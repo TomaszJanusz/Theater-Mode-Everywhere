@@ -173,10 +173,84 @@
     "message": "退出剧场模式"
   },
   "cycleSwitchPlayer": {
-    "message": "循环 / 切换播放器"
+    "message": "切换页面中的视频"
   },
   "cycleSwitchVideo": {
-    "message": "循环 / 切换视频"
+    "message": "切换页面中的视频"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "仅在页面上有多个 HTML5 视频时有效。"
+  },
+  "cycleVideoFit": {
+    "message": "切换视频适配"
+  },
+  "onlyOneVideoHud": {
+    "message": "功能不可用。仅当页面上有多个播放器时才能切换视频。"
+  },
+  "cycleIframeHud": {
+    "message": "切换仅适用于 HTML5 视频"
+  },
+  "videoFitTooltip": {
+    "message": "视频适配 <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "适应"
+  },
+  "videoFitCover": {
+    "message": "填充"
+  },
+  "videoFitFill": {
+    "message": "拉伸"
+  },
+  "reportABug": {
+    "message": "报告错误"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "这是我的新扩展！有了 Privacy Thing，你可以自己决定任何网站能看到你的哪些数据：位置、语言、时区，以及更多信息。它可以减少跨网站追踪你的可能性。"
+  },
+  "privacyThingPopoverNote": {
+    "message": "免费开源。"
+  },
+  "whatsNew": {
+    "message": "新功能"
+  },
+  "whatsNewDialogTitle": {
+    "message": "新功能"
+  },
+  "whatsNewLead": {
+    "message": "近期更新："
+  },
+  "whatsNewItemFit": {
+    "message": "影院模式新增适应、填充和拉伸，可通过工具栏按钮和快捷键 Z 切换。"
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "“切换页面上的视频”现在会说明为何在只有一个播放器时无法切换。"
+  },
+  "whatsNewItemSettings": {
+    "message": "设置中新增了“报告错误”和 Privacy Thing 推广。"
+  },
+  "whatsNewThanks": {
+    "message": "感谢 Denis 的建议和反馈 :)"
+  },
+  "dialogAcknowledge": {
+    "message": "知道了"
+  },
+  "dialogChoiceTrue": {
+    "message": "是"
+  },
+  "dialogChoiceFalse": {
+    "message": "否"
   },
   "showHideHelp": {
     "message": "显示/隐藏帮助"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "切换视频 <kbd>$KEY$</kbd>",
+    "message": "切换页面中的视频 <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

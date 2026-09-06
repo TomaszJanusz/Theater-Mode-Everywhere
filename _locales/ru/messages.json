@@ -173,10 +173,84 @@
     "message": "Выйти из режима кино"
   },
   "cycleSwitchPlayer": {
-    "message": "Переключить плеер"
+    "message": "Переключить видео на странице"
   },
   "cycleSwitchVideo": {
-    "message": "Переключить видео"
+    "message": "Переключить видео на странице"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Работает только если на странице больше одного HTML5-видео."
+  },
+  "cycleVideoFit": {
+    "message": "Сменить подгонку видео"
+  },
+  "onlyOneVideoHud": {
+    "message": "Функция недоступна. Переключение видео возможно только если на странице больше одного проигрывателя."
+  },
+  "cycleIframeHud": {
+    "message": "Переключение работает только с HTML5-видео"
+  },
+  "videoFitTooltip": {
+    "message": "Подгонка видео <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Вписать"
+  },
+  "videoFitCover": {
+    "message": "Заполнить"
+  },
+  "videoFitFill": {
+    "message": "Растянуть"
+  },
+  "reportABug": {
+    "message": "Сообщить об ошибке"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Вот моё новое расширение! С Privacy Thing вы сами решаете, какие данные о вас может видеть любой сайт: местоположение, язык, часовой пояс и многое, многое другое. Оно сокращает возможности отслеживания вас на разных сайтах."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Бесплатно и с открытым исходным кодом."
+  },
+  "whatsNew": {
+    "message": "Что нового"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Что нового"
+  },
+  "whatsNewLead": {
+    "message": "Вот что изменилось недавно:"
+  },
+  "whatsNewItemFit": {
+    "message": "Режимы вписать, заполнить и растянуть в режиме кино — кнопка на панели и сочетание Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Переключение видео на странице теперь объясняет, когда оно недоступно, потому что на странице только один проигрыватель."
+  },
+  "whatsNewItemSettings": {
+    "message": "В настройках появились «Сообщить об ошибке» и промо Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Спасибо Денису за предложения и замечания :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Понятно"
+  },
+  "dialogChoiceTrue": {
+    "message": "Да"
+  },
+  "dialogChoiceFalse": {
+    "message": "Нет"
   },
   "showHideHelp": {
     "message": "Показать/скрыть справку"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Переключить видео <kbd>$KEY$</kbd>",
+    "message": "Переключить видео на странице <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

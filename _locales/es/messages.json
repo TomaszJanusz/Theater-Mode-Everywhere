@@ -173,10 +173,84 @@
     "message": "Salir del modo teatro"
   },
   "cycleSwitchPlayer": {
-    "message": "Recorrer / cambiar reproductor"
+    "message": "Cambiar vídeo de la página"
   },
   "cycleSwitchVideo": {
-    "message": "Recorrer / cambiar video"
+    "message": "Cambiar vídeo de la página"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Solo funciona cuando la página tiene más de un vídeo HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "Cambiar ajuste del vídeo"
+  },
+  "onlyOneVideoHud": {
+    "message": "Función no disponible. Solo se puede cambiar de vídeo cuando hay más reproductores en la página."
+  },
+  "cycleIframeHud": {
+    "message": "El cambio solo funciona con vídeo HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "Ajuste del vídeo <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Ajustar"
+  },
+  "videoFitCover": {
+    "message": "Rellenar"
+  },
+  "videoFitFill": {
+    "message": "Estirar"
+  },
+  "reportABug": {
+    "message": "Informar de un error"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "¡Esta es mi nueva extensión! Con Privacy Thing tú decides qué datos puede ver sobre ti cualquier sitio web: ubicación, idioma, zona horaria y muchos, muchos más. Reduce las posibilidades de que te rastreen entre distintos sitios."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Gratis y de código abierto."
+  },
+  "whatsNew": {
+    "message": "Novedades"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Novedades"
+  },
+  "whatsNewLead": {
+    "message": "Esto es lo que cambió recientemente:"
+  },
+  "whatsNewItemFit": {
+    "message": "Modos Ajustar, Rellenar y Estirar en modo cine, con un botón en la barra y el atajo Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Cambiar vídeo en la página ahora explica cuándo no está disponible porque solo hay un reproductor."
+  },
+  "whatsNewItemSettings": {
+    "message": "Ajustes ahora incluye Informar de un error y una promo de Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Gracias a Denis por las sugerencias y los comentarios :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Entendido"
+  },
+  "dialogChoiceTrue": {
+    "message": "Sí"
+  },
+  "dialogChoiceFalse": {
+    "message": "No"
   },
   "showHideHelp": {
     "message": "Mostrar/ocultar ayuda"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Cambiar video <kbd>$KEY$</kbd>",
+    "message": "Cambiar vídeo de la página <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

@@ -12,12 +12,15 @@
   "license": "ISC",
   "packageManager": "pnpm@11.5.1",
   "devDependencies": {
+    "@types/archiver": "^6.0.2",
     "@types/chrome": "^0.0.268",
     "@types/node": "^20.12.7",
-    "@types/archiver": "^6.0.2",
     "archiver": "^7.0.1",
+    "tsx": "^4.7.2",
     "typescript": "^5.4.5",
-    "vite": "^5.2.10",
-    "tsx": "^4.7.2"
+    "vite": "^5.2.10"
+  },
+  "dependencies": {
+    "@privacy-thing/brand": "^0.2.1"
   }
 }

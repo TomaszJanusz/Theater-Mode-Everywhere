@@ -5,7 +5,14 @@ const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   generalControlsTitle: 'General Controls',
   toggleTheaterMode: 'Toggle Theater Mode',
   exitTheaterMode: 'Exit Theater Mode',
-  cycleSwitchVideo: 'Cycle / Switch Video',
+  cycleSwitchVideo: 'Switch Video on Page',
+  cycleVideoFit: 'Cycle Video Fit',
+  onlyOneVideoHud: 'Feature unavailable. Video switching is only possible when there are more players on the page.',
+  cycleIframeHud: 'Switching works only with HTML5 video',
+  videoFitTooltip: 'Video Fit <kbd>$1</kbd>',
+  videoFitContain: 'Fit',
+  videoFitCover: 'Fill',
+  videoFitFill: 'Stretch',
   showHideHelp: 'Show/Hide Help',
   playbackVolumeControlsTitle: 'Playback & Volume Controls',
   playPause: 'Play / Pause',
@@ -30,7 +37,7 @@ const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   noSubtitles: 'No subtitles',
   subtitlesOff: 'Off',
   trackLabel: 'Track $1',
-  switchVideoTooltip: 'Switch Video <kbd>$1</kbd>',
+  switchVideoTooltip: 'Switch Video on Page <kbd>$1</kbd>',
   keyboardShortcutsTooltip: 'Keyboard Shortcuts <kbd>$1</kbd>',
   fiveSeconds: '5 seconds',
   '@@bidi_dir': 'ltr',
@@ -92,6 +99,7 @@ interface Shortcuts {
   volumeDown: string;
   togglePiP: string;
   showHelp: string;
+  cycleFit: string;
 }
 
 const defaultShortcuts: Shortcuts = {
@@ -107,8 +115,26 @@ const defaultShortcuts: Shortcuts = {
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
   togglePiP: 'P',
-  showHelp: 'H'
+  showHelp: 'H',
+  cycleFit: 'Z'
 };
+
+const VIDEO_FIT_STORAGE_KEY = 'videoFitMode';
+const VIDEO_FIT_MODES = ['contain', 'cover', 'fill'] as const;
+type VideoFitMode = (typeof VIDEO_FIT_MODES)[number];
+const DEFAULT_VIDEO_FIT: VideoFitMode = 'contain';
+
+function resolveVideoFitMode(value: unknown): VideoFitMode {
+  return typeof value === 'string' && VIDEO_FIT_MODES.includes(value as VideoFitMode)
+    ? value as VideoFitMode
+    : DEFAULT_VIDEO_FIT;
+}
+
+function videoFitLabel(mode: VideoFitMode): string {
+  if (mode === 'cover') return t('videoFitCover');
+  if (mode === 'fill') return t('videoFitFill');
+  return t('videoFitContain');
+}
 
 // Kept inline so Vite emits a standalone classic content script without shared imports.
 const ACCENT_COLOR_STORAGE_KEY = 'accentColor';
@@ -214,6 +240,7 @@ let toolbarKeyboardInteractionActive = false;
 let currentToggleFullscreen: (() => void) | null = null;
 let onVolumeAdjustedCallback: (() => void) | null = null;
 let configuredAccentColor: AccentColorPreset = DEFAULT_ACCENT_COLOR;
+let configuredVideoFit: VideoFitMode = DEFAULT_VIDEO_FIT;
 
 const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
 const CURSOR_HIDDEN_CLASS = 'theater-everywhere-cursor-hidden';
@@ -229,7 +256,6 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   'min-width': '100vw',
   'min-height': '100vh',
   'z-index': '2147483647',
-  'object-fit': 'contain',
   margin: '0',
   padding: '0',
   transform: 'none',
@@ -249,11 +275,19 @@ type SavedInlineStyleState = {
 
 const theaterElementInlineStyleState = new WeakMap<HTMLElement, SavedInlineStyleState>();
 
+function getTheaterElementInlineStyles(): Record<string, string> {
+  return {
+    ...THEATER_ELEMENT_INLINE_STYLES,
+    'object-fit': configuredVideoFit,
+  };
+}
+
 function applyTheaterElementInlineStyles(element: HTMLElement): void {
+  const styles = getTheaterElementInlineStyles();
   if (!theaterElementInlineStyleState.has(element)) {
     theaterElementInlineStyleState.set(element, {
       hadStyleAttribute: element.hasAttribute('style'),
-      styles: Object.keys(THEATER_ELEMENT_INLINE_STYLES).map(property => ({
+      styles: Object.keys(styles).map(property => ({
         property,
         value: element.style.getPropertyValue(property),
         priority: element.style.getPropertyPriority(property),
@@ -261,9 +295,37 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     });
   }
 
-  Object.entries(THEATER_ELEMENT_INLINE_STYLES).forEach(([property, value]) => {
+  Object.entries(styles).forEach(([property, value]) => {
     element.style.setProperty(property, value, 'important');
   });
+  element.style.setProperty('--theater-object-fit', configuredVideoFit);
+}
+
+function applyTheaterVideoFit(mode: VideoFitMode = configuredVideoFit): void {
+  configuredVideoFit = mode;
+  document.documentElement.style.setProperty('--theater-object-fit', mode);
+  if (theaterElement) {
+    theaterElement.style.setProperty('object-fit', mode, 'important');
+    theaterElement.style.setProperty('--theater-object-fit', mode);
+  }
+}
+
+function persistVideoFitMode(mode: VideoFitMode): void {
+  applyTheaterVideoFit(mode);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      chrome.storage.sync.set({ [VIDEO_FIT_STORAGE_KEY]: mode });
+    }
+  } catch (_) {
+    // Storage can be unavailable in local test pages.
+  }
+}
+
+function cycleVideoFit(): void {
+  const currentIndex = VIDEO_FIT_MODES.indexOf(configuredVideoFit);
+  const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
+  persistVideoFitMode(nextMode);
+  triggerStatusIndicator(videoFitLabel(nextMode), STATUS_HUD_FIT_ICON);
 }
 
 function restoreTheaterElementInlineStyles(element: HTMLElement): void {
@@ -277,6 +339,8 @@ function restoreTheaterElementInlineStyles(element: HTMLElement): void {
       element.style.removeProperty(property);
     }
   });
+
+  element.style.removeProperty('--theater-object-fit');
 
   if (!savedState.hadStyleAttribute && element.getAttribute('style') === '') {
     element.removeAttribute('style');
@@ -490,12 +554,14 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
-      ACCENT_COLOR_STORAGE_KEY
+      ACCENT_COLOR_STORAGE_KEY,
+      VIDEO_FIT_STORAGE_KEY
     ]);
     const blacklist = (data.blacklist || []) as string[];
     const saved = data.shortcuts || {};
     volumeBoostEnabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
     configuredAccentColor = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
+    applyTheaterVideoFit(resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]));
     
     configuredShortcuts = {
       toggle: saved.toggle || defaultShortcuts.toggle,
@@ -510,7 +576,8 @@ async function checkBlacklistAndInit(): Promise<void> {
       volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
       volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
       togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-      showHelp: saved.showHelp || defaultShortcuts.showHelp
+      showHelp: saved.showHelp || defaultShortcuts.showHelp,
+      cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
     } as Shortcuts;
     
     const isBlacklisted = blacklist.some(domain => {
@@ -673,6 +740,14 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       cycleTheaterVideo('next');
+      return;
+    }
+
+    if (theaterElement && matchesShortcut(event, shortcuts.cycleFit)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      cycleVideoFit();
       return;
     }
 
@@ -917,7 +992,7 @@ function injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void {
       min-height: 100vh !important;
       z-index: 2147483647 !important;
       background-color: #000000 !important;
-      object-fit: contain !important;
+      object-fit: var(--theater-object-fit, contain) !important;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
@@ -1098,6 +1173,7 @@ function showHelpOverlay(): void {
         { label: t('toggleTheaterMode'), key: shortcuts.toggle },
         { label: t('exitTheaterMode'), key: shortcuts.exit },
         { label: t('cycleSwitchVideo'), key: shortcuts.cycle },
+        { label: t('cycleVideoFit'), key: shortcuts.cycleFit },
         { label: t('showHideHelp'), key: shortcuts.showHelp }
       ]
     },
@@ -1274,10 +1350,16 @@ function switchTheaterVideo(newVideo: HTMLVideoElement): void {
 function cycleTheaterVideo(direction: 'next' | 'prev' = 'next'): void {
   if (!theaterElement) return;
 
-  const videos = findAllVideosDeep(document);
-  if (videos.length <= 1) return;
+  if (theaterElement.tagName !== 'VIDEO') {
+    triggerStatusIndicator(t('cycleIframeHud'), STATUS_HUD_SWITCH_ICON);
+    return;
+  }
 
-  if (theaterElement.tagName !== 'VIDEO') return;
+  const videos = findAllVideosDeep(document);
+  if (videos.length <= 1) {
+    triggerStatusIndicator(t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON);
+    return;
+  }
 
   const currentVideo = theaterElement as HTMLVideoElement;
   const idx = videos.indexOf(currentVideo);
@@ -1500,6 +1582,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 // Run blacklist check and apply theme on load
 checkBlacklistAndInit();
+
+if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync') return;
+
+    if (changes.shortcuts?.newValue) {
+      const saved = changes.shortcuts.newValue || {};
+      configuredShortcuts = {
+        toggle: saved.toggle || defaultShortcuts.toggle,
+        exit: saved.exit || defaultShortcuts.exit,
+        seekBack: saved.seekBack || defaultShortcuts.seekBack,
+        seekForward: saved.seekForward || defaultShortcuts.seekForward,
+        cycle: saved.cycle || defaultShortcuts.cycle,
+        playPause: saved.playPause || defaultShortcuts.playPause,
+        frameBack: saved.frameBack || defaultShortcuts.frameBack,
+        frameForward: saved.frameForward || defaultShortcuts.frameForward,
+        toggleFullscreen: saved.toggleFullscreen || defaultShortcuts.toggleFullscreen,
+        volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
+        volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
+        togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
+        showHelp: saved.showHelp || defaultShortcuts.showHelp,
+        cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
+      };
+    }
+
+    if (changes[VIDEO_FIT_STORAGE_KEY]) {
+      applyTheaterVideoFit(resolveVideoFitMode(changes[VIDEO_FIT_STORAGE_KEY].newValue));
+    }
+  });
+}
 
 interface ExtendedHTMLDivElement extends HTMLDivElement {
   _videoListenersCleanup?: () => void;
@@ -2207,6 +2319,27 @@ function createCustomControls(video: HTMLVideoElement): void {
   rightSec.appendChild(ccBtn);
   rightSec.appendChild(speedContainer);
 
+  const fitBtn = document.createElement('button');
+  fitBtn.className = 'theater-control-btn video-fit-btn';
+  bindCustomTooltip(fitBtn, () => t('videoFitTooltip', configuredShortcuts.cycleFit));
+  const updateFitButtonIcon = () => {
+    setIcon(fitBtn, `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+        <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+        <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+        <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+      </svg>
+    `);
+  };
+  updateFitButtonIcon();
+  fitBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cycleVideoFit();
+  });
+  rightSec.appendChild(fitBtn);
+
   // Switch Video Button (Only if there are multiple video players on the page)
   const videosOnPage = findAllVideosDeep(document);
   if (videosOnPage.length > 1) {
@@ -2716,6 +2849,52 @@ function triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: '
     <div class="volume-hud-content">
       <div class="volume-hud-icon" style="${isBoosted ? 'color: #f59e0b;' : ''}">${icon}</div>
       <span class="volume-hud-text ${action === 'up' ? 'zoom-in' : 'zoom-out'}">${pct}%</span>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.remove();
+    }, 200);
+  }, 800);
+}
+
+const STATUS_HUD_SWITCH_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+  </svg>
+`;
+
+const STATUS_HUD_FIT_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+    <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+    <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+    <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+  </svg>
+`;
+
+function triggerStatusIndicator(text: string, icon: string): void {
+  if (!theaterElement) return;
+
+  const existing = document.querySelector('.theater-everywhere-volume-overlay') as HTMLElement | null;
+  if (existing) {
+    existing.remove();
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'theater-everywhere-volume-overlay status-hud';
+  applyUiDirection(overlay);
+  applyConfiguredAccentColor(overlay);
+
+  overlay.innerHTML = `
+    <div class="volume-hud-content">
+      <div class="volume-hud-icon zoom-in">${icon}</div>
+      <span class="volume-hud-text">${text}</span>
     </div>
   `;
 

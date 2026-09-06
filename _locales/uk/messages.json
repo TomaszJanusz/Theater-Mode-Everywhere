@@ -173,10 +173,84 @@
     "message": "Вийти з режиму кінотеатру"
   },
   "cycleSwitchPlayer": {
-    "message": "Перемкнути програвач"
+    "message": "Перемкнути відео на сторінці"
   },
   "cycleSwitchVideo": {
-    "message": "Перемкнути відео"
+    "message": "Перемкнути відео на сторінці"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Працює лише якщо на сторінці більше ніж одне HTML5-відео."
+  },
+  "cycleVideoFit": {
+    "message": "Змінити підгонку відео"
+  },
+  "onlyOneVideoHud": {
+    "message": "Функція недоступна. Перемикання відео можливе лише тоді, коли на сторінці більше ніж один програвач."
+  },
+  "cycleIframeHud": {
+    "message": "Перемикання працює лише з HTML5-відео"
+  },
+  "videoFitTooltip": {
+    "message": "Підгонка відео <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Вписати"
+  },
+  "videoFitCover": {
+    "message": "Заповнити"
+  },
+  "videoFitFill": {
+    "message": "Розтягнути"
+  },
+  "reportABug": {
+    "message": "Повідомити про помилку"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Ось моє нове розширення! З Privacy Thing ви самі вирішуєте, які дані про вас може бачити будь-який сайт: місцезнаходження, мову, часовий пояс і багато, багато іншого. Воно зменшує можливості відстежувати вас на різних сайтах."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Безплатне й з відкритим кодом."
+  },
+  "whatsNew": {
+    "message": "Що нового"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Що нового"
+  },
+  "whatsNewLead": {
+    "message": "Ось що змінилося останнім часом:"
+  },
+  "whatsNewItemFit": {
+    "message": "Режими вписати, заповнити й розтягнути в режимі кіно — кнопка на панелі та скорочення Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Перемикання відео на сторінці тепер пояснює, коли воно недоступне, бо на сторінці лише один програвач."
+  },
+  "whatsNewItemSettings": {
+    "message": "У налаштуваннях з’явилися «Повідомити про помилку» та промо Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Дякуємо Денісу за пропозиції та зауваження :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Зрозуміло"
+  },
+  "dialogChoiceTrue": {
+    "message": "Так"
+  },
+  "dialogChoiceFalse": {
+    "message": "Ні"
   },
   "showHideHelp": {
     "message": "Показати/приховати довідку"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Перемкнути відео <kbd>$KEY$</kbd>",
+    "message": "Перемкнути відео на сторінці <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

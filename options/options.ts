@@ -8,7 +8,33 @@ import {
   resolveAccentColorPreset,
   type AccentColorPreset
 } from '../src/accentTheme';
+import {
+  definePrivacyThingLogo,
+  type PrivacyThingLogoElement
+} from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
+import { hasUnseenWhatsNew, openWhatsNewDialog, syncWhatsNewButtonState } from '../src/whatsNew';
+
+definePrivacyThingLogo();
+
+function configurePrivacyThingLogo(): void {
+  const logo = document.querySelector<PrivacyThingLogoElement>('privacy-thing-logo');
+  logo?.configure({
+    animateIcon: true,
+    animateCursor: true,
+    trackPointer: true,
+    hoverReaction: 'boop',
+    tapReaction: 'jelly',
+    timing: {
+      pointer: {
+        directionDelayMs: 60,
+        idleHoldMs: 700,
+        transitionMs: 140,
+        inactivityTimeoutMs: 3500
+      }
+    }
+  });
+}
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -27,6 +53,7 @@ interface Shortcuts {
   volumeDown: string;
   togglePiP: string;
   showHelp: string;
+  cycleFit: string;
 }
 
 const defaultShortcuts: Shortcuts = {
@@ -42,7 +69,8 @@ const defaultShortcuts: Shortcuts = {
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
   togglePiP: 'P',
-  showHelp: 'H'
+  showHelp: 'H',
+  cycleFit: 'Z'
 };
 
 function safeGetStorage(keys: string | string[]): Promise<any> {
@@ -77,6 +105,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 
 async function init() {
   localizeDocument();
+  configurePrivacyThingLogo();
 
   const form = document.getElementById('add-domain-form') as HTMLFormElement;
   const input = document.getElementById('domain-input') as HTMLInputElement;
@@ -366,6 +395,7 @@ async function init() {
     const volumeDownInput = document.getElementById('shortcut-volume-down') as HTMLInputElement;
     const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
+    const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
 
     if (toggleInput) toggleInput.value = shortcuts.toggle || defaultShortcuts.toggle;
     if (exitInput) exitInput.value = shortcuts.exit || defaultShortcuts.exit;
@@ -380,6 +410,7 @@ async function init() {
     if (volumeDownInput) volumeDownInput.value = shortcuts.volumeDown || defaultShortcuts.volumeDown;
     if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
+    if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
   }
 
   async function loadAndRenderShortcuts() {
@@ -400,7 +431,8 @@ async function init() {
         volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
         volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
         togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-        showHelp: saved.showHelp || defaultShortcuts.showHelp
+        showHelp: saved.showHelp || defaultShortcuts.showHelp,
+        cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
       } as Shortcuts;
       
       renderShortcuts(shortcuts);
@@ -471,7 +503,8 @@ async function init() {
             volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
             volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
             togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-            showHelp: saved.showHelp || defaultShortcuts.showHelp
+            showHelp: saved.showHelp || defaultShortcuts.showHelp,
+            cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
           } as Shortcuts;
 
           const shortcutId = input.id;
@@ -488,6 +521,7 @@ async function init() {
           else if (shortcutId === 'shortcut-volume-down') shortcuts.volumeDown = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
+          else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
 
           await chrome.storage.sync.set({ shortcuts });
           await notifyAllTabs();
@@ -520,7 +554,8 @@ async function init() {
             volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
             volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
             togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-            showHelp: saved.showHelp || defaultShortcuts.showHelp
+            showHelp: saved.showHelp || defaultShortcuts.showHelp,
+            cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
           } as Shortcuts;
 
           shortcuts[shortcutKey] = defaultShortcuts[shortcutKey];
@@ -561,6 +596,22 @@ async function init() {
     }
   }
 
+  async function setupWhatsNew(): Promise<void> {
+    const button = document.getElementById('whats-new-btn');
+    if (!button) return;
+
+    await syncWhatsNewButtonState(button);
+    button.addEventListener('click', async () => {
+      await openWhatsNewDialog();
+      await syncWhatsNewButtonState(button);
+    });
+
+    if (await hasUnseenWhatsNew()) {
+      await openWhatsNewDialog();
+      await syncWhatsNewButtonState(button);
+    }
+  }
+
   function setupFeatureListeners() {
     const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
     if (toggle) {
@@ -574,6 +625,8 @@ async function init() {
       });
     }
   }
+
+  await setupWhatsNew();
 }
 
 if (document.readyState === 'loading') {

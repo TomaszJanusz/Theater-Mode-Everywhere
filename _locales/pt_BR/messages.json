@@ -173,10 +173,84 @@
     "message": "Sair do Modo Teatro"
   },
   "cycleSwitchPlayer": {
-    "message": "Alternar Player"
+    "message": "Alternar vídeo na página"
   },
   "cycleSwitchVideo": {
-    "message": "Alternar Vídeo"
+    "message": "Alternar vídeo na página"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Funciona apenas quando a página tem mais de um vídeo HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "Alternar ajuste do vídeo"
+  },
+  "onlyOneVideoHud": {
+    "message": "Recurso indisponível. A troca de vídeo só é possível quando há mais players na página."
+  },
+  "cycleIframeHud": {
+    "message": "A troca funciona apenas com vídeo HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "Ajuste do vídeo <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Ajustar"
+  },
+  "videoFitCover": {
+    "message": "Preencher"
+  },
+  "videoFitFill": {
+    "message": "Esticar"
+  },
+  "reportABug": {
+    "message": "Relatar um bug"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Aqui está a minha nova extensão! Com o Privacy Thing, você decide quais dados qualquer site pode ver sobre você: localização, idioma, fuso horário e muito, muito mais. Ela reduz as possibilidades de rastrear você entre diferentes sites."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Gratuita e de código aberto."
+  },
+  "whatsNew": {
+    "message": "Novidades"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Novidades"
+  },
+  "whatsNewLead": {
+    "message": "Veja o que mudou recentemente:"
+  },
+  "whatsNewItemFit": {
+    "message": "Os modos Ajustar, Preencher e Esticar no modo cinema, com um botão na barra e o atalho Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Trocar vídeo na página agora explica quando a troca está indisponível porque há apenas um player."
+  },
+  "whatsNewItemSettings": {
+    "message": "As configurações agora incluem Reportar um bug e uma promo do Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Obrigado ao Denis pelas sugestões e pelos comentários :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Entendi"
+  },
+  "dialogChoiceTrue": {
+    "message": "Sim"
+  },
+  "dialogChoiceFalse": {
+    "message": "Não"
   },
   "showHideHelp": {
     "message": "Mostrar/Ocultar Ajuda"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Alternar Vídeo <kbd>$KEY$</kbd>",
+    "message": "Alternar vídeo na página <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

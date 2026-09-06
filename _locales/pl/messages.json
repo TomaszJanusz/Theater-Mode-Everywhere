@@ -173,10 +173,84 @@
     "message": "Wyjdź z trybu kinowego"
   },
   "cycleSwitchPlayer": {
-    "message": "Przełącz odtwarzacz"
+    "message": "Przełącz wideo na stronie"
   },
   "cycleSwitchVideo": {
-    "message": "Przełącz wideo"
+    "message": "Przełącz wideo na stronie"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Działa tylko, gdy na stronie jest więcej niż jedno wideo HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "Zmień dopasowanie wideo"
+  },
+  "onlyOneVideoHud": {
+    "message": "Funkcja niedostępna. Przełączanie wideo jest możliwe wyłącznie, gdy jest więcej odtwarzaczy na stronie."
+  },
+  "cycleIframeHud": {
+    "message": "Przełączanie działa tylko z wideo HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "Dopasowanie wideo <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Dopasuj"
+  },
+  "videoFitCover": {
+    "message": "Wypełnij"
+  },
+  "videoFitFill": {
+    "message": "Rozciągnij"
+  },
+  "reportABug": {
+    "message": "Zgłoś błąd"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Oto moje nowe rozszerzenie! Z Privacy Thing sam decydujesz, jakie dane o Tobie widzi dowolna strona: lokalizację, język, strefę czasową i wiele, wiele innych. Redukuje możliwości śledzenia Cię pomiędzy stronami."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Darmowe i otwarte."
+  },
+  "whatsNew": {
+    "message": "Co nowego"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Co nowego"
+  },
+  "whatsNewLead": {
+    "message": "Oto co się ostatnio zmieniło:"
+  },
+  "whatsNewItemFit": {
+    "message": "Tryby Dopasuj, Wypełnij i Rozciągnij w trybie kinowym — przycisk na pasku i skrót Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Przełączanie wideo na stronie informuje, gdy funkcja jest niedostępna, bo jest tylko jeden odtwarzacz."
+  },
+  "whatsNewItemSettings": {
+    "message": "W ustawieniach pojawiły się Zgłoś błąd oraz promo Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Dzięki Denisowi za sugestie i uwagi :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Rozumiem"
+  },
+  "dialogChoiceTrue": {
+    "message": "Tak"
+  },
+  "dialogChoiceFalse": {
+    "message": "Nie"
   },
   "showHideHelp": {
     "message": "Pokaż/ukryj pomoc"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Przełącz wideo <kbd>$KEY$</kbd>",
+    "message": "Przełącz wideo na stronie <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

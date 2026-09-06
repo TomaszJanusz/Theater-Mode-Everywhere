@@ -13,7 +13,7 @@
   min-height: 100vh !important;
   z-index: 2147483647 !important;
   background-color: #000000 !important;
-  object-fit: contain !important;
+  object-fit: var(--theater-object-fit, contain) !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -865,6 +865,7 @@ video::-webkit-media-text-track-display {
   z-index: 2147483647 !important;
   pointer-events: none !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
   transition: opacity 0.15s ease, transform 0.15s ease !important;
 }
 
@@ -893,12 +894,25 @@ video::-webkit-media-text-track-display {
   direction: inherit !important;
 }
 
-.volume-hud-text.zoom-in {
+.volume-hud-text.zoom-in,
+.volume-hud-icon.zoom-in {
   animation: volume-hud-zoom-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
 
-.volume-hud-text.zoom-out {
+.volume-hud-text.zoom-out,
+.volume-hud-icon.zoom-out {
   animation: volume-hud-zoom-out 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+.theater-everywhere-volume-overlay.status-hud .volume-hud-icon {
+  flex-shrink: 0 !important;
+}
+
+.theater-everywhere-volume-overlay.status-hud .volume-hud-text {
+  max-width: 22rem !important;
+  white-space: normal !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
 }
 
 @keyframes volume-hud-zoom-in {

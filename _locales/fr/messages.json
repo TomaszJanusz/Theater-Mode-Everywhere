@@ -173,10 +173,84 @@
     "message": "Quitter le mode cinéma"
   },
   "cycleSwitchPlayer": {
-    "message": "Changer de lecteur"
+    "message": "Changer de vidéo sur la page"
   },
   "cycleSwitchVideo": {
-    "message": "Changer de vidéo"
+    "message": "Changer de vidéo sur la page"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Fonctionne uniquement lorsque la page contient plusieurs vidéos HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "Changer l’ajustement vidéo"
+  },
+  "onlyOneVideoHud": {
+    "message": "Fonction indisponible. Le changement de vidéo n’est possible que s’il y a plusieurs lecteurs sur la page."
+  },
+  "cycleIframeHud": {
+    "message": "Le changement fonctionne uniquement avec la vidéo HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "Ajustement vidéo <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Ajuster"
+  },
+  "videoFitCover": {
+    "message": "Remplir"
+  },
+  "videoFitFill": {
+    "message": "Étirer"
+  },
+  "reportABug": {
+    "message": "Signaler un bug"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Voici ma nouvelle extension ! Avec Privacy Thing, c’est vous qui décidez quelles données n’importe quel site peut voir à votre sujet : localisation, langue, fuseau horaire et bien, bien plus encore. Elle réduit les possibilités de vous suivre d’un site à l’autre."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Gratuite et open source."
+  },
+  "whatsNew": {
+    "message": "Nouveautés"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Nouveautés"
+  },
+  "whatsNewLead": {
+    "message": "Voici ce qui a changé récemment :"
+  },
+  "whatsNewItemFit": {
+    "message": "Les modes Ajuster, Remplir et Étirer en mode cinéma, avec un bouton dans la barre et le raccourci Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Changer de vidéo sur la page explique désormais quand le changement est indisponible parce qu’il n’y a qu’un seul lecteur."
+  },
+  "whatsNewItemSettings": {
+    "message": "Les paramètres incluent désormais Signaler un bug et une promo Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Merci à Denis pour les suggestions et les retours :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Compris"
+  },
+  "dialogChoiceTrue": {
+    "message": "Oui"
+  },
+  "dialogChoiceFalse": {
+    "message": "Non"
   },
   "showHideHelp": {
     "message": "Afficher/Masquer l'aide"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Changer de vidéo <kbd>$KEY$</kbd>",
+    "message": "Changer de vidéo sur la page <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

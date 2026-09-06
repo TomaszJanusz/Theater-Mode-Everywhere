@@ -13,6 +13,7 @@ Theater Mode Everywhere is built for anyone who wants to enjoy web videos withou
 
 KEY FEATURES
 - One-Key Immersive Mode: Press `T` to instantly expand the active video to fit the browser viewport. Press it again or `Escape` to return to normal. If there are multiple videos on the page, press `Shift+T` to cycle between them.
+- Video Fit Modes: Press `Z` or use the player button to cycle Fit, Fill, and Stretch, so you can crop letterboxing without another extension.
 - Sleek Custom Player Controls: A clean, modern control bar with vertical pop-up panels for volume and playback speed, glassmorphic tooltips, and remaining/elapsed time indicators.
 - Volume Boost (Up to 300%): Amplify quiet video audio up to 300% using the Web Audio API, with a non-linear slider for precise adjustments and a settings toggle.
 - Visual HUD Feedback: Get elegant animated overlays when adjusting volume, seeking, or toggling play/pause.

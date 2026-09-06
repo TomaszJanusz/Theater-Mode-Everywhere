@@ -20,13 +20,47 @@
           </div>
           <span class="logo-text">Theater Mode <span class="accent">Everywhere</span></span>
         </div>
-        <a href="https://theater.tomaszjanusz.dev" target="_blank" rel="noopener noreferrer" class="icon-btn" data-i18n-title="homepage">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-          <span data-i18n="homepage">Homepage</span>
-        </a>
+        <div class="header-actions">
+          <button type="button" id="whats-new-btn" class="icon-btn" data-i18n-title="whatsNew">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span data-i18n="whatsNew">What's New</span>
+          </button>
+          <a href="https://theater.tomaszjanusz.dev" target="_blank" rel="noopener noreferrer" class="icon-btn" data-i18n-title="homepage">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span data-i18n="homepage">Homepage</span>
+          </a>
+          <a href="https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer" class="icon-btn" data-i18n-title="reportABug">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v4"></path>
+              <path d="M16 2v4"></path>
+              <rect x="4" y="4" width="16" height="18" rx="2"></rect>
+              <path d="M8 10h8"></path>
+              <path d="M8 14h5"></path>
+            </svg>
+            <span data-i18n="reportABug">Report a Bug</span>
+          </a>
+          <a href="https://privacything.com" target="_blank" rel="noopener noreferrer" class="icon-btn privacy-thing-chip" aria-describedby="privacy-thing-popover">
+            <privacy-thing-logo
+              variant="horizontal"
+              label="Privacy Thing"
+              animate-icon
+              animate-cursor
+              track-pointer
+              hover-reaction="boop"
+              tap-reaction="jelly"
+            ></privacy-thing-logo>
+            <span id="privacy-thing-popover" class="privacy-thing-popover" role="tooltip">
+              <strong data-i18n="privacyThingPopoverTitle">Privacy Thing</strong>
+              <span data-i18n="privacyThingPopoverBody">Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site.</span>
+              <span class="privacy-thing-popover-note" data-i18n="privacyThingPopoverNote">Free and open source.</span>
+            </span>
+          </a>
+        </div>
       </div>
       <p class="subtitle" data-i18n="settingsSubtitle">Configure website exclusions, appearance, and theater mode keyboard shortcuts.</p>
     </header>
@@ -120,10 +154,24 @@
                 </div>
               </div>
               <div class="shortcut-row">
-                <label for="shortcut-cycle" data-i18n="cycleSwitchPlayer">Cycle / Switch Player</label>
+                <div class="shortcut-copy">
+                  <label for="shortcut-cycle" data-i18n="cycleSwitchPlayer">Switch Video on Page</label>
+                  <p class="shortcut-hint" data-i18n="cycleSwitchPlayerDescription">Works only when the page has more than one HTML5 video.</p>
+                </div>
                 <div class="shortcut-input-wrapper">
                   <input type="text" id="shortcut-cycle" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycle" title="Reset to default" data-i18n-title="resetToDefault">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-row">
+                <label for="shortcut-cycle-fit" data-i18n="cycleVideoFit">Cycle Video Fit</label>
+                <div class="shortcut-input-wrapper">
+                  <input type="text" id="shortcut-cycle-fit" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                  <button type="button" class="reset-single-btn" data-shortcut="cycleFit" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
                     </svg>

@@ -1,0 +1,62 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: |
+        The page URL, whether theater mode was on, and what you pressed or clicked.
+        A public page that reproduces it helps more than a description.
+      placeholder: |
+        1. Open https://example.com/video
+        2. Press T to enter theater mode
+        3. Press Shift+T
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: "1.3.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Edge
+        - Brave
+        - Other Chromium
+        - Firefox
+    validations:
+      required: true
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser and OS version
+      placeholder: "Chrome 140 on macOS 15.6"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: |
+        Console errors, whether it happens with a local file, whether there is
+        more than one video on the page, and whether an earlier version worked.
