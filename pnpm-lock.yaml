@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@privacy-thing/brand':
+        specifier: ^0.2.1
+        version: 0.2.1
     devDependencies:
       '@types/archiver':
         specifier: ^6.0.2
@@ -333,6 +337,10 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@privacy-thing/brand@0.2.1':
+    resolution: {integrity: sha512-onwfa29b2KoVb2uTdtEFFGNzcMgEWZYkFgeDwAHRh7cfGQaA+thQ5Nha2b9aXJQAmAJa/VkZrxx2LiWpy6OeJQ==}
+    engines: {node: '>=22.12.0'}
 
   '@rollup/rollup-android-arm-eabi@4.62.0':
     resolution: {integrity: sha512-IPIQ55ythEHkfEd9jMEi32OQ7SxURsGA43JI22lj01OLZNt2NUbJX8YUHxkVWyQ6daHPNn0truF5nSj3DQp6YQ==}
@@ -1043,6 +1051,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@privacy-thing/brand@0.2.1': {}
 
   '@rollup/rollup-android-arm-eabi@4.62.0':
     optional: true

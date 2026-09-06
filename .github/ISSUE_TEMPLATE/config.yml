@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Homepage
+    url: https://theater.tomaszjanusz.dev
+    about: Extension homepage and product information.
+  - name: Store listing
+    url: https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe
+    about: Chrome Web Store page if you want to leave a public review instead.

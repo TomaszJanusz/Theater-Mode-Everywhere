@@ -173,10 +173,84 @@
     "message": "Theatermodus verlassen"
   },
   "cycleSwitchPlayer": {
-    "message": "Player wechseln"
+    "message": "Video auf der Seite wechseln"
   },
   "cycleSwitchVideo": {
-    "message": "Video wechseln"
+    "message": "Video auf der Seite wechseln"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Funktioniert nur, wenn die Seite mehr als ein HTML5-Video enthält."
+  },
+  "cycleVideoFit": {
+    "message": "Videoanpassung wechseln"
+  },
+  "onlyOneVideoHud": {
+    "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehr Player auf der Seite vorhanden sind."
+  },
+  "cycleIframeHud": {
+    "message": "Wechseln funktioniert nur mit HTML5-Video"
+  },
+  "videoFitTooltip": {
+    "message": "Videoanpassung <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Einpassen"
+  },
+  "videoFitCover": {
+    "message": "Füllen"
+  },
+  "videoFitFill": {
+    "message": "Strecken"
+  },
+  "reportABug": {
+    "message": "Fehler melden"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Hier ist meine neue Erweiterung! Mit Privacy Thing entscheidest du selbst, welche Daten eine Website über dich sehen kann: Standort, Sprache, Zeitzone und vieles, vieles mehr. Es reduziert die Möglichkeiten, dich websiteübergreifend zu verfolgen."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Kostenlos und Open Source."
+  },
+  "whatsNew": {
+    "message": "Neuigkeiten"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Neuigkeiten"
+  },
+  "whatsNewLead": {
+    "message": "Das hat sich zuletzt geändert:"
+  },
+  "whatsNewItemFit": {
+    "message": "Die Modi Einpassen, Füllen und Strecken im Kinomodus, mit einer Schaltfläche in der Leiste und dem Shortcut Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "„Video auf der Seite wechseln“ erklärt jetzt, wenn das Wechseln nicht möglich ist, weil nur ein Player auf der Seite ist."
+  },
+  "whatsNewItemSettings": {
+    "message": "In den Einstellungen gibt es jetzt „Fehler melden“ und eine Privacy-Thing-Empfehlung."
+  },
+  "whatsNewThanks": {
+    "message": "Danke an Denis für die Anregungen und Rückmeldungen :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Verstanden"
+  },
+  "dialogChoiceTrue": {
+    "message": "Ja"
+  },
+  "dialogChoiceFalse": {
+    "message": "Nein"
   },
   "showHideHelp": {
     "message": "Hilfe ein-/ausblenden"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Video wechseln <kbd>$KEY$</kbd>",
+    "message": "Video auf der Seite wechseln <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

@@ -62,10 +62,101 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   width: 100%;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.privacy-thing-chip {
+  position: relative;
+  color: var(--text-primary);
+  line-height: 0;
+}
+
+.privacy-thing-chip privacy-thing-logo {
+  display: block;
+  width: 107px;
+  height: 20px;
+  color: inherit;
+  --privacy-thing-cursor-color: var(--accent-color);
+}
+
+.privacy-thing-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  inset-inline-end: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(268px, 72vw);
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  color: var(--text-primary);
+  line-height: 1.45;
+  text-align: start;
+  white-space: normal;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+}
+
+.privacy-thing-popover::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  inset-inline-end: 22px;
+  width: 9px;
+  height: 9px;
+  border-block-start: 1px solid var(--border-color);
+  border-inline-end: 1px solid var(--border-color);
+  background: inherit;
+  transform: rotate(-45deg);
+}
+
+.privacy-thing-popover strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.privacy-thing-popover-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.privacy-thing-chip:hover .privacy-thing-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.privacy-thing-chip:focus .privacy-thing-popover,
+.privacy-thing-chip:focus-visible .privacy-thing-popover,
+.privacy-thing-chip:focus-within .privacy-thing-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .icon-btn {
+  position: relative;
   background: none;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
@@ -78,8 +169,21 @@ body {
   justify-content: center;
   transition: all 0.2s ease;
   text-decoration: none;
+  font: inherit;
   font-size: 13px;
   font-weight: 500;
+}
+
+.icon-btn.has-unseen::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  inset-inline-end: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--bg-color);
 }
 
 .icon-btn:hover {
@@ -428,10 +532,24 @@ section h2 {
   gap: 20px;
 }
 
+.shortcut-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .shortcut-row label {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.shortcut-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .shortcut-input {
@@ -869,4 +987,190 @@ section h2 {
 
 .toggle-switch input:focus-visible + .toggle-slider {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 32%, transparent);
+}
+
+body.te-dialog-open {
+  overflow: hidden;
+}
+
+.te-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(9, 9, 11, 0.62);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  animation: te-dialog-fade-in 0.18s ease both;
+}
+
+.te-dialog-overlay.is-leaving {
+  animation: te-dialog-fade-out 0.16s ease both;
+}
+
+.te-dialog {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 22px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+  color: var(--text-primary);
+  animation: te-dialog-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.te-dialog-overlay.is-leaving .te-dialog {
+  animation: te-dialog-rise-out 0.16s ease both;
+}
+
+.te-dialog-title {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.te-dialog-body {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.whats-new-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.whats-new-lead {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.whats-new-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.whats-new-list li {
+  position: relative;
+  padding-inline-start: 16px;
+}
+
+.whats-new-list li::before {
+  content: '';
+  position: absolute;
+  top: 0.55em;
+  inset-inline-start: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+}
+
+.whats-new-thanks {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.te-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.te-dialog-btn {
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.te-dialog-btn-primary {
+  border: none;
+  background: var(--accent-color);
+  color: var(--accent-text);
+}
+
+.te-dialog-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.te-dialog-btn-secondary {
+  border: 1px solid var(--border-color);
+  background: #18181b;
+  color: var(--text-primary);
+}
+
+.te-dialog-btn-secondary:hover {
+  background: #27272a;
+  border-color: var(--text-secondary);
+}
+
+.te-dialog-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 36%, transparent);
+}
+
+.te-dialog-btn:active {
+  transform: scale(0.98);
+}
+
+@keyframes te-dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes te-dialog-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes te-dialog-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes te-dialog-rise-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .te-dialog-overlay,
+  .te-dialog,
+  .te-dialog-overlay.is-leaving,
+  .te-dialog-overlay.is-leaving .te-dialog {
+    animation: none;
+  }
 }

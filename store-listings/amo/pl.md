@@ -13,6 +13,7 @@ Theater Mode Everywhere jest dla osób, które chcą oglądać wideo w interneci
 
 GŁÓWNE FUNKCJE
 - Tryb immersyjny jednym klawiszem: naciśnij `T`, aby natychmiast powiększyć aktywne wideo do widoku przeglądarki. Naciśnij ponownie albo `Escape`, aby wrócić. Jeśli na stronie jest kilka filmów, użyj `Shift+T`, aby je przełączać.
+- Dopasowanie wideo: naciśnij `Z` albo użyj przycisku w odtwarzaczu, aby przełączać Dopasuj, Wypełnij i Rozciągnij i usunąć czarne pasy bez dodatkowego rozszerzenia.
 - Eleganckie własne kontrolki: nowoczesny pasek sterowania z pionowymi panelami głośności i prędkości odtwarzania, półprzezroczystymi podpowiedziami oraz wskaźnikami czasu pozostałego i odtworzonego.
 - Wzmocnienie głośności (do 300%): wzmacnia dźwięk cichych filmów do 300% za pomocą Web Audio API, z nieliniowym suwakiem do precyzyjnych ustawień i przełącznikiem w opcjach.
 - Wizualny HUD: eleganckie animowane nakładki przy zmianie głośności, przewijaniu oraz przełączaniu odtwarzania/pauzy.

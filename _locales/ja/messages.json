@@ -173,10 +173,84 @@
     "message": "シアターモード終了"
   },
   "cycleSwitchPlayer": {
-    "message": "プレーヤー切り替え"
+    "message": "ページ内の動画を切り替え"
   },
   "cycleSwitchVideo": {
-    "message": "ビデオ切り替え"
+    "message": "ページ内の動画を切り替え"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "ページに複数の HTML5 動画がある場合のみ動作します。"
+  },
+  "cycleVideoFit": {
+    "message": "動画のフィットを切り替え"
+  },
+  "onlyOneVideoHud": {
+    "message": "機能を利用できません。動画の切り替えは、ページに複数のプレーヤーがある場合のみ可能です。"
+  },
+  "cycleIframeHud": {
+    "message": "切り替えは HTML5 動画でのみ動作します"
+  },
+  "videoFitTooltip": {
+    "message": "動画フィット <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "フィット"
+  },
+  "videoFitCover": {
+    "message": "フィル"
+  },
+  "videoFitFill": {
+    "message": "ストレッチ"
+  },
+  "reportABug": {
+    "message": "バグを報告"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "新しい拡張機能です！Privacy Thing なら、どのサイトにどんな情報を見せるかを自分で決められます。位置情報、言語、タイムゾーンなど、ほかにもたくさん。サイトをまたいだ追跡の可能性を減らします。"
+  },
+  "privacyThingPopoverNote": {
+    "message": "無料・オープンソースです。"
+  },
+  "whatsNew": {
+    "message": "新着情報"
+  },
+  "whatsNewDialogTitle": {
+    "message": "新着情報"
+  },
+  "whatsNewLead": {
+    "message": "最近の変更点:"
+  },
+  "whatsNewItemFit": {
+    "message": "シアターモードのフィット / フィル / ストレッチ。ツールバーのボタンとショートカット Z で切り替えられます。"
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "ページ上の動画切り替えは、プレーヤーが1つしかないときに利用できない理由を表示します。"
+  },
+  "whatsNewItemSettings": {
+    "message": "設定に「バグを報告」と Privacy Thing の紹介が追加されました。"
+  },
+  "whatsNewThanks": {
+    "message": "Denis さん、ご提案とフィードバックをありがとうございます :)"
+  },
+  "dialogAcknowledge": {
+    "message": "了解"
+  },
+  "dialogChoiceTrue": {
+    "message": "はい"
+  },
+  "dialogChoiceFalse": {
+    "message": "いいえ"
   },
   "showHideHelp": {
     "message": "ヘルプ表示/非表示"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "ビデオ切り替え <kbd>$KEY$</kbd>",
+    "message": "ページ内の動画を切り替え <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

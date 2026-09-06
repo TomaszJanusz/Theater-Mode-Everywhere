@@ -173,10 +173,84 @@
     "message": "الخروج من وضع المسرح"
   },
   "cycleSwitchPlayer": {
-    "message": "تبديل المشغل"
+    "message": "تبديل الفيديو في الصفحة"
   },
   "cycleSwitchVideo": {
-    "message": "تبديل الفيديو"
+    "message": "تبديل الفيديو في الصفحة"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "يعمل فقط عندما تحتوي الصفحة على أكثر من فيديو HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "تبديل ملاءمة الفيديو"
+  },
+  "onlyOneVideoHud": {
+    "message": "الميزة غير متاحة. يمكن تبديل الفيديو فقط عندما يكون هناك أكثر من مشغّل في الصفحة."
+  },
+  "cycleIframeHud": {
+    "message": "يعمل التبديل فقط مع فيديو HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "ملاءمة الفيديو <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "ملاءمة"
+  },
+  "videoFitCover": {
+    "message": "ملء"
+  },
+  "videoFitFill": {
+    "message": "تمديد"
+  },
+  "reportABug": {
+    "message": "الإبلاغ عن خطأ"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "إليك إضافتي الجديدة! مع Privacy Thing، أنت من يقرر ما البيانات التي يمكن لأي موقع رؤيتها عنك: موقعك الجغرافي، واللغة، والمنطقة الزمنية، وغيرها الكثير والكثير. تقلّل من إمكانية تتبعك عبر المواقع المختلفة."
+  },
+  "privacyThingPopoverNote": {
+    "message": "مجانية ومفتوحة المصدر."
+  },
+  "whatsNew": {
+    "message": "ما الجديد"
+  },
+  "whatsNewDialogTitle": {
+    "message": "ما الجديد"
+  },
+  "whatsNewLead": {
+    "message": "إليك ما تغيّر مؤخرًا:"
+  },
+  "whatsNewItemFit": {
+    "message": "أوضاع الملاءمة والتعبئة والتمديد في وضع المسرح، مع زر في الشريط واختصار Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "تبديل الفيديو في الصفحة يوضح الآن متى يكون التبديل غير متاح لأن هناك مشغّلًا واحدًا فقط."
+  },
+  "whatsNewItemSettings": {
+    "message": "تتضمن الإعدادات الآن الإبلاغ عن خطأ وترويج Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "شكرًا لـ Denis على الاقتراحات والملاحظات :)"
+  },
+  "dialogAcknowledge": {
+    "message": "حسنًا"
+  },
+  "dialogChoiceTrue": {
+    "message": "نعم"
+  },
+  "dialogChoiceFalse": {
+    "message": "لا"
   },
   "showHideHelp": {
     "message": "إظهار/إخفاء المساعدة"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "تبديل الفيديو <kbd>$KEY$</kbd>",
+    "message": "تبديل الفيديو في الصفحة <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

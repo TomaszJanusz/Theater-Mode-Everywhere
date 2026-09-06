@@ -173,10 +173,84 @@
     "message": "Esci dalla modalità cinema"
   },
   "cycleSwitchPlayer": {
-    "message": "Cambia riproduttore"
+    "message": "Cambia video nella pagina"
   },
   "cycleSwitchVideo": {
-    "message": "Cambia video"
+    "message": "Cambia video nella pagina"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Funziona solo quando la pagina ha più di un video HTML5."
+  },
+  "cycleVideoFit": {
+    "message": "Cambia adattamento video"
+  },
+  "onlyOneVideoHud": {
+    "message": "Funzione non disponibile. Il cambio video è possibile solo quando nella pagina ci sono più lettori."
+  },
+  "cycleIframeHud": {
+    "message": "Il cambio funziona solo con video HTML5"
+  },
+  "videoFitTooltip": {
+    "message": "Adattamento video <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Adatta"
+  },
+  "videoFitCover": {
+    "message": "Riempi"
+  },
+  "videoFitFill": {
+    "message": "Allunga"
+  },
+  "reportABug": {
+    "message": "Segnala un bug"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Ecco la mia nuova estensione! Con Privacy Thing decidi tu quali dati su di te può vedere qualsiasi sito: posizione, lingua, fuso orario e molto, molto altro. Riduce le possibilità di tracciarti da un sito all’altro."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Gratuita e open source."
+  },
+  "whatsNew": {
+    "message": "Novità"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Novità"
+  },
+  "whatsNewLead": {
+    "message": "Ecco cosa è cambiato di recente:"
+  },
+  "whatsNewItemFit": {
+    "message": "Le modalità Adatta, Riempi e Allunga in modalità cinema, con un pulsante nella barra e la scorciatoia Z."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Cambia video nella pagina ora spiega quando il cambio non è disponibile perché c’è un solo lettore."
+  },
+  "whatsNewItemSettings": {
+    "message": "Le impostazioni ora includono Segnala un bug e una promo Privacy Thing."
+  },
+  "whatsNewThanks": {
+    "message": "Grazie a Denis per i suggerimenti e i commenti :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Ho capito"
+  },
+  "dialogChoiceTrue": {
+    "message": "Sì"
+  },
+  "dialogChoiceFalse": {
+    "message": "No"
   },
   "showHideHelp": {
     "message": "Mostra/Nascondi aiuto"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Cambia video <kbd>$KEY$</kbd>",
+    "message": "Cambia video nella pagina <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

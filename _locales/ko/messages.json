@@ -173,10 +173,84 @@
     "message": "시어터 모드 종료"
   },
   "cycleSwitchPlayer": {
-    "message": "플레이어 전환"
+    "message": "페이지의 동영상 전환"
   },
   "cycleSwitchVideo": {
-    "message": "비디오 전환"
+    "message": "페이지의 동영상 전환"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "페이지에 HTML5 동영상이 두 개 이상 있을 때만 동작합니다."
+  },
+  "cycleVideoFit": {
+    "message": "동영상 맞춤 전환"
+  },
+  "onlyOneVideoHud": {
+    "message": "기능을 사용할 수 없습니다. 동영상 전환은 페이지에 플레이어가 두 개 이상 있을 때만 가능합니다."
+  },
+  "cycleIframeHud": {
+    "message": "전환은 HTML5 동영상에서만 동작합니다"
+  },
+  "videoFitTooltip": {
+    "message": "동영상 맞춤 <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "맞춤"
+  },
+  "videoFitCover": {
+    "message": "채우기"
+  },
+  "videoFitFill": {
+    "message": "늘리기"
+  },
+  "reportABug": {
+    "message": "버그 신고"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "제 새 확장 프로그램입니다! Privacy Thing을 사용하면 어떤 사이트에 어떤 정보를 보여줄지 직접 정할 수 있습니다. 위치, 언어, 시간대 등 훨씬 더 많은 정보를 제어할 수 있습니다. 사이트 간 추적 가능성을 줄여 줍니다."
+  },
+  "privacyThingPopoverNote": {
+    "message": "무료이며 오픈 소스입니다."
+  },
+  "whatsNew": {
+    "message": "새로운 소식"
+  },
+  "whatsNewDialogTitle": {
+    "message": "새로운 소식"
+  },
+  "whatsNewLead": {
+    "message": "최근 변경 사항:"
+  },
+  "whatsNewItemFit": {
+    "message": "시어터 모드의 맞춤, 채우기, 늘리기 — 툴바 버튼과 Z 단축키로 전환합니다."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "페이지에서 동영상 전환은 플레이어가 하나뿐이라 사용할 수 없을 때 그 이유를 알려 줍니다."
+  },
+  "whatsNewItemSettings": {
+    "message": "설정에 버그 신고와 Privacy Thing 소개가 추가되었습니다."
+  },
+  "whatsNewThanks": {
+    "message": "Denis에게 제안과 의견에 감사드립니다 :)"
+  },
+  "dialogAcknowledge": {
+    "message": "확인"
+  },
+  "dialogChoiceTrue": {
+    "message": "예"
+  },
+  "dialogChoiceFalse": {
+    "message": "아니요"
   },
   "showHideHelp": {
     "message": "도움말 표시/숨기기"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "비디오 전환 <kbd>$KEY$</kbd>",
+    "message": "페이지의 동영상 전환 <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"

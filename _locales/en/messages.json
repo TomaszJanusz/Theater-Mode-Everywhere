@@ -173,10 +173,84 @@
     "message": "Exit Theater Mode"
   },
   "cycleSwitchPlayer": {
-    "message": "Cycle / Switch Player"
+    "message": "Switch Video on Page"
   },
   "cycleSwitchVideo": {
-    "message": "Cycle / Switch Video"
+    "message": "Switch Video on Page"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Works only when the page has more than one HTML5 video."
+  },
+  "cycleVideoFit": {
+    "message": "Cycle Video Fit"
+  },
+  "onlyOneVideoHud": {
+    "message": "Feature unavailable. Video switching is only possible when there are more players on the page."
+  },
+  "cycleIframeHud": {
+    "message": "Switching works only with HTML5 video"
+  },
+  "videoFitTooltip": {
+    "message": "Video Fit <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Fit"
+  },
+  "videoFitCover": {
+    "message": "Fill"
+  },
+  "videoFitFill": {
+    "message": "Stretch"
+  },
+  "reportABug": {
+    "message": "Report a Bug"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Free and open source."
+  },
+  "whatsNew": {
+    "message": "What's New"
+  },
+  "whatsNewDialogTitle": {
+    "message": "What's New"
+  },
+  "whatsNewLead": {
+    "message": "Here's what changed recently:"
+  },
+  "whatsNewItemFit": {
+    "message": "Fit, Fill, and Stretch modes in theater mode, with a toolbar button and the Z shortcut."
+  },
+  "whatsNewItemSwitchVideo": {
+    "message": "Switch Video on Page now explains when switching is unavailable because the page has only one player."
+  },
+  "whatsNewItemSettings": {
+    "message": "Settings now include Report a Bug and a Privacy Thing promo."
+  },
+  "whatsNewThanks": {
+    "message": "Thanks to Denis for the suggestions and feedback :)"
+  },
+  "dialogAcknowledge": {
+    "message": "Got it"
+  },
+  "dialogChoiceTrue": {
+    "message": "Yes"
+  },
+  "dialogChoiceFalse": {
+    "message": "No"
   },
   "showHideHelp": {
     "message": "Show/Hide Help"
@@ -295,7 +369,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Switch Video <kbd>$KEY$</kbd>",
+    "message": "Switch Video on Page <kbd>$KEY$</kbd>",
     "placeholders": {
       "key": {
         "content": "$1"
