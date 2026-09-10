@@ -1,6 +1,6 @@
 # Privacy Policy — Theater Mode Everywhere
 
-**Last updated: 2026-06-17**
+**Last updated: 2026-09-10**
 
 ## Summary
 
@@ -12,8 +12,10 @@ This extension collects **no personal data**. We do not:
 
 - Track browsing history or visited URLs
 - Collect analytics or usage statistics
-- Transmit any data to external servers
+- Transmit any data to the extension developer
 - Use cookies or fingerprinting techniques
+
+Theater mode may request caption files or timeline preview images **directly from the site you are already watching** (for example YouTube caption tracks or storyboard sprites already referenced by the player). Those requests stay between your browser and that provider. Captions and preview images are kept only in memory for the current playback session and are never stored, synced, or sent to us.
 
 ## Data Stored Locally
 

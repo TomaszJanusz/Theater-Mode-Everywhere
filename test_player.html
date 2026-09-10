@@ -79,13 +79,52 @@
     <ol>
       <li>Start playing the video below.</li>
       <li>Press the <kbd>T</kbd> key on your keyboard to expand the video player to fill the browser window.</li>
+      <li>Use CC to switch subtitle tracks, and hover the timeline for chapter titles.</li>
       <li>Press the <kbd>T</kbd> key again or the <kbd>Escape</kbd> key to restore the standard layout.</li>
       <li>Try toggling the extension on/off for this page via the toolbar popup and manage settings.</li>
     </ol>
   </div>
 
   <div class="video-container">
-    <video src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" poster="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg" width="640" height="360" controls></video>
+    <video id="test-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" poster="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg" width="640" height="360" controls></video>
   </div>
+  <script>
+    const video = document.getElementById('test-video');
+    const addTrack = (kind, label, lang, body) => {
+      const track = document.createElement('track');
+      track.kind = kind;
+      track.label = label;
+      track.srclang = lang;
+      track.src = URL.createObjectURL(new Blob([body], { type: 'text/vtt' }));
+      video.appendChild(track);
+    };
+    addTrack('subtitles', 'English', 'en', `WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+Theater Mode Everywhere test captions.
+
+00:00:04.000 --> 00:00:08.000
+Switch tracks from the CC menu in theater mode.
+`);
+    addTrack('subtitles', 'Polish', 'pl', `WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+Testowe napisy Theater Mode Everywhere.
+
+00:00:04.000 --> 00:00:08.000
+Zmień ścieżkę w menu CC po włączeniu trybu kinowego.
+`);
+    addTrack('chapters', 'Chapters', 'en', `WEBVTT
+
+00:00:00.000 --> 00:01:00.000
+Intro
+
+00:01:00.000 --> 00:02:30.000
+Forest
+
+00:02:30.000 --> 00:10:00.000
+Chase
+`);
+  </script>
 </body>
 </html>

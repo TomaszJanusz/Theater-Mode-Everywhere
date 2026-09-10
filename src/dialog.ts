@@ -6,6 +6,7 @@ export interface OpenDialogOptions {
   title: string;
   content: string | Node;
   actions: DialogActionSet;
+  setup?: (overlay: HTMLElement, dialog: HTMLElement) => void;
 }
 
 interface ActiveDialog {
@@ -81,6 +82,7 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
 
     dialog.append(header, body, footer);
     overlay.appendChild(dialog);
+    options.setup?.(overlay, dialog);
     document.body.appendChild(overlay);
     document.body.classList.add('te-dialog-open');
 

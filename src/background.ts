@@ -57,7 +57,52 @@ chrome.storage.onChanged.addListener(async (changes) => {
   }
 });
 
+const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
+
+function isAllowedYoutubeCaptionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const hostOk = /^(www\.)?youtube\.com$/i.test(parsed.hostname)
+      || /^youtu\.be$/i.test(parsed.hostname)
+      || /^(www\.)?youtube-nocookie\.com$/i.test(parsed.hostname);
+    return hostOk && /timedtext/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body?: string; contentType?: string; error?: string }> {
+  if (!isAllowedYoutubeCaptionUrl(url)) {
+    return { ok: false, error: 'blocked' };
+  }
+  try {
+    const response = await fetch(url, { credentials: 'omit', redirect: 'follow' });
+    if (!isAllowedYoutubeCaptionUrl(response.url)) {
+      return { ok: false, error: 'redirect-blocked' };
+    }
+    if (!response.ok) return { ok: false, error: `http-${response.status}` };
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_CAPTION_BYTES) {
+      return { ok: false, error: 'too-large' };
+    }
+    const contentType = response.headers.get('content-type') || '';
+    const body = new TextDecoder('utf-8').decode(buffer);
+    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:/i.test(body.slice(0, 400));
+    if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream/i.test(contentType) && !looksLikeCaptions) {
+      return { ok: false, error: 'content-type' };
+    }
+    return { ok: true, body, contentType };
+  } catch {
+    return { ok: false, error: 'fetch-failed' };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
+  if (message && message.action === 'theater-fetch-media') {
+    fetchAllowlistedCaption(String(message.url || '')).then(sendResponse);
+    return true;
+  }
   if (message && message.action === 'getBrowserTheme') {
     if (isFirefox) {
       browser.theme.getCurrent()
@@ -89,7 +134,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         });
       }
       if (!data.blacklist) {
-        await chrome.storage.sync.set({ blacklist: ['youtube.com'] });
+        await chrome.storage.sync.set({ blacklist: [] });
       }
     } catch (err) {
       console.error('[Theater Everywhere] Error initializing defaults:', err);

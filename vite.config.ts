@@ -14,7 +14,7 @@ export default defineConfig({
         background: resolve(__dirname, 'src/background.ts'),
         mainWorld: resolve(__dirname, 'src/mainWorld.ts'),
       },
-      output: {
+        output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'content') {
             return 'content.js';

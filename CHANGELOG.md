@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a media-features layer for captions, chapters, and hover previews, starting with native HTML5 tracks, YouTube description chapters, YouTube session caption tracks, and YouTube storyboard thumbnails.
+- Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
+
+### Changed
+- New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
+- Privacy policy now describes in-session provider requests for captions and timeline previews.
+- Timeline hover previews now open from the same height as the volume and speed popovers.
+- Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
+- Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
+
 ## [1.4.0] - 2026-09-06
 
 ### Added
