@@ -54,6 +54,7 @@ interface Shortcuts {
   togglePiP: string;
   showHelp: string;
   cycleFit: string;
+  toggleCaptions: string;
 }
 
 const defaultShortcuts: Shortcuts = {
@@ -70,8 +71,19 @@ const defaultShortcuts: Shortcuts = {
   volumeDown: 'ArrowDown',
   togglePiP: 'P',
   showHelp: 'H',
-  cycleFit: 'Z'
+  cycleFit: 'Z',
+  toggleCaptions: 'C'
 };
+
+function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
+  const next = { ...defaultShortcuts };
+  if (!saved) return next;
+  (Object.keys(defaultShortcuts) as Array<keyof Shortcuts>).forEach((key) => {
+    const value = saved[key];
+    if (typeof value === 'string' && value) next[key] = value;
+  });
+  return next;
+}
 
 function safeGetStorage(keys: string | string[]): Promise<any> {
   return new Promise((resolve) => {
@@ -396,6 +408,7 @@ async function init() {
     const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
     const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
+    const toggleCaptionsInput = document.getElementById('shortcut-toggle-captions') as HTMLInputElement;
 
     if (toggleInput) toggleInput.value = shortcuts.toggle || defaultShortcuts.toggle;
     if (exitInput) exitInput.value = shortcuts.exit || defaultShortcuts.exit;
@@ -411,31 +424,13 @@ async function init() {
     if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
     if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
+    if (toggleCaptionsInput) toggleCaptionsInput.value = shortcuts.toggleCaptions || defaultShortcuts.toggleCaptions;
   }
 
   async function loadAndRenderShortcuts() {
     try {
       const data = await safeGetStorage('shortcuts');
-      const saved = data.shortcuts || {};
-      
-      const shortcuts = {
-        toggle: saved.toggle || defaultShortcuts.toggle,
-        exit: saved.exit || defaultShortcuts.exit,
-        seekBack: saved.seekBack || defaultShortcuts.seekBack,
-        seekForward: saved.seekForward || defaultShortcuts.seekForward,
-        cycle: saved.cycle || defaultShortcuts.cycle,
-        playPause: saved.playPause || defaultShortcuts.playPause,
-        frameBack: saved.frameBack || defaultShortcuts.frameBack,
-        frameForward: saved.frameForward || defaultShortcuts.frameForward,
-        toggleFullscreen: saved.toggleFullscreen || defaultShortcuts.toggleFullscreen,
-        volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
-        volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
-        togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-        showHelp: saved.showHelp || defaultShortcuts.showHelp,
-        cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
-      } as Shortcuts;
-      
-      renderShortcuts(shortcuts);
+      renderShortcuts(withShortcutDefaults(data.shortcuts || {}));
     } catch (err) {
       console.error('Error loading shortcuts, using defaults:', err);
       renderShortcuts(defaultShortcuts);
@@ -489,23 +484,7 @@ async function init() {
         // Save to storage
         try {
           const data = await safeGetStorage('shortcuts');
-          const saved = data.shortcuts || {};
-          const shortcuts = {
-            toggle: saved.toggle || defaultShortcuts.toggle,
-            exit: saved.exit || defaultShortcuts.exit,
-            seekBack: saved.seekBack || defaultShortcuts.seekBack,
-            seekForward: saved.seekForward || defaultShortcuts.seekForward,
-            cycle: saved.cycle || defaultShortcuts.cycle,
-            playPause: saved.playPause || defaultShortcuts.playPause,
-            frameBack: saved.frameBack || defaultShortcuts.frameBack,
-            frameForward: saved.frameForward || defaultShortcuts.frameForward,
-            toggleFullscreen: saved.toggleFullscreen || defaultShortcuts.toggleFullscreen,
-            volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
-            volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
-            togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-            showHelp: saved.showHelp || defaultShortcuts.showHelp,
-            cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
-          } as Shortcuts;
+          const shortcuts = withShortcutDefaults(data.shortcuts || {});
 
           const shortcutId = input.id;
           if (shortcutId === 'shortcut-toggle') shortcuts.toggle = shortcutStr;
@@ -522,6 +501,7 @@ async function init() {
           else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
           else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
+          else if (shortcutId === 'shortcut-toggle-captions') shortcuts.toggleCaptions = shortcutStr;
 
           await chrome.storage.sync.set({ shortcuts });
           await notifyAllTabs();
@@ -540,23 +520,7 @@ async function init() {
 
         try {
           const data = await safeGetStorage('shortcuts');
-          const saved = data.shortcuts || {};
-          const shortcuts = {
-            toggle: saved.toggle || defaultShortcuts.toggle,
-            exit: saved.exit || defaultShortcuts.exit,
-            seekBack: saved.seekBack || defaultShortcuts.seekBack,
-            seekForward: saved.seekForward || defaultShortcuts.seekForward,
-            cycle: saved.cycle || defaultShortcuts.cycle,
-            playPause: saved.playPause || defaultShortcuts.playPause,
-            frameBack: saved.frameBack || defaultShortcuts.frameBack,
-            frameForward: saved.frameForward || defaultShortcuts.frameForward,
-            toggleFullscreen: saved.toggleFullscreen || defaultShortcuts.toggleFullscreen,
-            volumeUp: saved.volumeUp || defaultShortcuts.volumeUp,
-            volumeDown: saved.volumeDown || defaultShortcuts.volumeDown,
-            togglePiP: saved.togglePiP || defaultShortcuts.togglePiP,
-            showHelp: saved.showHelp || defaultShortcuts.showHelp,
-            cycleFit: saved.cycleFit || defaultShortcuts.cycleFit
-          } as Shortcuts;
+          const shortcuts = withShortcutDefaults(data.shortcuts || {});
 
           shortcuts[shortcutKey] = defaultShortcuts[shortcutKey];
 

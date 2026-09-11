@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Змінити підгонку відео"
   },
+  "toggleSubtitles": {
+    "message": "Увімкнути або вимкнути субтитри"
+  },
+  "subtitlesTooltip": {
+    "message": "Субтитри <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Субтитри ввімкнено"
+  },
+  "subtitlesOffHud": {
+    "message": "Субтитри вимкнено"
+  },
   "onlyOneVideoHud": {
     "message": "Функція недоступна. Перемикання відео можливе лише тоді, коли на сторінці більше ніж один програвач."
   },

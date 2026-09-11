@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Cycle Video Fit"
   },
+  "toggleSubtitles": {
+    "message": "Toggle Subtitles"
+  },
+  "subtitlesTooltip": {
+    "message": "Subtitles <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Subtitles on"
+  },
+  "subtitlesOffHud": {
+    "message": "Subtitles off"
+  },
   "onlyOneVideoHud": {
     "message": "Feature unavailable. Video switching is only possible when there are more players on the page."
   },

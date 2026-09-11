@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "تبديل ملاءمة الفيديو"
   },
+  "toggleSubtitles": {
+    "message": "تبديل الترجمة"
+  },
+  "subtitlesTooltip": {
+    "message": "الترجمة <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "الترجمة مفعلة"
+  },
+  "subtitlesOffHud": {
+    "message": "الترجمة متوقفة"
+  },
   "onlyOneVideoHud": {
     "message": "الميزة غير متاحة. يمكن تبديل الفيديو فقط عندما يكون هناك أكثر من مشغّل في الصفحة."
   },

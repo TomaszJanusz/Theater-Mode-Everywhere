@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Zmień dopasowanie wideo"
   },
+  "toggleSubtitles": {
+    "message": "Włącz/wyłącz napisy"
+  },
+  "subtitlesTooltip": {
+    "message": "Napisy <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Napisy włączone"
+  },
+  "subtitlesOffHud": {
+    "message": "Napisy wyłączone"
+  },
   "onlyOneVideoHud": {
     "message": "Funkcja niedostępna. Przełączanie wideo jest możliwe wyłącznie, gdy jest więcej odtwarzaczy na stronie."
   },

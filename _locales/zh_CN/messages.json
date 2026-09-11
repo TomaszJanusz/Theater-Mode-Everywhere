@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "切换视频适配"
   },
+  "toggleSubtitles": {
+    "message": "开关字幕"
+  },
+  "subtitlesTooltip": {
+    "message": "字幕 <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "字幕已开启"
+  },
+  "subtitlesOffHud": {
+    "message": "字幕已关闭"
+  },
   "onlyOneVideoHud": {
     "message": "功能不可用。仅当页面上有多个播放器时才能切换视频。"
   },

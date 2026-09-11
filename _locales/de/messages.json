@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Videoanpassung wechseln"
   },
+  "toggleSubtitles": {
+    "message": "Untertitel umschalten"
+  },
+  "subtitlesTooltip": {
+    "message": "Untertitel <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Untertitel ein"
+  },
+  "subtitlesOffHud": {
+    "message": "Untertitel aus"
+  },
   "onlyOneVideoHud": {
     "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehr Player auf der Seite vorhanden sind."
   },

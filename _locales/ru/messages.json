@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Сменить подгонку видео"
   },
+  "toggleSubtitles": {
+    "message": "Включить или выключить субтитры"
+  },
+  "subtitlesTooltip": {
+    "message": "Субтитры <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Субтитры включены"
+  },
+  "subtitlesOffHud": {
+    "message": "Субтитры выключены"
+  },
   "onlyOneVideoHud": {
     "message": "Функция недоступна. Переключение видео возможно только если на странице больше одного проигрывателя."
   },

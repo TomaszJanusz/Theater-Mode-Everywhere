@@ -1,6 +1,6 @@
 # Privacy Policy — Theater Mode Everywhere
 
-**Last updated: 2026-09-10**
+**Last updated: 2026-09-11**
 
 ## Summary
 
@@ -23,6 +23,8 @@ The extension stores the following data **exclusively on your device** using Chr
 
 - **Keyboard shortcuts** — your configured key bindings (e.g. which key activates theater mode)
 - **Domain blocklist** — domains where you have disabled the extension
+- **Caption appearance** — subtitle text, size, shadow, and background choices
+- **Caption language by site** — whether subtitles are on and which language code (for example `en` or `pl`) to use on that site. This is not a watch history and does not store video titles.
 
 This data is synced across your Chrome/Firefox profile devices via your browser account (if signed in) but is never sent to the extension developer or any third party.
 
@@ -30,7 +32,7 @@ This data is synced across your Chrome/Firefox profile devices via your browser 
 
 | Permission | Reason |
 |---|---|
-| `storage` | Save your keyboard shortcut and domain blocklist preferences |
+| `storage` | Save your keyboard shortcut, domain blocklist, and caption preferences |
 | `tabs` | Read the current tab's URL in the popup to show/update per-domain toggle status |
 | `<all_urls>` (host permission) | Inject the content script into pages to detect and enhance video players |
 | `theme` (Firefox only) | Read the browser theme colors to match the extension UI to your Firefox theme |

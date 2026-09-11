@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Cambia adattamento video"
   },
+  "toggleSubtitles": {
+    "message": "Attiva o disattiva i sottotitoli"
+  },
+  "subtitlesTooltip": {
+    "message": "Sottotitoli <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Sottotitoli attivi"
+  },
+  "subtitlesOffHud": {
+    "message": "Sottotitoli disattivati"
+  },
   "onlyOneVideoHud": {
     "message": "Funzione non disponibile. Il cambio video è possibile solo quando nella pagina ci sono più lettori."
   },

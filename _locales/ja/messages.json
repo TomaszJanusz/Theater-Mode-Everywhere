@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "動画のフィットを切り替え"
   },
+  "toggleSubtitles": {
+    "message": "字幕のオン/オフ"
+  },
+  "subtitlesTooltip": {
+    "message": "字幕 <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "字幕オン"
+  },
+  "subtitlesOffHud": {
+    "message": "字幕オフ"
+  },
   "onlyOneVideoHud": {
     "message": "機能を利用できません。動画の切り替えは、ページに複数のプレーヤーがある場合のみ可能です。"
   },

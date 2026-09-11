@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "동영상 맞춤 전환"
   },
+  "toggleSubtitles": {
+    "message": "자막 켜기/끄기"
+  },
+  "subtitlesTooltip": {
+    "message": "자막 <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "자막 켜짐"
+  },
+  "subtitlesOffHud": {
+    "message": "자막 꺼짐"
+  },
   "onlyOneVideoHud": {
     "message": "기능을 사용할 수 없습니다. 동영상 전환은 페이지에 플레이어가 두 개 이상 있을 때만 가능합니다."
   },

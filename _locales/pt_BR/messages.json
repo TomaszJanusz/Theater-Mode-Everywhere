@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Alternar ajuste do vídeo"
   },
+  "toggleSubtitles": {
+    "message": "Ativar ou desativar legendas"
+  },
+  "subtitlesTooltip": {
+    "message": "Legendas <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Legendas ativadas"
+  },
+  "subtitlesOffHud": {
+    "message": "Legendas desativadas"
+  },
   "onlyOneVideoHud": {
     "message": "Recurso indisponível. A troca de vídeo só é possível quando há mais players na página."
   },

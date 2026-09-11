@@ -184,6 +184,23 @@
   "cycleVideoFit": {
     "message": "Cambiar ajuste del vídeo"
   },
+  "toggleSubtitles": {
+    "message": "Activar o desactivar subtítulos"
+  },
+  "subtitlesTooltip": {
+    "message": "Subtítulos <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Subtítulos activados"
+  },
+  "subtitlesOffHud": {
+    "message": "Subtítulos desactivados"
+  },
   "onlyOneVideoHud": {
     "message": "Función no disponible. Solo se puede cambiar de vídeo cuando hay más reproductores en la página."
   },

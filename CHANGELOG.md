@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added a media-features layer for captions, chapters, and hover previews, starting with native HTML5 tracks, YouTube description chapters, YouTube session caption tracks, and YouTube storyboard thumbnails.
 - Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
+- Remember the selected subtitle language per site (by language code, not the menu label) and turn it back on in later theater sessions.
+- Added a `C` shortcut to toggle subtitles in theater mode, using the remembered language code when turning them back on.
 
 ### Changed
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
@@ -17,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Timeline hover previews now open from the same height as the volume and speed popovers.
 - Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
+
+### Fixed
+- Leaving theater mode on YouTube now asks the native player to recompute its chrome width, so the progress bar no longer stays full-viewport.
+- Volume and speed hover bridges no longer steal clicks from the top half of their toolbar buttons.
+- Advancing a YouTube playlist no longer keeps the previous video's seek-bar thumbnails, chapters, or overlay captions.
+- Overlay captions reload for the next YouTube playlist item instead of staying enabled with no text.
 
 ## [1.4.0] - 2026-09-06
 
