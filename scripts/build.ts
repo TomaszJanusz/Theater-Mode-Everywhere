@@ -72,6 +72,12 @@ async function run() {
     await build();
 
     const distDir = path.resolve(__dirname, '../dist');
+    for (const name of ['content.js', 'mainWorld.js'] as const) {
+      const source = fs.readFileSync(path.join(distDir, name), 'utf8');
+      if (/\bimport\s*(?:['"]|\{|\w+\s+from\b)/.test(source)) {
+        throw new Error(`${name} contains ESM imports; MV3 content/MAIN scripts must stay self-contained.`);
+      }
+    }
     const chromeStagingDir = path.resolve(__dirname, '../chrome-unpacked');
     const firefoxStagingDir = path.resolve(__dirname, '../firefox-unpacked');
 
