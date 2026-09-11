@@ -271,17 +271,17 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Gap-only hover bridge; keep pointer-events off while the panel is hidden. */
 .theater-volume-panel::after,
 .theater-speed-panel::after {
   content: '' !important;
   position: absolute !important;
   top: 100% !important;
-  left: -10px !important;
-  right: -10px !important;
-  width: auto !important;
-  height: 24px !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 8px !important;
   background: transparent !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 .theater-volume-container:hover .theater-volume-panel,
@@ -291,6 +291,13 @@
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(-50%) translateY(-8px) scale(1) !important;
+}
+
+.theater-volume-container:hover .theater-volume-panel::after,
+.theater-speed-container:hover .theater-speed-panel::after,
+.theater-volume-container:focus-within .theater-volume-panel::after,
+.theater-speed-container:focus-within .theater-speed-panel::after {
+  pointer-events: auto !important;
 }
 
 .theater-vertical-slider-wrapper {
