@@ -68,6 +68,17 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     return [];
   }
 
+  invalidate(): void {
+    const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
+    for (const track of tracks) {
+      try {
+        track.mode = 'disabled';
+      } catch {
+        // Some players freeze TextTrack.mode during media replacement.
+      }
+    }
+  }
+
   async getChapters(): Promise<Chapter[]> {
     const tracks = Array.from(this.video.textTracks || []).filter(chapterUsable);
     for (const track of tracks) {

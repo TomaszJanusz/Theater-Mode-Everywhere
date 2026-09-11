@@ -1,4 +1,4 @@
-import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, type CachedTimedtext } from './media-features/youtube-caption-url';
+import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, youtubePageVideoId, type CachedTimedtext } from './media-features/youtube-caption-url';
 
 (function() {
   const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
@@ -134,24 +134,58 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     return null;
   }
 
-  function ensureYoutubeCaptions(languageCode: string | null, kind: string | null): boolean {
+  function waitMs(ms: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  async function waitForCaptionTracklist(player: any, timeoutMs = 2000): Promise<any[]> {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      try {
+        player?.loadModule?.('captions');
+      } catch {
+        // Module may already be loaded.
+      }
+      const list = player?.getOption?.('captions', 'tracklist');
+      if (Array.isArray(list) && list.length > 0) return list;
+      await waitMs(100);
+    }
+    const list = player?.getOption?.('captions', 'tracklist');
+    return Array.isArray(list) ? list : [];
+  }
+
+  async function ensureYoutubeCaptions(
+    languageCode: string | null,
+    kind: string | null,
+    forceReset = false
+  ): Promise<boolean> {
     const button = document.querySelector('.ytp-subtitles-button') as HTMLElement | null;
-    const alreadyOn = button?.getAttribute('aria-pressed') === 'true';
     const player = findYoutubePlayer();
+    if (forceReset) {
+      try {
+        player?.unloadModule?.('captions');
+      } catch {
+        // Player may not expose unloadModule.
+      }
+      disableYoutubeCaptions();
+      await waitMs(80);
+    }
     try {
       player?.loadModule?.('captions');
     } catch {
       // Module may already be loaded.
     }
+    await waitForCaptionTracklist(player);
     try {
       const track = captionTrackFromPlayer(languageCode, kind);
       if (track && typeof player?.setOption === 'function') {
         player.setOption('captions', 'track', track);
-        return !alreadyOn;
+        return true;
       }
     } catch {
       // Fall through to the control button.
     }
+    const alreadyOn = button?.getAttribute('aria-pressed') === 'true';
     if (!alreadyOn && button) {
       button.click();
       return true;
@@ -164,7 +198,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     } catch {
       return false;
     }
-    return false;
+    return alreadyOn;
   }
 
   function disableYoutubeCaptions(): void {
@@ -200,7 +234,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
   }
 
   let captionMintInFlight: Promise<string | null> | null = null;
-  let lastCaptionMintFailedAt = 0;
+  const lastCaptionMintFailedAt = new Map<string, number>();
 
   function timedtextUrlsFromPerformance(): string[] {
     try {
@@ -266,10 +300,13 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     if (cached) return cached;
     const direct = await fetchTimedtextDirect(url);
     if (direct) return direct;
-    if (Date.now() - lastCaptionMintFailedAt < 1500) return findCachedBody(url);
+    const videoId = timedtextVideoId(url) || url;
+    const failedAt = lastCaptionMintFailedAt.get(videoId) || 0;
+    if (Date.now() - failedAt < 1500) return findCachedBody(url);
     if (captionMintInFlight) {
       await captionMintInFlight;
-      return findCachedBody(url);
+      const afterWait = findCachedBody(url);
+      if (afterWait) return afterWait;
     }
 
     captionMintInFlight = (async () => {
@@ -282,13 +319,14 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
       } catch {
         languageCode = null;
       }
-      ensureYoutubeCaptions(languageCode, kind);
+      await ensureYoutubeCaptions(languageCode, kind, true);
       return waitForCachedBody(url, 8000);
     })();
 
     try {
       const body = await captionMintInFlight;
-      if (!body) lastCaptionMintFailedAt = Date.now();
+      if (!body) lastCaptionMintFailedAt.set(videoId, Date.now());
+      else lastCaptionMintFailedAt.delete(videoId);
       return body;
     } finally {
       captionMintInFlight = null;
@@ -425,21 +463,46 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
 
   // CustomEvent listener — adjusts gain.value if AudioContext already exists,
   // otherwise marks the video as pending for setup on next real user gesture.
+  function youtubeResponseVideoId(raw: unknown): string | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const videoId = (raw as { videoDetails?: { videoId?: unknown } }).videoDetails?.videoId;
+    return typeof videoId === 'string' ? videoId : null;
+  }
+
+  function pickYoutubePlayerResponse(): unknown {
+    const win = window as any;
+    let live: unknown = null;
+    try {
+      live = findYoutubePlayer()?.getPlayerResponse?.() || null;
+    } catch {
+      live = null;
+    }
+    const boot = win.ytInitialPlayerResponse || null;
+    let config: unknown = null;
+    try {
+      if (win.ytplayer?.config?.args?.raw_player_response) {
+        config = win.ytplayer.config.args.raw_player_response;
+      } else if (typeof win.ytplayer?.config?.args?.player_response === 'string') {
+        config = JSON.parse(win.ytplayer.config.args.player_response);
+      }
+    } catch {
+      config = null;
+    }
+    const pageId = youtubePageVideoId(window.location.href);
+    const candidates = [live, boot, config].filter((item) => item && typeof item === 'object');
+    const matching = candidates.find((item) => {
+      const videoId = youtubeResponseVideoId(item);
+      return videoId && (!pageId || videoId === pageId);
+    });
+    if (matching) return matching;
+    // Playlist advances update ?v= before getPlayerResponse(). Returning the
+    // previous video here would keep stale storyboards in theater chrome.
+    return pageId ? null : (live || boot || config);
+  }
+
   function readYoutubeSnapshot(): Record<string, unknown> | null {
     try {
-      const win = window as any;
-      let raw = win.ytInitialPlayerResponse;
-      try {
-        raw = findYoutubePlayer()?.getPlayerResponse?.() || raw;
-      } catch {
-        // Fall back to the bootstrapped player response.
-      }
-      if (!raw && win.ytplayer?.config?.args?.raw_player_response) {
-        raw = win.ytplayer.config.args.raw_player_response;
-      }
-      if (!raw && typeof win.ytplayer?.config?.args?.player_response === 'string') {
-        raw = JSON.parse(win.ytplayer.config.args.player_response);
-      }
+      const raw = pickYoutubePlayerResponse() as any;
       if (!raw || typeof raw !== 'object') return null;
 
       const videoDetails = raw.videoDetails || {};
@@ -586,7 +649,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     };
     try {
       if (detail.enabled) {
-        ensureYoutubeCaptions(detail.language || null, detail.kind || null);
+        void ensureYoutubeCaptions(detail.language || null, detail.kind || null, true);
       } else {
         disableYoutubeCaptions();
       }
@@ -594,6 +657,35 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     } catch {
       respond(false);
     }
+  });
+
+  function refreshYoutubePlayerLayout(): void {
+    const player = findYoutubePlayer();
+    if (!player || typeof player.clientWidth !== 'number') return;
+    const width = player.clientWidth;
+    const height = player.clientHeight;
+    if (width <= 0 || height <= 0) return;
+
+    const chrome = player.querySelector?.('.ytp-chrome-bottom');
+    if (chrome instanceof HTMLElement) {
+      const chromeWidth = chrome.getBoundingClientRect().width;
+      if (chromeWidth > width + 16) {
+        chrome.style.removeProperty('width');
+        chrome.style.removeProperty('left');
+      }
+    }
+
+    try {
+      if (typeof player.setSize === 'function') {
+        player.setSize(width, height);
+      }
+    } catch {
+      // Watch-page player may not expose setSize.
+    }
+  }
+
+  window.addEventListener('theater-everywhere-host-layout-refresh', () => {
+    refreshYoutubePlayerLayout();
   });
 
   window.addEventListener('theater-everywhere-boost-event', () => {

@@ -22,6 +22,26 @@ export function timedtextVideoId(url: string): string | null {
   }
 }
 
+export function youtubePageVideoId(href: string): string | null {
+  try {
+    const url = new URL(href, 'https://www.youtube.com');
+    const fromQuery = url.searchParams.get('v');
+    if (fromQuery) return fromQuery;
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (host === 'youtu.be') return parts[0] || null;
+    if (parts[0] && ['shorts', 'embed', 'live', 'v'].includes(parts[0])) return parts[1] || null;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function youtubeSnapshotMatchesPage(snapshotVideoId: string | undefined, pageVideoId: string | null): boolean {
+  if (!snapshotVideoId || !pageVideoId) return true;
+  return snapshotVideoId === pageVideoId;
+}
+
 export function timedtextHasPot(url: string): boolean {
   try {
     return Boolean(new URL(url, 'https://www.youtube.com').searchParams.get('pot'));

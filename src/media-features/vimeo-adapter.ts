@@ -51,6 +51,15 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
       }));
   }
 
+  async reload(): Promise<void> {
+    this.snapshot = null;
+    await this.load();
+  }
+
+  invalidate(): void {
+    this.snapshot = null;
+  }
+
   dispose(): void {
     this.snapshot = null;
   }

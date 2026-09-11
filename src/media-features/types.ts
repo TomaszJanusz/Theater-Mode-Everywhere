@@ -69,5 +69,8 @@ export interface MediaFeaturesAdapter {
   getChapters?(): Promise<Chapter[]>;
   getPreviewSource?(): Promise<PreviewSource>;
   getPreviewFrame?(time: number, duration: number): PreviewFrame | null;
+  mediaId?(): string | null;
+  reload?(): Promise<void>;
+  invalidate?(): void;
   dispose(): void;
 }

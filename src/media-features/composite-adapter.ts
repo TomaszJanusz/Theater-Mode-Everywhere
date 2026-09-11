@@ -80,6 +80,22 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return null;
   }
 
+  mediaId(): string | null {
+    for (const adapter of this.adapters) {
+      const id = adapter.mediaId?.();
+      if (id) return id;
+    }
+    return null;
+  }
+
+  async reload(): Promise<void> {
+    await Promise.all(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));
+  }
+
+  invalidate(): void {
+    this.adapters.forEach((adapter) => adapter.invalidate?.());
+  }
+
   dispose(): void {
     this.adapters.forEach((adapter) => adapter.dispose());
   }
