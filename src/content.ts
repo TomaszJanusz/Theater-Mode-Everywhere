@@ -265,6 +265,26 @@ interface BoostedVideoElement extends HTMLVideoElement {
   _gainNode?: GainNode;
   _sourceNode?: MediaElementAudioSourceNode;
   _logicalVolume?: number;
+  _lastAudibleVolume?: number;
+}
+
+function rememberAudibleVolume(video: BoostedVideoElement, volume: number): void {
+  if (volume > 0) video._lastAudibleVolume = volume;
+}
+
+function restoreAudibleVolume(video: BoostedVideoElement): number {
+  if (typeof video._lastAudibleVolume === 'number' && video._lastAudibleVolume > 0) {
+    return video._lastAudibleVolume;
+  }
+  if (typeof video._logicalVolume === 'number' && video._logicalVolume > 0) {
+    return video._logicalVolume;
+  }
+  if (video.volume > 0) return video.volume;
+  return 1;
+}
+
+function isVideoSilent(video: HTMLVideoElement): boolean {
+  return video.muted || video.volume === 0;
 }
 
 function applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void {
@@ -852,6 +872,7 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
       video.muted = false;
     }
     applyVolumeAndBoost(boostedVideo, boostedVideo._logicalVolume);
+    rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
     triggerVolumeIndicator(boostedVideo._logicalVolume, video.muted, 'up');
     if (onVolumeAdjustedCallback) {
       onVolumeAdjustedCallback();
@@ -866,6 +887,7 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     }
     boostedVideo._logicalVolume = Math.max(0.0, boostedVideo._logicalVolume - 0.05);
     applyVolumeAndBoost(boostedVideo, boostedVideo._logicalVolume);
+    rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
     triggerVolumeIndicator(boostedVideo._logicalVolume, video.muted, 'down');
     if (onVolumeAdjustedCallback) {
       onVolumeAdjustedCallback();
@@ -2053,7 +2075,10 @@ function createCustomControls(video: HTMLVideoElement): void {
   volumeSlider.step = '0.05';
   
   const boostedVideo = video as BoostedVideoElement;
-  const initialLogical = boostedVideo._logicalVolume !== undefined ? boostedVideo._logicalVolume : (video.muted ? 0 : video.volume);
+  if (video.volume > 0) rememberAudibleVolume(boostedVideo, video.volume);
+  const initialLogical = boostedVideo._logicalVolume !== undefined
+    ? boostedVideo._logicalVolume
+    : (isVideoSilent(video) ? 0 : video.volume);
   volumeSlider.value = String(initialLogical);
 
   const volumeTick100 = document.createElement('div');
@@ -2135,7 +2160,17 @@ function createCustomControls(video: HTMLVideoElement): void {
   updateVolumeTooltip();
 
   volumeBtn.addEventListener('click', () => {
-    video.muted = !video.muted;
+    if (isVideoSilent(video)) {
+      const restore = restoreAudibleVolume(boostedVideo);
+      boostedVideo._logicalVolume = restore;
+      rememberAudibleVolume(boostedVideo, restore);
+      video.muted = false;
+      applyVolumeAndBoost(boostedVideo, restore);
+    } else {
+      rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume ?? video.volume);
+      boostedVideo._logicalVolume = boostedVideo._logicalVolume ?? video.volume;
+      video.muted = true;
+    }
   });
 
   volumeSlider.addEventListener('input', (e) => {
@@ -2145,6 +2180,7 @@ function createCustomControls(video: HTMLVideoElement): void {
       volumeSlider.value = '1.0';
     }
     boostedVideo._logicalVolume = val;
+    rememberAudibleVolume(boostedVideo, val);
     if (val > 0 && video.muted) {
       video.muted = false;
     }
@@ -2881,9 +2917,11 @@ function createCustomControls(video: HTMLVideoElement): void {
       if (boostedVideo._logicalVolume !== undefined && boostedVideo._logicalVolume > 1.0 && video.volume === 1.0) {
         // Keep the slider at the logical volume if currently boosted
         volumeSlider.value = String(boostedVideo._logicalVolume);
+        rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
       } else {
         boostedVideo._logicalVolume = video.volume;
         volumeSlider.value = String(video.volume);
+        rememberAudibleVolume(boostedVideo, video.volume);
       }
     }
     updateVolumeIcon();
