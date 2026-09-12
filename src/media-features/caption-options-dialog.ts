@@ -1,5 +1,6 @@
 import type { CaptionStyle } from './caption-style';
 import { applyCaptionStyle } from './caption-style';
+import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
 
@@ -80,7 +81,7 @@ export async function openCaptionOptionsDialog(options: {
   dialog.append(title, body, footer);
   overlay.appendChild(dialog);
   options.decorate?.(overlay);
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
   document.body.classList.add('te-dialog-open');
   done.focus();
 

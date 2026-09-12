@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remember the selected subtitle language per site (by language code, not the menu label) and turn it back on in later theater sessions.
 - Added a `C` shortcut to toggle subtitles in theater mode, using the remembered language code when turning them back on.
 - Added Settings → Features toggles for YouTube and Vimeo extras (captions, chapters, previews). Theater mode still works on those sites when a toggle is off.
+- Theater chrome now renders in an isolated shadow tree so host page CSS cannot restyle the player UI (including the subtitles menu font).
 
 ### Changed
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.

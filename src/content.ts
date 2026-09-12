@@ -20,6 +20,14 @@ import {
   resolveMediaProviderFlags,
   type MediaProviderFlags
 } from './media-features/provider-flags';
+import {
+  destroyPlayerUi,
+  eventPathIncludes,
+  eventPathMatches,
+  mountPlayerUi,
+  queryPlayerUi,
+  queryPlayerUiAll
+} from './player-ui-root';
 
 const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   keyboardShortcutsTitle: 'Keyboard Shortcuts',
@@ -368,7 +376,7 @@ function applyTheaterVideoFit(mode: VideoFitMode = configuredVideoFit): void {
 function applyProviderFlags(next: MediaProviderFlags): void {
   providerFlags = next;
   applyMediaProviderFlagAttrs(document.documentElement, next);
-  const wrapper = document.querySelector('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+  const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   wrapper?._mediaFeatures?.setProviderFlags(next);
 }
 
@@ -394,7 +402,7 @@ function persistCaptionStyle(style: CaptionStyle): void {
 
 function applyCaptionStyleToTheater(style: CaptionStyle): void {
   configuredCaptionStyle = style;
-  const wrapper = document.querySelector('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+  const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   wrapper?._mediaFeatures?.setCaptionStyle(style);
 }
 
@@ -417,7 +425,7 @@ function cycleVideoFit(): void {
 }
 
 function toggleTheaterCaptions(): void {
-  const wrapper = document.querySelector('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+  const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   const result = wrapper?._mediaFeatures?.toggleCaptions() || 'none';
   if (result === 'none') {
     triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
@@ -532,14 +540,14 @@ function updateCaptionDock(): void {
     return;
   }
 
-  const overlay = document.querySelector('.theater-caption-overlay.visible') as HTMLElement | null;
+  const overlay = queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
   const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
   const captionSize = overlay && overlayText && overlayText.textContent
     ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
     : null;
 
   const obstacles: DockRect[] = [];
-  const controls = document.querySelector('.theater-controls-wrapper.visible') as HTMLElement | null;
+  const controls = queryPlayerUi('.theater-controls-wrapper.visible') as HTMLElement | null;
   if (controls && controls.offsetWidth > 1 && controls.offsetHeight > 1) {
     obstacles.push(chromeLayoutRect(controls));
   }
@@ -552,7 +560,7 @@ function updateCaptionDock(): void {
     '.theater-volume-container:focus-within .theater-volume-panel',
     '.theater-speed-container:focus-within .theater-speed-panel'
   ]) {
-    document.querySelectorAll(selector).forEach((el) => {
+    queryPlayerUiAll(selector).forEach((el) => {
       if (isPaintedOverlay(el)) obstacles.push(overlayRect(el));
     });
   }
@@ -567,7 +575,7 @@ function updateCaptionDock(): void {
 }
 
 function hideToolbar(): void {
-  const controls = document.querySelector('.theater-controls-wrapper') as HTMLElement | null;
+  const controls = queryPlayerUi('.theater-controls-wrapper') as HTMLElement | null;
   if (!controls || !theaterElement) return;
 
   if (shouldKeepToolbarVisible(controls)) {
@@ -579,20 +587,20 @@ function hideToolbar(): void {
   if (theaterElement.tagName === 'VIDEO') {
     theaterElement.classList.remove('controls-visible');
   }
-  document.querySelector('.theater-button-tooltip')?.classList.remove('visible');
+  queryPlayerUi('.theater-button-tooltip')?.classList.remove('visible');
   document.documentElement.classList.add(CURSOR_HIDDEN_CLASS);
   updateCaptionDock();
 }
 
 // Show the floating quick actions toolbar based on pointer or keyboard activity.
 function showToolbar(event?: Event): void {
-  const controls = document.querySelector('.theater-controls-wrapper') as HTMLElement | null;
+  const controls = queryPlayerUi('.theater-controls-wrapper') as HTMLElement | null;
   if (!controls) return;
 
   if (event?.type === 'pointermove' || event?.type === 'pointerdown') {
     toolbarKeyboardInteractionActive = false;
   } else if (event?.type === 'focusin') {
-    toolbarKeyboardInteractionActive = event.target instanceof Element && event.target.matches(':focus-visible');
+    toolbarKeyboardInteractionActive = eventPathMatches(event, ':focus-visible');
   }
   
   controls.classList.add('visible');
@@ -701,19 +709,21 @@ function applyConfiguredAccentColor(target: HTMLElement): void {
 }
 
 function refreshExtensionAccentColor(): void {
-  document
-    .querySelectorAll<HTMLElement>(
-      [
-        '.theater-controls-wrapper',
-        '.theater-loading-indicator',
-        '.theater-button-tooltip',
-        '.theater-help-overlay',
-        '.theater-everywhere-seek-overlay',
-        '.theater-everywhere-volume-overlay',
-        '.te-dialog-overlay'
-      ].join(',')
-    )
-    .forEach(applyConfiguredAccentColor);
+  const selector = [
+    '.theater-controls-wrapper',
+    '.theater-loading-indicator',
+    '.theater-button-tooltip',
+    '.theater-help-overlay',
+    '.theater-everywhere-seek-overlay',
+    '.theater-everywhere-volume-overlay',
+    '.te-dialog-overlay'
+  ].join(',');
+  for (const el of [
+    ...document.querySelectorAll<HTMLElement>(selector),
+    ...queryPlayerUiAll<HTMLElement>(selector)
+  ]) {
+    applyConfiguredAccentColor(el);
+  }
 }
 
 // Check blacklist and initialize or destroy listeners
@@ -782,6 +792,10 @@ function getActiveElementDeep(): Element | null {
     activeEl = activeEl.shadowRoot.activeElement;
   }
   return activeEl;
+}
+
+function theaterDialogOpen(): boolean {
+  return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
 function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
@@ -904,7 +918,7 @@ function initialize(): void {
       activeEl.getAttribute('role') === 'textbox'
     );
     if (isEditable) return;
-    if (document.querySelector('.te-dialog-overlay')) return;
+    if (theaterDialogOpen()) return;
 
     const shortcuts = configuredShortcuts || defaultShortcuts;
 
@@ -1002,7 +1016,7 @@ function initialize(): void {
       activeEl.getAttribute('role') === 'textbox'
     );
     if (isEditable) return;
-    if (document.querySelector('.te-dialog-overlay')) return;
+    if (theaterDialogOpen()) return;
     const shortcuts = configuredShortcuts || defaultShortcuts;
     if (matchesShortcut(event, shortcuts.playPause)) {
       event.preventDefault();
@@ -1330,7 +1344,7 @@ function compareVideos(a: HTMLVideoElement, b: HTMLVideoElement): number {
 }
 
 function toggleHelpOverlay(): void {
-  const overlay = document.querySelector('.theater-help-overlay') as HTMLElement | null;
+  const overlay = queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
   if (overlay) {
     hideHelpOverlay();
   } else {
@@ -1458,7 +1472,7 @@ function showHelpOverlay(): void {
 
   card.appendChild(grid);
   overlay.appendChild(card);
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
 
   helpOverlayElement = overlay;
 }
@@ -1879,7 +1893,7 @@ function bindCustomTooltip(button: HTMLButtonElement, getTooltipText: () => stri
       tooltipState.element.className = 'theater-button-tooltip';
       applyUiDirection(tooltipState.element);
       applyConfiguredAccentColor(tooltipState.element);
-      document.body.appendChild(tooltipState.element);
+      mountPlayerUi(tooltipState.element);
     }
     
     const rawText = getTooltipText();
@@ -1942,7 +1956,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   
   loadingIndicator.appendChild(loadingSpinner);
   
-  document.body.appendChild(loadingIndicator);
+  mountPlayerUi(loadingIndicator);
 
   // Prevent event propagation so clicking controls doesn't trigger parent actions or play/pause
   wrapper.addEventListener('click', (e) => {
@@ -2470,15 +2484,14 @@ function createCustomControls(video: HTMLVideoElement): void {
   });
 
   const onDocumentClick = (e: MouseEvent) => {
-    if (ccMenu.classList.contains('visible') && !ccMenu.contains(e.target as Node) && !ccBtn.contains(e.target as Node)) {
+    if (ccMenu.classList.contains('visible') && !eventPathIncludes(e, ccMenu) && !eventPathIncludes(e, ccBtn)) {
       ccMenu.classList.remove('visible');
       updateCaptionDock();
     }
-    const target = e.target as HTMLElement;
-    if (target && !target.closest('.theater-volume-container')) {
+    if (!eventPathMatches(e, '.theater-volume-container')) {
       volumeSlider.blur();
     }
-    if (target && !target.closest('.theater-speed-container')) {
+    if (!eventPathMatches(e, '.theater-speed-container')) {
       speedSlider.blur();
     }
   };
@@ -2563,7 +2576,7 @@ function createCustomControls(video: HTMLVideoElement): void {
 
   wrapper.appendChild(controlsRow);
 
-  document.body.appendChild(wrapper);
+  mountPlayerUi(wrapper);
 
   // Scrubber updates
   let isDragging = false;
@@ -2976,19 +2989,13 @@ function createCustomControls(video: HTMLVideoElement): void {
 
 // Cleans up custom controls
 function destroyCustomControls(): void {
-  const wrapper = document.querySelector('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
-  if (wrapper) {
-    if (wrapper._videoListenersCleanup) {
-      wrapper._videoListenersCleanup();
-    }
-    wrapper.remove();
+  const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+  if (wrapper?._videoListenersCleanup) {
+    wrapper._videoListenersCleanup();
   }
 
-  if (tooltipState.element) {
-    tooltipState.element.remove();
-    tooltipState.element = null;
-  }
-  
+  tooltipState.element = null;
+
   document.removeEventListener('pointermove', showToolbar);
   document.removeEventListener('pointerdown', showToolbar);
   if (toolbarTimer) {
@@ -2997,9 +3004,7 @@ function destroyCustomControls(): void {
   }
   toolbarKeyboardInteractionActive = false;
   document.documentElement.classList.remove(CURSOR_HIDDEN_CLASS);
-  document
-    .querySelectorAll('.theater-everywhere-seek-overlay, .theater-everywhere-volume-overlay')
-    .forEach(overlay => overlay.remove());
+  destroyPlayerUi();
   currentToggleFullscreen = null;
 }
 
@@ -3008,7 +3013,7 @@ function triggerSeekIndicator(direction: 'left' | 'right'): void {
   if (!theaterElement) return;
 
   // If an overlay already exists in that direction, remove it to reset the animation
-  const existing = document.querySelector(`.theater-everywhere-seek-overlay.${direction}`) as HTMLElement | null;
+  const existing = queryPlayerUi(`.theater-everywhere-seek-overlay.${direction}`) as HTMLElement | null;
   if (existing) {
     existing.remove();
   }
@@ -3041,7 +3046,7 @@ function triggerSeekIndicator(direction: 'left' | 'right'): void {
   textSpan.textContent = t('fiveSeconds');
   overlay.appendChild(textSpan);
 
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
 
   // Automatically remove after animation completes
   setTimeout(() => {
@@ -3054,7 +3059,7 @@ function triggerSeekIndicator(direction: 'left' | 'right'): void {
 function triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: 'up' | 'down'): void {
   if (!theaterElement) return;
 
-  const existing = document.querySelector('.theater-everywhere-volume-overlay') as HTMLElement | null;
+  const existing = queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
   if (existing) {
     existing.remove();
   }
@@ -3093,7 +3098,7 @@ function triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: '
     </div>
   `;
 
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
 
   setTimeout(() => {
     overlay.classList.add('fade-out');
@@ -3129,7 +3134,7 @@ const STATUS_HUD_CC_ICON = `
 function triggerStatusIndicator(text: string, icon: string): void {
   if (!theaterElement) return;
 
-  const existing = document.querySelector('.theater-everywhere-volume-overlay') as HTMLElement | null;
+  const existing = queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
   if (existing) {
     existing.remove();
   }
@@ -3146,7 +3151,7 @@ function triggerStatusIndicator(text: string, icon: string): void {
     </div>
   `;
 
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
 
   setTimeout(() => {
     overlay.classList.add('fade-out');
@@ -3159,7 +3164,7 @@ function triggerStatusIndicator(text: string, icon: string): void {
 function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
   if (!theaterElement) return;
 
-  const existing = document.querySelector('.theater-everywhere-volume-overlay') as HTMLElement | null;
+  const existing = queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
   if (existing) {
     existing.remove();
   }
@@ -3190,7 +3195,7 @@ function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
     </div>
   `;
 
-  document.body.appendChild(overlay);
+  mountPlayerUi(overlay);
 
   setTimeout(() => {
     overlay.classList.add('fade-out');

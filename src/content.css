@@ -1,5 +1,34 @@
 /* CSS styles for Theater Everywhere extension */
 
+/*
+ * Player chrome lives in #theater-everywhere-ui's shadow root so page stylesheets
+ * cannot restyle it. :host applies only inside that shadow tree. The host itself
+ * is also reset from JS (inline !important) because inherited font/color still
+ * pierce shadow DOM from the page.
+ */
+#theater-everywhere-ui {
+  all: initial;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  line-height: 1.4 !important;
+  color: #f8fafc !important;
+}
+
+:host {
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  line-height: 1.4 !important;
+  color: #f8fafc !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* The active video or iframe element in theater mode */
 .theater-everywhere-video-active {
   position: fixed !important;
@@ -91,6 +120,10 @@
   pointer-events: none !important;
   transform: translateY(10px) !important;
   transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
 }
 
 .theater-controls-wrapper[dir="rtl"] {
@@ -746,6 +779,11 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   z-index: 2000000000 !important;
   display: none !important;
   flex-direction: column !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  pointer-events: auto !important;
 }
 
 .theater-cc-menu-header {
@@ -763,6 +801,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   font-size: 12px !important;
   font-weight: 650 !important;
   letter-spacing: 0.01em !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 .theater-cc-menu-options {
@@ -773,7 +812,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   font-size: 12px !important;
   font-weight: 650 !important;
   cursor: pointer !important;
-  font-family: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   border-radius: 6px !important;
 }
 
@@ -798,7 +837,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   align-items: center !important;
   justify-content: space-between !important;
   transition: background 0.15s ease !important;
-  font-family: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 .theater-cc-menu-item:hover {
@@ -882,7 +921,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   color: #f4f4f5 !important;
   font-size: 9px !important;
   font-weight: 700 !important;
-  font-family: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   padding: 2px 5px !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   line-height: 1 !important;
@@ -905,6 +944,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   z-index: 2147483647 !important;
   opacity: 1 !important;
   animation: theaterFadeIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  pointer-events: auto !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
 .theater-help-overlay[dir="rtl"] {
@@ -1025,7 +1066,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   font-weight: 700 !important;
   padding: 3px 8px !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
-  font-family: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1 !important;
   text-transform: uppercase !important;
 }
@@ -1165,6 +1206,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: rgba(9, 9, 11, 0.62) !important;
   backdrop-filter: blur(10px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+  pointer-events: auto !important;
 }
 
 .te-dialog {
@@ -1205,7 +1247,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   min-height: 36px !important;
   padding: 8px 16px !important;
   border-radius: 8px !important;
-  font: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   font-size: 13px !important;
   font-weight: 650 !important;
   cursor: pointer !important;

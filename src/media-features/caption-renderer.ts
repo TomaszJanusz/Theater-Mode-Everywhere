@@ -2,6 +2,7 @@ import { classifyCaptionWord, cueHasWordTimings, visibleCaptionLines } from './c
 import type { CaptionStyle } from './caption-style';
 import { applyCaptionStyle, DEFAULT_CAPTION_STYLE } from './caption-style';
 import type { CaptionCue } from './types';
+import { mountPlayerUi } from '../player-ui-root';
 
 export class CaptionRenderer {
   private root: HTMLDivElement;
@@ -18,7 +19,7 @@ export class CaptionRenderer {
     this.text = document.createElement('div');
     this.text.className = 'theater-caption-overlay-text';
     this.root.appendChild(this.text);
-    document.documentElement.appendChild(this.root);
+    mountPlayerUi(this.root);
     applyCaptionStyle(this.root, this.style);
     applyCaptionStyle(document.documentElement, this.style);
   }
