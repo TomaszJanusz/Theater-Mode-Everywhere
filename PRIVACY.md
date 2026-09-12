@@ -15,7 +15,7 @@ This extension collects **no personal data**. We do not:
 - Transmit any data to the extension developer
 - Use cookies or fingerprinting techniques
 
-Theater mode may request caption files or timeline preview images **directly from the site you are already watching** (for example YouTube caption tracks, storyboard sprites, or a page's own WebVTT/SRT files already referenced by a `<track>` element). Those requests stay between your browser and that provider. Captions and preview images are kept only in memory for the current playback session and are never stored, synced, or sent to us. You can turn YouTube and Vimeo extras off in Settings → Features; theater mode itself still works on those sites.
+Theater mode may request caption files or timeline preview images **directly from the site you are already watching** (for example YouTube caption tracks, YouTube storyboard sprites, Vimeo `vimeocdn` thumbnail sprites, or a page's own WebVTT/SRT files already referenced by a `<track>` element). Those requests stay between your browser and that provider. Captions and preview images are kept only in memory for the current playback session and are never stored, synced, or sent to us. You can turn YouTube and Vimeo extras off in Settings → Features; theater mode itself still works on those sites.
 
 ## Data Stored Locally
 

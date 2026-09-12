@@ -131,7 +131,7 @@
     "message": "Integrazione Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Usa i marker dei capitoli di Vimeo in modalità teatro. Disattiva per mantenere la modalità teatro su Vimeo senza richieste extra a Vimeo."
+    "message": "Usa i marker dei capitoli e le anteprime della timeline di Vimeo in modalità teatro. Disattiva per mantenere la modalità teatro su Vimeo senza richieste extra a Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "Esclusioni siti web"

@@ -131,7 +131,7 @@
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "シアターモードでVimeoのチャプターマーカーを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードでVimeoのチャプターマーカーとタイムラインプレビューを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
   },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"

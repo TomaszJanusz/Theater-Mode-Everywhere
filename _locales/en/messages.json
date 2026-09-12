@@ -131,7 +131,7 @@
     "message": "Vimeo integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Use Vimeo chapter markers in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo."
+    "message": "Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "Website Exclusions"

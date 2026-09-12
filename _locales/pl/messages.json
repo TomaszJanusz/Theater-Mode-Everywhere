@@ -131,7 +131,7 @@
     "message": "Integracja z Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Znaczniki rozdziałów z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
+    "message": "Znaczniki rozdziałów i miniaturki osi czasu z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"

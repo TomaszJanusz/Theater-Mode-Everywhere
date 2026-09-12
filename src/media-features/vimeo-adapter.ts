@@ -1,18 +1,23 @@
 import { requestMediaProbe, type VimeoPlayerSnapshot } from './probe';
+import { getVimeoPreviewFrame, parseVimeoThumbPreview, type VimeoThumbSprite } from './parsers/vimeo-thumbs';
 import type {
   CaptionCue,
   CaptionTrack,
   Chapter,
   MediaCapabilities,
-  MediaFeaturesAdapter
+  MediaFeaturesAdapter,
+  PreviewFrame,
+  PreviewSource
 } from './types';
 
 export class VimeoAdapter implements MediaFeaturesAdapter {
   private snapshot: VimeoPlayerSnapshot | null = null;
+  private thumbs: VimeoThumbSprite | null = null;
 
   async load(): Promise<void> {
     const probed = await requestMediaProbe();
     this.snapshot = probed.vimeo || null;
+    this.thumbs = parseVimeoThumbPreview(this.snapshot?.thumbPreview, this.snapshot?.duration || 0);
   }
 
   async probe(): Promise<MediaCapabilities> {
@@ -21,7 +26,7 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
     return {
       captions: false,
       chapters: chapters.length > 0,
-      previews: false
+      previews: Boolean(this.thumbs)
     };
   }
 
@@ -51,17 +56,36 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
       }));
   }
 
+  async getPreviewSource(): Promise<PreviewSource> {
+    if (!this.snapshot) await this.load();
+    return this.thumbs
+      ? { kind: 'sprite', provider: 'vimeo' }
+      : { kind: 'none', reason: 'no-thumb-preview' };
+  }
+
+  getPreviewFrame(time: number, duration: number): PreviewFrame | null {
+    if (!this.thumbs) return null;
+    return getVimeoPreviewFrame(this.thumbs, time, duration || this.thumbs.duration);
+  }
+
+  mediaId(): string | null {
+    return this.snapshot?.videoId || null;
+  }
+
   async reload(): Promise<void> {
     this.snapshot = null;
+    this.thumbs = null;
     await this.load();
   }
 
   invalidate(): void {
     this.snapshot = null;
+    this.thumbs = null;
   }
 
   dispose(): void {
     this.snapshot = null;
+    this.thumbs = null;
   }
 }
 

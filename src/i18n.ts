@@ -41,7 +41,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   youtubeIntegrationTitle: 'YouTube integration',
   youtubeIntegrationDescription: 'Use YouTube captions, chapters, and timeline previews in theater mode. Turn this off to keep theater mode on YouTube without extra requests to YouTube.',
   vimeoIntegrationTitle: 'Vimeo integration',
-  vimeoIntegrationDescription: 'Use Vimeo chapter markers in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo.',
+  vimeoIntegrationDescription: 'Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo.',
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',

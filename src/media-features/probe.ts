@@ -23,10 +23,22 @@ export type YoutubePlayerSnapshot = {
   markers?: Array<{ startMillis?: number; title?: { simpleText?: string } | string }>;
 };
 
+export type VimeoThumbPreview = {
+  url: string;
+  width: number;
+  height: number;
+  frameWidth: number;
+  frameHeight: number;
+  columns: number;
+  frames: number;
+};
+
 export type VimeoPlayerSnapshot = {
   duration?: number;
+  videoId?: string;
   textTracks?: Array<{ id?: string | number; label?: string; language?: string; kind?: string }>;
   chapters?: Array<{ startTime?: number; title?: string }>;
+  thumbPreview?: VimeoThumbPreview;
 };
 
 export type MediaProbeSnapshot = {

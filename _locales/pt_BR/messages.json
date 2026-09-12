@@ -131,7 +131,7 @@
     "message": "Integração com o Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Usa os marcadores de capítulos do Vimeo no modo teatro. Desative para manter o modo teatro no Vimeo sem pedidos extras ao Vimeo."
+    "message": "Usa os marcadores de capítulos e as miniaturas da linha do tempo do Vimeo no modo teatro. Desative para manter o modo teatro no Vimeo sem pedidos extras ao Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "Exclusões de Sites"

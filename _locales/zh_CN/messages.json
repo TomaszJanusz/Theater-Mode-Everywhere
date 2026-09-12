@@ -131,7 +131,7 @@
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "在剧场模式中使用 Vimeo 章节标记。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
+    "message": "在剧场模式中使用 Vimeo 章节标记和时间轴预览。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
   },
   "websiteExclusionsTitle": {
     "message": "网站排除项"

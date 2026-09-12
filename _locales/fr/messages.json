@@ -131,7 +131,7 @@
     "message": "Intégration Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Utiliser les marqueurs de chapitres Vimeo en mode cinéma. Désactivez pour garder le mode cinéma sur Vimeo sans requêtes supplémentaires vers Vimeo."
+    "message": "Utiliser les marqueurs de chapitres et les aperçus de la timeline Vimeo en mode cinéma. Désactivez pour garder le mode cinéma sur Vimeo sans requêtes supplémentaires vers Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "Exclusions de sites Web"

@@ -131,7 +131,7 @@
     "message": "تكامل Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "استخدم علامات فصول Vimeo في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Vimeo دون طلبات إضافية إلى Vimeo."
+    "message": "استخدم علامات فصول Vimeo ومعاينات الشريط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Vimeo دون طلبات إضافية إلى Vimeo."
   },
   "websiteExclusionsTitle": {
     "message": "استثناءات المواقع"

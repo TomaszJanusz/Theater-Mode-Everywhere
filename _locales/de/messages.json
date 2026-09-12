@@ -131,7 +131,7 @@
     "message": "Vimeo-Integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Vimeo-Kapitelmarken im Kinomodus. Ausschalten, um den Kinomodus auf Vimeo ohne zusätzliche Anfragen an Vimeo zu behalten."
+    "message": "Vimeo-Kapitelmarken und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Vimeo ohne zusätzliche Anfragen an Vimeo zu behalten."
   },
   "websiteExclusionsTitle": {
     "message": "Website-Ausschlüsse"
