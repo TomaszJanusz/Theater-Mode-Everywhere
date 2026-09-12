@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
 
 ### Fixed
+- Native HTML5 captions now render through the same theater overlay as YouTube, so subtitle options apply and host players like AblePlayer no longer show a second unstyled layer.
 - Leaving theater mode on YouTube now asks the native player to recompute its chrome width, so the progress bar no longer stays full-viewport.
 - Volume and speed hover bridges no longer steal clicks from the top half of their toolbar buttons.
 - Advancing a YouTube playlist no longer keeps the previous video's seek-bar thumbnails, chapters, or overlay captions.

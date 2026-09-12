@@ -20,11 +20,13 @@ export class CaptionRenderer {
     this.root.appendChild(this.text);
     document.documentElement.appendChild(this.root);
     applyCaptionStyle(this.root, this.style);
+    applyCaptionStyle(document.documentElement, this.style);
   }
 
   setStyle(style: CaptionStyle): void {
     this.style = style;
     applyCaptionStyle(this.root, style);
+    applyCaptionStyle(document.documentElement, style);
   }
 
   setCues(cues: CaptionCue[] | null): void {
@@ -69,6 +71,11 @@ export class CaptionRenderer {
   dispose(): void {
     this.cues = [];
     this.root.remove();
+    const root = document.documentElement.style;
+    root.removeProperty('--theater-caption-color');
+    root.removeProperty('--theater-caption-scale');
+    root.removeProperty('--theater-caption-bg');
+    root.removeProperty('--theater-caption-shadow');
   }
 
   private appendCue(cue: CaptionCue, time: number): void {

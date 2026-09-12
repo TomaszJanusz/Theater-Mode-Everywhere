@@ -682,8 +682,17 @@ html.theater-everywhere-html-active .ytp-caption-window-top {
   max-width: min(80vw, 960px) !important;
 }
 
-html.theater-using-overlay-captions .ytp-caption-window-container {
+html.theater-using-overlay-captions .ytp-caption-window-container,
+html.theater-using-overlay-captions .able-captions,
+html.theater-using-overlay-captions .able-captions-wrapper,
+html.theater-using-overlay-captions .able-captions-overlay,
+html.theater-using-overlay-captions .vjs-text-track-display,
+html.theater-using-overlay-captions .plyr__captions,
+html.theater-using-overlay-captions .jw-captions,
+html.theater-using-overlay-captions .jw-text-track-container,
+html.theater-using-overlay-captions .mejs-captions-layer {
   display: none !important;
+  visibility: hidden !important;
 }
 
 .theater-caption-overlay-text {
@@ -692,6 +701,7 @@ html.theater-using-overlay-captions .ytp-caption-window-container {
   color: var(--theater-caption-color, #ffffff) !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   font-size: calc(clamp(16px, 2.4vw, 28px) * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
@@ -799,12 +809,11 @@ html.theater-using-overlay-captions .ytp-caption-window-container {
   color: var(--accent-color, #6366f1) !important;
 }
 
-/* Custom styling for native video subtitles/captions */
-/* Note: text-shadow and font-family are not supported on ::cue in injected stylesheets */
+/* Fallback when overlay cues cannot be extracted. font-family/text-shadow are not supported on ::cue. */
 video::cue {
-  background-color: rgba(20, 20, 20, 0.8) !important;
-  color: #ffffff !important;
-  font-size: 16px !important;
+  background-color: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
+  color: var(--theater-caption-color, #ffffff) !important;
+  font-size: calc(16px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
 }
@@ -816,6 +825,16 @@ video::-webkit-media-text-track-display {
 
 .theater-everywhere-video-active.controls-visible::-webkit-media-text-track-display {
   transform: translateY(-80px) !important;
+}
+
+html.theater-using-overlay-captions video::cue {
+  visibility: hidden !important;
+  background: transparent !important;
+  color: transparent !important;
+}
+
+html.theater-using-overlay-captions video::-webkit-media-text-track-display {
+  display: none !important;
 }
 
 /* Custom Button Tooltips */

@@ -7,10 +7,11 @@ import { isAllowedMediaFetchUrl } from './fetch-allowlist';
 import { resolveMediaProviderFlags } from './provider-flags';
 import { shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
+import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
-import { sanitizeCaptionText } from './sanitize';
+import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
   it('parses WebVTT including multiline cues', () => {
@@ -25,7 +26,7 @@ NOTE ignored
 00:00:04.000 --> 00:00:06.500
 Second`);
     assert.equal(cues.length, 2);
-    assert.equal(cues[0].text, 'Hello world');
+    assert.equal(cues[0].text, 'Hello\nworld');
     assert.equal(cues[0].start, 1);
     assert.equal(cues[1].end, 6.5);
   });
@@ -113,6 +114,16 @@ Hello <c>world</c>`);
     assert.equal(sanitizeCaptionText('<b onclick="alert(1)">Hi</b>'), 'Hi');
     assert.equal(parseWebVtt('not a caption file').length, 0);
     assert.equal(parseSrt('').length, 0);
+  });
+
+  it('keeps cue line breaks while stripping VTT tags', () => {
+    assert.equal(sanitizeCaptionCueText('Hello<br>world'), 'Hello\nworld');
+    assert.equal(sanitizeCaptionCueText('Hello <c>world</c>\nnext line'), 'Hello world\nnext line');
+    assert.equal(parseNativeTrackPayload(`WEBVTT
+
+00:00:01.000 --> 00:00:03.000
+Usted nunca los ve
+a través de su sitio web.`)[0].text, 'Usted nunca los ve\na través de su sitio web.');
   });
 });
 
@@ -338,5 +349,110 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: false }, 'vimeo.com'), false);
     assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: true }, 'player.vimeo.com'), true);
     assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true }, 'example.com'), false);
+  });
+});
+
+describe('native text track overlay', () => {
+  class FakeCue {
+    constructor(
+      public startTime: number,
+      public endTime: number,
+      public text: string
+    ) {}
+  }
+
+  class FakeTrack {
+    kind = 'subtitles';
+    language = 'es';
+    label = 'Spanish';
+    mode: 'disabled' | 'hidden' | 'showing' = 'disabled';
+    cues: FakeCue[] = [];
+    addEventListener(): void {}
+    removeEventListener(): void {}
+  }
+
+  type TrackList = FakeTrack[] & {
+    addEventListener: (type: string, fn: () => void) => void;
+    removeEventListener: (type: string, fn: () => void) => void;
+    dispatchChange: () => void;
+  };
+
+  function createAdapter(track: FakeTrack, trackEl?: { kind: string; srclang: string; src: string; readyState: number }) {
+    const changeListeners = new Set<() => void>();
+    const tracks = [track] as TrackList;
+    tracks.addEventListener = (_type, fn) => {
+      changeListeners.add(fn);
+    };
+    tracks.removeEventListener = (_type, fn) => {
+      changeListeners.delete(fn);
+    };
+    tracks.dispatchChange = () => {
+      for (const fn of changeListeners) fn();
+    };
+    const video = {
+      textTracks: tracks,
+      querySelectorAll: (selector: string) => selector === 'track' && trackEl ? [trackEl] : []
+    };
+    return {
+      adapter: new NativeTextTrackAdapter(video as unknown as HTMLVideoElement),
+      tracks
+    };
+  }
+
+  it('maps in-memory cues and keeps line breaks', () => {
+    const track = new FakeTrack();
+    track.cues = [new FakeCue(1, 3, 'Hello <c>world</c>\nnext line')];
+    const cues = cuesFromTrack(track as unknown as TextTrack);
+    assert.equal(cues.length, 1);
+    assert.equal(cues[0].text, 'Hello world\nnext line');
+    assert.equal(cues[0].start, 1);
+    assert.equal(cues[0].end, 3);
+  });
+
+  it('activates overlay cues with hidden mode instead of showing', async () => {
+    const track = new FakeTrack();
+    track.cues = [new FakeCue(1, 3, 'Hola')];
+    const { adapter, tracks } = createAdapter(track);
+    const cues = await adapter.activateCaptionTrack('native:0');
+    assert.equal(track.mode, 'hidden');
+    assert.equal(cues?.[0].text, 'Hola');
+    track.mode = 'showing';
+    tracks.dispatchChange();
+    assert.equal(track.mode, 'hidden');
+  });
+
+  it('disables tracks when captions turn off', async () => {
+    const track = new FakeTrack();
+    track.cues = [new FakeCue(1, 3, 'Hola')];
+    const { adapter, tracks } = createAdapter(track);
+    await adapter.activateCaptionTrack('native:0');
+    const cues = await adapter.activateCaptionTrack(null);
+    assert.equal(cues, null);
+    assert.equal(track.mode, 'disabled');
+    track.mode = 'showing';
+    tracks.dispatchChange();
+    assert.equal(track.mode, 'showing');
+  });
+
+  it('fetches a same-origin track file when in-memory cues are empty', async () => {
+    const track = new FakeTrack();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(`WEBVTT
+
+00:00:00.000 --> 00:00:02.000
+Fetched line`, { status: 200 })) as typeof fetch;
+    try {
+      const { adapter } = createAdapter(track, {
+        kind: 'subtitles',
+        srclang: 'es',
+        src: 'https://example.com/captions.vtt',
+        readyState: 2
+      });
+      const cues = await adapter.activateCaptionTrack('native:0');
+      assert.equal(track.mode, 'hidden');
+      assert.equal(cues?.[0].text, 'Fetched line');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

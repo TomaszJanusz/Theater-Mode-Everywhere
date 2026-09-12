@@ -26,10 +26,21 @@ export function decodeEntities(value: string): string {
   });
 }
 
-export function sanitizeCaptionText(value: string): string {
-  return decodeEntities(value.replace(TAG_RE, ' '))
-    .replace(/\s+/g, ' ')
+export function sanitizeCaptionCueText(value: string): string {
+  const withBreaks = value
+    .replace(/\r\n/g, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(TAG_RE, ' ');
+  return decodeEntities(withBreaks)
+    .split('\n')
+    .map((line) => line.replace(/[^\S\n]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+export function sanitizeCaptionText(value: string): string {
+  return sanitizeCaptionCueText(value).replace(/\s+/g, ' ').trim();
 }
 
 export function clampNumber(value: number, min: number, max: number): number {

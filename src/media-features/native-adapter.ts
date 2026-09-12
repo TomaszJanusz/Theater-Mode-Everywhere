@@ -1,5 +1,12 @@
-import { sanitizeCaptionText } from './sanitize';
+import { MAX_CAPTION_BYTES } from './fetch-allowlist';
+import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
+import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 import type { CaptionCue, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from './types';
+
+const TRACK_NONE = 0;
+const TRACK_LOADING = 1;
+const TRACK_WAIT_MS = 500;
+const TRACK_WAIT_MS_NO_ELEMENT = 80;
 
 function trackUsable(track: TextTrack): boolean {
   const kind = track.kind as string;
@@ -10,26 +17,129 @@ function chapterUsable(track: TextTrack): boolean {
   return track.kind === 'chapters';
 }
 
-function cuesFromTrack(track: TextTrack): CaptionCue[] {
+function trackElementUsable(el: HTMLTrackElement): boolean {
+  const kind = el.kind || 'subtitles';
+  return kind === 'subtitles' || kind === 'captions';
+}
+
+type CueLike = {
+  startTime: number;
+  endTime: number;
+  text?: unknown;
+};
+
+function isCueLike(cue: unknown): cue is CueLike {
+  if (!cue || typeof cue !== 'object') return false;
+  const item = cue as CueLike;
+  return Number.isFinite(item.startTime) && Number.isFinite(item.endTime);
+}
+
+export function cuesFromTrack(track: TextTrack): CaptionCue[] {
   const cues: CaptionCue[] = [];
   const list = track.cues;
   if (!list) return cues;
   for (let i = 0; i < list.length; i++) {
     const cue = list[i];
-    if (!(cue instanceof TextTrackCue)) continue;
-    const text = 'text' in cue && typeof cue.text === 'string' ? cue.text : '';
+    if (!isCueLike(cue)) continue;
+    const raw = typeof cue.text === 'string' ? cue.text : '';
+    const text = sanitizeCaptionCueText(raw);
+    if (!text) continue;
     cues.push({
       start: cue.startTime,
       end: cue.endTime > cue.startTime ? cue.endTime : cue.startTime + 0.001,
-      text: String(text)
+      text
     });
   }
   return cues;
 }
 
+export function matchingTrackElement(
+  video: HTMLVideoElement,
+  track: TextTrack,
+  index: number
+): HTMLTrackElement | null {
+  const els = Array.from(video.querySelectorAll('track')).filter(trackElementUsable);
+  const trackKind = track.kind === 'captions' ? 'captions' : 'subtitles';
+  const byLang = els.find((el) => {
+    const kind = el.kind === 'captions' ? 'captions' : 'subtitles';
+    return kind === trackKind && (el.srclang || '') === (track.language || '');
+  });
+  if (byLang) return byLang;
+  return els[index] || null;
+}
+
+export function parseNativeTrackPayload(body: string): CaptionCue[] {
+  const trimmed = body.replace(/^\uFEFF/, '').trimStart();
+  if (/^WEBVTT/i.test(trimmed)) return parseWebVtt(body);
+  const vtt = parseWebVtt(body);
+  if (vtt.length > 0) return vtt;
+  const srt = parseSrt(body);
+  if (srt.length > 0) return srt;
+  return parseCaptionPayload(body);
+}
+
+function isSafeTrackUrl(url: URL): boolean {
+  return url.protocol === 'http:' || url.protocol === 'https:';
+}
+
+async function fetchTrackSource(src: string, baseHref: string): Promise<string | null> {
+  let url: URL;
+  try {
+    url = new URL(src, baseHref);
+  } catch {
+    return null;
+  }
+  if (!isSafeTrackUrl(url)) return null;
+  try {
+    const response = await fetch(url.href, { credentials: 'same-origin' });
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength === 0 || buffer.byteLength > MAX_CAPTION_BYTES) return null;
+    return new TextDecoder().decode(buffer);
+  } catch {
+    return null;
+  }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+async function waitForTrackCues(track: TextTrack, timeoutMs: number): Promise<CaptionCue[]> {
+  const existing = cuesFromTrack(track);
+  if (existing.length > 0) return existing;
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      globalThis.clearInterval(poll);
+      globalThis.clearTimeout(timer);
+      track.removeEventListener('cuechange', onChange);
+      resolve(cuesFromTrack(track));
+    };
+    const onChange = (): void => {
+      if (cuesFromTrack(track).length > 0) finish();
+    };
+    track.addEventListener('cuechange', onChange);
+    const poll = globalThis.setInterval(() => {
+      if (cuesFromTrack(track).length > 0) finish();
+    }, 40);
+    const timer = globalThis.setTimeout(finish, timeoutMs);
+  });
+}
+
 export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   private video: HTMLVideoElement;
   private restoredModes = new Map<TextTrack, TextTrackMode>();
+  private overlayTrack: TextTrack | null = null;
+  private watching = false;
+  private boundOnTracksChange = (): void => {
+    this.enforceOverlayTrackMode();
+  };
 
   constructor(video: HTMLVideoElement) {
     this.video = video;
@@ -58,25 +168,43 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
     const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
     if (id === null) {
-      for (const track of tracks) track.mode = 'disabled';
+      this.stopWatching();
+      for (const track of tracks) this.setTrackMode(track, 'disabled');
       return null;
     }
     const index = Number(id.replace('native:', ''));
+    const selected = tracks[index];
+    if (!selected) {
+      this.stopWatching();
+      for (const track of tracks) this.setTrackMode(track, 'disabled');
+      return [];
+    }
+
+    this.overlayTrack = selected;
     tracks.forEach((track, i) => {
-      track.mode = i === index ? 'showing' : 'disabled';
+      this.setTrackMode(track, i === index ? 'hidden' : 'disabled');
     });
-    return [];
+    this.startWatching();
+
+    let cues = cuesFromTrack(selected);
+    if (cues.length === 0) {
+      const trackEl = matchingTrackElement(this.video, selected, index);
+      const readyState = typeof trackEl?.readyState === 'number' ? trackEl.readyState : TRACK_NONE;
+      const shouldWait = !trackEl || readyState === TRACK_NONE || readyState === TRACK_LOADING;
+      if (shouldWait) {
+        cues = await waitForTrackCues(selected, trackEl ? TRACK_WAIT_MS : TRACK_WAIT_MS_NO_ELEMENT);
+      }
+    }
+    if (cues.length === 0) {
+      cues = await this.fetchCuesFromTrackElement(selected, index);
+    }
+    return cues;
   }
 
   invalidate(): void {
+    this.stopWatching();
     const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
-    for (const track of tracks) {
-      try {
-        track.mode = 'disabled';
-      } catch {
-        // Some players freeze TextTrack.mode during media replacement.
-      }
-    }
+    for (const track of tracks) this.setTrackMode(track, 'disabled');
   }
 
   async getChapters(): Promise<Chapter[]> {
@@ -84,12 +212,10 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     for (const track of tracks) {
       if (track.mode === 'disabled') {
         this.restoredModes.set(track, track.mode);
-        track.mode = 'hidden';
+        this.setTrackMode(track, 'hidden');
       }
       if (!track.cues || track.cues.length === 0) {
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, 50);
-        });
+        await delay(50);
       }
       const cues = cuesFromTrack(track);
       if (cues.length === 0) continue;
@@ -105,13 +231,55 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   }
 
   dispose(): void {
+    this.stopWatching();
     this.restoredModes.forEach((mode, track) => {
-      try {
-        track.mode = mode;
-      } catch {
-        // Track may already be gone with the media element.
-      }
+      this.setTrackMode(track, mode);
     });
     this.restoredModes.clear();
+  }
+
+  private async fetchCuesFromTrackElement(track: TextTrack, index: number): Promise<CaptionCue[]> {
+    const trackEl = matchingTrackElement(this.video, track, index);
+    const src = trackEl?.src;
+    if (!src) return [];
+    const baseHref = typeof document !== 'undefined' && document.baseURI
+      ? document.baseURI
+      : 'https://localhost/';
+    const body = await fetchTrackSource(src, baseHref);
+    if (!body) return [];
+    return parseNativeTrackPayload(body);
+  }
+
+  private startWatching(): void {
+    if (this.watching) return;
+    const list = this.video.textTracks;
+    if (!list?.addEventListener) return;
+    this.watching = true;
+    list.addEventListener('change', this.boundOnTracksChange);
+  }
+
+  private stopWatching(): void {
+    if (this.watching) {
+      this.video.textTracks?.removeEventListener('change', this.boundOnTracksChange);
+      this.watching = false;
+    }
+    this.overlayTrack = null;
+  }
+
+  private enforceOverlayTrackMode(): void {
+    if (!this.overlayTrack) return;
+    const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
+    for (const track of tracks) {
+      const desired: TextTrackMode = track === this.overlayTrack ? 'hidden' : 'disabled';
+      if (track.mode !== desired) this.setTrackMode(track, desired);
+    }
+  }
+
+  private setTrackMode(track: TextTrack, mode: TextTrackMode): void {
+    try {
+      if (track.mode !== mode) track.mode = mode;
+    } catch {
+      // Some players freeze TextTrack.mode during media replacement.
+    }
   }
 }

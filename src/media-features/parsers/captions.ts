@@ -1,4 +1,4 @@
-import { sanitizeCaptionText } from '../sanitize';
+import { sanitizeCaptionCueText, sanitizeCaptionText } from '../sanitize';
 import type { CaptionCue, CaptionWord } from '../types';
 
 const TIMESTAMP_RE = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?$/;
@@ -15,7 +15,7 @@ export function parseTimestamp(value: string): number | null {
 }
 
 function pushCue(cues: CaptionCue[], start: number, end: number, text: string, words?: CaptionWord[]): void {
-  const sanitized = sanitizeCaptionText(text);
+  const sanitized = sanitizeCaptionCueText(text);
   if (!sanitized) return;
   const safeEnd = end > start ? end : start + 0.001;
   const cue: CaptionCue = { start, end: safeEnd, text: sanitized };
@@ -74,7 +74,7 @@ export function parseWebVtt(input: string): CaptionCue[] {
       i += 1;
     }
     if (start === null || end === null) continue;
-    pushCue(cues, start, end, textLines.join(' '));
+    pushCue(cues, start, end, textLines.join('\n'));
   }
 
   return cues;
@@ -94,7 +94,7 @@ export function parseSrt(input: string): CaptionCue[] {
     const end = parseTimestamp((endRaw || '').trim());
     if (start === null || end === null) continue;
     const textLines = /^[0-9]+$/.test(lines[0]) ? lines.slice(2) : lines.slice(1);
-    pushCue(cues, start, end, textLines.join(' '));
+    pushCue(cues, start, end, textLines.join('\n'));
   }
 
   return cues;
