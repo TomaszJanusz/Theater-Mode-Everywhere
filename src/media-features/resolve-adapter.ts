@@ -1,5 +1,6 @@
 import { CompositeMediaAdapter } from './composite-adapter';
 import { NativeTextTrackAdapter } from './native-adapter';
+import { isPatreonHost, PatreonAdapter } from './patreon-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
 import { isVimeoHost, VimeoAdapter } from './vimeo-adapter';
 import { isYouTubeHost, YouTubeAdapter } from './youtube-adapter';
@@ -13,6 +14,10 @@ export function shouldAttachVimeoAdapter(flags: MediaProviderFlags, hostname?: s
   return flags.vimeo && isVimeoHost(hostname);
 }
 
+export function shouldAttachPatreonAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
+  return flags.patreon && isPatreonHost(hostname);
+}
+
 export function createMediaFeaturesAdapter(
   video: HTMLVideoElement,
   flags: MediaProviderFlags = defaultMediaProviderFlags()
@@ -20,5 +25,6 @@ export function createMediaFeaturesAdapter(
   const adapters: MediaFeaturesAdapter[] = [new NativeTextTrackAdapter(video)];
   if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter());
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
+  if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   return new CompositeMediaAdapter(adapters);
 }

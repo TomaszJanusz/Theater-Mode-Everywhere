@@ -1874,7 +1874,8 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
       const merged: Record<string, unknown> = {
         youtubeIntegrationEnabled: providerFlags.youtube,
-        vimeoIntegrationEnabled: providerFlags.vimeo
+        vimeoIntegrationEnabled: providerFlags.vimeo,
+        patreonIntegrationEnabled: providerFlags.patreon
       };
       for (const key of mediaProviderFlagStorageKeys()) {
         if (Object.prototype.hasOwnProperty.call(changes, key)) {

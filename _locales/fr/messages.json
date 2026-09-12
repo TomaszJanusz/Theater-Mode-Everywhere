@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Utiliser les marqueurs de chapitres et les aperçus de la timeline Vimeo en mode cinéma. Désactivez pour garder le mode cinéma sur Vimeo sans requêtes supplémentaires vers Vimeo."
   },
+  "patreonIntegrationTitle": {
+    "message": "Intégration Patreon"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Utiliser les sous-titres et les aperçus de la timeline Patreon en mode cinéma. Désactivez pour garder le mode cinéma sur Patreon sans requêtes supplémentaires vers Mux."
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusions de sites Web"
   },

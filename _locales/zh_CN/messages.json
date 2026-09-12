@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "在剧场模式中使用 Vimeo 章节标记和时间轴预览。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
   },
+  "patreonIntegrationTitle": {
+    "message": "Patreon 集成"
+  },
+  "patreonIntegrationDescription": {
+    "message": "在剧场模式中使用 Patreon 字幕和时间轴预览。关闭后仍可在 Patreon 使用剧场模式，但不会向 Mux 发起额外请求。"
+  },
   "websiteExclusionsTitle": {
     "message": "网站排除项"
   },

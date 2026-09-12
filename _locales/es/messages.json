@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Usa los marcadores de capítulos y las miniaturas de la línea de tiempo de Vimeo en el modo teatro. Desactívala para mantener el modo teatro en Vimeo sin peticiones extra a Vimeo."
   },
+  "patreonIntegrationTitle": {
+    "message": "Integración de Patreon"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Usa los subtítulos y las vistas previas de la línea de tiempo de Patreon en el modo teatro. Desactívala para mantener el modo teatro en Patreon sin peticiones extra a Mux."
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusiones de sitios web"
   },

@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo."
   },
+  "patreonIntegrationTitle": {
+    "message": "Patreon integration"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux."
+  },
   "websiteExclusionsTitle": {
     "message": "Website Exclusions"
   },

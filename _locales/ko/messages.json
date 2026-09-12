@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "극장 모드에서 Vimeo 챕터 표시와 타임라인 미리보기를 사용합니다. 끄면 Vimeo에 추가 요청 없이 극장 모드만 유지됩니다."
   },
+  "patreonIntegrationTitle": {
+    "message": "Patreon 연동"
+  },
+  "patreonIntegrationDescription": {
+    "message": "극장 모드에서 Patreon 자막과 타임라인 미리보기를 사용합니다. 끄면 Mux에 추가 요청 없이 극장 모드만 유지됩니다."
+  },
   "websiteExclusionsTitle": {
     "message": "웹사이트 예외"
   },

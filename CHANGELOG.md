@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
 - Remember the selected subtitle language per site (by language code, not the menu label) and turn it back on in later theater sessions.
 - Added a `C` shortcut to toggle subtitles in theater mode, using the remembered language code when turning them back on.
-- Added Settings → Features toggles for YouTube and Vimeo extras (captions, chapters, previews). Theater mode still works on those sites when a toggle is off.
+- Added Settings → Features toggles for YouTube, Vimeo, and Patreon extras (captions, chapters, previews). Theater mode still works on those sites when a toggle is off.
 - Theater chrome now renders in an isolated shadow tree so host page CSS cannot restyle the player UI (including the subtitles menu font).
 - Vimeo timeline hover previews now use the same sprite thumbnails as Vimeo's own scrubber.
+- Patreon native Mux videos now use Mux storyboard sprites for timeline hover previews, Mux caption WebVTT when the post has closed captions, plus post-body chapter timestamps when they follow the usual `00:00 Title` pattern.
 
 ### Changed
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
@@ -31,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume and speed hover bridges no longer steal clicks from the top half of their toolbar buttons.
 - Advancing a YouTube playlist no longer keeps the previous video's seek-bar thumbnails, chapters, or overlay captions.
 - Overlay captions reload for the next YouTube playlist item instead of staying enabled with no text.
+- Patreon hover previews now read the signed Mux `storyboard.vtt` from the post payload. Mux Player leaves `.storyboard` empty when a playback token is set without a storyboard token, so theater mode previously had no thumbnails even though the sprites existed.
+- Patreon captions can be turned on from theater mode. Mux keeps subtitle WebVTT off the inner `<video>` until the host CC menu is used; theater mode now loads `stream.mux.com/.../text/*.vtt` from the post payload.
+- Patreon no longer lists the same Mux caption twice (host `English (auto-generated)` plus a generic `Captions` sidecar).
 
 ## [1.4.0] - 2026-09-06
 

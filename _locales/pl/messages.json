@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Znaczniki rozdziałów i miniaturki osi czasu z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
   },
+  "patreonIntegrationTitle": {
+    "message": "Integracja z Patreon"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Napisy i podglądy osi czasu z Patreon w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Mux."
+  },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"
   },

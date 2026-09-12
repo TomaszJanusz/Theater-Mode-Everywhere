@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Vimeo-Kapitelmarken und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Vimeo ohne zusätzliche Anfragen an Vimeo zu behalten."
   },
+  "patreonIntegrationTitle": {
+    "message": "Patreon-Integration"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Patreon-Untertitel und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Patreon ohne zusätzliche Anfragen an Mux zu behalten."
+  },
   "websiteExclusionsTitle": {
     "message": "Website-Ausschlüsse"
   },

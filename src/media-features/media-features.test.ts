@@ -5,13 +5,16 @@ import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-do
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { isAllowedMediaFetchUrl } from './fetch-allowlist';
 import { resolveMediaProviderFlags } from './provider-flags';
-import { shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachPatreonAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
+import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
+import { parsePatreonPageAssets, pickPatreonPageAssets, applyPatreonCaptionMeta, mergePatreonCaptionTracks } from './parsers/patreon-page';
+import { preferProviderCaptionTracks } from './composite-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
@@ -30,6 +33,21 @@ Second`);
     assert.equal(cues[0].text, 'Hello\nworld');
     assert.equal(cues[0].start, 1);
     assert.equal(cues[1].end, 6.5);
+  });
+
+  it('parses Mux transcript WebVTT with cue identifiers', () => {
+    const cues = parseWebVtt(`WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.360
+Hello friends
+
+2
+00:00:03.360 --> 00:00:05.000
+Welcome back`);
+    assert.equal(cues.length, 2);
+    assert.equal(cues[0].text, 'Hello friends');
+    assert.equal(cues[1].start, 3.36);
   });
 
   it('parses SRT and overlapping cues', () => {
@@ -206,6 +224,60 @@ describe('vimeo thumb preview parser', () => {
   });
 });
 
+describe('mux storyboard parser', () => {
+  const vtt = `WEBVTT
+
+00:00:00.000 --> 00:01:06.067
+https://image.mux.com/Dk8pvMnvTeqDk9dy5nqmXz02MM4YtdElW/storyboard.jpg#xywh=0,0,256,160
+
+00:01:06.067 --> 00:02:14.067
+https://image.mux.com/Dk8pvMnvTeqDk9dy5nqmXz02MM4YtdElW/storyboard.jpg#xywh=256,0,256,160
+`;
+
+  it('maps hover time onto a sprite tile and infers sheet size from xywh', () => {
+    const set = parseMuxStoryboard(vtt);
+    assert.ok(set);
+    assert.equal(set!.cues.length, 2);
+    const first = getMuxPreviewFrame(set!, 0);
+    const nearby = getMuxPreviewFrame(set!, 30);
+    const later = getMuxPreviewFrame(set!, 80);
+    assert.ok(first && nearby && later);
+    assert.equal(first!.image.url, nearby!.image.url);
+    assert.equal(first!.image.x, 0);
+    assert.equal(first!.image.sheetWidth, 512);
+    assert.equal(first!.image.sheetHeight, 160);
+    assert.equal(later!.image.x, 256);
+    assert.equal(later!.image.tileWidth, 256);
+  });
+
+  it('parses Mux JSON storyboards', () => {
+    const set = parseMuxStoryboard(JSON.stringify({
+      url: 'https://image.mux.com/Dk8pvMnvTeqDk9dy5nqmXz02MM4YtdElW/storyboard.webp',
+      tile_width: 256,
+      tile_height: 160,
+      duration: 134.067,
+      tiles: [
+        { start: 0, x: 0, y: 0 },
+        { start: 66.067, x: 256, y: 0 }
+      ]
+    }));
+    assert.ok(set);
+    const later = getMuxPreviewFrame(set!, 90);
+    assert.ok(later);
+    assert.equal(later!.image.x, 256);
+    assert.equal(later!.image.sheetWidth, 512);
+    assert.match(later!.image.url, /^https:\/\/image\.mux\.com\//);
+  });
+
+  it('rejects non-mux image hosts', () => {
+    assert.equal(parseMuxStoryboard(`WEBVTT
+
+00:00:00.000 --> 00:00:05.000
+https://evil.example/storyboard.jpg#xywh=0,0,256,160
+`), null);
+  });
+});
+
 describe('youtube page video identity', () => {
   it('reads watch, shorts, embed, live, and youtu.be URLs', () => {
     assert.equal(youtubePageVideoId('https://www.youtube.com/watch?v=abc123&list=PLtest'), 'abc123');
@@ -273,6 +345,135 @@ describe('fetch allowlist', () => {
       kind: 'caption-track',
       url: 'http://www.youtube.com/api/timedtext'
     }), false);
+  });
+
+  it('allows only Mux storyboard metadata on image.mux.com', () => {
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'storyboard-vtt',
+      url: 'https://image.mux.com/abc123/storyboard.vtt?token=x&format=webp'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'storyboard-json',
+      url: 'https://image.mux.com/abc123/storyboard.json'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'storyboard-vtt',
+      url: 'https://image.mux.com/abc123/storyboard.jpg'
+    }), false);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'storyboard-vtt',
+      url: 'https://evil.example/abc123/storyboard.vtt'
+    }), false);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'caption-track',
+      url: 'https://stream.mux.com/abc123/text/trackid.vtt?token=x'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'caption-track',
+      url: 'https://stream.mux.com/abc123.m3u8?token=x'
+    }), false);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'patreon',
+      kind: 'caption-track',
+      url: 'https://evil.example/abc123/text/trackid.vtt'
+    }), false);
+  });
+});
+
+describe('patreon page asset parser', () => {
+  const html = String.raw`{"playback_id":"PlayId01","storyboard":{"vtt_url":"https:\/\/image.mux.com\/PlayId01\/storyboard.vtt?token=abc","json_url":"https:\/\/image.mux.com\/PlayId01\/storyboard.json?token=abc"},"transcript_url":"https:\/\/stream.mux.com\/PlayId01\/text\/TrackId01.vtt?token=abc"}
+{"playback_id":"OtherId02","storyboard":{"vtt_url":"https://image.mux.com/OtherId02/storyboard.vtt?token=def"}}`;
+
+  it('extracts signed Mux storyboard and caption URLs, including escaped JSON', () => {
+    const assets = parsePatreonPageAssets(html);
+    const play = pickPatreonPageAssets(assets, 'PlayId01');
+    assert.ok(play);
+    assert.equal(play!.storyboardVttUrl, 'https://image.mux.com/PlayId01/storyboard.vtt?token=abc');
+    assert.equal(play!.storyboardJsonUrl, 'https://image.mux.com/PlayId01/storyboard.json?token=abc');
+    assert.equal(play!.captions.length, 1);
+    assert.equal(play!.captions[0].url, 'https://stream.mux.com/PlayId01/text/TrackId01.vtt?token=abc');
+    const other = pickPatreonPageAssets(assets, 'OtherId02');
+    assert.equal(other?.captions.length, 0);
+    assert.equal(other?.storyboardVttUrl, 'https://image.mux.com/OtherId02/storyboard.vtt?token=def');
+    const unicode = parsePatreonPageAssets(
+      'https:\\u002F\\u002Fimage.mux.com\\u002FUniId03\\u002Fstoryboard.vtt?token=ghi'
+    );
+    assert.equal(pickPatreonPageAssets(unicode, 'UniId03')?.storyboardVttUrl, 'https://image.mux.com/UniId03/storyboard.vtt?token=ghi');
+  });
+
+  it('ignores stream manifests and non-mux hosts', () => {
+    const assets = parsePatreonPageAssets(`
+      https://stream.mux.com/PlayId01.m3u8?token=abc
+      https://evil.example/PlayId01/storyboard.vtt?token=abc
+      https://evil.example/PlayId01/text/TrackId01.vtt?token=abc
+    `);
+    assert.equal(assets.length, 0);
+  });
+
+  it('merges duplicate Mux caption URLs and copies host track labels', () => {
+    const merged = mergePatreonCaptionTracks(
+      [{
+        id: 'patreon:PlayId01:TrackId01',
+        url: 'https://stream.mux.com/PlayId01/text/TrackId01.vtt?token=abc',
+        language: '',
+        label: 'Captions'
+      }],
+      [{
+        id: 'patreon-hls:0',
+        url: 'https://stream.mux.com/PlayId01/text/TrackId01.vtt?token=xyz',
+        language: 'en',
+        label: 'English (auto-generated)',
+        autoGenerated: true
+      }]
+    );
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].language, 'en');
+    assert.equal(merged[0].label, 'English (auto-generated)');
+    assert.equal(merged[0].autoGenerated, true);
+
+    const labeled = applyPatreonCaptionMeta(
+      [{
+        id: 'patreon:PlayId01:TrackId01',
+        url: 'https://stream.mux.com/PlayId01/text/TrackId01.vtt?token=abc',
+        language: '',
+        label: 'Captions'
+      }],
+      [{ language: 'en', label: 'English (auto-generated)', autoGenerated: true }]
+    );
+    assert.equal(labeled[0].label, 'English (auto-generated)');
+    assert.equal(labeled[0].language, 'en');
+    assert.equal(labeled[0].autoGenerated, true);
+  });
+});
+
+describe('caption track merge', () => {
+  it('hides native HTML5 tracks when Patreon already exposes the same sidecar', () => {
+    const tracks = preferProviderCaptionTracks([
+      {
+        id: 'native:0',
+        language: 'en',
+        label: 'English (auto-generated)',
+        kind: 'captions',
+        source: 'native-text-track',
+        autoGenerated: true
+      },
+      {
+        id: 'patreon:PlayId01:TrackId01',
+        language: 'en',
+        label: 'English (auto-generated)',
+        kind: 'captions',
+        source: 'patreon',
+        autoGenerated: true
+      }
+    ]);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].source, 'patreon');
   });
 });
 
@@ -366,23 +567,28 @@ describe('caption language preference', () => {
 });
 
 describe('provider integration flags', () => {
-  it('defaults YouTube and Vimeo extras on', () => {
-    assert.deepEqual(resolveMediaProviderFlags(undefined), { youtube: true, vimeo: true });
-    assert.deepEqual(resolveMediaProviderFlags({}), { youtube: true, vimeo: true });
+  it('defaults YouTube, Vimeo, and Patreon extras on', () => {
+    assert.deepEqual(resolveMediaProviderFlags(undefined), { youtube: true, vimeo: true, patreon: true });
+    assert.deepEqual(resolveMediaProviderFlags({}), { youtube: true, vimeo: true, patreon: true });
   });
 
   it('treats only explicit false as off', () => {
     const flags = resolveMediaProviderFlags({
       youtubeIntegrationEnabled: false,
-      vimeoIntegrationEnabled: true
+      vimeoIntegrationEnabled: true,
+      patreonIntegrationEnabled: false
     });
     assert.equal(flags.youtube, false);
     assert.equal(flags.vimeo, true);
+    assert.equal(flags.patreon, false);
     assert.equal(shouldAttachYouTubeAdapter(flags, 'www.youtube.com'), false);
-    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true }, 'www.youtube.com'), true);
-    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: false }, 'vimeo.com'), false);
-    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: true }, 'player.vimeo.com'), true);
-    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true }, 'example.com'), false);
+    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true, patreon: true }, 'www.youtube.com'), true);
+    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: false, patreon: true }, 'vimeo.com'), false);
+    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: true, patreon: true }, 'player.vimeo.com'), true);
+    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true, patreon: true }, 'example.com'), false);
+    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: true }, 'www.patreon.com'), true);
+    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: false }, 'www.patreon.com'), false);
+    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: true }, 'example.com'), false);
   });
 });
 

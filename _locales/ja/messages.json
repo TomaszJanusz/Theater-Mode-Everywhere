@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "シアターモードでVimeoのチャプターマーカーとタイムラインプレビューを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
   },
+  "patreonIntegrationTitle": {
+    "message": "Patreon連携"
+  },
+  "patreonIntegrationDescription": {
+    "message": "シアターモードでPatreonの字幕とタイムラインプレビューを使います。オフにすると、Muxへの追加リクエストなしでシアターモードだけが残ります。"
+  },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"
   },

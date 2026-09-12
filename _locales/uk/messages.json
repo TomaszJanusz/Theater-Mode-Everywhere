@@ -133,6 +133,12 @@
   "vimeoIntegrationDescription": {
     "message": "Мітки розділів і мініатюри шкали часу Vimeo у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Vimeo без додаткових запитів до Vimeo."
   },
+  "patreonIntegrationTitle": {
+    "message": "Інтеграція з Patreon"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Субтитри та прев’ю шкали часу Patreon у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Patreon без додаткових запитів до Mux."
+  },
   "websiteExclusionsTitle": {
     "message": "Винятки для вебсайтів"
   },

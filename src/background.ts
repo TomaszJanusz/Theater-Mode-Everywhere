@@ -72,13 +72,39 @@ function isAllowedYoutubeCaptionUrl(url: string): boolean {
   }
 }
 
+function isAllowedMuxStoryboardUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.hostname.replace(/^www\./i, '').toLowerCase() !== 'image.mux.com') return false;
+    return /\/[^/]+\/storyboard\.(vtt|json)$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedMuxCaptionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.hostname.replace(/^www\./i, '').toLowerCase() !== 'stream.mux.com') return false;
+    return /\/[^/]+\/text\/[^/]+\.vtt$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedMediaBrokerUrl(url: string): boolean {
+  return isAllowedYoutubeCaptionUrl(url) || isAllowedMuxStoryboardUrl(url) || isAllowedMuxCaptionUrl(url);
+}
+
 async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body?: string; contentType?: string; error?: string }> {
-  if (!isAllowedYoutubeCaptionUrl(url)) {
+  if (!isAllowedMediaBrokerUrl(url)) {
     return { ok: false, error: 'blocked' };
   }
   try {
     const response = await fetch(url, { credentials: 'omit', redirect: 'follow' });
-    if (!isAllowedYoutubeCaptionUrl(response.url)) {
+    if (!isAllowedMediaBrokerUrl(response.url)) {
       return { ok: false, error: 'redirect-blocked' };
     }
     if (!response.ok) return { ok: false, error: `http-${response.status}` };
@@ -88,7 +114,7 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
     }
     const contentType = response.headers.get('content-type') || '';
     const body = new TextDecoder('utf-8').decode(buffer);
-    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:/i.test(body.slice(0, 400));
+    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:/i.test(body.slice(0, 400));
     if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream/i.test(contentType) && !looksLikeCaptions) {
       return { ok: false, error: 'content-type' };
     }
