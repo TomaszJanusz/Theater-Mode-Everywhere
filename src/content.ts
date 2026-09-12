@@ -21,6 +21,11 @@ import {
   type MediaProviderFlags
 } from './media-features/provider-flags';
 import {
+  mediaHasSource,
+  requestVideoPlay,
+  toggleVideoPlayback
+} from './host-play';
+import {
   destroyPlayerUi,
   eventPathIncludes,
   eventPathMatches,
@@ -632,14 +637,7 @@ function preventDoubleToggle(e: Event): void {
 
   // Only toggle play/pause on 'click' to guarantee it happens exactly once per mouse release
   if (e.type === 'click' && theaterElement.tagName === 'VIDEO') {
-    const video = theaterElement as HTMLVideoElement;
-    if (video.paused) {
-      video.play().catch(err => {
-        console.error('[Theater Everywhere] Programmatic play failed:', err);
-      });
-    } else {
-      video.pause();
-    }
+    toggleVideoPlayback(theaterElement as HTMLVideoElement);
   }
 }
 
@@ -807,15 +805,9 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     e.stopImmediatePropagation();
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
     if (e.key === ' ' || e.code === 'Space') return;
-    if (video.paused) {
-      video.play().catch(err => {
-        console.error('[Theater Everywhere] Play failed:', err);
-      });
-      triggerPlaybackIndicator('play');
-    } else {
-      video.pause();
-      triggerPlaybackIndicator('pause');
-    }
+    const willPlay = !mediaHasSource(video) || video.paused;
+    toggleVideoPlayback(video);
+    triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
   } else if (matchesShortcut(e, shortcuts.seekBack)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1538,14 +1530,12 @@ function switchTheaterVideo(newVideo: HTMLVideoElement): void {
   newVideo.dataset.originalControls = originalControls ? 'true' : 'false';
   newVideo.removeAttribute('controls');
 
-  if (newVideo.readyState === 0) {
+  if (newVideo.readyState === 0 && mediaHasSource(newVideo)) {
     newVideo.preload = 'auto';
     newVideo.load();
   }
 
-  newVideo.play().catch(err => {
-    console.error('[Theater Everywhere] Auto-play failed during switch:', err);
-  });
+  requestVideoPlay(newVideo);
 
   const eventTypes = ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'];
   eventTypes.forEach(type => {
@@ -1660,8 +1650,10 @@ function enterTheaterMode(element: HTMLElement): void {
     // Hide browser native controls so we use our custom controls overlay instead
     video.removeAttribute('controls');
 
-    // Force loading of paused/unloaded videos to display the initial frame instead of a gray/black screen
-    if (video.readyState === 0) {
+    // Force loading of paused/unloaded videos to display the initial frame instead of a gray/black screen.
+    // Skip empty players (Vimeo before its own Play attaches DASH/HLS) — load() there fetches nothing
+    // and a later video.play() can hide the host overlay without ever starting media.
+    if (video.readyState === 0 && mediaHasSource(video)) {
       video.preload = 'auto';
       video.load();
     }
@@ -2030,11 +2022,7 @@ function createCustomControls(video: HTMLVideoElement): void {
 
   setIcon(playPauseBtn, video.paused ? playIcon : pauseIcon);
   playPauseBtn.addEventListener('click', () => {
-    if (video.paused) {
-      video.play().catch(console.error);
-    } else {
-      video.pause();
-    }
+    toggleVideoPlayback(video);
   });
 
   // Volume Container

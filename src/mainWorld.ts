@@ -438,6 +438,53 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     return el.isContentEditable || el.getAttribute('role') === 'textbox';
   }
 
+  function mediaHasSource(video: HTMLVideoElement): boolean {
+    if (video.currentSrc || video.src || video.srcObject) return true;
+    return Boolean(video.querySelector('source[src]'));
+  }
+
+  function looksLikeHostPlayButton(el: HTMLElement): boolean {
+    if (el.id === 'theater-everywhere-ui' || el.closest('#theater-everywhere-ui')) return false;
+    const className = el.className.toString();
+    if (/\b(?:ytp-large-play-button|vjs-big-play-button|plyr__control--overlaid)\b/.test(className)) {
+      return true;
+    }
+    const aria = (el.getAttribute('aria-label') || '').trim();
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(aria)
+      || /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(text);
+  }
+
+  function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null {
+    const scan = (root: ParentNode): HTMLElement | null => {
+      const candidates = root.querySelectorAll(
+        'button, [role="button"], .ytp-large-play-button, .vjs-big-play-button, .plyr__control--overlaid'
+      );
+      for (const node of candidates) {
+        if (node instanceof HTMLElement && looksLikeHostPlayButton(node)) return node;
+      }
+      return null;
+    };
+    let node: Node | null = video.parentNode;
+    while (node) {
+      if (node instanceof Element || node instanceof Document || node instanceof ShadowRoot) {
+        const found = scan(node);
+        if (found) return found;
+      }
+      node = node instanceof ShadowRoot ? node.host : node.parentNode;
+    }
+    return null;
+  }
+
+  function requestVideoPlay(video: HTMLVideoElement): void {
+    if (mediaHasSource(video)) {
+      video.play().catch(() => {});
+      return;
+    }
+    const hostPlay = findHostPlayButton(video);
+    if (hostPlay) hostPlay.click();
+  }
+
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
     const video = document.querySelector('.theater-everywhere-video-active');
     if (!(video instanceof HTMLVideoElement)) return;
@@ -449,9 +496,9 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     event.stopImmediatePropagation();
     if (event.type !== 'keydown' || event.repeat) return;
 
-    const wantPaused = !video.paused;
+    const wantPaused = mediaHasSource(video) && !video.paused;
     if (wantPaused) video.pause();
-    else video.play().catch(() => {});
+    else requestVideoPlay(video);
     window.dispatchEvent(new CustomEvent('theater-everywhere-playback-intent', {
       detail: { action: wantPaused ? 'pause' : 'play' }
     }));
