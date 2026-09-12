@@ -4,6 +4,14 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
   const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
   const timedtextBodies: CachedTimedtext[] = [];
 
+  function youtubeIntegrationEnabled(): boolean {
+    return !document.documentElement.hasAttribute('data-te-youtube-integration-off');
+  }
+
+  function vimeoIntegrationEnabled(): boolean {
+    return !document.documentElement.hasAttribute('data-te-vimeo-integration-off');
+  }
+
   function requestUrl(input: RequestInfo | URL): string {
     if (typeof input === 'string') return input;
     if (input instanceof URL) return input.toString();
@@ -296,6 +304,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
   }
 
   async function fetchTimedtextWithPot(url: string): Promise<string | null> {
+    if (!youtubeIntegrationEnabled()) return null;
     const cached = findCachedBody(url);
     if (cached) return cached;
     const direct = await fetchTimedtextDirect(url);
@@ -579,8 +588,8 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
       detail: {
         requestId,
-        youtube: readYoutubeSnapshot(),
-        vimeo: readVimeoSnapshot()
+        youtube: youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null,
+        vimeo: vimeoIntegrationEnabled() ? readVimeoSnapshot() : null
       }
     }));
   });
@@ -613,7 +622,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
           detail: { requestId, ok: Boolean(ok && body) }
         }));
       };
-      if (!isAllowedTimedtextUrl(url)) {
+      if (!youtubeIntegrationEnabled() || !isAllowedTimedtextUrl(url)) {
         respond(false);
         continue;
       }
@@ -648,6 +657,10 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
       }));
     };
     try {
+      if (!youtubeIntegrationEnabled()) {
+        respond(false);
+        return;
+      }
       if (detail.enabled) {
         void ensureYoutubeCaptions(detail.language || null, detail.kind || null, true);
       } else {

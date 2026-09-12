@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "تضخيم الصوت حتى 300% باستخدام Web Audio API. قد يظهر مؤشر تحميل قصير عند دخول وضع المسرح لأول مرة بعد تمكين هذا الخيار."
   },
+  "youtubeIntegrationTitle": {
+    "message": "تكامل YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "استخدم ترجمات YouTube والفصول ومعاينات الخط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في YouTube دون طلبات إضافية إلى YouTube."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "تكامل Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "استخدم علامات فصول Vimeo في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Vimeo دون طلبات إضافية إلى Vimeo."
+  },
   "websiteExclusionsTitle": {
     "message": "استثناءات المواقع"
   },

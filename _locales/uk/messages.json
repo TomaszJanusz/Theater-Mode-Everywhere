@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Збільшуйте гучність до 300% за допомогою Web Audio API. При першому переході в режим кінотеатру з цією функцією може ненадовго з'явитися індикатор завантаження."
   },
+  "youtubeIntegrationTitle": {
+    "message": "Інтеграція з YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Субтитри, розділи та прев’ю шкали часу YouTube у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на YouTube без додаткових запитів до YouTube."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Інтеграція з Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Мітки розділів Vimeo у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Vimeo без додаткових запитів до Vimeo."
+  },
   "websiteExclusionsTitle": {
     "message": "Винятки для вебсайтів"
   },

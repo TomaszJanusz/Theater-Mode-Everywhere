@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Web Audio API를 사용하여 음량을 최대 300%까지 증폭합니다. 이 기능을 활성화한 상태에서 처음 시어터 모드에 진입하면 로딩 표시가 잠시 나타날 수 있습니다."
   },
+  "youtubeIntegrationTitle": {
+    "message": "YouTube 연동"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "극장 모드에서 YouTube 자막, 챕터, 타임라인 미리보기를 사용합니다. 끄면 YouTube에 추가 요청 없이 극장 모드만 유지됩니다."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Vimeo 연동"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "극장 모드에서 Vimeo 챕터 표시를 사용합니다. 끄면 Vimeo에 추가 요청 없이 극장 모드만 유지됩니다."
+  },
   "websiteExclusionsTitle": {
     "message": "웹사이트 예외"
   },

@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "使用 Web Audio API 将音量放大到最高 300%。启用后首次进入剧场模式时，可能会短暂显示加载指示器。"
   },
+  "youtubeIntegrationTitle": {
+    "message": "YouTube 集成"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "在剧场模式中使用 YouTube 字幕、章节和时间轴预览。关闭后仍可在 YouTube 使用剧场模式，但不会向 YouTube 发起额外请求。"
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Vimeo 集成"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "在剧场模式中使用 Vimeo 章节标记。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
+  },
   "websiteExclusionsTitle": {
     "message": "网站排除项"
   },

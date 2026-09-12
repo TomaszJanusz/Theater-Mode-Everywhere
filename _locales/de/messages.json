@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Verstärke die Lautstärke mit der Web Audio API auf bis zu 300%. Beim ersten Aktivieren des Theatermodus kann kurz eine Ladeanzeige erscheinen."
   },
+  "youtubeIntegrationTitle": {
+    "message": "YouTube-Integration"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "YouTube-Untertitel, Kapitel und Timeline-Vorschauen im Kinomodus. Ausschalten, um den Kinomodus auf YouTube ohne zusätzliche Anfragen an YouTube zu behalten."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Vimeo-Integration"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Vimeo-Kapitelmarken im Kinomodus. Ausschalten, um den Kinomodus auf Vimeo ohne zusätzliche Anfragen an Vimeo zu behalten."
+  },
   "websiteExclusionsTitle": {
     "message": "Website-Ausschlüsse"
   },

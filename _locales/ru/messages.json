@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Увеличивайте громкость до 300% с помощью Web Audio API. При первом входе в режим кино после включения этой функции может ненадолго появиться индикатор загрузки."
   },
+  "youtubeIntegrationTitle": {
+    "message": "Интеграция с YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Субтитры, главы и превью шкалы времени YouTube в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на YouTube без дополнительных запросов к YouTube."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Интеграция с Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Метки глав Vimeo в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Vimeo без дополнительных запросов к Vimeo."
+  },
   "websiteExclusionsTitle": {
     "message": "Исключения сайтов"
   },

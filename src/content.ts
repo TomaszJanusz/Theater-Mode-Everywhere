@@ -13,6 +13,13 @@ import {
   type CaptionLanguagePreference
 } from './media-features/caption-preference';
 import { MediaFeaturesController } from './media-features/controller';
+import {
+  applyMediaProviderFlagAttrs,
+  defaultMediaProviderFlags,
+  mediaProviderFlagStorageKeys,
+  resolveMediaProviderFlags,
+  type MediaProviderFlags
+} from './media-features/provider-flags';
 
 const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   keyboardShortcutsTitle: 'Keyboard Shortcuts',
@@ -237,6 +244,7 @@ function applyAccentColorPreset(target: HTMLElement, preset: AccentColorPreset):
 }
 
 let volumeBoostEnabled = false;
+let providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
 let configuredShortcuts: Shortcuts = { ...defaultShortcuts };
 
 interface BoostedVideoElement extends HTMLVideoElement {
@@ -355,6 +363,13 @@ function applyTheaterVideoFit(mode: VideoFitMode = configuredVideoFit): void {
     theaterElement.style.setProperty('object-fit', mode, 'important');
     theaterElement.style.setProperty('--theater-object-fit', mode);
   }
+}
+
+function applyProviderFlags(next: MediaProviderFlags): void {
+  providerFlags = next;
+  applyMediaProviderFlagAttrs(document.documentElement, next);
+  const wrapper = document.querySelector('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+  wrapper?._mediaFeatures?.setProviderFlags(next);
 }
 
 function persistCaptionPreference(pref: CaptionLanguagePreference): void {
@@ -710,6 +725,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
+      ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
@@ -718,6 +734,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     const blacklist = (data.blacklist || []) as string[];
     const saved = data.shortcuts || {};
     volumeBoostEnabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
+    applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
     configuredAccentColor = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
     applyTheaterVideoFit(resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]));
     applyCaptionStyleToTheater(resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY]));
@@ -1826,6 +1843,18 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     if (changes[CAPTION_PREF_STORAGE_KEY]) {
       captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
     }
+    if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
+      const merged: Record<string, unknown> = {
+        youtubeIntegrationEnabled: providerFlags.youtube,
+        vimeoIntegrationEnabled: providerFlags.vimeo
+      };
+      for (const key of mediaProviderFlagStorageKeys()) {
+        if (Object.prototype.hasOwnProperty.call(changes, key)) {
+          merged[key] = changes[key].newValue;
+        }
+      }
+      applyProviderFlags(resolveMediaProviderFlags(merged));
+    }
   });
 }
 
@@ -2393,6 +2422,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     onCaptionStyleChange: persistCaptionStyle,
     captionPreference: captionPreferenceMap[captionPreferenceHost(window.location.hostname)] || null,
     onCaptionPreferenceChange: persistCaptionPreference,
+    providerFlags,
     decorateCaptionDialog: (overlay) => {
       applyUiDirection(overlay);
       applyConfiguredAccentColor(overlay);

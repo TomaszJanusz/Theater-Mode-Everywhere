@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Amplifica el volumen hasta 300% con Web Audio API. Puede aparecer un breve indicador de carga la primera vez que entres en modo teatro con esta opción activa."
   },
+  "youtubeIntegrationTitle": {
+    "message": "Integración de YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Usa subtítulos, capítulos y vistas previas de la línea de tiempo de YouTube en el modo teatro. Desactívala para mantener el modo teatro en YouTube sin peticiones extra a YouTube."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Integración de Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Usa los marcadores de capítulos de Vimeo en el modo teatro. Desactívala para mantener el modo teatro en Vimeo sin peticiones extra a Vimeo."
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusiones de sitios web"
   },

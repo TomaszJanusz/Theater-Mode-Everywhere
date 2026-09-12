@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Web Audio APIを使用して音量を最大300%まで増幅します。この機能を有効にした後、最初にシアターモードを起動した際、短いロード用のアニメーションが表示されることがあります。"
   },
+  "youtubeIntegrationTitle": {
+    "message": "YouTube連携"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "シアターモードでYouTubeの字幕、チャプター、タイムラインプレビューを使います。オフにすると、YouTubeへの追加リクエストなしでシアターモードだけが残ります。"
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Vimeo連携"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "シアターモードでVimeoのチャプターマーカーを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
+  },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"
   },

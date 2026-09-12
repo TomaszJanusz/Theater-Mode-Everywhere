@@ -115,6 +115,12 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
   });
 }
 
+const FEATURE_TOGGLES = [
+  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false },
+  { id: 'youtube-integration-toggle', key: 'youtubeIntegrationEnabled', fallback: true },
+  { id: 'vimeo-integration-toggle', key: 'vimeoIntegrationEnabled', fallback: true }
+] as const;
+
 async function init() {
   localizeDocument();
   configurePrivacyThingLogo();
@@ -548,13 +554,16 @@ async function init() {
     }
   }
 
-  // --- Features (Volume Boost) ---
+  // --- Features ---
   async function loadAndRenderFeatures() {
     try {
-      const data = await safeGetStorage('volumeBoostEnabled');
-      const enabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
-      const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
-      if (toggle) toggle.checked = enabled;
+      const data = await safeGetStorage(FEATURE_TOGGLES.map((item) => item.key));
+      for (const item of FEATURE_TOGGLES) {
+        const toggle = document.getElementById(item.id) as HTMLInputElement | null;
+        if (!toggle) continue;
+        if (data[item.key] === undefined) toggle.checked = item.fallback;
+        else toggle.checked = Boolean(data[item.key]);
+      }
     } catch (err) {
       console.error('Error loading feature settings:', err);
     }
@@ -577,14 +586,15 @@ async function init() {
   }
 
   function setupFeatureListeners() {
-    const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
-    if (toggle) {
+    for (const item of FEATURE_TOGGLES) {
+      const toggle = document.getElementById(item.id) as HTMLInputElement | null;
+      if (!toggle) continue;
       toggle.addEventListener('change', async () => {
         try {
-          await chrome.storage.sync.set({ volumeBoostEnabled: toggle.checked });
+          await chrome.storage.sync.set({ [item.key]: toggle.checked });
           await notifyAllTabs();
         } catch (err) {
-          console.error('Error saving volume boost setting:', err);
+          console.error('Error saving feature setting:', err);
         }
       });
     }

@@ -121,6 +121,18 @@
   "volumeBoostDescription": {
     "message": "Wzmocnij głośność do 300% za pomocą Web Audio API. Przy pierwszym wejściu w tryb kinowy z tą opcją może pojawić się krótki wskaźnik ładowania."
   },
+  "youtubeIntegrationTitle": {
+    "message": "Integracja z YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Napisy, rozdziały i podglądy osi czasu z YouTube w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do YouTube."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Integracja z Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Znaczniki rozdziałów z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
+  },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"
   },

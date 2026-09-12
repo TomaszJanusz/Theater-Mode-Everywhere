@@ -4,6 +4,7 @@ import { openCaptionOptionsDialog } from './caption-options-dialog';
 import { chapterAtTime } from './cue-index';
 import type { CaptionStyle } from './caption-style';
 import { DEFAULT_CAPTION_STYLE } from './caption-style';
+import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderFlags } from './provider-flags';
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
 
@@ -17,6 +18,7 @@ export type MediaFeaturesBindings = {
   onCaptionStyleChange?: (style: CaptionStyle) => void;
   captionPreference?: CaptionLanguagePreference | null;
   onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
+  providerFlags?: MediaProviderFlags;
   decorateCaptionDialog?: (overlay: HTMLElement) => void;
 };
 
@@ -48,9 +50,11 @@ export class MediaFeaturesController {
   private onCaptionStyleChange?: (style: CaptionStyle) => void;
   private onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
+  private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
 
   constructor(bindings: MediaFeaturesBindings) {
-    this.adapter = createMediaFeaturesAdapter(bindings.video);
+    this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
+    this.adapter = createMediaFeaturesAdapter(bindings.video, this.providerFlags);
     this.renderer = new CaptionRenderer(bindings.onCaptionChange);
     this.video = bindings.video;
     this.ccBtn = bindings.ccBtn;
@@ -74,6 +78,15 @@ export class MediaFeaturesController {
 
   async start(): Promise<void> {
     await this.refresh();
+  }
+
+  setProviderFlags(flags: MediaProviderFlags): void {
+    if (this.disposed || mediaProviderFlagsEqual(this.providerFlags, flags)) return;
+    this.providerFlags = flags;
+    this.adapter.dispose();
+    this.adapter = createMediaFeaturesAdapter(this.video, flags);
+    this.invalidate();
+    void this.refresh();
   }
 
   invalidate(): void {
