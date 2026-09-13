@@ -43,6 +43,8 @@
   z-index: 2147483647 !important;
   background-color: #000000 !important;
   object-fit: var(--theater-object-fit, contain) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;

@@ -355,6 +355,8 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   'min-width': '100vw',
   'min-height': '100vh',
   'z-index': '2147483647',
+  opacity: '1',
+  'pointer-events': 'auto',
   margin: '0',
   padding: '0',
   transform: 'none',
@@ -658,8 +660,13 @@ function showToolbar(event?: Event): void {
 }
 
 // Prevent custom player containers from double-toggling play/pause and handle clicks/pointers
+function isPrimaryPointerEvent(event: Event): boolean {
+  return !('button' in event) || (event as MouseEvent).button === 0;
+}
+
 function preventDoubleToggle(e: Event): void {
   if (!theaterElement) return;
+  if (!isPrimaryPointerEvent(e)) return;
 
   // Block double clicks completely to avoid site-level fullscreen conflicts
   if (e.type === 'dblclick') {
@@ -679,6 +686,12 @@ function preventDoubleToggle(e: Event): void {
     toggleVideoPlayback(theaterElement as HTMLVideoElement);
   }
 }
+
+// Registered at document_start so this runs before host contextmenu blockers.
+window.addEventListener('contextmenu', (event) => {
+  if (!theaterElement || event.target !== theaterElement) return;
+  event.stopImmediatePropagation();
+}, true);
 
 interface Listeners {
   keydown: ((event: KeyboardEvent) => void) | null;
@@ -1239,6 +1252,8 @@ function injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void {
       z-index: 2147483647 !important;
       background-color: #000000 !important;
       object-fit: var(--theater-object-fit, contain) !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
