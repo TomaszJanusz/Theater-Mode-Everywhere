@@ -1397,6 +1397,11 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
         } else if (wallNow != null && Number.isFinite(html5Now)) {
           offset = wallNow - html5Now;
         }
+        // Prefer the mapping content already stored. Wall and HTML5 clocks
+        // disagree while a DVR seek is in flight.
+        if (Number.isFinite(stored) && Number.isFinite(offset) && Math.abs(offset - stored) > 5) {
+          offset = stored;
+        }
         if (Number.isFinite(offset)) {
           player.seekTo(detail.time + offset, true);
           return;

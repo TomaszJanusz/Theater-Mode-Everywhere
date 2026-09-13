@@ -34,7 +34,9 @@ import {
   seekBy,
   seekToLive,
   seekToMediaTime,
-  timeToRatio
+  timeToRatio,
+  displayMediaTime,
+  clearPendingMediaSeek
 } from './playback-window';
 import {
   destroyPlayerUi,
@@ -2695,8 +2697,8 @@ function createCustomControls(video: HTMLVideoElement): void {
       scrubberBuffer.style.width = window.live && !window.seekable ? '100%' : '0%';
     }
 
-    if (isDragging || video.seeking) return;
-    const pct = timeToRatio(cur, window) * 100;
+    if (isDragging) return;
+    const pct = timeToRatio(displayMediaTime(video), window) * 100;
     scrubberFill.style.width = `${pct}%`;
     scrubberHandle.style.left = `${pct}%`;
   };
@@ -2960,6 +2962,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     void mediaFeatures.refresh();
   };
   const onMediaReset = () => {
+    clearPendingMediaSeek(video);
     mediaFeatures.invalidate();
     tooltip.classList.remove('visible');
     tooltip.replaceChildren();

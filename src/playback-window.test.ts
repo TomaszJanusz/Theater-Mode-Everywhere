@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   clampToWindow,
+  displayMediaTime,
   hostLiveHint,
   isAtLiveEdge,
   isVideoAtLiveEdge,
@@ -9,6 +10,7 @@ import {
   ratioToTime,
   seekBy,
   seekToLive,
+  seekToMediaTime,
   timeToRatio
 } from './playback-window';
 
@@ -172,6 +174,78 @@ describe('playback window', () => {
     assert.equal(isAtLiveEdge(46_610, window), false);
     assert.equal(isVideoAtLiveEdge(video, window), false);
     assert.ok(window.end - 46_610 > 170);
+  });
+
+  it('does not remap YouTube live DVR when the native thumb jumps ahead of HTML5', () => {
+    const video = youtubeLiveVideo({
+      duration: 50_390,
+      currentTime: 46_790,
+      wall: { min: 15_513_207, max: 15_556_402, now: 15_556_402 },
+      liveHead: true
+    });
+    const live = playbackWindow(video);
+    const first = ratioToTime(0.4, live);
+    video.setYoutubeLive({
+      currentTime: first,
+      liveHead: false,
+      wall: { min: 15_513_207, max: 15_556_402, now: 15_513_207 + (first - live.start) }
+    });
+    const afterFirst = playbackWindow(video);
+    assert.ok(Math.abs(afterFirst.end - live.end) < 1);
+    const firstRatio = timeToRatio(first, afterFirst);
+
+    const second = ratioToTime(0.15, afterFirst);
+    const secondWall = 15_513_207 + (second - afterFirst.start);
+    video.setYoutubeLive({
+      currentTime: first,
+      liveHead: false,
+      wall: { min: 15_513_207, max: 15_556_402, now: secondWall }
+    });
+    const inFlight = playbackWindow(video);
+    assert.ok(Math.abs(inFlight.end - live.end) < 1, 'live head should stay put while HTML5 lags');
+    assert.ok(Math.abs(timeToRatio(first, inFlight) - firstRatio) < 0.01);
+    assert.ok(timeToRatio(second, inFlight) < firstRatio);
+  });
+
+  it('holds the theater time on a YouTube live seek until HTML5 catches up', () => {
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const dispatched: unknown[] = [];
+    (globalThis as { window?: { dispatchEvent: (event: Event) => boolean } }).window = {
+      dispatchEvent: (event: Event) => {
+        dispatched.push(event);
+        return true;
+      }
+    };
+    try {
+      const video = youtubeLiveVideo({
+        duration: 50_390,
+        currentTime: 46_790,
+        wall: { min: 15_513_207, max: 15_556_402, now: 15_556_402 },
+        liveHead: true
+      });
+      playbackWindow(video);
+      video.setYoutubeLive({
+        currentTime: 32_577,
+        liveHead: false,
+        wall: { min: 15_513_207, max: 15_556_402, now: 15_542_189 }
+      });
+      const firstTime = video.currentTime;
+      const window = playbackWindow(video);
+      const target = ratioToTime(0.2, window);
+      seekToMediaTime(video, target);
+      assert.equal(video.currentTime, firstTime);
+      assert.ok(dispatched.length > 0);
+      assert.ok(Math.abs(displayMediaTime(video) - target) < 0.5);
+      assert.ok(Math.abs(timeToRatio(displayMediaTime(video), playbackWindow(video)) - 0.2) < 0.02);
+      video.currentTime = target;
+      assert.ok(Math.abs(displayMediaTime(video) - target) < 0.5);
+    } finally {
+      if (previousWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window?: unknown }).window = previousWindow;
+      }
+    }
   });
 
   it('treats the YouTube live-head badge as the edge when the progress bar is missing', () => {

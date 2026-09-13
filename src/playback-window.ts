@@ -14,6 +14,9 @@ export const LIVE_EDGE_SECONDS = 2;
 export const MIN_LIVE_DVR_SECONDS = 15;
 export const MAX_LIVE_DVR_SECONDS = 24 * 60 * 60;
 export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
+const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
+const PENDING_MEDIA_SEEK_MS = 10_000;
+const PENDING_MEDIA_SEEK_ARRIVED_SECONDS = 1.25;
 
 type YoutubePlayerHost = HTMLElement & {
   getVideoData?: () => { isLive?: boolean } | null;
@@ -50,6 +53,7 @@ function youtubeProgressTimes(player: YoutubePlayerHost): { min: number; max: nu
 }
 
 const youtubeWallOffsets = new WeakMap<HTMLVideoElement, number>();
+const pendingMediaSeeks = new WeakMap<HTMLVideoElement, { time: number; until: number }>();
 
 function rememberYoutubeWallOffset(video: HTMLVideoElement, offset: number): void {
   youtubeWallOffsets.set(video, offset);
@@ -60,17 +64,7 @@ function rememberYoutubeWallOffset(video: HTMLVideoElement, offset: number): voi
   }
 }
 
-function youtubeWallOffset(video: HTMLVideoElement, times: { min: number; max: number; now: number }): number | null {
-  const html5Now = video.currentTime;
-  if (!Number.isFinite(html5Now)) return null;
-  const atLiveHead = hostIsAtLiveHead(video);
-  const ariaBehind = times.max - times.now;
-  const liveNow = atLiveHead ? times.max : times.now;
-  const measured = liveNow - html5Now;
-  if (atLiveHead || ariaBehind > LIVE_EDGE_SECONDS) {
-    rememberYoutubeWallOffset(video, measured);
-    return measured;
-  }
+function rememberedYoutubeWallOffset(video: HTMLVideoElement): number | null {
   const remembered = youtubeWallOffsets.get(video);
   if (Number.isFinite(remembered)) return remembered as number;
   try {
@@ -79,6 +73,32 @@ function youtubeWallOffset(video: HTMLVideoElement, times: { min: number; max: n
   } catch {
     // Ignore dataset on test doubles.
   }
+  return null;
+}
+
+function youtubeWallOffset(video: HTMLVideoElement, times: { min: number; max: number; now: number }): number | null {
+  const html5Now = video.currentTime;
+  if (!Number.isFinite(html5Now)) return null;
+  const atLiveHead = hostIsAtLiveHead(video);
+  const ariaBehind = times.max - times.now;
+  const liveNow = atLiveHead ? times.max : times.now;
+  const measured = liveNow - html5Now;
+  const remembered = rememberedYoutubeWallOffset(video);
+  const ariaTrusted = atLiveHead || ariaBehind > LIVE_EDGE_SECONDS;
+  if (ariaTrusted) {
+    // During an in-flight DVR seek the native thumb can jump before HTML5
+    // currentTime does. That pair is not a new mapping — keep the last offset.
+    if (
+      remembered != null
+      && Number.isFinite(measured)
+      && Math.abs(measured - remembered) > YOUTUBE_WALL_OFFSET_RESYNC_SECONDS
+    ) {
+      return remembered;
+    }
+    rememberYoutubeWallOffset(video, measured);
+    return measured;
+  }
+  if (remembered != null) return remembered;
   return measured;
 }
 
@@ -232,13 +252,36 @@ export function isAtLiveEdge(time: number, window: PlaybackWindow, threshold = L
 }
 
 export function isVideoAtLiveEdge(video: HTMLVideoElement, window?: PlaybackWindow): boolean {
-  if (hostIsAtLiveHead(video)) return true;
-  return isAtLiveEdge(video.currentTime || 0, window ?? playbackWindow(video));
+  const shown = displayMediaTime(video);
+  const pendingAway = Math.abs(shown - (video.currentTime || 0)) > PENDING_MEDIA_SEEK_ARRIVED_SECONDS;
+  if (hostIsAtLiveHead(video) && !pendingAway) return true;
+  return isAtLiveEdge(shown, window ?? playbackWindow(video));
+}
+
+export function displayMediaTime(video: HTMLVideoElement): number {
+  const now = video.currentTime || 0;
+  const pending = pendingMediaSeeks.get(video);
+  if (!pending) return now;
+  if (Math.abs(now - pending.time) <= PENDING_MEDIA_SEEK_ARRIVED_SECONDS || Date.now() >= pending.until) {
+    pendingMediaSeeks.delete(video);
+    return now;
+  }
+  return pending.time;
+}
+
+export function clearPendingMediaSeek(video: HTMLVideoElement): void {
+  pendingMediaSeeks.delete(video);
+}
+
+function rememberPendingMediaSeek(video: HTMLVideoElement, time: number): void {
+  if (!Number.isFinite(time)) return;
+  pendingMediaSeeks.set(video, { time, until: Date.now() + PENDING_MEDIA_SEEK_MS });
 }
 
 function requestYoutubeLiveSeek(detail: MediaSeekDetail): boolean {
-  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return false;
-  window.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail }));
+  const target = typeof globalThis === 'object' ? (globalThis as typeof globalThis & { window?: Window }).window : undefined;
+  if (!target || typeof target.dispatchEvent !== 'function') return false;
+  target.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail }));
   return true;
 }
 
@@ -249,6 +292,7 @@ function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
 export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
   const window = playbackWindow(video);
   const target = window.seekable ? clampToWindow(time, window) : time;
+  rememberPendingMediaSeek(video, target);
   if (canSeekYoutubeLive(video)) {
     if (window.live && isAtLiveEdge(target, window)) {
       if (requestYoutubeLiveSeek({ live: true })) return;
@@ -262,8 +306,12 @@ export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
 export function seekToLive(video: HTMLVideoElement): boolean {
   const window = playbackWindow(video);
   if (!window.live) return false;
+  rememberPendingMediaSeek(video, window.end);
   if (canSeekYoutubeLive(video) && requestYoutubeLiveSeek({ live: true })) return true;
-  if (!window.seekable) return false;
+  if (!window.seekable) {
+    clearPendingMediaSeek(video);
+    return false;
+  }
   video.currentTime = window.end;
   return true;
 }
@@ -271,6 +319,6 @@ export function seekToLive(video: HTMLVideoElement): boolean {
 export function seekBy(video: HTMLVideoElement, delta: number): boolean {
   const window = playbackWindow(video);
   if (!window.seekable) return false;
-  seekToMediaTime(video, (video.currentTime || 0) + delta);
+  seekToMediaTime(video, displayMediaTime(video) + delta);
   return true;
 }
