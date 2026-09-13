@@ -2232,7 +2232,9 @@ function createCustomControls(video: HTMLVideoElement): void {
     const window = playbackWindow(video);
     const locked = window.live && !window.seekable;
     const canJumpToLive = window.live && window.seekable;
+    const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, window);
     timeDisplay.classList.toggle('theater-time-live', window.live);
+    timeDisplay.classList.toggle('theater-time-live-behind', behindLive);
     timeDisplay.classList.toggle('theater-time-live-jump', canJumpToLive);
     timeDisplay.style.cursor = window.live && !canJumpToLive ? 'default' : 'pointer';
     timeDisplay.title = canJumpToLive ? t('jumpToLive') : '';
@@ -2248,13 +2250,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     const cur = video.currentTime || 0;
     syncLiveChrome();
     if (window.live) {
-      const liveLabel = t('liveBadge');
-      const behind = Math.max(0, window.end - cur);
-      if (!window.seekable || isVideoAtLiveEdge(video, window) || behind > MAX_LIVE_DVR_SECONDS) {
-        timeDisplay.textContent = liveLabel;
-      } else {
-        timeDisplay.textContent = `-${formatTime(behind)} · ${liveLabel}`;
-      }
+      timeDisplay.textContent = t('liveBadge');
       return;
     }
     const dur = window.end;
@@ -2769,11 +2765,11 @@ function createCustomControls(video: HTMLVideoElement): void {
     
     const targetTime = ratioToTime(pos, window);
     if (window.live) {
-      const liveLabel = t('liveBadge');
-      const behind = Math.max(0, window.end - targetTime);
-      timeDisplay.textContent = (!window.seekable || isAtLiveEdge(targetTime, window) || behind > MAX_LIVE_DVR_SECONDS)
-        ? liveLabel
-        : `-${formatTime(behind)} · ${liveLabel}`;
+      timeDisplay.textContent = t('liveBadge');
+      timeDisplay.classList.toggle(
+        'theater-time-live-behind',
+        window.seekable && !isAtLiveEdge(targetTime, window)
+      );
     } else if (showRemainingTime) {
       const remaining = Math.max(0, window.end - targetTime);
       timeDisplay.textContent = `-${formatTime(remaining)} / ${formatTime(window.end)}`;

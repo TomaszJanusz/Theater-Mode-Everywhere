@@ -476,8 +476,16 @@
   letter-spacing: 0.04em !important;
 }
 
+.theater-time-display.theater-time-live-behind {
+  color: var(--text-secondary, #a1a1aa) !important;
+}
+
 .theater-time-display.theater-time-live-jump:hover {
   color: #fca5a5 !important;
+}
+
+.theater-time-display.theater-time-live-behind.theater-time-live-jump:hover {
+  color: #f87171 !important;
 }
 
 .theater-scrubber-container.theater-scrubber-live-locked {

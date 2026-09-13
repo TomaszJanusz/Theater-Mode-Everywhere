@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
 - Privacy policy now describes in-session provider requests for captions and timeline previews.
 - Timeline hover previews now open from the same height as the volume and speed popovers.
+- Seekable live that is behind the live edge keeps a LIVE label in the control bar, in the same color as VOD time, instead of a negative clock that can jitter by a second. Hovering the scrubber still shows how far behind you are.
 - Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
 
