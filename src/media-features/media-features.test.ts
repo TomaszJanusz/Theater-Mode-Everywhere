@@ -4,8 +4,8 @@ import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, 
 import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { isAllowedMediaFetchUrl } from './fetch-allowlist';
-import { resolveMediaProviderFlags } from './provider-flags';
-import { shouldAttachPatreonAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { defaultMediaProviderFlags, resolveMediaProviderFlags } from './provider-flags';
+import { shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
@@ -14,6 +14,8 @@ import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-story
 import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
 import { parsePatreonPageAssets, pickPatreonPageAssets, applyPatreonCaptionMeta, mergePatreonCaptionTracks } from './parsers/patreon-page';
+import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from './parsers/twitch-storyboard';
+import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
 import { preferProviderCaptionTracks } from './composite-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
@@ -384,6 +386,44 @@ describe('fetch allowlist', () => {
       url: 'https://evil.example/abc123/text/trackid.vtt'
     }), false);
   });
+
+  it('allows only Twitch storyboard JSON and caption VTT on known CDNs', () => {
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'storyboard-json',
+      url: 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'storyboard-json',
+      url: 'https://vod-secure.twitch.tv/abc/storyboards/635475444-info.json'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'storyboard-json',
+      url: 'https://d2nvs31859zcd8.cloudfront.net/abc/storyboards/2870679210-info.json'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'storyboard-json',
+      url: 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-0.jpg'
+    }), false);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'storyboard-json',
+      url: 'https://static-cdn.jtvnw.net/cf_vods/abc/playlist.m3u8'
+    }), false);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'caption-track',
+      url: 'https://captions.twitch.tv/en/abc.vtt'
+    }), true);
+    assert.equal(isAllowedMediaFetchUrl({
+      provider: 'twitch',
+      kind: 'caption-track',
+      url: 'https://gql.twitch.tv/gql'
+    }), false);
+  });
 });
 
 describe('patreon page asset parser', () => {
@@ -475,6 +515,185 @@ describe('caption track merge', () => {
     assert.equal(tracks.length, 1);
     assert.equal(tracks[0].source, 'patreon');
   });
+
+  it('hides native HTML5 tracks when Twitch already exposes a sidecar', () => {
+    const tracks = preferProviderCaptionTracks([
+      {
+        id: 'native:0',
+        language: 'en',
+        label: 'English',
+        kind: 'captions',
+        source: 'native-text-track'
+      },
+      {
+        id: 'twitch:en:abc',
+        language: 'en',
+        label: 'English',
+        kind: 'captions',
+        source: 'twitch'
+      }
+    ]);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].source, 'twitch');
+  });
+});
+
+describe('twitch page and storyboard parsers', () => {
+  const storyboardJson = JSON.stringify([
+    {
+      width: 160,
+      height: 90,
+      count: 8,
+      rows: 2,
+      cols: 2,
+      images: [
+        'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-0.jpg',
+        'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-1.jpg'
+      ]
+    }
+  ]);
+
+  it('reads VOD ids from /videos/{id} and embed ?video=', () => {
+    assert.equal(twitchPageVideoId('https://www.twitch.tv/videos/635475444'), '635475444');
+    assert.equal(twitchPageVideoId('https://player.twitch.tv/?video=v635475444'), '635475444');
+    assert.equal(twitchPageVideoId('https://www.twitch.tv/shroud'), null);
+  });
+
+  it('does not guess a homepage VOD when the URL has no video id', () => {
+    const assets = parseTwitchPageAssets(
+      '{"seekPreviewsURL":"https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json","positionMilliseconds":0,"durationMilliseconds":1000,"description":"Just Chatting"}',
+      'https://www.twitch.tv/shroud'
+    );
+    assert.equal(assets.videoId, null);
+    assert.equal(assets.seekPreviewsURL, undefined);
+    assert.equal(assets.moments.length, 0);
+  });
+
+  it('extracts seekPreviewsURL, moments, and caption VTT from page JSON', () => {
+    const html = String.raw`{"id":"635475444","lengthSeconds":120,"seekPreviewsURL":"https:\/\/static-cdn.jtvnw.net\/cf_vods\/abc\/storyboards\/635475444-info.json","moments":{"edges":[{"node":{"positionMilliseconds":0,"durationMilliseconds":60000,"description":"Just Chatting"}},{"node":{"positionMilliseconds":60000,"durationMilliseconds":60000,"description":"VALORANT"}}]}}
+https://captions.twitch.tv/en/635475444.vtt`;
+    const assets = parseTwitchPageAssets(html, 'https://www.twitch.tv/videos/635475444');
+    assert.equal(assets.videoId, '635475444');
+    assert.equal(assets.duration, 120);
+    assert.equal(assets.seekPreviewsURL, 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json');
+    assert.equal(assets.moments.length, 2);
+    assert.equal(assets.moments[1].title, 'VALORANT');
+    assert.equal(assets.moments[1].start, 60);
+    assert.equal(assets.captions.length, 1);
+    assert.equal(assets.captions[0].url, 'https://captions.twitch.tv/en/635475444.vtt');
+  });
+
+  it('maps sprite tiles from seekPreviews JSON', () => {
+    const set = parseTwitchSeekPreviews(
+      storyboardJson,
+      80,
+      'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json'
+    );
+    assert.ok(set);
+    const frame = getTwitchPreviewFrame(set!, 50, 80);
+    assert.ok(frame);
+    assert.equal(frame!.image.url, 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-1.jpg');
+    assert.equal(frame!.image.x, 160);
+    assert.equal(frame!.image.y, 0);
+  });
+
+  it('rejects HLS and off-host sprite URLs', () => {
+    assert.equal(parseTwitchSeekPreviews(JSON.stringify([{
+      width: 160,
+      height: 90,
+      count: 4,
+      rows: 2,
+      cols: 2,
+      images: ['https://evil.example/storyboards/x-0.jpg']
+    }]), 40, 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json'), null);
+  });
+
+  it('builds storyboard URLs from cf_vods thumbs and relative sprite names', () => {
+    const urls = collectTwitchStoryboardUrls(
+      'https://static-cdn.jtvnw.net/cf_vods/d2nvs31859zcd8/cba4ade3acdcd9e03eff_fuslie_317424009975_1789073127/thumb/custom.png',
+      '2870679210'
+    );
+    assert.equal(
+      urls[0],
+      'https://d2nvs31859zcd8.cloudfront.net/cba4ade3acdcd9e03eff_fuslie_317424009975_1789073127/storyboards/2870679210-info.json'
+    );
+    assert.ok(urls.includes(
+      'https://vod-secure.twitch.tv/cba4ade3acdcd9e03eff_fuslie_317424009975_1789073127/storyboards/2870679210-info.json'
+    ));
+    const set = parseTwitchSeekPreviews(JSON.stringify([{
+      count: 200,
+      width: 220,
+      height: 124,
+      rows: 10,
+      cols: 5,
+      interval: 150,
+      images: ['2870679210-high-0.jpg', '2870679210-high-1.jpg']
+    }]), 0, urls[0]);
+    assert.ok(set);
+    assert.equal(set!.duration, 30000);
+    assert.equal(
+      set!.images[0],
+      'https://d2nvs31859zcd8.cloudfront.net/cba4ade3acdcd9e03eff_fuslie_317424009975_1789073127/storyboards/2870679210-high-0.jpg'
+    );
+    const frame = getTwitchPreviewFrame(set!, 15000, 30000);
+    assert.ok(frame);
+    assert.equal(frame!.image.url, set!.images[1]);
+  });
+
+  it('reads chapters and seekPreviewsURL from Twitch GQL video payloads', () => {
+    const payload = extractTwitchPayloadFromJson([
+      { data: { video: { id: '2830719929', lengthSeconds: 3600, seekPreviewsURL: 'https://d2nvs31859zcd8.cloudfront.net/assetid/storyboards/2830719929-info.json' } } },
+      { data: { video: { id: '2830719929', moments: { edges: [
+        { node: { positionMilliseconds: 0, durationMilliseconds: 120000, description: 'Intro' } },
+        { node: { positionMilliseconds: 120000, durationMilliseconds: 600000, description: 'Boss fight' } }
+      ] } } } }
+    ], '2830719929');
+    assert.equal(payload.duration, 3600);
+    assert.equal(payload.seekPreviewsURL, 'https://d2nvs31859zcd8.cloudfront.net/assetid/storyboards/2830719929-info.json');
+    assert.equal(payload.moments?.length, 2);
+    assert.equal(payload.moments?.[1].title, 'Boss fight');
+    assert.equal(payload.moments?.[1].start, 120);
+  });
+
+  it('keeps CloudFront seekPreviewsURL and derives it from cf_vods thumbs', () => {
+    const html = 'https://static-cdn.jtvnw.net/cf_vods/d3vd9lfkzbru3h/6426ad31284a42844348_jaice_315847840872_1785197564//thumb/thumb2-640x360.jpg';
+    const urls = collectTwitchStoryboardUrls(html, '2830719929');
+    assert.equal(
+      urls[0],
+      'https://d3vd9lfkzbru3h.cloudfront.net/6426ad31284a42844348_jaice_315847840872_1785197564/storyboards/2830719929-info.json'
+    );
+    const payload = extractTwitchPayloadFromJson({
+      data: {
+        video: {
+          id: '2830719929',
+          moments: {
+            edges: [{
+              node: {
+                id: '1154bb86d20c7af9a8bbf27b6672d9c2',
+                moments: { edges: [] },
+                durationMilliseconds: 5005000,
+                positionMilliseconds: 0,
+                description: 'Just Chatting',
+                video: { id: '2830719929', lengthSeconds: 18430 }
+              }
+            }, {
+              node: {
+                id: '636e5766ce63ba5bcf32ce8d7ef6dd4e',
+                moments: { edges: [] },
+                durationMilliseconds: 13249000,
+                positionMilliseconds: 5005000,
+                description: 'Cyberpunk 2077',
+                video: { id: '2830719929', lengthSeconds: 18430 }
+              }
+            }]
+          }
+        }
+      }
+    }, '2830719929');
+    assert.equal(payload.moments?.length, 2);
+    assert.equal(payload.moments?.[1].title, 'Cyberpunk 2077');
+    assert.equal(payload.moments?.[1].start, 5005);
+  });
 });
 
 describe('caption dock', () => {
@@ -538,6 +757,8 @@ describe('caption language preference', () => {
     assert.equal(captionPreferenceHost('www.youtube.com'), 'youtube.com');
     assert.equal(captionPreferenceHost('m.youtube.com'), 'youtube.com');
     assert.equal(captionPreferenceHost('youtu.be'), 'youtube.com');
+    assert.equal(captionPreferenceHost('player.twitch.tv'), 'twitch.tv');
+    assert.equal(captionPreferenceHost('www.twitch.tv'), 'twitch.tv');
     assert.equal(languagesCompatible('en', 'en-US'), true);
     assert.equal(languagesCompatible('pl', 'de'), false);
     const tracks = [
@@ -567,28 +788,41 @@ describe('caption language preference', () => {
 });
 
 describe('provider integration flags', () => {
-  it('defaults YouTube, Vimeo, and Patreon extras on', () => {
-    assert.deepEqual(resolveMediaProviderFlags(undefined), { youtube: true, vimeo: true, patreon: true });
-    assert.deepEqual(resolveMediaProviderFlags({}), { youtube: true, vimeo: true, patreon: true });
+  const allOn = defaultMediaProviderFlags();
+
+  it('defaults YouTube, Vimeo, Patreon, and Twitch extras on', () => {
+    assert.deepEqual(resolveMediaProviderFlags(undefined), {
+      youtube: true,
+      vimeo: true,
+      patreon: true,
+      twitch: true
+    });
+    assert.deepEqual(resolveMediaProviderFlags({}), allOn);
   });
 
   it('treats only explicit false as off', () => {
     const flags = resolveMediaProviderFlags({
       youtubeIntegrationEnabled: false,
       vimeoIntegrationEnabled: true,
-      patreonIntegrationEnabled: false
+      patreonIntegrationEnabled: false,
+      twitchIntegrationEnabled: false
     });
     assert.equal(flags.youtube, false);
     assert.equal(flags.vimeo, true);
     assert.equal(flags.patreon, false);
-    assert.equal(shouldAttachYouTubeAdapter(flags, 'www.youtube.com'), false);
-    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true, patreon: true }, 'www.youtube.com'), true);
-    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: false, patreon: true }, 'vimeo.com'), false);
-    assert.equal(shouldAttachVimeoAdapter({ youtube: true, vimeo: true, patreon: true }, 'player.vimeo.com'), true);
-    assert.equal(shouldAttachYouTubeAdapter({ youtube: true, vimeo: true, patreon: true }, 'example.com'), false);
-    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: true }, 'www.patreon.com'), true);
-    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: false }, 'www.patreon.com'), false);
-    assert.equal(shouldAttachPatreonAdapter({ youtube: true, vimeo: true, patreon: true }, 'example.com'), false);
+    assert.equal(flags.twitch, false);
+    assert.equal(shouldAttachYouTubeAdapter({ ...allOn, youtube: false }, 'www.youtube.com'), false);
+    assert.equal(shouldAttachYouTubeAdapter(allOn, 'www.youtube.com'), true);
+    assert.equal(shouldAttachVimeoAdapter({ ...allOn, vimeo: false }, 'vimeo.com'), false);
+    assert.equal(shouldAttachVimeoAdapter(allOn, 'player.vimeo.com'), true);
+    assert.equal(shouldAttachYouTubeAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachPatreonAdapter(allOn, 'www.patreon.com'), true);
+    assert.equal(shouldAttachPatreonAdapter({ ...allOn, patreon: false }, 'www.patreon.com'), false);
+    assert.equal(shouldAttachPatreonAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachTwitchAdapter(allOn, 'www.twitch.tv'), true);
+    assert.equal(shouldAttachTwitchAdapter(allOn, 'player.twitch.tv'), true);
+    assert.equal(shouldAttachTwitchAdapter({ ...allOn, twitch: false }, 'www.twitch.tv'), false);
+    assert.equal(shouldAttachTwitchAdapter(allOn, 'example.com'), false);
   });
 });
 

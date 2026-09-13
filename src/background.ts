@@ -94,8 +94,39 @@ function isAllowedMuxCaptionUrl(url: string): boolean {
   }
 }
 
+function isAllowedTwitchStoryboardUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    const hostOk = host === 'vod-secure.twitch.tv'
+      || host === 'vod-storyboards.twitch.tv'
+      || host === 'static-cdn.jtvnw.net'
+      || /^d[a-z0-9]{6,}\.cloudfront\.net$/i.test(host);
+    return hostOk && /\/storyboards\/[^/?#]*info\.json$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedTwitchCaptionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    if (host !== 'captions.twitch.tv' && !host.endsWith('.captions.twitch.tv')) return false;
+    return /\.vtt$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
 function isAllowedMediaBrokerUrl(url: string): boolean {
-  return isAllowedYoutubeCaptionUrl(url) || isAllowedMuxStoryboardUrl(url) || isAllowedMuxCaptionUrl(url);
+  return isAllowedYoutubeCaptionUrl(url)
+    || isAllowedMuxStoryboardUrl(url)
+    || isAllowedMuxCaptionUrl(url)
+    || isAllowedTwitchStoryboardUrl(url)
+    || isAllowedTwitchCaptionUrl(url);
 }
 
 async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body?: string; contentType?: string; error?: string }> {
@@ -114,7 +145,7 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
     }
     const contentType = response.headers.get('content-type') || '';
     const body = new TextDecoder('utf-8').decode(buffer);
-    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:/i.test(body.slice(0, 400));
+    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:|"images"\s*:/i.test(body.slice(0, 400));
     if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream/i.test(contentType) && !looksLikeCaptions) {
       return { ok: false, error: 'content-type' };
     }

@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Napisy i podglądy osi czasu z Patreon w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Mux."
   },
+  "twitchIntegrationTitle": {
+    "message": "Integracja z Twitch"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Rozdziały i podglądy osi czasu z VOD-ów Twitch w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Twitch."
+  },
+  "liveBadge": {
+    "message": "NA ŻYWO"
+  },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"
   },

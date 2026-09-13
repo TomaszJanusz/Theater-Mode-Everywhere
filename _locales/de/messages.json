@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Patreon-Untertitel und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Patreon ohne zusätzliche Anfragen an Mux zu behalten."
   },
+  "twitchIntegrationTitle": {
+    "message": "Twitch-Integration"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Kapitel und Timeline-Vorschaubilder von Twitch-VODs im Kinomodus. Ausschalten, um den Kinomodus auf Twitch ohne zusätzliche Anfragen an Twitch-CDNs zu behalten."
+  },
+  "liveBadge": {
+    "message": "LIVE"
+  },
   "websiteExclusionsTitle": {
     "message": "Website-Ausschlüsse"
   },

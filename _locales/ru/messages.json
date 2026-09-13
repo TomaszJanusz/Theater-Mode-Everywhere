@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Субтитры и превью шкалы времени Patreon в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Patreon без дополнительных запросов к Mux."
   },
+  "twitchIntegrationTitle": {
+    "message": "Интеграция с Twitch"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Главы и превью шкалы времени VOD Twitch в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Twitch без дополнительных запросов к CDN Twitch."
+  },
+  "liveBadge": {
+    "message": "ЭФИР"
+  },
   "websiteExclusionsTitle": {
     "message": "Исключения сайтов"
   },

@@ -17,7 +17,7 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
     seen.add(key);
     merged.push(track);
   }
-  if (merged.some((track) => track.source === 'patreon')) {
+  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch')) {
     return merged.filter((track) => track.source !== 'native-text-track');
   }
   return merged;

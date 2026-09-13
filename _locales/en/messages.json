@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux."
   },
+  "twitchIntegrationTitle": {
+    "message": "Twitch integration"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs."
+  },
+  "liveBadge": {
+    "message": "LIVE"
+  },
   "websiteExclusionsTitle": {
     "message": "Website Exclusions"
   },

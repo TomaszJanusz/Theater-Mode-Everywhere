@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Usa los subtítulos y las vistas previas de la línea de tiempo de Patreon en el modo teatro. Desactívala para mantener el modo teatro en Patreon sin peticiones extra a Mux."
   },
+  "twitchIntegrationTitle": {
+    "message": "Integración de Twitch"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Usa los capítulos y las vistas previas de la línea de tiempo de los VOD de Twitch en el modo teatro. Desactívala para mantener el modo teatro en Twitch sin peticiones extra a las CDN de Twitch."
+  },
+  "liveBadge": {
+    "message": "EN VIVO"
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusiones de sitios web"
   },

@@ -17,6 +17,7 @@ export function captionPreferenceHost(hostname = ''): string {
     return 'youtube.com';
   }
   if (host === 'vimeo.com' || host.endsWith('.vimeo.com')) return 'vimeo.com';
+  if (host === 'twitch.tv' || host.endsWith('.twitch.tv')) return 'twitch.tv';
   return host;
 }
 

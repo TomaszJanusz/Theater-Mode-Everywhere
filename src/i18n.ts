@@ -44,6 +44,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   vimeoIntegrationDescription: 'Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo.',
   patreonIntegrationTitle: 'Patreon integration',
   patreonIntegrationDescription: 'Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux.',
+  twitchIntegrationTitle: 'Twitch integration',
+  twitchIntegrationDescription: 'Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs.',
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',

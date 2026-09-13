@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "シアターモードでPatreonの字幕とタイムラインプレビューを使います。オフにすると、Muxへの追加リクエストなしでシアターモードだけが残ります。"
   },
+  "twitchIntegrationTitle": {
+    "message": "Twitch連携"
+  },
+  "twitchIntegrationDescription": {
+    "message": "シアターモードでTwitchのVODチャプターとタイムラインプレビューを使います。オフにすると、Twitch CDNへの追加リクエストなしでシアターモードだけが残ります。"
+  },
+  "liveBadge": {
+    "message": "配信中"
+  },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"
   },

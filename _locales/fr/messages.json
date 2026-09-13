@@ -139,6 +139,15 @@
   "patreonIntegrationDescription": {
     "message": "Utiliser les sous-titres et les aperçus de la timeline Patreon en mode cinéma. Désactivez pour garder le mode cinéma sur Patreon sans requêtes supplémentaires vers Mux."
   },
+  "twitchIntegrationTitle": {
+    "message": "Intégration Twitch"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Utiliser les chapitres et les aperçus de la timeline des VOD Twitch en mode cinéma. Désactivez pour garder le mode cinéma sur Twitch sans requêtes supplémentaires vers les CDN Twitch."
+  },
+  "liveBadge": {
+    "message": "DIRECT"
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusions de sites Web"
   },
