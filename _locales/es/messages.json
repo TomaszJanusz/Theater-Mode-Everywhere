@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "EN VIVO"
   },
+  "jumpToLive": {
+    "message": "Ir al directo"
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusiones de sitios web"
   },

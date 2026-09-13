@@ -1348,6 +1348,63 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     refreshYoutubePlayerLayout();
   });
 
+  function youtubeWallNow(player: any): number | null {
+    const now = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuenow'));
+    return Number.isFinite(now) ? now : null;
+  }
+
+  function youtubeWallLiveHead(player: any): number | null {
+    const max = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuemax'));
+    return Number.isFinite(max) ? max : null;
+  }
+
+  window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
+    const detail = (event as CustomEvent<{ live?: boolean; time?: number }>).detail || {};
+    const player = findYoutubePlayer();
+    const video = findActiveVideo(document) || document.querySelector('video');
+    try {
+      if (detail.live === true) {
+        const liveHead = youtubeWallLiveHead(player);
+        if (typeof player?.seekTo === 'function' && liveHead != null) {
+          player.seekTo(liveHead, true);
+        }
+        if (typeof player?.seekToLiveHead === 'function') {
+          player.seekToLiveHead();
+        }
+        return;
+      }
+      if (typeof detail.time === 'number' && Number.isFinite(detail.time) && typeof player?.seekTo === 'function') {
+        const videoEl = video instanceof HTMLVideoElement ? video : null;
+        const html5Now = videoEl ? videoEl.currentTime : NaN;
+        const wallNow = youtubeWallNow(player);
+        const wallMax = youtubeWallLiveHead(player);
+        const liveBadge = player?.querySelector?.('.ytp-live-badge');
+        const atLiveHead = Boolean(liveBadge?.classList?.contains('ytp-live-badge-is-livehead'));
+        const stored = videoEl ? Number(videoEl.dataset.teYtWallOffset) : NaN;
+        const ariaBehind = wallMax != null && wallNow != null ? wallMax - wallNow : NaN;
+        let offset = NaN;
+        if (atLiveHead && wallMax != null && Number.isFinite(html5Now)) {
+          offset = wallMax - html5Now;
+        } else if (Number.isFinite(ariaBehind) && ariaBehind > 2 && wallNow != null && Number.isFinite(html5Now)) {
+          offset = wallNow - html5Now;
+        } else if (Number.isFinite(stored)) {
+          offset = stored;
+        } else if (wallNow != null && Number.isFinite(html5Now)) {
+          offset = wallNow - html5Now;
+        }
+        if (Number.isFinite(offset)) {
+          player.seekTo(detail.time + offset, true);
+          return;
+        }
+      }
+    } catch {
+      // Watch-page player may not expose live seek helpers.
+    }
+    if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {
+      video.currentTime = detail.time;
+    }
+  });
+
   window.addEventListener('theater-everywhere-boost-event', () => {
     const video = findActiveVideo(document);
     if (!video) return;

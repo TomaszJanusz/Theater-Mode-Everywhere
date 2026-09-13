@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "配信中"
   },
+  "jumpToLive": {
+    "message": "ライブに戻る"
+  },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"
   },

@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "مباشر"
   },
+  "jumpToLive": {
+    "message": "الانتقال إلى البث المباشر"
+  },
   "websiteExclusionsTitle": {
     "message": "استثناءات المواقع"
   },

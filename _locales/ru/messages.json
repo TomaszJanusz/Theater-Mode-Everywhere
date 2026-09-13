@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "ЭФИР"
   },
+  "jumpToLive": {
+    "message": "К прямой трансляции"
+  },
   "websiteExclusionsTitle": {
     "message": "Исключения сайтов"
   },

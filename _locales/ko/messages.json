@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "실시간"
   },
+  "jumpToLive": {
+    "message": "실시간으로 이동"
+  },
   "websiteExclusionsTitle": {
     "message": "웹사이트 예외"
   },

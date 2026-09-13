@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "DIRECT"
   },
+  "jumpToLive": {
+    "message": "Aller au direct"
+  },
   "websiteExclusionsTitle": {
     "message": "Exclusions de sites Web"
   },

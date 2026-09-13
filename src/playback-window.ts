@@ -13,16 +13,99 @@ export type PlaybackWindowOptions = {
 export const LIVE_EDGE_SECONDS = 2;
 export const MIN_LIVE_DVR_SECONDS = 15;
 export const MAX_LIVE_DVR_SECONDS = 24 * 60 * 60;
+export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
 
 type YoutubePlayerHost = HTMLElement & {
   getVideoData?: () => { isLive?: boolean } | null;
 };
 
+export type MediaSeekDetail = {
+  live?: boolean;
+  time?: number;
+};
+
+function youtubePlayerHost(node: Element | null): YoutubePlayerHost | null {
+  if (!node || typeof (node as Element).querySelector !== 'function') return null;
+  return node as YoutubePlayerHost;
+}
+
 function youtubePlayerFor(video: HTMLVideoElement): YoutubePlayerHost | null {
-  if (typeof video.closest !== 'function') return null;
-  const closest = video.closest('#movie_player, .html5-video-player');
-  if (!closest || typeof (closest as Element).querySelector !== 'function') return null;
-  return closest as YoutubePlayerHost;
+  if (typeof video.closest === 'function') {
+    const closest = youtubePlayerHost(video.closest('#movie_player, .html5-video-player'));
+    if (closest) return closest;
+  }
+  if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return null;
+  return youtubePlayerHost(document.querySelector('#movie_player, .html5-video-player'));
+}
+
+function youtubeProgressTimes(player: YoutubePlayerHost): { min: number; max: number; now: number } | null {
+  const bar = player.querySelector('.ytp-progress-bar');
+  if (!bar) return null;
+  const min = Number(bar.getAttribute('aria-valuemin'));
+  const max = Number(bar.getAttribute('aria-valuemax'));
+  const nowRaw = Number(bar.getAttribute('aria-valuenow'));
+  const now = Number.isFinite(nowRaw) ? nowRaw : max;
+  if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(now) || max <= min) return null;
+  return { min, max, now };
+}
+
+const youtubeWallOffsets = new WeakMap<HTMLVideoElement, number>();
+
+function rememberYoutubeWallOffset(video: HTMLVideoElement, offset: number): void {
+  youtubeWallOffsets.set(video, offset);
+  try {
+    video.dataset.teYtWallOffset = String(offset);
+  } catch {
+    // Some test doubles are not real elements.
+  }
+}
+
+function youtubeWallOffset(video: HTMLVideoElement, times: { min: number; max: number; now: number }): number | null {
+  const html5Now = video.currentTime;
+  if (!Number.isFinite(html5Now)) return null;
+  const atLiveHead = hostIsAtLiveHead(video);
+  const ariaBehind = times.max - times.now;
+  const liveNow = atLiveHead ? times.max : times.now;
+  const measured = liveNow - html5Now;
+  if (atLiveHead || ariaBehind > LIVE_EDGE_SECONDS) {
+    rememberYoutubeWallOffset(video, measured);
+    return measured;
+  }
+  const remembered = youtubeWallOffsets.get(video);
+  if (Number.isFinite(remembered)) return remembered as number;
+  try {
+    const stored = Number(video.dataset.teYtWallOffset);
+    if (Number.isFinite(stored)) return stored;
+  } catch {
+    // Ignore dataset on test doubles.
+  }
+  return measured;
+}
+
+function youtubeDvrBounds(video: HTMLVideoElement): { start: number; end: number } | null {
+  const player = youtubePlayerFor(video);
+  if (!player) return null;
+  const times = youtubeProgressTimes(player);
+  if (!times) return null;
+  const offset = youtubeWallOffset(video, times);
+  if (offset == null || !Number.isFinite(offset)) return null;
+  const start = times.min - offset;
+  const end = times.max - offset;
+  const span = end - start;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || span < MIN_LIVE_DVR_SECONDS || span > MAX_LIVE_DVR_SECONDS) {
+    return null;
+  }
+  return { start, end };
+}
+
+function youtubeLiveHeadBounds(video: HTMLVideoElement): { start: number; end: number } | null {
+  if (!hostIsAtLiveHead(video)) return null;
+  const end = video.currentTime;
+  if (!Number.isFinite(end) || end <= 0) return null;
+  const start = 0;
+  const span = end - start;
+  if (span < MIN_LIVE_DVR_SECONDS || span > MAX_LIVE_DVR_SECONDS) return null;
+  return { start, end };
 }
 
 export function hostLiveHint(video: HTMLVideoElement): boolean {
@@ -36,6 +119,12 @@ export function hostLiveHint(video: HTMLVideoElement): boolean {
   if (player.classList.contains('ytp-livebadge-color')) return true;
   const badge = player.querySelector('.ytp-live-badge');
   return Boolean(badge && (badge as HTMLElement).offsetParent !== null);
+}
+
+export function hostIsAtLiveHead(video: HTMLVideoElement): boolean {
+  const player = youtubePlayerFor(video);
+  const badge = player?.querySelector('.ytp-live-badge');
+  return Boolean(badge && badge.classList.contains('ytp-live-badge-is-livehead'));
 }
 
 function seekableBounds(video: HTMLVideoElement): { start: number; end: number } | null {
@@ -61,17 +150,23 @@ function finiteDuration(video: HTMLVideoElement): number | null {
   return mediaDuration;
 }
 
+function boundsWindow(bounds: { start: number; end: number }): PlaybackWindow {
+  return {
+    start: bounds.start,
+    end: bounds.end,
+    duration: bounds.end - bounds.start,
+    seekable: true,
+    live: true
+  };
+}
+
 function liveWindow(video: HTMLVideoElement): PlaybackWindow {
+  const youtubeDvr = youtubeDvrBounds(video);
+  if (youtubeDvr) return boundsWindow(youtubeDvr);
+  const youtubeHead = youtubeLiveHeadBounds(video);
+  if (youtubeHead) return boundsWindow(youtubeHead);
   const bounds = seekableBounds(video);
-  if (bounds) {
-    return {
-      start: bounds.start,
-      end: bounds.end,
-      duration: bounds.end - bounds.start,
-      seekable: true,
-      live: true
-    };
-  }
+  if (bounds) return boundsWindow(bounds);
   const duration = finiteDuration(video);
   if (duration != null) {
     return {
@@ -136,9 +231,46 @@ export function isAtLiveEdge(time: number, window: PlaybackWindow, threshold = L
   return window.end - time <= threshold;
 }
 
+export function isVideoAtLiveEdge(video: HTMLVideoElement, window?: PlaybackWindow): boolean {
+  if (hostIsAtLiveHead(video)) return true;
+  return isAtLiveEdge(video.currentTime || 0, window ?? playbackWindow(video));
+}
+
+function requestYoutubeLiveSeek(detail: MediaSeekDetail): boolean {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return false;
+  window.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail }));
+  return true;
+}
+
+function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
+  return hostLiveHint(video) && Boolean(youtubePlayerFor(video));
+}
+
+export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
+  const window = playbackWindow(video);
+  const target = window.seekable ? clampToWindow(time, window) : time;
+  if (canSeekYoutubeLive(video)) {
+    if (window.live && isAtLiveEdge(target, window)) {
+      if (requestYoutubeLiveSeek({ live: true })) return;
+    } else if (requestYoutubeLiveSeek({ time: target })) {
+      return;
+    }
+  }
+  video.currentTime = target;
+}
+
+export function seekToLive(video: HTMLVideoElement): boolean {
+  const window = playbackWindow(video);
+  if (!window.live) return false;
+  if (canSeekYoutubeLive(video) && requestYoutubeLiveSeek({ live: true })) return true;
+  if (!window.seekable) return false;
+  video.currentTime = window.end;
+  return true;
+}
+
 export function seekBy(video: HTMLVideoElement, delta: number): boolean {
   const window = playbackWindow(video);
   if (!window.seekable) return false;
-  video.currentTime = clampToWindow((video.currentTime || 0) + delta, window);
+  seekToMediaTime(video, (video.currentTime || 0) + delta);
   return true;
 }

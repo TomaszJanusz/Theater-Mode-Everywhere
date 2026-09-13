@@ -476,6 +476,10 @@
   letter-spacing: 0.04em !important;
 }
 
+.theater-time-display.theater-time-live-jump:hover {
+  color: #fca5a5 !important;
+}
+
 .theater-scrubber-container.theater-scrubber-live-locked {
   cursor: default !important;
   pointer-events: none !important;

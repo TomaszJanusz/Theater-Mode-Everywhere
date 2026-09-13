@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "直播"
   },
+  "jumpToLive": {
+    "message": "回到直播"
+  },
   "websiteExclusionsTitle": {
     "message": "网站排除项"
   },

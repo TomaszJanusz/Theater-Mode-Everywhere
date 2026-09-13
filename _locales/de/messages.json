@@ -148,6 +148,9 @@
   "liveBadge": {
     "message": "LIVE"
   },
+  "jumpToLive": {
+    "message": "Zur Live-Übertragung"
+  },
   "websiteExclusionsTitle": {
     "message": "Website-Ausschlüsse"
   },
