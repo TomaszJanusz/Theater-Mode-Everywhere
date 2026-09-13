@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "字幕已开启"
   },
+  "subtitlesOnNamedHud": {
+    "message": "字幕已开启：$1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "字幕已关闭"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "无法加载字幕"
   },
   "onlyOneVideoHud": {
     "message": "功能不可用。仅当页面上有多个播放器时才能切换视频。"

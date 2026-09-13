@@ -136,9 +136,9 @@ export function hostLiveHint(video: HTMLVideoElement): boolean {
   } catch {
     // Player API may throw before the embed is ready.
   }
-  if (player.classList.contains('ytp-livebadge-color')) return true;
-  const badge = player.querySelector('.ytp-live-badge');
-  return Boolean(badge && (badge as HTMLElement).offsetParent !== null);
+  // Do not use ytp-livebadge-color: YouTube applies it to VOD chrome too.
+  const badge = player.querySelector('.ytp-live-badge') as HTMLElement | null;
+  return Boolean(badge && badge.offsetParent);
 }
 
 export function hostIsAtLiveHead(video: HTMLVideoElement): boolean {

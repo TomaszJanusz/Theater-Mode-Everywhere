@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Субтитры включены"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Субтитры включены: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Субтитры выключены"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Не удалось загрузить субтитры"
   },
   "onlyOneVideoHud": {
     "message": "Функция недоступна. Переключение видео возможно только если на странице больше одного проигрывателя."

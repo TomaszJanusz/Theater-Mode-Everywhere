@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Napisy włączone"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Napisy włączone: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Napisy wyłączone"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Nie udało się wczytać napisów"
   },
   "onlyOneVideoHud": {
     "message": "Funkcja niedostępna. Przełączanie wideo jest możliwe wyłącznie, gdy jest więcej odtwarzaczy na stronie."

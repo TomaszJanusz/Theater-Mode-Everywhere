@@ -272,6 +272,19 @@ describe('playback window', () => {
     assert.equal(playbackWindow(video).live, true);
   });
 
+  it('does not treat a YouTube VOD as live because the player has ytp-livebadge-color', () => {
+    const player = {
+      classList: { contains: (name: string) => name === 'ytp-livebadge-color' },
+      querySelector: (selector: string) => selector.includes('live-badge') ? { offsetParent: null } : null,
+      getVideoData: () => ({ isLive: false })
+    };
+    const video = fakeVideo({ duration: 1473, currentTime: 1445 });
+    (video as HTMLVideoElement & { closest: () => unknown }).closest = () => player;
+    assert.equal(hostLiveHint(video), false);
+    assert.equal(playbackWindow(video).live, false);
+    assert.equal(playbackWindow(video).end, 1473);
+  });
+
   it('maps live DVR onto the seekable range instead of Infinity', () => {
     const window = playbackWindow(fakeVideo({
       duration: Number.POSITIVE_INFINITY,

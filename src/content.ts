@@ -1,4 +1,5 @@
 import './content.css';
+import theaterCss from './content.css?inline';
 import { computeCaptionDockBottom, type DockRect } from './media-features/caption-dock';
 import {
   CAPTION_STYLE_STORAGE_KEY,
@@ -12,7 +13,7 @@ import {
   upsertCaptionPreference,
   type CaptionLanguagePreference
 } from './media-features/caption-preference';
-import { MediaFeaturesController } from './media-features/controller';
+import { MediaFeaturesController, type CaptionHudPayload } from './media-features/controller';
 import {
   applyMediaProviderFlagAttrs,
   defaultMediaProviderFlags,
@@ -25,6 +26,7 @@ import {
   requestVideoPlay,
   toggleVideoPlayback
 } from './host-play';
+import { selectSwitchableVideos } from './switchable-videos';
 import {
   isAtLiveEdge,
   isVideoAtLiveEdge,
@@ -44,8 +46,11 @@ import {
   eventPathMatches,
   mountPlayerUi,
   queryPlayerUi,
-  queryPlayerUiAll
+  queryPlayerUiAll,
+  setPlayerUiCss
 } from './player-ui-root';
+
+setPlayerUiCss(theaterCss);
 
 const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   keyboardShortcutsTitle: 'Keyboard Shortcuts',
@@ -84,7 +89,9 @@ const I18N_FALLBACK_MESSAGES: Record<string, string> = {
   toggleSubtitles: 'Toggle Subtitles',
   subtitlesTooltip: 'Subtitles <kbd>$1</kbd>',
   subtitlesOnHud: 'Subtitles on',
+  subtitlesOnNamedHud: 'Subtitles on: $1',
   subtitlesOffHud: 'Subtitles off',
+  subtitlesLoadFailedHud: 'Couldn\'t load subtitles',
   noSubtitles: 'No subtitles',
   subtitlesOff: 'Off',
   liveBadge: 'LIVE',
@@ -466,18 +473,29 @@ function cycleVideoFit(): void {
   triggerStatusIndicator(videoFitLabel(nextMode), STATUS_HUD_FIT_ICON);
 }
 
+function showCaptionHud(payload: CaptionHudPayload): void {
+  if (payload.result === 'none') {
+    triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
+    return;
+  }
+  if (payload.result === 'failed') {
+    triggerStatusIndicator(t('subtitlesLoadFailedHud'), STATUS_HUD_CC_ICON);
+    return;
+  }
+  if (payload.result === 'on') {
+    triggerStatusIndicator(
+      payload.label ? t('subtitlesOnNamedHud', payload.label) : t('subtitlesOnHud'),
+      STATUS_HUD_CC_ICON
+    );
+    return;
+  }
+  triggerStatusIndicator(t('subtitlesOffHud'), STATUS_HUD_CC_ICON);
+}
+
 async function toggleTheaterCaptions(): Promise<void> {
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   try {
-    const result = (await wrapper?._mediaFeatures?.toggleCaptions()) || 'none';
-    if (result === 'none') {
-      triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
-      return;
-    }
-    triggerStatusIndicator(
-      result === 'on' ? t('subtitlesOnHud') : t('subtitlesOffHud'),
-      STATUS_HUD_CC_ICON
-    );
+    await wrapper?._mediaFeatures?.toggleCaptions();
   } catch (err) {
     console.error('[Theater Everywhere] Caption toggle failed:', err);
   }
@@ -1526,10 +1544,12 @@ function hideHelpOverlay(): void {
 function findBestVideo(): HTMLVideoElement | null {
   const videos = findAllVideosDeep(document);
   if (videos.length === 0) return null;
-  if (videos.length === 1) return videos[0];
+  const pool = selectSwitchableVideos(videos);
+  const ranked = pool.length > 0 ? pool : videos;
+  if (ranked.length === 1) return ranked[0];
 
-  videos.sort(compareVideos);
-  return videos[0];
+  ranked.sort(compareVideos);
+  return ranked[0];
 }
 
 function switchTheaterVideo(newVideo: HTMLVideoElement): void {
@@ -1624,13 +1644,13 @@ function cycleTheaterVideo(direction: 'next' | 'prev' = 'next'): void {
     return;
   }
 
-  const videos = findAllVideosDeep(document);
+  const currentVideo = theaterElement as HTMLVideoElement;
+  const videos = selectSwitchableVideos(findAllVideosDeep(document), currentVideo);
   if (videos.length <= 1) {
     triggerStatusIndicator(t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON);
     return;
   }
 
-  const currentVideo = theaterElement as HTMLVideoElement;
   const idx = videos.indexOf(currentVideo);
   if (idx === -1) return;
 
@@ -2523,6 +2543,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     scrubberTrack,
     t,
     onCaptionChange: updateCaptionDock,
+    onCaptionHud: showCaptionHud,
     onCaptionStyleChange: persistCaptionStyle,
     captionPreference: captionPreferenceMap[captionPreferenceHost(window.location.hostname)] || null,
     onCaptionPreferenceChange: persistCaptionPreference,
@@ -2620,8 +2641,8 @@ function createCustomControls(video: HTMLVideoElement): void {
   });
   rightSec.appendChild(fitBtn);
 
-  // Switch Video Button (Only if there are multiple video players on the page)
-  const videosOnPage = findAllVideosDeep(document);
+  // Switch Video Button (Only if there are multiple real video players on the page)
+  const videosOnPage = selectSwitchableVideos(findAllVideosDeep(document), video);
   if (videosOnPage.length > 1) {
     const switchVideoBtn = document.createElement('button');
     switchVideoBtn.className = 'theater-control-btn switch-video-btn';
@@ -2956,7 +2977,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     setBuffering(false);
   };
   const onPause = () => { setIcon(playPauseBtn, playIcon); };
-  let lastMediaPath = window.location.pathname;
+  let lastMediaHref = window.location.href;
   const onTimeUpdate = () => { 
     updateScrubber(); 
     updateTimeDisplay();
@@ -2965,8 +2986,8 @@ function createCustomControls(video: HTMLVideoElement): void {
     if (!video.paused && !video.seeking && video.readyState >= 3) {
       setBuffering(false);
     }
-    if (window.location.pathname !== lastMediaPath) {
-      lastMediaPath = window.location.pathname;
+    if (window.location.href !== lastMediaHref) {
+      lastMediaHref = window.location.href;
       void mediaFeatures.refresh();
     }
   };

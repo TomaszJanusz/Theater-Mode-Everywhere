@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Sottotitoli attivi"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Sottotitoli attivi: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Sottotitoli disattivati"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Impossibile caricare i sottotitoli"
   },
   "onlyOneVideoHud": {
     "message": "Funzione non disponibile. Il cambio video è possibile solo quando nella pagina ci sono più lettori."

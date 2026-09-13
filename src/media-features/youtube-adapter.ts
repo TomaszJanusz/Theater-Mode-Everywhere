@@ -11,6 +11,7 @@ import {
   type YoutubeCaptionMeta,
   type YoutubePlayerSnapshot
 } from './probe';
+import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import type {
   CaptionCue,
   CaptionTrack,
@@ -43,6 +44,67 @@ function youtubePageVideoId(href: string): string | null {
 function youtubeSnapshotMatchesPage(snapshotVideoId: string | undefined, pageVideoId: string | null): boolean {
   if (!snapshotVideoId || !pageVideoId) return true;
   return snapshotVideoId === pageVideoId;
+}
+
+const CAPTION_AUTH_KEYS = [
+  'pot',
+  'potc',
+  'c',
+  'cver',
+  'cplayer',
+  'cbr',
+  'cbrver',
+  'cos',
+  'cosver',
+  'cplatform',
+  'xorb',
+  'xobt',
+  'xovt'
+] as const;
+
+function timedtextVideoId(url: string): string | null {
+  try {
+    return new URL(url, 'https://www.youtube.com').searchParams.get('v');
+  } catch {
+    return null;
+  }
+}
+
+function timedtextHasPot(url: string): boolean {
+  try {
+    return Boolean(new URL(url, 'https://www.youtube.com').searchParams.get('pot'));
+  } catch {
+    return false;
+  }
+}
+
+function mergeYoutubeCaptionAuth(targetUrl: string, sourceUrl: string): string {
+  try {
+    const target = new URL(targetUrl, 'https://www.youtube.com');
+    const source = new URL(sourceUrl, 'https://www.youtube.com');
+    for (const key of CAPTION_AUTH_KEYS) {
+      const value = source.searchParams.get(key);
+      if (value) target.searchParams.set(key, value);
+    }
+    return target.toString();
+  } catch {
+    return targetUrl;
+  }
+}
+
+function signYoutubeCaptionUrl(targetUrl: string, sourceUrls: string[]): string {
+  const targetId = timedtextVideoId(targetUrl);
+  for (const source of sourceUrls) {
+    if (!timedtextHasPot(source)) continue;
+    const sourceId = timedtextVideoId(source);
+    if (targetId) {
+      if (sourceId !== targetId) continue;
+    } else if (sourceId) {
+      continue;
+    }
+    return mergeYoutubeCaptionAuth(targetUrl, source);
+  }
+  return targetUrl;
 }
 
 function looksLikeHtmlError(body: string): boolean {
@@ -89,6 +151,7 @@ async function fetchCaptionTrack(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+  absolute = signYoutubeCaptionUrl(absolute, readPublishedYoutubeCaptionAuthUrls());
   const request: MediaFetchRequest = {
     provider: 'youtube',
     kind: 'caption-track',
@@ -132,16 +195,13 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     const previousId = this.lastVideoId;
     const probed = await requestMediaProbe();
     const pageVideoId = youtubePageVideoId(window.location.href);
-    let snapshot = probed.youtube || readYoutubeSnapshotFromDom();
-    if (!snapshot && (window as unknown as { ytInitialPlayerResponse?: unknown }).ytInitialPlayerResponse) {
-      snapshot = normalizeYoutubePlayerResponse(
-        (window as unknown as { ytInitialPlayerResponse?: unknown }).ytInitialPlayerResponse
-      );
-    }
-    if (snapshot && !youtubeSnapshotMatchesPage(snapshot.videoId, pageVideoId)) {
-      snapshot = null;
-    }
-    this.snapshot = snapshot;
+    const boot = (window as unknown as { ytInitialPlayerResponse?: unknown }).ytInitialPlayerResponse;
+    this.snapshot = firstMatchingYoutubeSnapshot(pageVideoId, [
+      probed.youtube,
+      readPublishedYoutubeSnapshot(),
+      readYoutubeSnapshotFromDom(),
+      boot ? normalizeYoutubePlayerResponse(boot) : null
+    ]);
     if (this.snapshot?.videoId) this.lastVideoId = this.snapshot.videoId;
     if (previousId && this.snapshot?.videoId && previousId !== this.snapshot.videoId) {
       cueCache.clear();
@@ -213,18 +273,20 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     if (!this.snapshotMatchesPage()) await this.reload();
     const track = this.tracks.find((item) => item.id === id);
     if (!track) return null;
-    const cached = cueCache.get(track.baseUrl);
+    const fetchUrl = signYoutubeCaptionUrl(track.baseUrl, readPublishedYoutubeCaptionAuthUrls());
+    const cached = cueCache.get(track.baseUrl) || cueCache.get(fetchUrl);
     if (cached && cached.length > 0 && this.snapshotMatchesPage()) {
       await requestYoutubePlayerCaptions({ enabled: false });
       return cached;
     }
 
-    for (const url of captionUrlVariants(track.baseUrl)) {
+    for (const url of captionUrlVariants(fetchUrl)) {
       const body = await fetchCaptionTrack(url);
       if (!body) continue;
       const cues = parseCaptionPayload(body);
       if (cues.length > 0) {
         cueCache.set(track.baseUrl, cues);
+        cueCache.set(fetchUrl, cues);
         await requestYoutubePlayerCaptions({ enabled: false });
         return cues;
       }

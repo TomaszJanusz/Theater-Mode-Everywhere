@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Untertitel ein"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Untertitel ein: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Untertitel aus"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Untertitel konnten nicht geladen werden"
   },
   "onlyOneVideoHud": {
     "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehr Player auf der Seite vorhanden sind."

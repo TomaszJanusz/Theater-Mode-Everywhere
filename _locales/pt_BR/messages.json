@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Legendas ativadas"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Legendas ativadas: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Legendas desativadas"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Não foi possível carregar as legendas"
   },
   "onlyOneVideoHud": {
     "message": "Recurso indisponível. A troca de vídeo só é possível quando há mais players na página."

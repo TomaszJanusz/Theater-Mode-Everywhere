@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Subtitles on"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Subtitles on: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Subtitles off"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Couldn't load subtitles"
   },
   "onlyOneVideoHud": {
     "message": "Feature unavailable. Video switching is only possible when there are more players on the page."

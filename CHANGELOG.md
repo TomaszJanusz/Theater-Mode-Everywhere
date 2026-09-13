@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a media-features layer for captions, chapters, and hover previews, starting with native HTML5 tracks, YouTube description chapters, YouTube session caption tracks, and YouTube storyboard thumbnails.
 - Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
 - Remember the selected subtitle language per site (by language code, not the menu label) and turn it back on in later theater sessions.
+- Theater mode autoloads captions when the last session on that site left them on, even if the next video only has a different language.
 - Added a `C` shortcut to toggle subtitles in theater mode, using the remembered language code when turning them back on.
 - Added Settings → Features toggles for YouTube, Vimeo, Patreon, and Twitch extras (captions, chapters, previews). Theater mode still works on those sites when a toggle is off.
 - Theater chrome now renders in an isolated shadow tree so host page CSS cannot restyle the player UI (including the subtitles menu font).
@@ -33,18 +34,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native HTML5 captions now render through the same theater overlay as YouTube, so subtitle options apply and host players like AblePlayer no longer show a second unstyled layer.
 - Theater time and scrubber no longer treat `video.duration === Infinity` as a VOD at 0%; live DVR can seek inside `video.seekable`.
 - YouTube Live no longer shows about an hour behind the live edge: the media `duration` includes lookahead past the actual head, so theater mode maps the DVR window from YouTube's progress bar and seeks through the player API.
+- YouTube VODs are no longer treated as live just because the player has `ytp-livebadge-color`; that class is now on regular watch-page chrome even when `getVideoData().isLive` is false and the Live badge is `display: none`.
 - Seeking inside a YouTube Live DVR window no longer snaps the theater scrubber back to the previous click while HTML5 `currentTime` is still catching up.
 - Live chrome no longer treats a huge or paused-at-zero `seekable` range as a 300,000-hour DVR window; unseekable live now shows `LIVE` and locks the scrubber.
 - Leaving theater mode on YouTube now asks the native player to recompute its chrome width, so the progress bar no longer stays full-viewport.
 - Volume and speed hover bridges no longer steal clicks from the top half of their toolbar buttons.
 - Advancing a YouTube playlist no longer keeps the previous video's seek-bar thumbnails, chapters, or overlay captions.
 - Overlay captions reload for the next YouTube playlist item instead of staying enabled with no text.
+- YouTube playlist items no longer show “No subtitles” when the native player has captions: theater was reading the previous video’s `ytInitialPlayerResponse` after SPA navigation, discarding it as stale, and leaving an empty track list. It now prefers the live player response (skipping hidden Shorts leftovers) and a published current-video snapshot.
 - Patreon hover previews now read the signed Mux `storyboard.vtt` from the post payload. Mux Player leaves `.storyboard` empty when a playback token is set without a storyboard token, so theater mode previously had no thumbnails even though the sprites existed.
 - Patreon captions can be turned on from theater mode. Mux keeps subtitle WebVTT off the inner `<video>` until the host CC menu is used; theater mode now loads `stream.mux.com/.../text/*.vtt` from the post payload.
 - Patreon no longer lists the same Mux caption twice (host `English (auto-generated)` plus a generic `Captions` sidecar).
 - Subtitle HUD waits for overlay cues, so `C` and the CC icon stay in sync instead of reporting on before captions exist.
 - Volume boost stays orange only after the Web Audio graph exists, Picture-in-Picture uses the same active color as CC, and LIVE only offers “Go to live” when playback is behind the live edge.
 - Theater mode on players like TikTok that hide the `<video>` under an overlay now keeps native right-click menus: the video is forced visible and clickable, right-button presses are not swallowed, and host `contextmenu` blockers are stopped from reaching the theater video.
+- Switch Video no longer appears on a single YouTube watch page just because hover-preview, miniplayer, a hidden leftover Shorts player, or empty leftover `<video>` elements exist. Cycling also skips those dummies, which previously opened theater on an unloaded player and left the loading spinner up.
+- YouTube caption tracks now load in theater: unsigned `/api/timedtext` URLs get the same-video `pot` from the player session, instead of hanging on unsigned fetches and then reporting Subtitles off.
+- Caption HUD now covers `C`, the CC menu, and a successful auto-restore, names the language when captions turn on, and says the load failed instead of Subtitles off when the track list exists but cues do not.
+- HTML5 subtitle tracks that only have a label (no language code) are remembered per site the same way coded tracks are.
+- Theater chrome no longer flashes unstyled HTML on enter: the player UI lives in a shadow tree, and `content.css` was loaded there with an async `<link>`. The skin is now inlined before the controls are mounted.
 
 ## [1.4.0] - 2026-09-06
 

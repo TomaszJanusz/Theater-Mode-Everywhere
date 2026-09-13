@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "字幕オン"
   },
+  "subtitlesOnNamedHud": {
+    "message": "字幕オン: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "字幕オフ"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "字幕を読み込めませんでした"
   },
   "onlyOneVideoHud": {
     "message": "機能を利用できません。動画の切り替えは、ページに複数のプレーヤーがある場合のみ可能です。"

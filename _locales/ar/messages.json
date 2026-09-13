@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "الترجمة مفعلة"
   },
+  "subtitlesOnNamedHud": {
+    "message": "الترجمة مفعلة: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "الترجمة متوقفة"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "تعذر تحميل الترجمة"
   },
   "onlyOneVideoHud": {
     "message": "الميزة غير متاحة. يمكن تبديل الفيديو فقط عندما يكون هناك أكثر من مشغّل في الصفحة."

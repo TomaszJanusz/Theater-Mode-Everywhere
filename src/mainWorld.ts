@@ -1,4 +1,4 @@
-import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, youtubePageVideoId, type CachedTimedtext } from './media-features/youtube-caption-url';
+import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, type CachedTimedtext } from './media-features/youtube-caption-url';
 
 (function() {
   const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
@@ -38,6 +38,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     if (last && last.url === record.url && last.body === record.body) return;
     timedtextBodies.push(record);
     if (timedtextBodies.length > 20) timedtextBodies.shift();
+    publishYoutubeCaptionAuth();
     if (window !== window.top) {
       try {
         window.top?.postMessage({ type: 'theater-everywhere-timedtext-body', record }, '*');
@@ -195,8 +196,79 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     }
   });
 
+  function isAuxiliaryYoutubePlayer(el: Element | null): boolean {
+    if (!el) return true;
+    if (el.id === 'shorts-player' || el.id === 'inline-player' || el.id === 'inline-preview-player') return true;
+    return Boolean(el.closest('ytd-shorts, ytd-video-preview, ytd-miniplayer, [hidden]'));
+  }
+
   function findYoutubePlayer(): any {
-    return document.querySelector('#movie_player, .html5-video-player');
+    const movie = document.getElementById('movie_player');
+    if (movie && !isAuxiliaryYoutubePlayer(movie)) return movie;
+    const players = Array.from(document.querySelectorAll('.html5-video-player'));
+    return players.find((el) => !isAuxiliaryYoutubePlayer(el)) || movie || players[0] || null;
+  }
+
+  const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
+  const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
+
+  function publishHiddenJson(id: string, payload: unknown | null): void {
+    const existing = document.getElementById(id);
+    if (payload == null) {
+      existing?.remove();
+      return;
+    }
+    const el = existing || document.createElement('div');
+    el.id = id;
+    el.setAttribute('hidden', '');
+    el.textContent = JSON.stringify(payload);
+    if (!existing) {
+      (document.documentElement || document.head || document.body)?.appendChild(el);
+    }
+  }
+
+  function publishYoutubeSnapshot(snapshot: Record<string, unknown> | null): void {
+    publishHiddenJson(YOUTUBE_SNAPSHOT_SCRIPT_ID, snapshot);
+  }
+
+  function youtubeCaptionAuthSources(videoId: string | null): string[] {
+    const pageId = youtubePageVideoId(window.location.href);
+    const want = videoId || pageId;
+    const urls = [
+      ...timedtextUrlsFromPerformance(),
+      ...timedtextBodies.map((item) => item.url)
+    ];
+    const out: string[] = [];
+    for (const url of urls.reverse()) {
+      if (!timedtextHasPot(url)) continue;
+      const id = timedtextVideoId(url);
+      if (want && id && id !== want) continue;
+      if (pageId && id && id !== pageId) continue;
+      if (!out.includes(url)) out.push(url);
+    }
+    return out;
+  }
+
+  function publishYoutubeCaptionAuth(): void {
+    try {
+      if (!youtubeIntegrationEnabled()) {
+        publishHiddenJson(YOUTUBE_CAPTION_AUTH_ID, null);
+        return;
+      }
+      const urls = youtubeCaptionAuthSources(youtubePageVideoId(window.location.href));
+      publishHiddenJson(YOUTUBE_CAPTION_AUTH_ID, urls.slice(0, 8));
+    } catch {
+      // Publishing must never break the host player.
+    }
+  }
+
+  function publishCurrentYoutubeSnapshot(): void {
+    try {
+      publishYoutubeSnapshot(youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null);
+      publishYoutubeCaptionAuth();
+    } catch {
+      // Publishing must never break the host player.
+    }
   }
 
   function captionTrackFromPlayer(languageCode: string | null, kind: string | null): Record<string, unknown> | null {
@@ -339,31 +411,19 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     const add = (value: string) => {
       if (value && !candidates.includes(value) && isAllowedTimedtextUrl(value)) candidates.push(value);
     };
-    const videoId = timedtextVideoId(url);
-    for (const entry of timedtextUrlsFromPerformance().reverse()) {
-      if (!videoId || timedtextVideoId(entry) === videoId) add(entry);
-    }
-    add(url);
+    const videoId = timedtextVideoId(url) || youtubePageVideoId(window.location.href);
+    const signed = signYoutubeCaptionUrl(url, youtubeCaptionAuthSources(videoId));
+    publishYoutubeCaptionAuth();
+    add(signed);
     try {
-      const parsed = new URL(url, window.location.href);
+      const parsed = new URL(signed, window.location.href);
       parsed.searchParams.set('fmt', 'json3');
       add(parsed.toString());
     } catch {
       // Keep the original caption URL.
     }
-    const snapshot = readYoutubeSnapshot() as { captionTracks?: Array<{ baseUrl?: string }> } | null;
-    for (const track of snapshot?.captionTracks || []) {
-      if (!track.baseUrl) continue;
-      add(track.baseUrl);
-      try {
-        const parsed = new URL(track.baseUrl, window.location.href);
-        parsed.searchParams.set('fmt', 'json3');
-        add(parsed.toString());
-      } catch {
-        // Ignore malformed player-response caption URLs.
-      }
-    }
-    for (const candidate of candidates.slice(0, 8)) {
+    if (!timedtextHasPot(signed)) return null;
+    for (const candidate of candidates.slice(0, 4)) {
       try {
         const controller = new AbortController();
         const timer = window.setTimeout(() => controller.abort(), 4000);
@@ -1192,15 +1252,42 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
 
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = (event as CustomEvent<{ requestId?: number }>).detail?.requestId;
+    let youtube: Record<string, unknown> | null = null;
+    let vimeo: Record<string, unknown> | null = null;
+    let patreon: Record<string, unknown> | null = null;
+    let twitch: Record<string, unknown> | null = null;
+    try {
+      youtube = youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null;
+    } catch {
+      youtube = null;
+    }
+    try {
+      vimeo = vimeoIntegrationEnabled() ? readVimeoSnapshot() : null;
+    } catch {
+      vimeo = null;
+    }
+    try {
+      patreon = patreonIntegrationEnabled() ? readPatreonSnapshot() : null;
+    } catch {
+      patreon = null;
+    }
+    try {
+      twitch = twitchIntegrationEnabled() ? readTwitchSnapshot() : null;
+    } catch {
+      twitch = null;
+    }
+    publishYoutubeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: {
-        requestId,
-        youtube: youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null,
-        vimeo: vimeoIntegrationEnabled() ? readVimeoSnapshot() : null,
-        patreon: patreonIntegrationEnabled() ? readPatreonSnapshot() : null,
-        twitch: twitchIntegrationEnabled() ? readTwitchSnapshot() : null
-      }
+      detail: { requestId, youtube, vimeo, patreon, twitch }
     }));
+  });
+
+  ['yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'].forEach((name) => {
+    window.addEventListener(name, publishCurrentYoutubeSnapshot);
+    document.addEventListener(name, publishCurrentYoutubeSnapshot);
+  });
+  [0, 300, 1000, 2500].forEach((ms) => {
+    window.setTimeout(publishCurrentYoutubeSnapshot, ms);
   });
 
   function isAllowedMuxStoryboardUrl(url: string): boolean {

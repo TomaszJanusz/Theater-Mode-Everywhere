@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Sous-titres activés"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Sous-titres activés : $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Sous-titres désactivés"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Impossible de charger les sous-titres"
   },
   "onlyOneVideoHud": {
     "message": "Fonction indisponible. Le changement de vidéo n’est possible que s’il y a plusieurs lecteurs sur la page."

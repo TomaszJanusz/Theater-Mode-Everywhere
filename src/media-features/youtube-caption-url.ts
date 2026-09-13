@@ -60,6 +60,21 @@ export function mergeYoutubeCaptionAuth(targetUrl: string, sourceUrl: string): s
   return target.toString();
 }
 
+export function signYoutubeCaptionUrl(targetUrl: string, sourceUrls: string[]): string {
+  const targetId = timedtextVideoId(targetUrl);
+  for (const source of sourceUrls) {
+    if (!timedtextHasPot(source)) continue;
+    const sourceId = timedtextVideoId(source);
+    if (targetId) {
+      if (sourceId !== targetId) continue;
+    } else if (sourceId) {
+      continue;
+    }
+    return mergeYoutubeCaptionAuth(targetUrl, source);
+  }
+  return targetUrl;
+}
+
 export type CachedTimedtext = {
   videoId: string;
   lang: string;

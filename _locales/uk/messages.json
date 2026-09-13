@@ -228,8 +228,19 @@
   "subtitlesOnHud": {
     "message": "Субтитри ввімкнено"
   },
+  "subtitlesOnNamedHud": {
+    "message": "Субтитри ввімкнено: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
   "subtitlesOffHud": {
     "message": "Субтитри вимкнено"
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Не вдалося завантажити субтитри"
   },
   "onlyOneVideoHud": {
     "message": "Функція недоступна. Перемикання відео можливе лише тоді, коли на сторінці більше ніж один програвач."

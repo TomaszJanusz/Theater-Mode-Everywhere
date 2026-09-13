@@ -4,6 +4,12 @@ const UI_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetic
 
 let hostEl: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
+let playerUiCss = '';
+
+export function setPlayerUiCss(css: string): void {
+  playerUiCss = css;
+  if (shadow && hostEl?.isConnected) ensureShadowStyles(shadow);
+}
 
 function isolateHost(host: HTMLElement): void {
   const styles: Array<[string, string]> = [
@@ -39,50 +45,37 @@ function collectInjectedTheaterCss(): string {
   return chunks.join('\n');
 }
 
-function extensionContentCssUrl(): string | null {
-  try {
-    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-      return chrome.runtime.getURL('content.css');
-    }
-  } catch {
-    // Local test pages have no extension runtime.
-  }
-  return null;
-}
-
 function ensureShadowStyles(root: ShadowRoot): void {
-  if (root.getElementById(STYLE_ID)) return;
-
-  const reset = document.createElement('style');
-  reset.id = `${STYLE_ID}-reset`;
-  reset.textContent = `
-    :host {
-      all: initial;
-      font-family: ${UI_FONT} !important;
-      line-height: 1.4 !important;
-      color: #f8fafc !important;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+  const css = playerUiCss || collectInjectedTheaterCss();
+  const existing = root.getElementById(STYLE_ID);
+  if (existing) {
+    if (css && existing.tagName === 'STYLE' && existing.textContent !== css) {
+      existing.textContent = css;
     }
-  `;
-  root.appendChild(reset);
+    return;
+  }
 
-  const injected = collectInjectedTheaterCss();
-  if (injected) {
+  // Inline the skin before chrome is mounted. A <link rel="stylesheet"> to
+  // content.css paints the shadow tree as raw HTML until the sheet loads.
+  if (css) {
     const style = document.createElement('style');
     style.id = STYLE_ID;
-    style.textContent = injected;
+    style.textContent = css;
     root.appendChild(style);
     return;
   }
 
-  const href = extensionContentCssUrl();
-  if (!href) return;
-  const link = document.createElement('link');
-  link.id = STYLE_ID;
-  link.rel = 'stylesheet';
-  link.href = href;
-  root.appendChild(link);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+      const link = document.createElement('link');
+      link.id = STYLE_ID;
+      link.rel = 'stylesheet';
+      link.href = chrome.runtime.getURL('content.css');
+      root.appendChild(link);
+    }
+  } catch {
+    // Local test pages have no extension runtime.
+  }
 }
 
 export function getPlayerUiRoot(): ShadowRoot {
