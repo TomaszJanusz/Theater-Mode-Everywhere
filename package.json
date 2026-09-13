@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsx scripts/build.ts",
-    "test": "tsx --test src/media-features/media-features.test.ts src/host-play.test.ts",
+    "test": "tsx --test src/media-features/media-features.test.ts src/host-play.test.ts src/playback-window.test.ts",
     "store:cws:screenshots": "tsx scripts/render-cws-screenshots.ts"
   },
   "author": "Tomasz Janusz",
