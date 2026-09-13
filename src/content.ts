@@ -462,17 +462,21 @@ function cycleVideoFit(): void {
   triggerStatusIndicator(videoFitLabel(nextMode), STATUS_HUD_FIT_ICON);
 }
 
-function toggleTheaterCaptions(): void {
+async function toggleTheaterCaptions(): Promise<void> {
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
-  const result = wrapper?._mediaFeatures?.toggleCaptions() || 'none';
-  if (result === 'none') {
-    triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
-    return;
+  try {
+    const result = (await wrapper?._mediaFeatures?.toggleCaptions()) || 'none';
+    if (result === 'none') {
+      triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
+      return;
+    }
+    triggerStatusIndicator(
+      result === 'on' ? t('subtitlesOnHud') : t('subtitlesOffHud'),
+      STATUS_HUD_CC_ICON
+    );
+  } catch (err) {
+    console.error('[Theater Everywhere] Caption toggle failed:', err);
   }
-  triggerStatusIndicator(
-    result === 'on' ? t('subtitlesOnHud') : t('subtitlesOffHud'),
-    STATUS_HUD_CC_ICON
-  );
 }
 
 function restoreTheaterElementInlineStyles(element: HTMLElement): void {
@@ -959,7 +963,7 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      toggleTheaterCaptions();
+      void toggleTheaterCaptions();
       return;
     }
 

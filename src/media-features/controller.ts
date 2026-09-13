@@ -8,6 +8,8 @@ import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderF
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
 
+export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'dispose'>;
+
 export type MediaFeaturesBindings = {
   video: HTMLVideoElement;
   ccBtn: HTMLButtonElement;
@@ -20,7 +22,14 @@ export type MediaFeaturesBindings = {
   onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   providerFlags?: MediaProviderFlags;
   decorateCaptionDialog?: (overlay: HTMLElement) => void;
+  adapter?: MediaFeaturesAdapter;
+  renderer?: CaptionOverlayRenderer;
 };
+
+function setOverlayCaptionsClass(on: boolean): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('theater-using-overlay-captions', on);
+}
 
 export type TooltipMediaExtras = {
   chapterTitle: string;
@@ -29,7 +38,7 @@ export type TooltipMediaExtras = {
 
 export class MediaFeaturesController {
   private adapter: MediaFeaturesAdapter;
-  private renderer: CaptionRenderer;
+  private renderer: CaptionOverlayRenderer;
   private video: HTMLVideoElement;
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
@@ -51,11 +60,14 @@ export class MediaFeaturesController {
   private onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
+  private opChain: Promise<void> = Promise.resolve();
+  private activateGeneration = 0;
+  private activateInFlight = false;
 
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
-    this.adapter = createMediaFeaturesAdapter(bindings.video, this.providerFlags);
-    this.renderer = new CaptionRenderer(bindings.onCaptionChange);
+    this.adapter = bindings.adapter || createMediaFeaturesAdapter(bindings.video, this.providerFlags);
+    this.renderer = bindings.renderer || new CaptionRenderer(bindings.onCaptionChange);
     this.video = bindings.video;
     this.ccBtn = bindings.ccBtn;
     this.ccMenu = bindings.ccMenu;
@@ -71,9 +83,18 @@ export class MediaFeaturesController {
       };
       if (bindings.captionPreference.enabled) this.captionPreference = this.lastLanguagePref;
     }
-    this.chapterLayer = document.createElement('div');
-    this.chapterLayer.className = 'theater-scrubber-chapters';
-    bindings.scrubberTrack.appendChild(this.chapterLayer);
+    if (typeof document === 'undefined') {
+      this.chapterLayer = {
+        className: '',
+        replaceChildren() {},
+        remove() {},
+        appendChild() { return null; }
+      } as unknown as HTMLDivElement;
+    } else {
+      this.chapterLayer = document.createElement('div');
+      this.chapterLayer.className = 'theater-scrubber-chapters';
+      bindings.scrubberTrack.appendChild(this.chapterLayer);
+    }
   }
 
   async start(): Promise<void> {
@@ -91,6 +112,7 @@ export class MediaFeaturesController {
 
   invalidate(): void {
     if (this.disposed) return;
+    this.activateGeneration += 1;
     this.adapter.invalidate?.();
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
@@ -98,7 +120,7 @@ export class MediaFeaturesController {
     this.activeTrackId = null;
     this.usingOverlayCaptions = false;
     this.renderer.setCues([]);
-    document.documentElement.classList.remove('theater-using-overlay-captions');
+    setOverlayCaptionsClass(false);
     this.renderChapterMarks();
     this.updateCcState();
     this.renderCcMenu();
@@ -127,15 +149,18 @@ export class MediaFeaturesController {
       if (this.disposed) return;
       const mediaChanged = Boolean(previousId && this.mediaId && previousId !== this.mediaId);
       if (mediaChanged) {
+        this.activateGeneration += 1;
         this.activeTrackId = null;
         this.usingOverlayCaptions = false;
         this.renderer.setCues([]);
-        document.documentElement.classList.remove('theater-using-overlay-captions');
+        setOverlayCaptionsClass(false);
       }
       this.renderChapterMarks();
       this.updateCcState();
       this.renderCcMenu();
-      const shouldRestoreCaptions = Boolean(this.captionPreference) && (mediaChanged || this.activeTrackId === null);
+      const shouldRestoreCaptions = Boolean(this.captionPreference)
+        && !this.activateInFlight
+        && (mediaChanged || !this.captionsAreOn());
       if (shouldRestoreCaptions) {
         const match = findPreferredCaptionTrack(this.tracks, this.captionPreference);
         if (match) {
@@ -157,6 +182,7 @@ export class MediaFeaturesController {
 
   private renderChapterMarks(): void {
     this.chapterLayer.replaceChildren();
+    if (typeof document === 'undefined') return;
     const duration = this.video.duration;
     if (!Number.isFinite(duration) || duration <= 0 || this.chapters.length === 0) return;
     for (const chapter of this.chapters) {
@@ -168,12 +194,16 @@ export class MediaFeaturesController {
     }
   }
 
+  private captionsAreOn(): boolean {
+    return this.activeTrackId !== null && this.usingOverlayCaptions;
+  }
+
   private updateCcState(): void {
     const hasTracks = this.tracks.length > 0;
     this.ccBtn.classList.toggle('disabled', !hasTracks);
     this.ccBtn.style.opacity = hasTracks ? '' : '0.35';
     this.ccBtn.style.pointerEvents = hasTracks ? '' : 'none';
-    this.ccBtn.classList.toggle('active', this.activeTrackId !== null);
+    this.ccBtn.classList.toggle('active', this.captionsAreOn());
   }
 
   setCaptionStyle(style: CaptionStyle): void {
@@ -182,6 +212,7 @@ export class MediaFeaturesController {
   }
 
   renderCcMenu(): void {
+    if (typeof document === 'undefined') return;
     this.ccMenu.replaceChildren();
 
     const header = document.createElement('div');
@@ -210,7 +241,7 @@ export class MediaFeaturesController {
       return;
     }
 
-    this.ccMenu.appendChild(this.menuItem(this.t('subtitlesOff'), this.activeTrackId === null, () => {
+    this.ccMenu.appendChild(this.menuItem(this.t('subtitlesOff'), !this.captionsAreOn(), () => {
       void this.activate(null);
     }));
 
@@ -219,7 +250,7 @@ export class MediaFeaturesController {
       const label = track.autoGenerated && !/auto/i.test(baseLabel)
         ? this.t('autoGeneratedTrack', baseLabel)
         : baseLabel;
-      this.ccMenu.appendChild(this.menuItem(label, this.activeTrackId === track.id, () => {
+      this.ccMenu.appendChild(this.menuItem(label, this.captionsAreOn() && this.activeTrackId === track.id, () => {
         void this.activate(track.id);
       }));
     }
@@ -257,11 +288,15 @@ export class MediaFeaturesController {
     return item;
   }
 
-  async activate(id: string | null, options?: { persist?: boolean }): Promise<void> {
-    this.activeTrackId = id;
-    const track = this.tracks.find((item) => item.id === id);
-    const persist = options?.persist !== false;
-    if (track) {
+  private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.opChain.then(fn, fn);
+    this.opChain = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private persistAfterActivate(id: string | null, on: boolean, persist: boolean): void {
+    const track = on && id ? this.tracks.find((item) => item.id === id) : undefined;
+    if (on && track) {
       const language = normalizeLanguageCode(track.language);
       this.captionPreference = language
         ? { language, autoGenerated: Boolean(track.autoGenerated) }
@@ -274,7 +309,9 @@ export class MediaFeaturesController {
           autoGenerated: Boolean(track.autoGenerated)
         });
       }
-    } else {
+      return;
+    }
+    if (id === null) {
       const previous = this.captionPreference || this.lastLanguagePref;
       this.captionPreference = null;
       if (persist) {
@@ -285,27 +322,67 @@ export class MediaFeaturesController {
         });
       }
     }
-    const overlayCues = await this.adapter.activateCaptionTrack(id);
-    this.usingOverlayCaptions = Boolean(id && overlayCues && overlayCues.length > 0);
-    this.renderer.setCues(this.usingOverlayCaptions ? overlayCues : []);
-    document.documentElement.classList.toggle('theater-using-overlay-captions', this.usingOverlayCaptions);
-    if (this.usingOverlayCaptions) this.renderer.update(this.video.currentTime || 0);
-    this.updateCcState();
-    this.renderCcMenu();
   }
 
-  toggleCaptions(): 'on' | 'off' | 'none' {
-    if (this.disposed || this.tracks.length === 0) return 'none';
-    if (this.activeTrackId) {
-      void this.activate(null);
-      return 'off';
+  private async activateUnlocked(id: string | null, options?: { persist?: boolean }): Promise<void> {
+    if (this.disposed) return;
+    const gen = ++this.activateGeneration;
+    this.activateInFlight = true;
+    const persist = options?.persist !== false;
+    try {
+      let overlayCues: Awaited<ReturnType<MediaFeaturesAdapter['activateCaptionTrack']>> = [];
+      try {
+        overlayCues = await this.adapter.activateCaptionTrack(id);
+      } catch (err) {
+        console.error('[Theater Everywhere] Caption activate failed:', err);
+        overlayCues = [];
+      }
+      if (this.disposed || gen !== this.activateGeneration) return;
+      let on = Boolean(id && overlayCues && overlayCues.length > 0);
+      if (id && !on) {
+        try {
+          await this.adapter.activateCaptionTrack(null);
+        } catch (err) {
+          console.error('[Theater Everywhere] Caption deactivate failed:', err);
+        }
+        if (this.disposed || gen !== this.activateGeneration) return;
+        overlayCues = [];
+      }
+      this.activeTrackId = on ? id : null;
+      this.usingOverlayCaptions = on;
+      this.renderer.setCues(on ? overlayCues : []);
+      setOverlayCaptionsClass(on);
+      if (on) this.renderer.update(this.video.currentTime || 0);
+      this.persistAfterActivate(id, on, persist);
+      this.updateCcState();
+      this.renderCcMenu();
+      this.onCaptionChange?.();
+    } finally {
+      this.activateInFlight = false;
+      if (gen !== this.activateGeneration && !this.disposed) {
+        void this.refresh();
+      }
     }
-    const match = findPreferredCaptionTrack(this.tracks, this.lastLanguagePref || this.captionPreference)
-      || this.tracks.find((track) => normalizeLanguageCode(track.language))
-      || this.tracks[0];
-    if (!match) return 'none';
-    void this.activate(match.id);
-    return 'on';
+  }
+
+  async activate(id: string | null, options?: { persist?: boolean }): Promise<void> {
+    await this.enqueue(() => this.activateUnlocked(id, options));
+  }
+
+  async toggleCaptions(): Promise<'on' | 'off' | 'none'> {
+    return this.enqueue(async () => {
+      if (this.disposed || this.tracks.length === 0) return 'none';
+      if (this.captionsAreOn()) {
+        await this.activateUnlocked(null);
+        return this.captionsAreOn() ? 'on' : 'off';
+      }
+      const match = findPreferredCaptionTrack(this.tracks, this.lastLanguagePref || this.captionPreference)
+        || this.tracks.find((track) => normalizeLanguageCode(track.language))
+        || this.tracks[0];
+      if (!match) return 'none';
+      await this.activateUnlocked(match.id);
+      return this.captionsAreOn() ? 'on' : 'off';
+    });
   }
 
   updateTime(time: number): void {
@@ -323,13 +400,14 @@ export class MediaFeaturesController {
 
   ccTooltip(): string {
     if (this.tracks.length === 0) return this.t('noSubtitlesAvailable');
-    return this.activeTrackId ? this.t('disableSubtitles') : this.t('enableSubtitles');
+    return this.captionsAreOn() ? this.t('disableSubtitles') : this.t('enableSubtitles');
   }
 
   dispose(): void {
     this.disposed = true;
+    this.activateGeneration += 1;
     this.refreshQueued = false;
-    document.documentElement.classList.remove('theater-using-overlay-captions');
+    setOverlayCaptionsClass(false);
     this.renderer.dispose();
     this.adapter.dispose();
     this.chapterLayer.remove();
