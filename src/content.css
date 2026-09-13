@@ -790,7 +790,8 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 }
 
 /* Subtitles CC active state styling */
-.theater-control-btn.cc-btn.active {
+.theater-control-btn.cc-btn.active,
+.theater-control-btn.pip-btn.active {
   color: var(--accent-color, #6366f1) !important;
 }
 

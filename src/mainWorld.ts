@@ -444,7 +444,10 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
 
   function setupAudioGraph(video: HTMLVideoElement): boolean {
     const boosted = video as any;
-    if (boosted._theaterGainNode) return true; // Already initialized
+    if (boosted._theaterGainNode) {
+      video.dataset.theaterBoostReady = 'true';
+      return true; // Already initialized
+    }
     if (failedVideos.has(video)) return false; // Previously failed
 
     try {
@@ -462,6 +465,8 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
 
       boosted._theaterAudioCtx = ctx;
       boosted._theaterGainNode = gain;
+      video.dataset.theaterBoostReady = 'true';
+      window.dispatchEvent(new CustomEvent('theater-everywhere-boost-ready'));
 
       // Apply pending multiplier
       if (pendingVideo === video) {
@@ -1415,6 +1420,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, timedtextVideoId, 
     if (boosted._theaterGainNode) {
       // AudioContext already running — just adjust gain
       boosted._theaterGainNode.gain.value = multiplier;
+      video.dataset.theaterBoostReady = 'true';
 
       if (boosted._theaterAudioCtx && boosted._theaterAudioCtx.state === 'suspended') {
         boosted._theaterAudioCtx.resume().catch(() => {});

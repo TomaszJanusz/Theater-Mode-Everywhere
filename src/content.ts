@@ -2131,7 +2131,7 @@ function createCustomControls(video: HTMLVideoElement): void {
       volumeBtn.style.color = '';
     } else {
       setIcon(volumeBtn, volHighIcon);
-      if (logicalVol > 1.0) {
+      if (logicalVol > 1.0 && video.dataset.theaterBoostReady === 'true') {
         volumeBtn.style.color = '#f59e0b';
       } else {
         volumeBtn.style.color = '';
@@ -2167,6 +2167,13 @@ function createCustomControls(video: HTMLVideoElement): void {
     }
   };
   updateVolumeTooltip();
+
+  const onBoostReady = () => {
+    updateVolumeIcon();
+    updateVolumeSliderFill();
+    updateVolumeTooltip();
+  };
+  window.addEventListener('theater-everywhere-boost-ready', onBoostReady);
 
   volumeBtn.addEventListener('click', () => {
     if (isVideoSilent(video)) {
@@ -2239,9 +2246,9 @@ function createCustomControls(video: HTMLVideoElement): void {
     const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, window);
     timeDisplay.classList.toggle('theater-time-live', window.live);
     timeDisplay.classList.toggle('theater-time-live-behind', behindLive);
-    timeDisplay.classList.toggle('theater-time-live-jump', canJumpToLive);
+    timeDisplay.classList.toggle('theater-time-live-jump', behindLive);
     timeDisplay.style.cursor = window.live && !canJumpToLive ? 'default' : 'pointer';
-    timeDisplay.title = canJumpToLive ? t('jumpToLive') : '';
+    timeDisplay.title = behindLive ? t('jumpToLive') : '';
     scrubberContainer.classList.toggle('theater-scrubber-live', window.live);
     scrubberContainer.classList.toggle('theater-scrubber-live-locked', locked);
     scrubberContainer.setAttribute('aria-disabled', locked ? 'true' : 'false');
@@ -2382,6 +2389,12 @@ function createCustomControls(video: HTMLVideoElement): void {
   bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', configuredShortcuts.togglePiP));
 
   setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
+  const syncPipButton = () => {
+    pipBtn.classList.toggle('active', document.pictureInPictureElement === video);
+  };
+  syncPipButton();
+  video.addEventListener('enterpictureinpicture', syncPipButton);
+  video.addEventListener('leavepictureinpicture', syncPipButton);
   pipBtn.addEventListener('click', () => {
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture().catch(console.error);
@@ -3037,6 +3050,9 @@ function createCustomControls(video: HTMLVideoElement): void {
     video.removeEventListener('playing', onPlaying);
     video.removeEventListener('stalled', onStalled);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
+    window.removeEventListener('theater-everywhere-boost-ready', onBoostReady);
+    video.removeEventListener('enterpictureinpicture', syncPipButton);
+    video.removeEventListener('leavepictureinpicture', syncPipButton);
     if (bufferingTimeout) {
       clearTimeout(bufferingTimeout);
       bufferingTimeout = null;
@@ -3141,7 +3157,7 @@ function triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: '
   }
 
   const overlay = document.createElement('div');
-  const isBoosted = !muted && logicalVolume > 1.0;
+  const isBoosted = !muted && logicalVolume > 1.0 && activeVideo?.dataset.theaterBoostReady === 'true';
   overlay.className = 'theater-everywhere-volume-overlay' + (isBoosted ? ' boosted' : '');
   applyUiDirection(overlay);
   applyConfiguredAccentColor(overlay);
