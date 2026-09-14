@@ -10,6 +10,7 @@ type SmokeBrowser = 'chromium' | 'firefox';
 const ROOT = path.resolve(__dirname, '..');
 const PLAYER_FIXTURE = path.join(ROOT, 'test/fixtures/local-player.html');
 const IFRAME_FIXTURE = path.join(ROOT, 'test/fixtures/iframe-player.html');
+const YOUTUBE_EMBED_FIXTURE = path.join(ROOT, 'test/fixtures/youtube-embed.html');
 const THEATER_VIDEO_CLASS = 'theater-everywhere-video-active';
 const THEATER_HTML_CLASS = 'theater-everywhere-html-active';
 const PARENT_HOST = 'child.example.localhost';
@@ -59,9 +60,14 @@ function delay(ms: number): Promise<void> {
 function startFixtureServer(): Promise<{ origin: string; close: () => Promise<void> }> {
   const player = readFileSync(PLAYER_FIXTURE);
   const iframe = readFileSync(IFRAME_FIXTURE);
+  const youtubeEmbed = readFileSync(YOUTUBE_EMBED_FIXTURE);
   const server = createServer((req, res) => {
     const url = req.url || '/';
-    const body = url.startsWith('/iframe') ? iframe : player;
+    const body = url.startsWith('/youtube-embed')
+      ? youtubeEmbed
+      : url.startsWith('/iframe')
+        ? iframe
+        : player;
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store'
@@ -301,7 +307,7 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
 }
 
 async function run(): Promise<void> {
-  if (!existsSync(PLAYER_FIXTURE) || !existsSync(IFRAME_FIXTURE)) {
+  if (!existsSync(PLAYER_FIXTURE) || !existsSync(IFRAME_FIXTURE) || !existsSync(YOUTUBE_EMBED_FIXTURE)) {
     fail('Missing smoke fixtures under test/fixtures.');
   }
 

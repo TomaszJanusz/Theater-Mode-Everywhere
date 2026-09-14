@@ -2,14 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>F-01 YouTube nocookie iframe fixture</title>
+  <title>Theater Everywhere YouTube-nocookie fixture</title>
+  <style>
+    html, body { margin: 0; background: #111; color: #ddd; font: 14px/1.4 sans-serif; }
+    p { margin: 12px 16px; }
+    iframe { display: block; width: 560px; height: 315px; border: 0; margin: 16px; background: #000; }
+  </style>
 </head>
 <body>
-  <p>Local parent document used to reproduce Theater Everywhere F-01 (stuck theater mode in a cross-origin iframe).</p>
+  <p>
+    Manual F-01 repro: load the unpacked extension, serve this file over
+    <code>http</code> (not <code>file://</code>), click the embed, then press
+    <kbd>T</kbd> / <kbd>Escape</kbd> from the child and from this parent page.
+  </p>
   <iframe
     id="player"
-    width="560"
-    height="315"
     src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
     title="YouTube video"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
