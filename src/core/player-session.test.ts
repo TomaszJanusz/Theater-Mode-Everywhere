@@ -29,15 +29,44 @@ describe('PlayerSession', () => {
 
   it('exit and dispose are idempotent', () => {
     const session = new PlayerSession();
-    session.bind();
+    const host = { tagName: 'VIDEO' } as HTMLElement;
+    session.rebind(host);
+    assert.equal(session.element, host);
     assert.equal(session.tryBeginExit(), true);
     assert.equal(session.tryBeginExit(), false);
     session.finishExit();
     session.finishExit();
+    assert.equal(session.element, null);
     assert.equal(session.state.kind, 'idle');
     session.dispose();
     session.dispose();
     assert.equal(session.state.kind, 'disposed');
+  });
+
+  it('owns the theater element through rebind and rejects a network EXIT without sessionId', () => {
+    const session = new PlayerSession();
+    const first = { tagName: 'VIDEO' } as HTMLElement;
+    const second = { tagName: 'VIDEO' } as HTMLElement;
+    const bound = session.rebind(first);
+    session.activate(bound.epoch);
+    assert.equal(session.element, first);
+    const next = session.rebind(second, bound.id, bound.nonce);
+    assert.equal(session.element, second);
+    assert.equal(next.id, bound.id);
+    assert.equal(session.activate(next.epoch), true);
+    assert.equal(session.dispatch({ type: 'EXIT', origin: 'network' }), false);
+    assert.equal(session.state.kind, 'active');
+    assert.equal(session.dispatch({ type: 'EXIT', origin: 'network', sessionId: bound.id }), true);
+    assert.equal(session.state.kind, 'exiting');
+    session.finishExit();
+    assert.equal(session.element, null);
+    assert.equal(session.dispatch({ type: 'EXIT', origin: 'local' }), false);
+    assert.equal(session.dispatch({ type: 'PLAY_PAUSE' }), false);
+    assert.equal(session.dispatch({ type: 'SEEK_BY', delta: 5 }), false);
+    const again = session.rebind(first);
+    session.activate(again.epoch);
+    assert.equal(session.dispatch({ type: 'PLAY_PAUSE' }), true);
+    assert.equal(session.dispatch({ type: 'SEEK_BY', delta: -5 }), true);
   });
 
   it('rejects snapshots until the session is active', () => {

@@ -116,6 +116,24 @@ async function assertTheaterToggle(page: Page): Promise<void> {
 
   if (!await theaterEntered(page)) fail('Theater mode did not activate after T.');
 
+  const pausedBefore = await page.evaluate(() => {
+    const video = document.querySelector('video#player') as HTMLVideoElement | null;
+    return Boolean(video?.paused);
+  });
+  await page.keyboard.press('Space');
+  await delay(400);
+  const pausedAfter = await page.evaluate(() => {
+    const video = document.querySelector('video#player') as HTMLVideoElement | null;
+    return Boolean(video?.paused);
+  });
+  if (pausedAfter === pausedBefore) {
+    fail('Space did not toggle playback in theater mode on a non-provider host.');
+  }
+  if (!pausedAfter) {
+    await page.keyboard.press('Space');
+    await delay(200);
+  }
+
   await page.keyboard.press('Escape');
   await page.waitForFunction(({ videoClass, htmlClass }) => {
     const video = document.querySelector('video#player');
@@ -181,6 +199,32 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
       && !childVideo?.classList.contains(videoClass)
       && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
   }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+
+  await delay(400);
+  await frame.locator('video#player').click({ timeout: 15_000 });
+  await delay(200);
+  await frame.locator('body').press('t');
+  await page.waitForFunction((videoClass) => {
+    const iframe = document.querySelector('#child');
+    const childDoc = (iframe as HTMLIFrameElement | null)?.contentDocument;
+    const childVideo = childDoc?.querySelector('video#player');
+    return Boolean(
+      iframe?.classList.contains(videoClass)
+      || childVideo?.classList.contains(videoClass)
+      || childDoc?.documentElement.classList.contains('theater-everywhere-html-active')
+    );
+  }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  await delay(400);
+  await frame.locator('body').press('Escape');
+  await page.waitForFunction((videoClass) => {
+    const iframe = document.querySelector('#child');
+    const childDoc = (iframe as HTMLIFrameElement | null)?.contentDocument;
+    const childVideo = childDoc?.querySelector('video#player');
+    return !iframe?.classList.contains(videoClass)
+      && !childVideo?.classList.contains(videoClass)
+      && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
+  }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  console.log('smoke:chromium iframe child T/Escape passed');
 }
 
 async function assertParentBlacklist(page: Page, origin: string, context: BrowserContext): Promise<void> {

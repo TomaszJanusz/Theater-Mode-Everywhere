@@ -11,9 +11,11 @@
 </head>
 <body>
   <p>
-    Manual F-01 repro: load the unpacked extension, serve this file over
-    <code>http</code> (not <code>file://</code>), click the embed, then press
-    <kbd>T</kbd> / <kbd>Escape</kbd> from the child and from this parent page.
+    Manual F-01 repro for a real YouTube-nocookie embed: load the unpacked
+    extension, serve this file over <code>http</code> (not <code>file://</code>),
+    click the embed, then press <kbd>T</kbd> / <kbd>Escape</kbd> from the child
+    and from this parent page. Same-origin iframe T/Escape is covered by
+    <code>pnpm smoke:chromium</code>.
   </p>
   <iframe
     id="player"

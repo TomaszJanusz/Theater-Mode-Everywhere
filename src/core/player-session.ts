@@ -3,6 +3,8 @@ import { createSessionId } from '../protocol/frame-messages';
 import { emptyMediaSnapshot, type MediaSnapshot } from './media-snapshot';
 
 export type SessionKind = 'idle' | 'binding' | 'active' | 'exiting' | 'disposed';
+export type ExitOrigin = 'local' | 'network';
+export type ExitFrom = 'parent' | 'child' | 'self';
 
 export type SessionState =
   | { kind: 'idle' }
@@ -11,12 +13,22 @@ export type SessionState =
   | { kind: 'exiting'; epoch: number }
   | { kind: 'disposed' };
 
+export type PlayerCommand =
+  | { type: 'EXIT'; origin?: ExitOrigin; sessionId?: string; from?: ExitFrom }
+  | { type: 'PLAY_PAUSE' }
+  | { type: 'SEEK_BY'; delta: number }
+  | { type: 'TOGGLE_CAPTIONS' }
+  | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
+  | { type: 'CYCLE_FIT' }
+  | { type: 'TOGGLE_HELP' };
+
 export class PlayerSession {
   private epoch = 0;
   private scope = new DisposableScope();
   private abort = new AbortController();
   private kind: SessionKind = 'idle';
   private snapshot: MediaSnapshot = emptyMediaSnapshot();
+  private host: HTMLElement | null = null;
   id: string | null = null;
   nonce: string | null = null;
 
@@ -40,6 +52,10 @@ export class PlayerSession {
     return this.abort.signal;
   }
 
+  get element(): HTMLElement | null {
+    return this.host;
+  }
+
   get isExiting(): boolean {
     return this.kind === 'exiting';
   }
@@ -48,12 +64,21 @@ export class PlayerSession {
     return this.kind === 'idle' || this.kind === 'disposed';
   }
 
+  get hasUi(): boolean {
+    return this.host != null || (this.id != null && !this.isIdle);
+  }
+
   ensureNonce(): string {
     if (!this.nonce) this.nonce = createSessionId();
     return this.nonce;
   }
 
-  matches(sessionId?: string): boolean {
+  matches(sessionId?: string, source: ExitOrigin = 'local'): boolean {
+    if (source === 'network') {
+      if (!sessionId) return !this.id;
+      if (!this.id) return true;
+      return sessionId === this.id;
+    }
     if (!sessionId) return true;
     if (!this.id) return true;
     return sessionId === this.id;
@@ -70,6 +95,16 @@ export class PlayerSession {
     return { epoch: this.epoch, id: this.id, nonce: this.nonce };
   }
 
+  rebind(
+    element: HTMLElement,
+    sessionId?: string,
+    nonce?: string
+  ): { epoch: number; id: string; nonce: string } {
+    const bound = this.bind(sessionId, nonce);
+    this.host = element;
+    return bound;
+  }
+
   activate(epoch = this.epoch): boolean {
     if (this.kind === 'active' && this.epoch === epoch) return true;
     if (this.kind !== 'binding' || this.epoch !== epoch) return false;
@@ -83,14 +118,28 @@ export class PlayerSession {
     return true;
   }
 
-  tryBeginExit(): boolean {
+  dispatch(command: PlayerCommand): boolean {
+    if (command.type === 'EXIT') {
+      return this.beginExit(command.sessionId, command.origin ?? 'local');
+    }
+    if (!this.host || this.kind === 'exiting' || this.kind === 'disposed') return false;
+    return true;
+  }
+
+  beginExit(sessionId?: string, source: ExitOrigin = 'local'): boolean {
     if (this.kind === 'exiting' || this.kind === 'disposed') return false;
-    if (this.kind === 'idle' && !this.id) return false;
+    if (!this.host && !this.id) return false;
+    if (!this.matches(sessionId, source)) return false;
     this.kind = 'exiting';
     return true;
   }
 
+  tryBeginExit(): boolean {
+    return this.beginExit(undefined, 'local');
+  }
+
   finishExit(): void {
+    this.host = null;
     this.id = null;
     this.nonce = null;
     this.snapshot = emptyMediaSnapshot();
@@ -106,6 +155,7 @@ export class PlayerSession {
   dispose(): void {
     if (this.kind === 'disposed') return;
     this.kind = 'disposed';
+    this.host = null;
     this.id = null;
     this.nonce = null;
     this.snapshot = emptyMediaSnapshot();
