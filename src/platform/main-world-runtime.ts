@@ -1,4 +1,4 @@
-import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from '../media-features/fetch-allowlist';
+import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched } from '../providers/registry';
 import { findActiveVideo } from './active-video';

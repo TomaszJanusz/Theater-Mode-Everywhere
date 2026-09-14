@@ -83,7 +83,7 @@ describe('F-01 frame session handshake', () => {
     let theater = true;
     let current: string | null = sessionId;
     const exit = (incoming: string) => {
-      if (current && incoming !== current && incoming !== 'legacy') return false;
+      if (current && incoming !== current) return false;
       theater = false;
       current = null;
       return true;

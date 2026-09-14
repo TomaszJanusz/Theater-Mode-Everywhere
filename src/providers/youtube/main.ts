@@ -7,7 +7,7 @@ import {
   youtubePageVideoId,
   type CachedTimedtext
 } from '../../media-features/youtube-caption-url';
-import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
+import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { publishHiddenJson } from '../../platform/hidden-json';
 

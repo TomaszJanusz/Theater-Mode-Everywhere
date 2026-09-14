@@ -54,7 +54,7 @@ export class PlayerSession {
   }
 
   matches(sessionId?: string): boolean {
-    if (!sessionId || sessionId === 'legacy') return true;
+    if (!sessionId) return true;
     if (!this.id) return true;
     return sessionId === this.id;
   }
@@ -65,9 +65,16 @@ export class PlayerSession {
     this.abort = new AbortController();
     this.id = sessionId || this.id || createSessionId();
     this.nonce = nonce || this.nonce || createSessionId();
-    this.kind = 'active';
+    this.kind = 'binding';
     this.snapshot = emptyMediaSnapshot();
     return { epoch: this.epoch, id: this.id, nonce: this.nonce };
+  }
+
+  activate(epoch = this.epoch): boolean {
+    if (this.kind === 'active' && this.epoch === epoch) return true;
+    if (this.kind !== 'binding' || this.epoch !== epoch) return false;
+    this.kind = 'active';
+    return true;
   }
 
   publishSnapshot(snapshot: MediaSnapshot, epoch: number): boolean {

@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
@@ -8,9 +8,12 @@ import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
 type SmokeBrowser = 'chromium' | 'firefox';
 
 const ROOT = path.resolve(__dirname, '..');
-const FIXTURE_PATH = path.join(ROOT, 'test/fixtures/local-player.html');
+const PLAYER_FIXTURE = path.join(ROOT, 'test/fixtures/local-player.html');
+const IFRAME_FIXTURE = path.join(ROOT, 'test/fixtures/iframe-player.html');
 const THEATER_VIDEO_CLASS = 'theater-everywhere-video-active';
 const THEATER_HTML_CLASS = 'theater-everywhere-html-active';
+const PARENT_HOST = 'child.example.localhost';
+const PARENT_BLACKLIST = 'example.localhost';
 
 function fail(message: string): never {
   console.error(message);
@@ -53,21 +56,24 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function startFixtureServer(): Promise<{ url: string; close: () => Promise<void> }> {
-  const html = readFileSync(FIXTURE_PATH);
-  const server = createServer((_req, res) => {
+function startFixtureServer(): Promise<{ origin: string; close: () => Promise<void> }> {
+  const player = readFileSync(PLAYER_FIXTURE);
+  const iframe = readFileSync(IFRAME_FIXTURE);
+  const server = createServer((req, res) => {
+    const url = req.url || '/';
+    const body = url.startsWith('/iframe') ? iframe : player;
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store'
     });
-    res.end(html);
+    res.end(body);
   });
 
   return new Promise((resolve, reject) => {
     server.listen(0, '127.0.0.1', () => {
       const address = server.address() as AddressInfo;
       resolve({
-        url: `http://127.0.0.1:${address.port}/`,
+        origin: `http://127.0.0.1:${address.port}`,
         close: () => new Promise((done, failClose) => {
           server.close((err) => (err ? failClose(err) : done()));
         })
@@ -87,6 +93,13 @@ async function waitForPlayer(page: Page): Promise<void> {
   }, null, { timeout: 15_000 });
 }
 
+async function theaterEntered(page: Page): Promise<boolean> {
+  return page.evaluate(({ videoClass, htmlClass }) => {
+    const video = document.querySelector('video#player');
+    return Boolean(video?.classList.contains(videoClass) || document.documentElement.classList.contains(htmlClass));
+  }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS });
+}
+
 async function assertTheaterToggle(page: Page): Promise<void> {
   await page.click('video#player');
   await page.keyboard.press('t');
@@ -95,16 +108,7 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     return Boolean(video?.classList.contains(videoClass) || document.documentElement.classList.contains(htmlClass));
   }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS }, { timeout: 10_000 });
 
-  const entered = await page.evaluate(({ videoClass, htmlClass }) => {
-    const video = document.querySelector('video#player');
-    return {
-      video: Boolean(video?.classList.contains(videoClass)),
-      html: document.documentElement.classList.contains(htmlClass)
-    };
-  }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS });
-  if (!entered.video && !entered.html) {
-    fail('Theater mode did not activate after T.');
-  }
+  if (!await theaterEntered(page)) fail('Theater mode did not activate after T.');
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(({ videoClass, htmlClass }) => {
@@ -123,7 +127,70 @@ async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<voi
   await delay(400);
 }
 
-async function smokeChromium(url: string, unpackedDir: string): Promise<void> {
+async function extensionWorker(context: BrowserContext) {
+  let [worker] = context.serviceWorkers();
+  if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 15_000 });
+  return worker;
+}
+
+async function setBlacklist(context: BrowserContext, entries: string[]): Promise<void> {
+  const worker = await extensionWorker(context);
+  await worker.evaluate(async (blacklist) => {
+    await chrome.storage.sync.set({ blacklist });
+  }, entries);
+}
+
+async function assertBlacklistBlocksTheater(page: Page): Promise<void> {
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPlayer(page);
+  await page.click('video#player');
+  await page.keyboard.press('t');
+  await delay(800);
+  if (await theaterEntered(page)) {
+    fail('Theater mode activated on a blacklisted host.');
+  }
+}
+
+async function assertIframeHandshake(page: Page, origin: string): Promise<void> {
+  await page.goto(`${origin}/iframe`, { waitUntil: 'domcontentloaded' });
+  const frame = page.frameLocator('#child');
+  await frame.locator('video#player').click({ timeout: 15_000 });
+  await page.keyboard.press('t');
+  await page.waitForFunction((videoClass) => {
+    const iframe = document.querySelector('#child');
+    const childDoc = (iframe as HTMLIFrameElement | null)?.contentDocument;
+    const childVideo = childDoc?.querySelector('video#player');
+    return Boolean(
+      iframe?.classList.contains(videoClass)
+      || childVideo?.classList.contains(videoClass)
+      || childDoc?.documentElement.classList.contains('theater-everywhere-html-active')
+    );
+  }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction((videoClass) => {
+    const iframe = document.querySelector('#child');
+    const childDoc = (iframe as HTMLIFrameElement | null)?.contentDocument;
+    const childVideo = childDoc?.querySelector('video#player');
+    return !iframe?.classList.contains(videoClass)
+      && !childVideo?.classList.contains(videoClass)
+      && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
+  }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+}
+
+async function assertParentBlacklist(page: Page, origin: string, context: BrowserContext): Promise<void> {
+  await setBlacklist(context, [PARENT_BLACKLIST]);
+  const port = new URL(origin).port;
+  await page.goto(`http://${PARENT_HOST}:${port}/`, { waitUntil: 'domcontentloaded' });
+  await waitForPlayer(page);
+  await page.click('video#player');
+  await page.keyboard.press('t');
+  await delay(800);
+  if (await theaterEntered(page)) {
+    fail('Theater mode activated under a parent-domain blacklist.');
+  }
+}
+
+async function smokeChromium(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
   }
@@ -138,50 +205,109 @@ async function smokeChromium(url: string, unpackedDir: string): Promise<void> {
         '--headless=new',
         '--no-sandbox',
         '--disable-dev-shm-usage',
+        `--host-resolver-rules=MAP *.example.localhost 127.0.0.1,MAP example.localhost 127.0.0.1`,
         `--disable-extensions-except=${unpackedDir}`,
         `--load-extension=${unpackedDir}`
       ]
     });
 
     const page = context.pages()[0] || await context.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertTheaterToggle(page);
-    console.log('smoke:chromium passed (unpacked MV3 extension)');
+    console.log('smoke:chromium local player T/Escape passed');
+
+    await setBlacklist(context, ['127.0.0.1']);
+    await assertBlacklistBlocksTheater(page);
+    await setBlacklist(context, []);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertTheaterToggle(page);
+    console.log('smoke:chromium blacklist exact host passed');
+
+    await assertIframeHandshake(page, origin);
+    console.log('smoke:chromium same-origin iframe handshake passed');
+
+    await assertParentBlacklist(page, origin, context);
+    await setBlacklist(context, []);
+    console.log('smoke:chromium parent-domain blacklist passed');
   } finally {
     await context?.close();
     rmSync(userDataDir, { recursive: true, force: true });
   }
 }
 
-async function smokeFirefox(url: string, unpackedDir: string): Promise<void> {
+async function tryFirefoxSideload(origin: string): Promise<boolean> {
+  const xpiSource = path.join(ROOT, 'dist/theater-everywhere-firefox.zip');
+  if (!existsSync(xpiSource)) return false;
+  const userDataDir = mkdtempSync(path.join(tmpdir(), 'te-smoke-firefox-'));
+  const extensionsDir = path.join(userDataDir, 'extensions');
+  mkdirSync(extensionsDir, { recursive: true });
+  copyFileSync(xpiSource, path.join(extensionsDir, 'theater-everywhere@tomaszjanusz.dev.xpi'));
+  let context: BrowserContext | null = null;
+  try {
+    context = await firefox.launchPersistentContext(userDataDir, {
+      headless: true,
+      viewport: { width: 1280, height: 720 },
+      firefoxUserPrefs: {
+        'xpinstall.signatures.required': false,
+        'extensions.autoDisableScopes': 0,
+        'extensions.enabledScopes': 15,
+        'extensions.startupScanScopes': 15
+      }
+    });
+    const page = context.pages()[0] || await context.newPage();
+    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await page.click('video#player');
+    await page.keyboard.press('t');
+    await delay(1500);
+    const entered = await theaterEntered(page);
+    if (!entered) return false;
+    await page.keyboard.press('Escape');
+    await delay(500);
+    console.log('smoke:firefox passed (sideloaded MV3 xpi)');
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await context?.close();
+    rmSync(userDataDir, { recursive: true, force: true });
+  }
+}
+
+async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('firefox')) {
     skipLocally('Skipping smoke:firefox. Run: pnpm exec playwright install chromium firefox');
   }
 
+  if (await tryFirefoxSideload(origin)) return;
+
   const browser = await firefox.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await injectBundledPlayer(page, unpackedDir);
     await assertTheaterToggle(page);
-    console.log('smoke:firefox passed (injected bundled content.js; Playwright cannot load MV3 addons)');
+    console.log('smoke:firefox passed (injected bundled content.js; sideload of unsigned MV3 xpi is blocked)');
   } finally {
     await browser.close();
   }
 }
 
 async function run(): Promise<void> {
-  if (!existsSync(FIXTURE_PATH)) fail(`Missing fixture ${FIXTURE_PATH}`);
+  if (!existsSync(PLAYER_FIXTURE) || !existsSync(IFRAME_FIXTURE)) {
+    fail('Missing smoke fixtures under test/fixtures.');
+  }
 
   const targets = requestedBrowsers();
   const fixture = await startFixtureServer();
   try {
     for (const kind of targets) {
       const unpackedDir = requireBuiltExtension(kind);
-      if (kind === 'chromium') await smokeChromium(fixture.url, unpackedDir);
-      else await smokeFirefox(fixture.url, unpackedDir);
+      if (kind === 'chromium') await smokeChromium(fixture.origin, unpackedDir);
+      else await smokeFirefox(fixture.origin, unpackedDir);
     }
   } finally {
     await fixture.close();

@@ -1,10 +1,11 @@
 import type { CaptionTrack, Chapter, MediaCapabilities } from '../media-features/types';
+import type { ProviderError } from './errors';
 
 export type MediaSnapshot = {
   capabilities: MediaCapabilities;
   tracks: CaptionTrack[];
   chapters: Chapter[];
-  errors: unknown[];
+  errors: ProviderError[];
 };
 
 export function emptyMediaSnapshot(): MediaSnapshot {

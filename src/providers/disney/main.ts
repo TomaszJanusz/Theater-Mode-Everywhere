@@ -1,4 +1,4 @@
-import { MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
+import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
 import { publishHiddenJson } from '../../platform/hidden-json';

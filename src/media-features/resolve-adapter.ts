@@ -1,11 +1,11 @@
 import { CompositeMediaAdapter } from './composite-adapter';
-import { DisneyAdapter } from './disney-adapter';
-import { NativeTextTrackAdapter } from './native-adapter';
-import { PatreonAdapter } from './patreon-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
-import { TwitchAdapter } from './twitch-adapter';
-import { VimeoAdapter } from './vimeo-adapter';
-import { YouTubeAdapter } from './youtube-adapter';
+import { DisneyAdapter } from '../providers/disney/adapter';
+import { NativeTextTrackAdapter } from '../providers/native/adapter';
+import { PatreonAdapter } from '../providers/patreon/adapter';
+import { TwitchAdapter } from '../providers/twitch/adapter';
+import { VimeoAdapter } from '../providers/vimeo/adapter';
+import { YouTubeAdapter } from '../providers/youtube/adapter';
 import { shouldAttachProvider } from '../providers/registry';
 import type { MediaFeaturesAdapter } from './types';
 

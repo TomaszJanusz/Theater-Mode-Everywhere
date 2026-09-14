@@ -1,4 +1,4 @@
-import { isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
+import { isAllowedMediaFetchUrl } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isPatreonHost } from '../hosts';
 

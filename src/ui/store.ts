@@ -32,25 +32,47 @@ const defaultState = (): PlayerUiState => ({
   shortcuts: { ...defaultShortcuts }
 });
 
+function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
+  return (
+    left.theaterActive === right.theaterActive
+    && left.helpOpen === right.helpOpen
+    && left.toolbarVisible === right.toolbarVisible
+    && left.videoFit === right.videoFit
+    && left.accentColor === right.accentColor
+    && left.captionStyle === right.captionStyle
+    && left.shortcuts === right.shortcuts
+  );
+}
+
 function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
+  let next = state;
   switch (action.type) {
     case 'HYDRATE':
-      return { ...state, ...action.value };
+      next = { ...state, ...action.value };
+      break;
     case 'SET_THEATER_ACTIVE':
-      return { ...state, theaterActive: action.value, helpOpen: action.value ? state.helpOpen : false };
+      next = { ...state, theaterActive: action.value, helpOpen: action.value ? state.helpOpen : false };
+      break;
     case 'SET_HELP_OPEN':
-      return { ...state, helpOpen: action.value };
+      next = { ...state, helpOpen: action.value };
+      break;
     case 'SET_TOOLBAR_VISIBLE':
-      return { ...state, toolbarVisible: action.value };
+      next = { ...state, toolbarVisible: action.value };
+      break;
     case 'SET_VIDEO_FIT':
-      return { ...state, videoFit: action.value };
+      next = { ...state, videoFit: action.value };
+      break;
     case 'SET_ACCENT':
-      return { ...state, accentColor: action.value };
+      next = { ...state, accentColor: action.value };
+      break;
     case 'SET_CAPTION_STYLE':
-      return { ...state, captionStyle: action.value };
+      next = { ...state, captionStyle: action.value };
+      break;
     case 'SET_SHORTCUTS':
-      return { ...state, shortcuts: action.value };
+      next = { ...state, shortcuts: action.value };
+      break;
   }
+  return sameState(state, next) ? state : next;
 }
 
 export class PlayerUiStore {

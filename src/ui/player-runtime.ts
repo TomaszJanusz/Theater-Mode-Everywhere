@@ -55,27 +55,27 @@ import { ACCENT_COLOR_STORAGE_KEY } from '../accentTheme';
 import { createSessionId } from '../protocol/frame-messages';
 import {
   applyAccentColorPreset,
-  DEFAULT_ACCENT_COLOR,
-  DEFAULT_VIDEO_FIT,
   resolveAccentColorPreset,
   resolveVideoFitMode,
   VIDEO_FIT_MODES,
   VIDEO_FIT_STORAGE_KEY,
   videoFitLabel,
-  type AccentColorPreset,
   type VideoFitMode
 } from './appearance';
 import { applyUiDirection, t } from './messages';
-import { defaultShortcuts, matchesShortcut, withShortcutDefaults, type Shortcuts } from './shortcuts';
-import { PlayerUiStore } from './store';
+import { defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { PlayerUiStore, type PlayerUiState } from './store';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
 const uiStore = new PlayerUiStore();
 
+function ui(): PlayerUiState {
+  return uiStore.getState();
+}
+
 let volumeBoostEnabled = false;
 let providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
-let configuredShortcuts: Shortcuts = { ...defaultShortcuts };
 
 interface BoostedVideoElement extends HTMLVideoElement {
   _audioCtx?: AudioContext;
@@ -138,9 +138,6 @@ let toolbarTimer: ReturnType<typeof setTimeout> | null = null;
 let toolbarKeyboardInteractionActive = false;
 let currentToggleFullscreen: (() => void) | null = null;
 let onVolumeAdjustedCallback: (() => void) | null = null;
-let configuredAccentColor: AccentColorPreset = DEFAULT_ACCENT_COLOR;
-let configuredVideoFit: VideoFitMode = DEFAULT_VIDEO_FIT;
-let configuredCaptionStyle: CaptionStyle = resolveCaptionStyle(null);
 let captionPreferenceMap: Record<string, CaptionLanguagePreference> = {};
 
 const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -185,7 +182,7 @@ const theaterElementInlineStyleState = new WeakMap<HTMLElement, SavedInlineStyle
 function getTheaterElementInlineStyles(): Record<string, string> {
   return {
     ...THEATER_ELEMENT_INLINE_STYLES,
-    'object-fit': configuredVideoFit,
+    'object-fit': ui().videoFit,
   };
 }
 
@@ -205,16 +202,16 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
   Object.entries(styles).forEach(([property, value]) => {
     element.style.setProperty(property, value, 'important');
   });
-  element.style.setProperty('--theater-object-fit', configuredVideoFit);
+  element.style.setProperty('--theater-object-fit', ui().videoFit);
 }
 
-function applyTheaterVideoFit(mode: VideoFitMode = configuredVideoFit): void {
-  configuredVideoFit = mode;
+function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
   uiStore.dispatch({ type: 'SET_VIDEO_FIT', value: mode });
-  document.documentElement.style.setProperty('--theater-object-fit', mode);
+  const fit = ui().videoFit;
+  document.documentElement.style.setProperty('--theater-object-fit', fit);
   if (theaterElement) {
-    theaterElement.style.setProperty('object-fit', mode, 'important');
-    theaterElement.style.setProperty('--theater-object-fit', mode);
+    theaterElement.style.setProperty('object-fit', fit, 'important');
+    theaterElement.style.setProperty('--theater-object-fit', fit);
   }
 }
 
@@ -237,8 +234,7 @@ function persistCaptionPreference(pref: CaptionLanguagePreference): void {
 }
 
 function persistCaptionStyle(style: CaptionStyle): void {
-  configuredCaptionStyle = style;
-  uiStore.dispatch({ type: 'SET_CAPTION_STYLE', value: style });
+  applyCaptionStyleToTheater(style);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
       chrome.storage.sync.set({ [CAPTION_STYLE_STORAGE_KEY]: style });
@@ -247,9 +243,9 @@ function persistCaptionStyle(style: CaptionStyle): void {
 }
 
 function applyCaptionStyleToTheater(style: CaptionStyle): void {
-  configuredCaptionStyle = style;
+  uiStore.dispatch({ type: 'SET_CAPTION_STYLE', value: style });
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
-  wrapper?._mediaFeatures?.setCaptionStyle(style);
+  wrapper?._mediaFeatures?.setCaptionStyle(ui().captionStyle);
 }
 
 function persistVideoFitMode(mode: VideoFitMode): void {
@@ -264,7 +260,7 @@ function persistVideoFitMode(mode: VideoFitMode): void {
 }
 
 function cycleVideoFit(): void {
-  const currentIndex = VIDEO_FIT_MODES.indexOf(configuredVideoFit);
+  const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
   const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
   persistVideoFitMode(nextMode);
   triggerStatusIndicator(videoFitLabel(nextMode), STATUS_HUD_FIT_ICON);
@@ -332,7 +328,7 @@ function shouldKeepToolbarVisible(controls: HTMLElement): boolean {
   const isScrubberDragging = controls.querySelector('.theater-scrubber-container.dragging') !== null;
   const hasKeyboardFocus = toolbarKeyboardInteractionActive && controls.querySelector(':focus-visible') !== null;
 
-  return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || helpOverlayElement !== null;
+  return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || ui().helpOpen;
 }
 
 function closeTheaterPopovers(): void {
@@ -541,7 +537,7 @@ function setTooltipContent(el: HTMLElement, rawText: string): void {
 }
 
 function applyConfiguredAccentColor(target: HTMLElement): void {
-  applyAccentColorPreset(target, configuredAccentColor);
+  applyAccentColorPreset(target, ui().accentColor);
 }
 
 function refreshExtensionAccentColor(): void {
@@ -586,21 +582,18 @@ async function checkBlacklistAndInit(): Promise<void> {
     const saved = data.shortcuts || {};
     volumeBoostEnabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
     applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
-    configuredAccentColor = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
-    applyTheaterVideoFit(resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]));
-    applyCaptionStyleToTheater(resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY]));
-    captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
-    
-    configuredShortcuts = withShortcutDefaults(saved);
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
-        shortcuts: configuredShortcuts,
-        videoFit: configuredVideoFit,
-        accentColor: configuredAccentColor,
-        captionStyle: configuredCaptionStyle
+        shortcuts: withShortcutDefaults(saved),
+        videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
+        accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
+        captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
     });
+    applyTheaterVideoFit(ui().videoFit);
+    applyCaptionStyleToTheater(ui().captionStyle);
+    captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
     
     const isBlacklisted = resolveDomainPolicy(currentHostname, blacklist).effective;
 
@@ -645,7 +638,7 @@ function theaterDialogOpen(): boolean {
 }
 
 function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
-  const shortcuts = configuredShortcuts || defaultShortcuts;
+  const shortcuts = ui().shortcuts || defaultShortcuts;
   
   if (matchesShortcut(e, shortcuts.playPause)) {
     e.preventDefault();
@@ -754,7 +747,7 @@ function initialize(): void {
     if (isEditable) return;
     if (theaterDialogOpen()) return;
 
-    const shortcuts = configuredShortcuts || defaultShortcuts;
+    const shortcuts = ui().shortcuts || defaultShortcuts;
 
     if (theaterElement && matchesShortcut(event, shortcuts.cycle)) {
       event.preventDefault();
@@ -795,7 +788,7 @@ function initialize(): void {
       toggleTheaterMode();
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
-      if (helpOverlayElement) {
+      if (ui().helpOpen) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -851,7 +844,7 @@ function initialize(): void {
     );
     if (isEditable) return;
     if (theaterDialogOpen()) return;
-    const shortcuts = configuredShortcuts || defaultShortcuts;
+    const shortcuts = ui().shortcuts || defaultShortcuts;
     if (matchesShortcut(event, shortcuts.playPause)) {
       event.preventDefault();
       event.stopPropagation();
@@ -1173,7 +1166,7 @@ function showHelpOverlay(): void {
 
   showToolbar();
 
-  const shortcuts = configuredShortcuts || defaultShortcuts;
+  const shortcuts = ui().shortcuts || defaultShortcuts;
 
   const overlay = document.createElement('div');
   overlay.className = 'theater-help-overlay';
@@ -1289,12 +1282,14 @@ function showHelpOverlay(): void {
   mountPlayerUi(overlay);
 
   helpOverlayElement = overlay;
+  uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
 }
 
 function hideHelpOverlay(): void {
   if (!helpOverlayElement) return;
   helpOverlayElement.remove();
   helpOverlayElement = null;
+  uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
   scheduleToolbarHide();
 }
 
@@ -1518,9 +1513,6 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     eventTypes.forEach(type => {
       video.addEventListener(type, preventDoubleToggle, true);
     });
-
-    // Create and inject our unified bottom player controls
-    createCustomControls(video);
   }
 
   // Traverse ancestors and apply override class (crossing shadow boundaries)
@@ -1546,6 +1538,11 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   // If we are in an iframe, notify the parent document to expand the iframe itself
   if (window !== window.top && session.id) {
     frames.postToParent('FRAME_ENTER', session.id);
+  }
+  session.activate();
+
+  if (theaterElement.tagName === 'VIDEO') {
+    createCustomControls(theaterElement as HTMLVideoElement);
   }
 }
 
@@ -1671,8 +1668,11 @@ export function bootstrapPlayerRuntime(): void {
       if (areaName !== 'sync') return;
 
       if (changes.shortcuts?.newValue) {
-        const saved = changes.shortcuts.newValue || {};
-        configuredShortcuts = withShortcutDefaults(saved);
+        uiStore.dispatch({ type: 'SET_SHORTCUTS', value: withShortcutDefaults(changes.shortcuts.newValue || {}) });
+      }
+      if (changes[ACCENT_COLOR_STORAGE_KEY]) {
+        uiStore.dispatch({ type: 'SET_ACCENT', value: resolveAccentColorPreset(changes[ACCENT_COLOR_STORAGE_KEY].newValue) });
+        refreshExtensionAccentColor();
       }
 
       if (changes[VIDEO_FIT_STORAGE_KEY]) {
@@ -1847,7 +1847,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   
   bindCustomTooltip(playPauseBtn, () => {
     const action = video.paused ? t('play') : t('pause');
-    return `${action} <kbd>${configuredShortcuts.playPause}</kbd>`;
+    return `${action} <kbd>${ui().shortcuts.playPause}</kbd>`;
   });
 
   const playIcon = `
@@ -2199,7 +2199,7 @@ function createCustomControls(video: HTMLVideoElement): void {
     pipBtn.style.display = 'none';
   }
 
-  bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', configuredShortcuts.togglePiP));
+  bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', ui().shortcuts.togglePiP));
 
   setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
   const syncPipButton = () => {
@@ -2221,7 +2221,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   fullscreenBtn.className = 'theater-control-btn fullscreen-btn';
   
   bindCustomTooltip(fullscreenBtn, () => {
-    return document.fullscreenElement ? t('exitFullscreen') : t('fullscreenTooltip', configuredShortcuts.toggleFullscreen);
+    return document.fullscreenElement ? t('exitFullscreen') : t('fullscreenTooltip', ui().shortcuts.toggleFullscreen);
   });
 
   const enterFullscreenIcon = `
@@ -2293,8 +2293,8 @@ function createCustomControls(video: HTMLVideoElement): void {
   closeBtn.className = 'theater-control-btn close-btn';
   
   bindCustomTooltip(closeBtn, () => {
-    const toggleKey = escapeHtml((configuredShortcuts.toggle || 'T').toUpperCase());
-    const exitKey = escapeHtml(configuredShortcuts.exit === 'Escape' ? 'Esc' : (configuredShortcuts.exit || 'Esc'));
+    const toggleKey = escapeHtml((ui().shortcuts.toggle || 'T').toUpperCase());
+    const exitKey = escapeHtml(ui().shortcuts.exit === 'Escape' ? 'Esc' : (ui().shortcuts.exit || 'Esc'));
     return t('exitTheaterModeTooltip', [toggleKey, exitKey]);
   });
 
@@ -2327,16 +2327,19 @@ function createCustomControls(video: HTMLVideoElement): void {
     decorateCaptionDialog: (overlay) => {
       applyUiDirection(overlay);
       applyConfiguredAccentColor(overlay);
+    },
+    onSnapshot: (snapshot) => {
+      session.publishSnapshot(snapshot, session.currentEpoch);
     }
   });
   wrapper._mediaFeatures = mediaFeatures;
-  mediaFeatures.setCaptionStyle(configuredCaptionStyle);
+  mediaFeatures.setCaptionStyle(ui().captionStyle);
   void mediaFeatures.start();
   updateCaptionDock();
 
   bindCustomTooltip(ccBtn, () => {
     if (mediaFeatures.ccTooltip() === t('noSubtitlesAvailable')) return t('noSubtitlesAvailable');
-    return t('subtitlesTooltip', configuredShortcuts.toggleCaptions);
+    return t('subtitlesTooltip', ui().shortcuts.toggleCaptions);
   });
 
   setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0M14 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0"></path></svg>`);
@@ -2400,7 +2403,7 @@ function createCustomControls(video: HTMLVideoElement): void {
 
   const fitBtn = document.createElement('button');
   fitBtn.className = 'theater-control-btn video-fit-btn';
-  bindCustomTooltip(fitBtn, () => t('videoFitTooltip', configuredShortcuts.cycleFit));
+  bindCustomTooltip(fitBtn, () => t('videoFitTooltip', ui().shortcuts.cycleFit));
   const updateFitButtonIcon = () => {
     setIcon(fitBtn, `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2424,7 +2427,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   if (videosOnPage.length > 1) {
     const switchVideoBtn = document.createElement('button');
     switchVideoBtn.className = 'theater-control-btn switch-video-btn';
-    bindCustomTooltip(switchVideoBtn, () => t('switchVideoTooltip', configuredShortcuts.cycle));
+    bindCustomTooltip(switchVideoBtn, () => t('switchVideoTooltip', ui().shortcuts.cycle));
     setIcon(switchVideoBtn, `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
@@ -2443,7 +2446,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   // Help Button (Keyboard shortcuts listing)
   const helpBtn = document.createElement('button');
   helpBtn.className = 'theater-control-btn help-btn';
-  bindCustomTooltip(helpBtn, () => t('keyboardShortcutsTooltip', configuredShortcuts.showHelp));
+  bindCustomTooltip(helpBtn, () => t('keyboardShortcutsTooltip', ui().shortcuts.showHelp));
   setIcon(helpBtn, `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="10"></circle>

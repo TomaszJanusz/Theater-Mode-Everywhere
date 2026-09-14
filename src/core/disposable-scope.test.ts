@@ -56,4 +56,26 @@ describe('F-07 DisposableScope', () => {
     await new Promise((resolve) => setTimeout(resolve, 40));
     assert.equal(fired, false);
   });
+
+  it('drops document capture listeners used for drag when disposed mid-gesture', () => {
+    const listeners = new Map<string, number>();
+    const stub: EventTarget = {
+      addEventListener(type) {
+        listeners.set(type, (listeners.get(type) || 0) + 1);
+      },
+      removeEventListener(type) {
+        listeners.set(type, (listeners.get(type) || 1) - 1);
+      },
+      dispatchEvent() {
+        return true;
+      }
+    };
+    const controlsScope = new DisposableScope();
+    const gestureScope = controlsScope.child();
+    gestureScope.listen(stub, 'mousemove', () => {}, true);
+    gestureScope.listen(stub, 'mouseup', () => {}, true);
+    controlsScope.dispose();
+    assert.equal(listeners.get('mousemove'), 0);
+    assert.equal(listeners.get('mouseup'), 0);
+  });
 });

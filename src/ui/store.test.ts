@@ -15,4 +15,13 @@ describe('PlayerUiStore', () => {
     assert.equal(store.getState().theaterActive, false);
     assert.equal(store.getState().helpOpen, false);
   });
+
+  it('exposes hydrated values as the live UI state', () => {
+    const store = new PlayerUiStore();
+    store.dispatch({ type: 'HYDRATE', value: { theaterActive: true, videoFit: 'cover' } });
+    assert.equal(store.getState().theaterActive, true);
+    assert.equal(store.getState().videoFit, 'cover');
+    store.dispatch({ type: 'SET_VIDEO_FIT', value: 'cover' });
+    assert.equal(store.getState().videoFit, 'cover');
+  });
 });

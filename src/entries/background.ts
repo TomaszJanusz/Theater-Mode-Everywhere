@@ -1,5 +1,5 @@
 import { resolveDomainPolicy } from '../platform/domain-policy';
-import { isAllowedBrokerFetchUrl } from '../media-features/fetch-allowlist';
+import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 
 declare const browser: any;
 
@@ -57,8 +57,6 @@ chrome.storage.onChanged.addListener(async (changes) => {
     }
   }
 });
-
-const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body?: string; contentType?: string; error?: string }> {
   if (!isAllowedBrokerFetchUrl(url)) {

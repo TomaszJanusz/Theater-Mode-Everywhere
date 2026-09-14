@@ -324,4 +324,34 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.ok(calls.includes('fresh-list'));
     assert.equal(ccBtn.classList.contains('disabled'), false);
   });
+
+  it('publishes a typed media snapshot after refresh', async () => {
+    const seen: Array<{ captions: boolean; errorCount: number }> = [];
+    const { controller } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : [])
+    }, {
+      onSnapshot: (snapshot) => {
+        seen.push({ captions: snapshot.capabilities.captions, errorCount: snapshot.errors.length });
+      }
+    });
+    await controller.refresh();
+    assert.deepEqual(seen, [{ captions: true, errorCount: 0 }]);
+  });
+
+  it('records a provider error on the snapshot when probe fails', async () => {
+    const codes: string[] = [];
+    const { controller } = createController({
+      listCaptionTracks: async () => {
+        throw new Error('probe failed');
+      },
+      activateCaptionTrack: async () => []
+    }, {
+      onSnapshot: (snapshot) => {
+        codes.push(...snapshot.errors.map((error) => error.code));
+      }
+    });
+    await controller.refresh();
+    assert.deepEqual(codes, ['network-failed']);
+  });
 });

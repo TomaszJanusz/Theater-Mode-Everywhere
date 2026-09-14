@@ -8,6 +8,8 @@ import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderF
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
 import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
+import type { MediaSnapshot } from '../core/media-snapshot';
+import { providerError } from '../core/errors';
 
 export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
 
@@ -38,6 +40,7 @@ export type MediaFeaturesBindings = {
   decorateCaptionDialog?: (overlay: HTMLElement) => void;
   adapter?: MediaFeaturesAdapter;
   renderer?: CaptionOverlayRenderer;
+  onSnapshot?: (snapshot: MediaSnapshot) => void;
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -75,6 +78,7 @@ export class MediaFeaturesController {
   private onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
+  private onSnapshot?: (snapshot: MediaSnapshot) => void;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
   private sessionEpoch = 0;
@@ -94,6 +98,7 @@ export class MediaFeaturesController {
     this.onCaptionStyleChange = bindings.onCaptionStyleChange;
     this.onCaptionPreferenceChange = bindings.onCaptionPreferenceChange;
     this.decorateCaptionDialog = bindings.decorateCaptionDialog;
+    this.onSnapshot = bindings.onSnapshot;
     const pref = bindings.captionPreference;
     if (pref && (pref.language || pref.label)) {
       this.lastLanguagePref = {
@@ -179,6 +184,7 @@ export class MediaFeaturesController {
     const epoch = this.sessionEpoch;
     const adapter = this.adapter;
     const previousId = this.mediaId;
+    const errors: MediaSnapshot['errors'] = [];
     try {
       try {
         await adapter.reload?.();
@@ -192,6 +198,7 @@ export class MediaFeaturesController {
         console.error('[Theater Everywhere] Media features probe failed:', err);
         this.tracks = [];
         this.chapters = [];
+        errors.push(providerError('network-failed', { capability: 'captions', cause: err, epoch }));
       }
       if (!this.isCurrent(epoch, adapter)) return;
       const mediaChanged = Boolean(previousId && this.mediaId && previousId !== this.mediaId);
@@ -232,6 +239,18 @@ export class MediaFeaturesController {
         }
       }
     } finally {
+      if (this.isCurrent(epoch, adapter)) {
+        this.onSnapshot?.({
+          capabilities: {
+            captions: this.tracks.length > 0,
+            chapters: this.chapters.length > 0,
+            previews: false
+          },
+          tracks: this.tracks,
+          chapters: this.chapters,
+          errors
+        });
+      }
       this.refreshInFlight = false;
       if (this.refreshQueued && !this.disposed) {
         this.refreshQueued = false;
