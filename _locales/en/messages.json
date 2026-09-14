@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs."
   },
+  "disneyIntegrationTitle": {
+    "message": "Disney+ integration"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Use Disney+ captions and timeline previews in theater mode when the player session includes them. Turn this off to keep theater mode on Disney+ without extra requests to Disney CDNs."
+  },
   "liveBadge": {
     "message": "LIVE"
   },

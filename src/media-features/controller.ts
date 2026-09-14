@@ -6,6 +6,7 @@ import type { CaptionStyle } from './caption-style';
 import { DEFAULT_CAPTION_STYLE } from './caption-style';
 import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderFlags } from './provider-flags';
 import { createMediaFeaturesAdapter } from './resolve-adapter';
+import { displayMediaTime } from '../playback-window';
 import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
 
 export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
@@ -260,7 +261,10 @@ export class MediaFeaturesController {
       void this.openCaptionOptions();
     });
     header.append(title, optionsBtn);
-    this.ccMenu.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'theater-cc-menu-list';
+    list.appendChild(header);
 
     if (this.tracks.length === 0) {
       const item = document.createElement('div');
@@ -268,20 +272,22 @@ export class MediaFeaturesController {
       item.textContent = this.t('noSubtitles');
       item.style.opacity = '0.5';
       item.style.cursor = 'default';
-      this.ccMenu.appendChild(item);
+      list.appendChild(item);
+      this.ccMenu.appendChild(list);
       return;
     }
 
-    this.ccMenu.appendChild(this.menuItem(this.t('subtitlesOff'), !this.captionsAreOn(), () => {
+    list.appendChild(this.menuItem(this.t('subtitlesOff'), !this.captionsAreOn(), () => {
       void this.activate(null, { hud: true });
     }));
 
     for (const track of this.tracks) {
       const label = this.captionTrackDisplayLabel(track);
-      this.ccMenu.appendChild(this.menuItem(label, this.captionsAreOn() && this.activeTrackId === track.id, () => {
+      list.appendChild(this.menuItem(label, this.captionsAreOn() && this.activeTrackId === track.id, () => {
         void this.activate(track.id, { hud: true });
       }));
     }
+    this.ccMenu.appendChild(list);
   }
 
   private captionTrackDisplayLabel(track: CaptionTrack): string {
@@ -407,7 +413,7 @@ export class MediaFeaturesController {
       this.usingOverlayCaptions = on;
       this.renderer.setCues(on ? overlayCues : []);
       setOverlayCaptionsClass(on);
-      if (on) this.renderer.update(this.video.currentTime || 0);
+      if (on) this.renderer.update(displayMediaTime(this.video));
       this.persistAfterActivate(id, on, persist);
       this.updateCcState();
       this.renderCcMenu();
@@ -452,6 +458,11 @@ export class MediaFeaturesController {
 
   updateTime(time: number): void {
     if (this.usingOverlayCaptions) this.renderer.update(time);
+  }
+
+  retainCaptionsOnElementReset(): boolean {
+    const pageId = this.adapter.mediaId?.() || null;
+    return Boolean(pageId && this.mediaId && pageId === this.mediaId);
   }
 
   tooltipExtras(time: number): TooltipMediaExtras {

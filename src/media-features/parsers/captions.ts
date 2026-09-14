@@ -40,7 +40,7 @@ export function parseWebVtt(input: string): CaptionCue[] {
   const lines = normalized.split('\n');
   let i = 0;
 
-  while (i < lines.length && (lines[i].trim() === '' || /^WEBVTT/i.test(lines[i]) || /^NOTE\b/i.test(lines[i]) || /^STYLE\b/i.test(lines[i]) || /^REGION\b/i.test(lines[i]) || /^Kind:/i.test(lines[i]) || /^Language:/i.test(lines[i]))) {
+  while (i < lines.length && (lines[i].trim() === '' || /^WEBVTT/i.test(lines[i]) || /^NOTE\b/i.test(lines[i]) || /^STYLE\b/i.test(lines[i]) || /^REGION\b/i.test(lines[i]) || /^Kind:/i.test(lines[i]) || /^Language:/i.test(lines[i]) || /^X-TIMESTAMP-MAP:/i.test(lines[i]))) {
     if (/^NOTE\b/i.test(lines[i]) || /^STYLE\b/i.test(lines[i]) || /^REGION\b/i.test(lines[i])) {
       i += 1;
       while (i < lines.length && lines[i].trim() !== '') i += 1;

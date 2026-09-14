@@ -121,12 +121,29 @@ function isAllowedTwitchCaptionUrl(url: string): boolean {
   }
 }
 
+function isAllowedDisneyCaptionUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    if (host !== 'dssott.com' && !host.endsWith('.dssott.com')) return false;
+    if (/\.vtt$/i.test(parsed.pathname) || /SUBTITLE_1_WEBVTT/i.test(url)) return true;
+    return /\.m3u8$/i.test(parsed.pathname) && (
+      /una-ctr-all/i.test(url)
+      || /composite_[^/?#]+_(NORMAL|FORCED|SDH)_/i.test(url)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isAllowedMediaBrokerUrl(url: string): boolean {
   return isAllowedYoutubeCaptionUrl(url)
     || isAllowedMuxStoryboardUrl(url)
     || isAllowedMuxCaptionUrl(url)
     || isAllowedTwitchStoryboardUrl(url)
-    || isAllowedTwitchCaptionUrl(url);
+    || isAllowedTwitchCaptionUrl(url)
+    || isAllowedDisneyCaptionUrl(url);
 }
 
 async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body?: string; contentType?: string; error?: string }> {
@@ -145,8 +162,8 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
     }
     const contentType = response.headers.get('content-type') || '';
     const body = new TextDecoder('utf-8').decode(buffer);
-    const looksLikeCaptions = /WEBVTT|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:|"images"\s*:/i.test(body.slice(0, 400));
-    if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream/i.test(contentType) && !looksLikeCaptions) {
+    const looksLikeCaptions = /WEBVTT|#EXTM3U|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:|"images"\s*:/i.test(body.slice(0, 400));
+    if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream|mpegurl|m3u8/i.test(contentType) && !looksLikeCaptions) {
       return { ok: false, error: 'content-type' };
     }
     return { ok: true, body, contentType };

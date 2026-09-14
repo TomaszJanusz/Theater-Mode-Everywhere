@@ -120,7 +120,8 @@ const FEATURE_TOGGLES = [
   { id: 'youtube-integration-toggle', key: 'youtubeIntegrationEnabled', fallback: true },
   { id: 'vimeo-integration-toggle', key: 'vimeoIntegrationEnabled', fallback: true },
   { id: 'patreon-integration-toggle', key: 'patreonIntegrationEnabled', fallback: true },
-  { id: 'twitch-integration-toggle', key: 'twitchIntegrationEnabled', fallback: true }
+  { id: 'twitch-integration-toggle', key: 'twitchIntegrationEnabled', fallback: true },
+  { id: 'disney-integration-toggle', key: 'disneyIntegrationEnabled', fallback: true }
 ] as const;
 
 async function init() {

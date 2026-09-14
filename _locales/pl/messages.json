@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Rozdziały i podglądy osi czasu z VOD-ów Twitch w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Twitch."
   },
+  "disneyIntegrationTitle": {
+    "message": "Integracja z Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Napisy i podglądy osi czasu z Disney+ w trybie kinowym, gdy sesja odtwarzania je zawiera. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Disney."
+  },
   "liveBadge": {
     "message": "NA ŻYWO"
   },

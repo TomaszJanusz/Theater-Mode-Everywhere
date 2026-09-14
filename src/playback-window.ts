@@ -1,3 +1,10 @@
+import {
+  isDisneyHost,
+  readDisneyChromeDuration,
+  readDisneyContentTime,
+  readPublishedDisneySnapshot
+} from './media-features/parsers/disney-page';
+
 export type PlaybackWindow = {
   start: number;
   end: number;
@@ -8,11 +15,13 @@ export type PlaybackWindow = {
 
 export type PlaybackWindowOptions = {
   live?: boolean;
+  duration?: number;
 };
 
 export const LIVE_EDGE_SECONDS = 2;
 export const MIN_LIVE_DVR_SECONDS = 15;
 export const MAX_LIVE_DVR_SECONDS = 24 * 60 * 60;
+const SLIDING_DVR_START_SECONDS = 5;
 export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
 const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
 const PENDING_MEDIA_SEEK_MS = 10_000;
@@ -170,6 +179,49 @@ function finiteDuration(video: HTMLVideoElement): number | null {
   return mediaDuration;
 }
 
+function prefixSeekableEnd(video: HTMLVideoElement): number | null {
+  try {
+    const range = video.seekable;
+    if (!range || range.length === 0) return null;
+    const start = range.start(0);
+    const end = range.end(range.length - 1);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+    if (start > SLIDING_DVR_START_SECONDS) return null;
+    if (end - start > MAX_LIVE_DVR_SECONDS) return null;
+    return end;
+  } catch {
+    return null;
+  }
+}
+
+function unknownLengthVodWindow(video: HTMLVideoElement): PlaybackWindow | null {
+  const end = prefixSeekableEnd(video);
+  if (end == null) return null;
+  return {
+    start: 0,
+    end,
+    duration: end,
+    seekable: true,
+    live: false
+  };
+}
+
+function usableHostDuration(video: HTMLVideoElement, duration: number | null | undefined): number | null {
+  if (duration == null || !Number.isFinite(duration) || duration <= 0) return null;
+  const now = video.currentTime;
+  if (Number.isFinite(now) && duration + 1 < now) return null;
+  const prefix = prefixSeekableEnd(video);
+  if (prefix != null && duration + 1 < prefix) return null;
+  return duration;
+}
+
+function hostKnownVodDuration(video: HTMLVideoElement): number | null {
+  if (typeof document === 'undefined' || !isDisneyHost()) return null;
+  const harvested = readPublishedDisneySnapshot(document)?.duration;
+  const chrome = readDisneyChromeDuration(document);
+  return usableHostDuration(video, harvested ?? chrome ?? null);
+}
+
 function boundsWindow(bounds: { start: number; end: number }): PlaybackWindow {
   return {
     start: bounds.start,
@@ -213,7 +265,10 @@ export function playbackWindow(
   const live = options?.live ?? hostLiveHint(video);
   if (live) return liveWindow(video);
 
-  const duration = finiteDuration(video);
+  const duration = usableHostDuration(
+    video,
+    options?.duration ?? finiteDuration(video) ?? hostKnownVodDuration(video)
+  );
   if (duration != null) {
     return {
       start: 0,
@@ -223,6 +278,9 @@ export function playbackWindow(
       live: false
     };
   }
+
+  const unknownVod = unknownLengthVodWindow(video);
+  if (unknownVod) return unknownVod;
 
   return liveWindow(video);
 }
@@ -259,7 +317,7 @@ export function isVideoAtLiveEdge(video: HTMLVideoElement, window?: PlaybackWind
 }
 
 export function displayMediaTime(video: HTMLVideoElement): number {
-  const now = video.currentTime || 0;
+  const now = readDisneyContentTime(video) ?? (video.currentTime || 0);
   const pending = pendingMediaSeeks.get(video);
   if (!pending) return now;
   if (Math.abs(now - pending.time) <= PENDING_MEDIA_SEEK_ARRIVED_SECONDS || Date.now() >= pending.until) {
@@ -278,7 +336,7 @@ function rememberPendingMediaSeek(video: HTMLVideoElement, time: number): void {
   pendingMediaSeeks.set(video, { time, until: Date.now() + PENDING_MEDIA_SEEK_MS });
 }
 
-function requestYoutubeLiveSeek(detail: MediaSeekDetail): boolean {
+function requestHostMediaSeek(detail: MediaSeekDetail): boolean {
   const target = typeof globalThis === 'object' ? (globalThis as typeof globalThis & { window?: Window }).window : undefined;
   if (!target || typeof target.dispatchEvent !== 'function') return false;
   target.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail }));
@@ -289,17 +347,22 @@ function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
   return hostLiveHint(video) && Boolean(youtubePlayerFor(video));
 }
 
+function canSeekDisneyHost(): boolean {
+  return isDisneyHost();
+}
+
 export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
   const window = playbackWindow(video);
   const target = window.seekable ? clampToWindow(time, window) : time;
   rememberPendingMediaSeek(video, target);
   if (canSeekYoutubeLive(video)) {
     if (window.live && isAtLiveEdge(target, window)) {
-      if (requestYoutubeLiveSeek({ live: true })) return;
-    } else if (requestYoutubeLiveSeek({ time: target })) {
+      if (requestHostMediaSeek({ live: true })) return;
+    } else if (requestHostMediaSeek({ time: target })) {
       return;
     }
   }
+  if (canSeekDisneyHost() && requestHostMediaSeek({ time: target })) return;
   video.currentTime = target;
 }
 
@@ -307,7 +370,7 @@ export function seekToLive(video: HTMLVideoElement): boolean {
   const window = playbackWindow(video);
   if (!window.live) return false;
   rememberPendingMediaSeek(video, window.end);
-  if (canSeekYoutubeLive(video) && requestYoutubeLiveSeek({ live: true })) return true;
+  if (canSeekYoutubeLive(video) && requestHostMediaSeek({ live: true })) return true;
   if (!window.seekable) {
     clearPendingMediaSeek(video);
     return false;

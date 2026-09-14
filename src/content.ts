@@ -1,6 +1,7 @@
 import './content.css';
 import theaterCss from './content.css?inline';
 import { computeCaptionDockBottom, type DockRect } from './media-features/caption-dock';
+import { DISNEY_CLOCK_EVENT } from './media-features/parsers/disney-page';
 import {
   CAPTION_STYLE_STORAGE_KEY,
   resolveCaptionStyle,
@@ -1920,7 +1921,8 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
         youtubeIntegrationEnabled: providerFlags.youtube,
         vimeoIntegrationEnabled: providerFlags.vimeo,
         patreonIntegrationEnabled: providerFlags.patreon,
-        twitchIntegrationEnabled: providerFlags.twitch
+        twitchIntegrationEnabled: providerFlags.twitch,
+        disneyIntegrationEnabled: providerFlags.disney
       };
       for (const key of mediaProviderFlagStorageKeys()) {
         if (Object.prototype.hasOwnProperty.call(changes, key)) {
@@ -2295,7 +2297,7 @@ function createCustomControls(video: HTMLVideoElement): void {
 
   const updateTimeDisplay = () => {
     const window = playbackWindow(video);
-    const cur = video.currentTime || 0;
+    const cur = displayMediaTime(video);
     syncLiveChrome();
     if (window.live) {
       timeDisplay.textContent = t('liveBadge');
@@ -2971,6 +2973,19 @@ function createCustomControls(video: HTMLVideoElement): void {
     }
   };
 
+  let lastDisneyPlayhead = Number.NaN;
+  const onDisneyClock = () => {
+    const playhead = Number(video.dataset.teDisneyPlayhead);
+    updateScrubber();
+    updateTimeDisplay();
+    mediaFeatures.updateTime(displayMediaTime(video));
+    updateCaptionDock();
+    if (Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
+      setBuffering(false);
+    }
+    if (Number.isFinite(playhead)) lastDisneyPlayhead = playhead;
+  };
+
   // Event hookups
   const onPlay = () => {
     setIcon(playPauseBtn, pauseIcon);
@@ -2981,9 +2996,13 @@ function createCustomControls(video: HTMLVideoElement): void {
   const onTimeUpdate = () => { 
     updateScrubber(); 
     updateTimeDisplay();
-    mediaFeatures.updateTime(video.currentTime || 0);
+    mediaFeatures.updateTime(displayMediaTime(video));
     updateCaptionDock();
     if (!video.paused && !video.seeking && video.readyState >= 3) {
+      setBuffering(false);
+    }
+    const playhead = Number(video.dataset.teDisneyPlayhead);
+    if (!video.paused && Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
       setBuffering(false);
     }
     if (window.location.href !== lastMediaHref) {
@@ -2995,11 +3014,13 @@ function createCustomControls(video: HTMLVideoElement): void {
   const onDurationChange = () => {
     updateScrubber();
     updateTimeDisplay();
-    void mediaFeatures.refresh();
+    if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
   };
   const onMediaReset = () => {
     clearPendingMediaSeek(video);
-    mediaFeatures.invalidate();
+    if (!mediaFeatures.retainCaptionsOnElementReset()) {
+      mediaFeatures.invalidate();
+    }
     tooltip.classList.remove('visible');
     tooltip.replaceChildren();
     updateScrubber();
@@ -3036,9 +3057,23 @@ function createCustomControls(video: HTMLVideoElement): void {
     updateSpeedTooltip();
   };
   
-  const onWaiting = () => { setBuffering(true); };
-  const onSeeking = () => { setBuffering(true); };
+  let bufferingFailsafe: number | null = null;
+  const armBufferingFailsafe = () => {
+    if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
+    bufferingFailsafe = window.setTimeout(() => {
+      bufferingFailsafe = null;
+      if (!video.paused || Number.isFinite(Number(video.dataset.teDisneyPlayhead))) {
+        setBuffering(false);
+      }
+    }, 4000);
+  };
+  const onWaiting = () => { setBuffering(true); armBufferingFailsafe(); };
+  const onSeeking = () => { setBuffering(true); armBufferingFailsafe(); };
   const onSeeked = () => { 
+    if (bufferingFailsafe) {
+      clearTimeout(bufferingFailsafe);
+      bufferingFailsafe = null;
+    }
     updateScrubber(); 
     updateTimeDisplay(); 
     setBuffering(false); 
@@ -3061,6 +3096,8 @@ function createCustomControls(video: HTMLVideoElement): void {
   video.addEventListener('emptied', onMediaReset);
   document.addEventListener('yt-navigate-finish', onPageMediaChange);
   window.addEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
+  window.addEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
+  window.addEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
   video.addEventListener('volumechange', onVolumeChange);
   video.addEventListener('ratechange', onRateChange);
   video.addEventListener('waiting', onWaiting);
@@ -3081,6 +3118,8 @@ function createCustomControls(video: HTMLVideoElement): void {
     video.removeEventListener('emptied', onMediaReset);
     document.removeEventListener('yt-navigate-finish', onPageMediaChange);
     window.removeEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
+    window.removeEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
+    window.removeEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
     video.removeEventListener('volumechange', onVolumeChange);
     video.removeEventListener('ratechange', onRateChange);
     video.removeEventListener('waiting', onWaiting);
@@ -3095,6 +3134,10 @@ function createCustomControls(video: HTMLVideoElement): void {
     if (bufferingTimeout) {
       clearTimeout(bufferingTimeout);
       bufferingTimeout = null;
+    }
+    if (bufferingFailsafe) {
+      clearTimeout(bufferingFailsafe);
+      bufferingFailsafe = null;
     }
     if (video.textTracks) {
       video.textTracks.removeEventListener('change', handleTrackChange);

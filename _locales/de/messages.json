@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Kapitel und Timeline-Vorschaubilder von Twitch-VODs im Kinomodus. Ausschalten, um den Kinomodus auf Twitch ohne zusätzliche Anfragen an Twitch-CDNs zu behalten."
   },
+  "disneyIntegrationTitle": {
+    "message": "Disney+-Integration"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Nutze Disney+-Untertitel und Timeline-Vorschauen im Theater-Modus, wenn die Wiedergabesitzung sie enthält. Ausschalten, um Theater-Modus auf Disney+ ohne zusätzliche Anfragen an Disney-CDNs zu behalten."
+  },
   "liveBadge": {
     "message": "LIVE"
   },

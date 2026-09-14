@@ -334,6 +334,30 @@ describe('playback window', () => {
     assert.equal(timeToRatio(190, realDvr), 110 / 120);
   });
 
+  it('treats Infinity duration with a seekable prefix from 0 as VOD of unknown length', () => {
+    const window = playbackWindow(fakeVideo({
+      duration: Number.POSITIVE_INFINITY,
+      seekable: [{ start: 0, end: 156 }],
+      currentTime: 143
+    }));
+    assert.equal(window.live, false);
+    assert.equal(window.seekable, true);
+    assert.equal(window.start, 0);
+    assert.equal(window.end, 156);
+    assert.ok(Math.abs(timeToRatio(143, window) - 143 / 156) < 0.001);
+  });
+
+  it('uses a known host duration instead of the growing MSE prefix', () => {
+    const window = playbackWindow(fakeVideo({
+      duration: Number.POSITIVE_INFINITY,
+      seekable: [{ start: 0, end: 156 }],
+      currentTime: 143
+    }), { duration: 7080 });
+    assert.equal(window.live, false);
+    assert.equal(window.end, 7080);
+    assert.ok(Math.abs(timeToRatio(143, window) - 143 / 7080) < 0.001);
+  });
+
   it('clamps seeks inside the DVR window', () => {
     const video = fakeVideo({
       duration: Number.POSITIVE_INFINITY,
@@ -364,5 +388,33 @@ describe('playback window', () => {
     const window = playbackWindow(fakeVideo({ duration: 10 }));
     assert.equal(clampToWindow(-1, window), 0);
     assert.equal(clampToWindow(12, window), 10);
+  });
+
+  it('maps Disney+ theater time from Hive playhead and seeks through the host player', () => {
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const dispatched: unknown[] = [];
+    (globalThis as { window?: { location: { hostname: string }; dispatchEvent: (event: Event) => boolean } }).window = {
+      location: { hostname: 'www.disneyplus.com' },
+      dispatchEvent: (event: Event) => {
+        dispatched.push(event);
+        return true;
+      }
+    };
+    try {
+      const video = fakeVideo({ duration: 7260, currentTime: 184 });
+      (video as HTMLVideoElement & { dataset: Record<string, string> }).dataset = { teDisneyPlayhead: '1840' };
+      assert.ok(Math.abs(displayMediaTime(video) - 1840) < 0.01);
+      const before = video.currentTime;
+      seekToMediaTime(video, 3600);
+      assert.equal(video.currentTime, before);
+      assert.equal(dispatched.length, 1);
+      assert.ok(Math.abs(displayMediaTime(video) - 3600) < 0.5);
+    } finally {
+      if (previousWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window?: unknown }).window = previousWindow;
+      }
+    }
   });
 });

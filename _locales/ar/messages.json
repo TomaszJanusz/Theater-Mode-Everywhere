@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "استخدم فصول فيديوهات Twitch ومعاينات المخطط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Twitch دون طلبات إضافية إلى شبكات Twitch."
   },
+  "disneyIntegrationTitle": {
+    "message": "تكامل Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "استخدم ترجمات Disney+ ومعاينات الشريط الزمني في وضع المسرح عندما تتوفر في جلسة التشغيل. أوقف الخيار للإبقاء على وضع المسرح في Disney+ دون طلبات إضافية إلى شبكات Disney."
+  },
   "liveBadge": {
     "message": "مباشر"
   },

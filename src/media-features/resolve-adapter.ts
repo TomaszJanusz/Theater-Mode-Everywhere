@@ -1,4 +1,5 @@
 import { CompositeMediaAdapter } from './composite-adapter';
+import { DisneyAdapter, isDisneyHost } from './disney-adapter';
 import { NativeTextTrackAdapter } from './native-adapter';
 import { isPatreonHost, PatreonAdapter } from './patreon-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
@@ -23,6 +24,10 @@ export function shouldAttachTwitchAdapter(flags: MediaProviderFlags, hostname?: 
   return flags.twitch && isTwitchHost(hostname);
 }
 
+export function shouldAttachDisneyAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
+  return flags.disney && isDisneyHost(hostname);
+}
+
 export function createMediaFeaturesAdapter(
   video: HTMLVideoElement,
   flags: MediaProviderFlags = defaultMediaProviderFlags()
@@ -32,5 +37,6 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
+  if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   return new CompositeMediaAdapter(adapters);
 }

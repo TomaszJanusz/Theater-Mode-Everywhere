@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Розділи та прев’ю шкали часу VOD Twitch у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Twitch без додаткових запитів до CDN Twitch."
   },
+  "disneyIntegrationTitle": {
+    "message": "Інтеграція Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Субтитри та прев’ю шкали Disney+ у театральному режимі, якщо вони є в сесії відтворення. Вимкніть, щоб залишити театральний режим на Disney+ без додаткових запитів до CDN Disney."
+  },
   "liveBadge": {
     "message": "ЕФІР"
   },

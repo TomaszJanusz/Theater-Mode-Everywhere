@@ -801,13 +801,16 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 .theater-cc-menu {
   position: absolute !important;
   bottom: 56px !important;
-  background: rgba(20, 20, 20, 0.85) !important;
+  background: rgba(20, 20, 20, 0.92) !important;
   backdrop-filter: blur(12px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 8px !important;
-  padding: 4px 0 6px !important;
-  min-width: 196px !important;
+  padding: 0 !important;
+  min-width: 176px !important;
+  max-width: min(280px, calc(100vw - 24px)) !important;
+  max-height: min(42vh, 280px) !important;
+  overflow: hidden !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
   z-index: 2000000000 !important;
   display: none !important;
@@ -819,14 +822,28 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   pointer-events: auto !important;
 }
 
+.theater-cc-menu-list {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  max-height: min(42vh, 280px) !important;
+  padding: 0 0 4px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent !important;
+}
+
 .theater-cc-menu-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 12px !important;
-  padding: 6px 12px 8px 16px !important;
+  gap: 8px !important;
+  padding: 6px 8px 6px 12px !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  margin-bottom: 2px !important;
+  margin: 0 !important;
+  background: rgba(20, 20, 20, 0.96) !important;
 }
 
 .theater-cc-menu-title {
@@ -861,9 +878,10 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   background: none !important;
   border: none !important;
   color: #f8fafc !important;
-  padding: 8px 16px !important;
+  padding: 5px 12px !important;
   text-align: start !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   display: flex !important;

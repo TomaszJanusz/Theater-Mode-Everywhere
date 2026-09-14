@@ -1,7 +1,7 @@
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json';
   url: string;
 };
@@ -62,6 +62,24 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest): boolean {
     const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
     const hostOk = host === 'captions.twitch.tv' || host.endsWith('.captions.twitch.tv');
     return hostOk && /\.vtt$/i.test(parsed.pathname);
+  }
+
+  if (request.provider === 'disney') {
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    const dssott = host === 'dssott.com' || host.endsWith('.dssott.com');
+    if (!dssott) return false;
+    if (request.kind === 'caption-track') {
+      if (/\.vtt$/i.test(parsed.pathname) || /SUBTITLE_1_WEBVTT/i.test(request.url)) return true;
+      return /\.m3u8$/i.test(parsed.pathname) && (
+        /una-ctr-all/i.test(request.url)
+        || /composite_[^/?#]+_(NORMAL|FORCED|SDH)_/i.test(request.url)
+      );
+    }
+    if (request.kind === 'storyboard-json') {
+      if (/DUB_CARD/i.test(request.url)) return false;
+      return /\.bif$/i.test(parsed.pathname) && /thumbnails?\//i.test(request.url);
+    }
+    return false;
   }
 
   return false;

@@ -30,12 +30,12 @@ export function isSafeMuxImageUrl(url: string): boolean {
   }
 }
 
-function imageUrlWithoutHash(url: string): string | null {
+function imageUrlWithoutHash(url: string, isSafe: (href: string) => boolean = isSafeMuxImageUrl): string | null {
   try {
     const parsed = new URL(url);
     parsed.hash = '';
     const href = parsed.toString();
-    return isSafeMuxImageUrl(href) ? href : null;
+    return isSafe(href) ? href : null;
   } catch {
     return null;
   }
@@ -81,7 +81,10 @@ function withSheetSizes(
   });
 }
 
-export function parseMuxStoryboardVtt(body: string): MuxStoryboardSet | null {
+export function parseMuxStoryboardVtt(
+  body: string,
+  isSafe: (href: string) => boolean = isSafeMuxImageUrl
+): MuxStoryboardSet | null {
   const lines = body.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
   const raw: Array<{ start: number; end: number; url: string; x: number; y: number; w: number; h: number }> = [];
   let i = 0;
@@ -113,7 +116,7 @@ export function parseMuxStoryboardVtt(body: string): MuxStoryboardSet | null {
     if (start === null || end === null || end <= start) continue;
     const payload = textLines.find((item) => item.includes('xywh=')) || textLines[0] || '';
     const xywh = parseXywh(payload);
-    const url = imageUrlWithoutHash(payload);
+    const url = imageUrlWithoutHash(payload, isSafe);
     if (!xywh || !url) continue;
     raw.push({ start, end, url, ...xywh });
   }
@@ -122,14 +125,17 @@ export function parseMuxStoryboardVtt(body: string): MuxStoryboardSet | null {
   return { duration: cues[cues.length - 1].end, cues };
 }
 
-export function parseMuxStoryboardJson(body: string): MuxStoryboardSet | null {
+export function parseMuxStoryboardJson(
+  body: string,
+  isSafe: (href: string) => boolean = isSafeMuxImageUrl
+): MuxStoryboardSet | null {
   let data: Record<string, unknown>;
   try {
     data = JSON.parse(body) as Record<string, unknown>;
   } catch {
     return null;
   }
-  const sheetUrl = typeof data.url === 'string' ? imageUrlWithoutHash(data.url) : null;
+  const sheetUrl = typeof data.url === 'string' ? imageUrlWithoutHash(data.url, isSafe) : null;
   const tileWidth = Number(data.tile_width ?? data.tileWidth);
   const tileHeight = Number(data.tile_height ?? data.tileHeight);
   const tiles = Array.isArray(data.tiles) ? data.tiles : [];
@@ -170,21 +176,28 @@ export function parseMuxStoryboardJson(body: string): MuxStoryboardSet | null {
   };
 }
 
-export function parseMuxStoryboard(body: string): MuxStoryboardSet | null {
+export function parseMuxStoryboard(
+  body: string,
+  isSafe: (href: string) => boolean = isSafeMuxImageUrl
+): MuxStoryboardSet | null {
   const trimmed = body.replace(/^\uFEFF/, '').trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith('{')) return parseMuxStoryboardJson(trimmed);
-  return parseMuxStoryboardVtt(trimmed);
+  if (trimmed.startsWith('{')) return parseMuxStoryboardJson(trimmed, isSafe);
+  return parseMuxStoryboardVtt(trimmed, isSafe);
 }
 
-export function getMuxPreviewFrame(set: MuxStoryboardSet, time: number): PreviewFrame | null {
+export function getMuxPreviewFrame(
+  set: MuxStoryboardSet,
+  time: number,
+  isSafe: (href: string) => boolean = isSafeMuxImageUrl
+): PreviewFrame | null {
   if (!Number.isFinite(time) || time < 0 || set.cues.length === 0) return null;
   let cue = set.cues[0];
   for (const candidate of set.cues) {
     if (time >= candidate.start) cue = candidate;
     else break;
   }
-  if (!isSafeMuxImageUrl(cue.url)) return null;
+  if (!isSafe(cue.url)) return null;
   return {
     time: cue.start,
     width: cue.tileWidth,

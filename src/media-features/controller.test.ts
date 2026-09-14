@@ -278,4 +278,16 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.equal(persisted.at(-1)?.language, '');
     assert.equal(persisted.at(-1)?.label, 'english');
   });
+
+  it('keeps overlay captions when the media element empties on the same title', async () => {
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      mediaId: () => 'same-title'
+    });
+    await controller.refresh();
+    await controller.activate(SAMPLE_TRACK.id);
+    assert.equal(ccBtn.classList.contains('active'), true);
+    assert.equal(controller.retainCaptionsOnElementReset(), true);
+  });
 });

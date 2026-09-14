@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "在剧场模式中使用 Twitch VOD 章节和时间轴预览。关闭后仍可在 Twitch 使用剧场模式，但不会向 Twitch CDN 发起额外请求。"
   },
+  "disneyIntegrationTitle": {
+    "message": "Disney+ 集成"
+  },
+  "disneyIntegrationDescription": {
+    "message": "当播放会话包含字幕和进度条预览时，在剧场模式中使用它们。关闭后仍可在 Disney+ 使用剧场模式，且不会向 Disney CDN 发出额外请求。"
+  },
   "liveBadge": {
     "message": "直播"
   },

@@ -15,7 +15,7 @@ This extension collects **no personal data**. We do not:
 - Transmit any data to the extension developer
 - Use cookies or fingerprinting techniques
 
-Theater mode may request caption files or timeline preview images **directly from the site you are already watching** (for example YouTube caption tracks, YouTube storyboard sprites, Vimeo `vimeocdn` thumbnail sprites, Patreon/Mux `image.mux.com` storyboard files, Patreon/Mux `stream.mux.com` caption WebVTT files, Twitch VOD storyboard JSON and sprite images on CloudFront / `vod-secure.twitch.tv` / `vod-storyboards.twitch.tv` / `static-cdn.jtvnw.net`, optional Twitch caption WebVTT on `captions.twitch.tv`, or a page's own WebVTT/SRT files already referenced by a `<track>` element). Those requests stay between your browser and that provider. Captions and preview images are kept only in memory for the current playback session and are never stored, synced, or sent to us. You can turn YouTube, Vimeo, Patreon, and Twitch extras off in Settings → Features; theater mode itself still works on those sites.
+Theater mode may request caption files or timeline preview images **directly from the site you are already watching** (for example YouTube caption tracks, YouTube storyboard sprites, Vimeo `vimeocdn` thumbnail sprites, Patreon/Mux `image.mux.com` storyboard files, Patreon/Mux `stream.mux.com` caption WebVTT files, Twitch VOD storyboard JSON and sprite images on CloudFront / `vod-secure.twitch.tv` / `vod-storyboards.twitch.tv` / `static-cdn.jtvnw.net`, optional Twitch caption WebVTT on `captions.twitch.tv`, Disney+ HLS subtitle playlists, WebVTT segments, and Roku BIF thumbnails on `*.dssott.com` when those URLs already appear in the page's playback session, or a page's own WebVTT/SRT files already referenced by a `<track>` element). Those requests stay between your browser and that provider. The extension does not call Disney BAM GraphQL (`disney.api.edge.bamgrid.com`) itself. Captions and preview images are kept only in memory for the current playback session and are never stored, synced, or sent to us. You can turn YouTube, Vimeo, Patreon, Twitch, and Disney+ extras off in Settings → Features; theater mode itself still works on those sites.
 
 ## Data Stored Locally
 
@@ -25,7 +25,7 @@ The extension stores the following data **exclusively on your device** using Chr
 - **Domain blocklist** — domains where you have disabled the extension
 - **Caption appearance** — subtitle text, size, shadow, and background choices
 - **Caption language by site** — whether subtitles are on and which language code (for example `en` or `pl`) to use on that site. This is not a watch history and does not store video titles.
-- **Provider integrations** — whether extra YouTube, Vimeo, Patreon, and Twitch theater features (captions, chapters, previews) are enabled. These default to on.
+- **Provider integrations** — whether extra YouTube, Vimeo, Patreon, Twitch, and Disney+ theater features (captions, chapters, previews) are enabled. These default to on.
 
 This data is synced across your Chrome/Firefox profile devices via your browser account (if signed in) but is never sent to the extension developer or any third party.
 

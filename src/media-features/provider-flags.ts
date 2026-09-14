@@ -1,4 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -6,7 +6,8 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   youtube: 'youtubeIntegrationEnabled',
   vimeo: 'vimeoIntegrationEnabled',
   patreon: 'patreonIntegrationEnabled',
-  twitch: 'twitchIntegrationEnabled'
+  twitch: 'twitchIntegrationEnabled',
+  disney: 'disneyIntegrationEnabled'
 };
 
 export type MediaProviderFlags = Record<MediaProviderId, boolean>;
@@ -15,9 +16,10 @@ const YOUTUBE_ATTR = 'data-te-youtube-integration-off';
 const VIMEO_ATTR = 'data-te-vimeo-integration-off';
 const PATREON_ATTR = 'data-te-patreon-integration-off';
 const TWITCH_ATTR = 'data-te-twitch-integration-off';
+const DISNEY_ATTR = 'data-te-disney-integration-off';
 
 export function defaultMediaProviderFlags(): MediaProviderFlags {
-  return { youtube: true, vimeo: true, patreon: true, twitch: true };
+  return { youtube: true, vimeo: true, patreon: true, twitch: true, disney: true };
 }
 
 export function resolveMediaProviderFlags(data: Record<string, unknown> | null | undefined): MediaProviderFlags {
@@ -43,4 +45,5 @@ export function applyMediaProviderFlagAttrs(root: HTMLElement, flags: MediaProvi
   root.toggleAttribute(VIMEO_ATTR, !flags.vimeo);
   root.toggleAttribute(PATREON_ATTR, !flags.patreon);
   root.toggleAttribute(TWITCH_ATTR, !flags.twitch);
+  root.toggleAttribute(DISNEY_ATTR, !flags.disney);
 }

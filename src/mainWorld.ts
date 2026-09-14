@@ -2,6 +2,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
 
 (function() {
   const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
+  const MAX_BIF_BYTES = 16 * 1024 * 1024;
   const timedtextBodies: CachedTimedtext[] = [];
   let twitchHarvest: {
     videoId?: string;
@@ -10,6 +11,17 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     moments: Array<{ startTime: number; endTime?: number; title: string }>;
   } = { moments: [] };
   let twitchHarvestNotifyTimer = 0;
+  let disneyHarvest: {
+    mediaId?: string;
+    duration?: number;
+    masterUrl?: string;
+    storyboardUrl?: string;
+    bifBlobUrl?: string;
+    bifFrameCount?: number;
+    thumbnail?: { width: number; height: number; intervalMs: number; bifUrl?: string };
+    captions: Array<{ id: string; language: string; label: string; url: string }>;
+  } = { captions: [] };
+  let disneyHarvestNotifyTimer = 0;
 
   function youtubeIntegrationEnabled(): boolean {
     return !document.documentElement.hasAttribute('data-te-youtube-integration-off');
@@ -19,8 +31,16 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     return !document.documentElement.hasAttribute('data-te-vimeo-integration-off');
   }
 
+  function patreonIntegrationEnabled(): boolean {
+    return !document.documentElement.hasAttribute('data-te-patreon-integration-off');
+  }
+
   function twitchIntegrationEnabled(): boolean {
     return !document.documentElement.hasAttribute('data-te-twitch-integration-off');
+  }
+
+  function disneyIntegrationEnabled(): boolean {
+    return !document.documentElement.hasAttribute('data-te-disney-integration-off');
   }
 
   function requestUrl(input: RequestInfo | URL): string {
@@ -71,6 +91,19 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     response.clone().text().then((text) => harvestTwitchGqlBody(text)).catch(() => {});
   }
 
+  function captureDisneyNetworkResponse(url: string, response: Response): void {
+    if (!disneyIntegrationEnabled()) return;
+    const finalUrl = (response && response.url) || url;
+    if (!response || !response.ok) return;
+    if (isAllowedDisneyBifUrl(url) || isAllowedDisneyBifUrl(finalUrl)) {
+      response.clone().arrayBuffer().then((buffer) => rememberDisneyBif(buffer, finalUrl || url)).catch(() => {});
+      return;
+    }
+    if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|vtt|bif)(\?|$)/i.test(finalUrl)) return;
+    if (!shouldHarvestDisneyUrl(url) && !shouldHarvestDisneyUrl(finalUrl)) return;
+    response.clone().text().then((text) => harvestDisneyBody(finalUrl, text)).catch(() => {});
+  }
+
   function wrapFetch(fn: typeof fetch): typeof fetch {
     return function(this: Window, input: RequestInfo | URL): Promise<Response> {
       const url = requestUrl(input);
@@ -79,6 +112,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
           const clone = response.clone();
           captureTimedtextResponse(url, clone);
           captureTwitchNetworkResponse(url, clone);
+          captureDisneyNetworkResponse(url, clone);
         } catch {
           // Harvest must not break the page's fetch.
         }
@@ -93,10 +127,11 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     if (result && typeof (result as Promise<unknown>).then === 'function') {
       (result as Promise<unknown>).then((data) => {
         try {
-          if (!twitchIntegrationEnabled()) return;
           const url = this.url || '';
-          if (!/gql\.twitch\.tv/i.test(url)) return;
-          harvestTwitchGqlBody(JSON.stringify(data));
+          if (twitchIntegrationEnabled() && /gql\.twitch\.tv/i.test(url)) {
+            harvestTwitchGqlBody(JSON.stringify(data));
+          }
+          harvestDisneyData(url, data);
         } catch {
           // Ignore harvest failures from host JSON parsing.
         }
@@ -111,11 +146,14 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     if (result && typeof (result as Promise<string>).then === 'function') {
       (result as Promise<string>).then((text) => {
         try {
-          if (!twitchIntegrationEnabled() || !text) return;
+          if (!text) return;
           const url = this.url || '';
-          if (!/gql\.twitch\.tv/i.test(url) && !/"positionMilliseconds"|"seekPreviewsURL"/.test(text.slice(0, 4000))) return;
-          if (!isTwitchHostName(window.location.hostname) && !/gql\.twitch\.tv/i.test(url)) return;
-          harvestTwitchGqlBody(text);
+          if (twitchIntegrationEnabled() && (/gql\.twitch\.tv/i.test(url) || /"positionMilliseconds"|"seekPreviewsURL"/.test(text.slice(0, 4000)))) {
+            if (isTwitchHostName(window.location.hostname) || /gql\.twitch\.tv/i.test(url)) {
+              harvestTwitchGqlBody(text);
+            }
+          }
+          harvestDisneyBody(url, text);
         } catch {
           // Ignore harvest failures from host text parsing.
         }
@@ -150,10 +188,12 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     this.addEventListener('loadend', function(this: XMLHttpRequest) {
       const url = this.responseURL || (this as XMLHttpRequest & { _theaterTimedtextUrl?: string })._theaterTimedtextUrl || '';
       if (this.status < 200 || this.status >= 300) return;
-      const body = xhrResponseText(this);
+      if (disneyIntegrationEnabled() && isAllowedDisneyBifUrl(url)) harvestDisneyBifFromXhr(this);
+      const body = isAllowedDisneyBifUrl(url) ? null : xhrResponseText(this);
       if (body) cacheTimedtextBody(url, body);
       if (body && /gql\.twitch\.tv/i.test(url)) harvestTwitchGqlBody(body);
       if (isAllowedTwitchStoryboardUrl(url)) rememberTwitchStoryboardUrl(url);
+      if (body) harvestDisneyBody(url, body);
       if (!body && /gql\.twitch\.tv/i.test(url) && this.responseType === 'blob' && this.response instanceof Blob) {
         this.response.text().then((text) => harvestTwitchGqlBody(text)).catch(() => {});
       }
@@ -1250,12 +1290,350 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     }
   }
 
+  const DISNEY_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-disney-snapshot';
+  const DISNEY_DURATION_KEY_RE = /^(runtime(millis|ms)?|duration(millis|ms|inms)?|length(millis|ms)?)$/i;
+  const DISNEY_PLAY_ID_RE = /\/play\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+  function isDisneyHostName(hostname: string): boolean {
+    const host = hostname.replace(/^www\./i, '').toLowerCase();
+    return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
+  }
+
+  function disneyPageMediaId(href = window.location.href): string | null {
+    try {
+      const match = new URL(href, 'https://www.disneyplus.com').pathname.match(DISNEY_PLAY_ID_RE);
+      return match ? match[1].toLowerCase() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function isDssottHostName(hostname: string): boolean {
+    const host = hostname.replace(/^www\./i, '').toLowerCase();
+    return host === 'dssott.com' || host.endsWith('.dssott.com');
+  }
+
+  function shouldHarvestDisneyUrl(url: string): boolean {
+    if (!url) return false;
+    if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|gif|vtt|bif|js|css|woff2?)(\?|$)/i.test(url)) return false;
+    if (/bamgrid\.com|disney-plus\.net/i.test(url)) return true;
+    if (/dssott\.com/i.test(url) && /\.json(\?|$)/i.test(url)) return true;
+    return /disneyplus\.com/i.test(url) && /\/(playback|session|explore|api)\//i.test(url);
+  }
+
+  function disneyDurationSeconds(value: number): number | null {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    if (value > 12 * 3600 && value <= 12 * 3600 * 1000) {
+      const seconds = value / 1000;
+      return seconds >= 30 ? seconds : null;
+    }
+    if (value >= 30 && value <= 12 * 3600) return value;
+    return null;
+  }
+
+  function isAllowedDisneyMasterUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' || !isDssottHostName(parsed.hostname)) return false;
+      return /\.m3u8$/i.test(parsed.pathname) && /una-ctr-all/i.test(url);
+    } catch {
+      return false;
+    }
+  }
+
+  function isAllowedDisneyCaptionUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url, window.location.href);
+      if (parsed.protocol !== 'https:' || !isDssottHostName(parsed.hostname)) return false;
+      if (/\.vtt$/i.test(parsed.pathname) || /SUBTITLE_1_WEBVTT/i.test(url)) return true;
+      return /\.m3u8$/i.test(parsed.pathname) && (
+        /una-ctr-all/i.test(url)
+        || /composite_[^/?#]+_(NORMAL|FORCED|SDH)_/i.test(url)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function isAllowedDisneyBifUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' || !isDssottHostName(parsed.hostname)) return false;
+      if (/DUB_CARD/i.test(url)) return false;
+      return /\.bif$/i.test(parsed.pathname) && /thumbnails?\//i.test(url);
+    } catch {
+      return false;
+    }
+  }
+
+  function disneyBifFrameCount(buffer: ArrayBuffer): number {
+    if (buffer.byteLength < 80) return 0;
+    const bytes = new Uint8Array(buffer);
+    const magic = [0x89, 0x42, 0x49, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
+    for (let i = 0; i < magic.length; i++) {
+      if (bytes[i] !== magic[i]) return 0;
+    }
+    const count = new DataView(buffer).getUint32(12, true);
+    return Number.isFinite(count) && count > 0 && count <= 4000 ? count : 0;
+  }
+
+  function extractDisneyThumbnail(raw: unknown): { width: number; height: number; intervalMs: number; bifUrl: string } | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const bifs = (raw as { bifs?: unknown }).bifs;
+    if (!Array.isArray(bifs)) return null;
+    let best: { width: number; height: number; intervalMs: number; bifUrl: string } | null = null;
+    for (const entry of bifs) {
+      if (!entry || typeof entry !== 'object') continue;
+      const item = entry as Record<string, unknown>;
+      const presentations = Array.isArray(item.presentations) ? item.presentations : [];
+      const main = presentations.find((presentation) => {
+        if (!presentation || typeof presentation !== 'object') return false;
+        return String((presentation as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN';
+      });
+      if (!main || typeof main !== 'object') continue;
+      const paths = (main as { paths?: unknown }).paths;
+      const bifUrl = Array.isArray(paths)
+        ? paths.find((path): path is string => typeof path === 'string' && isAllowedDisneyBifUrl(path))
+        : undefined;
+      if (!bifUrl) continue;
+      const width = Number(item.thumbnailWidth);
+      const height = Number(item.thumbnailHeight);
+      const intervalMs = Number(item.intervalMilliseconds);
+      const meta = {
+        width: Number.isFinite(width) && width > 0 ? width : 480,
+        height: Number.isFinite(height) && height > 0 ? height : 270,
+        intervalMs: Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : 10_000,
+        bifUrl
+      };
+      const count = Number((main as { thumbnailCount?: number }).thumbnailCount);
+      if (!best || (Number.isFinite(count) && count > 10)) best = meta;
+      if (String((main as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN') return meta;
+    }
+    return best;
+  }
+
+  function extractDisneyHarvest(raw: unknown): {
+    duration?: number;
+    masterUrl?: string;
+    captions: Array<{ id: string; language: string; label: string; url: string }>;
+    storyboardUrl?: string;
+    thumbnail?: { width: number; height: number; intervalMs: number; bifUrl?: string };
+  } | null {
+    if (raw == null || typeof raw !== 'object') return null;
+    const captions: Array<{ id: string; language: string; label: string; url: string }> = [];
+    const namedDurations: number[] = [];
+    const storyboards: string[] = [];
+    let masterUrl: string | undefined;
+    let thumbnail = extractDisneyThumbnail(raw);
+    let budget = 5000;
+    const walk = (node: unknown, depth: number) => {
+      if (budget <= 0 || node == null || depth > 14) return;
+      budget -= 1;
+      if (Array.isArray(node)) {
+        for (const item of node) walk(item, depth + 1);
+        return;
+      }
+      if (typeof node !== 'object') return;
+      const record = node as Record<string, unknown>;
+      if (!thumbnail) thumbnail = extractDisneyThumbnail(record);
+      const complete = record.complete;
+      if (complete && typeof complete === 'object') {
+        const completeUrl = (complete as { url?: unknown }).url;
+        if (typeof completeUrl === 'string' && isAllowedDisneyMasterUrl(completeUrl)) masterUrl = completeUrl;
+      }
+      for (const [key, value] of Object.entries(record)) {
+        if (typeof value === 'number' && DISNEY_DURATION_KEY_RE.test(key)) {
+          const seconds = disneyDurationSeconds(value);
+          if (seconds != null) namedDurations.push(seconds);
+        }
+        if (typeof value !== 'string' || !value.startsWith('https://')) continue;
+        if (!masterUrl && (key === 'url' || isAllowedDisneyMasterUrl(value)) && isAllowedDisneyMasterUrl(value)) {
+          masterUrl = value;
+        }
+        if (isAllowedDisneyBifUrl(value) && !storyboards.includes(value)) storyboards.push(value);
+      }
+      for (const value of Object.values(record)) walk(value, depth + 1);
+    };
+    walk(raw, 0);
+    const storyboardUrl = thumbnail?.bifUrl || storyboards[0];
+    if (namedDurations.length === 0 && !masterUrl && !storyboardUrl) return null;
+    return {
+      duration: namedDurations.length > 0 ? Math.max(...namedDurations) : undefined,
+      masterUrl,
+      captions,
+      storyboardUrl,
+      thumbnail: thumbnail || (storyboardUrl ? { width: 480, height: 270, intervalMs: 10_000, bifUrl: storyboardUrl } : undefined)
+    };
+  }
+
+  function resetDisneyHarvest(mediaId?: string): void {
+    if (disneyHarvest.bifBlobUrl) {
+      try {
+        URL.revokeObjectURL(disneyHarvest.bifBlobUrl);
+      } catch {
+        // Ignore revoke failures for expired harvest blobs.
+      }
+    }
+    disneyHarvest = { mediaId, captions: [] };
+  }
+
+  function rememberDisneyBif(buffer: ArrayBuffer, url?: string): void {
+    if (!disneyIntegrationEnabled()) return;
+    if (url && /DUB_CARD/i.test(url)) return;
+    if (buffer.byteLength < 80 || buffer.byteLength > MAX_BIF_BYTES) return;
+    const count = disneyBifFrameCount(buffer);
+    if (count < 8) return;
+    if ((disneyHarvest.bifFrameCount || 0) >= count) return;
+    if (disneyHarvest.bifBlobUrl) {
+      try {
+        URL.revokeObjectURL(disneyHarvest.bifBlobUrl);
+      } catch {
+        // Replace the previous BIF blob.
+      }
+    }
+    disneyHarvest.bifBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
+    disneyHarvest.bifFrameCount = count;
+    notifyDisneyHarvest();
+  }
+
+  function harvestDisneyBifFromXhr(xhr: XMLHttpRequest): void {
+    try {
+      const url = xhr.responseURL || '';
+      if (xhr.response instanceof ArrayBuffer) {
+        rememberDisneyBif(xhr.response, url);
+        return;
+      }
+      if (xhr.response instanceof Blob) {
+        xhr.response.arrayBuffer().then((buffer) => rememberDisneyBif(buffer, url)).catch(() => {});
+      }
+    } catch {
+      // Ignore binary harvest failures from host XHR.
+    }
+  }
+
+  function publishDisneyHarvest(): void {
+    if (!disneyIntegrationEnabled()) {
+      publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, null);
+      return;
+    }
+    const mediaId = disneyHarvest.mediaId || disneyPageMediaId() || undefined;
+    if (!mediaId && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl && !disneyHarvest.duration) {
+      publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, null);
+      return;
+    }
+    publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, {
+      mediaId,
+      duration: disneyHarvest.duration,
+      masterUrl: disneyHarvest.masterUrl,
+      storyboardUrl: disneyHarvest.storyboardUrl,
+      bifBlobUrl: disneyHarvest.bifBlobUrl,
+      thumbnail: disneyHarvest.thumbnail,
+      captions: disneyHarvest.captions
+    });
+  }
+
+  function notifyDisneyHarvest(): void {
+    publishDisneyHarvest();
+    if (disneyHarvestNotifyTimer) return;
+    disneyHarvestNotifyTimer = window.setTimeout(() => {
+      disneyHarvestNotifyTimer = 0;
+      window.dispatchEvent(new CustomEvent('theater-everywhere-disney-harvest'));
+    }, 50);
+  }
+
+  function mergeDisneyHarvest(next: {
+    duration?: number;
+    masterUrl?: string;
+    captions: Array<{ id: string; language: string; label: string; url: string }>;
+    storyboardUrl?: string;
+    thumbnail?: { width: number; height: number; intervalMs: number; bifUrl?: string };
+  }): void {
+    const mediaId = disneyPageMediaId();
+    if (mediaId && disneyHarvest.mediaId && disneyHarvest.mediaId !== mediaId) {
+      resetDisneyHarvest(mediaId);
+    }
+    if (mediaId) disneyHarvest.mediaId = mediaId;
+    let changed = false;
+    if (next.duration && next.duration !== disneyHarvest.duration) {
+      disneyHarvest.duration = next.duration;
+      changed = true;
+    }
+    if (next.masterUrl && next.masterUrl !== disneyHarvest.masterUrl) {
+      disneyHarvest.masterUrl = next.masterUrl;
+      changed = true;
+    }
+    if (next.storyboardUrl && next.storyboardUrl !== disneyHarvest.storyboardUrl) {
+      disneyHarvest.storyboardUrl = next.storyboardUrl;
+      changed = true;
+    }
+    if (next.thumbnail && JSON.stringify(next.thumbnail) !== JSON.stringify(disneyHarvest.thumbnail)) {
+      disneyHarvest.thumbnail = next.thumbnail;
+      changed = true;
+    }
+    for (const track of next.captions) {
+      if (disneyHarvest.captions.some((item) => item.url === track.url)) continue;
+      disneyHarvest.captions.push(track);
+      changed = true;
+      if (disneyHarvest.captions.length >= 40) break;
+    }
+    if (changed) notifyDisneyHarvest();
+  }
+
+  function harvestDisneyData(url: string, data: unknown): void {
+    if (!disneyIntegrationEnabled()) return;
+    if (!isDisneyHostName(window.location.hostname) && !shouldHarvestDisneyUrl(url)) return;
+    const extracted = extractDisneyHarvest(data);
+    if (extracted) mergeDisneyHarvest(extracted);
+  }
+
+  function harvestDisneyBody(url: string, body: string): void {
+    if (!disneyIntegrationEnabled() || !body) return;
+    if (body.length > MAX_CAPTION_BYTES) return;
+    const trimmed = body.trim();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
+    if (!shouldHarvestDisneyUrl(url) && !isDisneyHostName(window.location.hostname)) return;
+    if (!/runtimeMillis|runtimeMs|"timedText"|timedTextTracks|trickPlay|subtitle|caption|"bifs"|una-ctr-all|"complete"/i.test(trimmed.slice(0, 8000))
+      && !shouldHarvestDisneyUrl(url)) return;
+    try {
+      harvestDisneyData(url, JSON.parse(trimmed));
+    } catch {
+      // Ignore non-JSON playback bodies.
+    }
+  }
+
+  function readDisneySnapshot(): Record<string, unknown> | null {
+    try {
+      if (!isDisneyHostName(window.location.hostname)) return null;
+      const mediaId = disneyPageMediaId() || disneyHarvest.mediaId;
+      if (mediaId && disneyHarvest.mediaId && disneyHarvest.mediaId !== mediaId) {
+        resetDisneyHarvest(mediaId);
+      }
+      if (mediaId) disneyHarvest.mediaId = mediaId;
+      publishDisneyHarvest();
+      if (!disneyHarvest.duration && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl) {
+        return mediaId ? { mediaId } : null;
+      }
+      return {
+        mediaId,
+        duration: disneyHarvest.duration,
+        masterUrl: disneyHarvest.masterUrl,
+        storyboardUrl: disneyHarvest.storyboardUrl,
+        bifBlobUrl: disneyHarvest.bifBlobUrl,
+        thumbnail: disneyHarvest.thumbnail,
+        captionTracks: [...disneyHarvest.captions]
+      };
+    } catch {
+      return null;
+    }
+  }
+
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = (event as CustomEvent<{ requestId?: number }>).detail?.requestId;
     let youtube: Record<string, unknown> | null = null;
     let vimeo: Record<string, unknown> | null = null;
     let patreon: Record<string, unknown> | null = null;
     let twitch: Record<string, unknown> | null = null;
+    let disney: Record<string, unknown> | null = null;
     try {
       youtube = youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null;
     } catch {
@@ -1276,9 +1654,14 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     } catch {
       twitch = null;
     }
+    try {
+      disney = disneyIntegrationEnabled() ? readDisneySnapshot() : null;
+    } catch {
+      disney = null;
+    }
     publishYoutubeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch }
+      detail: { requestId, youtube, vimeo, patreon, twitch, disney }
     }));
   });
 
@@ -1333,6 +1716,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     if (youtubeIntegrationEnabled() && isAllowedTimedtextUrl(url)) return true;
     if (patreonIntegrationEnabled() && (isAllowedMuxStoryboardUrl(url) || isAllowedMuxCaptionUrl(url))) return true;
     if (twitchIntegrationEnabled() && isAllowedTwitchCaptionUrl(url)) return true;
+    if (disneyIntegrationEnabled() && (isAllowedDisneyCaptionUrl(url) || isAllowedDisneyBifUrl(url))) return true;
     return false;
   }
 
@@ -1359,7 +1743,10 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
           : fetch(url, { credentials: 'omit' }).then(async (response) => {
               if (!response.ok) return null;
               const buffer = await response.arrayBuffer();
-              if (buffer.byteLength === 0 || buffer.byteLength > MAX_CAPTION_BYTES) return null;
+              const isBif = isAllowedDisneyBifUrl(url);
+              const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
+              if (buffer.byteLength === 0 || buffer.byteLength > maxBytes) return null;
+              if (isBif) return URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
               return new TextDecoder().decode(buffer);
             });
         load
@@ -1450,10 +1837,204 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     return Number.isFinite(max) ? max : null;
   }
 
+  type DisneyHivePlayer = {
+    seek: (ms: number) => unknown;
+    play?: () => unknown;
+    pause?: () => unknown;
+    scrub?: (ms: number) => unknown;
+    on?: (name: string, handler: () => void) => unknown;
+    timeline?: { info?: { playheadPositionMs?: number } };
+  };
+
+  const DISNEY_CLOCK_EVENT = 'theater-everywhere-disney-clock';
+  let cachedDisneyPlayer: DisneyHivePlayer | null = null;
+  let disneyPlayerEventsBound = false;
+  let disneyClockTimer = 0;
+
+  function isDisneyHivePlayer(value: unknown): value is DisneyHivePlayer {
+    if (!value || typeof value !== 'object') return false;
+    const player = value as DisneyHivePlayer;
+    if (typeof player.seek !== 'function') return false;
+    return typeof player.play === 'function'
+      || typeof player.scrub === 'function'
+      || typeof player.timeline?.info?.playheadPositionMs === 'number';
+  }
+
+  function disneyPlayerFromNode(value: unknown): DisneyHivePlayer | null {
+    if (isDisneyHivePlayer(value)) return value;
+    if (!value || typeof value !== 'object') return null;
+    const record = value as Record<string, unknown>;
+    for (const key of ['mediaPlayer', 'player', 'hivePlayer']) {
+      const nested = record[key];
+      if (isDisneyHivePlayer(nested)) return nested;
+      if (nested && typeof nested === 'object' && isDisneyHivePlayer((nested as { mediaPlayer?: unknown }).mediaPlayer)) {
+        return (nested as { mediaPlayer: DisneyHivePlayer }).mediaPlayer;
+      }
+    }
+    return null;
+  }
+
+  function disneyPlayerFromObject(value: unknown): DisneyHivePlayer | null {
+    const named = disneyPlayerFromNode(value);
+    if (named) return named;
+    if (!value || typeof value !== 'object') return null;
+    let keys: string[];
+    try {
+      keys = Object.keys(value);
+    } catch {
+      return null;
+    }
+    for (const key of keys.slice(0, 80)) {
+      let candidate: unknown;
+      try {
+        candidate = (value as Record<string, unknown>)[key];
+      } catch {
+        continue;
+      }
+      const found = disneyPlayerFromNode(candidate);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function disneyPlayerFromFiberHost(host: Element): DisneyHivePlayer | null {
+    const fiberKey = Object.keys(host).find((key) => key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$'));
+    if (!fiberKey) return null;
+    let fiber: { memoizedProps?: unknown; memoizedState?: { memoizedState?: unknown; next?: unknown }; stateNode?: unknown; return?: unknown } | null =
+      (host as unknown as Record<string, unknown>)[fiberKey] as typeof fiber;
+    let steps = 0;
+    while (fiber && steps < 400) {
+      steps += 1;
+      const fromProps = disneyPlayerFromObject(fiber.memoizedProps);
+      if (fromProps) return fromProps;
+      let hook = fiber.memoizedState;
+      let hookSteps = 0;
+      while (hook && hookSteps < 24) {
+        const fromHook = disneyPlayerFromObject(hook.memoizedState);
+        if (fromHook) return fromHook;
+        hook = hook.next as typeof hook;
+        hookSteps += 1;
+      }
+      const fromState = disneyPlayerFromObject(fiber.stateNode);
+      if (fromState) return fromState;
+      fiber = fiber.return as typeof fiber;
+    }
+    return null;
+  }
+
+  function findDisneyHivePlayer(video?: HTMLVideoElement | null): DisneyHivePlayer | null {
+    if (isDisneyHivePlayer(cachedDisneyPlayer)) return cachedDisneyPlayer;
+    const videos = video ? [video, ...Array.from(document.querySelectorAll('video'))] : Array.from(document.querySelectorAll('video'));
+    const seen = new Set<HTMLVideoElement>();
+    for (const node of videos) {
+      if (!(node instanceof HTMLVideoElement) || seen.has(node)) continue;
+      seen.add(node);
+      const attached = disneyPlayerFromNode(node);
+      if (attached) {
+        cachedDisneyPlayer = attached;
+        return attached;
+      }
+      let host: Element | null = node;
+      while (host) {
+        const fromFiber = disneyPlayerFromFiberHost(host);
+        if (fromFiber) {
+          cachedDisneyPlayer = fromFiber;
+          return fromFiber;
+        }
+        host = host.parentElement;
+      }
+    }
+    return null;
+  }
+
+  function disneyPlayheadSeconds(player: DisneyHivePlayer | null): number | null {
+    const ms = player?.timeline?.info?.playheadPositionMs;
+    return typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? ms / 1000 : null;
+  }
+
+  function publishDisneyPlayhead(video: HTMLVideoElement | null, player: DisneyHivePlayer | null): number | null {
+    const seconds = disneyPlayheadSeconds(player);
+    if (seconds == null) return seconds;
+    const videos = new Set<HTMLVideoElement>();
+    if (video instanceof HTMLVideoElement) videos.add(video);
+    document.querySelectorAll('video').forEach((node) => {
+      if (node instanceof HTMLVideoElement) videos.add(node);
+    });
+    for (const node of videos) {
+      try {
+        node.dataset.teDisneyPlayhead = String(seconds);
+      } catch {
+        // Dataset may be missing on unexpected hosts.
+      }
+    }
+    window.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: seconds } }));
+    return seconds;
+  }
+
+  function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
+    if (!player || disneyPlayerEventsBound || typeof player.on !== 'function') return;
+    const publish = () => {
+      const video = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
+      publishDisneyPlayhead(video, player);
+    };
+    try {
+      player.on('@EVENT/PLAYER/TIMECODE', publish);
+      player.on('@EVENT/PLAYER/PLAYBACK/MEDIA_SEEK_COMPLETE', publish);
+      player.on('@EVENT/PLAYER/PLAYBACK/MEDIA_RESUMED', publish);
+      disneyPlayerEventsBound = true;
+    } catch {
+      disneyPlayerEventsBound = false;
+    }
+  }
+
+  function ensureDisneyClock(): void {
+    if (!isDisneyHostName(window.location.hostname) || !disneyIntegrationEnabled()) return;
+    const video = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
+    const player = findDisneyHivePlayer(video);
+    bindDisneyPlayerClock(player);
+    publishDisneyPlayhead(video, player);
+    if (disneyClockTimer) return;
+    disneyClockTimer = window.setInterval(() => {
+      if (!disneyIntegrationEnabled()) return;
+      const active = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
+      const next = findDisneyHivePlayer(active);
+      bindDisneyPlayerClock(next);
+      publishDisneyPlayhead(active, next);
+    }, 250);
+  }
+
+  window.addEventListener('theater-everywhere-disney-harvest', () => {
+    ensureDisneyClock();
+  });
+  if (isDisneyHostName(window.location.hostname)) {
+    ensureDisneyClock();
+  }
+
   window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
     const detail = (event as CustomEvent<{ live?: boolean; time?: number }>).detail || {};
     const player = findYoutubePlayer();
     const video = findActiveVideo(document) || document.querySelector('video');
+    if (
+      isDisneyHostName(window.location.hostname)
+      && disneyIntegrationEnabled()
+      && typeof detail.time === 'number'
+      && Number.isFinite(detail.time)
+    ) {
+      const hive = findDisneyHivePlayer(video instanceof HTMLVideoElement ? video : null);
+      if (hive) {
+        try {
+          hive.seek(Math.round(detail.time * 1000));
+          if (video instanceof HTMLVideoElement) {
+            video.dataset.teDisneyPlayhead = String(detail.time);
+          }
+          bindDisneyPlayerClock(hive);
+        } catch {
+          // Player seek can throw if the session is still attaching.
+        }
+        return;
+      }
+      return;
+    }
     try {
       if (detail.live === true) {
         const liveHead = youtubeWallLiveHead(player);

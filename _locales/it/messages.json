@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Usa i capitoli e le anteprime della timeline dei VOD Twitch in modalità teatro. Disattiva per mantenere la modalità teatro su Twitch senza richieste extra alle CDN Twitch."
   },
+  "disneyIntegrationTitle": {
+    "message": "Integrazione Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Usa sottotitoli e anteprime Disney+ in modalità teatro quando la sessione di riproduzione li include. Disattiva per lasciare la modalità teatro su Disney+ senza richieste extra ai CDN Disney."
+  },
   "liveBadge": {
     "message": "LIVE"
   },

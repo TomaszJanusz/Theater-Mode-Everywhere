@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "극장 모드에서 Twitch VOD 챕터와 타임라인 미리보기를 사용합니다. 끄면 Twitch CDN에 추가 요청 없이 극장 모드만 유지됩니다."
   },
+  "disneyIntegrationTitle": {
+    "message": "Disney+ 통합"
+  },
+  "disneyIntegrationDescription": {
+    "message": "재생 세션에 포함되어 있으면 시어터 모드에서 Disney+ 자막과 타임라인 미리보기를 사용합니다. 끄면 Disney CDN에 추가 요청 없이 시어터 모드만 유지됩니다."
+  },
   "liveBadge": {
     "message": "실시간"
   },

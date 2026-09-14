@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "Usa los capítulos y las vistas previas de la línea de tiempo de los VOD de Twitch en el modo teatro. Desactívala para mantener el modo teatro en Twitch sin peticiones extra a las CDN de Twitch."
   },
+  "disneyIntegrationTitle": {
+    "message": "Integración de Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Usa subtítulos y miniaturas de Disney+ en el modo teatro cuando la sesión de reproducción los incluye. Desactívalo para dejar el modo teatro en Disney+ sin peticiones extra a las CDN de Disney."
+  },
   "liveBadge": {
     "message": "EN VIVO"
   },

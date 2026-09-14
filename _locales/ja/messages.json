@@ -145,6 +145,12 @@
   "twitchIntegrationDescription": {
     "message": "シアターモードでTwitchのVODチャプターとタイムラインプレビューを使います。オフにすると、Twitch CDNへの追加リクエストなしでシアターモードだけが残ります。"
   },
+  "disneyIntegrationTitle": {
+    "message": "Disney+ 連携"
+  },
+  "disneyIntegrationDescription": {
+    "message": "再生セッションに含まれている場合、シアターモードで Disney+ の字幕とタイムラインプレビューを使います。オフにすると、Disney CDN への追加リクエストなしでシアターモードだけが残ります。"
+  },
   "liveBadge": {
     "message": "配信中"
   },
