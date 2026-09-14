@@ -8,8 +8,10 @@ import {
   type CachedTimedtext
 } from '../../media-features/youtube-caption-url';
 import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { publishHiddenJson } from '../../platform/hidden-json';
+import { isYouTubeHost } from '../hosts';
 
 export function youtubeIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('youtube');
@@ -97,12 +99,18 @@ export function cacheTimedtextBody(url: string, body: string): void {
   timedtextBodies.push(record);
   if (timedtextBodies.length > 20) timedtextBodies.shift();
   publishYoutubeCaptionAuth();
-  if (window !== window.top) {
-    try {
-      window.top?.postMessage({ type: 'theater-everywhere-timedtext-body', record }, '*');
-    } catch {
-      // Cross-origin embeds cannot share the caption cache.
-    }
+  postTimedtextToTop(record);
+}
+
+function postTimedtextToTop(record: CachedTimedtext): void {
+  if (window === window.top) return;
+  const target = discoverParentOrigin();
+  if (!target) return;
+  try {
+    if (!isYouTubeHost(new URL(target).hostname)) return;
+    window.top?.postMessage({ type: 'theater-everywhere-timedtext-body', record }, target);
+  } catch {
+    // Cross-origin embeds cannot share the caption cache.
   }
 }
 
@@ -502,8 +510,14 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
 export function installYoutubeMain(): void {
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;
+    try {
+      if (!isYouTubeHost(new URL(event.origin).hostname)) return;
+    } catch {
+      return;
+    }
     const data = event.data;
     if (data && data.type === 'theater-everywhere-timedtext-body' && data.record && typeof data.record.body === 'string') {
+      if (typeof data.record.url !== 'string' || !isAllowedTimedtextUrl(data.record.url)) return;
       timedtextBodies.push(data.record as CachedTimedtext);
       if (timedtextBodies.length > 20) timedtextBodies.shift();
     }

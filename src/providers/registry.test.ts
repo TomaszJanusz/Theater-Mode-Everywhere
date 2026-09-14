@@ -28,7 +28,9 @@ describe('provider registry', () => {
     assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
     assert.equal(shouldPatchMainWorld('example.com'), false);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com'), true);
+    assert.equal(isYouTubeHost('www.youtube-nocookie.com.'), true);
     assert.equal(isDisneyHost('www.disneyplus.com'), true);
+    assert.equal(isDisneyHost('www.disneyplus.com.'), true);
   });
 
   it('honors provider flags when attaching adapters', () => {

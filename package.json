@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsx scripts/build.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts src/platform/domain-policy.test.ts src/core/disposable-scope.test.ts src/core/player-session.test.ts src/protocol/frame-handshake.test.ts src/providers/registry.test.ts src/ui/store.test.ts",
+    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts src/platform/domain-policy.test.ts src/platform/parent-origin.test.ts src/core/disposable-scope.test.ts src/core/player-session.test.ts src/protocol/frame-handshake.test.ts src/providers/registry.test.ts src/ui/store.test.ts src/ui/shortcuts.test.ts scripts/bundle-integrity.test.ts",
     "verify:bundles": "tsx scripts/verify-bundles.ts",
     "smoke": "tsx scripts/smoke.ts",
     "smoke:chromium": "tsx scripts/smoke.ts chromium",

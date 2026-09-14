@@ -48,7 +48,7 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
   if (!shortcutStr) return false;
 
   const parts = shortcutStr.split('+');
-  const mainKey = parts[parts.length - 1];
+  const mainKey = parts.pop() || '+';
 
   let eventKey = e.key.length === 1 ? e.key.toUpperCase() : e.key;
   if (eventKey === ' ' || eventKey === 'SPACEBAR') {

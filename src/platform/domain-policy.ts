@@ -7,7 +7,12 @@ export type DomainPolicyResult = {
 };
 
 export function normalizeHost(host: string): string {
-  return host.replace(/^www\./i, '').toLowerCase();
+  return host.replace(/\.$/, '').replace(/^www\./i, '').toLowerCase();
+}
+
+export function parentBlockedEntry(policy: DomainPolicyResult): string | null {
+  if (!policy.effective || policy.source !== 'parent') return null;
+  return policy.matchedEntry;
 }
 
 export function resolveDomainPolicy(host: string, entries: readonly string[]): DomainPolicyResult {

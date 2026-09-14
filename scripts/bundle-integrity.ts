@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const ESM_IMPORT_RE = /\bimport\s*(?:['"]|\{|\w+\s+from\b)/;
+const ESM_IMPORT_RE = /(?:^|[\n;])\s*(?:import\s*(?:['"]|\*|\{|\w)|export\s+(?:\{|\*|default\b|async\b|function\b|class\b|const\b|let\b|var\b))/m;
 
 export function assertSelfContainedScript(filePath: string): void {
   const source = fs.readFileSync(filePath, 'utf8');

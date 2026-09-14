@@ -140,7 +140,6 @@ function extractDisneyThumbnail(raw: unknown): { width: number; height: number; 
     };
     const count = Number((main as { thumbnailCount?: number }).thumbnailCount);
     if (!best || (Number.isFinite(count) && count > 10)) best = meta;
-    if (String((main as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN') return meta;
   }
   return best;
 }

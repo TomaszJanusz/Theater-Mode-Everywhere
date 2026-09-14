@@ -1,7 +1,7 @@
 /* Popup script for Theater Everywhere */
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
-import { removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
+import { parentBlockedEntry, removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -122,8 +122,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const policy = resolveDomainPolicy(currentDomain, blacklist);
       const isActive = !policy.effective;
       toggleEl.checked = isActive;
-      if (!isActive && policy.source === 'parent' && policy.matchedEntry) {
-        setUIState(false, t('statusDisabledByParent', policy.matchedEntry));
+      const parentEntry = parentBlockedEntry(policy);
+      if (parentEntry) {
+        setUIState(false, t('statusDisabledByParent', parentEntry));
       } else {
         setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
       }

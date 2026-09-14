@@ -283,6 +283,10 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
 
   if (await tryFirefoxSideload(origin)) return;
 
+  // Playwright cannot sideload an unsigned MV3 Firefox addon. Chromium smoke
+  // covers the packaged extension; this path only checks the bundled player
+  // script as a local/CI diagnostic, not Firefox permissions or background.
+
   const browser = await firefox.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });

@@ -1,4 +1,5 @@
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isTwitchHost } from '../hosts';
 
@@ -131,13 +132,6 @@ function addTwitchHarvestMoment(moment: { startTime: number; endTime?: number; t
 export function harvestTwitchGqlBody(body: string): void {
   if (!body || body.length > MAX_CAPTION_BYTES) return;
   if (!/"seekPreviewsURL"|"positionMilliseconds"|"lengthSeconds"|"moments"/.test(body.slice(0, 200000))) return;
-  if (window !== window.top) {
-    try {
-      window.top!.postMessage({ type: 'theater-everywhere-twitch-harvest-body', body }, '*');
-    } catch {
-      // Cross-origin parent frames cannot receive harvest copies.
-    }
-  }
   let data: unknown;
   try {
     data = JSON.parse(body);
@@ -168,8 +162,10 @@ export function harvestTwitchGqlBody(body: string): void {
       if (twitchHarvest.seekPreviewsURL !== before) changed = true;
     }
     if (idMatchesVideo) {
+      const before = twitchHarvest.duration;
       const length = Number(record.lengthSeconds ?? record.length);
       if (Number.isFinite(length) && length > 0) twitchHarvest.duration = length;
+      if (twitchHarvest.duration !== before) changed = true;
     }
     const moment = readTwitchMoment(record);
     if (moment && addTwitchHarvestMoment(moment)) changed = true;
@@ -195,6 +191,7 @@ export function harvestTwitchGqlBody(body: string): void {
   }
   publishTwitchHarvest();
   if (changed) notifyTwitchHarvest();
+  postTwitchHarvestSnapshotToTop();
 }
 
 export function captureTwitchNetworkResponse(url: string, response: Response): void {
@@ -267,17 +264,63 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
   }
 }
 
+function postTwitchHarvestSnapshotToTop(): void {
+  if (window === window.top) return;
+  const target = discoverParentOrigin();
+  if (!target) return;
+  try {
+    if (!isTwitchHost(new URL(target).hostname)) return;
+    window.top!.postMessage({
+      type: 'theater-everywhere-twitch-harvest-snapshot',
+      snapshot: {
+        videoId: twitchHarvest.videoId,
+        duration: twitchHarvest.duration,
+        seekPreviewsURL: twitchHarvest.seekPreviewsURL,
+        moments: twitchHarvest.moments
+      }
+    }, target);
+  } catch {
+    // Cross-origin parent frames cannot receive harvest copies.
+  }
+}
+
+function applyTwitchHarvestSnapshot(snapshot: {
+  videoId?: string;
+  duration?: number;
+  seekPreviewsURL?: string;
+  moments?: TwitchHarvest['moments'];
+}): void {
+  let changed = false;
+  if (snapshot.videoId && snapshot.videoId !== twitchHarvest.videoId) {
+    twitchHarvest = { videoId: snapshot.videoId, moments: [] };
+    changed = true;
+  }
+  if (snapshot.duration && snapshot.duration !== twitchHarvest.duration) {
+    twitchHarvest.duration = snapshot.duration;
+    changed = true;
+  }
+  if (snapshot.seekPreviewsURL && snapshot.seekPreviewsURL !== twitchHarvest.seekPreviewsURL) {
+    rememberTwitchStoryboardUrl(snapshot.seekPreviewsURL);
+    changed = true;
+  }
+  for (const moment of snapshot.moments || []) {
+    if (addTwitchHarvestMoment(moment)) changed = true;
+  }
+  publishTwitchHarvest();
+  if (changed) notifyTwitchHarvest();
+}
+
 export function installTwitchMain(): void {
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;
+    try {
+      if (!isTwitchHost(new URL(event.origin).hostname)) return;
+    } catch {
+      return;
+    }
     const data = event.data;
-    if (data && data.type === 'theater-everywhere-twitch-harvest-body' && typeof data.body === 'string') {
-      try {
-        if (!isTwitchHost(new URL(event.origin).hostname)) return;
-      } catch {
-        return;
-      }
-      harvestTwitchGqlBody(data.body);
+    if (data && data.type === 'theater-everywhere-twitch-harvest-snapshot' && data.snapshot && typeof data.snapshot === 'object') {
+      applyTwitchHarvestSnapshot(data.snapshot);
     }
   });
 }

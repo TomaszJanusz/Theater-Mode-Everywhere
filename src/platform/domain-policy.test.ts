@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   normalizeHost,
+  parentBlockedEntry,
   removeMatchingBlacklistEntry,
   resolveDomainPolicy
 } from './domain-policy';
@@ -19,6 +20,17 @@ describe('F-04 domain policy', () => {
     assert.deepEqual(
       resolveDomainPolicy('video.example.com', ['example.com']),
       { effective: true, matchedEntry: 'example.com', source: 'parent' }
+    );
+  });
+
+  it('treats a trailing DNS root dot as the same host', () => {
+    assert.deepEqual(
+      resolveDomainPolicy('www.Example.com.', ['example.com']),
+      { effective: true, matchedEntry: 'example.com', source: 'exact' }
+    );
+    assert.deepEqual(
+      resolveDomainPolicy('child.example.localhost.', ['example.localhost']),
+      { effective: true, matchedEntry: 'example.localhost', source: 'parent' }
     );
   });
 
@@ -45,5 +57,11 @@ describe('F-04 domain policy', () => {
       removeMatchingBlacklistEntry('video.example.com', ['example.com', 'other.test']),
       ['other.test']
     );
+  });
+
+  it('exposes the parent entry used by the toolbar popup copy', () => {
+    const policy = resolveDomainPolicy('child.example.localhost', ['example.localhost']);
+    assert.equal(parentBlockedEntry(policy), 'example.localhost');
+    assert.equal(parentBlockedEntry(resolveDomainPolicy('example.localhost', ['example.localhost'])), null);
   });
 });

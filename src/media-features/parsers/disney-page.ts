@@ -395,7 +395,6 @@ export function parseDisneyThumbnailIndex(raw: unknown): DisneyThumbnailMeta | n
     };
     const count = Number((main as { thumbnailCount?: number }).thumbnailCount);
     if (!best || (Number.isFinite(count) && count > 10)) best = meta;
-    if (String((main as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN') return meta;
   }
   return best;
 }

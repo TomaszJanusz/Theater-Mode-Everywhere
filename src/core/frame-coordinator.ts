@@ -7,8 +7,11 @@ import {
   type FrameEnvelope,
   type FrameMessageType
 } from '../protocol/frame-messages';
+import { discoverParentOrigin, resolveParentMessageTarget } from '../platform/parent-origin';
 
 export class FrameCoordinator {
+  private parentOrigin: string | null = null;
+
   constructor(private readonly getNonce: () => string) {}
 
   childWindows(): Array<Window | null> {
@@ -26,8 +29,10 @@ export class FrameCoordinator {
 
   postToParent(type: FrameMessageType, sessionId: string, payload: Record<string, unknown> = {}): void {
     if (window === window.top) return;
+    const target = resolveParentMessageTarget(this.parentOrigin, discoverParentOrigin());
+    if (!target) return;
     try {
-      window.parent.postMessage(createFrameMessage(type, sessionId, payload, this.getNonce()), '*');
+      window.parent.postMessage(createFrameMessage(type, sessionId, payload, this.getNonce()), target);
     } catch {
       // Ignore cross-origin frame access errors.
     }
@@ -68,6 +73,9 @@ export class FrameCoordinator {
     if (!envelope) return null;
     const iframes = Array.from(document.querySelectorAll('iframe'));
     const { fromParent, fromChild } = isTrustedFrameSource(event, this.childWindows());
+    if (fromParent && event.origin && event.origin !== 'null') {
+      this.parentOrigin = event.origin;
+    }
     if (fromChild) {
       const iframe = iframes.find((item) => item.contentWindow === event.source);
       if (iframe && iframe.src && !originMatchesIframe(event, iframe)) return null;

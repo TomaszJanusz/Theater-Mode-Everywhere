@@ -58,7 +58,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   keyboardShortcutsTooltip: 'Keyboard Shortcuts <kbd>$1</kbd>',
   fiveSeconds: '5 seconds',
   '@@bidi_dir': 'ltr',
-  '@@bidi_lang': 'en'
+  '@@ui_locale': 'en'
 };
 
 export type UiDirection = 'ltr' | 'rtl';
@@ -96,7 +96,7 @@ export function getUiDirection(): UiDirection {
 export function applyUiDirection(element: HTMLElement): void {
   element.dir = getUiDirection();
 
-  const language = t('@@bidi_lang');
+  const language = t('@@ui_locale');
   if (language && !language.startsWith('@@')) {
     element.lang = language.replace('_', '-');
   }

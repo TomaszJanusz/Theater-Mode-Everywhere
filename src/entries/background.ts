@@ -62,8 +62,14 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
   if (!isAllowedBrokerFetchUrl(url)) {
     return { ok: false, error: 'blocked' };
   }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
-    const response = await fetch(url, { credentials: 'omit', redirect: 'follow' });
+    const response = await fetch(url, {
+      credentials: 'omit',
+      redirect: 'follow',
+      signal: controller.signal
+    });
     if (!isAllowedBrokerFetchUrl(response.url)) {
       return { ok: false, error: 'redirect-blocked' };
     }
@@ -81,6 +87,8 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
     return { ok: true, body, contentType };
   } catch {
     return { ok: false, error: 'fetch-failed' };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

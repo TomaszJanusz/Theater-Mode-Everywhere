@@ -59,7 +59,7 @@ jobs:
           # Fetch existing tags
           git fetch --tags
           
-          if git rev-parse "${{ env.RELEASE_TAG }}" >/dev/null 2>&1; then
+          if git rev-parse --verify "refs/tags/${{ env.RELEASE_TAG }}^{commit}" >/dev/null 2>&1; then
             echo "Tag ${{ env.RELEASE_TAG }} already exists. Skipping version bump and tag creation."
           else
             # Strip leading 'v' if present (e.g. v1.0.0 -> 1.0.0)
@@ -113,11 +113,11 @@ jobs:
       - name: Pin release to tag SHA
         run: |
           git fetch --tags --force
-          if ! git rev-parse "${RELEASE_TAG}" >/dev/null 2>&1; then
+          if ! git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null 2>&1; then
             echo "Release tag ${RELEASE_TAG} was not found after tag creation." >&2
             exit 1
           fi
-          RELEASE_SHA="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          RELEASE_SHA="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")"
           git checkout --detach "$RELEASE_SHA"
           HEAD_SHA="$(git rev-parse HEAD)"
           if [ "$HEAD_SHA" != "$RELEASE_SHA" ]; then

@@ -145,7 +145,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   keyboardShortcutsTooltip: 'Keyboard Shortcuts <kbd>$1</kbd>',
   fiveSeconds: '5 seconds',
   '@@bidi_dir': 'ltr',
-  '@@bidi_lang': 'en'
+  '@@ui_locale': 'en'
 };
 
 export function t(messageName: string, substitutions?: string | string[]): string {
@@ -208,8 +208,8 @@ function applyDocumentLocale(root: ParentNode): void {
   const bidiDir = t('@@bidi_dir');
   documentElement.dir = bidiDir === 'rtl' ? 'rtl' : 'ltr';
 
-  const bidiLang = t('@@bidi_lang');
-  if (bidiLang && !bidiLang.startsWith('@@')) {
-    documentElement.lang = bidiLang.replace('_', '-');
+  const uiLocale = t('@@ui_locale');
+  if (uiLocale && !uiLocale.startsWith('@@')) {
+    documentElement.lang = uiLocale.replace('_', '-');
   }
 }
