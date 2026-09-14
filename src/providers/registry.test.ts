@@ -9,6 +9,11 @@ import {
   shouldPatchMainWorld
 } from './registry';
 import { isDisneyHost, isYouTubeHost } from './hosts';
+import { readDisneySnapshot } from './disney/main';
+import { readPatreonSnapshot } from './patreon/main';
+import { readTwitchSnapshot } from './twitch/main';
+import { readVimeoSnapshot } from './vimeo/main';
+import { readYoutubeSnapshot } from './youtube/main';
 
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
@@ -32,5 +37,13 @@ describe('provider registry', () => {
     assert.equal(markMainWorldBooted(target), false);
     assert.equal(markFetchPatched(target), true);
     assert.equal(markFetchPatched(target), false);
+  });
+
+  it('exposes a MAIN snapshot reader per provider', () => {
+    assert.equal(typeof readYoutubeSnapshot, 'function');
+    assert.equal(typeof readVimeoSnapshot, 'function');
+    assert.equal(typeof readPatreonSnapshot, 'function');
+    assert.equal(typeof readTwitchSnapshot, 'function');
+    assert.equal(typeof readDisneySnapshot, 'function');
   });
 });

@@ -1,5 +1,7 @@
+import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+
 export function vimeoIntegrationEnabled(): boolean {
-  return !document.documentElement.hasAttribute('data-te-vimeo-integration-off');
+  return mediaProviderIntegrationEnabled('vimeo');
 }
 
 export function readVimeoSnapshot(): Record<string, unknown> | null {
