@@ -568,10 +568,22 @@ function scheduleToolbarHide(): void {
 
 function shouldKeepToolbarVisible(controls: HTMLElement): boolean {
   const isScrubberDragging = controls.querySelector('.theater-scrubber-container.dragging') !== null;
-  const isCcMenuOpen = controls.querySelector('.theater-cc-menu.visible') !== null;
   const hasKeyboardFocus = toolbarKeyboardInteractionActive && controls.querySelector(':focus-visible') !== null;
 
-  return controls.matches(':hover') || isScrubberDragging || isCcMenuOpen || hasKeyboardFocus || helpOverlayElement !== null;
+  return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || helpOverlayElement !== null;
+}
+
+function closeTheaterPopovers(): void {
+  queryPlayerUi('.theater-cc-menu')?.classList.remove('visible');
+  for (const el of queryPlayerUiAll<HTMLElement>(
+    '.theater-volume-container button, .theater-volume-container input, .theater-speed-container button, .theater-speed-container input'
+  )) {
+    el.blur();
+  }
+}
+
+function blurMouseToggle(event: MouseEvent, button: HTMLElement): void {
+  if (event.detail >= 1) button.blur();
 }
 
 function isPaintedOverlay(el: Element | null): el is Element {
@@ -648,6 +660,7 @@ function hideToolbar(): void {
     return;
   }
 
+  closeTheaterPopovers();
   controls.classList.remove('visible');
   if (theaterElement.tagName === 'VIDEO') {
     theaterElement.classList.remove('controls-visible');
@@ -686,6 +699,8 @@ function isPrimaryPointerEvent(event: Event): boolean {
 function preventDoubleToggle(e: Event): void {
   if (!theaterElement) return;
   if (!isPrimaryPointerEvent(e)) return;
+
+  if (e.type !== 'dblclick') closeTheaterPopovers();
 
   // Block double clicks completely to avoid site-level fullscreen conflicts
   if (e.type === 'dblclick') {
@@ -2214,7 +2229,7 @@ function createCustomControls(video: HTMLVideoElement): void {
   };
   window.addEventListener('theater-everywhere-boost-ready', onBoostReady);
 
-  volumeBtn.addEventListener('click', () => {
+  volumeBtn.addEventListener('click', (event) => {
     if (isVideoSilent(video)) {
       const restore = restoreAudibleVolume(boostedVideo);
       boostedVideo._logicalVolume = restore;
@@ -2226,6 +2241,7 @@ function createCustomControls(video: HTMLVideoElement): void {
       boostedVideo._logicalVolume = boostedVideo._logicalVolume ?? video.volume;
       video.muted = true;
     }
+    blurMouseToggle(event, volumeBtn);
   });
 
   volumeSlider.addEventListener('input', (e) => {
@@ -2398,13 +2414,14 @@ function createCustomControls(video: HTMLVideoElement): void {
   };
   updateSpeedTooltip();
 
-  speedBtn.addEventListener('click', () => {
+  speedBtn.addEventListener('click', (event) => {
     if (video.playbackRate !== 1.0) {
       lastNonNormalSpeed = video.playbackRate;
       video.playbackRate = 1.0;
     } else {
       video.playbackRate = lastNonNormalSpeed;
     }
+    blurMouseToggle(event, speedBtn);
   });
 
   speedSlider.addEventListener('input', (e) => {
@@ -2596,24 +2613,26 @@ function createCustomControls(video: HTMLVideoElement): void {
     updateCaptionDock();
   });
 
-  const onDocumentClick = (e: MouseEvent) => {
-    if (ccMenu.classList.contains('visible') && !eventPathIncludes(e, ccMenu) && !eventPathIncludes(e, ccBtn)) {
-      ccMenu.classList.remove('visible');
-      updateCaptionDock();
-    }
-    if (!eventPathMatches(e, '.theater-volume-container')) {
+  const dismissPopoversIfOutside = (e: Event) => {
+    const inCc = eventPathIncludes(e, ccMenu) || eventPathIncludes(e, ccBtn);
+    const inVolume = eventPathMatches(e, '.theater-volume-container');
+    const inSpeed = eventPathMatches(e, '.theater-speed-container');
+    if (!inCc) ccMenu.classList.remove('visible');
+    if (!inVolume) {
+      volumeBtn.blur();
       volumeSlider.blur();
     }
-    if (!eventPathMatches(e, '.theater-speed-container')) {
+    if (!inSpeed) {
+      speedBtn.blur();
       speedSlider.blur();
     }
+    updateCaptionDock();
   };
-  window.addEventListener('click', onDocumentClick, true);
+  window.addEventListener('pointerdown', dismissPopoversIfOutside, true);
+  window.addEventListener('click', dismissPopoversIfOutside, true);
 
   const onWindowBlur = () => {
-    ccMenu.classList.remove('visible');
-    volumeSlider.blur();
-    speedSlider.blur();
+    closeTheaterPopovers();
     updateCaptionDock();
   };
   window.addEventListener('blur', onWindowBlur);
@@ -3149,7 +3168,8 @@ function createCustomControls(video: HTMLVideoElement): void {
     });
     mediaFeatures.dispose();
     wrapper._mediaFeatures = undefined;
-    window.removeEventListener('click', onDocumentClick, true);
+    window.removeEventListener('pointerdown', dismissPopoversIfOutside, true);
+    window.removeEventListener('click', dismissPopoversIfOutside, true);
     window.removeEventListener('blur', onWindowBlur);
     loadingIndicator.remove();
   };

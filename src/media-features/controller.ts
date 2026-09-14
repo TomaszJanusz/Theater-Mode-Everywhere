@@ -326,6 +326,7 @@ export class MediaFeaturesController {
 
   private menuItem(label: string, active: boolean, onClick: () => void): HTMLButtonElement {
     const item = document.createElement('button');
+    item.type = 'button';
     item.className = 'theater-cc-menu-item';
     item.textContent = label;
     if (active) {

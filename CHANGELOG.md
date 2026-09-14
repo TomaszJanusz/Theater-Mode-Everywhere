@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disney+ captions follow the Hive player clock (`playheadPositionMs`) instead of MSE `currentTime`, which is a different timeline and made overlay cues look late or early.
 - Clicking the theater seek bar on Disney+ no longer leaves a stuck spinner: seeks go through the host player API, and a failed HTML5 `currentTime` assignment is no longer used.
 - Disney+ hover previews no longer stick on a gray opening still: theater was keeping the 1-frame `DUB_CARD` BIF that loads after the MAIN timeline file, and MAIN frame timestamps are milliseconds (`multiplier = 1`) rather than seconds.
+- Volume, speed, and subtitle popovers no longer stay pinned after a mouse click on their toggle, a click on the video, or the chrome auto-hide timeout. Subtitle language rows now use the full menu width as the hit target.
 
 ## [1.4.0] - 2026-09-06
 

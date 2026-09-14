@@ -823,6 +823,11 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 }
 
 .theater-cc-menu-list {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
@@ -875,6 +880,8 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 }
 
 .theater-cc-menu-item {
+  appearance: none !important;
+  -webkit-appearance: none !important;
   background: none !important;
   border: none !important;
   color: #f8fafc !important;
@@ -887,6 +894,11 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  align-self: stretch !important;
+  flex: 0 0 auto !important;
   transition: background 0.15s ease !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
