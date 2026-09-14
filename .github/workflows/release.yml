@@ -142,6 +142,21 @@ jobs:
       - name: Verify Bundles
         run: pnpm verify:bundles
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Smoke Chromium
+        run: xvfb-run --auto-servernum pnpm smoke:chromium
+
+      - name: Smoke Firefox
+        run: xvfb-run --auto-servernum pnpm smoke:firefox
+
       - name: Record source SHA
         run: |
           printf '%s\n' "{\"tag\":\"${RELEASE_TAG}\",\"sha\":\"${RELEASE_SHA}\"}" > dist/build-info.json

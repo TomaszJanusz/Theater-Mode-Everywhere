@@ -5,7 +5,6 @@ import {
   createSessionId,
   isTrustedFrameEnvelope,
   parseFrameMessage,
-  parseLegacyFrameMessage,
   readFrameEnvelope,
   type FrameEnvelope
 } from './frame-messages';
@@ -74,10 +73,9 @@ describe('F-01 frame session handshake', () => {
     }), true);
   });
 
-  it('dual-reads legacy theater-everywhere-* messages', () => {
-    const legacy = readFrameEnvelope({ type: 'theater-everywhere-enter' });
-    assert.equal(legacy?.type, 'FRAME_ENTER');
-    assert.equal(parseLegacyFrameMessage({ type: 'theater-everywhere-exit-down' })?.type, 'FRAME_EXIT');
+  it('ignores v0 theater-everywhere-* messages', () => {
+    assert.equal(readFrameEnvelope({ type: 'theater-everywhere-enter' }), null);
+    assert.equal(readFrameEnvelope({ type: 'theater-everywhere-exit-down' }), null);
   });
 
   it('treats EXIT as idempotent for a matching session', () => {
@@ -162,13 +160,11 @@ describe('F-08 world fetch envelope', () => {
     assert.equal(parseWorldMessage({ ...message, v: 0 }), null);
   });
 
-  it('dual-reads a legacy same-window fetch postMessage that includes a url', () => {
-    const parsed = readWorldEnvelope({
+  it('ignores a v0 same-window fetch postMessage', () => {
+    assert.equal(readWorldEnvelope({
       type: 'theater-everywhere-media-fetch',
       requestId: 7,
       url: 'https://www.youtube.com/api/timedtext?v=1'
-    });
-    assert.equal(parsed?.type, 'PAGE_FETCH');
-    assert.equal(parsed?.payload.url, 'https://www.youtube.com/api/timedtext?v=1');
+    }), null);
   });
 });

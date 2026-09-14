@@ -63,22 +63,8 @@ export function parseWorldMessage(data: unknown): WorldEnvelope | null {
   };
 }
 
-export function parseLegacyWorldFetch(data: unknown): WorldEnvelope | null {
-  if (!data || typeof data !== 'object') return null;
-  const msg = data as Record<string, unknown>;
-  if (msg.type !== 'theater-everywhere-media-fetch') return null;
-  if (typeof msg.url !== 'string' || !msg.url) return null;
-  return createWorldMessage(
-    'PAGE_FETCH',
-    { url: msg.url, legacy: true },
-    typeof msg.requestId === 'string' && msg.requestId ? msg.requestId : String(msg.requestId ?? createSessionId()),
-    'legacy',
-    'legacy'
-  );
-}
-
 export function readWorldEnvelope(data: unknown): WorldEnvelope | null {
-  return parseWorldMessage(data) || parseLegacyWorldFetch(data);
+  return parseWorldMessage(data);
 }
 
 export function isSameWindowMessage(event: MessageEvent): boolean {

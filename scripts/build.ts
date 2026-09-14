@@ -101,8 +101,8 @@ async function run() {
     console.log('Compiling TypeScript and HTML via Vite...');
     await build();
     console.log('Bundling isolated MV3 classic scripts...');
-    await buildClassicScript('content', 'src/content.ts');
-    await buildClassicScript('mainWorld', 'src/mainWorld.ts');
+    await buildClassicScript('content', 'src/entries/content.ts');
+    await buildClassicScript('mainWorld', 'src/entries/main-world.ts');
 
     const distDir = path.resolve(__dirname, '../dist');
     assertSelfContainedBundles(distDir);

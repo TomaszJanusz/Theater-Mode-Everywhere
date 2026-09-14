@@ -10,7 +10,7 @@ export default defineConfig({
       input: {
         popup: resolve(__dirname, 'popup/popup.html'),
         options: resolve(__dirname, 'options/options.html'),
-        background: resolve(__dirname, 'src/background.ts'),
+        background: resolve(__dirname, 'src/entries/background.ts'),
       },
         output: {
         entryFileNames: (chunkInfo) => {

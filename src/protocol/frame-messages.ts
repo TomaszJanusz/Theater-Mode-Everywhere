@@ -97,36 +97,8 @@ export function parseFrameMessage(data: unknown): FrameEnvelope | null {
   };
 }
 
-const LEGACY_TYPE_MAP: Record<string, FrameMessageType> = {
-  'theater-everywhere-toggle': 'FRAME_TOGGLE',
-  'theater-everywhere-enter': 'FRAME_ENTER',
-  'theater-everywhere-exit': 'FRAME_EXIT',
-  'theater-everywhere-exit-down': 'FRAME_EXIT',
-  'theater-everywhere-key': 'PLAYBACK_COMMAND'
-};
-
-export function parseLegacyFrameMessage(data: unknown): FrameEnvelope | null {
-  if (!data || typeof data !== 'object') return null;
-  const msg = data as Record<string, unknown>;
-  if (typeof msg.type !== 'string') return null;
-  const type = LEGACY_TYPE_MAP[msg.type];
-  if (!type) return null;
-  const payload: Record<string, unknown> = { ...msg, legacy: true };
-  delete payload.type;
-  return {
-    v: FRAME_PROTOCOL_V,
-    channel: FRAME_CHANNEL,
-    sessionId: typeof msg.sessionId === 'string' && msg.sessionId ? msg.sessionId : 'legacy',
-    requestId: 'legacy',
-    origin: 'legacy',
-    nonce: 'legacy',
-    type,
-    payload
-  };
-}
-
 export function readFrameEnvelope(data: unknown): FrameEnvelope | null {
-  return parseFrameMessage(data) || parseLegacyFrameMessage(data);
+  return parseFrameMessage(data);
 }
 
 export function isTrustedFrameSource(
@@ -154,9 +126,8 @@ export function originMatchesIframe(event: MessageEvent, iframe: HTMLIFrameEleme
 
 export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTrustContext): boolean {
   if (!context.fromParent && !context.fromChild) return false;
-  if (envelope.origin !== 'legacy' && envelope.origin !== context.eventOrigin) return false;
+  if (envelope.origin !== context.eventOrigin) return false;
   if (envelope.type === 'FRAME_TOGGLE' || envelope.type === 'FRAME_ENTER') return true;
-  if (envelope.sessionId === 'legacy' || envelope.nonce === 'legacy') return true;
   if (envelope.type === 'FRAME_EXIT' || envelope.type === 'FRAME_EXITED') {
     if (!context.activeSessionId) return true;
     return envelope.sessionId === context.activeSessionId;
