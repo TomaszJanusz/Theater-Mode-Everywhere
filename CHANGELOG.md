@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disney+ hover previews no longer stick on a gray opening still: theater was keeping the 1-frame `DUB_CARD` BIF that loads after the MAIN timeline file, and MAIN frame timestamps are milliseconds (`multiplier = 1`) rather than seconds.
 - Volume, speed, and subtitle popovers no longer stay pinned after a mouse click on their toggle, a click on the video, or the chrome auto-hide timeout. Subtitle language rows now use the full menu width as the hit target.
 - YouTube description chapters now accept a two-stamp `Contents:` list (`00:00:00 - Intro` plus a later title). Theater previously required three timestamps, which is YouTube's auto-chapter UI rule, not a useful floor for the scrubber.
+- Disney+ theater seek now drives the Hive player on `DISNEY-WEB-PLAYER` / `hive-video`, not the hidden dummy `<video>`, and does not pin the clock or captions to the scrubber target until the host playhead moves. A stuck opening MSE prefix retries with `play`/`scrub` instead of assigning `currentTime`.
 
 ## [1.4.0] - 2026-09-06
 

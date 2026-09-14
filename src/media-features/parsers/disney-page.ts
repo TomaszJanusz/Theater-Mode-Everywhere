@@ -15,6 +15,69 @@ export function readDisneyContentTime(video: HTMLVideoElement | null | undefined
   return null;
 }
 
+export const DISNEY_MEDIA_SEEK_STUCK_SECONDS = 15;
+
+// MAIN (`src/mainWorld.ts`) duplicates isUsableDisneyMediaVideo / ranking
+// instead of importing this module — bundled content.js / mainWorld.js must
+// stay free of ESM imports.
+
+export function disneyMediaSeekLooksStuck(
+  seekableEnd: number | null | undefined,
+  targetSeconds: number
+): boolean {
+  if (seekableEnd == null || !Number.isFinite(seekableEnd) || !Number.isFinite(targetSeconds)) return false;
+  return targetSeconds > seekableEnd + DISNEY_MEDIA_SEEK_STUCK_SECONDS;
+}
+
+export function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefined): boolean {
+  if (!video) return false;
+  const className = typeof video.className === 'string' ? video.className : '';
+  if (/\bbtm-media-client-element\b/.test(className)) return false;
+  let display = '';
+  try {
+    display = video.style?.display || '';
+  } catch {
+    // Test doubles may omit style.
+  }
+  try {
+    if (typeof getComputedStyle === 'function' && typeof (video as Node).nodeType === 'number') {
+      display = getComputedStyle(video).display || display;
+    }
+  } catch {
+    // jsdom/test doubles may not compute styles.
+  }
+  if (display === 'none') return false;
+  const videoWidth = Number(video.videoWidth) || 0;
+  let boxW = Number(video.clientWidth) || 0;
+  let boxH = Number(video.clientHeight) || 0;
+  try {
+    if (typeof video.getBoundingClientRect === 'function') {
+      const rect = video.getBoundingClientRect();
+      boxW = Math.max(boxW, rect.width || 0);
+      boxH = Math.max(boxH, rect.height || 0);
+    }
+  } catch {
+    // Ignore layout-less test doubles.
+  }
+  const hasBox = boxW > 8 && boxH > 8;
+  const hasSource = Boolean(video.currentSrc || video.src);
+  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className)) {
+    return videoWidth > 0 || hasSource || hasBox;
+  }
+  return (videoWidth > 0 || hasSource) && hasBox;
+}
+
+export function rankDisneyMediaVideos(videos: HTMLVideoElement[]): HTMLVideoElement[] {
+  const usable = videos.filter((item) => isUsableDisneyMediaVideo(item));
+  const score = (item: HTMLVideoElement) => {
+    const className = typeof item.className === 'string' ? item.className : '';
+    if (/\btheater-everywhere-video-active\b/.test(className)) return 3;
+    if (/\bhive-video\b/.test(className)) return 2;
+    return 1;
+  };
+  return usable.slice().sort((a, b) => score(b) - score(a));
+}
+
 export type DisneyPageCaption = {
   id: string;
   url: string;

@@ -1847,9 +1847,14 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
   };
 
   const DISNEY_CLOCK_EVENT = 'theater-everywhere-disney-clock';
+  const DISNEY_MEDIA_SEEK_STUCK_SECONDS = 15;
+  const DISNEY_SEEK_RETRY_MS = 1500;
   let cachedDisneyPlayer: DisneyHivePlayer | null = null;
-  let disneyPlayerEventsBound = false;
+  let cachedDisneyPlayerHost: Element | null = null;
+  const disneyClockBoundPlayers = new WeakSet<object>();
   let disneyClockTimer = 0;
+  let restoreDisneyPauseAfterSeek = false;
+  let pendingDisneySeekTarget: number | null = null;
 
   function isDisneyHivePlayer(value: unknown): value is DisneyHivePlayer {
     if (!value || typeof value !== 'object') return false;
@@ -1858,6 +1863,119 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     return typeof player.play === 'function'
       || typeof player.scrub === 'function'
       || typeof player.timeline?.info?.playheadPositionMs === 'number';
+  }
+
+  function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefined): boolean {
+    if (!video || !(video instanceof HTMLVideoElement)) return false;
+    const className = typeof video.className === 'string' ? video.className : '';
+    if (/\bbtm-media-client-element\b/.test(className)) return false;
+    let display = '';
+    try {
+      display = window.getComputedStyle(video).display;
+    } catch {
+      display = video.style?.display || '';
+    }
+    if (display === 'none') return false;
+    const rect = video.getBoundingClientRect();
+    const hasBox = rect.width > 8 && rect.height > 8;
+    const hasSource = Boolean(video.currentSrc || video.src);
+    if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className)) {
+      return video.videoWidth > 0 || hasSource || hasBox;
+    }
+    return (video.videoWidth > 0 || hasSource) && hasBox;
+  }
+
+  function disneyMediaVideos(preferred?: HTMLVideoElement | null): HTMLVideoElement[] {
+    const all = Array.from(document.querySelectorAll('video')).filter((node): node is HTMLVideoElement => (
+      node instanceof HTMLVideoElement
+    ));
+    const seen = new Set<HTMLVideoElement>();
+    const out: HTMLVideoElement[] = [];
+    const push = (node: HTMLVideoElement | null | undefined) => {
+      if (!node || seen.has(node) || !isUsableDisneyMediaVideo(node)) return;
+      seen.add(node);
+      out.push(node);
+    };
+    push(preferred || null);
+    for (const node of all) {
+      if (node.classList.contains('theater-everywhere-video-active')) push(node);
+    }
+    for (const node of all) {
+      if (node.classList.contains('hive-video')) push(node);
+    }
+    for (const node of all) push(node);
+    return out;
+  }
+
+  function disneyActiveMediaVideo(): HTMLVideoElement | null {
+    const active = findActiveVideo(document);
+    if (active && isUsableDisneyMediaVideo(active)) return active;
+    return disneyMediaVideos()[0] || null;
+  }
+
+  function disneyMediaSeekLooksStuck(video: HTMLVideoElement | null, targetSeconds: number): boolean {
+    if (!video || !Number.isFinite(targetSeconds)) return false;
+    try {
+      if (!video.seekable.length) return targetSeconds > DISNEY_MEDIA_SEEK_STUCK_SECONDS;
+      const start = video.seekable.start(0);
+      const end = video.seekable.end(video.seekable.length - 1);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start > 5) return false;
+      return targetSeconds > end + DISNEY_MEDIA_SEEK_STUCK_SECONDS;
+    } catch {
+      return false;
+    }
+  }
+
+  function disneySessionLooksPaused(): boolean {
+    const video = disneyActiveMediaVideo();
+    return Boolean(video?.paused || document.querySelector('.btm-media-player-idle'));
+  }
+
+  function applyDisneyHostSeek(
+    player: DisneyHivePlayer,
+    timeSeconds: number,
+    options: { playIfIdle?: boolean; scrub?: boolean }
+  ): void {
+    const ms = Math.round(timeSeconds * 1000);
+    player.seek(ms);
+    if (options.playIfIdle) {
+      if (disneySessionLooksPaused()) {
+        restoreDisneyPauseAfterSeek = true;
+        try {
+          player.play?.();
+        } catch {
+          // Session may still be attaching.
+        }
+      }
+    }
+    if (options.scrub) {
+      try {
+        player.scrub?.(ms);
+      } catch {
+        // scrub is optional; seek remains the primary API.
+      }
+    }
+  }
+
+  function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHivePlayer {
+    cachedDisneyPlayer = player;
+    cachedDisneyPlayerHost = host;
+    return player;
+  }
+
+  function disneyPlayerCacheValid(): boolean {
+    if (!cachedDisneyPlayer || !isDisneyHivePlayer(cachedDisneyPlayer)) return false;
+    if (!cachedDisneyPlayerHost?.isConnected) return false;
+    const web = document.querySelector('disney-web-player');
+    if (
+      web
+      && cachedDisneyPlayerHost !== web
+      && !web.contains(cachedDisneyPlayerHost)
+      && !cachedDisneyPlayerHost.contains(web)
+    ) {
+      return false;
+    }
+    return true;
   }
 
   function disneyPlayerFromNode(value: unknown): DisneyHivePlayer | null {
@@ -1922,28 +2040,26 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     return null;
   }
 
-  function findDisneyHivePlayer(video?: HTMLVideoElement | null): DisneyHivePlayer | null {
-    if (isDisneyHivePlayer(cachedDisneyPlayer)) return cachedDisneyPlayer;
-    const videos = video ? [video, ...Array.from(document.querySelectorAll('video'))] : Array.from(document.querySelectorAll('video'));
-    const seen = new Set<HTMLVideoElement>();
+  function findDisneyHivePlayer(video?: HTMLVideoElement | null, refresh = false): DisneyHivePlayer | null {
+    if (!refresh && disneyPlayerCacheValid()) return cachedDisneyPlayer;
+    const web = document.querySelector('disney-web-player');
+    if (web) {
+      const fromWeb = disneyPlayerFromFiberHost(web);
+      if (fromWeb) return rememberDisneyPlayer(fromWeb, web);
+    }
+    const videos = disneyMediaVideos(video || null);
     for (const node of videos) {
-      if (!(node instanceof HTMLVideoElement) || seen.has(node)) continue;
-      seen.add(node);
       const attached = disneyPlayerFromNode(node);
-      if (attached) {
-        cachedDisneyPlayer = attached;
-        return attached;
-      }
+      if (attached) return rememberDisneyPlayer(attached, node);
       let host: Element | null = node;
       while (host) {
         const fromFiber = disneyPlayerFromFiberHost(host);
-        if (fromFiber) {
-          cachedDisneyPlayer = fromFiber;
-          return fromFiber;
-        }
+        if (fromFiber) return rememberDisneyPlayer(fromFiber, host);
         host = host.parentElement;
       }
     }
+    cachedDisneyPlayer = null;
+    cachedDisneyPlayerHost = null;
     return null;
   }
 
@@ -1952,14 +2068,16 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
     return typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? ms / 1000 : null;
   }
 
+  function disneyHiveSeekReached(player: DisneyHivePlayer | null, targetSeconds: number): boolean {
+    const playhead = disneyPlayheadSeconds(player);
+    return playhead != null && Math.abs(playhead - targetSeconds) <= 2.5;
+  }
+
   function publishDisneyPlayhead(video: HTMLVideoElement | null, player: DisneyHivePlayer | null): number | null {
     const seconds = disneyPlayheadSeconds(player);
     if (seconds == null) return seconds;
-    const videos = new Set<HTMLVideoElement>();
-    if (video instanceof HTMLVideoElement) videos.add(video);
-    document.querySelectorAll('video').forEach((node) => {
-      if (node instanceof HTMLVideoElement) videos.add(node);
-    });
+    const videos = new Set<HTMLVideoElement>(disneyMediaVideos(video));
+    if (video && isUsableDisneyMediaVideo(video)) videos.add(video);
     for (const node of videos) {
       try {
         node.dataset.teDisneyPlayhead = String(seconds);
@@ -1972,31 +2090,43 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
   }
 
   function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
-    if (!player || disneyPlayerEventsBound || typeof player.on !== 'function') return;
+    if (!player || typeof player.on !== 'function') return;
+    if (disneyClockBoundPlayers.has(player)) return;
     const publish = () => {
-      const video = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
-      publishDisneyPlayhead(video, player);
+      publishDisneyPlayhead(disneyActiveMediaVideo(), player);
+      if (pendingDisneySeekTarget == null || !disneyHiveSeekReached(player, pendingDisneySeekTarget)) return;
+      if (restoreDisneyPauseAfterSeek) {
+        try {
+          player.pause?.();
+        } catch {
+          // Ignore pause races after seek.
+        }
+        restoreDisneyPauseAfterSeek = false;
+      }
+      pendingDisneySeekTarget = null;
     };
     try {
       player.on('@EVENT/PLAYER/TIMECODE', publish);
-      player.on('@EVENT/PLAYER/PLAYBACK/MEDIA_SEEK_COMPLETE', publish);
+      player.on('@EVENT/PLAYER/PLAYBACK/MEDIA_SEEK_COMPLETE', () => {
+        publish();
+      });
       player.on('@EVENT/PLAYER/PLAYBACK/MEDIA_RESUMED', publish);
-      disneyPlayerEventsBound = true;
+      disneyClockBoundPlayers.add(player);
     } catch {
-      disneyPlayerEventsBound = false;
+      // Player event binding can throw if the session is still attaching.
     }
   }
 
   function ensureDisneyClock(): void {
     if (!isDisneyHostName(window.location.hostname) || !disneyIntegrationEnabled()) return;
-    const video = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
+    const video = disneyActiveMediaVideo();
     const player = findDisneyHivePlayer(video);
     bindDisneyPlayerClock(player);
     publishDisneyPlayhead(video, player);
     if (disneyClockTimer) return;
     disneyClockTimer = window.setInterval(() => {
       if (!disneyIntegrationEnabled()) return;
-      const active = (findActiveVideo(document) || document.querySelector('video')) as HTMLVideoElement | null;
+      const active = disneyActiveMediaVideo();
       const next = findDisneyHivePlayer(active);
       bindDisneyPlayerClock(next);
       publishDisneyPlayhead(active, next);
@@ -2020,18 +2150,34 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, signYoutubeCaption
       && typeof detail.time === 'number'
       && Number.isFinite(detail.time)
     ) {
-      const hive = findDisneyHivePlayer(video instanceof HTMLVideoElement ? video : null);
+      const mediaVideo = disneyActiveMediaVideo()
+        || (video instanceof HTMLVideoElement && isUsableDisneyMediaVideo(video) ? video : null);
+      const hive = findDisneyHivePlayer(mediaVideo, true);
       if (hive) {
+        // Do not write teDisneyPlayhead to the target here. Captions and the
+        // clock follow timeline.info / MEDIA_SEEK_COMPLETE; the scrubber thumb
+        // uses pendingMediaSeeks until the host playhead moves.
+        pendingDisneySeekTarget = detail.time;
+        restoreDisneyPauseAfterSeek = disneySessionLooksPaused();
         try {
-          hive.seek(Math.round(detail.time * 1000));
-          if (video instanceof HTMLVideoElement) {
-            video.dataset.teDisneyPlayhead = String(detail.time);
-          }
+          applyDisneyHostSeek(hive, detail.time, { playIfIdle: false, scrub: false });
           bindDisneyPlayerClock(hive);
         } catch {
           // Player seek can throw if the session is still attaching.
         }
-        return;
+        window.setTimeout(() => {
+          if (pendingDisneySeekTarget == null) return;
+          const latestVideo = disneyActiveMediaVideo();
+          const latestHive = findDisneyHivePlayer(latestVideo, true);
+          if (!latestHive || disneyHiveSeekReached(latestHive, pendingDisneySeekTarget)) return;
+          if (!disneyMediaSeekLooksStuck(latestVideo, pendingDisneySeekTarget)) return;
+          try {
+            applyDisneyHostSeek(latestHive, pendingDisneySeekTarget, { playIfIdle: true, scrub: true });
+            bindDisneyPlayerClock(latestHive);
+          } catch {
+            // Retry can fail if the session dropped.
+          }
+        }, DISNEY_SEEK_RETRY_MS);
       }
       return;
     }
