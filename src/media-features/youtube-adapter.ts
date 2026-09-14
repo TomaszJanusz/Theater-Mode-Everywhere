@@ -322,7 +322,4 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 }
 
-export function isYouTubeHost(hostname = window.location.hostname): boolean {
-  const host = hostname.replace(/^www\./, '');
-  return host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com' || host.endsWith('.youtube.com');
-}
+export { isYouTubeHost } from '../providers/hosts';

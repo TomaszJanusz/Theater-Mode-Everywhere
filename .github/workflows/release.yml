@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Determine Tag Name
         run: |
@@ -107,11 +110,42 @@ jobs:
             git push origin "${{ env.RELEASE_TAG }}"
           fi
 
+      - name: Pin release to tag SHA
+        run: |
+          git fetch --tags --force
+          if ! git rev-parse "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release tag ${RELEASE_TAG} was not found after tag creation." >&2
+            exit 1
+          fi
+          RELEASE_SHA="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          git checkout --detach "$RELEASE_SHA"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          if [ "$HEAD_SHA" != "$RELEASE_SHA" ]; then
+            echo "HEAD $HEAD_SHA does not match ${RELEASE_TAG} commit $RELEASE_SHA." >&2
+            exit 1
+          fi
+          echo "RELEASE_SHA=$RELEASE_SHA" >> "$GITHUB_ENV"
+          echo "Building ${RELEASE_TAG} from $RELEASE_SHA"
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
       - name: Build Extension
         run: pnpm run build
+
+      - name: Verify Bundles
+        run: pnpm verify:bundles
+
+      - name: Record source SHA
+        run: |
+          printf '%s\n' "{\"tag\":\"${RELEASE_TAG}\",\"sha\":\"${RELEASE_SHA}\"}" > dist/build-info.json
+          cat dist/build-info.json
 
       - name: Extract Release Notes
         run: |
@@ -125,6 +159,7 @@ jobs:
           gh release create "${{ env.RELEASE_TAG }}" \
             dist/theater-everywhere-chrome.zip \
             dist/theater-everywhere-firefox.zip \
+            dist/build-info.json \
             --title "Release ${{ env.RELEASE_TAG }}" \
             --notes-file dist/release_notes.md
 

@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "비활성"
   },
+  "statusDisabledByParent": {
+    "message": "$1(으)로 사용 중지됨",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "비활성 (시스템)"
   },

@@ -231,7 +231,4 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
   }
 }
 
-export function isPatreonHost(hostname = window.location.hostname): boolean {
-  const host = hostname.replace(/^www\./, '').toLowerCase();
-  return host === 'patreon.com' || host.endsWith('.patreon.com');
-}
+export { isPatreonHost } from '../providers/hosts';

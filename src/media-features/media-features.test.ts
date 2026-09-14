@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
 import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
-import { isAllowedMediaFetchUrl } from './fetch-allowlist';
+import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
 import { defaultMediaProviderFlags, resolveMediaProviderFlags } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
@@ -40,7 +40,7 @@ import {
   rankDisneyMediaVideos,
   disneyMediaSeekLooksStuck
 } from './parsers/disney-page';
-import { preferProviderCaptionTracks } from './composite-adapter';
+import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
@@ -583,6 +583,18 @@ describe('fetch allowlist', () => {
       url: 'https://vod-akc-euwest1.media.dssott.com/ps01/playlist.m3u8'
     }), false);
   });
+
+  it('uses one classifier for page fetch and the background broker', () => {
+    const youtube = 'https://www.youtube.com/api/timedtext?v=abc';
+    const disneyBif = 'https://vod-akc-euwest1.media.dssott.com/ps01/thumbnails/roku.bif';
+    const twitchStoryboard = 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json';
+    assert.equal(isAllowedPageFetchUrl(youtube), true);
+    assert.equal(isAllowedBrokerFetchUrl(youtube), true);
+    assert.equal(isAllowedPageFetchUrl(disneyBif), true);
+    assert.equal(isAllowedBrokerFetchUrl(disneyBif), false);
+    assert.equal(isAllowedPageFetchUrl(twitchStoryboard), false);
+    assert.equal(isAllowedBrokerFetchUrl(twitchStoryboard), true);
+  });
 });
 
 describe('patreon page asset parser', () => {
@@ -694,6 +706,45 @@ describe('caption track merge', () => {
     ]);
     assert.equal(tracks.length, 1);
     assert.equal(tracks[0].source, 'twitch');
+  });
+});
+
+describe('F-05 composite adapter isolation', () => {
+  const nativeTrack = {
+    id: 'native:0',
+    language: 'en',
+    label: 'English',
+    kind: 'captions' as const,
+    source: 'native-text-track' as const
+  };
+
+  function stubAdapter(overrides: Partial<import('./types').MediaFeaturesAdapter> = {}): import('./types').MediaFeaturesAdapter {
+    return {
+      probe: async () => ({ captions: true, chapters: false, previews: false }),
+      listCaptionTracks: async () => [nativeTrack],
+      activateCaptionTrack: async () => [],
+      dispose() {},
+      ...overrides
+    };
+  }
+
+  it('keeps native caption tracks when another provider rejects', async () => {
+    const composite = new CompositeMediaAdapter([
+      stubAdapter(),
+      stubAdapter({
+        probe: async () => {
+          throw new Error('provider down');
+        },
+        listCaptionTracks: async () => {
+          throw new Error('provider down');
+        }
+      })
+    ]);
+    const capabilities = await composite.probe();
+    const tracks = await composite.listCaptionTracks();
+    assert.equal(capabilities.captions, true);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].id, 'native:0');
   });
 });
 

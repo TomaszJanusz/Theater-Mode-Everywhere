@@ -17,14 +17,19 @@ function hostnameAllowed(hostname: string, allowed: RegExp[]): boolean {
   return allowed.some((pattern) => pattern.test(hostname));
 }
 
-export function isAllowedMediaFetchUrl(request: MediaFetchRequest): boolean {
-  let parsed: URL;
+function parseHttpsUrl(url: string, base?: string): URL | null {
   try {
-    parsed = new URL(request.url);
+    const parsed = base ? new URL(url, base) : new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    return parsed;
   } catch {
-    return false;
+    return null;
   }
-  if (parsed.protocol !== 'https:') return false;
+}
+
+export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string): boolean {
+  const parsed = parseHttpsUrl(request.url, base);
+  if (!parsed) return false;
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') {
     const hostOk = hostnameAllowed(parsed.hostname, [
@@ -87,6 +92,35 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest): boolean {
 
 export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest): boolean {
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
+}
+
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney'];
+const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json'];
+
+export function classifyMediaFetchUrl(url: string, base?: string): MediaFetchRequest | null {
+  for (const provider of CLASSIFY_PROVIDERS) {
+    for (const kind of CLASSIFY_KINDS) {
+      const request: MediaFetchRequest = { provider, kind, url };
+      if (isAllowedMediaFetchUrl(request, base)) return request;
+    }
+  }
+  return null;
+}
+
+export function isAllowedPageFetchUrl(url: string, base?: string): boolean {
+  const classified = classifyMediaFetchUrl(url, base);
+  if (!classified) return false;
+  // Twitch storyboards are harvested from network; page fetch stays caption/BIF scoped.
+  if (classified.provider === 'twitch' && classified.kind === 'storyboard-json') return false;
+  return true;
+}
+
+export function isAllowedBrokerFetchUrl(url: string): boolean {
+  const classified = classifyMediaFetchUrl(url);
+  if (!classified) return false;
+  // Disney BIF is binary and larger than the text broker budget.
+  if (classified.provider === 'disney' && classified.kind === 'storyboard-json') return false;
+  return true;
 }
 
 export { MAX_CAPTION_BYTES };

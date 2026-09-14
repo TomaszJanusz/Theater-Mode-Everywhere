@@ -1,6 +1,7 @@
 /* Popup script for Theater Everywhere */
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
+import { removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -82,8 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       blacklist = blacklist.map(d => d.startsWith('www.') ? d.substring(4) : d);
 
       if (isActive) {
-        // Remove from blacklist to activate
-        blacklist = blacklist.filter(d => d !== currentDomain);
+        blacklist = removeMatchingBlacklistEntry(currentDomain, blacklist);
       } else {
         // Add to blacklist to deactivate
         if (!blacklist.includes(currentDomain)) {
@@ -119,15 +119,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await chrome.storage.sync.get({ blacklist: [] });
       const blacklist = (data.blacklist || []) as string[];
       
-      const isBlacklisted = blacklist.some(d => {
-        const clean = d.startsWith('www.') ? d.substring(4) : d;
-        return clean === currentDomain;
-      });
-
-      // In blacklist = not active = checkbox unchecked
-      const isActive = !isBlacklisted;
+      const policy = resolveDomainPolicy(currentDomain, blacklist);
+      const isActive = !policy.effective;
       toggleEl.checked = isActive;
-      setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+      if (!isActive && policy.source === 'parent' && policy.matchedEntry) {
+        setUIState(false, t('statusDisabledByParent', policy.matchedEntry));
+      } else {
+        setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+      }
     } catch (err) {
       console.error('Error reading storage:', err);
     }

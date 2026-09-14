@@ -50,6 +50,17 @@ import {
   queryPlayerUiAll,
   setPlayerUiCss
 } from './player-ui-root';
+import { DisposableScope } from './core/disposable-scope';
+import { resolveDomainPolicy } from './platform/domain-policy';
+import {
+  createFrameMessage,
+  createSessionId,
+  originMatchesIframe,
+  isTrustedFrameEnvelope,
+  isTrustedFrameSource,
+  readFrameEnvelope,
+  type FrameMessageType
+} from './protocol/frame-messages';
 
 setPlayerUiCss(theaterCss);
 
@@ -735,6 +746,7 @@ interface Listeners {
   pause: ((event: Event) => void) | null;
   message: ((event: MessageEvent) => void) | null;
   navigate: (() => void) | null;
+  playbackIntent: ((event: Event) => void) | null;
 }
 
 // Event listener references for clean removal
@@ -745,19 +757,63 @@ const listeners: Listeners = {
   play: null,
   pause: null,
   message: null,
-  navigate: null
+  navigate: null,
+  playbackIntent: null
 };
+
+let runtimeScope = new DisposableScope();
+let activeSessionId: string | null = null;
+let activeSessionNonce: string | null = null;
+let exitingSession = false;
+
+function childIframeWindows(): Array<Window | null> {
+  return Array.from(document.querySelectorAll('iframe')).map((iframe) => iframe.contentWindow);
+}
+
+function sessionNonce(): string {
+  if (!activeSessionNonce) activeSessionNonce = createSessionId();
+  return activeSessionNonce;
+}
+
+function postToParent(type: FrameMessageType, sessionId: string, payload: Record<string, unknown> = {}): void {
+  if (window === window.top) return;
+  try {
+    // Child→parent uses * so a missing/wrong document.referrer cannot drop EXIT (F-01).
+    window.parent.postMessage(createFrameMessage(type, sessionId, payload, sessionNonce()), '*');
+  } catch {
+    // Ignore cross-origin frame access errors.
+  }
+}
+
+function postToChildIframe(
+  iframe: HTMLIFrameElement,
+  type: FrameMessageType,
+  sessionId: string,
+  payload: Record<string, unknown> = {},
+  nonce = sessionNonce()
+): void {
+  if (!iframe.contentWindow) return;
+  try {
+    iframe.contentWindow.postMessage(createFrameMessage(type, sessionId, payload, nonce), getIframeOrigin(iframe));
+  } catch {
+    // Ignore cross-origin frame access errors.
+  }
+}
+
+function postToAllChildren(
+  type: FrameMessageType,
+  sessionId: string,
+  payload: Record<string, unknown> = {},
+  nonce = sessionNonce()
+): void {
+  document.querySelectorAll('iframe').forEach((iframe) => {
+    postToChildIframe(iframe, type, sessionId, payload, nonce);
+  });
+}
 
 function getIframeOrigin(iframe: HTMLIFrameElement): string {
   try {
     if (iframe.src) return new URL(iframe.src, window.location.href).origin;
-  } catch (_) {}
-  return '*';
-}
-
-function getParentOrigin(): string {
-  try {
-    if (document.referrer) return new URL(document.referrer).origin;
   } catch (_) {}
   return '*';
 }
@@ -836,11 +892,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     
     configuredShortcuts = withShortcutDefaults(saved);
     
-    const isBlacklisted = blacklist.some(domain => {
-      const cleanDomain = domain.startsWith('www.') ? domain.substring(4) : domain;
-      const cleanHostname = currentHostname.startsWith('www.') ? currentHostname.substring(4) : currentHostname;
-      return cleanHostname === cleanDomain || cleanHostname.endsWith('.' + cleanDomain);
-    });
+    const isBlacklisted = resolveDomainPolicy(currentHostname, blacklist).effective;
 
     // Nested provider frames stay active so YouTube/Vimeo embeds still work
     // when the provider hostname is excluded at the top-level site.
@@ -977,6 +1029,9 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
 function initialize(): void {
   if (isInitialized) return;
 
+  runtimeScope.dispose();
+  runtimeScope = new DisposableScope();
+
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
@@ -1036,7 +1091,7 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         hideHelpOverlay();
-      } else if (theaterElement) {
+      } else if (theaterElement || activeSessionId) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1049,15 +1104,14 @@ function initialize(): void {
       } else if (theaterElement.tagName === 'IFRAME') {
         const iframe = theaterElement as HTMLIFrameElement;
         if (iframe.contentWindow) {
-          iframe.contentWindow.postMessage({
-            type: 'theater-everywhere-key',
+          postToChildIframe(iframe, 'PLAYBACK_COMMAND', activeSessionId || createSessionId(), {
             key: event.key,
             code: event.code,
             ctrlKey: event.ctrlKey,
             altKey: event.altKey,
             shiftKey: event.shiftKey,
             metaKey: event.metaKey
-          }, getIframeOrigin(iframe));
+          });
           if (matchesShortcut(event, shortcuts.playPause) ||
               matchesShortcut(event, shortcuts.seekBack) ||
               matchesShortcut(event, shortcuts.seekForward) ||
@@ -1071,11 +1125,12 @@ function initialize(): void {
       }
     }
   };
-  window.addEventListener('keydown', listeners.keydown, true);
-  window.addEventListener('theater-everywhere-playback-intent', (event: Event) => {
+  runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
+  listeners.playbackIntent = (event: Event) => {
     const action = (event as CustomEvent<{ action?: 'play' | 'pause' }>).detail?.action;
     if (action === 'play' || action === 'pause') triggerPlaybackIndicator(action);
-  });
+  };
+  runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
     if (!theaterElement) return;
     const activeEl = getActiveElementDeep() as HTMLElement | null;
@@ -1094,8 +1149,8 @@ function initialize(): void {
       event.stopImmediatePropagation();
     }
   };
-  window.addEventListener('keyup', listeners.keyup, true);
-  window.addEventListener('keypress', listeners.keyup, true);
+  runtimeScope.listen(window, 'keyup', listeners.keyup!, true);
+  runtimeScope.listen(window, 'keypress', listeners.keyup!, true);
 
   // 2. Mouse Move Listener (Track video under cursor using composedPath)
   listeners.mousemove = (event: MouseEvent) => {
@@ -1132,7 +1187,7 @@ function initialize(): void {
       // Ignore errors
     }
   };
-  document.addEventListener('mousemove', listeners.mousemove, { passive: true });
+  runtimeScope.listen(document, 'mousemove', listeners.mousemove!, { passive: true });
 
   // 3. Play/Pause event tracking
   listeners.play = (event: Event) => {
@@ -1142,60 +1197,53 @@ function initialize(): void {
       activeVideo = video;
     }
   };
-  document.addEventListener('play', listeners.play, true); // Use capture phase since 'play' does not bubble
+  runtimeScope.listen(document, 'play', listeners.play!, true); // Use capture phase since 'play' does not bubble
 
   listeners.pause = (_event: Event) => {
     // Track pause events to keep activeVideo reference fresh if needed
   };
-  document.addEventListener('pause', listeners.pause, true); // Use capture phase since 'pause' does not bubble
+  runtimeScope.listen(document, 'pause', listeners.pause!, true); // Use capture phase since 'pause' does not bubble
 
   // 4. Cross-iframe postMessage listener
   listeners.message = (event: MessageEvent) => {
-    const data = event.data;
-    if (!data || typeof data !== 'object') return;
-    if (!data.type || !String(data.type).startsWith('theater-everywhere-')) return;
+    const envelope = readFrameEnvelope(event.data);
+    if (!envelope) return;
 
-    // Only accept messages from our parent frame or one of our child iframes
-    const isFromParent = window !== window.top && event.source === window.parent;
-    const isFromChild = Array.from(document.querySelectorAll('iframe')).some(
-      iframe => iframe.contentWindow === event.source
-    );
-    if (!isFromParent && !isFromChild) return;
+    const iframes = Array.from(document.querySelectorAll('iframe'));
+    const { fromParent, fromChild } = isTrustedFrameSource(event, childIframeWindows());
+    if (fromChild) {
+      const iframe = iframes.find((item) => item.contentWindow === event.source);
+      if (iframe && iframe.src && !originMatchesIframe(event, iframe)) return;
+    }
+    if (!isTrustedFrameEnvelope(envelope, {
+      eventOrigin: event.origin,
+      fromParent,
+      fromChild,
+      activeSessionId,
+      activeNonce: activeSessionNonce
+    })) {
+      return;
+    }
 
-    if (data.type === 'theater-everywhere-toggle') {
-      // Toggle requested by parent
+    if (envelope.type === 'FRAME_TOGGLE') {
       toggleTheaterMode();
-    } else if (data.type === 'theater-everywhere-enter') {
-      // Child frame entered theater mode; find that iframe and expand it
-      const iframes = document.querySelectorAll('iframe');
-      for (const iframe of iframes) {
-        if (iframe.contentWindow === event.source) {
-          enterTheaterMode(iframe);
-          break;
-        }
-      }
-    } else if (data.type === 'theater-everywhere-exit') {
-      // Child frame exited theater mode; restore that iframe
-      const iframes = document.querySelectorAll('iframe');
-      for (const iframe of iframes) {
-        if (iframe.contentWindow === event.source) {
-          exitTheaterMode();
-          break;
-        }
-      }
-    } else if (data.type === 'theater-everywhere-exit-down') {
-      // Parent frame told us to exit theater mode
-      exitTheaterMode();
-    } else if (data.type === 'theater-everywhere-key') {
+    } else if (envelope.type === 'FRAME_ENTER' && fromChild) {
+      const iframe = iframes.find((item) => item.contentWindow === event.source);
+      if (iframe) enterTheaterMode(iframe, envelope.sessionId, envelope.nonce);
+    } else if (envelope.type === 'FRAME_EXIT') {
+      exitTheaterMode('network', envelope.sessionId, fromParent ? 'parent' : 'child');
+    } else if (envelope.type === 'FRAME_EXITED') {
+      return;
+    } else if (envelope.type === 'PLAYBACK_COMMAND') {
       if (theaterElement && theaterElement.tagName === 'VIDEO') {
         const video = theaterElement as HTMLVideoElement;
         handleVideoKey({
-          key: data.key,
-          code: data.code,
-          ctrlKey: data.ctrlKey,
-          altKey: data.altKey,
-          shiftKey: data.shiftKey,
-          metaKey: data.metaKey,
+          key: envelope.payload.key,
+          code: envelope.payload.code,
+          ctrlKey: envelope.payload.ctrlKey,
+          altKey: envelope.payload.altKey,
+          shiftKey: envelope.payload.shiftKey,
+          metaKey: envelope.payload.metaKey,
           preventDefault: () => {},
           stopPropagation: () => {},
           stopImmediatePropagation: () => {}
@@ -1203,16 +1251,16 @@ function initialize(): void {
       }
     }
   };
-  window.addEventListener('message', listeners.message);
+  runtimeScope.listen(window, 'message', listeners.message!);
 
   // 5. SPA navigation listener — auto-exit theater mode when page navigates away
   listeners.navigate = () => {
-    if (theaterElement && !isElementInDOMDeep(theaterElement)) {
+    if ((theaterElement && !isElementInDOMDeep(theaterElement)) || (activeSessionId && theaterElement && !isElementInDOMDeep(theaterElement))) {
       exitTheaterMode();
     }
     activeVideo = null;
   };
-  window.addEventListener('popstate', listeners.navigate);
+  runtimeScope.listen(window, 'popstate', listeners.navigate!);
 
   isInitialized = true;
 }
@@ -1221,7 +1269,7 @@ function initialize(): void {
 function destroy(): void {
   if (!isInitialized) return;
 
-  if (theaterElement) {
+  if (theaterElement || activeSessionId) {
     exitTheaterMode();
   }
 
@@ -1230,16 +1278,16 @@ function destroy(): void {
     toolbarTimer = null;
   }
 
-  if (listeners.keydown) window.removeEventListener('keydown', listeners.keydown, true);
-  if (listeners.keyup) {
-    window.removeEventListener('keyup', listeners.keyup, true);
-    window.removeEventListener('keypress', listeners.keyup, true);
-  }
-  if (listeners.mousemove) document.removeEventListener('mousemove', listeners.mousemove);
-  if (listeners.play) document.removeEventListener('play', listeners.play, true);
-  if (listeners.pause) document.removeEventListener('pause', listeners.pause, true);
-  if (listeners.message) window.removeEventListener('message', listeners.message);
-  if (listeners.navigate) window.removeEventListener('popstate', listeners.navigate);
+  runtimeScope.dispose();
+  runtimeScope = new DisposableScope();
+  listeners.keydown = null;
+  listeners.keyup = null;
+  listeners.mousemove = null;
+  listeners.play = null;
+  listeners.pause = null;
+  listeners.message = null;
+  listeners.navigate = null;
+  listeners.playbackIntent = null;
 
   isInitialized = false;
 }
@@ -1689,29 +1737,24 @@ function toggleTheaterMode(): void {
   isTransitioning = true;
   setTimeout(() => { isTransitioning = false; }, 200);
 
-  if (theaterElement) {
-    exitTheaterMode();
+  if (theaterElement || activeSessionId) {
+    exitTheaterMode('local');
   } else {
     const video = findBestVideo();
     if (video) {
       enterTheaterMode(video);
     } else {
-      // No video found locally, ask child iframes to toggle
-      const iframes = document.querySelectorAll('iframe');
-      iframes.forEach(iframe => {
-        if (iframe.contentWindow) {
-          iframe.contentWindow.postMessage({ type: 'theater-everywhere-toggle' }, getIframeOrigin(iframe));
-        }
-      });
+      postToAllChildren('FRAME_TOGGLE', createSessionId(), {}, createSessionId());
     }
   }
 }
 
-// Enter theater mode
-function enterTheaterMode(element: HTMLElement): void {
+function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
   if (theaterElement) return;
 
   theaterElement = element;
+  activeSessionId = sessionId || activeSessionId || createSessionId();
+  activeSessionNonce = nonce || activeSessionNonce || createSessionId();
 
   // If the active video is inside a Shadow DOM, inject styling into its root node
   const rootNode = element.getRootNode();
@@ -1807,15 +1850,24 @@ function enterTheaterMode(element: HTMLElement): void {
   document.documentElement.classList.add('theater-everywhere-html-active');
 
   // If we are in an iframe, notify the parent document to expand the iframe itself
-  if (window !== window.top) {
-    window.parent.postMessage({ type: 'theater-everywhere-enter' }, getParentOrigin());
+  if (window !== window.top && activeSessionId) {
+    postToParent('FRAME_ENTER', activeSessionId);
   }
 }
 
 // Exit theater mode
-function exitTheaterMode(): void {
-  if (!theaterElement) return;
+function exitTheaterMode(
+  origin: 'local' | 'network' = 'local',
+  sessionId?: string,
+  from: 'parent' | 'child' | 'self' = 'self'
+): void {
+  if (exitingSession) return;
+  if (!theaterElement && !activeSessionId) return;
+  if (sessionId && activeSessionId && sessionId !== activeSessionId && sessionId !== 'legacy') return;
 
+  exitingSession = true;
+  const closedSessionId = activeSessionId;
+  try {
   hideHelpOverlay();
 
   if (document.fullscreenElement) {
@@ -1823,7 +1875,7 @@ function exitTheaterMode(): void {
   }
 
   // Restore HTML5 video attributes
-  if (theaterElement.tagName === 'VIDEO') {
+  if (theaterElement && theaterElement.tagName === 'VIDEO') {
     const video = theaterElement as HTMLVideoElement;
     const originalControls = video.dataset.originalControls;
     if (originalControls === 'true') {
@@ -1844,8 +1896,10 @@ function exitTheaterMode(): void {
     video.classList.remove('controls-visible');
   }
 
-  theaterElement.classList.remove('theater-everywhere-video-active');
-  restoreTheaterElementInlineStyles(theaterElement);
+  if (theaterElement) {
+    theaterElement.classList.remove('theater-everywhere-video-active');
+    restoreTheaterElementInlineStyles(theaterElement);
+  }
 
   // Restore ancestors styling
   ancestorsList.forEach(parent => {
@@ -1861,25 +1915,30 @@ function exitTheaterMode(): void {
 
   refreshHostPlayerLayout();
 
-  // If this was an iframe, propagate exit to child window inside it
-  if (theaterElement.tagName === 'IFRAME') {
-    const iframe = theaterElement as HTMLIFrameElement;
-    try {
-      if (iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'theater-everywhere-exit-down' }, getIframeOrigin(iframe));
+  if (closedSessionId) {
+    if (origin === 'local') {
+      if (theaterElement && theaterElement.tagName === 'IFRAME') {
+        postToChildIframe(theaterElement as HTMLIFrameElement, 'FRAME_EXIT', closedSessionId);
+      } else {
+        postToAllChildren('FRAME_EXIT', closedSessionId);
       }
-    } catch (e) {
-      // Ignore cross-origin exceptions
+      postToParent('FRAME_EXIT', closedSessionId);
+    } else if (from === 'child') {
+      postToAllChildren('FRAME_EXITED', closedSessionId);
+      postToParent('FRAME_EXIT', closedSessionId);
+    } else {
+      postToParent('FRAME_EXITED', closedSessionId);
+      postToAllChildren('FRAME_EXIT', closedSessionId);
     }
   }
 
-  // If we are in an iframe, notify parent to restore iframe size
-  if (window !== window.top) {
-    window.parent.postMessage({ type: 'theater-everywhere-exit' }, getParentOrigin());
-  }
-
   theaterElement = null;
+  activeSessionId = null;
+  activeSessionNonce = null;
   updateCaptionDock();
+  } finally {
+    exitingSession = false;
+  }
 }
 
 function refreshHostPlayerLayout(): void {
@@ -2016,6 +2075,9 @@ function bindCustomTooltip(button: HTMLButtonElement, getTooltipText: () => stri
 // Creates unified bottom player controls
 function createCustomControls(video: HTMLVideoElement): void {
   destroyCustomControls();
+
+  const controlsScope = new DisposableScope();
+  let gestureScope: DisposableScope | null = null;
 
   const wrapper = document.createElement('div') as ExtendedHTMLDivElement;
   wrapper.className = 'theater-controls-wrapper';
@@ -2903,7 +2965,7 @@ function createCustomControls(video: HTMLVideoElement): void {
       };
       video.addEventListener('seeked', onSeeked);
       
-      setTimeout(() => {
+      controlsScope.timeout(() => {
         isDragging = false;
         scrubberContainer.classList.remove('dragging');
         video.removeEventListener('seeked', onSeeked);
@@ -2920,12 +2982,14 @@ function createCustomControls(video: HTMLVideoElement): void {
         }
       }, 150);
 
-      document.removeEventListener('mousemove', onMouseMove, true);
-      document.removeEventListener('mouseup', onMouseUp, true);
+      gestureScope?.dispose();
+      gestureScope = null;
     };
 
-    document.addEventListener('mousemove', onMouseMove, true);
-    document.addEventListener('mouseup', onMouseUp, true);
+    gestureScope?.dispose();
+    gestureScope = new DisposableScope();
+    gestureScope.listen(document, 'mousemove', onMouseMove, true);
+    gestureScope.listen(document, 'mouseup', onMouseUp, true);
   };
 
   scrubberContainer.addEventListener('mousedown', onScrubberMouseDown);
@@ -2955,19 +3019,21 @@ function createCustomControls(video: HTMLVideoElement): void {
       };
       video.addEventListener('seeked', onSeeked);
       
-      setTimeout(() => {
+      controlsScope.timeout(() => {
         isDragging = false;
         scrubberContainer.classList.remove('dragging');
         video.removeEventListener('seeked', onSeeked);
         tooltip.classList.remove('visible');
       }, 150);
 
-      document.removeEventListener('touchmove', onTouchMove, true);
-      document.removeEventListener('touchend', onTouchEnd, true);
+      gestureScope?.dispose();
+      gestureScope = null;
     };
 
-    document.addEventListener('touchmove', onTouchMove, { capture: true, passive: true });
-    document.addEventListener('touchend', onTouchEnd, true);
+    gestureScope?.dispose();
+    gestureScope = new DisposableScope();
+    gestureScope.listen(document, 'touchmove', onTouchMove, { capture: true, passive: true });
+    gestureScope.listen(document, 'touchend', onTouchEnd, true);
   };
   scrubberContainer.addEventListener('touchstart', onScrubberTouchStart, { passive: true });
 
@@ -3127,6 +3193,9 @@ function createCustomControls(video: HTMLVideoElement): void {
 
   wrapper._videoListenersCleanup = () => {
     onVolumeAdjustedCallback = null;
+    gestureScope?.dispose();
+    gestureScope = null;
+    controlsScope.dispose();
     video.removeEventListener('play', onPlay);
     video.removeEventListener('pause', onPause);
     video.removeEventListener('timeupdate', onTimeUpdate);

@@ -1,4 +1,7 @@
-import { isSafeTwitchStoryboardHost, isSafeTwitchStoryboardJsonUrl } from './twitch-storyboard';
+import { isSafeTwitchStoryboardJsonUrl } from './twitch-storyboard';
+import { isTwitchHost } from '../../providers/hosts';
+
+export { isTwitchHost };
 
 export type TwitchPageMoment = {
   start: number;
@@ -40,13 +43,6 @@ function unescapeJsonString(value: string): string {
 
 function clipUrl(url: string): string {
   return url.replace(/[\\]+$/, '').slice(0, 2000);
-}
-
-export function isTwitchHost(hostname?: string): boolean {
-  const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : ''))
-    .replace(/^www\./, '')
-    .toLowerCase();
-  return host === 'twitch.tv' || host.endsWith('.twitch.tv');
 }
 
 export function twitchPageVideoId(href: string): string | null {

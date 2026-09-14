@@ -15,6 +15,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   errorLoading: 'Error loading',
   statusActive: 'Active',
   statusDisabled: 'Disabled',
+  statusDisabledByParent: 'Disabled by $1',
   statusInactiveSystem: 'Inactive (system)',
   statusUnavailable: 'Unavailable',
   toggleTheaterModeLower: 'Toggle theater mode',

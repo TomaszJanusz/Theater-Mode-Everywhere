@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsx scripts/build.ts",
-    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts src/platform/domain-policy.test.ts src/core/disposable-scope.test.ts src/protocol/frame-handshake.test.ts src/providers/registry.test.ts",
+    "verify:bundles": "tsx scripts/verify-bundles.ts",
     "store:cws:screenshots": "tsx scripts/render-cws-screenshots.ts"
   },
   "author": "Tomasz Janusz",

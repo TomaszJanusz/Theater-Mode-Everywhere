@@ -77,7 +77,9 @@ export class MediaFeaturesController {
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
+  private sessionEpoch = 0;
   private activateInFlight = false;
+  private dialogAbort = new AbortController();
 
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
@@ -122,15 +124,20 @@ export class MediaFeaturesController {
   setProviderFlags(flags: MediaProviderFlags): void {
     if (this.disposed || mediaProviderFlagsEqual(this.providerFlags, flags)) return;
     this.providerFlags = flags;
+    this.rebindAdapter(createMediaFeaturesAdapter(this.video, flags));
+  }
+
+  rebindAdapter(adapter: MediaFeaturesAdapter): void {
+    if (this.disposed) return;
     this.adapter.dispose();
-    this.adapter = createMediaFeaturesAdapter(this.video, flags);
+    this.adapter = adapter;
     this.invalidate();
     void this.refresh();
   }
 
   invalidate(): void {
     if (this.disposed) return;
-    this.activateGeneration += 1;
+    this.bumpEpoch();
     this.adapter.invalidate?.();
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
@@ -145,6 +152,23 @@ export class MediaFeaturesController {
     this.onCaptionChange?.();
   }
 
+  private bumpEpoch(): void {
+    this.sessionEpoch += 1;
+    this.activateGeneration += 1;
+    if (!this.dialogAbort.signal.aborted) this.dialogAbort.abort();
+    this.dialogAbort = new AbortController();
+  }
+
+  private isCurrent(epoch: number, adapter: MediaFeaturesAdapter): boolean {
+    return !this.disposed && this.sessionEpoch === epoch && this.adapter === adapter;
+  }
+
+  private delay(ms: number, epoch: number, adapter: MediaFeaturesAdapter): Promise<boolean> {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(this.isCurrent(epoch, adapter)), ms);
+    });
+  }
+
   async refresh(): Promise<void> {
     if (this.disposed) return;
     if (this.refreshInFlight) {
@@ -152,19 +176,24 @@ export class MediaFeaturesController {
       return;
     }
     this.refreshInFlight = true;
+    const epoch = this.sessionEpoch;
+    const adapter = this.adapter;
     const previousId = this.mediaId;
     try {
       try {
-        await this.adapter.reload?.();
-        this.mediaId = this.adapter.mediaId?.() || null;
-        this.tracks = await this.adapter.listCaptionTracks();
-        this.chapters = this.adapter.getChapters ? await this.adapter.getChapters() : [];
+        await adapter.reload?.();
+        if (!this.isCurrent(epoch, adapter)) return;
+        this.mediaId = adapter.mediaId?.() || null;
+        this.tracks = await adapter.listCaptionTracks();
+        if (!this.isCurrent(epoch, adapter)) return;
+        this.chapters = adapter.getChapters ? await adapter.getChapters() : [];
       } catch (err) {
+        if (!this.isCurrent(epoch, adapter)) return;
         console.error('[Theater Everywhere] Media features probe failed:', err);
         this.tracks = [];
         this.chapters = [];
       }
-      if (this.disposed) return;
+      if (!this.isCurrent(epoch, adapter)) return;
       const mediaChanged = Boolean(previousId && this.mediaId && previousId !== this.mediaId);
       if (mediaChanged) {
         this.activateGeneration += 1;
@@ -182,24 +211,23 @@ export class MediaFeaturesController {
       if (shouldRestoreCaptions) {
         let match = pickCaptionTrack(this.tracks, this.captionPreference);
         if (!match) {
-          await new Promise<void>((resolve) => setTimeout(resolve, 700));
-          if (this.disposed || !this.captionPreference) return;
+          if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
           try {
-            this.tracks = await this.adapter.listCaptionTracks();
+            this.tracks = await adapter.listCaptionTracks();
           } catch {
+            if (!this.isCurrent(epoch, adapter)) return;
             this.tracks = [];
           }
+          if (!this.isCurrent(epoch, adapter)) return;
           this.updateCcState();
           this.renderCcMenu();
           match = pickCaptionTrack(this.tracks, this.captionPreference);
         }
         if (match) {
           await this.activate(match.id, { persist: false, hud: 'on' });
-          if (!this.usingOverlayCaptions && !this.disposed) {
-            await new Promise<void>((resolve) => setTimeout(resolve, 700));
-            if (!this.disposed && this.captionPreference) {
-              await this.activate(match.id, { persist: false, hud: 'on' });
-            }
+          if (!this.usingOverlayCaptions && this.isCurrent(epoch, adapter)) {
+            if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
+            await this.activate(match.id, { persist: false, hud: 'on' });
           }
         }
       }
@@ -316,6 +344,7 @@ export class MediaFeaturesController {
     await openCaptionOptionsDialog({
       t: this.t,
       style: this.captionStyle,
+      signal: this.dialogAbort.signal,
       onChange: (style) => {
         this.setCaptionStyle(style);
         this.onCaptionStyleChange?.(style);
@@ -482,7 +511,7 @@ export class MediaFeaturesController {
 
   dispose(): void {
     this.disposed = true;
-    this.activateGeneration += 1;
+    this.bumpEpoch();
     this.refreshQueued = false;
     setOverlayCaptionsClass(false);
     this.renderer.dispose();
