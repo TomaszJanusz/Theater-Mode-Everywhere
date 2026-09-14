@@ -1,6 +1,6 @@
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
-import { markFetchPatched } from '../providers/registry';
+import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import {
   captureTimedtextResponse,
@@ -68,7 +68,8 @@ export function installMainWorldRuntime(): void {
     return wrapped;
   }
 
-  if (markFetchPatched(window)) {
+  const harvestHost = shouldPatchMainWorld(window.location.hostname);
+  if (harvestHost && markFetchPatched(window)) {
     const originalResponseJson = Response.prototype.json;
     Response.prototype.json = function(this: Response) {
       const result = originalResponseJson.apply(this, arguments as unknown as []);
@@ -158,9 +159,11 @@ export function installMainWorldRuntime(): void {
     }
   }
 
-  installYoutubeMain();
-  installTwitchMain();
-  installDisneyMain();
+  if (harvestHost) {
+    installYoutubeMain();
+    installTwitchMain();
+    installDisneyMain();
+  }
 
   let pendingVideo: HTMLVideoElement | null = null;
   let pendingMultiplier: number = 1.0;

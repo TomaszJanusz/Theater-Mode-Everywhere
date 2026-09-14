@@ -27,6 +27,7 @@ describe('provider registry', () => {
     assert.equal(shouldPatchMainWorld('www.youtube.com'), true);
     assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
     assert.equal(shouldPatchMainWorld('example.com'), false);
+    assert.equal(shouldPatchMainWorld('127.0.0.1'), false);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com'), true);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com.'), true);
     assert.equal(isDisneyHost('www.disneyplus.com'), true);
