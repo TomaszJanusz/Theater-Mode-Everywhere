@@ -31,7 +31,8 @@ export function parseYoutubeDescriptionChapters(
   }
 
   matches.sort((a, b) => a.start - b.start);
-  if (matches.length < 3) return [];
+  // YouTube's auto-chapter UI wants 3+ stamps; a 0:00 Contents pair is still a usable list.
+  if (matches.length < 2) return [];
   if (matches[0].start !== 0) return [];
 
   const chapters: Chapter[] = [];

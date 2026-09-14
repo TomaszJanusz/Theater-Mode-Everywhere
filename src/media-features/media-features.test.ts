@@ -207,8 +207,21 @@ describe('youtube chapter parser', () => {
     assert.equal(chapters[2].end, 20 * 60);
   });
 
-  it('rejects fewer than three, missing 00:00, or short segments', () => {
-    assert.equal(parseYoutubeDescriptionChapters('00:00 A\n00:20 B').length, 0);
+  it('accepts a two-stamp Contents list', () => {
+    const chapters = parseYoutubeDescriptionChapters(
+      'Contents:\n00:00:00 - Intro\n00:01:03 - Content\n\n#Mrow #MrowLive #MrowReal',
+      702
+    );
+    assert.equal(chapters.length, 2);
+    assert.equal(chapters[0].start, 0);
+    assert.equal(chapters[0].title, 'Intro');
+    assert.equal(chapters[1].start, 63);
+    assert.equal(chapters[1].title, 'Content');
+    assert.equal(chapters[1].end, 702);
+  });
+
+  it('rejects a single stamp, missing 00:00, or short segments', () => {
+    assert.equal(parseYoutubeDescriptionChapters('00:00 A').length, 0);
     assert.equal(parseYoutubeDescriptionChapters('00:10 A\n00:20 B\n00:40 C').length, 0);
     assert.equal(parseYoutubeDescriptionChapters('00:00 A\n00:05 B\n00:40 C').length, 0);
   });
