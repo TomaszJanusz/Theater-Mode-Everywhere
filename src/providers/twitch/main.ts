@@ -264,6 +264,12 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
   }
 }
 
+export function twitchHarvestSnapshotMatchesPage(pageHref: string, snapshotVideoId?: string): boolean {
+  const pageId = twitchPageVideoId(pageHref);
+  if (!pageId) return true;
+  return Boolean(snapshotVideoId) && snapshotVideoId === pageId;
+}
+
 function postTwitchHarvestSnapshotToTop(): void {
   if (window === window.top) return;
   const target = discoverParentOrigin();
@@ -318,8 +324,13 @@ export function installTwitchMain(): void {
     } catch {
       return;
     }
+    const fromChildFrame = Array.from(document.querySelectorAll('iframe')).some(
+      (iframe) => iframe.contentWindow === event.source
+    );
+    if (!fromChildFrame) return;
     const data = event.data;
     if (data && data.type === 'theater-everywhere-twitch-harvest-snapshot' && data.snapshot && typeof data.snapshot === 'object') {
+      if (!twitchHarvestSnapshotMatchesPage(window.location.href, data.snapshot.videoId)) return;
       applyTwitchHarvestSnapshot(data.snapshot);
     }
   });

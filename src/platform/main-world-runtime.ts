@@ -216,6 +216,7 @@ export function installMainWorldRuntime(): void {
   }
 
   function resumeIfSuspended(): void {
+    if (!document.documentElement.classList.contains('theater-everywhere-html-active')) return;
     const video = findActiveVideo(document);
     if (!video) return;
 

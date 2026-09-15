@@ -135,7 +135,13 @@ export function originMatchesIframe(event: MessageEvent, iframe: HTMLIFrameEleme
 export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTrustContext): boolean {
   if (!context.fromParent && !context.fromChild) return false;
   if (envelope.origin !== context.eventOrigin) return false;
-  if (envelope.type === 'FRAME_TOGGLE' || envelope.type === 'FRAME_ENTER') return true;
+  if (envelope.type === 'FRAME_ENTER') return true;
+  if (envelope.type === 'FRAME_TOGGLE') {
+    if (context.fromParent) return true;
+    if (!context.activeSessionId || envelope.sessionId !== context.activeSessionId) return false;
+    if (context.activeNonce && envelope.nonce !== context.activeNonce) return false;
+    return true;
+  }
   if (envelope.type === 'FRAME_EXIT' || envelope.type === 'FRAME_EXITED') {
     if (!context.activeSessionId) return true;
     return envelope.sessionId === context.activeSessionId;

@@ -64,6 +64,7 @@ describe('PlayerSession', () => {
     assert.equal(session.dispatch({ type: 'PLAY_PAUSE' }), false);
     assert.equal(session.dispatch({ type: 'SEEK_BY', delta: 5 }), false);
     const again = session.rebind(first);
+    assert.equal(session.dispatch({ type: 'PLAY_PAUSE' }), false);
     session.activate(again.epoch);
     assert.equal(session.dispatch({ type: 'PLAY_PAUSE' }), true);
     assert.equal(session.dispatch({ type: 'SEEK_BY', delta: -5 }), true);

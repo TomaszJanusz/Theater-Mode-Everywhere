@@ -38,7 +38,9 @@ export function createHelp(ctx: PlayerChromeContext) {
     title.textContent = ctx.t('keyboardShortcutsTitle');
 
     const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
     closeBtn.className = 'theater-help-close-btn';
+    closeBtn.setAttribute('aria-label', ctx.t('showHideHelp'));
     closeBtn.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>

@@ -131,12 +131,16 @@ export function createHud(ctx: PlayerChromeContext) {
     overlay.className = 'theater-everywhere-volume-overlay status-hud';
     ctx.paintOverlay(overlay);
 
-    overlay.innerHTML = `
-    <div class="volume-hud-content">
-      <div class="volume-hud-icon zoom-in">${icon}</div>
-      <span class="volume-hud-text">${text}</span>
-    </div>
-  `;
+    const content = document.createElement('div');
+    content.className = 'volume-hud-content';
+    const iconEl = document.createElement('div');
+    iconEl.className = 'volume-hud-icon zoom-in';
+    iconEl.innerHTML = icon;
+    const textEl = document.createElement('span');
+    textEl.className = 'volume-hud-text';
+    textEl.textContent = text;
+    content.append(iconEl, textEl);
+    overlay.appendChild(content);
 
     ctx.mountPlayerUi(overlay);
 

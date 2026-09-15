@@ -819,6 +819,10 @@ export function createControls(ctx: PlayerChromeContext) {
     let isDragging = false;
     let lastSeekTime = 0;
     let seekTimeout: number | null = null;
+    controlsScope.add(() => {
+      if (seekTimeout) clearTimeout(seekTimeout);
+      seekTimeout = null;
+    });
 
     const throttledSeek = (time: number) => {
       const now = Date.now();
@@ -832,6 +836,7 @@ export function createControls(ctx: PlayerChromeContext) {
       } else {
         if (seekTimeout) clearTimeout(seekTimeout);
         seekTimeout = window.setTimeout(() => {
+          seekTimeout = null;
           seekHostTime(video, time);
           lastSeekTime = Date.now();
         }, 100 - (now - lastSeekTime));

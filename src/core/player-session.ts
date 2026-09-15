@@ -122,7 +122,7 @@ export class PlayerSession {
     if (command.type === 'EXIT') {
       return this.beginExit(command.sessionId, command.origin ?? 'local');
     }
-    if (!this.host || this.kind === 'exiting' || this.kind === 'disposed') return false;
+    if (!this.host || this.kind !== 'active') return false;
     return true;
   }
 

@@ -78,6 +78,33 @@ describe('F-01 frame session handshake', () => {
     assert.equal(readFrameEnvelope({ type: 'theater-everywhere-exit-down' }), null);
   });
 
+  it('rejects child FRAME_TOGGLE without the active session', () => {
+    const sessionId = createSessionId();
+    const nonce = createSessionId();
+    const toggle = createFrameMessage('FRAME_TOGGLE', sessionId, {}, nonce, 'https://ads.example');
+    assert.equal(isTrustedFrameEnvelope(toggle, {
+      eventOrigin: 'https://ads.example',
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: null,
+      activeNonce: null
+    }), false);
+    assert.equal(isTrustedFrameEnvelope(toggle, {
+      eventOrigin: 'https://ads.example',
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: sessionId,
+      activeNonce: nonce
+    }), true);
+    assert.equal(isTrustedFrameEnvelope(toggle, {
+      eventOrigin: 'https://ads.example',
+      fromParent: true,
+      fromChild: false,
+      activeSessionId: null,
+      activeNonce: null
+    }), true);
+  });
+
   it('treats EXIT as idempotent for a matching session', () => {
     const sessionId = createSessionId();
     let theater = true;
