@@ -44,6 +44,13 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
   return next;
 }
 
+export function shortcutDisplayParts(shortcutStr: string): string[] {
+  if (!shortcutStr) return [];
+  const parts = shortcutStr.split('+');
+  const mainKey = parts.pop() || '+';
+  return [...parts.filter(Boolean), mainKey];
+}
+
 export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
   if (!shortcutStr) return false;
 

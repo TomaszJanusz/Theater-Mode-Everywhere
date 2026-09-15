@@ -1,4 +1,4 @@
-import { defaultShortcuts } from './shortcuts';
+import { defaultShortcuts, shortcutDisplayParts } from './shortcuts';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
@@ -110,7 +110,7 @@ export function createHelp(ctx: PlayerChromeContext) {
         keyWrapper.className = 'theater-help-key-wrapper';
         keyWrapper.dir = 'ltr';
 
-        const keys = item.key.split('+');
+        const keys = shortcutDisplayParts(item.key);
         keys.forEach((k, idx) => {
           if (idx > 0) {
             keyWrapper.appendChild(document.createTextNode(' + '));

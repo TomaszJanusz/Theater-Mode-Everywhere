@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { matchesShortcut } from './shortcuts';
+import { matchesShortcut, shortcutDisplayParts } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -34,5 +34,11 @@ describe('shortcut matching', () => {
 
   it('still matches Shift+T', () => {
     assert.equal(matchesShortcut(key({ key: 't', shiftKey: true, code: 'KeyT' }), 'Shift+T'), true);
+  });
+
+  it('renders + and Ctrl++ as real keys instead of empty kbd parts', () => {
+    assert.deepEqual(shortcutDisplayParts('+'), ['+']);
+    assert.deepEqual(shortcutDisplayParts('Ctrl++'), ['Ctrl', '+']);
+    assert.deepEqual(shortcutDisplayParts('Shift+T'), ['Shift', 'T']);
   });
 });
