@@ -18,6 +18,18 @@ const PATREON_ATTR = 'data-te-patreon-integration-off';
 const TWITCH_ATTR = 'data-te-twitch-integration-off';
 const DISNEY_ATTR = 'data-te-disney-integration-off';
 
+const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
+  youtube: YOUTUBE_ATTR,
+  vimeo: VIMEO_ATTR,
+  patreon: PATREON_ATTR,
+  twitch: TWITCH_ATTR,
+  disney: DISNEY_ATTR
+};
+
+export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {
+  return !document.documentElement.hasAttribute(MEDIA_PROVIDER_OFF_ATTRS[id]);
+}
+
 export function defaultMediaProviderFlags(): MediaProviderFlags {
   return { youtube: true, vimeo: true, patreon: true, twitch: true, disney: true };
 }

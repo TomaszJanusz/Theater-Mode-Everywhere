@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Desactivado"
   },
+  "statusDisabledByParent": {
+    "message": "Desactivado por $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Inactivo (sistema)"
   },

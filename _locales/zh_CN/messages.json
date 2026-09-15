@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "已禁用"
   },
+  "statusDisabledByParent": {
+    "message": "已被 $1 禁用",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "未启用（系统）"
   },

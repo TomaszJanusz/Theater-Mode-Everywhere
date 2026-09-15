@@ -126,10 +126,7 @@ function stripWww(hostname: string): string {
   return hostname.replace(/^www\./i, '').toLowerCase();
 }
 
-export function isDisneyHost(hostname = typeof window === 'undefined' ? '' : window.location.hostname): boolean {
-  const host = stripWww(hostname);
-  return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
-}
+export { isDisneyHost } from '../../providers/hosts';
 
 export function disneyPlayId(href: string): string | null {
   try {
@@ -398,7 +395,6 @@ export function parseDisneyThumbnailIndex(raw: unknown): DisneyThumbnailMeta | n
     };
     const count = Number((main as { thumbnailCount?: number }).thumbnailCount);
     if (!best || (Number.isFinite(count) && count > 10)) best = meta;
-    if (String((main as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN') return meta;
   }
   return best;
 }
@@ -492,7 +488,7 @@ export function parseDisneyPlaybackPayload(raw: unknown, mediaId?: string | null
     masterUrl,
     captions: [],
     storyboardUrl: thumbnail?.bifUrl || storyboards[0],
-    thumbnail
+    thumbnail: thumbnail ?? undefined
   };
 }
 

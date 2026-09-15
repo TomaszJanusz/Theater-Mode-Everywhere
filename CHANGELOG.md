@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
 - The subtitles menu is compact and scrollable, with a sticky header, so long language lists (Disney+ and similar) keep the top of the menu on screen.
+- MAIN world always installs Space and volume-boost handlers. Fetch/XHR harvest still patches only on provider hosts.
+- `PlayerSession` owns the theater element: enter goes through `rebind`, exit through `dispatch({ type: 'EXIT' })`, and a network EXIT without `sessionId` is ignored.
+- Player chrome is split out of `player-runtime.ts` into `hud`, `help`, `discovery`, `toolbar`, and `controls`, sharing a `PlayerChromeContext` so views do not import `src/providers/*`.
+- Playback keys and chrome clicks go through `PlayerCommand` (`PLAY_PAUSE`, `SEEK_BY`, `TOGGLE_CAPTIONS`, `CYCLE_VIDEO`, `CYCLE_FIT`, `TOGGLE_HELP`) instead of calling host seek/play APIs from the views.
 
 ### Fixed
 - Pressing play in theater mode on an unstarted Vimeo (or similar) player now clicks the host Play control instead of calling `video.play()` on an empty element, which left a spinner and never attached media.
@@ -62,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume, speed, and subtitle popovers no longer stay pinned after a mouse click on their toggle, a click on the video, or the chrome auto-hide timeout. Subtitle language rows now use the full menu width as the hit target.
 - YouTube description chapters now accept a two-stamp `Contents:` list (`00:00:00 - Intro` plus a later title). Theater previously required three timestamps, which is YouTube's auto-chapter UI rule, not a useful floor for the scrubber.
 - Disney+ theater seek now drives the Hive player on `DISNEY-WEB-PLAYER` / `hive-video`, not the hidden dummy `<video>`, and does not pin the clock or captions to the scrubber target until the host playhead moves. A stuck opening MSE prefix retries with `play`/`scrub` instead of assigning `currentTime`.
+- Space and volume boost work again on ordinary HTML5 pages. MAIN still harvests YouTube/Twitch/Disney only on those hosts.
 
 ## [1.4.0] - 2026-09-06
 

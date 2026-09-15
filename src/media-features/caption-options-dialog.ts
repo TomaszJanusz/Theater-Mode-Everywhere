@@ -4,11 +4,16 @@ import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
 
+/**
+ * Mounts the caption-style dialog and reports each user change through `onChange`.
+ * The returned promise resolves after the dialog is dismissed or the optional signal aborts.
+ */
 export async function openCaptionOptionsDialog(options: {
   t: Translate;
   style: CaptionStyle;
   onChange: (style: CaptionStyle) => void;
   decorate?: (overlay: HTMLElement) => void;
+  signal?: AbortSignal;
 }): Promise<void> {
   const current = { ...options.style };
 
@@ -86,9 +91,13 @@ export async function openCaptionOptionsDialog(options: {
   done.focus();
 
   await new Promise<void>((resolve) => {
+    let settled = false;
     const close = (): void => {
+      if (settled) return;
+      settled = true;
       overlay.removeEventListener('pointerdown', onOverlay);
       document.removeEventListener('keydown', onKeyDown, true);
+      options.signal?.removeEventListener('abort', onAbort);
       document.body.classList.remove('te-dialog-open');
       overlay.remove();
       resolve();
@@ -102,9 +111,17 @@ export async function openCaptionOptionsDialog(options: {
       event.stopPropagation();
       close();
     };
+    const onAbort = (): void => {
+      close();
+    };
     overlay.addEventListener('pointerdown', onOverlay);
     document.addEventListener('keydown', onKeyDown, true);
     done.addEventListener('click', close, { once: true });
+    if (options.signal?.aborted) {
+      close();
+      return;
+    }
+    options.signal?.addEventListener('abort', onAbort, { once: true });
   });
 }
 

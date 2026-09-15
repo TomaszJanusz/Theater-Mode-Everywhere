@@ -89,7 +89,4 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
   }
 }
 
-export function isVimeoHost(hostname = window.location.hostname): boolean {
-  const host = hostname.replace(/^www\./, '');
-  return host === 'vimeo.com' || host.endsWith('.vimeo.com');
-}
+export { isVimeoHost } from '../providers/hosts';

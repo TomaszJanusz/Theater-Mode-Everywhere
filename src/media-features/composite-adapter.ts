@@ -1,3 +1,4 @@
+import { allSettledResults, fulfilledValues } from '../core/result';
 import type {
   CaptionCue,
   CaptionTrack,
@@ -30,8 +31,9 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     this.adapters = adapters;
   }
 
+  /** Combines capabilities from adapters that respond successfully, ignoring rejected probes. */
   async probe(): Promise<MediaCapabilities> {
-    const results = await Promise.all(this.adapters.map((adapter) => adapter.probe()));
+    const results = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.probe())));
     return {
       captions: results.some((item) => item.captions),
       chapters: results.some((item) => item.chapters),
@@ -39,33 +41,55 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     };
   }
 
+  /**
+   * Merges tracks from successful adapters and drops native tracks when Patreon, Twitch, or Disney
+   * tracks are present.
+   */
   async listCaptionTracks(): Promise<CaptionTrack[]> {
-    const lists = await Promise.all(this.adapters.map((adapter) => adapter.listCaptionTracks()));
+    const lists = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.listCaptionTracks())));
     return preferProviderCaptionTracks(lists.flat());
   }
 
+  /**
+   * Activates adapters that report the requested track and deactivates the others.
+   * Passing `null` deactivates every adapter; failures are isolated so another adapter can respond.
+   */
   async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
     if (id === null) {
-      await Promise.all(this.adapters.map((adapter) => adapter.activateCaptionTrack(null)));
+      await allSettledResults(this.adapters.map((adapter) => adapter.activateCaptionTrack(null)));
       return null;
     }
     let overlayCues: CaptionCue[] | null = null;
     for (const adapter of this.adapters) {
-      const tracks = await adapter.listCaptionTracks();
-      if (tracks.some((track) => track.id === id)) {
-        overlayCues = await adapter.activateCaptionTrack(id);
-      } else {
-        await adapter.activateCaptionTrack(null);
+      let tracks: CaptionTrack[] = [];
+      try {
+        tracks = await adapter.listCaptionTracks();
+      } catch {
+        continue;
+      }
+      try {
+        if (tracks.some((track) => track.id === id)) {
+          overlayCues = await adapter.activateCaptionTrack(id);
+        } else {
+          await adapter.activateCaptionTrack(null);
+        }
+      } catch {
+        // A failing provider must not prevent native or other captions from activating (F-05).
       }
     }
     return overlayCues;
   }
 
+  /** Returns the first nonempty chapter list, continuing past adapters that fail. */
   async getChapters(): Promise<Chapter[]> {
     for (const adapter of this.adapters) {
       if (!adapter.getChapters) continue;
-      const chapters = await adapter.getChapters();
-      if (chapters.length > 0) return chapters;
+      try {
+        const chapters = await adapter.getChapters();
+        if (chapters.length > 0) return chapters;
+      } catch {
+        // Keep looking; one provider's chapter failure is not fatal.
+      }
     }
     return [];
   }
@@ -95,8 +119,9 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return null;
   }
 
+  /** Reloads every adapter without rejecting when an individual reload fails. */
   async reload(): Promise<void> {
-    await Promise.all(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));
+    await allSettledResults(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));
   }
 
   invalidate(): void {

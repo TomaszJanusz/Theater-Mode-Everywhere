@@ -99,8 +99,16 @@ async function fetchDisneyBif(url: string, blobUrl?: string): Promise<ArrayBuffe
   if (direct && isDisneyTimelineBif(direct)) return direct;
   const fromPage = await requestPageFetch(url, 20000);
   if (fromPage?.startsWith('blob:')) {
-    const buffer = await loadArrayBuffer(fromPage);
-    if (buffer && isDisneyTimelineBif(buffer)) return buffer;
+    try {
+      const buffer = await loadArrayBuffer(fromPage);
+      if (buffer && isDisneyTimelineBif(buffer)) return buffer;
+    } finally {
+      try {
+        URL.revokeObjectURL(fromPage);
+      } catch {
+        // Blob URLs created in MAIN may not be revocable from isolated world.
+      }
+    }
   }
   return null;
 }

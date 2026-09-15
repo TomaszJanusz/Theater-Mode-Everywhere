@@ -2,6 +2,7 @@ import { build } from 'vite';
 import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
+import { assertSelfContainedBundles } from './bundle-integrity';
 
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
@@ -63,6 +64,35 @@ function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
   });
 }
 
+async function buildClassicScript(entryName: 'content' | 'mainWorld', entryFile: string): Promise<void> {
+  const root = path.resolve(__dirname, '..');
+  await build({
+    configFile: false,
+    root,
+    publicDir: false,
+    build: {
+      emptyOutDir: false,
+      outDir: path.join(root, 'dist'),
+      minify: false,
+      cssCodeSplit: false,
+      rollupOptions: {
+        input: path.join(root, entryFile),
+        output: {
+          format: 'es',
+          inlineDynamicImports: true,
+          entryFileNames: `${entryName}.js`,
+          assetFileNames: (assetInfo) => {
+            if (entryName === 'content' && assetInfo.name && assetInfo.name.endsWith('.css')) {
+              return 'content.css';
+            }
+            return 'assets/[name]-[hash][extname]';
+          }
+        }
+      }
+    }
+  });
+}
+
 async function run() {
   try {
     console.log('=== Starting TypeScript + Vite Bundle & Build ===');
@@ -70,14 +100,12 @@ async function run() {
     // 1. Run Vite build
     console.log('Compiling TypeScript and HTML via Vite...');
     await build();
+    console.log('Bundling isolated MV3 classic scripts...');
+    await buildClassicScript('content', 'src/entries/content.ts');
+    await buildClassicScript('mainWorld', 'src/entries/main-world.ts');
 
     const distDir = path.resolve(__dirname, '../dist');
-    for (const name of ['content.js', 'mainWorld.js'] as const) {
-      const source = fs.readFileSync(path.join(distDir, name), 'utf8');
-      if (/\bimport\s*(?:['"]|\{|\w+\s+from\b)/.test(source)) {
-        throw new Error(`${name} contains ESM imports; MV3 content/MAIN scripts must stay self-contained.`);
-      }
-    }
+    assertSelfContainedBundles(distDir);
     const chromeStagingDir = path.resolve(__dirname, '../chrome-unpacked');
     const firefoxStagingDir = path.resolve(__dirname, '../firefox-unpacked');
 

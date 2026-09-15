@@ -41,12 +41,13 @@ export function cuesFromTrack(track: TextTrack): CaptionCue[] {
   for (let i = 0; i < list.length; i++) {
     const cue = list[i];
     if (!isCueLike(cue)) continue;
-    const raw = typeof cue.text === 'string' ? cue.text : '';
+    const like: CueLike = cue;
+    const raw = typeof like.text === 'string' ? like.text : '';
     const text = sanitizeCaptionCueText(raw);
     if (!text) continue;
     cues.push({
-      start: cue.startTime,
-      end: cue.endTime > cue.startTime ? cue.endTime : cue.startTime + 0.001,
+      start: like.startTime,
+      end: like.endTime > like.startTime ? like.endTime : like.startTime + 0.001,
       text
     });
   }

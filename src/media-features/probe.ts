@@ -1,3 +1,5 @@
+import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
+
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
 export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
 export const MEDIA_FETCH_EVENT = 'theater-everywhere-media-fetch';
@@ -145,59 +147,35 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
   });
 }
 
-type FetchRequest = {
-  requestId: number;
-  url: string;
-};
-
-type FetchResponse = {
-  requestId: number;
-  ok: boolean;
-  body?: string;
-};
-
+/**
+ * Requests a page resource through the MAIN-world broker.
+ * Resolves to `null` when the broker rejects the request, returns an empty body, or times out.
+ */
 export function requestPageFetch(url: string, timeoutMs = 8000): Promise<string | null> {
   return new Promise((resolve) => {
-    const id = ++requestId;
+    const request = createWorldMessage('PAGE_FETCH', { url });
     let settled = false;
-    const job = document.createElement('div');
-    job.hidden = true;
-    job.dataset.teCaptionFetch = 'pending';
-    job.dataset.teCaptionId = String(id);
-    job.dataset.teCaptionUrl = url;
-    document.documentElement.appendChild(job);
 
-    const readJob = (): void => {
-      const state = job.dataset.teCaptionFetch;
-      if (state === 'ok') finish(job.textContent);
-      else if (state === 'err') finish(null);
-    };
-
-    const onResult = (event: Event) => {
-      const detail = (event as CustomEvent<FetchResponse>).detail;
-      if (!detail || detail.requestId !== id) return;
-      readJob();
+    const onMessage = (event: MessageEvent) => {
+      if (!isSameWindowMessage(event)) return;
+      const envelope = readWorldEnvelope(event.data);
+      if (!envelope || envelope.type !== 'PAGE_FETCH_RESULT') return;
+      if (envelope.requestId !== request.requestId) return;
+      const body = envelope.payload.body;
+      finish(envelope.payload.ok && typeof body === 'string' ? body : null);
     };
 
     const finish = (body: string | null) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      window.clearInterval(poll);
-      observer.disconnect();
-      window.removeEventListener(MEDIA_FETCH_RESULT_EVENT, onResult as EventListener);
-      job.remove();
+      window.removeEventListener('message', onMessage);
       resolve(body && body.trim() ? body : null);
     };
 
     const timer = window.setTimeout(() => finish(null), timeoutMs);
-    const observer = new MutationObserver(readJob);
-    observer.observe(job, { attributes: true, attributeFilter: ['data-te-caption-fetch'] });
-    const poll = window.setInterval(readJob, 50);
-
-    window.addEventListener(MEDIA_FETCH_RESULT_EVENT, onResult as EventListener);
-    window.dispatchEvent(new CustomEvent<FetchRequest>(MEDIA_FETCH_EVENT, { detail: { requestId: id, url } }));
-    window.postMessage({ type: MEDIA_FETCH_EVENT, requestId: id }, '*');
+    window.addEventListener('message', onMessage);
+    window.postMessage(request, '*');
   });
 }
 
