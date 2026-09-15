@@ -24,9 +24,16 @@ function deliver(from: FrameNode, to: FrameNode, type: FrameEnvelope['type']): v
   to.inbox.push(createFrameMessage(type, sessionId, {}, nonce, from.origin));
 }
 
-function accept(node: FrameNode, envelope: FrameEnvelope, fromParent: boolean, fromChild: boolean): boolean {
+function accept(
+  node: FrameNode,
+  envelope: FrameEnvelope,
+  fromParent: boolean,
+  fromChild: boolean,
+  trustedOrigin = false
+): boolean {
   return isTrustedFrameEnvelope(envelope, {
     eventOrigin: envelope.origin,
+    trustedOrigin,
     fromParent,
     fromChild,
     activeSessionId: node.sessionId,
@@ -52,6 +59,7 @@ describe('F-01 frame session handshake', () => {
     const envelope = createFrameMessage('PLAYBACK_COMMAND', sessionId, { key: 'k' }, 'secret', 'https://child.example');
     assert.equal(isTrustedFrameEnvelope(envelope, {
       eventOrigin: 'https://evil.example',
+      trustedOrigin: false,
       fromParent: false,
       fromChild: true,
       activeSessionId: sessionId,
@@ -59,6 +67,7 @@ describe('F-01 frame session handshake', () => {
     }), false);
     assert.equal(isTrustedFrameEnvelope(envelope, {
       eventOrigin: 'https://child.example',
+      trustedOrigin: false,
       fromParent: false,
       fromChild: true,
       activeSessionId: sessionId,
@@ -66,6 +75,7 @@ describe('F-01 frame session handshake', () => {
     }), false);
     assert.equal(isTrustedFrameEnvelope(envelope, {
       eventOrigin: 'https://child.example',
+      trustedOrigin: false,
       fromParent: false,
       fromChild: true,
       activeSessionId: sessionId,
@@ -84,6 +94,7 @@ describe('F-01 frame session handshake', () => {
     const toggle = createFrameMessage('FRAME_TOGGLE', sessionId, {}, nonce, 'https://ads.example');
     assert.equal(isTrustedFrameEnvelope(toggle, {
       eventOrigin: 'https://ads.example',
+      trustedOrigin: false,
       fromParent: false,
       fromChild: true,
       activeSessionId: null,
@@ -91,6 +102,7 @@ describe('F-01 frame session handshake', () => {
     }), false);
     assert.equal(isTrustedFrameEnvelope(toggle, {
       eventOrigin: 'https://ads.example',
+      trustedOrigin: false,
       fromParent: false,
       fromChild: true,
       activeSessionId: sessionId,
@@ -98,10 +110,61 @@ describe('F-01 frame session handshake', () => {
     }), true);
     assert.equal(isTrustedFrameEnvelope(toggle, {
       eventOrigin: 'https://ads.example',
+      trustedOrigin: false,
       fromParent: true,
       fromChild: false,
       activeSessionId: null,
       activeNonce: null
+    }), false);
+    assert.equal(isTrustedFrameEnvelope(toggle, {
+      eventOrigin: 'https://ads.example',
+      trustedOrigin: true,
+      fromParent: true,
+      fromChild: false,
+      activeSessionId: null,
+      activeNonce: null
+    }), true);
+    assert.equal(isTrustedFrameEnvelope(toggle, {
+      eventOrigin: 'https://ads.example',
+      trustedOrigin: false,
+      fromParent: true,
+      fromChild: false,
+      activeSessionId: sessionId,
+      activeNonce: nonce
+    }), true);
+  });
+
+  it('rejects unauthenticated FRAME_ENTER without a trusted origin policy', () => {
+    const enter = createFrameMessage(
+      'FRAME_ENTER',
+      createSessionId(),
+      {},
+      createSessionId(),
+      'https://child.example'
+    );
+    assert.equal(isTrustedFrameEnvelope(enter, {
+      eventOrigin: 'https://child.example',
+      trustedOrigin: false,
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: null,
+      activeNonce: null
+    }), false);
+    assert.equal(isTrustedFrameEnvelope(enter, {
+      eventOrigin: 'https://child.example',
+      trustedOrigin: true,
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: null,
+      activeNonce: null
+    }), true);
+    assert.equal(isTrustedFrameEnvelope(enter, {
+      eventOrigin: 'https://child.example',
+      trustedOrigin: false,
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: enter.sessionId,
+      activeNonce: enter.nonce
     }), true);
   });
 
@@ -139,7 +202,7 @@ describe('F-01 frame session handshake', () => {
     deliver(child, parent, 'FRAME_ENTER');
     const enter = parent.inbox.pop();
     assert.ok(enter);
-    assert.equal(accept(parent, enter, false, true), true);
+    assert.equal(accept(parent, enter, false, true, true), true);
     parent.sessionId = enter.sessionId;
     parent.nonce = enter.nonce;
     parent.theater = true;
@@ -170,6 +233,7 @@ describe('F-01 frame session handshake', () => {
     const envelope = createFrameMessage('FRAME_EXIT', createSessionId(), {}, 'n', 'https://child.example');
     assert.equal(isTrustedFrameEnvelope(envelope, {
       eventOrigin: envelope.origin,
+      trustedOrigin: false,
       fromParent: false,
       fromChild: false,
       activeSessionId: envelope.sessionId,

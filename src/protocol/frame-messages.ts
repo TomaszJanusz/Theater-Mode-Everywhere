@@ -21,6 +21,7 @@ export type FrameEnvelope = {
 
 export type FrameTrustContext = {
   eventOrigin: string;
+  trustedOrigin: boolean;
   fromParent: boolean;
   fromChild: boolean;
   activeSessionId: string | null;
@@ -135,12 +136,18 @@ export function originMatchesIframe(event: MessageEvent, iframe: HTMLIFrameEleme
 export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTrustContext): boolean {
   if (!context.fromParent && !context.fromChild) return false;
   if (envelope.origin !== context.eventOrigin) return false;
-  if (envelope.type === 'FRAME_ENTER') return true;
+  const hasValidCredentials = Boolean(
+    context.activeSessionId
+    && context.activeNonce
+    && envelope.sessionId === context.activeSessionId
+    && envelope.nonce === context.activeNonce
+  );
+  if (envelope.type === 'FRAME_ENTER') {
+    return hasValidCredentials || context.trustedOrigin;
+  }
   if (envelope.type === 'FRAME_TOGGLE') {
-    if (context.fromParent) return true;
-    if (!context.activeSessionId || envelope.sessionId !== context.activeSessionId) return false;
-    if (context.activeNonce && envelope.nonce !== context.activeNonce) return false;
-    return true;
+    if (context.fromParent) return hasValidCredentials || context.trustedOrigin;
+    return hasValidCredentials;
   }
   if (envelope.type === 'FRAME_EXIT' || envelope.type === 'FRAME_EXITED') {
     if (!context.activeSessionId) return true;

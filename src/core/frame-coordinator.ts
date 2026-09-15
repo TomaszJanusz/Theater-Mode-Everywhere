@@ -73,21 +73,48 @@ export class FrameCoordinator {
     if (!envelope) return null;
     const iframes = Array.from(document.querySelectorAll('iframe'));
     const { fromParent, fromChild } = isTrustedFrameSource(event, this.childWindows());
-    if (fromParent && event.origin && event.origin !== 'null') {
-      this.parentOrigin = event.origin;
+    const hasValidCredentials = Boolean(
+      activeSessionId
+      && activeNonce
+      && envelope.sessionId === activeSessionId
+      && envelope.nonce === activeNonce
+    );
+    let trustedOrigin = false;
+    if (fromParent) {
+      const expectedParentOrigin = resolveParentMessageTarget(this.parentOrigin, discoverParentOrigin());
+      trustedOrigin = Boolean(
+        event.origin
+        && event.origin !== 'null'
+        && expectedParentOrigin
+        && expectedParentOrigin !== '*'
+        && event.origin === expectedParentOrigin
+      );
     }
     if (fromChild) {
       const iframe = iframes.find((item) => item.contentWindow === event.source);
-      if (iframe && iframe.src && !originMatchesIframe(event, iframe)) return null;
+      if (iframe && iframe.src) {
+        if (!originMatchesIframe(event, iframe)) return null;
+        trustedOrigin = true;
+      }
     }
     if (!isTrustedFrameEnvelope(envelope, {
       eventOrigin: event.origin,
+      trustedOrigin,
       fromParent,
       fromChild,
       activeSessionId,
       activeNonce
     })) {
       return null;
+    }
+    if (
+      fromParent
+      && (trustedOrigin || hasValidCredentials)
+      && event.origin
+      && event.origin !== 'null'
+      && (!this.parentOrigin || this.parentOrigin === event.origin)
+    ) {
+      this.parentOrigin = event.origin;
     }
     return { envelope, fromParent, fromChild };
   }
