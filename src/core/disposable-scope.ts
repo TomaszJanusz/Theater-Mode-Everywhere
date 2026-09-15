@@ -54,6 +54,10 @@ export class DisposableScope {
     return child;
   }
 
+  /**
+   * Aborts the scope and runs its cleanup callbacks once, in reverse registration order.
+   * Cleanup failures do not prevent remaining callbacks from running.
+   */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;

@@ -84,6 +84,10 @@ export class PlayerSession {
     return sessionId === this.id;
   }
 
+  /**
+   * Starts a new binding epoch, aborting work from the previous epoch and resetting its snapshot.
+   * Existing session credentials are reused when replacements are not supplied.
+   */
   bind(sessionId?: string, nonce?: string): { epoch: number; id: string; nonce: string } {
     this.epoch += 1;
     if (!this.abort.signal.aborted) this.abort.abort();
@@ -112,6 +116,7 @@ export class PlayerSession {
     return true;
   }
 
+  /** Stores a snapshot only while the matching binding epoch is active. */
   publishSnapshot(snapshot: MediaSnapshot, epoch: number): boolean {
     if (this.kind !== 'active' || this.epoch !== epoch) return false;
     this.snapshot = snapshot;

@@ -133,6 +133,10 @@ export function originMatchesIframe(event: MessageEvent, iframe: HTMLIFrameEleme
   }
 }
 
+/**
+ * Applies the message-type-specific origin and session credential policy to a parsed frame
+ * envelope. The caller must supply source provenance derived from the receiving window.
+ */
 export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTrustContext): boolean {
   if (!context.fromParent && !context.fromChild) return false;
   if (envelope.origin !== context.eventOrigin) return false;

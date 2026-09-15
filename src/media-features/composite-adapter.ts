@@ -31,6 +31,7 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     this.adapters = adapters;
   }
 
+  /** Combines capabilities from adapters that respond successfully, ignoring rejected probes. */
   async probe(): Promise<MediaCapabilities> {
     const results = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.probe())));
     return {
@@ -40,11 +41,19 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     };
   }
 
+  /**
+   * Merges tracks from successful adapters and drops native tracks when Patreon, Twitch, or Disney
+   * tracks are present.
+   */
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     const lists = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.listCaptionTracks())));
     return preferProviderCaptionTracks(lists.flat());
   }
 
+  /**
+   * Activates adapters that report the requested track and deactivates the others.
+   * Passing `null` deactivates every adapter; failures are isolated so another adapter can respond.
+   */
   async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
     if (id === null) {
       await allSettledResults(this.adapters.map((adapter) => adapter.activateCaptionTrack(null)));
@@ -71,6 +80,7 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return overlayCues;
   }
 
+  /** Returns the first nonempty chapter list, continuing past adapters that fail. */
   async getChapters(): Promise<Chapter[]> {
     for (const adapter of this.adapters) {
       if (!adapter.getChapters) continue;
@@ -109,6 +119,7 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return null;
   }
 
+  /** Reloads every adapter without rejecting when an individual reload fails. */
   async reload(): Promise<void> {
     await allSettledResults(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));
   }

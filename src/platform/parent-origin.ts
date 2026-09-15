@@ -23,6 +23,10 @@ export function discoverParentOrigin(): string | null {
   return null;
 }
 
+/**
+ * Selects a parent postMessage target, rejecting conflicting origins and using a wildcard only
+ * while neither a stored nor discoverable origin is available.
+ */
 export function resolveParentMessageTarget(stored: string | null, discovered: string | null): string | null {
   if (stored && discovered && stored !== discovered) return null;
   return stored || discovered || '*';

@@ -4,6 +4,10 @@ import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
 
+/**
+ * Mounts the caption-style dialog and reports each user change through `onChange`.
+ * The returned promise resolves after the dialog is dismissed or the optional signal aborts.
+ */
 export async function openCaptionOptionsDialog(options: {
   t: Translate;
   style: CaptionStyle;

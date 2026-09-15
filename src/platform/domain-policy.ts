@@ -15,6 +15,7 @@ export function parentBlockedEntry(policy: DomainPolicyResult): string | null {
   return policy.matchedEntry;
 }
 
+/** Resolves an exact blacklist match or the most specific matching parent domain. */
 export function resolveDomainPolicy(host: string, entries: readonly string[]): DomainPolicyResult {
   const hostname = normalizeHost(host);
   if (!hostname) {

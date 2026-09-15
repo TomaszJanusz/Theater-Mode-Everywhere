@@ -147,6 +147,10 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
   });
 }
 
+/**
+ * Requests a page resource through the MAIN-world broker.
+ * Resolves to `null` when the broker rejects the request, returns an empty body, or times out.
+ */
 export function requestPageFetch(url: string, timeoutMs = 8000): Promise<string | null> {
   return new Promise((resolve) => {
     const request = createWorldMessage('PAGE_FETCH', { url });

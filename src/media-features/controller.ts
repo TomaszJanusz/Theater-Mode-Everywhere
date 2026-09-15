@@ -174,6 +174,10 @@ export class MediaFeaturesController {
     });
   }
 
+  /**
+   * Reloads media metadata and publishes a snapshot for the current adapter epoch.
+   * Concurrent requests queue one follow-up refresh, and stale adapter results are ignored.
+   */
   async refresh(): Promise<void> {
     if (this.disposed) return;
     if (this.refreshInFlight) {

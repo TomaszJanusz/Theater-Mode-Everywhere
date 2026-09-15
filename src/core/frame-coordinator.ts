@@ -64,6 +64,10 @@ export class FrameCoordinator {
     });
   }
 
+  /**
+   * Accepts a frame message only when its source, origin, and session credentials satisfy the
+   * protocol policy. A verified parent origin is retained for subsequent messages.
+   */
   readTrusted(
     event: MessageEvent,
     activeSessionId: string | null,
