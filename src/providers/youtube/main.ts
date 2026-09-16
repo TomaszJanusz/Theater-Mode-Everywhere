@@ -7,6 +7,13 @@ import {
   youtubePageVideoId,
   type CachedTimedtext
 } from '../../media-features/youtube-caption-url';
+import {
+  findYoutubeHeatmap,
+  isYoutubeWatchJsonUrl,
+  youtubeHeatmapHarvestMatchesPage,
+  youtubeWatchJsonVideoId,
+  type YoutubeHeatmap
+} from '../../media-features/parsers/youtube-heatmap';
 import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
@@ -22,6 +29,93 @@ const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
 const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
 let captionMintInFlight: Promise<string | null> | null = null;
 const lastCaptionMintFailedAt = new Map<string, number>();
+let youtubeHeatmapHarvest: (YoutubeHeatmap & { videoId: string | null }) | null = null;
+let youtubeHarvestNotifyTimer = 0;
+
+function notifyYoutubeHarvest(): void {
+  if (youtubeHarvestNotifyTimer) return;
+  youtubeHarvestNotifyTimer = window.setTimeout(() => {
+    youtubeHarvestNotifyTimer = 0;
+    window.dispatchEvent(new CustomEvent('theater-everywhere-youtube-harvest'));
+  }, 80);
+}
+
+function rememberYoutubeHeatmap(found: YoutubeHeatmap, videoId: string | null): boolean {
+  const segments = found.segments || [];
+  const prev = youtubeHeatmapHarvest;
+  const same = Boolean(
+    prev
+    && prev.videoId === videoId
+    && prev.source === found.source
+    && prev.segments?.length === segments.length
+    && prev.segments?.[0]?.startMs === segments[0]?.startMs
+    && prev.segments?.[0]?.intensity === segments[0]?.intensity
+    && prev.segments?.[segments.length - 1]?.intensity === segments[segments.length - 1]?.intensity
+  );
+  youtubeHeatmapHarvest = { ...found, videoId, segments };
+  return !same;
+}
+
+function dropStaleYoutubeHeatmapHarvest(): void {
+  const pageId = youtubePageVideoId(window.location.href);
+  if (youtubeHeatmapHarvest && pageId && youtubeHeatmapHarvest.videoId && youtubeHeatmapHarvest.videoId !== pageId) {
+    youtubeHeatmapHarvest = null;
+  }
+}
+
+function heatmapForCurrentPage(playerRaw: unknown): YoutubeHeatmap | undefined {
+  dropStaleYoutubeHeatmapHarvest();
+  const pageId = youtubePageVideoId(window.location.href);
+  const win = window as Window & { ytInitialData?: unknown };
+  const fromInitial = findYoutubeHeatmap(win.ytInitialData);
+  const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
+  if (fromInitial?.segments && youtubeHeatmapHarvestMatchesPage(pageId, initialId)) {
+    rememberYoutubeHeatmap(fromInitial, pageId || initialId);
+    return { source: fromInitial.source, segments: fromInitial.segments };
+  }
+  const fromPlayer = findYoutubeHeatmap(playerRaw);
+  const playerId = youtubeWatchJsonVideoId(playerRaw) || youtubeResponseVideoId(playerRaw);
+  if (fromPlayer?.segments && youtubeHeatmapHarvestMatchesPage(pageId, playerId)) {
+    rememberYoutubeHeatmap(fromPlayer, pageId || playerId);
+    return { source: fromPlayer.source, segments: fromPlayer.segments };
+  }
+  if (
+    youtubeHeatmapHarvest?.segments
+    && youtubeHeatmapHarvestMatchesPage(pageId, youtubeHeatmapHarvest.videoId)
+  ) {
+    return { source: youtubeHeatmapHarvest.source, segments: youtubeHeatmapHarvest.segments };
+  }
+  return undefined;
+}
+
+export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
+  if (!youtubeIntegrationEnabled()) return;
+  if (!isYouTubeHost(window.location.hostname)) return;
+  if (url && !isYoutubeWatchJsonUrl(url, window.location.href)) return;
+  const found = findYoutubeHeatmap(data);
+  if (!found?.segments) return;
+  const pageId = youtubePageVideoId(window.location.href);
+  const jsonId = youtubeWatchJsonVideoId(data);
+  if (!youtubeHeatmapHarvestMatchesPage(pageId, jsonId)) return;
+  const changed = rememberYoutubeHeatmap(found, pageId || jsonId);
+  if (!changed) return;
+  publishCurrentYoutubeSnapshot();
+  notifyYoutubeHarvest();
+}
+
+export function harvestYoutubeHeatmapText(url: string, text: string): void {
+  if (!text || text.length > 8_000_000) return;
+  if (
+    !text.includes('MARKER_TYPE_HEATMAP')
+    && !text.includes('HEATSEEKER')
+    && !text.includes('heatmapRenderer')
+  ) return;
+  try {
+    harvestYoutubeHeatmapJson(url, JSON.parse(text));
+  } catch {
+    // Host body was not JSON.
+  }
+}
 
 function isAuxiliaryYoutubePlayer(el: Element | null): boolean {
   if (!el) return true;
@@ -368,7 +462,15 @@ function pickYoutubePlayerResponse(): unknown {
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
   try {
     const raw = pickYoutubePlayerResponse() as any;
-    if (!raw || typeof raw !== 'object') return null;
+    const heatmap = heatmapForCurrentPage(raw);
+    if (!raw || typeof raw !== 'object') {
+      if (!heatmap) return null;
+      const videoId = youtubePageVideoId(window.location.href);
+      return {
+        ...(videoId ? { videoId: videoId.slice(0, 20) } : {}),
+        heatmap
+      };
+    }
 
     const videoDetails = raw.videoDetails || {};
     const captionTracks = (raw.captions?.playerCaptionsTracklistRenderer?.captionTracks || [])
@@ -413,7 +515,8 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       storyboardSpec: typeof raw.storyboards?.playerStoryboardSpecRenderer?.spec === 'string'
         ? raw.storyboards.playerStoryboardSpecRenderer.spec.slice(0, 4000)
         : undefined,
-      markers
+      markers,
+      ...(heatmap ? { heatmap } : {})
     };
   } catch {
     return null;

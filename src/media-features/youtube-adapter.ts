@@ -1,5 +1,6 @@
 import { parseCaptionPayload } from './parsers/captions';
 import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
+import { heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
 import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
@@ -20,7 +21,8 @@ import type {
   MediaCapabilities,
   MediaFeaturesAdapter,
   PreviewFrame,
-  PreviewSource
+  PreviewSource,
+  TimelineHeatmap
 } from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
@@ -301,6 +303,20 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     const fromDescription = parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration);
     if (fromDescription.length > 0) return fromDescription;
     return parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
+  }
+
+  getHeatmap(): TimelineHeatmap | null {
+    if (this.snapshotMatchesPage()) {
+      const stored = this.snapshot?.heatmap;
+      if (stored?.segments && stored.segments.length > 0) {
+        const durationMs = (this.snapshot?.duration || 0) * 1000;
+        const svgPath = heatmapSvgPath(stored.segments, durationMs || undefined);
+        if (svgPath) return { source: stored.source, segments: stored.segments, svgPath };
+      }
+      if (stored?.svgPath) return stored;
+    }
+    const svgPath = readRenderedYoutubeHeatmapPath();
+    return svgPath ? { source: 'svg', svgPath } : null;
   }
 
   async getPreviewSource(): Promise<PreviewSource> {

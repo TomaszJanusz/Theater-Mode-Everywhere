@@ -133,7 +133,7 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Active la prise en charge des sous-titres, des chapitres et des miniatures sur la timeline en mode cinéma."
+    "message": "Active la prise en charge des sous-titres, des chapitres, de la heatmap Most Replayed et des miniatures sur la timeline en mode cinéma."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"

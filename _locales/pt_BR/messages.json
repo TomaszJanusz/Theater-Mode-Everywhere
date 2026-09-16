@@ -133,7 +133,7 @@
     "message": "Integração com o YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Ativa o suporte a legendas, capítulos e miniaturas na linha do tempo no modo teatro."
+    "message": "Ativa o suporte a legendas, capítulos, mapa Most Replayed e miniaturas na linha do tempo no modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integração com o Vimeo"

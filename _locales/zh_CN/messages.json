@@ -133,7 +133,7 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "在剧场模式中启用字幕、章节和时间轴缩略图支持。"
+    "message": "在剧场模式中启用字幕、章节、最多重播热力图和时间轴缩略图支持。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"

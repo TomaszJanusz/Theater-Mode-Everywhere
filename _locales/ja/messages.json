@@ -133,7 +133,7 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "シアターモードで字幕、チャプター、タイムラインのサムネイルのサポートを有効にします。"
+    "message": "シアターモードで字幕、チャプター、Most Replayed ヒートマップ、タイムラインのサムネイルのサポートを有効にします。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"

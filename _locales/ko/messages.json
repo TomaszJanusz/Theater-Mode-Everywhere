@@ -133,7 +133,7 @@
     "message": "YouTube 연동"
   },
   "youtubeIntegrationDescription": {
-    "message": "극장 모드에서 자막, 챕터, 타임라인 썸네일 지원을 켭니다."
+    "message": "극장 모드에서 자막, 챕터, Most Replayed 히트맵, 타임라인 썸네일 지원을 켭니다."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 연동"

@@ -103,15 +103,17 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
-  background-color: rgba(9, 9, 11, 0.85) !important;
-  background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  background: transparent !important;
+  border: none !important;
   border-radius: 12px !important;
   padding: 10px 16px !important;
   overflow: visible !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
+  contain: none !important;
+  clip-path: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
   user-select: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -121,6 +123,22 @@
   font-style: normal !important;
   letter-spacing: normal !important;
   text-transform: none !important;
+}
+
+/* Glass on a pseudo so backdrop-filter cannot clip the heatmap above the bar. */
+.theater-controls-wrapper::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border-radius: 12px !important;
+  background-color: rgba(9, 9, 11, 0.85) !important;
+  background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
 }
 
 .theater-controls-wrapper[dir="rtl"] {
@@ -141,6 +159,9 @@
   position: relative !important;
   margin: 0 16px !important;
   overflow: visible !important;
+  contain: none !important;
+  clip-path: none !important;
+  z-index: 1 !important;
 }
 
 .theater-scrubber-track {
@@ -148,6 +169,7 @@
   background-color: rgba(255, 255, 255, 0.2) !important;
   border-radius: 2px !important;
   position: relative !important;
+  overflow: visible !important;
   transition: height 0.15s ease !important;
 }
 
@@ -190,11 +212,59 @@
   transition: transform 0.15s ease !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
   z-index: 5 !important;
+  pointer-events: none !important;
 }
 
 .theater-scrubber-container:hover .theater-scrubber-handle,
 .theater-scrubber-container.dragging .theater-scrubber-handle {
   transform: translate(-50%, -50%) scale(1) !important;
+}
+
+.theater-scrubber-heatmap {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 50px !important;
+  bottom: calc(100% + 17px) !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  overflow: visible !important;
+  display: block !important;
+  visibility: hidden !important;
+  background: transparent !important;
+}
+
+.theater-scrubber-heatmap.theater-scrubber-heatmap-ready {
+  visibility: visible !important;
+}
+
+.theater-scrubber-heatmap-path {
+  stroke: none !important;
+}
+
+.theater-scrubber-heatmap-stroke {
+  fill: none !important;
+  stroke: rgba(255, 255, 255, 0.75) !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.theater-scrubber-heatmap-scrubbing {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #ffffff 0,
+    #ffffff var(--theater-heatmap-hover, 100%),
+    rgba(255, 255, 255, 0.22) var(--theater-heatmap-hover, 100%)
+  ) !important;
+  mask-image: linear-gradient(
+    to right,
+    #ffffff 0,
+    #ffffff var(--theater-heatmap-hover, 100%),
+    rgba(255, 255, 255, 0.22) var(--theater-heatmap-hover, 100%)
+  ) !important;
 }
 
 .theater-scrubber-chapters {
@@ -220,6 +290,9 @@
   align-items: center !important;
   width: 100% !important;
   position: relative !important;
+  z-index: 1 !important;
+  overflow: visible !important;
+  contain: none !important;
 }
 
 .theater-controls-wrapper[dir="rtl"] .theater-controls-row {
@@ -463,9 +536,18 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+  font-feature-settings: "tnum" 1, "lnum" 1 !important;
+  font-variant-ligatures: none !important;
   color: var(--text-secondary, #a1a1aa) !important;
   user-select: none !important;
   margin-inline-start: 6px !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  text-align: start !important;
+  box-sizing: content-box !important;
+  min-width: var(--theater-time-width, 11ch) !important;
 }
 
 .theater-time-display.theater-time-live {
@@ -628,8 +710,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Pulsing handle animation during buffering/seeking */
-.theater-scrubber-container.buffering .theater-scrubber-handle,
+/* Pulsing pin while dragging a seek target */
 .theater-scrubber-container.dragging .theater-scrubber-handle {
   transform: translate(-50%, -50%) scale(1) !important;
   animation: theater-pulse 1.2s infinite ease-in-out !important;
@@ -675,6 +756,10 @@
 
 .theater-scrubber-tooltip.visible {
   opacity: 1 !important;
+}
+
+.theater-has-heatmap .theater-scrubber-tooltip {
+  transform: translateX(-50%) translateY(-38px) !important;
 }
 
 .theater-scrubber-preview {

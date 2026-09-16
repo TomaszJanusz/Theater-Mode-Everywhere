@@ -6,7 +6,8 @@ import type {
   MediaCapabilities,
   MediaFeaturesAdapter,
   PreviewFrame,
-  PreviewSource
+  PreviewSource,
+  TimelineHeatmap
 } from './types';
 
 export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrack[] {
@@ -92,6 +93,20 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
       }
     }
     return [];
+  }
+
+  /** Returns the first heatmap with a drawable path or segments. */
+  getHeatmap(): TimelineHeatmap | null {
+    for (const adapter of this.adapters) {
+      if (!adapter.getHeatmap) continue;
+      try {
+        const heatmap = adapter.getHeatmap();
+        if (heatmap?.svgPath || (heatmap?.segments && heatmap.segments.length > 0)) return heatmap;
+      } catch {
+        // Keep looking; a missing Most Replayed chart is not fatal.
+      }
+    }
+    return null;
   }
 
   async getPreviewSource(): Promise<PreviewSource> {

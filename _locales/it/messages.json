@@ -133,7 +133,7 @@
     "message": "Integrazione YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Attiva il supporto per sottotitoli, capitoli e miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per sottotitoli, capitoli, heatmap Most Replayed e miniature sulla timeline in modalità teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integrazione Vimeo"

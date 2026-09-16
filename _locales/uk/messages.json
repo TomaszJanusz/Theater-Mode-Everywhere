@@ -133,7 +133,7 @@
     "message": "Інтеграція з YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Вмикає підтримку субтитрів, розділів та мініатюр на шкалі часу в режимі кінотеатру."
+    "message": "Вмикає підтримку субтитрів, розділів, теплокарти Most Replayed та мініатюр на шкалі часу в режимі кінотеатру."
   },
   "vimeoIntegrationTitle": {
     "message": "Інтеграція з Vimeo"

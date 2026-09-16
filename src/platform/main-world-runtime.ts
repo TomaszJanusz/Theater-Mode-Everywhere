@@ -7,6 +7,8 @@ import {
   cacheTimedtextBody,
   fetchTimedtextWithPot,
   handleYoutubeMediaSeek,
+  harvestYoutubeHeatmapJson,
+  harvestYoutubeHeatmapText,
   installYoutubeMain,
   isAllowedTimedtextUrl,
   publishYoutubeProbeSnapshot,
@@ -79,6 +81,7 @@ export function installMainWorldRuntime(): void {
             const url = this.url || '';
             harvestTwitchResponseJson(url, data);
             harvestDisneyData(url, data);
+            harvestYoutubeHeatmapJson(url, data);
           } catch {
             // Ignore harvest failures from host JSON parsing.
           }
@@ -97,6 +100,7 @@ export function installMainWorldRuntime(): void {
             const url = this.url || '';
             harvestTwitchResponseText(url, text);
             harvestDisneyBody(url, text);
+            harvestYoutubeHeatmapText(url, text);
           } catch {
             // Ignore harvest failures from host text parsing.
           }
@@ -136,6 +140,7 @@ export function installMainWorldRuntime(): void {
         if (body) cacheTimedtextBody(url, body);
         harvestTwitchXhr(url, body, this);
         if (body) harvestDisneyBody(url, body);
+        if (body) harvestYoutubeHeatmapText(url, body);
       });
       return originalXhrSend.apply(this, arguments as unknown as Parameters<XMLHttpRequest['send']>);
     };

@@ -133,7 +133,7 @@
     "message": "YouTube-Integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für Untertitel, Kapitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
+    "message": "Aktiviert die Unterstützung für Untertitel, Kapitel, die Most-Replayed-Heatmap und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo-Integration"

@@ -7,7 +7,8 @@ import { DEFAULT_CAPTION_STYLE } from './caption-style';
 import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderFlags } from './provider-flags';
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
-import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
+import { heatmapRidgePath } from './parsers/youtube-heatmap-path';
+import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
@@ -60,6 +61,9 @@ export class MediaFeaturesController {
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
   private chapterLayer: HTMLDivElement;
+  private heatmapLayer: SVGSVGElement;
+  private heatmapHasData = false;
+  private heatmap: TimelineHeatmap | null = null;
   private t: MediaFeaturesBindings['t'];
   private tracks: CaptionTrack[] = [];
   private chapters: Chapter[] = [];
@@ -115,11 +119,42 @@ export class MediaFeaturesController {
         remove() {},
         appendChild() { return null; }
       } as unknown as HTMLDivElement;
+      this.heatmapLayer = {
+        className: '',
+        classList: { add() {}, remove() {}, toggle() { return false; } },
+        style: { setProperty() {}, removeProperty() {} },
+        replaceChildren() {},
+        remove() {},
+        appendChild() { return null; },
+        setAttribute() {},
+        closest() { return null; }
+      } as unknown as SVGSVGElement;
     } else {
       this.chapterLayer = document.createElement('div');
       this.chapterLayer.className = 'theater-scrubber-chapters';
       bindings.scrubberTrack.appendChild(this.chapterLayer);
+      this.heatmapLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      this.heatmapLayer.setAttribute('class', 'theater-scrubber-heatmap');
+      this.heatmapLayer.setAttribute('viewBox', '0 0 1000 100');
+      this.heatmapLayer.setAttribute('preserveAspectRatio', 'none');
+      this.heatmapLayer.setAttribute('width', '100%');
+      this.heatmapLayer.setAttribute('height', '100%');
+      this.heatmapLayer.setAttribute('aria-hidden', 'true');
+      const heatmapHost = bindings.scrubberTrack.parentElement || bindings.scrubberTrack;
+      heatmapHost.insertBefore(this.heatmapLayer, heatmapHost.firstChild);
     }
+  }
+
+  setHeatmapHover(ratio: number | null): void {
+    if (typeof document === 'undefined') return;
+    if (ratio == null || !Number.isFinite(ratio) || !this.heatmapHasData) {
+      this.heatmapLayer.style.removeProperty('--theater-heatmap-hover');
+      this.heatmapLayer.classList.remove('theater-scrubber-heatmap-scrubbing');
+      return;
+    }
+    const pct = Math.max(0, Math.min(1, ratio)) * 100;
+    this.heatmapLayer.style.setProperty('--theater-heatmap-hover', `${pct}%`);
+    this.heatmapLayer.classList.add('theater-scrubber-heatmap-scrubbing');
   }
 
   async start(): Promise<void> {
@@ -147,11 +182,13 @@ export class MediaFeaturesController {
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
     this.chapters = [];
+    this.heatmap = null;
     this.activeTrackId = null;
     this.usingOverlayCaptions = false;
     this.renderer.setCues([]);
     setOverlayCaptionsClass(false);
     this.renderChapterMarks();
+    this.renderHeatmap();
     this.updateCcState();
     this.renderCcMenu();
     this.onCaptionChange?.();
@@ -197,11 +234,18 @@ export class MediaFeaturesController {
         this.tracks = await adapter.listCaptionTracks();
         if (!this.isCurrent(epoch, adapter)) return;
         this.chapters = adapter.getChapters ? await adapter.getChapters() : [];
+        if (!this.isCurrent(epoch, adapter)) return;
+        try {
+          this.heatmap = adapter.getHeatmap ? adapter.getHeatmap() : null;
+        } catch {
+          this.heatmap = null;
+        }
       } catch (err) {
         if (!this.isCurrent(epoch, adapter)) return;
         console.error('[Theater Everywhere] Media features probe failed:', err);
         this.tracks = [];
         this.chapters = [];
+        this.heatmap = null;
         errors.push(providerError('network-failed', { capability: 'captions', cause: err, epoch }));
       }
       if (!this.isCurrent(epoch, adapter)) return;
@@ -214,6 +258,7 @@ export class MediaFeaturesController {
         setOverlayCaptionsClass(false);
       }
       this.renderChapterMarks();
+      this.renderHeatmap();
       this.updateCcState();
       this.renderCcMenu();
       const shouldRestoreCaptions = Boolean(this.captionPreference)
@@ -275,6 +320,63 @@ export class MediaFeaturesController {
       mark.style.left = `${(chapter.start / duration) * 100}%`;
       this.chapterLayer.appendChild(mark);
     }
+  }
+
+  private renderHeatmap(): void {
+    this.heatmapLayer.replaceChildren();
+    const pathData = this.heatmap?.svgPath || '';
+    this.heatmapHasData = Boolean(pathData);
+    this.syncHeatmapPresence();
+    if (!this.heatmapHasData) {
+      this.setHeatmapHover(null);
+      this.heatmapLayer.classList.remove('theater-scrubber-heatmap-ready');
+      return;
+    }
+    if (typeof document === 'undefined') return;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svgEl = (name: string) => document.createElementNS(ns, name);
+    const defs = svgEl('defs');
+    const gradient = svgEl('linearGradient');
+    gradient.setAttribute('id', 'theater-heatmap-fill');
+    gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+    gradient.setAttribute('x1', '0');
+    gradient.setAttribute('y1', '100');
+    gradient.setAttribute('x2', '0');
+    gradient.setAttribute('y2', '0');
+    const bottom = svgEl('stop');
+    bottom.setAttribute('offset', '0');
+    bottom.setAttribute('stop-color', '#ffffff');
+    bottom.setAttribute('stop-opacity', '0');
+    const hold = svgEl('stop');
+    hold.setAttribute('offset', '0.25');
+    hold.setAttribute('stop-color', '#ffffff');
+    hold.setAttribute('stop-opacity', '0');
+    const top = svgEl('stop');
+    top.setAttribute('offset', '1');
+    top.setAttribute('stop-color', '#ffffff');
+    top.setAttribute('stop-opacity', '0.7');
+    gradient.append(bottom, hold, top);
+    defs.appendChild(gradient);
+
+    const fill = svgEl('path');
+    fill.setAttribute('class', 'theater-scrubber-heatmap-path');
+    fill.setAttribute('d', pathData);
+    fill.setAttribute('fill', 'url(#theater-heatmap-fill)');
+
+    const ridge = heatmapRidgePath(pathData);
+    const stroke = svgEl('path');
+    stroke.setAttribute('class', 'theater-scrubber-heatmap-stroke');
+    stroke.setAttribute('d', ridge || pathData);
+
+    this.heatmapLayer.append(defs, fill, stroke);
+    this.heatmapLayer.classList.add('theater-scrubber-heatmap-ready');
+    this.syncHeatmapPresence();
+  }
+
+  private syncHeatmapPresence(): void {
+    if (typeof document === 'undefined') return;
+    const chrome = this.heatmapLayer.closest('.theater-controls-wrapper');
+    chrome?.classList.toggle('theater-has-heatmap', this.heatmapHasData);
   }
 
   private captionsAreOn(): boolean {
@@ -537,8 +639,11 @@ export class MediaFeaturesController {
     this.bumpEpoch();
     this.refreshQueued = false;
     setOverlayCaptionsClass(false);
+    this.heatmapHasData = false;
+    this.syncHeatmapPresence();
     this.renderer.dispose();
     this.adapter.dispose();
     this.chapterLayer.remove();
+    this.heatmapLayer.remove();
   }
 }

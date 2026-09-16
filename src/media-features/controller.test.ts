@@ -339,6 +339,19 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.deepEqual(seen, [{ captions: true, errorCount: 0 }]);
   });
 
+  it('accepts a heatmap from the adapter without breaking caption refresh', async () => {
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      getHeatmap: () => ({
+        source: 'markers',
+        svgPath: 'M 0 96 C 250 20 750 20 1000 96 L 1000 100 L 0 100 Z'
+      })
+    });
+    await controller.refresh();
+    assert.equal(ccBtn.classList.contains('disabled'), false);
+  });
+
   it('records a provider error on the snapshot when probe fails', async () => {
     const codes: string[] = [];
     const { controller } = createController({

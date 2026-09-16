@@ -133,7 +133,7 @@
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Enables support for captions, chapters, and thumbnails on the timeline in theater mode."
+    "message": "Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"

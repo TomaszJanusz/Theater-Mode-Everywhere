@@ -40,7 +40,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   volumeBoostTitle: 'Volume Boost',
   volumeBoostDescription: 'Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.',
   youtubeIntegrationTitle: 'YouTube integration',
-  youtubeIntegrationDescription: 'Enables support for captions, chapters, and thumbnails on the timeline in theater mode.',
+  youtubeIntegrationDescription: 'Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode.',
   vimeoIntegrationTitle: 'Vimeo integration',
   vimeoIntegrationDescription: 'Enables support for chapter markers and thumbnails on the timeline in theater mode.',
   patreonIntegrationTitle: 'Patreon integration',

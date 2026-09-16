@@ -23,6 +23,11 @@ export type YoutubePlayerSnapshot = {
   captionTracks?: YoutubeCaptionMeta[];
   storyboardSpec?: string;
   markers?: Array<{ startMillis?: number; title?: { simpleText?: string } | string }>;
+  heatmap?: {
+    source: 'markers' | 'legacy' | 'svg';
+    segments?: Array<{ startMs: number; durationMs: number; intensity: number }>;
+    svgPath?: string;
+  };
 };
 
 export type VimeoThumbPreview = {
@@ -228,6 +233,38 @@ export function readYoutubeSnapshotFromDom(): YoutubePlayerSnapshot | null {
   return null;
 }
 
+function normalizeYoutubeHeatmap(raw: unknown): YoutubePlayerSnapshot['heatmap'] | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const data = raw as {
+    source?: unknown;
+    segments?: unknown;
+    svgPath?: unknown;
+  };
+  const source = data.source;
+  if (source !== 'markers' && source !== 'legacy' && source !== 'svg') return undefined;
+  const segments = Array.isArray(data.segments)
+    ? data.segments.flatMap((item) => {
+      if (!item || typeof item !== 'object') return [];
+      const row = item as { startMs?: unknown; durationMs?: unknown; intensity?: unknown };
+      const startMs = Number(row.startMs);
+      const durationMs = Number(row.durationMs);
+      const intensity = Number(row.intensity);
+      if (!Number.isFinite(startMs) || !Number.isFinite(durationMs) || !Number.isFinite(intensity)) return [];
+      if (startMs < 0 || durationMs <= 0) return [];
+      return [{ startMs, durationMs, intensity }];
+    })
+    : undefined;
+  const svgPath = typeof data.svgPath === 'string' && data.svgPath.trim().length > 20
+    ? data.svgPath.trim()
+    : undefined;
+  if (!segments?.length && !svgPath) return undefined;
+  return {
+    source,
+    ...(segments && segments.length > 0 ? { segments } : {}),
+    ...(svgPath ? { svgPath } : {})
+  };
+}
+
 export function normalizeYoutubePlayerResponse(raw: unknown): YoutubePlayerSnapshot | null {
   if (!raw || typeof raw !== 'object') return null;
   const data = raw as Record<string, any>;
@@ -266,6 +303,7 @@ export function normalizeYoutubePlayerResponse(raw: unknown): YoutubePlayerSnaps
     description: typeof videoDetails.shortDescription === 'string' ? videoDetails.shortDescription : undefined,
     captionTracks,
     storyboardSpec: data.storyboards?.playerStoryboardSpecRenderer?.spec,
-    markers
+    markers,
+    heatmap: normalizeYoutubeHeatmap(data.heatmap)
   };
 }

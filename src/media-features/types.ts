@@ -64,11 +64,18 @@ export type MediaCapabilities = {
   previews: boolean;
 };
 
+export type TimelineHeatmap = {
+  source: string;
+  segments?: Array<{ startMs: number; durationMs: number; intensity: number }>;
+  svgPath?: string;
+};
+
 export interface MediaFeaturesAdapter {
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
   activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null>;
   getChapters?(): Promise<Chapter[]>;
+  getHeatmap?(): TimelineHeatmap | null;
   getPreviewSource?(): Promise<PreviewSource>;
   getPreviewFrame?(time: number, duration: number): PreviewFrame | null;
   mediaId?(): string | null;

@@ -11,6 +11,13 @@ import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, read
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
+import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
+import {
+  findYoutubeHeatmap,
+  isYoutubeWatchJsonUrl,
+  validateYoutubeHeatmap,
+  youtubeHeatmapHarvestMatchesPage
+} from './parsers/youtube-heatmap';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
@@ -748,6 +755,19 @@ describe('F-05 composite adapter isolation', () => {
     assert.equal(tracks.length, 1);
     assert.equal(tracks[0].id, 'native:0');
   });
+
+  it('returns the first drawable heatmap', () => {
+    const composite = new CompositeMediaAdapter([
+      stubAdapter(),
+      stubAdapter({
+        getHeatmap: () => ({
+          source: 'markers',
+          svgPath: 'M 0 96 C 10 20 20 20 30 96 L 1000 100 L 0 100 Z'
+        })
+      })
+    ]);
+    assert.equal(composite.getHeatmap()?.source, 'markers');
+  });
 });
 
 describe('twitch page and storyboard parsers', () => {
@@ -1364,5 +1384,131 @@ https://vod-akc-euwest1.media.dssott.com/ps01/video/segment.m4s
     assert.equal(disneyBifTimestampSeconds(10_000, 1), 10);
     assert.equal(disneyBifTimestampSeconds(10, 1000), 10);
     assert.equal(disneyBifTimestampSeconds(10_000, 1000), 10);
+  });
+});
+
+describe('YouTube Most Replayed heatmap parser', () => {
+  const modernTree = {
+    frameworkUpdates: {
+      entityBatchUpdate: {
+        mutations: [{
+          payload: {
+            macroMarkersListEntity: {
+              markersList: {
+                markerType: 'MARKER_TYPE_HEATMAP',
+                markers: [
+                  { startMillis: '0', durationMillis: '2790', intensityScoreNormalized: 1 },
+                  { startMillis: '2790', durationMillis: '2790', intensityScoreNormalized: 0.71 }
+                ]
+              }
+            }
+          }
+        }]
+      }
+    }
+  };
+
+  const legacyTree = {
+    playerOverlays: {
+      playerOverlayRenderer: {
+        decoratedPlayerBarRenderer: {
+          decoratedPlayerBarRenderer: {
+            playerBar: {
+              multiMarkersPlayerBarRenderer: {
+                markersMap: [{
+                  key: 'HEATSEEKER',
+                  value: {
+                    heatmap: {
+                      heatmapRenderer: {
+                        heatMarkers: [
+                          {
+                            heatMarkerRenderer: {
+                              timeRangeStartMillis: 0,
+                              markerDurationMillis: 1620,
+                              heatMarkerIntensityScoreNormalized: 0.4
+                            }
+                          },
+                          {
+                            heatMarkerRenderer: {
+                              timeRangeStartMillis: 1620,
+                              markerDurationMillis: 1620,
+                              heatMarkerIntensityScoreNormalized: 1
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }]
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  it('finds MARKER_TYPE_HEATMAP markers by semantic walk', () => {
+    const found = findYoutubeHeatmap(modernTree);
+    assert.equal(found?.source, 'markers');
+    assert.equal(found?.segments?.length, 2);
+    assert.deepEqual(found?.segments?.[0], { startMs: 0, durationMs: 2790, intensity: 1 });
+    assert.equal(validateYoutubeHeatmap(found?.segments), true);
+  });
+
+  it('finds legacy HEATSEEKER / heatmapRenderer markers', () => {
+    const found = findYoutubeHeatmap(legacyTree);
+    assert.equal(found?.source, 'legacy');
+    assert.equal(found?.segments?.[1]?.intensity, 1);
+    assert.equal(found?.segments?.[1]?.startMs, 1620);
+  });
+
+  it('prefers the modern marker list when both formats exist', () => {
+    const found = findYoutubeHeatmap({ ...modernTree, ...legacyTree });
+    assert.equal(found?.source, 'markers');
+    assert.equal(found?.segments?.[0]?.durationMs, 2790);
+  });
+
+  it('returns null when heatmap data is missing', () => {
+    assert.equal(findYoutubeHeatmap({ videoDetails: { videoId: 'abc' } }), null);
+    assert.equal(validateYoutubeHeatmap([]), false);
+    assert.equal(validateYoutubeHeatmap([{ startMs: 10, durationMs: 0, intensity: 1 }]), false);
+  });
+
+  it('accepts intensity above 1 and still builds a path', () => {
+    assert.equal(validateYoutubeHeatmap([{ startMs: 0, durationMs: 1000, intensity: 1.4 }]), true);
+    const d = heatmapSvgPath([{ startMs: 0, durationMs: 1000, intensity: 1.4 }], 1000);
+    assert.match(d, /^M /);
+    assert.match(d, /Z$/);
+    const ridge = heatmapRidgePath(d);
+    assert.match(ridge, /^M /);
+    assert.doesNotMatch(ridge, /Z$/);
+    assert.doesNotMatch(ridge, /L 1000 100/);
+    assert.doesNotMatch(ridge, /L 0 100/);
+  });
+
+  it('binds harvest to the current watch videoId', () => {
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', 'bbbbbbbbbbb'), false);
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', 'aaaaaaaaaaa'), true);
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', null), true);
+  });
+
+  it('accepts InnerTube watch JSON URLs and ignores other hosts', () => {
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/next?prettyPrint=false'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/get_watch'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/player'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://gql.twitch.tv/gql'), false);
+    assert.equal(isYoutubeWatchJsonUrl(''), true);
+  });
+
+  it('reads a nonempty modern SVG path and skips empty stubs', () => {
+    const path = 'M 0 96 C 50 10 100 10 150 96 L 1000 100 L 0 100 Z';
+    const root = {
+      querySelectorAll: () => [
+        { getAttribute: (name: string) => (name === 'd' ? '   ' : null) },
+        { getAttribute: (name: string) => (name === 'd' ? path : null) }
+      ]
+    };
+    assert.equal(readRenderedYoutubeHeatmapPath(root as unknown as ParentNode), path);
   });
 });

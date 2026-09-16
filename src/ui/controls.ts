@@ -373,16 +373,22 @@ export function createControls(ctx: PlayerChromeContext) {
     timeDisplay.textContent = '0:00 / 0:00';
 
     const formatTime = (secs: number): string => {
-      if (isNaN(secs) || !isFinite(secs)) return '0:00';
+      const total = playbackWindow(video).end;
+      const span = Number.isFinite(total) && total > 0 && total !== Infinity ? total : secs;
+      if (isNaN(secs) || !isFinite(secs)) secs = 0;
       const h = Math.floor(secs / 3600);
       const m = Math.floor((secs % 3600) / 60);
       const s = Math.floor(secs % 60);
-      const sStr = s < 10 ? '0' + s : String(s);
-      if (h > 0) {
-        const mStr = m < 10 ? '0' + m : String(m);
-        return `${h}:${mStr}:${sStr}`;
-      }
+      const sStr = String(s).padStart(2, '0');
+      if (span >= 3600) return `${h}:${String(m).padStart(2, '0')}:${sStr}`;
+      if (span >= 600) return `${String(m).padStart(2, '0')}:${sStr}`;
       return `${m}:${sStr}`;
+    };
+
+    const lockTimeDisplayWidth = (duration: number) => {
+      if (!Number.isFinite(duration) || duration <= 0 || duration === Infinity) return;
+      const end = formatTime(duration);
+      timeDisplay.style.setProperty('--theater-time-width', `${(`-${end} / ${end}`).length}ch`);
     };
 
     let showRemainingTime = false;
@@ -411,7 +417,10 @@ export function createControls(ctx: PlayerChromeContext) {
       scrubberContainer.classList.toggle('theater-scrubber-live-locked', locked);
       scrubberContainer.setAttribute('aria-disabled', locked ? 'true' : 'false');
       speedContainer.hidden = window.live;
-      if (locked) tooltip.classList.remove('visible');
+      if (locked) {
+        tooltip.classList.remove('visible');
+        mediaFeatures.setHeatmapHover(null);
+      }
     };
 
     const updateTimeDisplay = () => {
@@ -423,6 +432,7 @@ export function createControls(ctx: PlayerChromeContext) {
         return;
       }
       const dur = window.end;
+      lockTimeDisplayWidth(dur);
       if (showRemainingTime) {
         const remaining = Math.max(0, dur - cur);
         timeDisplay.textContent = `-${formatTime(remaining)} / ${formatTime(dur)}`;
@@ -867,7 +877,6 @@ export function createControls(ctx: PlayerChromeContext) {
       if (isDragging) return;
       const pct = timeToRatio(displayMediaTime(video), window) * 100;
       scrubberFill.style.width = `${pct}%`;
-      scrubberHandle.style.left = `${pct}%`;
     };
     updateScrubber();
 
@@ -880,6 +889,8 @@ export function createControls(ctx: PlayerChromeContext) {
       const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       const time = ratioToTime(pos, window);
       const extras = mediaFeatures.tooltipExtras(time);
+      scrubberHandle.style.left = `${pos * 100}%`;
+      mediaFeatures.setHeatmapHover(pos);
 
       tooltip.replaceChildren();
       if (extras.preview) {
@@ -931,6 +942,7 @@ export function createControls(ctx: PlayerChromeContext) {
     const onScrubberMouseLeave = () => {
       if (!isDragging) {
         tooltip.classList.remove('visible');
+        mediaFeatures.setHeatmapHover(null);
         updateCaptionDock();
       }
     };
@@ -948,6 +960,7 @@ export function createControls(ctx: PlayerChromeContext) {
       const pct = pos * 100;
       scrubberFill.style.width = `${pct}%`;
       scrubberHandle.style.left = `${pct}%`;
+      mediaFeatures.setHeatmapHover(pos);
     
       const targetTime = ratioToTime(pos, window);
       if (window.live) {
@@ -1009,6 +1022,7 @@ export function createControls(ctx: PlayerChromeContext) {
             upEvt.clientY > rect.bottom
           ) {
             tooltip.classList.remove('visible');
+            mediaFeatures.setHeatmapHover(null);
           }
         };
         video.addEventListener('seeked', onSeeked);
@@ -1027,6 +1041,7 @@ export function createControls(ctx: PlayerChromeContext) {
             upEvt.clientY > rect.bottom
           ) {
             tooltip.classList.remove('visible');
+            mediaFeatures.setHeatmapHover(null);
           }
         }, 150);
 
@@ -1064,6 +1079,7 @@ export function createControls(ctx: PlayerChromeContext) {
           scrubberContainer.classList.remove('dragging');
           video.removeEventListener('seeked', onSeeked);
           tooltip.classList.remove('visible');
+          mediaFeatures.setHeatmapHover(null);
         };
         video.addEventListener('seeked', onSeeked);
       
@@ -1072,6 +1088,7 @@ export function createControls(ctx: PlayerChromeContext) {
           scrubberContainer.classList.remove('dragging');
           video.removeEventListener('seeked', onSeeked);
           tooltip.classList.remove('visible');
+          mediaFeatures.setHeatmapHover(null);
         }, 150);
 
         gestureScope?.dispose();
@@ -1156,6 +1173,7 @@ export function createControls(ctx: PlayerChromeContext) {
       }
       tooltip.classList.remove('visible');
       tooltip.replaceChildren();
+      mediaFeatures.setHeatmapHover(null);
       updateScrubber();
       updateTimeDisplay();
       updateCaptionDock();
@@ -1228,6 +1246,7 @@ export function createControls(ctx: PlayerChromeContext) {
     video.addEventListener('loadedmetadata', onDurationChange);
     video.addEventListener('emptied', onMediaReset);
     document.addEventListener('yt-navigate-finish', onPageMediaChange);
+    window.addEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
     window.addEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
@@ -1253,6 +1272,7 @@ export function createControls(ctx: PlayerChromeContext) {
       video.removeEventListener('loadedmetadata', onDurationChange);
       video.removeEventListener('emptied', onMediaReset);
       document.removeEventListener('yt-navigate-finish', onPageMediaChange);
+      window.removeEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
       window.removeEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
