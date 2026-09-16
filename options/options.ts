@@ -51,6 +51,7 @@ interface Shortcuts {
   toggleFullscreen: string;
   volumeUp: string;
   volumeDown: string;
+  toggleMute: string;
   togglePiP: string;
   showHelp: string;
   cycleFit: string;
@@ -69,6 +70,7 @@ const defaultShortcuts: Shortcuts = {
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
+  toggleMute: 'M',
   togglePiP: 'P',
   showHelp: 'H',
   cycleFit: 'Z',
@@ -414,6 +416,7 @@ async function init() {
     const toggleFullscreenInput = document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement;
     const volumeUpInput = document.getElementById('shortcut-volume-up') as HTMLInputElement;
     const volumeDownInput = document.getElementById('shortcut-volume-down') as HTMLInputElement;
+    const toggleMuteInput = document.getElementById('shortcut-toggle-mute') as HTMLInputElement;
     const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
     const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
@@ -430,6 +433,7 @@ async function init() {
     if (toggleFullscreenInput) toggleFullscreenInput.value = shortcuts.toggleFullscreen || defaultShortcuts.toggleFullscreen;
     if (volumeUpInput) volumeUpInput.value = shortcuts.volumeUp || defaultShortcuts.volumeUp;
     if (volumeDownInput) volumeDownInput.value = shortcuts.volumeDown || defaultShortcuts.volumeDown;
+    if (toggleMuteInput) toggleMuteInput.value = shortcuts.toggleMute || defaultShortcuts.toggleMute;
     if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
     if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
@@ -507,6 +511,7 @@ async function init() {
           else if (shortcutId === 'shortcut-toggle-fullscreen') shortcuts.toggleFullscreen = shortcutStr;
           else if (shortcutId === 'shortcut-volume-up') shortcuts.volumeUp = shortcutStr;
           else if (shortcutId === 'shortcut-volume-down') shortcuts.volumeDown = shortcutStr;
+          else if (shortcutId === 'shortcut-toggle-mute') shortcuts.toggleMute = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
           else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;

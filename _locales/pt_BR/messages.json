@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Legendas desativadas"
   },
+  "subtitlesLoadingHud": {
+    "message": "Carregando legendas..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Não foi possível carregar as legendas"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Diminuir Volume (5%)"
   },
+  "toggleMute": {
+    "message": "Alternar mudo"
+  },
   "frameFullscreenPipTitle": {
     "message": "Quadro, Tela Cheia e PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Pausar"
+  },
+  "muteHud": {
+    "message": "Mudo"
+  },
+  "unmuteHud": {
+    "message": "Ativar som"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",

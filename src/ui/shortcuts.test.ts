@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { matchesShortcut, shortcutDisplayParts } from './shortcuts';
+import { defaultShortcuts, matchesShortcut, shortcutDisplayParts } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -21,6 +21,10 @@ function key(partial: {
 }
 
 describe('shortcut matching', () => {
+  it('defaults mute to M', () => {
+    assert.equal(defaultShortcuts.toggleMute, 'M');
+  });
+
   it('matches a standalone plus key', () => {
     assert.equal(matchesShortcut(key({ key: '+', shiftKey: true, code: 'Equal' }), '+'), true);
   });

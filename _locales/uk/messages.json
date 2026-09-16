@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Субтитри вимкнено"
   },
+  "subtitlesLoadingHud": {
+    "message": "Завантаження субтитрів..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Не вдалося завантажити субтитри"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Зменшити гучність (5%)"
   },
+  "toggleMute": {
+    "message": "Увімкнути/вимкнути звук"
+  },
   "frameFullscreenPipTitle": {
     "message": "Кадри, повний екран та PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Пауза"
+  },
+  "muteHud": {
+    "message": "Без звуку"
+  },
+  "unmuteHud": {
+    "message": "Увімкнути звук"
   },
   "pictureInPictureTooltip": {
     "message": "Картинка в картинці <kbd>$KEY$</kbd>",

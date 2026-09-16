@@ -48,7 +48,6 @@ export function createControls(ctx: PlayerChromeContext) {
   const escapeHtml = (s: string) => ctx.actions.escapeHtml(s);
   const applyVolumeAndBoost = (video: HTMLVideoElement, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
   const rememberAudibleVolume = (video: BoostedVideoElement, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
-  const restoreAudibleVolume = (video: BoostedVideoElement) => ctx.actions.restoreAudibleVolume(video);
   const isVideoSilent = (video: HTMLVideoElement) => ctx.actions.isVideoSilent(video);
   const persistCaptionPreference = (pref: Parameters<typeof ctx.actions.persistCaptionPreference>[0]) => {
     ctx.actions.persistCaptionPreference(pref);
@@ -333,17 +332,7 @@ export function createControls(ctx: PlayerChromeContext) {
     window.addEventListener('theater-everywhere-boost-ready', onBoostReady);
 
     volumeBtn.addEventListener('click', (event) => {
-      if (isVideoSilent(video)) {
-        const restore = restoreAudibleVolume(boostedVideo);
-        boostedVideo._logicalVolume = restore;
-        rememberAudibleVolume(boostedVideo, restore);
-        video.muted = false;
-        applyVolumeAndBoost(boostedVideo, restore);
-      } else {
-        rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume ?? video.volume);
-        boostedVideo._logicalVolume = boostedVideo._logicalVolume ?? video.volume;
-        video.muted = true;
-      }
+      ctx.actions.toggleVideoMute(video);
       blurMouseToggle(event, volumeBtn);
     });
 

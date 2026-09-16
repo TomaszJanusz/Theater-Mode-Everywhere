@@ -63,6 +63,7 @@ export type PlayerChromeActions = {
   rememberAudibleVolume(video: BoostedVideoElement, volume: number): void;
   restoreAudibleVolume(video: BoostedVideoElement): number;
   isVideoSilent(video: HTMLVideoElement): boolean;
+  toggleVideoMute(video: HTMLVideoElement): void;
   persistCaptionPreference(pref: CaptionLanguagePreference): void;
   persistCaptionStyle(style: CaptionStyle): void;
   persistVideoFitMode(mode: VideoFitMode): void;

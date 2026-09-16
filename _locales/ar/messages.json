@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "الترجمة متوقفة"
   },
+  "subtitlesLoadingHud": {
+    "message": "جارٍ تحميل الترجمة..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "تعذر تحميل الترجمة"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "خفض الصوت (5%)"
   },
+  "toggleMute": {
+    "message": "تبديل كتم الصوت"
+  },
   "frameFullscreenPipTitle": {
     "message": "الإطار، ملء الشاشة و PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "إيقاف مؤقت"
+  },
+  "muteHud": {
+    "message": "كتم الصوت"
+  },
+  "unmuteHud": {
+    "message": "إلغاء الكتم"
   },
   "pictureInPictureTooltip": {
     "message": "صورة داخل صورة <kbd>$KEY$</kbd>",

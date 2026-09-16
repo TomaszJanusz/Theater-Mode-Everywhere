@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "字幕オフ"
   },
+  "subtitlesLoadingHud": {
+    "message": "字幕を読み込み中..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "字幕を読み込めませんでした"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "音量ダウン (5%)"
   },
+  "toggleMute": {
+    "message": "ミュートを切り替え"
+  },
   "frameFullscreenPipTitle": {
     "message": "フレーム送り、全画面、PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "一時停止"
+  },
+  "muteHud": {
+    "message": "ミュート"
+  },
+  "unmuteHud": {
+    "message": "ミュート解除"
   },
   "pictureInPictureTooltip": {
     "message": "ピクチャーインピクチャー <kbd>$KEY$</kbd>",

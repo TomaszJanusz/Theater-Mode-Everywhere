@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Untertitel aus"
   },
+  "subtitlesLoadingHud": {
+    "message": "Untertitel werden geladen..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Untertitel konnten nicht geladen werden"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Leiser (5%)"
   },
+  "toggleMute": {
+    "message": "Stummschaltung umschalten"
+  },
   "frameFullscreenPipTitle": {
     "message": "Einzelbild, Vollbild und PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "muteHud": {
+    "message": "Stumm"
+  },
+  "unmuteHud": {
+    "message": "Ton an"
   },
   "pictureInPictureTooltip": {
     "message": "Bild-in-Bild <kbd>$KEY$</kbd>",

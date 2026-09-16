@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Subtitles off"
   },
+  "subtitlesLoadingHud": {
+    "message": "Loading subtitles..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Couldn't load subtitles"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Volume Down (5%)"
   },
+  "toggleMute": {
+    "message": "Toggle mute"
+  },
   "frameFullscreenPipTitle": {
     "message": "Frame, Fullscreen & PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "muteHud": {
+    "message": "Mute"
+  },
+  "unmuteHud": {
+    "message": "Unmute"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",

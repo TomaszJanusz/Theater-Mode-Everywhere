@@ -16,10 +16,30 @@ export const STATUS_HUD_FIT_ICON = `
   </svg>
 `;
 
+export type CaptionHudView =
+  | { kind: 'dismiss' }
+  | { kind: 'loading'; title: string }
+  | { kind: 'status'; title: string; detail?: string; icon: string };
+
 export const STATUS_HUD_CC_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <rect x="3" y="4" width="18" height="16" rx="2"></rect>
     <path d="M7 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0M14 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0"></path>
+  </svg>
+`;
+
+export const STATUS_HUD_MUTE_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+    <line x1="23" y1="9" x2="17" y2="15"></line>
+    <line x1="17" y1="9" x2="23" y2="15"></line>
+  </svg>
+`;
+
+export const STATUS_HUD_UNMUTE_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   </svg>
 `;
 
@@ -195,10 +215,86 @@ export function createHud(ctx: PlayerChromeContext) {
     }, 800);
   }
 
+  let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
+  let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearCaptionHudTimers(): void {
+    if (captionHudHideTimer) {
+      clearTimeout(captionHudHideTimer);
+      captionHudHideTimer = null;
+    }
+    if (captionHudRemoveTimer) {
+      clearTimeout(captionHudRemoveTimer);
+      captionHudRemoveTimer = null;
+    }
+  }
+
+  function removeCaptionHud(): void {
+    clearCaptionHudTimers();
+    ctx.queryPlayerUi('.theater-everywhere-caption-hud')?.remove();
+  }
+
+  function triggerCaptionHud(view: CaptionHudView): void {
+    if (view.kind === 'dismiss') {
+      removeCaptionHud();
+      return;
+    }
+
+    if (!ctx.session.element) return;
+
+    removeCaptionHud();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'theater-everywhere-caption-hud status-hud' + (view.kind === 'loading' ? ' loading' : '');
+    ctx.paintOverlay(overlay);
+
+    const content = document.createElement('div');
+    content.className = 'volume-hud-content';
+
+    const iconEl = document.createElement('div');
+    iconEl.className = 'volume-hud-icon';
+    if (view.kind === 'loading') {
+      const spinner = document.createElement('div');
+      spinner.className = 'caption-hud-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      iconEl.appendChild(spinner);
+    } else {
+      iconEl.innerHTML = view.icon;
+    }
+
+    const copy = document.createElement('div');
+    copy.className = 'volume-hud-copy';
+    const textEl = document.createElement('span');
+    textEl.className = 'volume-hud-text';
+    textEl.textContent = view.title;
+    copy.appendChild(textEl);
+    if (view.kind === 'status' && view.detail) {
+      const detailEl = document.createElement('span');
+      detailEl.className = 'volume-hud-detail';
+      detailEl.textContent = view.detail;
+      copy.appendChild(detailEl);
+    }
+
+    content.append(iconEl, copy);
+    overlay.appendChild(content);
+    ctx.mountPlayerUi(overlay);
+
+    if (view.kind === 'loading') return;
+
+    const displayDuration = view.kind === 'status' && view.detail ? 4_000 : 800;
+    captionHudHideTimer = setTimeout(() => {
+      overlay.classList.add('fade-out');
+      captionHudRemoveTimer = setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+      }, 200);
+    }, displayDuration);
+  }
+
   return {
     triggerSeekIndicator,
     triggerVolumeIndicator,
     triggerStatusIndicator,
-    triggerPlaybackIndicator
+    triggerPlaybackIndicator,
+    triggerCaptionHud
   };
 }

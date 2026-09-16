@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a `C` shortcut to toggle subtitles in theater mode, using the remembered language code when turning them back on.
 - Added Settings → Features toggles for YouTube, Vimeo, Patreon, Twitch, and Disney+ extras (captions, chapters, previews). Theater mode still works on those sites when a toggle is off.
 - Theater chrome now renders in an isolated shadow tree so host page CSS cannot restyle the player UI (including the subtitles menu font).
+- Mute and unmute from the theater speaker button or the default `M` shortcut share one action and show the center HUD, same as play/pause and volume.
+- Caption HUD has a top-right variant (top-left in RTL) with the same 24px edge inset as the control bar. Captions use it for on/off, a spinner with “Loading subtitles…” while a track is fetching, and the loaded track name on a second line.
 - Vimeo timeline hover previews now use the same sprite thumbnails as Vimeo's own scrubber.
 - Patreon native Mux videos now use Mux storyboard sprites for timeline hover previews, Mux caption WebVTT when the post has closed captions, plus post-body chapter timestamps when they follow the usual `00:00 Title` pattern.
 - Live streams now show a LIVE badge, map the scrubber onto the DVR `seekable` window when one exists, hide seeking on unseekable live, and hide the speed control on all live. Detection is generic from the media element (`duration === Infinity`, sliding DVR ranges) plus host live hints such as YouTube `getVideoData().isLive`, because YouTube Live reports a growing finite duration that would otherwise look like a VOD. On seekable live, clicking LIVE jumps to the live edge.
@@ -37,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Playback keys and chrome clicks go through `PlayerCommand` (`PLAY_PAUSE`, `SEEK_BY`, `TOGGLE_CAPTIONS`, `CYCLE_VIDEO`, `CYCLE_FIT`, `TOGGLE_HELP`) instead of calling host seek/play APIs from the views.
 
 ### Fixed
+- The heatmap accent/white split no longer leaves a 1px white fringe at the hover pin.
 - Pressing play in theater mode on an unstarted Vimeo (or similar) player now clicks the host Play control instead of calling `video.play()` on an empty element, which left a spinner and never attached media.
 - Unmuting from the theater speaker button restores the last audible level (or 100% when the player started at volume 0), instead of leaving autoplay-muted videos silent.
 - Native HTML5 captions now render through the same theater overlay as YouTube, so subtitle options apply and host players like AblePlayer no longer show a second unstyled layer.

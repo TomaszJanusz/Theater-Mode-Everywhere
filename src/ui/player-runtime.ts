@@ -49,7 +49,13 @@ import { PlayerUiStore, type PlayerUiState } from './store';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
-import { createHud, STATUS_HUD_CC_ICON, STATUS_HUD_FIT_ICON } from './hud';
+import {
+  createHud,
+  STATUS_HUD_CC_ICON,
+  STATUS_HUD_FIT_ICON,
+  STATUS_HUD_MUTE_ICON,
+  STATUS_HUD_UNMUTE_ICON
+} from './hud';
 import {
   bindRootHelpers,
   createChromeRefs,
@@ -93,7 +99,8 @@ const {
   triggerSeekIndicator,
   triggerVolumeIndicator,
   triggerStatusIndicator,
-  triggerPlaybackIndicator
+  triggerPlaybackIndicator,
+  triggerCaptionHud
 } = hud;
 const {
   showToolbar,
@@ -128,6 +135,25 @@ function restoreAudibleVolume(video: BoostedVideoElement): number {
 
 function isVideoSilent(video: HTMLVideoElement): boolean {
   return video.muted || video.volume === 0;
+}
+
+function toggleVideoMute(video: HTMLVideoElement): void {
+  const boostedVideo = video as BoostedVideoElement;
+  if (isVideoSilent(video)) {
+    const restore = restoreAudibleVolume(boostedVideo);
+    boostedVideo._logicalVolume = restore;
+    rememberAudibleVolume(boostedVideo, restore);
+    video.muted = false;
+    applyVolumeAndBoost(boostedVideo, restore);
+    triggerStatusIndicator(t('unmuteHud'), STATUS_HUD_UNMUTE_ICON);
+  } else {
+    const volume = boostedVideo._logicalVolume ?? video.volume;
+    rememberAudibleVolume(boostedVideo, volume);
+    boostedVideo._logicalVolume = volume;
+    video.muted = true;
+    triggerStatusIndicator(t('muteHud'), STATUS_HUD_MUTE_ICON);
+  }
+  refs.onVolumeAdjustedCallback?.();
 }
 
 function applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void {
@@ -209,6 +235,7 @@ function bindChromeActions(): void {
     rememberAudibleVolume,
     restoreAudibleVolume,
     isVideoSilent,
+    toggleVideoMute,
     persistCaptionPreference,
     persistCaptionStyle,
     persistVideoFitMode,
@@ -356,22 +383,32 @@ function cycleVideoFit(): void {
 }
 
 function showCaptionHud(payload: CaptionHudPayload): void {
+  if (payload.result === 'loading') {
+    triggerCaptionHud({ kind: 'loading', title: t('subtitlesLoadingHud') });
+    return;
+  }
+  if (payload.result === 'dismiss') {
+    triggerCaptionHud({ kind: 'dismiss' });
+    return;
+  }
   if (payload.result === 'none') {
-    triggerStatusIndicator(t('noSubtitlesAvailable'), STATUS_HUD_CC_ICON);
+    triggerCaptionHud({ kind: 'status', title: t('noSubtitlesAvailable'), icon: STATUS_HUD_CC_ICON });
     return;
   }
   if (payload.result === 'failed') {
-    triggerStatusIndicator(t('subtitlesLoadFailedHud'), STATUS_HUD_CC_ICON);
+    triggerCaptionHud({ kind: 'status', title: t('subtitlesLoadFailedHud'), icon: STATUS_HUD_CC_ICON });
     return;
   }
   if (payload.result === 'on') {
-    triggerStatusIndicator(
-      payload.label ? t('subtitlesOnNamedHud', payload.label) : t('subtitlesOnHud'),
-      STATUS_HUD_CC_ICON
-    );
+    triggerCaptionHud({
+      kind: 'status',
+      title: t('subtitlesOnHud'),
+      ...(payload.label ? { detail: payload.label } : {}),
+      icon: STATUS_HUD_CC_ICON
+    });
     return;
   }
-  triggerStatusIndicator(t('subtitlesOffHud'), STATUS_HUD_CC_ICON);
+  triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud'), icon: STATUS_HUD_CC_ICON });
 }
 
 async function toggleTheaterCaptions(): Promise<void> {
@@ -445,6 +482,7 @@ function refreshExtensionAccentColor(): void {
     '.theater-help-overlay',
     '.theater-everywhere-seek-overlay',
     '.theater-everywhere-volume-overlay',
+    '.theater-everywhere-caption-hud',
     '.te-dialog-overlay'
   ].join(',');
   for (const el of [
@@ -599,6 +637,11 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     if (refs.onVolumeAdjustedCallback) {
       refs.onVolumeAdjustedCallback();
     }
+  } else if (matchesShortcut(e, shortcuts.toggleMute)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    toggleVideoMute(video);
   } else if (matchesShortcut(e, shortcuts.togglePiP)) {
     e.preventDefault();
     e.stopPropagation();
@@ -714,7 +757,8 @@ function initialize(): void {
               matchesShortcut(event, shortcuts.seekBack) ||
               matchesShortcut(event, shortcuts.seekForward) ||
               matchesShortcut(event, shortcuts.frameBack) ||
-              matchesShortcut(event, shortcuts.frameForward)) {
+              matchesShortcut(event, shortcuts.frameForward) ||
+              matchesShortcut(event, shortcuts.toggleMute)) {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();

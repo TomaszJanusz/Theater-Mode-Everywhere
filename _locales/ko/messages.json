@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "자막 꺼짐"
   },
+  "subtitlesLoadingHud": {
+    "message": "자막을 불러오는 중..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "자막을 불러오지 못했습니다"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "음량 낮추기 (5%)"
   },
+  "toggleMute": {
+    "message": "음소거 전환"
+  },
   "frameFullscreenPipTitle": {
     "message": "프레임, 전체 화면 및 PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "일시정지"
+  },
+  "muteHud": {
+    "message": "음소거"
+  },
+  "unmuteHud": {
+    "message": "음소거 해제"
   },
   "pictureInPictureTooltip": {
     "message": "화면 속 화면 <kbd>$KEY$</kbd>",

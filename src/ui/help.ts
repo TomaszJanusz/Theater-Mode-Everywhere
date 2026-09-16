@@ -75,7 +75,8 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('seekBackward5'), key: shortcuts.seekBack },
           { label: ctx.t('seekForward5'), key: shortcuts.seekForward },
           { label: ctx.t('volumeUp5'), key: shortcuts.volumeUp },
-          { label: ctx.t('volumeDown5'), key: shortcuts.volumeDown }
+          { label: ctx.t('volumeDown5'), key: shortcuts.volumeDown },
+          { label: ctx.t('toggleMute'), key: shortcuts.toggleMute }
         ]
       },
       {

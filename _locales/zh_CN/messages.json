@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "字幕已关闭"
   },
+  "subtitlesLoadingHud": {
+    "message": "正在加载字幕..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "无法加载字幕"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "降低音量（5%）"
   },
+  "toggleMute": {
+    "message": "切换静音"
+  },
   "frameFullscreenPipTitle": {
     "message": "逐帧、全屏和画中画"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "暂停"
+  },
+  "muteHud": {
+    "message": "静音"
+  },
+  "unmuteHud": {
+    "message": "取消静音"
   },
   "pictureInPictureTooltip": {
     "message": "画中画 <kbd>$KEY$</kbd>",

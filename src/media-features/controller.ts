@@ -15,7 +15,7 @@ import { providerError } from '../core/errors';
 export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
 
 export type CaptionHudPayload = {
-  result: CaptionToggleResult;
+  result: CaptionToggleResult | 'loading' | 'dismiss';
   label?: string;
 };
 
@@ -595,6 +595,9 @@ export class MediaFeaturesController {
     const gen = ++this.activateGeneration;
     this.activateInFlight = true;
     const persist = options?.persist !== false;
+    if (id && options?.hud === true) {
+      this.onCaptionHud?.({ result: 'loading' });
+    }
     try {
       let overlayCues: Awaited<ReturnType<MediaFeaturesAdapter['activateCaptionTrack']>> = [];
       try {
@@ -659,7 +662,7 @@ export class MediaFeaturesController {
         this.emitCaptionHud('none', true);
         return 'none';
       }
-      const result = await this.activateUnlocked(match.id);
+      const result = await this.activateUnlocked(match.id, { hud: true });
       this.emitCaptionHud(result, true);
       return this.captionsAreOn() ? 'on' : 'failed';
     });

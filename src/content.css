@@ -1308,6 +1308,45 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   direction: rtl !important;
 }
 
+.theater-everywhere-caption-hud {
+  position: fixed !important;
+  top: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(15, 15, 15, 0.5) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 10px 18px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.theater-everywhere-caption-hud[dir="rtl"] {
+  right: auto !important;
+  left: 24px !important;
+  direction: rtl !important;
+}
+
+.theater-everywhere-caption-hud.fade-out {
+  opacity: 0 !important;
+  transform: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
 .theater-everywhere-volume-overlay.boosted {
   border-color: rgba(245, 158, 11, 0.4) !important;
 }
@@ -1339,15 +1378,47 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   animation: volume-hud-zoom-out 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
 
-.theater-everywhere-volume-overlay.status-hud .volume-hud-icon {
+.theater-everywhere-volume-overlay.status-hud .volume-hud-icon,
+.theater-everywhere-caption-hud.status-hud .volume-hud-icon {
   flex-shrink: 0 !important;
 }
 
-.theater-everywhere-volume-overlay.status-hud .volume-hud-text {
+.theater-everywhere-volume-overlay.status-hud .volume-hud-text,
+.theater-everywhere-caption-hud.status-hud .volume-hud-text {
   max-width: 22rem !important;
   white-space: normal !important;
   font-weight: 600 !important;
   line-height: 1.35 !important;
+}
+
+.volume-hud-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+.theater-everywhere-caption-hud[dir="rtl"] .volume-hud-copy {
+  align-items: flex-end !important;
+}
+
+.volume-hud-detail {
+  max-width: 22rem !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+}
+
+.caption-hud-spinner {
+  width: 22px !important;
+  height: 22px !important;
+  border: 2.5px solid rgba(255, 255, 255, 0.2) !important;
+  border-top-color: var(--accent-color, #6366f1) !important;
+  border-radius: 50% !important;
+  animation: theater-spin 0.8s linear infinite !important;
 }
 
 @keyframes volume-hud-zoom-in {

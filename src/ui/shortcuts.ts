@@ -10,6 +10,7 @@ export interface Shortcuts {
   toggleFullscreen: string;
   volumeUp: string;
   volumeDown: string;
+  toggleMute: string;
   togglePiP: string;
   showHelp: string;
   cycleFit: string;
@@ -28,6 +29,7 @@ export const defaultShortcuts: Shortcuts = {
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
+  toggleMute: 'M',
   togglePiP: 'P',
   showHelp: 'H',
   cycleFit: 'Z',

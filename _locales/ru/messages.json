@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Субтитры выключены"
   },
+  "subtitlesLoadingHud": {
+    "message": "Загрузка субтитров..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Не удалось загрузить субтитры"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Уменьшить громкость (5%)"
   },
+  "toggleMute": {
+    "message": "Включить/выключить звук"
+  },
   "frameFullscreenPipTitle": {
     "message": "Кадр, полный экран и PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Пауза"
+  },
+  "muteHud": {
+    "message": "Без звука"
+  },
+  "unmuteHud": {
+    "message": "Включить звук"
   },
   "pictureInPictureTooltip": {
     "message": "Картинка в картинке <kbd>$KEY$</kbd>",

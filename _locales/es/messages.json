@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Subtítulos desactivados"
   },
+  "subtitlesLoadingHud": {
+    "message": "Cargando subtítulos..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "No se pudieron cargar los subtítulos"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Bajar volumen (5%)"
   },
+  "toggleMute": {
+    "message": "Alternar silencio"
+  },
   "frameFullscreenPipTitle": {
     "message": "Fotograma, pantalla completa y PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Pausar"
+  },
+  "muteHud": {
+    "message": "Silenciar"
+  },
+  "unmuteHud": {
+    "message": "Activar sonido"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",

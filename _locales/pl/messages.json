@@ -253,6 +253,9 @@
   "subtitlesOffHud": {
     "message": "Napisy wyłączone"
   },
+  "subtitlesLoadingHud": {
+    "message": "Ładowanie napisów..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Nie udało się wczytać napisów"
   },
@@ -345,6 +348,9 @@
   "volumeDown5": {
     "message": "Ciszej (5%)"
   },
+  "toggleMute": {
+    "message": "Włącz/wyłącz wyciszenie"
+  },
   "frameFullscreenPipTitle": {
     "message": "Klatki, pełny ekran i PiP"
   },
@@ -386,6 +392,12 @@
   },
   "pause": {
     "message": "Pauza"
+  },
+  "muteHud": {
+    "message": "Wycisz"
+  },
+  "unmuteHud": {
+    "message": "Odcisz"
   },
   "pictureInPictureTooltip": {
     "message": "Obraz w obrazie <kbd>$KEY$</kbd>",
