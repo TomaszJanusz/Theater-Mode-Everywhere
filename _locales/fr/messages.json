@@ -133,31 +133,31 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Sous-titres, chapitres et aperçus au survol de la timeline en mode cinéma."
+    "message": "Active les sous-titres, les chapitres et les miniatures sur la timeline en mode cinéma."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Marqueurs de chapitres et aperçus au survol de la timeline en mode cinéma."
+    "message": "Active les marqueurs de chapitres et les miniatures sur la timeline en mode cinéma."
   },
   "patreonIntegrationTitle": {
     "message": "Intégration Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Sous-titres et aperçus au survol de la timeline en mode cinéma."
+    "message": "Active les sous-titres et les miniatures sur la timeline en mode cinéma."
   },
   "twitchIntegrationTitle": {
     "message": "Intégration Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Chapitres des VOD et aperçus au survol de la timeline en mode cinéma."
+    "message": "Active les chapitres des VOD et les miniatures sur la timeline en mode cinéma."
   },
   "disneyIntegrationTitle": {
     "message": "Intégration Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Sous-titres et aperçus au survol de la timeline en mode cinéma, lorsque le lecteur les fournit."
+    "message": "Active les sous-titres et les miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
   },
   "liveBadge": {
     "message": "DIRECT"

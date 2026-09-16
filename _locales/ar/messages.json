@@ -133,31 +133,31 @@
     "message": "تكامل YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "ترجمات وفصول ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
+    "message": "يفعّل الترجمات والفصول والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "vimeoIntegrationTitle": {
     "message": "تكامل Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "علامات فصول ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
+    "message": "يفعّل علامات الفصول والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "patreonIntegrationTitle": {
     "message": "تكامل Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "ترجمات ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
+    "message": "يفعّل الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "twitchIntegrationTitle": {
     "message": "تكامل Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "فصول الفيديو المسجل ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
+    "message": "يفعّل فصول الفيديو المسجّل والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "disneyIntegrationTitle": {
     "message": "تكامل Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "ترجمات ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
+    "message": "يفعّل الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
   },
   "liveBadge": {
     "message": "مباشر"

@@ -133,31 +133,31 @@
     "message": "Integracja z YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Napisy, rozdziały i podgląd klatek na osi czasu w trybie kinowym."
+    "message": "Włącza napisy, rozdziały i miniaturki na osi czasu w trybie kinowym."
   },
   "vimeoIntegrationTitle": {
     "message": "Integracja z Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Rozdziały i podgląd klatek na osi czasu w trybie kinowym."
+    "message": "Włącza znaczniki rozdziałów i miniaturki na osi czasu w trybie kinowym."
   },
   "patreonIntegrationTitle": {
     "message": "Integracja z Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Napisy i podgląd klatek na osi czasu w trybie kinowym."
+    "message": "Włącza napisy i miniaturki na osi czasu w trybie kinowym."
   },
   "twitchIntegrationTitle": {
     "message": "Integracja z Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Rozdziały VOD i podgląd klatek na osi czasu w trybie kinowym."
+    "message": "Włącza rozdziały VOD i miniaturki na osi czasu w trybie kinowym."
   },
   "disneyIntegrationTitle": {
     "message": "Integracja z Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Napisy i podgląd klatek na osi czasu w trybie kinowym, gdy odtwarzacz je udostępnia."
+    "message": "Włącza napisy i miniaturki na osi czasu w trybie kinowym, gdy odtwarzacz je udostępnia."
   },
   "liveBadge": {
     "message": "NA ŻYWO"

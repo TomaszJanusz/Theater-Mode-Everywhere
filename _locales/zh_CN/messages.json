@@ -133,31 +133,31 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "在剧场模式中提供字幕、章节和时间轴悬停预览。"
+    "message": "在剧场模式中启用字幕、章节和时间轴缩略图。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "在剧场模式中提供章节标记和时间轴悬停预览。"
+    "message": "在剧场模式中启用章节标记和时间轴缩略图。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 集成"
   },
   "patreonIntegrationDescription": {
-    "message": "在剧场模式中提供字幕和时间轴悬停预览。"
+    "message": "在剧场模式中启用字幕和时间轴缩略图。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 集成"
   },
   "twitchIntegrationDescription": {
-    "message": "在剧场模式中提供点播章节和时间轴悬停预览。"
+    "message": "在剧场模式中启用点播章节和时间轴缩略图。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 集成"
   },
   "disneyIntegrationDescription": {
-    "message": "在剧场模式中提供字幕和时间轴悬停预览（若播放器提供这些内容）。"
+    "message": "当播放器提供这些内容时，在剧场模式中启用字幕和时间轴缩略图。"
   },
   "liveBadge": {
     "message": "直播"

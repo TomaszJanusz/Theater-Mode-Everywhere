@@ -133,31 +133,31 @@
     "message": "Integração com o YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Legendas, capítulos e prévias ao passar o mouse na linha do tempo no modo teatro."
+    "message": "Ativa legendas, capítulos e miniaturas na linha do tempo no modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integração com o Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Marcadores de capítulos e prévias ao passar o mouse na linha do tempo no modo teatro."
+    "message": "Ativa marcadores de capítulos e miniaturas na linha do tempo no modo teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integração com o Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Legendas e prévias ao passar o mouse na linha do tempo no modo teatro."
+    "message": "Ativa legendas e miniaturas na linha do tempo no modo teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integração com a Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Capítulos de VOD e prévias ao passar o mouse na linha do tempo no modo teatro."
+    "message": "Ativa capítulos de VOD e miniaturas na linha do tempo no modo teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integração com Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Legendas e prévias ao passar o mouse na linha do tempo no modo teatro, quando o player as oferece."
+    "message": "Ativa legendas e miniaturas na linha do tempo no modo teatro quando o player as oferece."
   },
   "liveBadge": {
     "message": "AO VIVO"

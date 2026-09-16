@@ -133,31 +133,31 @@
     "message": "Интеграция с YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Субтитры, главы и превью кадров на шкале времени в режиме кинотеатра."
+    "message": "Включает субтитры, главы и миниатюры на шкале времени в режиме кинотеатра."
   },
   "vimeoIntegrationTitle": {
     "message": "Интеграция с Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Метки глав и превью кадров на шкале времени в режиме кинотеатра."
+    "message": "Включает метки глав и миниатюры на шкале времени в режиме кинотеатра."
   },
   "patreonIntegrationTitle": {
     "message": "Интеграция с Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Субтитры и превью кадров на шкале времени в режиме кинотеатра."
+    "message": "Включает субтитры и миниатюры на шкале времени в режиме кинотеатра."
   },
   "twitchIntegrationTitle": {
     "message": "Интеграция с Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Главы VOD и превью кадров на шкале времени в режиме кинотеатра."
+    "message": "Включает главы VOD и миниатюры на шкале времени в режиме кинотеатра."
   },
   "disneyIntegrationTitle": {
     "message": "Интеграция Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Субтитры и превью кадров на шкале времени в режиме кинотеатра, если плеер их отдаёт."
+    "message": "Включает субтитры и миниатюры на шкале времени в режиме кинотеатра, если плеер их отдаёт."
   },
   "liveBadge": {
     "message": "ЭФИР"

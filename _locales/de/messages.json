@@ -133,31 +133,31 @@
     "message": "YouTube-Integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Untertitel, Kapitel und Vorschaubilder auf der Zeitleiste im Kinomodus."
+    "message": "Aktiviert Untertitel, Kapitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo-Integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Kapitelmarken und Vorschaubilder auf der Zeitleiste im Kinomodus."
+    "message": "Aktiviert Kapitelmarken und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon-Integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Untertitel und Vorschaubilder auf der Zeitleiste im Kinomodus."
+    "message": "Aktiviert Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch-Integration"
   },
   "twitchIntegrationDescription": {
-    "message": "VOD-Kapitel und Vorschaubilder auf der Zeitleiste im Kinomodus."
+    "message": "Aktiviert VOD-Kapitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+-Integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Untertitel und Vorschaubilder auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
+    "message": "Aktiviert Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
   },
   "liveBadge": {
     "message": "LIVE"
