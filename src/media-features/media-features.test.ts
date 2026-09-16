@@ -246,6 +246,8 @@ describe('youtube storyboard parser', () => {
     assert.equal(first!.image.url, nearby!.image.url);
     assert.equal(first!.image.tileWidth, 160);
     assert.match(first!.image.url, /^https:\/\/i9\.ytimg\.com\/sb\/abc\/storyboard3_L2\/M0\.jpg/);
+    const atDisplayWidth = getStoryboardFrame(set!, 0);
+    assert.equal(atDisplayWidth!.image.tileWidth, 160);
   });
 
   it('rejects non-ytimg hosts', () => {

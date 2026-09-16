@@ -133,31 +133,31 @@
     "message": "Интеграция с YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Субтитры, главы и превью шкалы времени YouTube в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на YouTube без дополнительных запросов к YouTube."
+    "message": "Субтитры, главы и превью кадров на шкале времени в режиме кинотеатра."
   },
   "vimeoIntegrationTitle": {
     "message": "Интеграция с Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Метки глав и миниатюры шкалы времени Vimeo в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Vimeo без дополнительных запросов к Vimeo."
+    "message": "Метки глав и превью кадров на шкале времени в режиме кинотеатра."
   },
   "patreonIntegrationTitle": {
     "message": "Интеграция с Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Субтитры и превью шкалы времени Patreon в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Patreon без дополнительных запросов к Mux."
+    "message": "Субтитры и превью кадров на шкале времени в режиме кинотеатра."
   },
   "twitchIntegrationTitle": {
     "message": "Интеграция с Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Главы и превью шкалы времени VOD Twitch в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Twitch без дополнительных запросов к CDN Twitch."
+    "message": "Главы VOD и превью кадров на шкале времени в режиме кинотеатра."
   },
   "disneyIntegrationTitle": {
     "message": "Интеграция Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Субтитры и превью шкалы Disney+ в театральном режиме, если они есть в сессии воспроизведения. Выключите, чтобы оставить театральный режим на Disney+ без дополнительных запросов к CDN Disney."
+    "message": "Субтитры и превью кадров на шкале времени в режиме кинотеатра, если плеер их отдаёт."
   },
   "liveBadge": {
     "message": "ЭФИР"

@@ -1,6 +1,7 @@
 import { parseCaptionPayload } from './parsers/captions';
 import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
+import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import {
   normalizeYoutubePlayerResponse,
@@ -311,7 +312,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
 
   getPreviewFrame(time: number, _duration: number): PreviewFrame | null {
     if (!this.storyboards || !this.snapshotMatchesPage()) return null;
-    const targetWidth = Math.round(160 * (window.devicePixelRatio || 1));
+    const targetWidth = Math.round(PREVIEW_DISPLAY_WIDTH * (window.devicePixelRatio || 1));
     return getStoryboardFrame(this.storyboards, time, targetWidth);
   }
 

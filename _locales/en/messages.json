@@ -133,31 +133,31 @@
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Use YouTube captions, chapters, and timeline previews in theater mode. Turn this off to keep theater mode on YouTube without extra requests to YouTube."
+    "message": "Captions, chapters, and hover previews on the timeline in theater mode."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo."
+    "message": "Chapter markers and hover previews on the timeline in theater mode."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux."
+    "message": "Captions and hover previews on the timeline in theater mode."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs."
+    "message": "VOD chapters and hover previews on the timeline in theater mode."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Use Disney+ captions and timeline previews in theater mode when the player session includes them. Turn this off to keep theater mode on Disney+ without extra requests to Disney CDNs."
+    "message": "Captions and hover previews on the timeline in theater mode, when the player provides them."
   },
   "liveBadge": {
     "message": "LIVE"

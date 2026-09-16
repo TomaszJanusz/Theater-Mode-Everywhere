@@ -1,6 +1,5 @@
 const HOST_ID = 'theater-everywhere-ui';
 const STYLE_ID = 'theater-everywhere-ui-styles';
-const UI_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 let hostEl: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
@@ -9,27 +8,6 @@ let playerUiCss = '';
 export function setPlayerUiCss(css: string): void {
   playerUiCss = css;
   if (shadow && hostEl?.isConnected) ensureShadowStyles(shadow);
-}
-
-function isolateHost(host: HTMLElement): void {
-  const styles: Array<[string, string]> = [
-    ['all', 'initial'],
-    ['position', 'fixed'],
-    ['inset', '0px'],
-    ['width', '100%'],
-    ['height', '100%'],
-    ['display', 'block'],
-    ['pointer-events', 'none'],
-    ['z-index', '2147483647'],
-    ['font-family', UI_FONT],
-    ['line-height', '1.4'],
-    ['color', '#f8fafc'],
-    ['-webkit-font-smoothing', 'antialiased'],
-    ['-moz-osx-font-smoothing', 'grayscale']
-  ];
-  for (const [property, value] of styles) {
-    host.style.setProperty(property, value, 'important');
-  }
 }
 
 function collectInjectedTheaterCss(): string {
@@ -88,7 +66,6 @@ export function getPlayerUiRoot(): ShadowRoot {
     hostEl.setAttribute('data-theater-everywhere-ui', '');
     (document.documentElement || document.body).appendChild(hostEl);
   }
-  isolateHost(hostEl);
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
   return shadow;

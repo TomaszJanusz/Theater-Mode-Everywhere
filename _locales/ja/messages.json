@@ -133,31 +133,31 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "シアターモードでYouTubeの字幕、チャプター、タイムラインプレビューを使います。オフにすると、YouTubeへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードで字幕、チャプター、タイムラインのホバープレビューを使えます。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "シアターモードでVimeoのチャプターマーカーとタイムラインプレビューを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードでチャプターマーカーとタイムラインのホバープレビューを使えます。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon連携"
   },
   "patreonIntegrationDescription": {
-    "message": "シアターモードでPatreonの字幕とタイムラインプレビューを使います。オフにすると、Muxへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードで字幕とタイムラインのホバープレビューを使えます。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch連携"
   },
   "twitchIntegrationDescription": {
-    "message": "シアターモードでTwitchのVODチャプターとタイムラインプレビューを使います。オフにすると、Twitch CDNへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードでVODチャプターとタイムラインのホバープレビューを使えます。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 連携"
   },
   "disneyIntegrationDescription": {
-    "message": "再生セッションに含まれている場合、シアターモードで Disney+ の字幕とタイムラインプレビューを使います。オフにすると、Disney CDN への追加リクエストなしでシアターモードだけが残ります。"
+    "message": "プレーヤーが提供する場合、シアターモードで字幕とタイムラインのホバープレビューを使えます。"
   },
   "liveBadge": {
     "message": "配信中"

@@ -133,31 +133,31 @@
     "message": "Integracja z YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Napisy, rozdziały i podglądy osi czasu z YouTube w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do YouTube."
+    "message": "Napisy, rozdziały i podgląd klatek na osi czasu w trybie kinowym."
   },
   "vimeoIntegrationTitle": {
     "message": "Integracja z Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Znaczniki rozdziałów i miniaturki osi czasu z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
+    "message": "Rozdziały i podgląd klatek na osi czasu w trybie kinowym."
   },
   "patreonIntegrationTitle": {
     "message": "Integracja z Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Napisy i podglądy osi czasu z Patreon w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Mux."
+    "message": "Napisy i podgląd klatek na osi czasu w trybie kinowym."
   },
   "twitchIntegrationTitle": {
     "message": "Integracja z Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Rozdziały i podglądy osi czasu z VOD-ów Twitch w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Twitch."
+    "message": "Rozdziały VOD i podgląd klatek na osi czasu w trybie kinowym."
   },
   "disneyIntegrationTitle": {
     "message": "Integracja z Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Napisy i podglądy osi czasu z Disney+ w trybie kinowym, gdy sesja odtwarzania je zawiera. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Disney."
+    "message": "Napisy i podgląd klatek na osi czasu w trybie kinowym, gdy odtwarzacz je udostępnia."
   },
   "liveBadge": {
     "message": "NA ŻYWO"

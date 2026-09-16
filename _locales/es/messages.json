@@ -133,31 +133,31 @@
     "message": "Integración de YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Usa subtítulos, capítulos y vistas previas de la línea de tiempo de YouTube en el modo teatro. Desactívala para mantener el modo teatro en YouTube sin peticiones extra a YouTube."
+    "message": "Subtítulos, capítulos y vistas previas al pasar el cursor por la línea de tiempo en modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integración de Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Usa los marcadores de capítulos y las miniaturas de la línea de tiempo de Vimeo en el modo teatro. Desactívala para mantener el modo teatro en Vimeo sin peticiones extra a Vimeo."
+    "message": "Marcadores de capítulos y vistas previas al pasar el cursor por la línea de tiempo en modo teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integración de Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Usa los subtítulos y las vistas previas de la línea de tiempo de Patreon en el modo teatro. Desactívala para mantener el modo teatro en Patreon sin peticiones extra a Mux."
+    "message": "Subtítulos y vistas previas al pasar el cursor por la línea de tiempo en modo teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integración de Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Usa los capítulos y las vistas previas de la línea de tiempo de los VOD de Twitch en el modo teatro. Desactívala para mantener el modo teatro en Twitch sin peticiones extra a las CDN de Twitch."
+    "message": "Capítulos de VOD y vistas previas al pasar el cursor por la línea de tiempo en modo teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integración de Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Usa subtítulos y miniaturas de Disney+ en el modo teatro cuando la sesión de reproducción los incluye. Desactívalo para dejar el modo teatro en Disney+ sin peticiones extra a las CDN de Disney."
+    "message": "Subtítulos y vistas previas al pasar el cursor por la línea de tiempo en modo teatro, cuando el reproductor los ofrece."
   },
   "liveBadge": {
     "message": "EN VIVO"

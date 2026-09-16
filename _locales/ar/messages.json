@@ -133,31 +133,31 @@
     "message": "تكامل YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "استخدم ترجمات YouTube والفصول ومعاينات الخط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في YouTube دون طلبات إضافية إلى YouTube."
+    "message": "ترجمات وفصول ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
   },
   "vimeoIntegrationTitle": {
     "message": "تكامل Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "استخدم علامات فصول Vimeo ومعاينات الشريط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Vimeo دون طلبات إضافية إلى Vimeo."
+    "message": "علامات فصول ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
   },
   "patreonIntegrationTitle": {
     "message": "تكامل Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "استخدم ترجمات Patreon ومعاينات الخط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Patreon دون طلبات إضافية إلى Mux."
+    "message": "ترجمات ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
   },
   "twitchIntegrationTitle": {
     "message": "تكامل Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "استخدم فصول فيديوهات Twitch ومعاينات المخطط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Twitch دون طلبات إضافية إلى شبكات Twitch."
+    "message": "فصول الفيديو المسجل ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح."
   },
   "disneyIntegrationTitle": {
     "message": "تكامل Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "استخدم ترجمات Disney+ ومعاينات الشريط الزمني في وضع المسرح عندما تتوفر في جلسة التشغيل. أوقف الخيار للإبقاء على وضع المسرح في Disney+ دون طلبات إضافية إلى شبكات Disney."
+    "message": "ترجمات ومعاينات عند تمرير المؤشر على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
   },
   "liveBadge": {
     "message": "مباشر"

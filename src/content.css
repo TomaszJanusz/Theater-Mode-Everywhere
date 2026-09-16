@@ -1,13 +1,15 @@
 /* CSS styles for Theater Everywhere extension */
 
 /*
- * Player chrome lives in #theater-everywhere-ui's shadow root so page stylesheets
- * cannot restyle it. :host applies only inside that shadow tree. The host itself
- * is also reset from JS (inline !important) because inherited font/color still
- * pierce shadow DOM from the page.
+ * Player chrome lives in #theater-everywhere-ui's shadow root so page
+ * stylesheets cannot restyle it. The host sits in the page light DOM: this
+ * content-script ID rule is the shield against page CSS. :host carries the
+ * same layout inside the shadow sheet so the overlay does not need inline
+ * !important on the host element.
  */
-#theater-everywhere-ui {
-  all: initial;
+#theater-everywhere-ui,
+:host {
+  all: initial !important;
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
@@ -15,13 +17,6 @@
   display: block !important;
   pointer-events: none !important;
   z-index: 2147483647 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  line-height: 1.4 !important;
-  color: #f8fafc !important;
-}
-
-:host {
-  all: initial;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1.4 !important;
   color: #f8fafc !important;
@@ -686,12 +681,12 @@
   border-radius: 4px !important;
   overflow: hidden !important;
   background-color: #111 !important;
-  max-width: 160px !important;
-  max-height: 90px !important;
+  max-width: 250px !important;
+  max-height: 160px !important;
 }
 
 .theater-scrubber-chapter-title {
-  max-width: 180px !important;
+  max-width: 250px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 1.3 !important;

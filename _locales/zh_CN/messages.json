@@ -133,31 +133,31 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "在剧场模式中使用 YouTube 字幕、章节和时间轴预览。关闭后仍可在 YouTube 使用剧场模式，但不会向 YouTube 发起额外请求。"
+    "message": "在剧场模式中提供字幕、章节和时间轴悬停预览。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "在剧场模式中使用 Vimeo 章节标记和时间轴预览。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
+    "message": "在剧场模式中提供章节标记和时间轴悬停预览。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 集成"
   },
   "patreonIntegrationDescription": {
-    "message": "在剧场模式中使用 Patreon 字幕和时间轴预览。关闭后仍可在 Patreon 使用剧场模式，但不会向 Mux 发起额外请求。"
+    "message": "在剧场模式中提供字幕和时间轴悬停预览。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 集成"
   },
   "twitchIntegrationDescription": {
-    "message": "在剧场模式中使用 Twitch VOD 章节和时间轴预览。关闭后仍可在 Twitch 使用剧场模式，但不会向 Twitch CDN 发起额外请求。"
+    "message": "在剧场模式中提供点播章节和时间轴悬停预览。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 集成"
   },
   "disneyIntegrationDescription": {
-    "message": "当播放会话包含字幕和进度条预览时，在剧场模式中使用它们。关闭后仍可在 Disney+ 使用剧场模式，且不会向 Disney CDN 发出额外请求。"
+    "message": "在剧场模式中提供字幕和时间轴悬停预览（若播放器提供这些内容）。"
   },
   "liveBadge": {
     "message": "直播"

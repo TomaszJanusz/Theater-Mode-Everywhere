@@ -133,31 +133,31 @@
     "message": "Інтеграція з YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Субтитри, розділи та прев’ю шкали часу YouTube у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на YouTube без додаткових запитів до YouTube."
+    "message": "Субтитри, розділи та прев’ю кадрів на шкалі часу в режимі кінотеатру."
   },
   "vimeoIntegrationTitle": {
     "message": "Інтеграція з Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Мітки розділів і мініатюри шкали часу Vimeo у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Vimeo без додаткових запитів до Vimeo."
+    "message": "Мітки розділів і прев’ю кадрів на шкалі часу в режимі кінотеатру."
   },
   "patreonIntegrationTitle": {
     "message": "Інтеграція з Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Субтитри та прев’ю шкали часу Patreon у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Patreon без додаткових запитів до Mux."
+    "message": "Субтитри та прев’ю кадрів на шкалі часу в режимі кінотеатру."
   },
   "twitchIntegrationTitle": {
     "message": "Інтеграція з Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Розділи та прев’ю шкали часу VOD Twitch у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Twitch без додаткових запитів до CDN Twitch."
+    "message": "Розділи VOD і прев’ю кадрів на шкалі часу в режимі кінотеатру."
   },
   "disneyIntegrationTitle": {
     "message": "Інтеграція Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Субтитри та прев’ю шкали Disney+ у театральному режимі, якщо вони є в сесії відтворення. Вимкніть, щоб залишити театральний режим на Disney+ без додаткових запитів до CDN Disney."
+    "message": "Субтитри та прев’ю кадрів на шкалі часу в режимі кінотеатру, якщо програвач їх надає."
   },
   "liveBadge": {
     "message": "ЕФІР"

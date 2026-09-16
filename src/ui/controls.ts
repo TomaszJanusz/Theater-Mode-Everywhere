@@ -1,6 +1,7 @@
 import { DISNEY_CLOCK_EVENT } from '../media-features/parsers/disney-page';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
+import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
 import {
@@ -885,7 +886,7 @@ export function createControls(ctx: PlayerChromeContext) {
         const preview = document.createElement('div');
         preview.className = 'theater-scrubber-preview';
         const image = extras.preview.image;
-        const displayWidth = Math.min(160, image.tileWidth);
+        const displayWidth = PREVIEW_DISPLAY_WIDTH;
         const scale = displayWidth / image.tileWidth;
         preview.style.width = `${displayWidth}px`;
         preview.style.height = `${Math.round(image.tileHeight * scale)}px`;
