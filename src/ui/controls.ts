@@ -385,12 +385,6 @@ export function createControls(ctx: PlayerChromeContext) {
       return `${m}:${sStr}`;
     };
 
-    const lockTimeDisplayWidth = (duration: number) => {
-      if (!Number.isFinite(duration) || duration <= 0 || duration === Infinity) return;
-      const end = formatTime(duration);
-      timeDisplay.style.setProperty('--theater-time-width', `${(`-${end} / ${end}`).length}ch`);
-    };
-
     let showRemainingTime = false;
     timeDisplay.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -432,7 +426,6 @@ export function createControls(ctx: PlayerChromeContext) {
         return;
       }
       const dur = window.end;
-      lockTimeDisplayWidth(dur);
       if (showRemainingTime) {
         const remaining = Math.max(0, dur - cur);
         timeDisplay.textContent = `-${formatTime(remaining)} / ${formatTime(dur)}`;

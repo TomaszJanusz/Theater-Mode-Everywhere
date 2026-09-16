@@ -20,13 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Live streams now show a LIVE badge, map the scrubber onto the DVR `seekable` window when one exists, hide seeking on unseekable live, and hide the speed control on all live. Detection is generic from the media element (`duration === Infinity`, sliding DVR ranges) plus host live hints such as YouTube `getVideoData().isLive`, because YouTube Live reports a growing finite duration that would otherwise look like a VOD. On seekable live, clicking LIVE jumps to the live edge.
 - Twitch VODs now use page `seekPreviewsURL` sprites for timeline hover previews and `video.moments` game-change markers as chapters, without calling Helix or `gql.twitch.tv`.
 - Disney+ theater extras harvest the page's playback JSON and thumbnail index (never by calling BAM GraphQL from the extension). Captions come from the signed HLS master on `*.dssott.com` (`#EXT-X-MEDIA` subtitle playlists and WebVTT segments). Hover previews use the MAIN Roku BIF the page already fetched.
-- YouTube theater extras now draw the Most Replayed heatmap above the seek bar from watch-page JSON (`MARKER_TYPE_HEATMAP` / legacy `HEATSEEKER`) already loaded by the player, with the native SVG path as fallback. The chart uses a white ridge and a fade-to-transparent fill. Hovering the bar lifts thumbnails above the chart and fades the heatmap to the right of the pin. The extension does not POST extra InnerTube requests for it.
+- YouTube theater extras now draw the Most Replayed heatmap above the seek bar from watch-page JSON (`MARKER_TYPE_HEATMAP` / legacy `HEATSEEKER`) already loaded by the player, with the native SVG path as fallback. The chart appears when hovering the seek bar, uses a white ridge and a fade-to-transparent fill, and tints the played side to the accent color. The extension does not POST extra InnerTube requests for it.
 
 ### Changed
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
 - Privacy policy now describes in-session provider requests for captions and timeline previews.
 - Timeline hover previews now open from the same height as the volume and speed popovers.
-- The theater clock keeps a fixed width (tabular digits, reserved remaining-time slot) so the scrubber no longer jumps as seconds tick.
+- The theater clock uses tabular digits and a duration-stable format so ticking seconds do not resize the scrubber.
 - Seekable live that is behind the live edge keeps a LIVE label in the control bar, in the same color as VOD time, instead of a negative clock that can jitter by a second. Hovering the scrubber still shows how far behind you are.
 - Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.

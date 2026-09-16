@@ -99,7 +99,7 @@
   bottom: 24px !important;
   left: 24px !important;
   right: 24px !important;
-  z-index: 2147483647 !important;
+  z-index: 2147483646 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
@@ -232,15 +232,40 @@
   overflow: visible !important;
   display: block !important;
   visibility: hidden !important;
+  opacity: 0 !important;
   background: transparent !important;
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.12s !important;
 }
 
 .theater-scrubber-heatmap.theater-scrubber-heatmap-ready {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.theater-scrubber-container:hover .theater-scrubber-heatmap.theater-scrubber-heatmap-ready,
+.theater-scrubber-container.dragging .theater-scrubber-heatmap.theater-scrubber-heatmap-ready {
   visibility: visible !important;
+  opacity: 1 !important;
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s !important;
 }
 
 .theater-scrubber-heatmap-path {
   stroke: none !important;
+}
+
+.theater-scrubber-heatmap-glow-layer {
+  overflow: visible !important;
+  filter: blur(8px) !important;
+}
+
+.theater-scrubber-heatmap-glow {
+  fill: none !important;
+  stroke: rgba(0, 0, 0, 0.175) !important;
+  stroke-width: 16px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  vector-effect: non-scaling-stroke;
+  transform: translateY(-6px);
 }
 
 .theater-scrubber-heatmap-stroke {
@@ -252,18 +277,50 @@
   vector-effect: non-scaling-stroke;
 }
 
-.theater-scrubber-heatmap-scrubbing {
+.theater-heatmap-fill-white {
+  stop-color: #ffffff;
+}
+
+.theater-heatmap-fill-accent {
+  stop-color: var(--accent-color, #6366f1);
+}
+
+.theater-scrubber-heatmap-played {
+  visibility: hidden !important;
+}
+
+.theater-scrubber-heatmap-played .theater-scrubber-heatmap-stroke {
+  stroke: color-mix(in srgb, var(--accent-color, #6366f1) 75%, transparent) !important;
+}
+
+.theater-scrubber-heatmap-scrubbing .theater-scrubber-heatmap-played {
+  visibility: visible !important;
   -webkit-mask-image: linear-gradient(
     to right,
     #ffffff 0,
-    #ffffff var(--theater-heatmap-hover, 100%),
-    rgba(255, 255, 255, 0.22) var(--theater-heatmap-hover, 100%)
+    #ffffff var(--theater-heatmap-hover, 0%),
+    transparent var(--theater-heatmap-hover, 0%)
   ) !important;
   mask-image: linear-gradient(
     to right,
     #ffffff 0,
-    #ffffff var(--theater-heatmap-hover, 100%),
-    rgba(255, 255, 255, 0.22) var(--theater-heatmap-hover, 100%)
+    #ffffff var(--theater-heatmap-hover, 0%),
+    transparent var(--theater-heatmap-hover, 0%)
+  ) !important;
+}
+
+.theater-scrubber-heatmap-scrubbing .theater-scrubber-heatmap-remaining {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent var(--theater-heatmap-hover, 0%),
+    #ffffff var(--theater-heatmap-hover, 0%)
+  ) !important;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent var(--theater-heatmap-hover, 0%),
+    #ffffff var(--theater-heatmap-hover, 0%)
   ) !important;
 }
 
@@ -543,11 +600,7 @@
   user-select: none !important;
   margin-inline-start: 6px !important;
   white-space: nowrap !important;
-  display: inline-block !important;
   flex-shrink: 0 !important;
-  text-align: start !important;
-  box-sizing: content-box !important;
-  min-width: var(--theater-time-width, 11ch) !important;
 }
 
 .theater-time-display.theater-time-live {
