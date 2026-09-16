@@ -133,31 +133,31 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "シアターモードで字幕、チャプター、タイムラインのサムネイルを有効にします。"
+    "message": "シアターモードで字幕、チャプター、タイムラインのサムネイルのサポートを有効にします。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "シアターモードでチャプターマーカーとタイムラインのサムネイルを有効にします。"
+    "message": "シアターモードでチャプターマーカーとタイムラインのサムネイルのサポートを有効にします。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon連携"
   },
   "patreonIntegrationDescription": {
-    "message": "シアターモードで字幕とタイムラインのサムネイルを有効にします。"
+    "message": "シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch連携"
   },
   "twitchIntegrationDescription": {
-    "message": "シアターモードでVODチャプターとタイムラインのサムネイルを有効にします。"
+    "message": "シアターモードでVODチャプターとタイムラインのサムネイルのサポートを有効にします。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 連携"
   },
   "disneyIntegrationDescription": {
-    "message": "プレーヤーが提供する場合、シアターモードで字幕とタイムラインのサムネイルを有効にします。"
+    "message": "プレーヤーが提供する場合、シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
   },
   "liveBadge": {
     "message": "配信中"

@@ -133,31 +133,31 @@
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Enables captions, chapters, and thumbnails on the timeline in theater mode."
+    "message": "Enables support for captions, chapters, and thumbnails on the timeline in theater mode."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Enables chapter markers and thumbnails on the timeline in theater mode."
+    "message": "Enables support for chapter markers and thumbnails on the timeline in theater mode."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Enables captions and thumbnails on the timeline in theater mode."
+    "message": "Enables support for captions and thumbnails on the timeline in theater mode."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Enables VOD chapters and thumbnails on the timeline in theater mode."
+    "message": "Enables support for VOD chapters and thumbnails on the timeline in theater mode."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Enables captions and thumbnails on the timeline in theater mode when the player provides them."
+    "message": "Enables support for captions and thumbnails on the timeline in theater mode when the player provides them."
   },
   "liveBadge": {
     "message": "LIVE"

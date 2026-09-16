@@ -133,31 +133,31 @@
     "message": "YouTube 연동"
   },
   "youtubeIntegrationDescription": {
-    "message": "극장 모드에서 자막, 챕터, 타임라인 썸네일을 켭니다."
+    "message": "극장 모드에서 자막, 챕터, 타임라인 썸네일 지원을 켭니다."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 연동"
   },
   "vimeoIntegrationDescription": {
-    "message": "극장 모드에서 챕터 표시와 타임라인 썸네일을 켭니다."
+    "message": "극장 모드에서 챕터 표시와 타임라인 썸네일 지원을 켭니다."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 연동"
   },
   "patreonIntegrationDescription": {
-    "message": "극장 모드에서 자막과 타임라인 썸네일을 켭니다."
+    "message": "극장 모드에서 자막과 타임라인 썸네일 지원을 켭니다."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 연동"
   },
   "twitchIntegrationDescription": {
-    "message": "극장 모드에서 VOD 챕터와 타임라인 썸네일을 켭니다."
+    "message": "극장 모드에서 VOD 챕터와 타임라인 썸네일 지원을 켭니다."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 통합"
   },
   "disneyIntegrationDescription": {
-    "message": "플레이어가 제공하는 경우 극장 모드에서 자막과 타임라인 썸네일을 켭니다."
+    "message": "플레이어가 제공하는 경우 극장 모드에서 자막과 타임라인 썸네일 지원을 켭니다."
   },
   "liveBadge": {
     "message": "실시간"

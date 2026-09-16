@@ -133,31 +133,31 @@
     "message": "Integrazione YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Attiva sottotitoli, capitoli e miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per sottotitoli, capitoli e miniature sulla timeline in modalità teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integrazione Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Attiva i marcatori dei capitoli e le miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per i marcatori dei capitoli e le miniature sulla timeline in modalità teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integrazione Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Attiva sottotitoli e miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integrazione Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Attiva i capitoli dei VOD e le miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per i capitoli dei VOD e le miniature sulla timeline in modalità teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integrazione Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Attiva sottotitoli e miniature sulla timeline in modalità teatro quando il lettore li fornisce."
+    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità teatro quando il lettore li fornisce."
   },
   "liveBadge": {
     "message": "LIVE"

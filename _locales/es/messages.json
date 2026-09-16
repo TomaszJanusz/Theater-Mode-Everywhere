@@ -133,31 +133,31 @@
     "message": "Integración de YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Activa subtítulos, capítulos y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Activa la compatibilidad con subtítulos, capítulos y miniaturas en la línea de tiempo en el modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integración de Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Activa marcadores de capítulos y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Activa la compatibilidad con marcadores de capítulos y miniaturas en la línea de tiempo en el modo teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integración de Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Activa subtítulos y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integración de Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Activa capítulos de VOD y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Activa la compatibilidad con capítulos de VOD y miniaturas en la línea de tiempo en el modo teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integración de Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Activa subtítulos y miniaturas en la línea de tiempo en el modo teatro cuando el reproductor los ofrece."
+    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro cuando el reproductor los ofrece."
   },
   "liveBadge": {
     "message": "EN VIVO"

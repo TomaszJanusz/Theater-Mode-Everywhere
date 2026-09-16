@@ -133,31 +133,31 @@
     "message": "Інтеграція з YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Вмикає субтитри, розділи та мініатюри на шкалі часу в режимі кінотеатру."
+    "message": "Вмикає підтримку субтитрів, розділів та мініатюр на шкалі часу в режимі кінотеатру."
   },
   "vimeoIntegrationTitle": {
     "message": "Інтеграція з Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Вмикає мітки розділів і мініатюри на шкалі часу в режимі кінотеатру."
+    "message": "Вмикає підтримку міток розділів і мініатюр на шкалі часу в режимі кінотеатру."
   },
   "patreonIntegrationTitle": {
     "message": "Інтеграція з Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Вмикає субтитри та мініатюри на шкалі часу в режимі кінотеатру."
+    "message": "Вмикає підтримку субтитрів та мініатюр на шкалі часу в режимі кінотеатру."
   },
   "twitchIntegrationTitle": {
     "message": "Інтеграція з Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Вмикає розділи VOD і мініатюри на шкалі часу в режимі кінотеатру."
+    "message": "Вмикає підтримку розділів VOD і мініатюр на шкалі часу в режимі кінотеатру."
   },
   "disneyIntegrationTitle": {
     "message": "Інтеграція Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Вмикає субтитри та мініатюри на шкалі часу в режимі кінотеатру, якщо програвач їх надає."
+    "message": "Вмикає підтримку субтитрів та мініатюр на шкалі часу в режимі кінотеатру, якщо програвач їх надає."
   },
   "liveBadge": {
     "message": "ЕФІР"

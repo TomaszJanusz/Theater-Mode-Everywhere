@@ -133,31 +133,31 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Active les sous-titres, les chapitres et les miniatures sur la timeline en mode cinéma."
+    "message": "Active la prise en charge des sous-titres, des chapitres et des miniatures sur la timeline en mode cinéma."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Active les marqueurs de chapitres et les miniatures sur la timeline en mode cinéma."
+    "message": "Active la prise en charge des marqueurs de chapitres et des miniatures sur la timeline en mode cinéma."
   },
   "patreonIntegrationTitle": {
     "message": "Intégration Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Active les sous-titres et les miniatures sur la timeline en mode cinéma."
+    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma."
   },
   "twitchIntegrationTitle": {
     "message": "Intégration Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Active les chapitres des VOD et les miniatures sur la timeline en mode cinéma."
+    "message": "Active la prise en charge des chapitres des VOD et des miniatures sur la timeline en mode cinéma."
   },
   "disneyIntegrationTitle": {
     "message": "Intégration Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Active les sous-titres et les miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
+    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
   },
   "liveBadge": {
     "message": "DIRECT"
