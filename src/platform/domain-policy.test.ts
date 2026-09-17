@@ -6,6 +6,7 @@ import {
   removeMatchingBlacklistEntry,
   resolveDomainPolicy
 } from './domain-policy';
+import { removeLegacyYoutubeExclusion } from './legacy-youtube-exclusion';
 
 describe('F-04 domain policy', () => {
   it('matches an exact host and strips www', () => {
@@ -56,6 +57,13 @@ describe('F-04 domain policy', () => {
     assert.deepEqual(
       removeMatchingBlacklistEntry('video.example.com', ['example.com', 'other.test']),
       ['other.test']
+    );
+  });
+
+  it('removes every legacy YouTube exclusion and preserves user rules', () => {
+    assert.deepEqual(
+      removeLegacyYoutubeExclusion(['youtube.com', 'www.youtube.com', 'YouTube.com.', 'vimeo.com']),
+      ['vimeo.com']
     );
   });
 

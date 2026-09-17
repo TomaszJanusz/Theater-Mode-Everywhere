@@ -1,4 +1,8 @@
 import { resolveDomainPolicy } from '../platform/domain-policy';
+import {
+  LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY,
+  removeLegacyYoutubeExclusion
+} from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import {
   shouldAutoOpenWhatsNewOnUpdate,
@@ -117,8 +121,27 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
   return false;
 });
 
+async function migrateLegacyYoutubeExclusion(): Promise<void> {
+  const local = await chrome.storage.local.get(LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY);
+  if (local[LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY]) return;
+
+  const sync = await chrome.storage.sync.get({ blacklist: [] as string[] });
+  const blacklist = Array.isArray(sync.blacklist) ? sync.blacklist : [];
+  const migrated = removeLegacyYoutubeExclusion(blacklist);
+  if (migrated.length !== blacklist.length) {
+    await chrome.storage.sync.set({ blacklist: migrated });
+  }
+  await chrome.storage.local.set({ [LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY]: true });
+}
+
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update') {
+    try {
+      await migrateLegacyYoutubeExclusion();
+    } catch (err) {
+      console.error('[Theater Everywhere] Error migrating legacy YouTube exclusion:', err);
+    }
+
     if (!shouldAutoOpenWhatsNewOnUpdate(details)) return;
 
     try {
