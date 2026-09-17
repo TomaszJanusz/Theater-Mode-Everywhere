@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "تبديل الترجمة"
   },
+  "increaseSubtitleSize": { "message": "تكبير حجم الترجمة" },
+  "decreaseSubtitleSize": { "message": "تصغير حجم الترجمة" },
   "subtitlesTooltip": {
     "message": "الترجمة <kbd>$KEY$</kbd>",
     "placeholders": {

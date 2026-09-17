@@ -1,6 +1,7 @@
 import {
   CAPTION_STYLE_STORAGE_KEY,
   resolveCaptionStyle,
+  stepCaptionFontScale,
   type CaptionStyle
 } from '../media-features/caption-style';
 import {
@@ -51,7 +52,6 @@ import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
 import {
   createHud,
-  STATUS_HUD_CC_ICON,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON
@@ -201,6 +201,12 @@ function executeCommand(command: PlayerCommand): void {
     }
     case 'TOGGLE_CAPTIONS':
       void toggleTheaterCaptions();
+      break;
+    case 'STEP_CAPTION_SIZE':
+      persistCaptionStyle({
+        ...ui().captionStyle,
+        fontScale: stepCaptionFontScale(ui().captionStyle.fontScale, command.direction)
+      });
       break;
     case 'CYCLE_VIDEO':
       cycleTheaterVideo(command.direction);
@@ -392,11 +398,11 @@ function showCaptionHud(payload: CaptionHudPayload): void {
     return;
   }
   if (payload.result === 'none') {
-    triggerCaptionHud({ kind: 'status', title: t('noSubtitlesAvailable'), icon: STATUS_HUD_CC_ICON });
+    triggerCaptionHud({ kind: 'status', title: t('noSubtitlesAvailable') });
     return;
   }
   if (payload.result === 'failed') {
-    triggerCaptionHud({ kind: 'status', title: t('subtitlesLoadFailedHud'), icon: STATUS_HUD_CC_ICON });
+    triggerCaptionHud({ kind: 'status', title: t('subtitlesLoadFailedHud') });
     return;
   }
   if (payload.result === 'on') {
@@ -404,11 +410,10 @@ function showCaptionHud(payload: CaptionHudPayload): void {
       kind: 'status',
       title: t('subtitlesOnHud'),
       ...(payload.label ? { detail: payload.label } : {}),
-      icon: STATUS_HUD_CC_ICON
     });
     return;
   }
-  triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud'), icon: STATUS_HUD_CC_ICON });
+  triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud') });
 }
 
 async function toggleTheaterCaptions(): Promise<void> {
@@ -475,6 +480,12 @@ function applyConfiguredAccentColor(target: HTMLElement): void {
 }
 
 function refreshExtensionAccentColor(): void {
+  // Keep the value on both inheritance roots. Existing chrome nodes can have
+  // their own inline value, so they are refreshed below as well.
+  applyConfiguredAccentColor(document.documentElement);
+  const playerUiHost = document.getElementById('theater-everywhere-ui');
+  if (playerUiHost) applyConfiguredAccentColor(playerUiHost);
+
   const selector = [
     '.theater-controls-wrapper',
     '.theater-loading-indicator',
@@ -664,6 +675,16 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     if (refs.currentToggleFullscreen) {
       refs.currentToggleFullscreen();
     }
+  } else if (matchesShortcut(e, shortcuts.increaseCaptionSize)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
+  } else if (matchesShortcut(e, shortcuts.decreaseCaptionSize)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
   }
 }
 
@@ -709,6 +730,22 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'TOGGLE_CAPTIONS' });
+      return;
+    }
+
+    if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
+      return;
+    }
+
+    if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
       return;
     }
 
@@ -758,7 +795,9 @@ function initialize(): void {
               matchesShortcut(event, shortcuts.seekForward) ||
               matchesShortcut(event, shortcuts.frameBack) ||
               matchesShortcut(event, shortcuts.frameForward) ||
-              matchesShortcut(event, shortcuts.toggleMute)) {
+              matchesShortcut(event, shortcuts.toggleMute) ||
+              matchesShortcut(event, shortcuts.increaseCaptionSize) ||
+              matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();

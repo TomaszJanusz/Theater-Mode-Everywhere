@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Увімкнути або вимкнути субтитри"
   },
+  "increaseSubtitleSize": { "message": "Збільшити розмір субтитрів" },
+  "decreaseSubtitleSize": { "message": "Зменшити розмір субтитрів" },
   "subtitlesTooltip": {
     "message": "Субтитри <kbd>$KEY$</kbd>",
     "placeholders": {

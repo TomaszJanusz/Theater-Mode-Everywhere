@@ -1,5 +1,5 @@
 import type { CaptionStyle } from './caption-style';
-import { applyCaptionStyle } from './caption-style';
+import { applyCaptionStyle, CAPTION_FONT_SCALES, resolveCaptionFontScale } from './caption-style';
 import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
@@ -57,7 +57,7 @@ export async function openCaptionOptionsDialog(options: {
     current.textColor = value;
     commit();
   }));
-  form.appendChild(sliderRow(options.t('subtitleSize'), current.fontScale, 0.75, 1.5, 0.05, (value) => {
+  form.appendChild(captionSizeRow(options.t('subtitleSize'), current.fontScale, (value) => {
     current.fontScale = value;
     commit();
   }));
@@ -123,6 +123,35 @@ export async function openCaptionOptionsDialog(options: {
     }
     options.signal?.addEventListener('abort', onAbort, { once: true });
   });
+}
+
+function captionSizeRow(label: string, value: number, onChange: (value: number) => void): HTMLElement {
+  const row = optionRow(label);
+  row.classList.add('theater-caption-size-row');
+
+  const control = document.createElement('div');
+  control.className = 'theater-caption-size-control';
+  const input = document.createElement('input');
+  input.type = 'range';
+  input.className = 'theater-caption-slider';
+  input.min = '0';
+  input.max = String(CAPTION_FONT_SCALES.length - 1);
+  input.step = '1';
+  input.value = String(CAPTION_FONT_SCALES.indexOf(resolveCaptionFontScale(value) as typeof CAPTION_FONT_SCALES[number]));
+  input.setAttribute('aria-label', label);
+  input.addEventListener('input', () => onChange(CAPTION_FONT_SCALES[Number(input.value)]));
+
+  const marks = document.createElement('div');
+  marks.className = 'theater-caption-size-marks';
+  CAPTION_FONT_SCALES.forEach((scale) => {
+    const mark = document.createElement('span');
+    mark.textContent = `${scale * 100}%`;
+    marks.appendChild(mark);
+  });
+
+  control.append(input, marks);
+  row.appendChild(control);
+  return row;
 }
 
 function colorRow(label: string, value: string, onChange: (value: string) => void): HTMLElement {

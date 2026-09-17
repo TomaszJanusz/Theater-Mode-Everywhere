@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Włącz/wyłącz napisy"
   },
+  "increaseSubtitleSize": { "message": "Powiększ napisy" },
+  "decreaseSubtitleSize": { "message": "Zmniejsz napisy" },
   "subtitlesTooltip": {
     "message": "Napisy <kbd>$KEY$</kbd>",
     "placeholders": {

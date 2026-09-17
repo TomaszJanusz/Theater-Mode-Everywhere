@@ -23,10 +23,18 @@ function key(partial: {
 describe('shortcut matching', () => {
   it('defaults mute to M', () => {
     assert.equal(defaultShortcuts.toggleMute, 'M');
+    assert.equal(defaultShortcuts.increaseCaptionSize, '+');
+    assert.equal(defaultShortcuts.decreaseCaptionSize, '-');
   });
 
   it('matches a standalone plus key', () => {
     assert.equal(matchesShortcut(key({ key: '+', shiftKey: true, code: 'Equal' }), '+'), true);
+  });
+
+  it('matches compatible Shift+= and numpad plus events, but not bare equals', () => {
+    assert.equal(matchesShortcut(key({ key: '=', shiftKey: true, code: 'Equal' }), '+'), true);
+    assert.equal(matchesShortcut(key({ key: '+', code: 'NumpadAdd' }), '+'), true);
+    assert.equal(matchesShortcut(key({ key: '=', code: 'Equal' }), '+'), false);
   });
 
   it('matches Ctrl++ without dropping the plus', () => {

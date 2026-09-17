@@ -18,6 +18,7 @@ export type PlayerCommand =
   | { type: 'PLAY_PAUSE' }
   | { type: 'SEEK_BY'; delta: number }
   | { type: 'TOGGLE_CAPTIONS' }
+  | { type: 'STEP_CAPTION_SIZE'; direction: 1 | -1 }
   | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
   | { type: 'CYCLE_FIT' }
   | { type: 'TOGGLE_HELP' };

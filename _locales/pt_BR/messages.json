@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Ativar ou desativar legendas"
   },
+  "increaseSubtitleSize": { "message": "Aumentar tamanho das legendas" },
+  "decreaseSubtitleSize": { "message": "Diminuir tamanho das legendas" },
   "subtitlesTooltip": {
     "message": "Legendas <kbd>$KEY$</kbd>",
     "placeholders": {

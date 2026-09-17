@@ -36,6 +36,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   disableSubtitles: 'Disable Subtitles',
   enableSubtitles: 'Enable Subtitles',
   toggleSubtitles: 'Toggle Subtitles',
+  increaseSubtitleSize: 'Increase Subtitle Size',
+  decreaseSubtitleSize: 'Decrease Subtitle Size',
   subtitlesTooltip: 'Subtitles <kbd>$1</kbd>',
   subtitlesOnHud: 'Subtitles on',
   subtitlesOnNamedHud: 'Subtitles on: $1',

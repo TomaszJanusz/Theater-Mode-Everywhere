@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "字幕のオン/オフ"
   },
+  "increaseSubtitleSize": { "message": "字幕を大きくする" },
+  "decreaseSubtitleSize": { "message": "字幕を小さくする" },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {

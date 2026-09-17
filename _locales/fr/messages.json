@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Activer ou désactiver les sous-titres"
   },
+  "increaseSubtitleSize": { "message": "Augmenter la taille des sous-titres" },
+  "decreaseSubtitleSize": { "message": "Réduire la taille des sous-titres" },
   "subtitlesTooltip": {
     "message": "Sous-titres <kbd>$KEY$</kbd>",
     "placeholders": {

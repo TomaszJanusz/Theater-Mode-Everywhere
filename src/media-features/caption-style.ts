@@ -2,6 +2,8 @@ import { clampNumber } from './sanitize';
 
 export const CAPTION_STYLE_STORAGE_KEY = 'captionStyle';
 
+export const CAPTION_FONT_SCALES = [0.5, 1, 1.5, 2, 3, 4] as const;
+
 export type CaptionStyle = {
   textColor: string;
   fontScale: number;
@@ -26,13 +28,26 @@ export function resolveCaptionStyle(value: unknown): CaptionStyle {
   const backgroundOpacity = Number(raw.backgroundOpacity);
   return {
     textColor: parseHexColor(raw.textColor, DEFAULT_CAPTION_STYLE.textColor),
-    fontScale: Number.isFinite(fontScale) ? clampNumber(fontScale, 0.75, 1.5) : DEFAULT_CAPTION_STYLE.fontScale,
+    fontScale: Number.isFinite(fontScale) ? resolveCaptionFontScale(fontScale) : DEFAULT_CAPTION_STYLE.fontScale,
     dropShadow: raw.dropShadow === true,
     backgroundColor: parseHexColor(raw.backgroundColor, DEFAULT_CAPTION_STYLE.backgroundColor),
     backgroundOpacity: Number.isFinite(backgroundOpacity)
       ? clampNumber(backgroundOpacity, 0, 1)
       : DEFAULT_CAPTION_STYLE.backgroundOpacity
   };
+}
+
+export function resolveCaptionFontScale(value: number): number {
+  const bounded = clampNumber(value, CAPTION_FONT_SCALES[0], CAPTION_FONT_SCALES[CAPTION_FONT_SCALES.length - 1]);
+  return CAPTION_FONT_SCALES.reduce((closest, candidate) => (
+    Math.abs(candidate - bounded) < Math.abs(closest - bounded) ? candidate : closest
+  ));
+}
+
+export function stepCaptionFontScale(value: number, direction: 1 | -1): number {
+  const current = resolveCaptionFontScale(value);
+  const index = CAPTION_FONT_SCALES.indexOf(current as typeof CAPTION_FONT_SCALES[number]);
+  return CAPTION_FONT_SCALES[Math.max(0, Math.min(CAPTION_FONT_SCALES.length - 1, index + direction))];
 }
 
 export function applyCaptionStyle(target: HTMLElement, style: CaptionStyle): void {

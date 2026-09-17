@@ -56,6 +56,8 @@ interface Shortcuts {
   showHelp: string;
   cycleFit: string;
   toggleCaptions: string;
+  increaseCaptionSize: string;
+  decreaseCaptionSize: string;
 }
 
 const defaultShortcuts: Shortcuts = {
@@ -74,7 +76,9 @@ const defaultShortcuts: Shortcuts = {
   togglePiP: 'P',
   showHelp: 'H',
   cycleFit: 'Z',
-  toggleCaptions: 'C'
+  toggleCaptions: 'C',
+  increaseCaptionSize: '+',
+  decreaseCaptionSize: '-'
 };
 
 function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
@@ -421,6 +425,8 @@ async function init() {
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
     const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
     const toggleCaptionsInput = document.getElementById('shortcut-toggle-captions') as HTMLInputElement;
+    const increaseCaptionSizeInput = document.getElementById('shortcut-increase-caption-size') as HTMLInputElement;
+    const decreaseCaptionSizeInput = document.getElementById('shortcut-decrease-caption-size') as HTMLInputElement;
 
     if (toggleInput) toggleInput.value = shortcuts.toggle || defaultShortcuts.toggle;
     if (exitInput) exitInput.value = shortcuts.exit || defaultShortcuts.exit;
@@ -438,6 +444,8 @@ async function init() {
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
     if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
     if (toggleCaptionsInput) toggleCaptionsInput.value = shortcuts.toggleCaptions || defaultShortcuts.toggleCaptions;
+    if (increaseCaptionSizeInput) increaseCaptionSizeInput.value = shortcuts.increaseCaptionSize || defaultShortcuts.increaseCaptionSize;
+    if (decreaseCaptionSizeInput) decreaseCaptionSizeInput.value = shortcuts.decreaseCaptionSize || defaultShortcuts.decreaseCaptionSize;
   }
 
   async function loadAndRenderShortcuts() {
@@ -516,6 +524,8 @@ async function init() {
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
           else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-captions') shortcuts.toggleCaptions = shortcutStr;
+          else if (shortcutId === 'shortcut-increase-caption-size') shortcuts.increaseCaptionSize = shortcutStr;
+          else if (shortcutId === 'shortcut-decrease-caption-size') shortcuts.decreaseCaptionSize = shortcutStr;
 
           await chrome.storage.sync.set({ shortcuts });
           await notifyAllTabs();

@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "开关字幕"
   },
+  "increaseSubtitleSize": { "message": "增大字幕大小" },
+  "decreaseSubtitleSize": { "message": "减小字幕大小" },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {

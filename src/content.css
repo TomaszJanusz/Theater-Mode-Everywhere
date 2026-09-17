@@ -900,7 +900,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   padding: 6px 12px !important;
   border-radius: 6px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: calc(clamp(16px, 2.4vw, 28px) * var(--theater-caption-scale, 1)) !important;
+  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
   white-space: pre-wrap !important;
@@ -1048,7 +1048,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 video::cue {
   background-color: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
   color: var(--theater-caption-color, #ffffff) !important;
-  font-size: calc(16px * var(--theater-caption-scale, 1)) !important;
+  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
 }
@@ -1400,6 +1400,12 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   text-align: right !important;
 }
 
+.caption-hud-content {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 22rem !important;
+}
+
 .theater-everywhere-caption-hud[dir="rtl"] .volume-hud-copy {
   align-items: flex-start !important;
   text-align: left !important;
@@ -1601,6 +1607,31 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: var(--accent-color, #6366f1) !important;
   border: none !important;
   cursor: pointer !important;
+}
+
+.theater-caption-size-row {
+  align-items: flex-start !important;
+}
+
+.theater-caption-size-control {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 220px !important;
+  gap: 5px !important;
+}
+
+.theater-caption-size-control .theater-caption-slider {
+  width: 100% !important;
+}
+
+.theater-caption-size-marks {
+  display: flex !important;
+  justify-content: space-between !important;
+  color: #a1a1aa !important;
+  font-size: 10px !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1 !important;
 }
 
 .theater-caption-toggle {

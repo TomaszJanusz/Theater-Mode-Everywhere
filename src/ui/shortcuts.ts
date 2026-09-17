@@ -15,6 +15,8 @@ export interface Shortcuts {
   showHelp: string;
   cycleFit: string;
   toggleCaptions: string;
+  increaseCaptionSize: string;
+  decreaseCaptionSize: string;
 }
 
 export const defaultShortcuts: Shortcuts = {
@@ -33,7 +35,9 @@ export const defaultShortcuts: Shortcuts = {
   togglePiP: 'P',
   showHelp: 'H',
   cycleFit: 'Z',
-  toggleCaptions: 'C'
+  toggleCaptions: 'C',
+  increaseCaptionSize: '+',
+  decreaseCaptionSize: '-'
 };
 
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
@@ -67,7 +71,12 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
   }
 
   const targetKey = mainKey.toUpperCase();
-  if (eventKey !== targetKey && e.code.toUpperCase() !== targetKey) return false;
+  const isCompatiblePlus = targetKey === '+' && (
+    eventKey === '+'
+    || e.code === 'NumpadAdd'
+    || (e.shiftKey && (eventKey === '=' || e.code === 'Equal'))
+  );
+  if (!isCompatiblePlus && eventKey !== targetKey && e.code.toUpperCase() !== targetKey) return false;
 
   const hasCtrl = parts.includes('Ctrl');
   const hasAlt = parts.includes('Alt');

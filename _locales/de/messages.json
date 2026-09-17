@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Untertitel umschalten"
   },
+  "increaseSubtitleSize": { "message": "Untertitel vergrößern" },
+  "decreaseSubtitleSize": { "message": "Untertitel verkleinern" },
   "subtitlesTooltip": {
     "message": "Untertitel <kbd>$KEY$</kbd>",
     "placeholders": {

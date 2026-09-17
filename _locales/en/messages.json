@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "Toggle Subtitles"
   },
+  "increaseSubtitleSize": { "message": "Increase Subtitle Size" },
+  "decreaseSubtitleSize": { "message": "Decrease Subtitle Size" },
   "subtitlesTooltip": {
     "message": "Subtitles <kbd>$KEY$</kbd>",
     "placeholders": {

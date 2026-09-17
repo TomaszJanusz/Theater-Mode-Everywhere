@@ -231,6 +231,8 @@
   "toggleSubtitles": {
     "message": "자막 켜기/끄기"
   },
+  "increaseSubtitleSize": { "message": "자막 크기 키우기" },
+  "decreaseSubtitleSize": { "message": "자막 크기 줄이기" },
   "subtitlesTooltip": {
     "message": "자막 <kbd>$KEY$</kbd>",
     "placeholders": {
