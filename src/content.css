@@ -36,6 +36,7 @@
   min-width: 100vw !important;
   min-height: 100vh !important;
   z-index: 2147483647 !important;
+  background: #000000 !important;
   background-color: #000000 !important;
   object-fit: var(--theater-object-fit, contain) !important;
   opacity: 1 !important;
@@ -70,6 +71,31 @@
   mask: none !important;
   will-change: auto !important;
   z-index: 2147483647 !important;
+}
+
+/* Disney+ overwrites video.className (dropping theater-everywhere-video-active),
+ * so the CSS black background is lost and body rgb(23,23,27) shows through the
+ * EME letterbox. Stage + body black survive that; DxcOverlay is the title/back chrome. */
+#theater-everywhere-disney-stage {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000000 !important;
+  z-index: 2147483645 !important;
+  pointer-events: none !important;
+}
+
+html.theater-everywhere-disney-stage,
+html.theater-everywhere-disney-stage body {
+  background: #000000 !important;
+}
+
+html.theater-everywhere-disney-stage .DxcOverlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Hide scrollbars on the document when theater mode is active */

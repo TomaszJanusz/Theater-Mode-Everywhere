@@ -23,9 +23,15 @@ import {
   toggleVideoPlayback
 } from '../host-play';
 import {
+  cancelPendingSeekResume,
   seekBy,
   seekToMediaTime
 } from '../playback-window';
+import {
+  applyTheaterViewportPin,
+  mountDisneyTheaterStage,
+  unmountDisneyTheaterStage
+} from './theater-layout';
 import {
   queryPlayerUi,
   queryPlayerUiAll
@@ -187,7 +193,9 @@ function executeCommand(command: PlayerCommand): void {
     case 'PLAY_PAUSE': {
       const host = session.element;
       if (host?.tagName === 'VIDEO') {
-        toggleVideoPlayback(host as HTMLVideoElement);
+        const video = host as HTMLVideoElement;
+        cancelPendingSeekResume(video);
+        toggleVideoPlayback(video);
       }
       break;
     }
@@ -287,6 +295,8 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   scale: 'none',
   'transform-style': 'flat',
   transition: 'none',
+  background: '#000000',
+  'background-color': '#000000',
 };
 
 type SavedInlineStyle = {
@@ -323,9 +333,21 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
   }
 
   Object.entries(styles).forEach(([property, value]) => {
+    if (property === 'top' || property === 'left') return;
+    if (element.style.getPropertyValue(property) === value && element.style.getPropertyPriority(property) === 'important') {
+      return;
+    }
     element.style.setProperty(property, value, 'important');
   });
-  element.style.setProperty('--theater-object-fit', ui().videoFit);
+  if (element.style.getPropertyValue('--theater-object-fit') !== ui().videoFit) {
+    element.style.setProperty('--theater-object-fit', ui().videoFit);
+  }
+  for (const property of ['top', 'left'] as const) {
+    if (!element.style.getPropertyValue(property)) {
+      element.style.setProperty(property, '0px', 'important');
+    }
+  }
+  applyTheaterViewportPin(element);
 }
 
 function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
@@ -990,10 +1012,19 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     }
   };
 
+  let ignoreStyleMutations = 0;
   const stabilizeLayout = (target: HTMLVideoElement): void => {
     if (session.element !== target) return;
-    applyTheaterElementInlineStyles(target);
-    refreshHostPlayerLayout();
+    ignoreStyleMutations += 1;
+    try {
+      target.classList.add('theater-everywhere-video-active');
+      applyTheaterElementInlineStyles(target);
+      refreshHostPlayerLayout();
+    } finally {
+      queueMicrotask(() => {
+        ignoreStyleMutations -= 1;
+      });
+    }
   };
 
   const stabilizeAfterMediaLoad = (): void => {
@@ -1021,6 +1052,26 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   session.runtimeScope.add(() => observer.disconnect());
+
+  const styleObserver = new MutationObserver(() => {
+    if (ignoreStyleMutations > 0 || session.element !== video) return;
+    const missingClass = !video.classList.contains('theater-everywhere-video-active');
+    const rect = video.getBoundingClientRect();
+    const offViewport =
+      Math.abs(rect.top) > 1
+      || Math.abs(rect.left) > 1
+      || Math.abs(rect.width - window.innerWidth) > 2
+      || Math.abs(rect.height - window.innerHeight) > 2;
+    if (!missingClass && !offViewport) return;
+    stabilizeLayout(video);
+  });
+  styleObserver.observe(video, { attributes: true, attributeFilter: ['style', 'class'] });
+  session.runtimeScope.add(() => styleObserver.disconnect());
+  session.runtimeScope.listen(window, 'resize', () => stabilizeLayout(video));
+  if (window.visualViewport) {
+    session.runtimeScope.listen(window.visualViewport, 'resize', () => stabilizeLayout(video));
+    session.runtimeScope.listen(window.visualViewport, 'scroll', () => stabilizeLayout(video));
+  }
 }
 
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
@@ -1118,6 +1169,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');
   document.documentElement.classList.add('theater-everywhere-html-active');
+  mountDisneyTheaterStage(window.location.hostname);
 
   // If we are in an iframe, notify the parent document to expand the iframe itself
   if (window !== window.top && session.id) {
@@ -1184,6 +1236,7 @@ function exitTheaterMode(
   // Restore scrollbars
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
+  unmountDisneyTheaterStage();
 
   refreshHostPlayerLayout();
 
@@ -1247,6 +1300,10 @@ export function bootstrapPlayerRuntime(): void {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
+
+      if (changes.blacklist) {
+        void checkBlacklistAndInit();
+      }
 
       if (changes.shortcuts?.newValue) {
         uiStore.dispatch({ type: 'SET_SHORTCUTS', value: withShortcutDefaults(changes.shortcuts.newValue || {}) });

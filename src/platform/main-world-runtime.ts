@@ -429,7 +429,7 @@ export function installMainWorldRuntime(): void {
   });
 
   window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
-    const detail = (event as CustomEvent<{ live?: boolean; time?: number }>).detail || {};
+    const detail = (event as CustomEvent<{ live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean }>).detail || {};
     const video = findActiveVideo(document) || document.querySelector('video');
     if (handleDisneyMediaSeek(detail, video)) return;
     if (handleYoutubeMediaSeek(detail, video)) return;

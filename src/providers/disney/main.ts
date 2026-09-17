@@ -43,8 +43,11 @@ let cachedDisneyPlayer: DisneyHivePlayer | null = null;
 let cachedDisneyPlayerHost: Element | null = null;
 const disneyClockBoundPlayers = new WeakSet<object>();
 let disneyClockTimer = 0;
-let restoreDisneyPauseAfterSeek = false;
+let pauseDisneyAfterSeek = false;
+let resumeDisneyPlaybackAfterSeek = false;
 let pendingDisneySeekTarget: number | null = null;
+let disneyResumeAttemptGeneration = 0;
+let disneySeekGeneration = 0;
 
 function disneyPageMediaId(href = window.location.href): string | null {
   try {
@@ -447,6 +450,34 @@ function disneySessionLooksPaused(): boolean {
   return Boolean(video?.paused || document.querySelector('.btm-media-player-idle'));
 }
 
+function cancelDisneyResumeAttempts(): void {
+  disneyResumeAttemptGeneration += 1;
+}
+
+function resumeDisneyAfterBufferedSeek(player: DisneyHivePlayer, video: HTMLVideoElement | null): void {
+  const generation = ++disneyResumeAttemptGeneration;
+  const resume = () => {
+    if (generation !== disneyResumeAttemptGeneration || !disneySessionLooksPaused()) return;
+    try {
+      player.play?.();
+    } catch {
+      // The player can reject a resume while its media pipeline is reattaching.
+    }
+  };
+
+  // Disney+ can emit seek completion before the target segment is playable.
+  // Retrying after media readiness covers the buffering path without changing
+  // the behavior of a seek that was initiated while paused.
+  resume();
+  if (video) {
+    video.addEventListener('canplay', resume, { once: true });
+    video.addEventListener('canplaythrough', resume, { once: true });
+  }
+  for (const delay of [250, 750, 1_500, 2_500]) {
+    window.setTimeout(resume, delay);
+  }
+}
+
 function applyDisneyHostSeek(
   player: DisneyHivePlayer,
   timeSeconds: number,
@@ -456,7 +487,6 @@ function applyDisneyHostSeek(
   player.seek(ms);
   if (options.playIfIdle) {
     if (disneySessionLooksPaused()) {
-      restoreDisneyPauseAfterSeek = true;
       try {
         player.play?.();
       } catch {
@@ -611,14 +641,15 @@ function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
   const publish = () => {
     publishDisneyPlayhead(disneyActiveMediaVideo(), player);
     if (pendingDisneySeekTarget == null || !disneyHiveSeekReached(player, pendingDisneySeekTarget)) return;
-    if (restoreDisneyPauseAfterSeek) {
+    if (pauseDisneyAfterSeek) {
       try {
         player.pause?.();
       } catch {
         // Ignore pause races after seek.
       }
-      restoreDisneyPauseAfterSeek = false;
     }
+    pauseDisneyAfterSeek = false;
+    resumeDisneyPlaybackAfterSeek = false;
     pendingDisneySeekTarget = null;
   };
   try {
@@ -649,7 +680,17 @@ function ensureDisneyClock(): void {
   }, 250);
 }
 
-export function handleDisneyMediaSeek(detail: { live?: boolean; time?: number }, video: Element | null): boolean {
+export function handleDisneyMediaSeek(
+  detail: { live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean },
+  video: Element | null
+): boolean {
+  if (detail.cancelPendingResume) {
+    pauseDisneyAfterSeek = false;
+    resumeDisneyPlaybackAfterSeek = false;
+    cancelDisneyResumeAttempts();
+    disneySeekGeneration += 1;
+    return isDisneyHost(window.location.hostname) && disneyIntegrationEnabled();
+  }
   if (
     !isDisneyHost(window.location.hostname)
     || !disneyIntegrationEnabled()
@@ -665,22 +706,27 @@ export function handleDisneyMediaSeek(detail: { live?: boolean; time?: number },
     // Do not write teDisneyPlayhead to the target here. Captions and the
     // clock follow timeline.info / MEDIA_SEEK_COMPLETE; the scrubber thumb
     // uses pendingMediaSeeks until the host playhead moves.
+    const seekGeneration = ++disneySeekGeneration;
+    cancelDisneyResumeAttempts();
     pendingDisneySeekTarget = detail.time;
-    restoreDisneyPauseAfterSeek = disneySessionLooksPaused();
+    pauseDisneyAfterSeek = !detail.resumeAfterSeek && disneySessionLooksPaused();
+    resumeDisneyPlaybackAfterSeek = detail.resumeAfterSeek === true;
     try {
-      applyDisneyHostSeek(hive, detail.time, { playIfIdle: false, scrub: false });
       bindDisneyPlayerClock(hive);
+      applyDisneyHostSeek(hive, detail.time, { playIfIdle: false, scrub: false });
+      if (resumeDisneyPlaybackAfterSeek) resumeDisneyAfterBufferedSeek(hive, mediaVideo);
     } catch {
       // Player seek can throw if the session is still attaching.
     }
     window.setTimeout(() => {
+      if (seekGeneration !== disneySeekGeneration) return;
       if (pendingDisneySeekTarget == null) return;
       const latestVideo = disneyActiveMediaVideo();
       const latestHive = findDisneyHivePlayer(latestVideo, true);
       if (!latestHive || disneyHiveSeekReached(latestHive, pendingDisneySeekTarget)) return;
       if (!disneyMediaSeekLooksStuck(latestVideo, pendingDisneySeekTarget)) return;
       try {
-        applyDisneyHostSeek(latestHive, pendingDisneySeekTarget, { playIfIdle: true, scrub: true });
+        applyDisneyHostSeek(latestHive, pendingDisneySeekTarget, { playIfIdle: resumeDisneyPlaybackAfterSeek, scrub: true });
         bindDisneyPlayerClock(latestHive);
       } catch {
         // Retry can fail if the session dropped.

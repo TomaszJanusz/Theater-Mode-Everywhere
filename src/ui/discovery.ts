@@ -52,6 +52,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       min-width: 100vw !important;
       min-height: 100vh !important;
       z-index: 2147483647 !important;
+      background: #000000 !important;
       background-color: #000000 !important;
       object-fit: var(--theater-object-fit, contain) !important;
       opacity: 1 !important;
@@ -84,6 +85,14 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       mask: none !important;
       will-change: auto !important;
       z-index: 2147483647 !important;
+    }
+    :host-context(html.theater-everywhere-disney-stage) .theater-everywhere-parent-active {
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 100% !important;
+      min-height: 100% !important;
+      overflow: visible !important;
+      background: #000000 !important;
     }
   `;
     shadowRoot.appendChild(styleEl);
