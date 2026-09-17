@@ -251,15 +251,14 @@ export function createHud(ctx: PlayerChromeContext) {
     const content = document.createElement('div');
     content.className = 'volume-hud-content';
 
-    const iconEl = document.createElement('div');
-    iconEl.className = 'volume-hud-icon';
+    let iconEl: HTMLDivElement | null = null;
     if (view.kind === 'loading') {
+      iconEl = document.createElement('div');
+      iconEl.className = 'volume-hud-icon';
       const spinner = document.createElement('div');
       spinner.className = 'caption-hud-spinner';
       spinner.setAttribute('aria-hidden', 'true');
       iconEl.appendChild(spinner);
-    } else {
-      iconEl.innerHTML = view.icon;
     }
 
     const copy = document.createElement('div');
@@ -275,7 +274,8 @@ export function createHud(ctx: PlayerChromeContext) {
       copy.appendChild(detailEl);
     }
 
-    content.append(iconEl, copy);
+    if (iconEl) content.appendChild(iconEl);
+    content.appendChild(copy);
     overlay.appendChild(content);
     ctx.mountPlayerUi(overlay);
 

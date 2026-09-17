@@ -1394,13 +1394,15 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 .volume-hud-copy {
   display: flex !important;
   flex-direction: column !important;
-  align-items: flex-start !important;
+  align-items: flex-end !important;
   gap: 2px !important;
   min-width: 0 !important;
+  text-align: right !important;
 }
 
 .theater-everywhere-caption-hud[dir="rtl"] .volume-hud-copy {
-  align-items: flex-end !important;
+  align-items: flex-start !important;
+  text-align: left !important;
 }
 
 .volume-hud-detail {
