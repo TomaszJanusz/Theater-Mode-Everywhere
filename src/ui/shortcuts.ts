@@ -73,8 +73,9 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
   const targetKey = mainKey.toUpperCase();
   const isCompatiblePlus = targetKey === '+' && (
     eventKey === '+'
+    || eventKey === '='
     || e.code === 'NumpadAdd'
-    || (e.shiftKey && (eventKey === '=' || e.code === 'Equal'))
+    || e.code === 'Equal'
   );
   if (!isCompatiblePlus && eventKey !== targetKey && e.code.toUpperCase() !== targetKey) return false;
 

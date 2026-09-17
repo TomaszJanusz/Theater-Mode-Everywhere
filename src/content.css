@@ -1411,15 +1411,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   text-align: left !important;
 }
 
-.volume-hud-detail {
-  max-width: 22rem !important;
-  color: rgba(255, 255, 255, 0.82) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  line-height: 1.3 !important;
-  white-space: normal !important;
-}
-
 .caption-hud-spinner {
   width: 22px !important;
   height: 22px !important;
@@ -1678,4 +1669,3 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transform: translateX(18px) !important;
   background: #ffffff !important;
 }
-

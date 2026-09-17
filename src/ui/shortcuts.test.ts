@@ -31,10 +31,10 @@ describe('shortcut matching', () => {
     assert.equal(matchesShortcut(key({ key: '+', shiftKey: true, code: 'Equal' }), '+'), true);
   });
 
-  it('matches compatible Shift+= and numpad plus events, but not bare equals', () => {
+  it('matches compatible equal, Shift+=, and numpad plus events', () => {
     assert.equal(matchesShortcut(key({ key: '=', shiftKey: true, code: 'Equal' }), '+'), true);
     assert.equal(matchesShortcut(key({ key: '+', code: 'NumpadAdd' }), '+'), true);
-    assert.equal(matchesShortcut(key({ key: '=', code: 'Equal' }), '+'), false);
+    assert.equal(matchesShortcut(key({ key: '=', code: 'Equal' }), '+'), true);
   });
 
   it('matches Ctrl++ without dropping the plus', () => {

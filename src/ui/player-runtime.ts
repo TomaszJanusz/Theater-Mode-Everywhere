@@ -408,8 +408,8 @@ function showCaptionHud(payload: CaptionHudPayload): void {
   if (payload.result === 'on') {
     triggerCaptionHud({
       kind: 'status',
-      title: t('subtitlesOnHud'),
-      ...(payload.label ? { detail: payload.label } : {}),
+      title: payload.label ? t('subtitlesOnNamedHud', payload.label) : t('subtitlesOnHud'),
+      duration: 4_000
     });
     return;
   }
