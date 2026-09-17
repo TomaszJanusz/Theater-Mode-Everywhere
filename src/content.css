@@ -298,14 +298,14 @@
   -webkit-mask-image: linear-gradient(
     to right,
     #ffffff 0,
-    #ffffff var(--theater-heatmap-hover, 0%),
-    transparent var(--theater-heatmap-hover, 0%)
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px),
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px)
   ) !important;
   mask-image: linear-gradient(
     to right,
     #ffffff 0,
-    #ffffff var(--theater-heatmap-hover, 0%),
-    transparent var(--theater-heatmap-hover, 0%)
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px),
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px)
   ) !important;
 }
 
@@ -313,14 +313,14 @@
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0,
-    transparent var(--theater-heatmap-hover, 0%),
-    #ffffff var(--theater-heatmap-hover, 0%)
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px),
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px)
   ) !important;
   mask-image: linear-gradient(
     to right,
     transparent 0,
-    transparent var(--theater-heatmap-hover, 0%),
-    #ffffff var(--theater-heatmap-hover, 0%)
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px),
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px)
   ) !important;
 }
 
