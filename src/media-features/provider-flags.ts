@@ -34,6 +34,18 @@ export function defaultMediaProviderFlags(): MediaProviderFlags {
   return { youtube: true, vimeo: true, patreon: true, twitch: true, disney: true };
 }
 
+export function richTheaterExperienceEnabled(flags: MediaProviderFlags): boolean {
+  return MEDIA_PROVIDER_IDS.every((id) => flags[id]);
+}
+
+export function mediaProviderFlagsForRichTheaterExperience(enabled: boolean): MediaProviderFlags {
+  return Object.fromEntries(MEDIA_PROVIDER_IDS.map((id) => [id, enabled])) as MediaProviderFlags;
+}
+
+export function mediaProviderFlagStorageUpdate(flags: MediaProviderFlags): Record<string, boolean> {
+  return Object.fromEntries(MEDIA_PROVIDER_IDS.map((id) => [MEDIA_PROVIDER_FLAG_KEYS[id], flags[id]]));
+}
+
 export function resolveMediaProviderFlags(data: Record<string, unknown> | null | undefined): MediaProviderFlags {
   const next = defaultMediaProviderFlags();
   for (const id of MEDIA_PROVIDER_IDS) {

@@ -234,6 +234,17 @@ section h2 {
   min-height: 148px;
 }
 
+.features-section {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+.features-section .card-body {
+  position: relative;
+  z-index: 1;
+}
+
 .card-heading {
   display: flex;
   flex-direction: column;
@@ -914,6 +925,7 @@ section h2 {
   gap: 4px;
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .feature-label {
@@ -922,6 +934,48 @@ section h2 {
   color: var(--text-primary);
   cursor: pointer;
 }
+
+.feature-title-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.feature-inline-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-color);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.feature-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 10px);
+  inset-inline-start: 0;
+  width: min(520px, calc(100vw - 64px));
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #18181b;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+}
+
+.feature-popover p + p { margin-top: 7px; }
+.feature-popover strong { color: var(--text-primary); font-weight: 600; }
+.feature-info.rte-popover-open .feature-popover { opacity: 1; visibility: visible; transform: translateY(0); }
 
 .feature-desc {
   font-size: 12px;

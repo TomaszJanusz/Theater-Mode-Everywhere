@@ -129,6 +129,21 @@
   "volumeBoostDescription": {
     "message": "Wzmocnij głośność do 300% za pomocą Web Audio API. Przy pierwszym wejściu w tryb kinowy z tą opcją może pojawić się krótki wskaźnik ładowania."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Eksperymentalne)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+ i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu — przeczytaj więcej "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "tutaj"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo. Dostępność różni się zależnie od serwisu."
+  },
   "youtubeIntegrationTitle": {
     "message": "Integracja z YouTube"
   },

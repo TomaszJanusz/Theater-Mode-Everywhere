@@ -2,6 +2,14 @@
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
 import { parentBlockedEntry, removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
+import {
+  mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from '../src/media-features/provider-flags';
+import { shouldPatchMainWorld } from '../src/providers/registry';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -14,6 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusDotEl = document.getElementById('status-dot') as HTMLElement;
   const statusTextEl = document.getElementById('status-text') as HTMLElement;
   const optionsBtn = document.getElementById('options-btn') as HTMLButtonElement;
+  const richTheaterCard = document.getElementById('rich-theater-experience-card') as HTMLElement;
+  const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement;
 
   let currentDomain = '';
   let activeTabId: number | null = null;
@@ -33,6 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         currentDomain = domain;
         domainNameEl.textContent = url.hostname;
+        if (shouldPatchMainWorld(url.hostname)) {
+          richTheaterCard.hidden = false;
+          const providerData = await chrome.storage.sync.get(mediaProviderFlagStorageKeys());
+          richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(providerData));
+        }
         
         // Load settings and update UI
         await updateStatusUI();
@@ -110,6 +125,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (err) {
       console.error('Error saving settings:', err);
+    }
+  });
+
+  richTheaterToggle.addEventListener('change', async () => {
+    try {
+      await chrome.storage.sync.set(
+        mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(richTheaterToggle.checked))
+      );
+      if (activeTabId) await chrome.tabs.sendMessage(activeTabId, { action: 'statusChanged' });
+    } catch (err) {
+      console.error('Error saving Rich Theater Experience setting:', err);
     }
   });
 

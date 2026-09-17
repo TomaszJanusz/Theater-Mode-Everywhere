@@ -4,7 +4,13 @@ import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, 
 import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
-import { defaultMediaProviderFlags, resolveMediaProviderFlags } from './provider-flags';
+import {
+  defaultMediaProviderFlags,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
@@ -1066,6 +1072,25 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachDisneyAdapter(allOn, 'www.disneyplus.com'), true);
     assert.equal(shouldAttachDisneyAdapter({ ...allOn, disney: false }, 'www.disneyplus.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'example.com'), false);
+  });
+
+  it('maps the global Rich Theater Experience switch onto every provider flag', () => {
+    assert.equal(richTheaterExperienceEnabled(allOn), true);
+    assert.equal(richTheaterExperienceEnabled({ ...allOn, twitch: false }), false);
+    assert.deepEqual(mediaProviderFlagsForRichTheaterExperience(false), {
+      youtube: false,
+      vimeo: false,
+      patreon: false,
+      twitch: false,
+      disney: false
+    });
+    assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
+      youtubeIntegrationEnabled: true,
+      vimeoIntegrationEnabled: true,
+      patreonIntegrationEnabled: true,
+      twitchIntegrationEnabled: true,
+      disneyIntegrationEnabled: true
+    });
   });
 });
 

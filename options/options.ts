@@ -14,6 +14,13 @@ import {
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
 import { hasUnseenWhatsNew, openWhatsNewDialog, syncWhatsNewButtonState } from '../src/whatsNew';
+import {
+  mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from '../src/media-features/provider-flags';
 
 definePrivacyThingLogo();
 
@@ -122,12 +129,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
-  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false },
-  { id: 'youtube-integration-toggle', key: 'youtubeIntegrationEnabled', fallback: true },
-  { id: 'vimeo-integration-toggle', key: 'vimeoIntegrationEnabled', fallback: true },
-  { id: 'patreon-integration-toggle', key: 'patreonIntegrationEnabled', fallback: true },
-  { id: 'twitch-integration-toggle', key: 'twitchIntegrationEnabled', fallback: true },
-  { id: 'disney-integration-toggle', key: 'disneyIntegrationEnabled', fallback: true }
+  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false }
 ] as const;
 
 async function init() {
@@ -575,13 +577,15 @@ async function init() {
   // --- Features ---
   async function loadAndRenderFeatures() {
     try {
-      const data = await safeGetStorage(FEATURE_TOGGLES.map((item) => item.key));
+      const data = await safeGetStorage([...FEATURE_TOGGLES.map((item) => item.key), ...mediaProviderFlagStorageKeys()]);
       for (const item of FEATURE_TOGGLES) {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
         if (!toggle) continue;
         if (data[item.key] === undefined) toggle.checked = item.fallback;
         else toggle.checked = Boolean(data[item.key]);
       }
+      const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
+      if (richTheaterToggle) richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(data));
     } catch (err) {
       console.error('Error loading feature settings:', err);
     }
@@ -616,6 +620,30 @@ async function init() {
         }
       });
     }
+
+    const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
+    richTheaterToggle?.addEventListener('change', async () => {
+      try {
+        const flags = mediaProviderFlagsForRichTheaterExperience(richTheaterToggle.checked);
+        await chrome.storage.sync.set(mediaProviderFlagStorageUpdate(flags));
+        await notifyAllTabs();
+      } catch (err) {
+        console.error('Error saving Rich Theater Experience setting:', err);
+      }
+    });
+
+    const detailsToggle = document.getElementById('rich-theater-experience-details') as HTMLButtonElement | null;
+    const richTheaterInfo = detailsToggle?.closest('.feature-info');
+    detailsToggle?.addEventListener('click', () => {
+      const expanded = !richTheaterInfo?.classList.contains('rte-popover-open');
+      richTheaterInfo?.classList.toggle('rte-popover-open', expanded);
+      detailsToggle.setAttribute('aria-expanded', String(expanded));
+    });
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Node) || richTheaterInfo?.contains(event.target)) return;
+      richTheaterInfo?.classList.remove('rte-popover-open');
+      detailsToggle?.setAttribute('aria-expanded', 'false');
+    });
   }
 
   await setupWhatsNew();
