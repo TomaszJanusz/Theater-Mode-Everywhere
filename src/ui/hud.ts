@@ -19,7 +19,7 @@ export const STATUS_HUD_FIT_ICON = `
 export type CaptionHudView =
   | { kind: 'dismiss' }
   | { kind: 'loading'; title: string }
-  | { kind: 'status'; title: string; duration?: number };
+  | { kind: 'status'; title: string; detail?: string; duration?: number };
 
 export const STATUS_HUD_MUTE_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -262,6 +262,13 @@ export function createHud(ctx: PlayerChromeContext) {
     textEl.className = 'volume-hud-text';
     textEl.textContent = view.title;
     copy.appendChild(textEl);
+    if (view.kind === 'status' && view.detail) {
+      const detailEl = document.createElement('span');
+      detailEl.className = 'volume-hud-detail';
+      detailEl.textContent = view.detail;
+      copy.appendChild(detailEl);
+    }
+
     if (iconEl) content.appendChild(iconEl);
     content.appendChild(copy);
     overlay.appendChild(content);

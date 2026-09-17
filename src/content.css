@@ -1401,14 +1401,31 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .caption-hud-content {
-  display: block !important;
+  display: inline-flex !important;
   width: fit-content !important;
-  max-width: 22rem !important;
+  max-width: none !important;
+}
+
+.caption-hud-content .volume-hud-copy {
+  width: fit-content !important;
+}
+
+.caption-hud-content .volume-hud-text,
+.caption-hud-content .volume-hud-detail {
+  max-width: none !important;
 }
 
 .theater-everywhere-caption-hud[dir="rtl"] .volume-hud-copy {
   align-items: flex-start !important;
   text-align: left !important;
+}
+
+.volume-hud-detail {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
 }
 
 .caption-hud-spinner {

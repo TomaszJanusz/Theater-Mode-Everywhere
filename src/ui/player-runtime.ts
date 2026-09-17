@@ -113,6 +113,7 @@ const { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay } = help;
 const {
   findAllVideosDeep,
   findBestVideo,
+  switchTheaterVideo,
   cycleTheaterVideo,
   injectStylesIntoShadowRoot
 } = discovery;
@@ -408,7 +409,8 @@ function showCaptionHud(payload: CaptionHudPayload): void {
   if (payload.result === 'on') {
     triggerCaptionHud({
       kind: 'status',
-      title: payload.label ? t('subtitlesOnNamedHud', payload.label) : t('subtitlesOnHud'),
+      title: t('subtitlesOnHud'),
+      ...(payload.label ? { detail: payload.label } : {}),
       duration: 4_000
     });
     return;
@@ -975,6 +977,52 @@ function toggleTheaterMode(): void {
   }
 }
 
+function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
+    const current = session.element;
+    if (current?.tagName !== 'VIDEO' || isElementInDOMDeep(current)) return;
+
+    const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
+      ? candidate
+      : findBestVideo();
+    if (replacement && replacement !== current) {
+      switchTheaterVideo(replacement);
+    }
+  };
+
+  const stabilizeLayout = (target: HTMLVideoElement): void => {
+    if (session.element !== target) return;
+    applyTheaterElementInlineStyles(target);
+    refreshHostPlayerLayout();
+  };
+
+  const stabilizeAfterMediaLoad = (): void => {
+    stabilizeLayout(video);
+    session.runtimeScope.raf(() => stabilizeLayout(video));
+    session.runtimeScope.timeout(() => stabilizeLayout(video), 120);
+  };
+
+  session.runtimeScope.listen(video, 'loadedmetadata', stabilizeAfterMediaLoad);
+  session.runtimeScope.listen(video, 'canplay', stabilizeAfterMediaLoad);
+  session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
+    const candidate = event.target;
+    if (!(candidate instanceof HTMLVideoElement)) return;
+    if (candidate === session.element) {
+      stabilizeLayout(candidate);
+      session.runtimeScope.raf(() => stabilizeLayout(candidate));
+      session.runtimeScope.timeout(() => stabilizeLayout(candidate), 120);
+      return;
+    }
+    rebindIfReplaced(candidate);
+  }, true);
+
+  const observer = new MutationObserver(() => {
+    rebindIfReplaced();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  session.runtimeScope.add(() => observer.disconnect());
+}
+
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
   if (session.element) return;
 
@@ -1079,6 +1127,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
 
   if (element.tagName === 'VIDEO') {
     createCustomControls(element as HTMLVideoElement);
+    keepTheaterVideoBound(element as HTMLVideoElement);
   }
 }
 
