@@ -1,5 +1,9 @@
 import { resolveDomainPolicy } from '../platform/domain-policy';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import {
+  shouldAutoOpenWhatsNewOnUpdate,
+  whatsNewAutoOpenStorageKey
+} from '../whatsNew-release';
 
 declare const browser: any;
 
@@ -114,6 +118,23 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
 });
 
 chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'update') {
+    if (!shouldAutoOpenWhatsNewOnUpdate(details)) return;
+
+    try {
+      const targetVersion = chrome.runtime.getManifest().version;
+      const storageKey = whatsNewAutoOpenStorageKey(targetVersion);
+      const data = await chrome.storage.local.get(storageKey);
+      if (data[storageKey]) return;
+
+      await chrome.storage.local.set({ [storageKey]: true });
+      await chrome.runtime.openOptionsPage();
+    } catch (err) {
+      console.error('[Theater Everywhere] Error opening What\'s New after update:', err);
+    }
+    return;
+  }
+
   if (details.reason === 'install') {
     try {
       const data = await chrome.storage.sync.get(['shortcuts', 'blacklist']);
