@@ -29,7 +29,7 @@ import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-th
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
 import { parsePatreonPageAssets, pickPatreonPageAssets, applyPatreonCaptionMeta, mergePatreonCaptionTracks } from './parsers/patreon-page';
 import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from './parsers/twitch-storyboard';
-import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
+import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchGraphqlBody, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
 import {
   disneyPlayId,
   isDisneyHost,
@@ -821,6 +821,42 @@ https://captions.twitch.tv/en/635475444.vtt`;
     assert.equal(assets.captions[0].url, 'https://captions.twitch.tv/en/635475444.vtt');
   });
 
+  it('does not treat other VODs on the page as chapters for the current video', () => {
+    const html = JSON.stringify({
+      videos: [
+        {
+          id: '111',
+          lengthSeconds: 400,
+          moments: { edges: [
+            { node: { positionMilliseconds: 0, durationMilliseconds: 125000, description: 'Special Events' } },
+            { node: { positionMilliseconds: 125000, durationMilliseconds: 10000, description: 'Just Chatting' } }
+          ] }
+        },
+        {
+          id: '2874024019',
+          lengthSeconds: 14400,
+          moments: { edges: [
+            { node: { positionMilliseconds: 0, durationMilliseconds: 14400000, description: 'Cyberpunk 2077' } }
+          ] }
+        },
+        {
+          id: '222',
+          lengthSeconds: 200,
+          moments: { edges: [
+            { node: { positionMilliseconds: 135000, durationMilliseconds: 19000, description: 'FINAL FANTASY XIV ONLINE' } },
+            { node: { positionMilliseconds: 154000, durationMilliseconds: 60000, description: 'God of War: Ragnarok' } }
+          ] }
+        }
+      ]
+    });
+    const assets = parseTwitchPageAssets(html, 'https://www.twitch.tv/videos/2874024019');
+    assert.equal(assets.moments.length, 1);
+    assert.equal(assets.moments[0].title, 'Cyberpunk 2077');
+    const gql = extractTwitchPayloadFromJson(JSON.parse(html), '2874024019');
+    assert.equal(gql.moments?.length, 1);
+    assert.equal(gql.moments?.[0].title, 'Cyberpunk 2077');
+  });
+
   it('maps sprite tiles from seekPreviews JSON', () => {
     const set = parseTwitchSeekPreviews(
       storyboardJson,
@@ -891,6 +927,22 @@ https://captions.twitch.tv/en/635475444.vtt`;
     assert.equal(payload.moments?.length, 2);
     assert.equal(payload.moments?.[1].title, 'Boss fight');
     assert.equal(payload.moments?.[1].start, 120);
+  });
+
+  it('keeps caption VTT URLs when GQL also has storyboards', () => {
+    const body = JSON.stringify({
+      data: {
+        video: {
+          id: '635475444',
+          lengthSeconds: 120,
+          seekPreviewsURL: 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json',
+          captionTrack: { url: 'https://captions.twitch.tv/en/635475444.vtt', language: 'en' }
+        }
+      }
+    });
+    const payload = parseTwitchGraphqlBody(body, '635475444');
+    assert.equal(payload.captions?.length, 1);
+    assert.equal(payload.captions?.[0].url, 'https://captions.twitch.tv/en/635475444.vtt');
   });
 
   it('keeps CloudFront seekPreviewsURL and derives it from cf_vods thumbs', () => {

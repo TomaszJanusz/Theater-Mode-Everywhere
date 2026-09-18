@@ -121,6 +121,26 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.deepEqual(hud, ['loading', 'failed']);
   });
 
+  it('turns host-managed captions on without overlay cues', async () => {
+    const hostTrack: CaptionTrack = {
+      id: 'twitch:host-cc',
+      language: 'en',
+      label: 'Closed Captions',
+      kind: 'captions',
+      source: 'twitch',
+      delivery: 'host'
+    };
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [hostTrack],
+      activateCaptionTrack: async (id) => (id ? [] : null)
+    });
+    await controller.refresh();
+    const result = await controller.toggleCaptions();
+    assert.equal(result, 'on');
+    assert.equal(ccBtn.classList.contains('active'), true);
+    assert.equal(ccBtn.classList.contains('disabled'), false);
+  });
+
   it('serializes overlapping toggles so the last one wins', async () => {
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK],

@@ -101,6 +101,42 @@ html.theater-everywhere-disney-stage .DxcOverlay {
   pointer-events: none !important;
 }
 
+/* Twitch `.persistent-player` uses an identity transform, which becomes the
+ * containing block for position:fixed and keeps the theater video inside the
+ * 16:9 player well instead of the viewport. */
+html.theater-everywhere-twitch-stage .persistent-player {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  translate: none !important;
+  overflow: visible !important;
+  z-index: 2147483646 !important;
+  background: #000000 !important;
+}
+
+html.theater-everywhere-twitch-stage .video-player,
+html.theater-everywhere-twitch-stage .video-player__container,
+html.theater-everywhere-twitch-stage .tw-aspect {
+  transform: none !important;
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.theater-everywhere-twitch-stage .side-nav,
+html.theater-everywhere-twitch-stage .top-nav,
+html.theater-everywhere-twitch-stage .right-column,
+html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Hide scrollbars on the document when theater mode is active */
 .theater-everywhere-body-active,
 .theater-everywhere-html-active {

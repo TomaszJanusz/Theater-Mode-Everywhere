@@ -434,7 +434,7 @@ export class MediaFeaturesController {
   }
 
   private captionsAreOn(): boolean {
-    return this.activeTrackId !== null && this.usingOverlayCaptions;
+    return this.activeTrackId !== null;
   }
 
   private updateCcState(): void {
@@ -609,7 +609,9 @@ export class MediaFeaturesController {
       if (this.disposed || gen !== this.activateGeneration) {
         return this.captionsAreOn() ? 'on' : 'off';
       }
-      let on = Boolean(id && overlayCues && overlayCues.length > 0);
+      const selected = id ? this.tracks.find((item) => item.id === id) : undefined;
+      const hostManaged = selected?.delivery === 'host';
+      let on = Boolean(id && (hostManaged || (overlayCues && overlayCues.length > 0)));
       if (id && !on) {
         try {
           await this.adapter.activateCaptionTrack(null);
@@ -622,9 +624,9 @@ export class MediaFeaturesController {
         overlayCues = [];
       }
       this.activeTrackId = on ? id : null;
-      this.usingOverlayCaptions = on;
-      this.renderer.setCues(on ? overlayCues : []);
-      setOverlayCaptionsClass(on);
+      this.usingOverlayCaptions = on && !hostManaged;
+      this.renderer.setCues(on && !hostManaged ? overlayCues || [] : []);
+      setOverlayCaptionsClass(on && !hostManaged);
       if (on) this.renderer.update(displayMediaTime(this.video));
       this.persistAfterActivate(id, on, persist);
       this.updateCcState();

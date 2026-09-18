@@ -28,13 +28,17 @@ import {
   seekToMediaTime
 } from '../playback-window';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
+import { isTwitchHost } from '../providers/hosts';
 import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
+  mountTwitchTheaterStage,
+  observeTwitchTheaterStage,
   theaterVideoNeedsRestyle,
   unmarkTheaterVideo,
-  unmountDisneyTheaterStage
+  unmountDisneyTheaterStage,
+  unmountTwitchTheaterStage
 } from './theater-layout';
 import {
   queryPlayerUi,
@@ -352,6 +356,10 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     }
   }
   applyTheaterViewportPin(element);
+  if (isTwitchHost()) {
+    element.style.setProperty('top', '0px', 'important');
+    element.style.setProperty('left', '0px', 'important');
+  }
 }
 
 function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
@@ -1026,6 +1034,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       if (!target.hasAttribute(THEATER_VIDEO_ATTR)) {
         target.setAttribute(THEATER_VIDEO_ATTR, '');
       }
+      mountTwitchTheaterStage(window.location.hostname);
       applyTheaterElementInlineStyles(target);
       if (relayoutHost) hostRelayoutQueued = true;
     } finally {
@@ -1094,6 +1103,9 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   markTheaterVideo(element);
+  mountDisneyTheaterStage(window.location.hostname);
+  mountTwitchTheaterStage(window.location.hostname);
+  session.runtimeScope.add(observeTwitchTheaterStage(window.location.hostname));
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
@@ -1176,7 +1188,6 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');
   document.documentElement.classList.add('theater-everywhere-html-active');
-  mountDisneyTheaterStage(window.location.hostname);
 
   // If we are in an iframe, notify the parent document to expand the iframe itself
   if (window !== window.top && session.id) {
@@ -1244,6 +1255,7 @@ function exitTheaterMode(
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
   unmountDisneyTheaterStage();
+  unmountTwitchTheaterStage();
 
   refreshHostPlayerLayout();
 

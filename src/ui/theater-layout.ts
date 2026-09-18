@@ -1,8 +1,9 @@
-import { isDisneyHost } from '../providers/hosts';
+import { isDisneyHost, isTwitchHost } from '../providers/hosts';
 import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
 export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
+export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
 
 const VIEWPORT_PIN_EPSILON_PX = 1;
 
@@ -19,6 +20,18 @@ export function theaterViewportPinOffset(
   };
 }
 
+export function resolveTheaterViewportPin(options: {
+  twitchStage: boolean;
+  rect: { top: number; left: number };
+  current: { top: number; left: number };
+}): { top: number; left: number } | null {
+  if (options.twitchStage) {
+    if (options.current.top === 0 && options.current.left === 0) return null;
+    return { top: 0, left: 0 };
+  }
+  return theaterViewportPinOffset(options.rect, options.current);
+}
+
 function readPinnedPx(element: HTMLElement, property: 'top' | 'left'): number {
   const raw = element.style.getPropertyValue(property).trim();
   const match = /^(-?\d+(?:\.\d+)?)px$/.exec(raw);
@@ -27,9 +40,14 @@ function readPinnedPx(element: HTMLElement, property: 'top' | 'left'): number {
 
 export function applyTheaterViewportPin(element: HTMLElement): void {
   const rect = element.getBoundingClientRect();
-  const next = theaterViewportPinOffset(rect, {
-    top: readPinnedPx(element, 'top'),
-    left: readPinnedPx(element, 'left')
+  const next = resolveTheaterViewportPin({
+    twitchStage: document.documentElement.classList.contains(TWITCH_THEATER_STAGE_CLASS)
+      || isTwitchHost(),
+    rect,
+    current: {
+      top: readPinnedPx(element, 'top'),
+      left: readPinnedPx(element, 'left')
+    }
   });
   if (!next) return;
   const top = `${next.top}px`;
@@ -75,7 +93,30 @@ export function mountDisneyTheaterStage(hostname: string): void {
   document.documentElement.appendChild(stage);
 }
 
+export function mountTwitchTheaterStage(hostname: string): void {
+  if (!isTwitchHost(hostname)) return;
+  document.documentElement.classList.add(TWITCH_THEATER_STAGE_CLASS);
+}
+
+export function observeTwitchTheaterStage(hostname: string): () => void {
+  if (!isTwitchHost(hostname)) return () => {};
+  const html = document.documentElement;
+  const restore = (): void => {
+    if (!html.classList.contains(TWITCH_THEATER_STAGE_CLASS)) {
+      html.classList.add(TWITCH_THEATER_STAGE_CLASS);
+    }
+  };
+  restore();
+  const observer = new MutationObserver(restore);
+  observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+}
+
 export function unmountDisneyTheaterStage(): void {
   document.documentElement.classList.remove(DISNEY_THEATER_STAGE_CLASS);
   document.getElementById(DISNEY_THEATER_STAGE_ID)?.remove();
+}
+
+export function unmountTwitchTheaterStage(): void {
+  document.documentElement.classList.remove(TWITCH_THEATER_STAGE_CLASS);
 }
