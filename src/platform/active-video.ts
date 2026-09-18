@@ -1,6 +1,10 @@
+export const THEATER_VIDEO_CLASS = 'theater-everywhere-video-active';
+export const THEATER_VIDEO_ATTR = 'data-theater-everywhere';
+export const THEATER_VIDEO_SELECTOR = `.${THEATER_VIDEO_CLASS}, [${THEATER_VIDEO_ATTR}]`;
+
 export function findActiveVideo(root: Document | ShadowRoot): HTMLVideoElement | null {
   if (!root) return null;
-  const video = root.querySelector('.theater-everywhere-video-active');
+  const video = root.querySelector(THEATER_VIDEO_SELECTOR);
   if (video && video.tagName === 'VIDEO') return video as HTMLVideoElement;
 
   const hosts = root.querySelectorAll('*');

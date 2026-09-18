@@ -61,17 +61,26 @@ export function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefi
   }
   const hasBox = boxW > 8 && boxH > 8;
   const hasSource = Boolean(video.currentSrc || video.src);
-  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className)) {
+  const markedTheater = hasTheaterVideoMark(video);
+  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className) || markedTheater) {
     return videoWidth > 0 || hasSource || hasBox;
   }
   return (videoWidth > 0 || hasSource) && hasBox;
+}
+
+function hasTheaterVideoMark(item: HTMLVideoElement): boolean {
+  try {
+    return typeof item.hasAttribute === 'function' && item.hasAttribute('data-theater-everywhere');
+  } catch {
+    return false;
+  }
 }
 
 export function rankDisneyMediaVideos(videos: HTMLVideoElement[]): HTMLVideoElement[] {
   const usable = videos.filter((item) => isUsableDisneyMediaVideo(item));
   const score = (item: HTMLVideoElement) => {
     const className = typeof item.className === 'string' ? item.className : '';
-    if (/\btheater-everywhere-video-active\b/.test(className)) return 3;
+    if (/\btheater-everywhere-video-active\b/.test(className) || hasTheaterVideoMark(item)) return 3;
     if (/\bhive-video\b/.test(className)) return 2;
     return 1;
   };

@@ -1,4 +1,5 @@
 import { isDisneyHost } from '../providers/hosts';
+import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
 export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
@@ -39,6 +40,29 @@ export function applyTheaterViewportPin(element: HTMLElement): void {
   if (element.style.getPropertyValue('left') !== left) {
     element.style.setProperty('left', left, 'important');
   }
+}
+
+export function markTheaterVideo(element: HTMLElement): void {
+  element.setAttribute(THEATER_VIDEO_ATTR, '');
+  if (!element.classList.contains(THEATER_VIDEO_CLASS)) {
+    element.classList.add(THEATER_VIDEO_CLASS);
+  }
+}
+
+export function unmarkTheaterVideo(element: HTMLElement): void {
+  element.removeAttribute(THEATER_VIDEO_ATTR);
+  element.classList.remove(THEATER_VIDEO_CLASS);
+}
+
+export function theaterVideoNeedsRestyle(element: {
+  hasAttribute(name: string): boolean;
+  getAttribute(name: string): string | null;
+}): boolean {
+  if (!element.hasAttribute(THEATER_VIDEO_ATTR)) return true;
+  const style = element.getAttribute('style') ?? '';
+  return !style.includes('position:')
+    || !style.includes('--theater-object-fit')
+    || !(style.includes('background:') || style.includes('background-color:'));
 }
 
 export function mountDisneyTheaterStage(hostname: string): void {

@@ -24,8 +24,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* The active video or iframe element in theater mode */
-.theater-everywhere-video-active {
+/* The active video or iframe element in theater mode.
+ * Disney+ overwrites video.className and drops theater-everywhere-video-active;
+ * data-theater-everywhere is not part of that rewrite. */
+.theater-everywhere-video-active,
+html.theater-everywhere-html-active [data-theater-everywhere] {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -1084,7 +1087,8 @@ video::-webkit-media-text-track-display {
   transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
-.theater-everywhere-video-active.controls-visible::-webkit-media-text-track-display {
+.theater-everywhere-video-active.controls-visible::-webkit-media-text-track-display,
+html.theater-everywhere-html-active [data-theater-everywhere].controls-visible::-webkit-media-text-track-display {
   transform: translateY(-80px) !important;
 }
 

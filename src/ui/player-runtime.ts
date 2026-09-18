@@ -27,9 +27,13 @@ import {
   seekBy,
   seekToMediaTime
 } from '../playback-window';
+import { THEATER_VIDEO_ATTR } from '../platform/active-video';
 import {
   applyTheaterViewportPin,
+  markTheaterVideo,
   mountDisneyTheaterStage,
+  theaterVideoNeedsRestyle,
+  unmarkTheaterVideo,
   unmountDisneyTheaterStage
 } from './theater-layout';
 import {
@@ -164,8 +168,8 @@ function toggleVideoMute(video: HTMLVideoElement): void {
 }
 
 function applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void {
-  if (!video.classList.contains('theater-everywhere-video-active')) {
-    video.classList.add('theater-everywhere-video-active');
+  if (!video.hasAttribute(THEATER_VIDEO_ATTR)) {
+    video.setAttribute(THEATER_VIDEO_ATTR, '');
   }
 
   if (!refs.volumeBoostEnabled || sliderValue <= 1.0) {
@@ -1013,65 +1017,68 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   };
 
   let ignoreStyleMutations = 0;
-  const stabilizeLayout = (target: HTMLVideoElement): void => {
+  let stabilizeScheduled = false;
+  let hostRelayoutQueued = false;
+  const stabilizeLayout = (target: HTMLVideoElement, relayoutHost = false): void => {
     if (session.element !== target) return;
     ignoreStyleMutations += 1;
     try {
-      target.classList.add('theater-everywhere-video-active');
+      if (!target.hasAttribute(THEATER_VIDEO_ATTR)) {
+        target.setAttribute(THEATER_VIDEO_ATTR, '');
+      }
       applyTheaterElementInlineStyles(target);
-      refreshHostPlayerLayout();
+      if (relayoutHost) hostRelayoutQueued = true;
     } finally {
       queueMicrotask(() => {
         ignoreStyleMutations -= 1;
       });
     }
+    if (hostRelayoutQueued) {
+      hostRelayoutQueued = false;
+      refreshHostPlayerLayout();
+    }
   };
 
-  const stabilizeAfterMediaLoad = (): void => {
-    stabilizeLayout(video);
-    session.runtimeScope.raf(() => stabilizeLayout(video));
-    session.runtimeScope.timeout(() => stabilizeLayout(video), 120);
+  const scheduleStabilize = (relayoutHost = false): void => {
+    if (relayoutHost) hostRelayoutQueued = true;
+    if (stabilizeScheduled) return;
+    stabilizeScheduled = true;
+    session.runtimeScope.raf(() => {
+      stabilizeScheduled = false;
+      stabilizeLayout(video, false);
+    });
   };
 
-  session.runtimeScope.listen(video, 'loadedmetadata', stabilizeAfterMediaLoad);
-  session.runtimeScope.listen(video, 'canplay', stabilizeAfterMediaLoad);
+  session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
   session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
     if (!(candidate instanceof HTMLVideoElement)) return;
     if (candidate === session.element) {
-      stabilizeLayout(candidate);
-      session.runtimeScope.raf(() => stabilizeLayout(candidate));
-      session.runtimeScope.timeout(() => stabilizeLayout(candidate), 120);
+      scheduleStabilize(true);
       return;
     }
     rebindIfReplaced(candidate);
   }, true);
 
+  let rebindScheduled = false;
   const observer = new MutationObserver(() => {
-    rebindIfReplaced();
+    if (rebindScheduled) return;
+    rebindScheduled = true;
+    session.runtimeScope.raf(() => {
+      rebindScheduled = false;
+      rebindIfReplaced();
+    });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   session.runtimeScope.add(() => observer.disconnect());
 
   const styleObserver = new MutationObserver(() => {
     if (ignoreStyleMutations > 0 || session.element !== video) return;
-    const missingClass = !video.classList.contains('theater-everywhere-video-active');
-    const rect = video.getBoundingClientRect();
-    const offViewport =
-      Math.abs(rect.top) > 1
-      || Math.abs(rect.left) > 1
-      || Math.abs(rect.width - window.innerWidth) > 2
-      || Math.abs(rect.height - window.innerHeight) > 2;
-    if (!missingClass && !offViewport) return;
-    stabilizeLayout(video);
+    if (!theaterVideoNeedsRestyle(video)) return;
+    scheduleStabilize(false);
   });
-  styleObserver.observe(video, { attributes: true, attributeFilter: ['style', 'class'] });
+  styleObserver.observe(video, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
   session.runtimeScope.add(() => styleObserver.disconnect());
-  session.runtimeScope.listen(window, 'resize', () => stabilizeLayout(video));
-  if (window.visualViewport) {
-    session.runtimeScope.listen(window.visualViewport, 'resize', () => stabilizeLayout(video));
-    session.runtimeScope.listen(window.visualViewport, 'scroll', () => stabilizeLayout(video));
-  }
 }
 
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
@@ -1086,7 +1093,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     injectStylesIntoShadowRoot(rootNode);
   }
 
-  element.classList.add('theater-everywhere-video-active');
+  markTheaterVideo(element);
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
@@ -1221,7 +1228,7 @@ function exitTheaterMode(
   }
 
   if (session.element) {
-    session.element.classList.remove('theater-everywhere-video-active');
+    unmarkTheaterVideo(session.element);
     restoreTheaterElementInlineStyles(session.element);
   }
 
@@ -1265,7 +1272,11 @@ function exitTheaterMode(
   }
 }
 
+let hostPlayerLayoutRefreshPending = false;
+
 function refreshHostPlayerLayout(): void {
+  if (hostPlayerLayoutRefreshPending) return;
+  hostPlayerLayoutRefreshPending = true;
   const fire = () => {
     try {
       window.dispatchEvent(new Event('resize'));
@@ -1281,7 +1292,10 @@ function refreshHostPlayerLayout(): void {
   fire();
   requestAnimationFrame(() => {
     fire();
-    window.setTimeout(fire, 120);
+    window.setTimeout(() => {
+      fire();
+      hostPlayerLayoutRefreshPending = false;
+    }, 120);
   });
 }
 

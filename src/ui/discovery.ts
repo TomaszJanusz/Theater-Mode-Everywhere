@@ -1,6 +1,7 @@
 import { selectSwitchableVideos } from '../switchable-videos';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
+import { markTheaterVideo, unmarkTheaterVideo } from './theater-layout';
 
 interface VideoMetrics {
   inViewport: boolean;
@@ -41,7 +42,8 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     const styleEl = document.createElement('style');
     styleEl.id = 'theater-everywhere-shadow-styles';
     styleEl.textContent = `
-    .theater-everywhere-video-active {
+    .theater-everywhere-video-active,
+    [data-theater-everywhere] {
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -204,10 +206,10 @@ export function createDiscovery(ctx: PlayerChromeContext) {
 
       ctx.actions.destroyCustomControls();
       video.classList.remove('controls-visible');
-      video.classList.remove('theater-everywhere-video-active');
+      unmarkTheaterVideo(video);
       ctx.actions.restoreTheaterElementInlineStyles(video);
     } else {
-      ctx.session.element.classList.remove('theater-everywhere-video-active');
+      unmarkTheaterVideo(ctx.session.element);
       ctx.actions.restoreTheaterElementInlineStyles(ctx.session.element);
     }
 
@@ -218,7 +220,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     if (rootNode instanceof ShadowRoot) {
       injectStylesIntoShadowRoot(rootNode);
     }
-    newVideo.classList.add('theater-everywhere-video-active');
+    markTheaterVideo(newVideo);
     ctx.actions.applyTheaterElementInlineStyles(newVideo);
 
     const originalControls = newVideo.hasAttribute('controls');

@@ -130,7 +130,7 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, index: num
 
 function activeVideoTime(): number {
   if (typeof document === 'undefined') return 0;
-  const video = document.querySelector('video.theater-everywhere-video-active') as HTMLVideoElement | null
+  const video = document.querySelector('video.theater-everywhere-video-active, video[data-theater-everywhere]') as HTMLVideoElement | null
     || document.querySelector('video');
   const playhead = readDisneyContentTime(video);
   if (playhead != null && playhead > 0) return playhead;

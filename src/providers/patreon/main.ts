@@ -7,7 +7,7 @@ export function patreonIntegrationEnabled(): boolean {
 }
 
 function findMuxPlayer(): any | null {
-  const start = document.querySelector('.theater-everywhere-video-active') || document.querySelector('video');
+  const start = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]') || document.querySelector('video');
   let node: Node | null = start;
   while (node) {
     if (node instanceof Element && node.localName === 'mux-player') return node;

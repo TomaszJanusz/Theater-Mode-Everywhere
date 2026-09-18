@@ -300,7 +300,7 @@ export function installMainWorldRuntime(): void {
   }
 
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
-    const video = document.querySelector('.theater-everywhere-video-active');
+    const video = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (!(video instanceof HTMLVideoElement)) return;
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     const isSpace = event.key === ' ' || event.code === 'Space';

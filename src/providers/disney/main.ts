@@ -398,7 +398,7 @@ function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefined): b
   const rect = video.getBoundingClientRect();
   const hasBox = rect.width > 8 && rect.height > 8;
   const hasSource = Boolean(video.currentSrc || video.src);
-  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className)) {
+  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className) || video.hasAttribute('data-theater-everywhere')) {
     return video.videoWidth > 0 || hasSource || hasBox;
   }
   return (video.videoWidth > 0 || hasSource) && hasBox;
@@ -417,7 +417,7 @@ function disneyMediaVideos(preferred?: HTMLVideoElement | null): HTMLVideoElemen
   };
   push(preferred || null);
   for (const node of all) {
-    if (node.classList.contains('theater-everywhere-video-active')) push(node);
+    if (node.classList.contains('theater-everywhere-video-active') || node.hasAttribute('data-theater-everywhere')) push(node);
   }
   for (const node of all) {
     if (node.classList.contains('hive-video')) push(node);
