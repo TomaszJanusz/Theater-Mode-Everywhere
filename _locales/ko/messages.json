@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "자막 옵션"
   },
+  "subtitleFont": {
+    "message": "글꼴"
+  },
   "subtitleTextColor": {
     "message": "텍스트"
   },

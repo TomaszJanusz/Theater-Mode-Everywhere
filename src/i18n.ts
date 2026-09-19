@@ -145,6 +145,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   subtitlesMenuTitle: 'Subtitles',
   subtitleOptions: 'Options',
   subtitleOptionsTitle: 'Subtitle options',
+  subtitleFont: 'Font',
   subtitleTextColor: 'Text',
   subtitleSize: 'Size',
   subtitleDropShadow: 'Shadow',

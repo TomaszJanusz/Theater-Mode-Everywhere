@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Untertiteloptionen"
   },
+  "subtitleFont": {
+    "message": "Schriftart"
+  },
   "subtitleTextColor": {
     "message": "Text"
   },

@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Параметри субтитрів"
   },
+  "subtitleFont": {
+    "message": "Шрифт"
+  },
   "subtitleTextColor": {
     "message": "Текст"
   },

@@ -961,10 +961,10 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 .theater-caption-overlay-text {
   display: inline-block !important;
   background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
-  color: var(--theater-caption-color, #ffffff) !important;
+  color: var(--theater-caption-color, rgba(250, 217, 0, 1)) !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-family: var(--theater-caption-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif) !important;
   font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
@@ -1112,7 +1112,7 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 /* Fallback when overlay cues cannot be extracted. font-family/text-shadow are not supported on ::cue. */
 video::cue {
   background-color: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
-  color: var(--theater-caption-color, #ffffff) !important;
+  color: var(--theater-caption-color, rgba(250, 217, 0, 1)) !important;
   font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
@@ -1615,18 +1615,39 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-caption-options {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+.theater-caption-options-dialog {
+  width: min(600px, 100%) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(155deg, rgba(35, 38, 40, 0.98), rgba(17, 18, 20, 0.98)) !important;
+}
+
+.theater-caption-options-dialog .te-dialog-body {
+  overflow: visible !important;
+}
+
+.theater-caption-options-footer {
+  justify-content: space-between !important;
 }
 
 .theater-caption-options-preview {
   display: flex !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding: 18px 12px !important;
-  border-radius: 8px !important;
-  background: #09090b !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  grid-column: 1 / -1 !important;
+  min-height: 64px !important;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.1), transparent 55%), #090a0b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
 .theater-caption-option-row {
@@ -1634,39 +1655,122 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 16px !important;
-  min-height: 32px !important;
+  min-height: 0 !important;
+  padding: 9px 11px !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.theater-caption-option-stack {
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: 8px !important;
 }
 
 .theater-caption-option-label {
   color: #f8fafc !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.035em !important;
+  text-transform: uppercase !important;
+}
+
+.theater-caption-font-choices {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.theater-caption-options > .theater-caption-option-stack:not(.theater-caption-shadow-row):not(.theater-caption-palette-row-compact) {
+  grid-column: 1 / -1 !important;
+}
+
+.theater-caption-font-choice {
+  appearance: none !important;
+  min-width: 0 !important;
+  height: 46px !important;
+  padding: 0 !important;
+  border: 2px solid transparent !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: #f8fafc !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.theater-caption-font-choice:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  transform: translateY(-1px) !important;
+}
+
+.theater-caption-font-choice.active {
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 5px 14px rgba(0, 0, 0, 0.22) !important;
+}
+
+.theater-caption-palette {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.theater-caption-swatch {
+  appearance: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border: 2px solid transparent !important;
+  border-radius: 50% !important;
+  background: var(--swatch-color) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.theater-caption-swatch:hover {
+  transform: scale(1.08) !important;
+}
+
+.theater-caption-swatch.active {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.65), 0 0 0 4px #ffffff !important;
+}
+
+.theater-caption-font-choice:focus-visible,
+.theater-caption-swatch:focus-visible {
+  outline: 3px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
+}
+
+.theater-caption-opacity-control {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.theater-caption-opacity-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  color: #aeb4bd !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
-.theater-caption-color {
-  width: 28px !important;
-  height: 28px !important;
-  padding: 0 !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  border-radius: 50% !important;
-  background: none !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-}
-
-.theater-caption-color::-webkit-color-swatch-wrapper {
-  padding: 0 !important;
-}
-
-.theater-caption-color::-webkit-color-swatch {
-  border: none !important;
-  border-radius: 50% !important;
+.theater-caption-opacity-header output {
+  color: #f8fafc !important;
+  font-variant-numeric: tabular-nums !important;
 }
 
 .theater-caption-slider {
   -webkit-appearance: none !important;
   appearance: none !important;
-  width: 140px !important;
+  width: 180px !important;
   height: 6px !important;
   border-radius: 999px !important;
   background: rgba(255, 255, 255, 0.2) !important;
@@ -1681,17 +1785,41 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: var(--accent-color, #6366f1) !important;
   border: none !important;
   cursor: pointer !important;
+  box-shadow: 0 0 0 2px #18181b, 0 0 0 3px rgba(255, 255, 255, 0.55) !important;
+}
+
+.theater-caption-slider::-moz-range-track {
+  height: 6px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.theater-caption-slider::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: var(--accent-color, #6366f1) !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 2px #18181b, 0 0 0 3px rgba(255, 255, 255, 0.55) !important;
+}
+
+.theater-caption-opacity-control .theater-caption-slider {
+  width: 100% !important;
 }
 
 .theater-caption-size-row {
-  align-items: flex-start !important;
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: 8px !important;
 }
 
 .theater-caption-size-control {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
-  width: 220px !important;
+  width: 100% !important;
   gap: 5px !important;
 }
 
@@ -1708,6 +1836,30 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   line-height: 1 !important;
 }
 
+.theater-caption-shadow-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 22px !important;
+}
+
+.theater-caption-palette-row-compact {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(180px, 1fr) !important;
+  align-items: end !important;
+  column-gap: 20px !important;
+}
+
+.theater-caption-palette-row-compact > .theater-caption-option-label {
+  grid-column: 1 / -1 !important;
+}
+
+.theater-caption-palette-row-compact .theater-caption-palette {
+  justify-content: flex-start !important;
+  gap: 14px !important;
+}
+
 .theater-caption-toggle {
   position: relative !important;
   display: inline-block !important;
@@ -1721,6 +1873,11 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+.theater-caption-toggle input:focus-visible + .theater-caption-toggle-track {
+  outline: 3px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
 }
 
 .theater-caption-toggle-track {
@@ -1751,4 +1908,23 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 .theater-caption-toggle input:checked + .theater-caption-toggle-track::before {
   transform: translateX(18px) !important;
   background: #ffffff !important;
+}
+
+@media (max-width: 520px) {
+  .theater-caption-options-dialog {
+    padding: 16px 14px 14px !important;
+  }
+
+  .theater-caption-font-choice {
+    height: 42px !important;
+    font-size: 23px !important;
+  }
+
+  .theater-caption-option-row {
+    padding: 8px !important;
+  }
+
+  .theater-caption-palette-row-compact {
+    grid-template-columns: auto minmax(130px, 1fr) !important;
+  }
 }

@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "字幕オプション"
   },
+  "subtitleFont": {
+    "message": "フォント"
+  },
   "subtitleTextColor": {
     "message": "文字"
   },

@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Opções de legendas"
   },
+  "subtitleFont": {
+    "message": "Fonte"
+  },
   "subtitleTextColor": {
     "message": "Texto"
   },

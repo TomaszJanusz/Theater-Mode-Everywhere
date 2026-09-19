@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "خيارات الترجمة"
   },
+  "subtitleFont": {
+    "message": "الخط"
+  },
   "subtitleTextColor": {
     "message": "النص"
   },

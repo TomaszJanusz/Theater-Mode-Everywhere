@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "字幕选项"
   },
+  "subtitleFont": {
+    "message": "字体"
+  },
   "subtitleTextColor": {
     "message": "文字"
   },

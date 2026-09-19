@@ -470,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Options des sous-titres"
   },
+  "subtitleFont": {
+    "message": "Police"
+  },
   "subtitleTextColor": {
     "message": "Texte"
   },
