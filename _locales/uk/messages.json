@@ -123,6 +123,21 @@
   "featuresDescription": {
     "message": "Увімкніть або вимкніть додаткові функції режиму кінотеатру."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (експериментальна функція)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Увімкніть розширену інтеграцію з улюбленими відеосервісами, зокрема YouTube, Twitch, Disney+ та іншими. Theater Mode Everywhere може показувати додаткову інформацію, підтримувати власні формати субтитрів і відкривати функції окремих сервісів. Доступність залежить від сервісу — докладніше "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "тут"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Увімкніть розширену інтеграцію з улюбленими відеосервісами. Доступність залежить від сервісу."
+  },
   "volumeBoostTitle": {
     "message": "Посилення звуку"
   },
@@ -396,10 +411,10 @@
     "message": "Пауза"
   },
   "muteHud": {
-    "message": "Без звуку"
+    "message": "Звук вимкнено"
   },
   "unmuteHud": {
-    "message": "Увімкнути звук"
+    "message": "Звук увімкнено"
   },
   "pictureInPictureTooltip": {
     "message": "Картинка в картинці <kbd>$KEY$</kbd>",

@@ -123,6 +123,21 @@
   "featuresDescription": {
     "message": "シアターモードのオプション動作の有効/無効を切り替えます。"
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience（試験運用）"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "YouTube、Twitch、Disney+ など、お気に入りの動画サービスとのより高度な連携を有効にします。Theater Mode Everywhere は、追加情報の表示、カスタム字幕形式への対応、サービス固有機能の利用を可能にします。利用できる機能はサービスによって異なります。詳しくは"
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "こちら"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "。"
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "お気に入りの動画サービスとのより高度な連携を有効にします。利用できる機能はサービスによって異なります。"
+  },
   "volumeBoostTitle": {
     "message": "音量ブースト"
   },
