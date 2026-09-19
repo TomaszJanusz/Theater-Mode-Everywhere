@@ -126,6 +126,10 @@ body {
   background: color-mix(in srgb, var(--accent-color) 5%, var(--card-bg));
 }
 
+.rte-card[hidden] {
+  display: none;
+}
+
 .rte-copy { min-width: 0; flex: 1; }
 .rte-label { display: block; font-size: 12px; font-weight: 650; color: var(--text-primary); cursor: pointer; }
 .rte-copy p { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.35; }
