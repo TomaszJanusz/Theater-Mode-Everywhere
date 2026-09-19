@@ -321,19 +321,19 @@
     "message": "Co nowego"
   },
   "whatsNewLead": {
-    "message": "Oto co się ostatnio zmieniło:"
+    "message": "Poznaj Rich Theater Experience z dodatkowymi narzędziami odtwarzania dla obsługiwanych serwisów wideo."
   },
-  "whatsNewItemFit": {
-    "message": "Tryby Dopasuj, Wypełnij i Rozciągnij w trybie kinowym — przycisk na pasku i skrót Z."
+  "whatsNewItemCaptions": {
+    "message": "Lepsze napisy: wybierz ścieżkę, dostosuj ich wygląd i zapamiętaj preferowany język dla każdej witryny."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Przełączanie wideo na stronie informuje, gdy funkcja jest niedostępna, bo jest tylko jeden odtwarzacz."
+  "whatsNewItemChapters": {
+    "message": "Więcej informacji na osi czasu: przechodź między rozdziałami i zobacz najczęściej odtwarzane momenty na YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "W ustawieniach pojawiły się Zgłoś błąd oraz promo Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Podejrzyj przed przewinięciem: najedź na oś czasu, aby zobaczyć miniatury w obsługiwanych odtwarzaczach YouTube, Vimeo, Patreon, Twitch i Disney+."
   },
   "whatsNewThanks": {
-    "message": "Dzięki Denisowi za sugestie i uwagi :)"
+    "message": "Włącz Rich Theater Experience (Experimental) z poziomu popupu rozszerzenia na obsługiwanych stronach lub na stronie Ustawienia. Funkcja jest nadal eksperymentalna, więc niektóre możliwości mogą różnić się zależnie od serwisu :)"
   },
   "dialogAcknowledge": {
     "message": "Rozumiem"

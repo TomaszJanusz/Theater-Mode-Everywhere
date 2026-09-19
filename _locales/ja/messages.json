@@ -306,19 +306,19 @@
     "message": "新着情報"
   },
   "whatsNewLead": {
-    "message": "最近の変更点:"
+    "message": "対応動画サービス向けの追加再生ツール、Rich Theater Experience を紹介します。"
   },
-  "whatsNewItemFit": {
-    "message": "シアターモードのフィット / フィル / ストレッチ。ツールバーのボタンとショートカット Z で切り替えられます。"
+  "whatsNewItemCaptions": {
+    "message": "字幕をもっと便利に: トラックを選び、見た目をカスタマイズし、サイトごとに優先言語を保存できます。"
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "ページ上の動画切り替えは、プレーヤーが1つしかないときに利用できない理由を表示します。"
+  "whatsNewItemChapters": {
+    "message": "タイムラインの情報を充実: チャプター間を移動し、YouTube の最も繰り返し再生された場面を確認できます。"
   },
-  "whatsNewItemSettings": {
-    "message": "設定に「バグを報告」と Privacy Thing の紹介が追加されました。"
+  "whatsNewItemPreviews": {
+    "message": "シーク前にプレビュー: タイムラインにカーソルを合わせると、対応する YouTube、Vimeo、Patreon、Twitch、Disney+ プレーヤーでサムネイルを表示します。"
   },
   "whatsNewThanks": {
-    "message": "Denis さん、ご提案とフィードバックをありがとうございます :)"
+    "message": "対応サイトでは拡張機能のポップアップから、または設定ページから Rich Theater Experience (Experimental) を有効にできます。まだ実験的な機能のため、サービスによって利用できる機能が異なる場合があります :)"
   },
   "dialogAcknowledge": {
     "message": "了解"

@@ -306,19 +306,19 @@
     "message": "ما الجديد"
   },
   "whatsNewLead": {
-    "message": "إليك ما تغيّر مؤخرًا:"
+    "message": "تعرّف على Rich Theater Experience مع أدوات تشغيل إضافية لخدمات الفيديو المدعومة."
   },
-  "whatsNewItemFit": {
-    "message": "أوضاع الملاءمة والتعبئة والتمديد في وضع المسرح، مع زر في الشريط واختصار Z."
+  "whatsNewItemCaptions": {
+    "message": "ترجمات أفضل: اختر مسارًا، وخصّص مظهر الترجمة، واحتفظ بلغتك المفضلة لكل موقع."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "تبديل الفيديو في الصفحة يوضح الآن متى يكون التبديل غير متاح لأن هناك مشغّلًا واحدًا فقط."
+  "whatsNewItemChapters": {
+    "message": "مزيد من السياق على الخط الزمني: انتقل بين الفصول وشاهد أكثر اللحظات إعادةً على YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "تتضمن الإعدادات الآن الإبلاغ عن خطأ وترويج Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ المدعومة."
   },
   "whatsNewThanks": {
-    "message": "شكرًا لـ Denis على الاقتراحات والملاحظات :)"
+    "message": "فعّل Rich Theater Experience (Experimental) من نافذة الإضافة على المواقع المدعومة أو من صفحة الإعدادات. ما زالت الميزة تجريبية، لذا قد تختلف بعض الوظائف حسب الخدمة :)"
   },
   "dialogAcknowledge": {
     "message": "حسنًا"

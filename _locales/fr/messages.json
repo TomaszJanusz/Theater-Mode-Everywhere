@@ -306,19 +306,19 @@
     "message": "Nouveautés"
   },
   "whatsNewLead": {
-    "message": "Voici ce qui a changé récemment :"
+    "message": "Découvrez Rich Theater Experience, avec des outils de lecture supplémentaires pour les services vidéo pris en charge."
   },
-  "whatsNewItemFit": {
-    "message": "Les modes Ajuster, Remplir et Étirer en mode cinéma, avec un bouton dans la barre et le raccourci Z."
+  "whatsNewItemCaptions": {
+    "message": "De meilleurs sous-titres : choisissez une piste, personnalisez leur apparence et conservez votre langue préférée pour chaque site."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Changer de vidéo sur la page explique désormais quand le changement est indisponible parce qu’il n’y a qu’un seul lecteur."
+  "whatsNewItemChapters": {
+    "message": "Plus de contexte sur la chronologie : passez d'un chapitre à l'autre et découvrez les moments les plus rejoués de YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "Les paramètres incluent désormais Signaler un bug et une promo Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch et Disney+ pris en charge."
   },
   "whatsNewThanks": {
-    "message": "Merci à Denis pour les suggestions et les retours :)"
+    "message": "Activez Rich Theater Experience (Experimental) depuis la fenêtre de l'extension sur les sites pris en charge, ou depuis la page Paramètres. La fonctionnalité est encore expérimentale, certaines fonctions peuvent donc varier selon le service :)"
   },
   "dialogAcknowledge": {
     "message": "Compris"

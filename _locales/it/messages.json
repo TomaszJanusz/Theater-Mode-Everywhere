@@ -306,19 +306,19 @@
     "message": "Novità"
   },
   "whatsNewLead": {
-    "message": "Ecco cosa è cambiato di recente:"
+    "message": "Scopri Rich Theater Experience, con strumenti di riproduzione aggiuntivi per i servizi video supportati."
   },
-  "whatsNewItemFit": {
-    "message": "Le modalità Adatta, Riempi e Allunga in modalità cinema, con un pulsante nella barra e la scorciatoia Z."
+  "whatsNewItemCaptions": {
+    "message": "Sottotitoli migliori: scegli una traccia, personalizzane l'aspetto e conserva la lingua preferita per ogni sito."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Cambia video nella pagina ora spiega quando il cambio non è disponibile perché c’è un solo lettore."
+  "whatsNewItemChapters": {
+    "message": "Più contesto sulla timeline: passa da un capitolo all'altro e scopri i momenti più riprodotti su YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "Le impostazioni ora includono Segnala un bug e una promo Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Anteprima prima di cercare: passa il cursore sulla timeline per vedere le miniature nei player supportati di YouTube, Vimeo, Patreon, Twitch e Disney+."
   },
   "whatsNewThanks": {
-    "message": "Grazie a Denis per i suggerimenti e i commenti :)"
+    "message": "Attiva Rich Theater Experience (Experimental) dal popup dell'estensione sui siti supportati o dalla pagina Impostazioni. La funzione è ancora sperimentale, quindi alcune funzionalità possono variare in base al servizio :)"
   },
   "dialogAcknowledge": {
     "message": "Ho capito"

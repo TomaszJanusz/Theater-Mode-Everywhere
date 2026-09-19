@@ -306,19 +306,19 @@
     "message": "新功能"
   },
   "whatsNewLead": {
-    "message": "近期更新："
+    "message": "认识 Rich Theater Experience，为受支持的视频服务提供更多播放工具。"
   },
-  "whatsNewItemFit": {
-    "message": "影院模式新增适应、填充和拉伸，可通过工具栏按钮和快捷键 Z 切换。"
+  "whatsNewItemCaptions": {
+    "message": "更好的字幕：选择字幕轨道，自定义字幕外观，并为每个网站保存首选语言。"
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "“切换页面上的视频”现在会说明为何在只有一个播放器时无法切换。"
+  "whatsNewItemChapters": {
+    "message": "时间轴信息更丰富：在章节之间跳转，并查看 YouTube 上重播次数最多的片段。"
   },
-  "whatsNewItemSettings": {
-    "message": "设置中新增了“报告错误”和 Privacy Thing 推广。"
+  "whatsNewItemPreviews": {
+    "message": "搜索前先预览：将鼠标悬停在时间轴上，即可在受支持的 YouTube、Vimeo、Patreon、Twitch 和 Disney+ 播放器中查看视频缩略图。"
   },
   "whatsNewThanks": {
-    "message": "感谢 Denis 的建议和反馈 :)"
+    "message": "可在受支持网站的扩展弹出窗口中，或在设置页面中启用 Rich Theater Experience (Experimental)。该功能仍处于实验阶段，因此部分功能可能因服务而异 :)"
   },
   "dialogAcknowledge": {
     "message": "知道了"

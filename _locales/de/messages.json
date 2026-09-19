@@ -306,19 +306,19 @@
     "message": "Neuigkeiten"
   },
   "whatsNewLead": {
-    "message": "Das hat sich zuletzt geändert:"
+    "message": "Entdecke Rich Theater Experience mit zusätzlichen Wiedergabewerkzeugen für unterstützte Videodienste."
   },
-  "whatsNewItemFit": {
-    "message": "Die Modi Einpassen, Füllen und Strecken im Kinomodus, mit einer Schaltfläche in der Leiste und dem Shortcut Z."
+  "whatsNewItemCaptions": {
+    "message": "Bessere Untertitel: Wähle eine Spur, passe ihr Aussehen an und speichere deine bevorzugte Sprache für jede Website."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "„Video auf der Seite wechseln“ erklärt jetzt, wenn das Wechseln nicht möglich ist, weil nur ein Player auf der Seite ist."
+  "whatsNewItemChapters": {
+    "message": "Mehr Kontext auf der Zeitleiste: Springe zwischen Kapiteln und sieh dir die meistwiederholten Momente auf YouTube an."
   },
-  "whatsNewItemSettings": {
-    "message": "In den Einstellungen gibt es jetzt „Fehler melden“ und eine Privacy-Thing-Empfehlung."
+  "whatsNewItemPreviews": {
+    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten YouTube-, Vimeo-, Patreon-, Twitch- und Disney+-Playern zu sehen."
   },
   "whatsNewThanks": {
-    "message": "Danke an Denis für die Anregungen und Rückmeldungen :)"
+    "message": "Aktiviere Rich Theater Experience (Experimental) über das Erweiterungs-Popup auf unterstützten Websites oder auf der Einstellungsseite. Die Funktion ist noch experimentell, daher können einzelne Funktionen je nach Dienst variieren :)"
   },
   "dialogAcknowledge": {
     "message": "Verstanden"

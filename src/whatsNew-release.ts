@@ -12,13 +12,13 @@ export type WhatsNewRelease = {
  * `autoOpenOptions` only for deliberate, high-impact release onboarding.
  */
 export const WHATS_NEW_RELEASE: WhatsNewRelease = {
-  id: 'fit-and-settings',
+  id: 'rich-theater-experience',
   itemKeys: [
-    'whatsNewItemFit',
-    'whatsNewItemSwitchVideo',
-    'whatsNewItemSettings'
+    'whatsNewItemCaptions',
+    'whatsNewItemChapters',
+    'whatsNewItemPreviews'
   ],
-  autoOpenOptions: false
+  autoOpenOptions: true
 };
 
 export const WHATS_NEW_ACK_STORAGE_KEY = 'whatsNewAcknowledgedId';

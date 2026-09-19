@@ -321,19 +321,19 @@
     "message": "What's New"
   },
   "whatsNewLead": {
-    "message": "Here's what changed recently:"
+    "message": "Meet Rich Theater Experience, with extra playback tools for supported video services."
   },
-  "whatsNewItemFit": {
-    "message": "Fit, Fill, and Stretch modes in theater mode, with a toolbar button and the Z shortcut."
+  "whatsNewItemCaptions": {
+    "message": "Better captions: choose a track, customize how subtitles look, and keep your preferred language for each site."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Switch Video on Page now explains when switching is unavailable because the page has only one player."
+  "whatsNewItemChapters": {
+    "message": "More context on the timeline: jump between chapters and see YouTube's Most Replayed moments."
   },
-  "whatsNewItemSettings": {
-    "message": "Settings now include Report a Bug and a Privacy Thing promo."
+  "whatsNewItemPreviews": {
+    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players."
   },
   "whatsNewThanks": {
-    "message": "Thanks to Denis for the suggestions and feedback :)"
+    "message": "Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It's still experimental, so some features may vary by service :)"
   },
   "dialogAcknowledge": {
     "message": "Got it"

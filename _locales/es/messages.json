@@ -306,19 +306,19 @@
     "message": "Novedades"
   },
   "whatsNewLead": {
-    "message": "Esto es lo que cambió recientemente:"
+    "message": "Descubre Rich Theater Experience con herramientas de reproducción adicionales para servicios de vídeo compatibles."
   },
-  "whatsNewItemFit": {
-    "message": "Modos Ajustar, Rellenar y Estirar en modo cine, con un botón en la barra y el atajo Z."
+  "whatsNewItemCaptions": {
+    "message": "Mejores subtítulos: elige una pista, personaliza su aspecto y guarda tu idioma preferido para cada sitio."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Cambiar vídeo en la página ahora explica cuándo no está disponible porque solo hay un reproductor."
+  "whatsNewItemChapters": {
+    "message": "Más contexto en la línea de tiempo: salta entre capítulos y descubre los momentos más repetidos de YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "Ajustes ahora incluye Informar de un error y una promo de Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Previsualiza antes de buscar: pasa el cursor por la línea de tiempo para ver miniaturas en reproductores compatibles de YouTube, Vimeo, Patreon, Twitch y Disney+."
   },
   "whatsNewThanks": {
-    "message": "Gracias a Denis por las sugerencias y los comentarios :)"
+    "message": "Activa Rich Theater Experience (Experimental) desde la ventana emergente de la extensión en sitios compatibles o desde la página de Ajustes. Sigue siendo experimental, por lo que algunas funciones pueden variar según el servicio :)"
   },
   "dialogAcknowledge": {
     "message": "Entendido"
