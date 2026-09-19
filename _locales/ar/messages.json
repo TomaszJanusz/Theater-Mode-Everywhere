@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "معطل"
   },
+  "statusDisabledByParent": {
+    "message": "معطّل بواسطة $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "غير نشط (نظام)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "تشغيل أو إيقاف سلوكيات وضع المسرح الاختيارية."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (تجريبية)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة — اقرأ المزيد "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "هنا"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك. يختلف التوفر حسب الخدمة."
+  },
   "volumeBoostTitle": {
     "message": "تضخيم الصوت"
   },
@@ -125,31 +148,31 @@
     "message": "تكامل YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "استخدم ترجمات YouTube والفصول ومعاينات الخط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في YouTube دون طلبات إضافية إلى YouTube."
+    "message": "يفعّل دعم الترجمات والفصول وخريطة Most Replayed والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "vimeoIntegrationTitle": {
     "message": "تكامل Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "استخدم علامات فصول Vimeo ومعاينات الشريط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Vimeo دون طلبات إضافية إلى Vimeo."
+    "message": "يفعّل دعم علامات الفصول والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "patreonIntegrationTitle": {
     "message": "تكامل Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "استخدم ترجمات Patreon ومعاينات الخط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Patreon دون طلبات إضافية إلى Mux."
+    "message": "يفعّل دعم الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "twitchIntegrationTitle": {
     "message": "تكامل Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "استخدم فصول فيديوهات Twitch ومعاينات المخطط الزمني في وضع المسرح. أوقف هذا الخيار للإبقاء على وضع المسرح في Twitch دون طلبات إضافية إلى شبكات Twitch."
+    "message": "يفعّل دعم فصول الفيديو المسجّل والصور المصغّرة على الخط الزمني في وضع المسرح."
   },
   "disneyIntegrationTitle": {
     "message": "تكامل Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "استخدم ترجمات Disney+ ومعاينات الشريط الزمني في وضع المسرح عندما تتوفر في جلسة التشغيل. أوقف الخيار للإبقاء على وضع المسرح في Disney+ دون طلبات إضافية إلى شبكات Disney."
+    "message": "يفعّل دعم الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
   },
   "liveBadge": {
     "message": "مباشر"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "تبديل الترجمة"
   },
+  "increaseSubtitleSize": { "message": "تكبير حجم الترجمة" },
+  "decreaseSubtitleSize": { "message": "تصغير حجم الترجمة" },
   "subtitlesTooltip": {
     "message": "الترجمة <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "الترجمة متوقفة"
+  },
+  "subtitlesLoadingHud": {
+    "message": "جارٍ تحميل الترجمة..."
   },
   "subtitlesLoadFailedHud": {
     "message": "تعذر تحميل الترجمة"
@@ -293,19 +321,19 @@
     "message": "ما الجديد"
   },
   "whatsNewLead": {
-    "message": "إليك ما تغيّر مؤخرًا:"
+    "message": "تعرّف على Rich Theater Experience مع أدوات تشغيل إضافية لخدمات الفيديو المدعومة."
   },
-  "whatsNewItemFit": {
-    "message": "أوضاع الملاءمة والتعبئة والتمديد في وضع المسرح، مع زر في الشريط واختصار Z."
+  "whatsNewItemCaptions": {
+    "message": "ترجمات أفضل: اختر مسارًا، وخصّص مظهر الترجمة، واحتفظ بلغتك المفضلة لكل موقع."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "تبديل الفيديو في الصفحة يوضح الآن متى يكون التبديل غير متاح لأن هناك مشغّلًا واحدًا فقط."
+  "whatsNewItemChapters": {
+    "message": "مزيد من السياق على الخط الزمني: انتقل بين الفصول وشاهد أكثر اللحظات إعادةً على YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "تتضمن الإعدادات الآن الإبلاغ عن خطأ وترويج Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ المدعومة."
   },
   "whatsNewThanks": {
-    "message": "شكرًا لـ Denis على الاقتراحات والملاحظات :)"
+    "message": "فعّل Rich Theater Experience (Experimental) من نافذة الإضافة على المواقع المدعومة أو من صفحة الإعدادات. ما زالت الميزة تجريبية، لذا قد تختلف بعض الوظائف حسب الخدمة :)"
   },
   "dialogAcknowledge": {
     "message": "حسنًا"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "خفض الصوت (5%)"
+  },
+  "toggleMute": {
+    "message": "تبديل كتم الصوت"
   },
   "frameFullscreenPipTitle": {
     "message": "الإطار، ملء الشاشة و PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "إيقاف مؤقت"
+  },
+  "muteHud": {
+    "message": "كتم الصوت"
+  },
+  "unmuteHud": {
+    "message": "إلغاء الكتم"
   },
   "pictureInPictureTooltip": {
     "message": "صورة داخل صورة <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "خيارات الترجمة"
+  },
+  "subtitleFont": {
+    "message": "الخط"
   },
   "subtitleTextColor": {
     "message": "النص"

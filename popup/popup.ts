@@ -1,6 +1,15 @@
 /* Popup script for Theater Everywhere */
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
+import { parentBlockedEntry, removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
+import {
+  mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from '../src/media-features/provider-flags';
+import { shouldPatchMainWorld } from '../src/providers/registry';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
@@ -13,6 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusDotEl = document.getElementById('status-dot') as HTMLElement;
   const statusTextEl = document.getElementById('status-text') as HTMLElement;
   const optionsBtn = document.getElementById('options-btn') as HTMLButtonElement;
+  const richTheaterCard = document.getElementById('rich-theater-experience-card') as HTMLElement;
+  const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement;
 
   let currentDomain = '';
   let activeTabId: number | null = null;
@@ -32,6 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         currentDomain = domain;
         domainNameEl.textContent = url.hostname;
+        if (shouldPatchMainWorld(url.hostname)) {
+          richTheaterCard.hidden = false;
+          const providerData = await chrome.storage.sync.get(mediaProviderFlagStorageKeys());
+          richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(providerData));
+        }
         
         // Load settings and update UI
         await updateStatusUI();
@@ -82,8 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       blacklist = blacklist.map(d => d.startsWith('www.') ? d.substring(4) : d);
 
       if (isActive) {
-        // Remove from blacklist to activate
-        blacklist = blacklist.filter(d => d !== currentDomain);
+        blacklist = removeMatchingBlacklistEntry(currentDomain, blacklist);
       } else {
         // Add to blacklist to deactivate
         if (!blacklist.includes(currentDomain)) {
@@ -113,21 +128,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  richTheaterToggle.addEventListener('change', async () => {
+    try {
+      await chrome.storage.sync.set(
+        mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(richTheaterToggle.checked))
+      );
+      if (activeTabId) await chrome.tabs.sendMessage(activeTabId, { action: 'statusChanged' });
+    } catch (err) {
+      console.error('Error saving Rich Theater Experience setting:', err);
+    }
+  });
+
   // Helper to read storage and set toggle state
   async function updateStatusUI() {
     try {
       const data = await chrome.storage.sync.get({ blacklist: [] });
       const blacklist = (data.blacklist || []) as string[];
       
-      const isBlacklisted = blacklist.some(d => {
-        const clean = d.startsWith('www.') ? d.substring(4) : d;
-        return clean === currentDomain;
-      });
-
-      // In blacklist = not active = checkbox unchecked
-      const isActive = !isBlacklisted;
+      const policy = resolveDomainPolicy(currentDomain, blacklist);
+      const isActive = !policy.effective;
       toggleEl.checked = isActive;
-      setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+      const parentEntry = parentBlockedEntry(policy);
+      if (parentEntry) {
+        setUIState(false, t('statusDisabledByParent', parentEntry));
+      } else {
+        setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+      }
     } catch (err) {
       console.error('Error reading storage:', err);
     }

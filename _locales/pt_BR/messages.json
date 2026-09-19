@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Desativado"
   },
+  "statusDisabledByParent": {
+    "message": "Desativado por $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Inativo (sistema)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Ative ou desative o comportamento opcional do modo teatro."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Experimental)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+ e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço — saiba mais "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "aqui"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos. A disponibilidade varia conforme o serviço."
+  },
   "volumeBoostTitle": {
     "message": "Amplificação de Volume"
   },
@@ -125,37 +148,37 @@
     "message": "Integração com o YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Usa legendas, capítulos e prévias da linha do tempo do YouTube no modo teatro. Desative para manter o modo teatro no YouTube sem pedidos extras ao YouTube."
+    "message": "Ativa o suporte a legendas, capítulos, mapa Most Replayed e miniaturas na linha do tempo no modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integração com o Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Usa os marcadores de capítulos e as miniaturas da linha do tempo do Vimeo no modo teatro. Desative para manter o modo teatro no Vimeo sem pedidos extras ao Vimeo."
+    "message": "Ativa o suporte a marcadores de capítulos e miniaturas na linha do tempo no modo teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integração com o Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Usa as legendas e as prévias da linha do tempo do Patreon no modo teatro. Desative para manter o modo teatro no Patreon sem pedidos extras ao Mux."
+    "message": "Ativa o suporte a legendas e miniaturas na linha do tempo no modo teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integração com a Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Usa os capítulos e as prévias da linha do tempo dos VODs da Twitch no modo teatro. Desative para manter o modo teatro na Twitch sem pedidos extras às CDNs da Twitch."
+    "message": "Ativa o suporte a capítulos de VOD e miniaturas na linha do tempo no modo teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integração com Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Use legendas e prévias da linha do tempo do Disney+ no modo teatro quando a sessão de reprodução as incluir. Desative para manter o modo teatro no Disney+ sem pedidos extras às CDNs da Disney."
+    "message": "Ativa o suporte a legendas e miniaturas na linha do tempo no modo teatro quando o player as oferece."
   },
   "liveBadge": {
     "message": "AO VIVO"
   },
   "jumpToLive": {
-    "message": "Ir para o ao vivo"
+    "message": "Voltar à transmissão ao vivo"
   },
   "websiteExclusionsTitle": {
     "message": "Exclusões de Sites"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Ativar ou desativar legendas"
   },
+  "increaseSubtitleSize": { "message": "Aumentar tamanho das legendas" },
+  "decreaseSubtitleSize": { "message": "Diminuir tamanho das legendas" },
   "subtitlesTooltip": {
     "message": "Legendas <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Legendas desativadas"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Carregando legendas..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Não foi possível carregar as legendas"
@@ -293,19 +321,19 @@
     "message": "Novidades"
   },
   "whatsNewLead": {
-    "message": "Veja o que mudou recentemente:"
+    "message": "Conheça o Rich Theater Experience, com ferramentas extras de reprodução para serviços de vídeo compatíveis."
   },
-  "whatsNewItemFit": {
-    "message": "Os modos Ajustar, Preencher e Esticar no modo cinema, com um botão na barra e o atalho Z."
+  "whatsNewItemCaptions": {
+    "message": "Legendas melhores: escolha uma faixa, personalize a aparência e mantenha seu idioma preferido para cada site."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Trocar vídeo na página agora explica quando a troca está indisponível porque há apenas um player."
+  "whatsNewItemChapters": {
+    "message": "Mais contexto na linha do tempo: navegue entre capítulos e veja os momentos mais reproduzidos do YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "As configurações agora incluem Reportar um bug e uma promo do Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Veja antes de buscar: passe o cursor sobre a linha do tempo para ver miniaturas em players compatíveis do YouTube, Vimeo, Patreon, Twitch e Disney+."
   },
   "whatsNewThanks": {
-    "message": "Obrigado ao Denis pelas sugestões e pelos comentários :)"
+    "message": "Ative o Rich Theater Experience (Experimental) pelo pop-up da extensão em sites compatíveis ou pela página de Configurações. O recurso ainda é experimental, portanto algumas funções podem variar conforme o serviço :)"
   },
   "dialogAcknowledge": {
     "message": "Entendi"
@@ -326,16 +354,19 @@
     "message": "Reproduzir / Pausar"
   },
   "seekBackward5": {
-    "message": "Retroceder (5s)"
+    "message": "Retroceder (5 s)"
   },
   "seekForward5": {
-    "message": "Avançar (5s)"
+    "message": "Avançar (5 s)"
   },
   "volumeUp5": {
     "message": "Aumentar Volume (5%)"
   },
   "volumeDown5": {
     "message": "Diminuir Volume (5%)"
+  },
+  "toggleMute": {
+    "message": "Alternar mudo"
   },
   "frameFullscreenPipTitle": {
     "message": "Quadro, Tela Cheia e PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pausar"
+  },
+  "muteHud": {
+    "message": "Som desativado"
+  },
+  "unmuteHud": {
+    "message": "Som ativado"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
@@ -433,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Opções de legendas"
   },
+  "subtitleFont": {
+    "message": "Fonte"
+  },
   "subtitleTextColor": {
     "message": "Texto"
   },
@@ -455,7 +495,7 @@
     "message": "Concluído"
   },
   "autoGeneratedTrack": {
-    "message": "$1 (auto)",
+    "message": "$1 (automática)",
     "placeholders": {
       "label": {
         "content": "$1"

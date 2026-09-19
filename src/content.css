@@ -1,13 +1,15 @@
 /* CSS styles for Theater Everywhere extension */
 
 /*
- * Player chrome lives in #theater-everywhere-ui's shadow root so page stylesheets
- * cannot restyle it. :host applies only inside that shadow tree. The host itself
- * is also reset from JS (inline !important) because inherited font/color still
- * pierce shadow DOM from the page.
+ * Player chrome lives in #theater-everywhere-ui's shadow root so page
+ * stylesheets cannot restyle it. The host sits in the page light DOM: this
+ * content-script ID rule is the shield against page CSS. :host carries the
+ * same layout inside the shadow sheet so the overlay does not need inline
+ * !important on the host element.
  */
-#theater-everywhere-ui {
-  all: initial;
+#theater-everywhere-ui,
+:host {
+  all: initial !important;
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
@@ -18,19 +20,15 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1.4 !important;
   color: #f8fafc !important;
-}
-
-:host {
-  all: initial;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  line-height: 1.4 !important;
-  color: #f8fafc !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* The active video or iframe element in theater mode */
-.theater-everywhere-video-active {
+/* The active video or iframe element in theater mode.
+ * Disney+ overwrites video.className and drops theater-everywhere-video-active;
+ * data-theater-everywhere is not part of that rewrite. */
+.theater-everywhere-video-active,
+html.theater-everywhere-html-active [data-theater-everywhere] {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -41,6 +39,7 @@
   min-width: 100vw !important;
   min-height: 100vh !important;
   z-index: 2147483647 !important;
+  background: #000000 !important;
   background-color: #000000 !important;
   object-fit: var(--theater-object-fit, contain) !important;
   opacity: 1 !important;
@@ -77,6 +76,67 @@
   z-index: 2147483647 !important;
 }
 
+/* Disney+ overwrites video.className (dropping theater-everywhere-video-active),
+ * so the CSS black background is lost and body rgb(23,23,27) shows through the
+ * EME letterbox. Stage + body black survive that; DxcOverlay is the title/back chrome. */
+#theater-everywhere-disney-stage {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000000 !important;
+  z-index: 2147483645 !important;
+  pointer-events: none !important;
+}
+
+html.theater-everywhere-disney-stage,
+html.theater-everywhere-disney-stage body {
+  background: #000000 !important;
+}
+
+html.theater-everywhere-disney-stage .DxcOverlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Twitch `.persistent-player` uses an identity transform, which becomes the
+ * containing block for position:fixed and keeps the theater video inside the
+ * 16:9 player well instead of the viewport. */
+html.theater-everywhere-twitch-stage .persistent-player {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  translate: none !important;
+  overflow: visible !important;
+  z-index: 2147483646 !important;
+  background: #000000 !important;
+}
+
+html.theater-everywhere-twitch-stage .video-player,
+html.theater-everywhere-twitch-stage .video-player__container,
+html.theater-everywhere-twitch-stage .tw-aspect {
+  transform: none !important;
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.theater-everywhere-twitch-stage .side-nav,
+html.theater-everywhere-twitch-stage .top-nav,
+html.theater-everywhere-twitch-stage .right-column,
+html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Hide scrollbars on the document when theater mode is active */
 .theater-everywhere-body-active,
 .theater-everywhere-html-active {
@@ -104,19 +164,21 @@
   bottom: 24px !important;
   left: 24px !important;
   right: 24px !important;
-  z-index: 2147483647 !important;
+  z-index: 2147483646 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
-  background-color: rgba(9, 9, 11, 0.85) !important;
-  background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  background: transparent !important;
+  border: none !important;
   border-radius: 12px !important;
   padding: 10px 16px !important;
   overflow: visible !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
+  contain: none !important;
+  clip-path: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
   user-select: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -126,6 +188,22 @@
   font-style: normal !important;
   letter-spacing: normal !important;
   text-transform: none !important;
+}
+
+/* Glass on a pseudo so backdrop-filter cannot clip the heatmap above the bar. */
+.theater-controls-wrapper::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border-radius: 12px !important;
+  background-color: rgba(9, 9, 11, 0.85) !important;
+  background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
 }
 
 .theater-controls-wrapper[dir="rtl"] {
@@ -146,6 +224,9 @@
   position: relative !important;
   margin: 0 16px !important;
   overflow: visible !important;
+  contain: none !important;
+  clip-path: none !important;
+  z-index: 1 !important;
 }
 
 .theater-scrubber-track {
@@ -153,6 +234,7 @@
   background-color: rgba(255, 255, 255, 0.2) !important;
   border-radius: 2px !important;
   position: relative !important;
+  overflow: visible !important;
   transition: height 0.15s ease !important;
 }
 
@@ -195,11 +277,116 @@
   transition: transform 0.15s ease !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
   z-index: 5 !important;
+  pointer-events: none !important;
 }
 
 .theater-scrubber-container:hover .theater-scrubber-handle,
 .theater-scrubber-container.dragging .theater-scrubber-handle {
   transform: translate(-50%, -50%) scale(1) !important;
+}
+
+.theater-scrubber-heatmap {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 50px !important;
+  bottom: calc(100% + 17px) !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  overflow: visible !important;
+  display: block !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.12s !important;
+}
+
+.theater-scrubber-heatmap.theater-scrubber-heatmap-ready {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.theater-scrubber-container:hover .theater-scrubber-heatmap.theater-scrubber-heatmap-ready,
+.theater-scrubber-container.dragging .theater-scrubber-heatmap.theater-scrubber-heatmap-ready {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s !important;
+}
+
+.theater-scrubber-heatmap-path {
+  stroke: none !important;
+}
+
+.theater-scrubber-heatmap-glow-layer {
+  overflow: visible !important;
+  filter: blur(8px) !important;
+}
+
+.theater-scrubber-heatmap-glow {
+  fill: none !important;
+  stroke: rgba(0, 0, 0, 0.175) !important;
+  stroke-width: 16px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  vector-effect: non-scaling-stroke;
+  transform: translateY(-6px);
+}
+
+.theater-scrubber-heatmap-stroke {
+  fill: none !important;
+  stroke: rgba(255, 255, 255, 0.75) !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.theater-heatmap-fill-white {
+  stop-color: #ffffff;
+}
+
+.theater-heatmap-fill-accent {
+  stop-color: var(--accent-color, #6366f1);
+}
+
+.theater-scrubber-heatmap-played {
+  visibility: hidden !important;
+}
+
+.theater-scrubber-heatmap-played .theater-scrubber-heatmap-stroke {
+  stroke: color-mix(in srgb, var(--accent-color, #6366f1) 75%, transparent) !important;
+}
+
+.theater-scrubber-heatmap-scrubbing .theater-scrubber-heatmap-played {
+  visibility: visible !important;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #ffffff 0,
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px),
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px)
+  ) !important;
+  mask-image: linear-gradient(
+    to right,
+    #ffffff 0,
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px),
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px)
+  ) !important;
+}
+
+.theater-scrubber-heatmap-scrubbing .theater-scrubber-heatmap-remaining {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px),
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px)
+  ) !important;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(var(--theater-heatmap-hover, 0%) + 1px),
+    #ffffff calc(var(--theater-heatmap-hover, 0%) + 1px)
+  ) !important;
 }
 
 .theater-scrubber-chapters {
@@ -225,6 +412,9 @@
   align-items: center !important;
   width: 100% !important;
   position: relative !important;
+  z-index: 1 !important;
+  overflow: visible !important;
+  contain: none !important;
 }
 
 .theater-controls-wrapper[dir="rtl"] .theater-controls-row {
@@ -468,9 +658,14 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+  font-feature-settings: "tnum" 1, "lnum" 1 !important;
+  font-variant-ligatures: none !important;
   color: var(--text-secondary, #a1a1aa) !important;
   user-select: none !important;
   margin-inline-start: 6px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .theater-time-display.theater-time-live {
@@ -633,8 +828,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Pulsing handle animation during buffering/seeking */
-.theater-scrubber-container.buffering .theater-scrubber-handle,
+/* Pulsing pin while dragging a seek target */
 .theater-scrubber-container.dragging .theater-scrubber-handle {
   transform: translate(-50%, -50%) scale(1) !important;
   animation: theater-pulse 1.2s infinite ease-in-out !important;
@@ -682,16 +876,20 @@
   opacity: 1 !important;
 }
 
+.theater-has-heatmap .theater-scrubber-tooltip {
+  transform: translateX(-50%) translateY(-38px) !important;
+}
+
 .theater-scrubber-preview {
   border-radius: 4px !important;
   overflow: hidden !important;
   background-color: #111 !important;
-  max-width: 160px !important;
-  max-height: 90px !important;
+  max-width: 250px !important;
+  max-height: 160px !important;
 }
 
 .theater-scrubber-chapter-title {
-  max-width: 180px !important;
+  max-width: 250px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 1.3 !important;
@@ -763,11 +961,11 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 .theater-caption-overlay-text {
   display: inline-block !important;
   background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
-  color: var(--theater-caption-color, #ffffff) !important;
+  color: var(--theater-caption-color, rgba(250, 217, 0, 1)) !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: calc(clamp(16px, 2.4vw, 28px) * var(--theater-caption-scale, 1)) !important;
+  font-family: var(--theater-caption-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif) !important;
+  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
   white-space: pre-wrap !important;
@@ -914,8 +1112,8 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 /* Fallback when overlay cues cannot be extracted. font-family/text-shadow are not supported on ::cue. */
 video::cue {
   background-color: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
-  color: var(--theater-caption-color, #ffffff) !important;
-  font-size: calc(16px * var(--theater-caption-scale, 1)) !important;
+  color: var(--theater-caption-color, rgba(250, 217, 0, 1)) !important;
+  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
 }
@@ -925,7 +1123,8 @@ video::-webkit-media-text-track-display {
   transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
-.theater-everywhere-video-active.controls-visible::-webkit-media-text-track-display {
+.theater-everywhere-video-active.controls-visible::-webkit-media-text-track-display,
+html.theater-everywhere-html-active [data-theater-everywhere].controls-visible::-webkit-media-text-track-display {
   transform: translateY(-80px) !important;
 }
 
@@ -1175,6 +1374,45 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   direction: rtl !important;
 }
 
+.theater-everywhere-caption-hud {
+  position: fixed !important;
+  top: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(15, 15, 15, 0.5) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 10px 18px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.theater-everywhere-caption-hud[dir="rtl"] {
+  right: auto !important;
+  left: 24px !important;
+  direction: rtl !important;
+}
+
+.theater-everywhere-caption-hud.fade-out {
+  opacity: 0 !important;
+  transform: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
 .theater-everywhere-volume-overlay.boosted {
   border-color: rgba(245, 158, 11, 0.4) !important;
 }
@@ -1206,15 +1444,63 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   animation: volume-hud-zoom-out 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
 
-.theater-everywhere-volume-overlay.status-hud .volume-hud-icon {
+.theater-everywhere-volume-overlay.status-hud .volume-hud-icon,
+.theater-everywhere-caption-hud.status-hud .volume-hud-icon {
   flex-shrink: 0 !important;
 }
 
-.theater-everywhere-volume-overlay.status-hud .volume-hud-text {
+.theater-everywhere-volume-overlay.status-hud .volume-hud-text,
+.theater-everywhere-caption-hud.status-hud .volume-hud-text {
   max-width: 22rem !important;
   white-space: normal !important;
   font-weight: 600 !important;
   line-height: 1.35 !important;
+}
+
+.volume-hud-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  text-align: right !important;
+}
+
+.caption-hud-content {
+  display: inline-flex !important;
+  width: fit-content !important;
+  max-width: none !important;
+}
+
+.caption-hud-content .volume-hud-copy {
+  width: fit-content !important;
+}
+
+.caption-hud-content .volume-hud-text,
+.caption-hud-content .volume-hud-detail {
+  max-width: none !important;
+}
+
+.theater-everywhere-caption-hud[dir="rtl"] .volume-hud-copy {
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+
+.volume-hud-detail {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+}
+
+.caption-hud-spinner {
+  width: 22px !important;
+  height: 22px !important;
+  border: 2.5px solid rgba(255, 255, 255, 0.2) !important;
+  border-top-color: var(--accent-color, #6366f1) !important;
+  border-radius: 50% !important;
+  animation: theater-spin 0.8s linear infinite !important;
 }
 
 @keyframes volume-hud-zoom-in {
@@ -1329,18 +1615,39 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-caption-options {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+.theater-caption-options-dialog {
+  width: min(600px, 100%) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(155deg, rgba(35, 38, 40, 0.98), rgba(17, 18, 20, 0.98)) !important;
+}
+
+.theater-caption-options-dialog .te-dialog-body {
+  overflow: visible !important;
+}
+
+.theater-caption-options-footer {
+  justify-content: space-between !important;
 }
 
 .theater-caption-options-preview {
   display: flex !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding: 18px 12px !important;
-  border-radius: 8px !important;
-  background: #09090b !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  grid-column: 1 / -1 !important;
+  min-height: 64px !important;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.1), transparent 55%), #090a0b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
 .theater-caption-option-row {
@@ -1348,39 +1655,122 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 16px !important;
-  min-height: 32px !important;
+  min-height: 0 !important;
+  padding: 9px 11px !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.theater-caption-option-stack {
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: 8px !important;
 }
 
 .theater-caption-option-label {
   color: #f8fafc !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.035em !important;
+  text-transform: uppercase !important;
+}
+
+.theater-caption-font-choices {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.theater-caption-options > .theater-caption-option-stack:not(.theater-caption-shadow-row):not(.theater-caption-palette-row-compact) {
+  grid-column: 1 / -1 !important;
+}
+
+.theater-caption-font-choice {
+  appearance: none !important;
+  min-width: 0 !important;
+  height: 46px !important;
+  padding: 0 !important;
+  border: 2px solid transparent !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: #f8fafc !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.theater-caption-font-choice:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  transform: translateY(-1px) !important;
+}
+
+.theater-caption-font-choice.active {
+  border-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 5px 14px rgba(0, 0, 0, 0.22) !important;
+}
+
+.theater-caption-palette {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.theater-caption-swatch {
+  appearance: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border: 2px solid transparent !important;
+  border-radius: 50% !important;
+  background: var(--swatch-color) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.theater-caption-swatch:hover {
+  transform: scale(1.08) !important;
+}
+
+.theater-caption-swatch.active {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.65), 0 0 0 4px #ffffff !important;
+}
+
+.theater-caption-font-choice:focus-visible,
+.theater-caption-swatch:focus-visible {
+  outline: 3px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
+}
+
+.theater-caption-opacity-control {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.theater-caption-opacity-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  color: #aeb4bd !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
 }
 
-.theater-caption-color {
-  width: 28px !important;
-  height: 28px !important;
-  padding: 0 !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  border-radius: 50% !important;
-  background: none !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-}
-
-.theater-caption-color::-webkit-color-swatch-wrapper {
-  padding: 0 !important;
-}
-
-.theater-caption-color::-webkit-color-swatch {
-  border: none !important;
-  border-radius: 50% !important;
+.theater-caption-opacity-header output {
+  color: #f8fafc !important;
+  font-variant-numeric: tabular-nums !important;
 }
 
 .theater-caption-slider {
   -webkit-appearance: none !important;
   appearance: none !important;
-  width: 140px !important;
+  width: 180px !important;
   height: 6px !important;
   border-radius: 999px !important;
   background: rgba(255, 255, 255, 0.2) !important;
@@ -1395,6 +1785,79 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: var(--accent-color, #6366f1) !important;
   border: none !important;
   cursor: pointer !important;
+  box-shadow: 0 0 0 2px #18181b, 0 0 0 3px rgba(255, 255, 255, 0.55) !important;
+}
+
+.theater-caption-slider::-moz-range-track {
+  height: 6px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.theater-caption-slider::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: var(--accent-color, #6366f1) !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 2px #18181b, 0 0 0 3px rgba(255, 255, 255, 0.55) !important;
+}
+
+.theater-caption-opacity-control .theater-caption-slider {
+  width: 100% !important;
+}
+
+.theater-caption-size-row {
+  align-items: stretch !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.theater-caption-size-control {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  gap: 5px !important;
+}
+
+.theater-caption-size-control .theater-caption-slider {
+  width: 100% !important;
+}
+
+.theater-caption-size-marks {
+  display: flex !important;
+  justify-content: space-between !important;
+  color: #a1a1aa !important;
+  font-size: 10px !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1 !important;
+}
+
+.theater-caption-shadow-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 22px !important;
+}
+
+.theater-caption-palette-row-compact {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(180px, 1fr) !important;
+  align-items: end !important;
+  column-gap: 20px !important;
+}
+
+.theater-caption-palette-row-compact > .theater-caption-option-label {
+  grid-column: 1 / -1 !important;
+}
+
+.theater-caption-palette-row-compact .theater-caption-palette {
+  justify-content: flex-start !important;
+  gap: 14px !important;
 }
 
 .theater-caption-toggle {
@@ -1410,6 +1873,11 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+.theater-caption-toggle input:focus-visible + .theater-caption-toggle-track {
+  outline: 3px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
 }
 
 .theater-caption-toggle-track {
@@ -1442,3 +1910,21 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: #ffffff !important;
 }
 
+@media (max-width: 520px) {
+  .theater-caption-options-dialog {
+    padding: 16px 14px 14px !important;
+  }
+
+  .theater-caption-font-choice {
+    height: 42px !important;
+    font-size: 23px !important;
+  }
+
+  .theater-caption-option-row {
+    padding: 8px !important;
+  }
+
+  .theater-caption-palette-row-compact {
+    grid-template-columns: auto minmax(130px, 1fr) !important;
+  }
+}

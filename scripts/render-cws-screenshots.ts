@@ -943,7 +943,7 @@ async function injectContentScriptFallback(
     Object.entries(locale.messages).map(([key, value]) => [key, value.message ?? '']),
   );
   messages['@@bidi_dir'] = getLocaleBidiDir(locale.code);
-  messages['@@bidi_lang'] = locale.chromeLang;
+  messages['@@ui_locale'] = locale.chromeLang;
 
   await evaluate(cdp, sessionId, [
     '(() => {',

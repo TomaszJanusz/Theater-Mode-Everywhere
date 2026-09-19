@@ -15,6 +15,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   errorLoading: 'Error loading',
   statusActive: 'Active',
   statusDisabled: 'Disabled',
+  statusDisabledByParent: 'Disabled by $1',
   statusInactiveSystem: 'Inactive (system)',
   statusUnavailable: 'Unavailable',
   toggleTheaterModeLower: 'Toggle theater mode',
@@ -38,16 +39,21 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   featuresDescription: 'Turn optional theater mode behavior on or off.',
   volumeBoostTitle: 'Volume Boost',
   volumeBoostDescription: 'Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.',
+  richTheaterExperienceTitle: 'Rich Theater Experience (Experimental)',
+  richTheaterExperienceDescription: 'Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service—read more ',
+  richTheaterExperienceReadMore: 'here',
+  richTheaterExperienceDescriptionEnd: '.',
+  richTheaterExperiencePopupDescription: 'Enable richer integrations with your favorite video services. Availability varies by service.',
   youtubeIntegrationTitle: 'YouTube integration',
-  youtubeIntegrationDescription: 'Use YouTube captions, chapters, and timeline previews in theater mode. Turn this off to keep theater mode on YouTube without extra requests to YouTube.',
+  youtubeIntegrationDescription: 'Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode.',
   vimeoIntegrationTitle: 'Vimeo integration',
-  vimeoIntegrationDescription: 'Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo.',
+  vimeoIntegrationDescription: 'Enables support for chapter markers and thumbnails on the timeline in theater mode.',
   patreonIntegrationTitle: 'Patreon integration',
-  patreonIntegrationDescription: 'Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux.',
+  patreonIntegrationDescription: 'Enables support for captions and thumbnails on the timeline in theater mode.',
   twitchIntegrationTitle: 'Twitch integration',
-  twitchIntegrationDescription: 'Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs.',
+  twitchIntegrationDescription: 'Enables support for VOD chapters and thumbnails on the timeline in theater mode.',
   disneyIntegrationTitle: 'Disney+ integration',
-  disneyIntegrationDescription: 'Use Disney+ captions and timeline previews in theater mode when the player session includes them. Turn this off to keep theater mode on Disney+ without extra requests to Disney CDNs.',
+  disneyIntegrationDescription: 'Enables support for captions and thumbnails on the timeline in theater mode when the player provides them.',
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',
@@ -82,11 +88,11 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   privacyThingPopoverNote: 'Free and open source.',
   whatsNew: "What's New",
   whatsNewDialogTitle: "What's New",
-  whatsNewLead: "Here's what changed recently:",
-  whatsNewItemFit: 'Fit, Fill, and Stretch modes in theater mode, with a toolbar button and the Z shortcut.',
-  whatsNewItemSwitchVideo: 'Switch Video on Page now explains when switching is unavailable because the page has only one player.',
-  whatsNewItemSettings: 'Settings now include Report a Bug and a Privacy Thing promo.',
-  whatsNewThanks: 'Thanks to Denis for the suggestions and feedback :)',
+  whatsNewLead: 'Meet Rich Theater Experience, with extra playback tools for supported video services.',
+  whatsNewItemCaptions: 'Better captions: choose a track, customize how subtitles look, and keep your preferred language for each site.',
+  whatsNewItemChapters: 'More context on the timeline: jump between chapters and see YouTube\'s Most Replayed moments.',
+  whatsNewItemPreviews: 'Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players.',
+  whatsNewThanks: 'Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It\'s still experimental, so some features may vary by service :)',
   dialogAcknowledge: 'Got it',
   dialogChoiceTrue: 'Yes',
   dialogChoiceFalse: 'No',
@@ -97,6 +103,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   seekForward5: 'Seek Forward (5s)',
   volumeUp5: 'Volume Up (5%)',
   volumeDown5: 'Volume Down (5%)',
+  toggleMute: 'Toggle mute',
   frameFullscreenPipTitle: 'Frame, Fullscreen & PiP',
   frameStepBackward: 'Frame Step Backward',
   frameStepForward: 'Frame Step Forward',
@@ -113,6 +120,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   madeInPoland: 'Made with <span class="heart">❤</span> in 🇵🇱',
   play: 'Play',
   pause: 'Pause',
+  muteHud: 'Mute',
+  unmuteHud: 'Unmute',
   pictureInPictureTooltip: 'Picture-in-Picture <kbd>$1</kbd>',
   exitFullscreen: 'Exit Fullscreen',
   fullscreenTooltip: 'Fullscreen <kbd>$1</kbd>',
@@ -121,10 +130,13 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   disableSubtitles: 'Disable Subtitles',
   enableSubtitles: 'Enable Subtitles',
   toggleSubtitles: 'Toggle Subtitles',
+  increaseSubtitleSize: 'Increase Subtitle Size',
+  decreaseSubtitleSize: 'Decrease Subtitle Size',
   subtitlesTooltip: 'Subtitles <kbd>$1</kbd>',
   subtitlesOnHud: 'Subtitles on',
   subtitlesOnNamedHud: 'Subtitles on: $1',
   subtitlesOffHud: 'Subtitles off',
+  subtitlesLoadingHud: 'Loading subtitles...',
   subtitlesLoadFailedHud: 'Couldn\'t load subtitles',
   noSubtitles: 'No subtitles',
   subtitlesOff: 'Off',
@@ -133,6 +145,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   subtitlesMenuTitle: 'Subtitles',
   subtitleOptions: 'Options',
   subtitleOptionsTitle: 'Subtitle options',
+  subtitleFont: 'Font',
   subtitleTextColor: 'Text',
   subtitleSize: 'Size',
   subtitleDropShadow: 'Shadow',
@@ -144,7 +157,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   keyboardShortcutsTooltip: 'Keyboard Shortcuts <kbd>$1</kbd>',
   fiveSeconds: '5 seconds',
   '@@bidi_dir': 'ltr',
-  '@@bidi_lang': 'en'
+  '@@ui_locale': 'en'
 };
 
 export function t(messageName: string, substitutions?: string | string[]): string {
@@ -207,8 +220,8 @@ function applyDocumentLocale(root: ParentNode): void {
   const bidiDir = t('@@bidi_dir');
   documentElement.dir = bidiDir === 'rtl' ? 'rtl' : 'ltr';
 
-  const bidiLang = t('@@bidi_lang');
-  if (bidiLang && !bidiLang.startsWith('@@')) {
-    documentElement.lang = bidiLang.replace('_', '-');
+  const uiLocale = t('@@ui_locale');
+  if (uiLocale && !uiLocale.startsWith('@@')) {
+    documentElement.lang = uiLocale.replace('_', '-');
   }
 }

@@ -1,6 +1,8 @@
 import { parseCaptionPayload } from './parsers/captions';
 import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
+import { heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
+import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import {
   normalizeYoutubePlayerResponse,
@@ -19,7 +21,8 @@ import type {
   MediaCapabilities,
   MediaFeaturesAdapter,
   PreviewFrame,
-  PreviewSource
+  PreviewSource,
+  TimelineHeatmap
 } from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
@@ -302,6 +305,20 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     return parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
   }
 
+  getHeatmap(): TimelineHeatmap | null {
+    if (this.snapshotMatchesPage()) {
+      const stored = this.snapshot?.heatmap;
+      if (stored?.segments && stored.segments.length > 0) {
+        const durationMs = (this.snapshot?.duration || 0) * 1000;
+        const svgPath = heatmapSvgPath(stored.segments, durationMs || undefined);
+        if (svgPath) return { source: stored.source, segments: stored.segments, svgPath };
+      }
+      if (stored?.svgPath) return stored;
+    }
+    const svgPath = readRenderedYoutubeHeatmapPath();
+    return svgPath ? { source: 'svg', svgPath } : null;
+  }
+
   async getPreviewSource(): Promise<PreviewSource> {
     if (!this.snapshot) await this.load();
     return this.storyboards
@@ -311,7 +328,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
 
   getPreviewFrame(time: number, _duration: number): PreviewFrame | null {
     if (!this.storyboards || !this.snapshotMatchesPage()) return null;
-    const targetWidth = Math.round(160 * (window.devicePixelRatio || 1));
+    const targetWidth = Math.round(PREVIEW_DISPLAY_WIDTH * (window.devicePixelRatio || 1));
     return getStoryboardFrame(this.storyboards, time, targetWidth);
   }
 
@@ -322,7 +339,4 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 }
 
-export function isYouTubeHost(hostname = window.location.hostname): boolean {
-  const host = hostname.replace(/^www\./, '');
-  return host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com' || host.endsWith('.youtube.com');
-}
+export { isYouTubeHost } from '../providers/hosts';

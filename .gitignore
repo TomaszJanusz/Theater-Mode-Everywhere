@@ -157,6 +157,12 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Browser extension artifacts
 web-ext-artifacts/
 *.crx

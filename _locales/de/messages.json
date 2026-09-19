@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Deaktiviert"
   },
+  "statusDisabledByParent": {
+    "message": "Deaktiviert durch $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Inaktiv (System)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Schalte optionale Funktionen des Theatermodus ein oder aus."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Experimentell)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+ und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst — mehr dazu "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "hier"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten. Die Verfügbarkeit variiert je nach Dienst."
+  },
   "volumeBoostTitle": {
     "message": "Lautstärkeverstärkung"
   },
@@ -125,31 +148,31 @@
     "message": "YouTube-Integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "YouTube-Untertitel, Kapitel und Timeline-Vorschauen im Kinomodus. Ausschalten, um den Kinomodus auf YouTube ohne zusätzliche Anfragen an YouTube zu behalten."
+    "message": "Aktiviert die Unterstützung für Untertitel, Kapitel, die Most-Replayed-Heatmap und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo-Integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Vimeo-Kapitelmarken und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Vimeo ohne zusätzliche Anfragen an Vimeo zu behalten."
+    "message": "Aktiviert die Unterstützung für Kapitelmarken und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon-Integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Patreon-Untertitel und Timeline-Vorschaubilder im Kinomodus. Ausschalten, um den Kinomodus auf Patreon ohne zusätzliche Anfragen an Mux zu behalten."
+    "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch-Integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Kapitel und Timeline-Vorschaubilder von Twitch-VODs im Kinomodus. Ausschalten, um den Kinomodus auf Twitch ohne zusätzliche Anfragen an Twitch-CDNs zu behalten."
+    "message": "Aktiviert die Unterstützung für VOD-Kapitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+-Integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Nutze Disney+-Untertitel und Timeline-Vorschauen im Theater-Modus, wenn die Wiedergabesitzung sie enthält. Ausschalten, um Theater-Modus auf Disney+ ohne zusätzliche Anfragen an Disney-CDNs zu behalten."
+    "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Untertitel umschalten"
   },
+  "increaseSubtitleSize": { "message": "Untertitel vergrößern" },
+  "decreaseSubtitleSize": { "message": "Untertitel verkleinern" },
   "subtitlesTooltip": {
     "message": "Untertitel <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -245,11 +270,14 @@
   "subtitlesOffHud": {
     "message": "Untertitel aus"
   },
+  "subtitlesLoadingHud": {
+    "message": "Untertitel werden geladen..."
+  },
   "subtitlesLoadFailedHud": {
     "message": "Untertitel konnten nicht geladen werden"
   },
   "onlyOneVideoHud": {
-    "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehr Player auf der Seite vorhanden sind."
+    "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehrere Player auf der Seite vorhanden sind."
   },
   "cycleIframeHud": {
     "message": "Wechseln funktioniert nur mit HTML5-Video"
@@ -293,19 +321,19 @@
     "message": "Neuigkeiten"
   },
   "whatsNewLead": {
-    "message": "Das hat sich zuletzt geändert:"
+    "message": "Entdecke Rich Theater Experience mit zusätzlichen Wiedergabewerkzeugen für unterstützte Videodienste."
   },
-  "whatsNewItemFit": {
-    "message": "Die Modi Einpassen, Füllen und Strecken im Kinomodus, mit einer Schaltfläche in der Leiste und dem Shortcut Z."
+  "whatsNewItemCaptions": {
+    "message": "Bessere Untertitel: Wähle eine Spur, passe ihr Aussehen an und speichere deine bevorzugte Sprache für jede Website."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "„Video auf der Seite wechseln“ erklärt jetzt, wenn das Wechseln nicht möglich ist, weil nur ein Player auf der Seite ist."
+  "whatsNewItemChapters": {
+    "message": "Mehr Kontext auf der Zeitleiste: Springe zwischen Kapiteln und sieh dir die meistwiederholten Momente auf YouTube an."
   },
-  "whatsNewItemSettings": {
-    "message": "In den Einstellungen gibt es jetzt „Fehler melden“ und eine Privacy-Thing-Empfehlung."
+  "whatsNewItemPreviews": {
+    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten YouTube-, Vimeo-, Patreon-, Twitch- und Disney+-Playern zu sehen."
   },
   "whatsNewThanks": {
-    "message": "Danke an Denis für die Anregungen und Rückmeldungen :)"
+    "message": "Aktiviere Rich Theater Experience (Experimental) über das Erweiterungs-Popup auf unterstützten Websites oder auf der Einstellungsseite. Die Funktion ist noch experimentell, daher können einzelne Funktionen je nach Dienst variieren :)"
   },
   "dialogAcknowledge": {
     "message": "Verstanden"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Leiser (5%)"
+  },
+  "toggleMute": {
+    "message": "Stummschaltung umschalten"
   },
   "frameFullscreenPipTitle": {
     "message": "Einzelbild, Vollbild und PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "muteHud": {
+    "message": "Stumm"
+  },
+  "unmuteHud": {
+    "message": "Ton an"
   },
   "pictureInPictureTooltip": {
     "message": "Bild-in-Bild <kbd>$KEY$</kbd>",
@@ -433,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Untertiteloptionen"
   },
+  "subtitleFont": {
+    "message": "Schriftart"
+  },
   "subtitleTextColor": {
     "message": "Text"
   },
@@ -455,7 +495,7 @@
     "message": "Fertig"
   },
   "autoGeneratedTrack": {
-    "message": "$1 (auto)",
+    "message": "$1 (automatisch)",
     "placeholders": {
       "label": {
         "content": "$1"

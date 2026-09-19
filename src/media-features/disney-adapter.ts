@@ -99,8 +99,16 @@ async function fetchDisneyBif(url: string, blobUrl?: string): Promise<ArrayBuffe
   if (direct && isDisneyTimelineBif(direct)) return direct;
   const fromPage = await requestPageFetch(url, 20000);
   if (fromPage?.startsWith('blob:')) {
-    const buffer = await loadArrayBuffer(fromPage);
-    if (buffer && isDisneyTimelineBif(buffer)) return buffer;
+    try {
+      const buffer = await loadArrayBuffer(fromPage);
+      if (buffer && isDisneyTimelineBif(buffer)) return buffer;
+    } finally {
+      try {
+        URL.revokeObjectURL(fromPage);
+      } catch {
+        // Blob URLs created in MAIN may not be revocable from isolated world.
+      }
+    }
   }
   return null;
 }
@@ -122,7 +130,7 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, index: num
 
 function activeVideoTime(): number {
   if (typeof document === 'undefined') return 0;
-  const video = document.querySelector('video.theater-everywhere-video-active') as HTMLVideoElement | null
+  const video = document.querySelector('video.theater-everywhere-video-active, video[data-theater-everywhere]') as HTMLVideoElement | null
     || document.querySelector('video');
   const playhead = readDisneyContentTime(video);
   if (playhead != null && playhead > 0) return playhead;

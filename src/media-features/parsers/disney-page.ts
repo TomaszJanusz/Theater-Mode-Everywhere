@@ -61,17 +61,26 @@ export function isUsableDisneyMediaVideo(video: HTMLVideoElement | null | undefi
   }
   const hasBox = boxW > 8 && boxH > 8;
   const hasSource = Boolean(video.currentSrc || video.src);
-  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className)) {
+  const markedTheater = hasTheaterVideoMark(video);
+  if (/\bhive-video\b/.test(className) || /\btheater-everywhere-video-active\b/.test(className) || markedTheater) {
     return videoWidth > 0 || hasSource || hasBox;
   }
   return (videoWidth > 0 || hasSource) && hasBox;
+}
+
+function hasTheaterVideoMark(item: HTMLVideoElement): boolean {
+  try {
+    return typeof item.hasAttribute === 'function' && item.hasAttribute('data-theater-everywhere');
+  } catch {
+    return false;
+  }
 }
 
 export function rankDisneyMediaVideos(videos: HTMLVideoElement[]): HTMLVideoElement[] {
   const usable = videos.filter((item) => isUsableDisneyMediaVideo(item));
   const score = (item: HTMLVideoElement) => {
     const className = typeof item.className === 'string' ? item.className : '';
-    if (/\btheater-everywhere-video-active\b/.test(className)) return 3;
+    if (/\btheater-everywhere-video-active\b/.test(className) || hasTheaterVideoMark(item)) return 3;
     if (/\bhive-video\b/.test(className)) return 2;
     return 1;
   };
@@ -126,10 +135,7 @@ function stripWww(hostname: string): string {
   return hostname.replace(/^www\./i, '').toLowerCase();
 }
 
-export function isDisneyHost(hostname = typeof window === 'undefined' ? '' : window.location.hostname): boolean {
-  const host = stripWww(hostname);
-  return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
-}
+export { isDisneyHost } from '../../providers/hosts';
 
 export function disneyPlayId(href: string): string | null {
   try {
@@ -398,7 +404,6 @@ export function parseDisneyThumbnailIndex(raw: unknown): DisneyThumbnailMeta | n
     };
     const count = Number((main as { thumbnailCount?: number }).thumbnailCount);
     if (!best || (Number.isFinite(count) && count > 10)) best = meta;
-    if (String((main as { presentationType?: string }).presentationType || '').toUpperCase() === 'MAIN') return meta;
   }
   return best;
 }
@@ -492,7 +497,7 @@ export function parseDisneyPlaybackPayload(raw: unknown, mediaId?: string | null
     masterUrl,
     captions: [],
     storyboardUrl: thumbnail?.bifUrl || storyboards[0],
-    thumbnail
+    thumbnail: thumbnail ?? undefined
   };
 }
 

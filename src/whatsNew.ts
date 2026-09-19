@@ -1,5 +1,9 @@
 import { openDialog } from './dialog';
 import { t } from './i18n';
+import {
+  WHATS_NEW_ACK_STORAGE_KEY,
+  WHATS_NEW_RELEASE
+} from './whatsNew-release';
 
 /**
  * Stable ID of the current What's New announcement.
@@ -10,14 +14,7 @@ import { t } from './i18n';
  * Leave it unchanged for version bumps, hotfixes, store-listing edits,
  * or any release that should not reopen this dialog.
  */
-export const WHATS_NEW_ANNOUNCEMENT_ID = 'fit-and-settings';
-export const WHATS_NEW_ACK_STORAGE_KEY = 'whatsNewAcknowledgedId';
-
-const WHATS_NEW_ITEM_KEYS = [
-  'whatsNewItemFit',
-  'whatsNewItemSwitchVideo',
-  'whatsNewItemSettings'
-] as const;
+export const WHATS_NEW_ANNOUNCEMENT_ID = WHATS_NEW_RELEASE.id;
 
 export function buildWhatsNewContent(): HTMLElement {
   const root = document.createElement('div');
@@ -30,7 +27,7 @@ export function buildWhatsNewContent(): HTMLElement {
 
   const list = document.createElement('ul');
   list.className = 'whats-new-list';
-  for (const key of WHATS_NEW_ITEM_KEYS) {
+  for (const key of WHATS_NEW_RELEASE.itemKeys) {
     const item = document.createElement('li');
     item.textContent = t(key);
     list.appendChild(item);

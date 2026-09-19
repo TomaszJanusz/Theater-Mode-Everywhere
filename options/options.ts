@@ -14,6 +14,13 @@ import {
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
 import { hasUnseenWhatsNew, openWhatsNewDialog, syncWhatsNewButtonState } from '../src/whatsNew';
+import {
+  mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from '../src/media-features/provider-flags';
 
 definePrivacyThingLogo();
 
@@ -51,10 +58,13 @@ interface Shortcuts {
   toggleFullscreen: string;
   volumeUp: string;
   volumeDown: string;
+  toggleMute: string;
   togglePiP: string;
   showHelp: string;
   cycleFit: string;
   toggleCaptions: string;
+  increaseCaptionSize: string;
+  decreaseCaptionSize: string;
 }
 
 const defaultShortcuts: Shortcuts = {
@@ -69,10 +79,13 @@ const defaultShortcuts: Shortcuts = {
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
+  toggleMute: 'M',
   togglePiP: 'P',
   showHelp: 'H',
   cycleFit: 'Z',
-  toggleCaptions: 'C'
+  toggleCaptions: 'C',
+  increaseCaptionSize: '+',
+  decreaseCaptionSize: '-'
 };
 
 function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
@@ -116,12 +129,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
-  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false },
-  { id: 'youtube-integration-toggle', key: 'youtubeIntegrationEnabled', fallback: true },
-  { id: 'vimeo-integration-toggle', key: 'vimeoIntegrationEnabled', fallback: true },
-  { id: 'patreon-integration-toggle', key: 'patreonIntegrationEnabled', fallback: true },
-  { id: 'twitch-integration-toggle', key: 'twitchIntegrationEnabled', fallback: true },
-  { id: 'disney-integration-toggle', key: 'disneyIntegrationEnabled', fallback: true }
+  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false }
 ] as const;
 
 async function init() {
@@ -414,10 +422,13 @@ async function init() {
     const toggleFullscreenInput = document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement;
     const volumeUpInput = document.getElementById('shortcut-volume-up') as HTMLInputElement;
     const volumeDownInput = document.getElementById('shortcut-volume-down') as HTMLInputElement;
+    const toggleMuteInput = document.getElementById('shortcut-toggle-mute') as HTMLInputElement;
     const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
     const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
     const toggleCaptionsInput = document.getElementById('shortcut-toggle-captions') as HTMLInputElement;
+    const increaseCaptionSizeInput = document.getElementById('shortcut-increase-caption-size') as HTMLInputElement;
+    const decreaseCaptionSizeInput = document.getElementById('shortcut-decrease-caption-size') as HTMLInputElement;
 
     if (toggleInput) toggleInput.value = shortcuts.toggle || defaultShortcuts.toggle;
     if (exitInput) exitInput.value = shortcuts.exit || defaultShortcuts.exit;
@@ -430,10 +441,13 @@ async function init() {
     if (toggleFullscreenInput) toggleFullscreenInput.value = shortcuts.toggleFullscreen || defaultShortcuts.toggleFullscreen;
     if (volumeUpInput) volumeUpInput.value = shortcuts.volumeUp || defaultShortcuts.volumeUp;
     if (volumeDownInput) volumeDownInput.value = shortcuts.volumeDown || defaultShortcuts.volumeDown;
+    if (toggleMuteInput) toggleMuteInput.value = shortcuts.toggleMute || defaultShortcuts.toggleMute;
     if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
     if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
     if (toggleCaptionsInput) toggleCaptionsInput.value = shortcuts.toggleCaptions || defaultShortcuts.toggleCaptions;
+    if (increaseCaptionSizeInput) increaseCaptionSizeInput.value = shortcuts.increaseCaptionSize || defaultShortcuts.increaseCaptionSize;
+    if (decreaseCaptionSizeInput) decreaseCaptionSizeInput.value = shortcuts.decreaseCaptionSize || defaultShortcuts.decreaseCaptionSize;
   }
 
   async function loadAndRenderShortcuts() {
@@ -507,10 +521,13 @@ async function init() {
           else if (shortcutId === 'shortcut-toggle-fullscreen') shortcuts.toggleFullscreen = shortcutStr;
           else if (shortcutId === 'shortcut-volume-up') shortcuts.volumeUp = shortcutStr;
           else if (shortcutId === 'shortcut-volume-down') shortcuts.volumeDown = shortcutStr;
+          else if (shortcutId === 'shortcut-toggle-mute') shortcuts.toggleMute = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
           else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-captions') shortcuts.toggleCaptions = shortcutStr;
+          else if (shortcutId === 'shortcut-increase-caption-size') shortcuts.increaseCaptionSize = shortcutStr;
+          else if (shortcutId === 'shortcut-decrease-caption-size') shortcuts.decreaseCaptionSize = shortcutStr;
 
           await chrome.storage.sync.set({ shortcuts });
           await notifyAllTabs();
@@ -560,13 +577,15 @@ async function init() {
   // --- Features ---
   async function loadAndRenderFeatures() {
     try {
-      const data = await safeGetStorage(FEATURE_TOGGLES.map((item) => item.key));
+      const data = await safeGetStorage([...FEATURE_TOGGLES.map((item) => item.key), ...mediaProviderFlagStorageKeys()]);
       for (const item of FEATURE_TOGGLES) {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
         if (!toggle) continue;
         if (data[item.key] === undefined) toggle.checked = item.fallback;
         else toggle.checked = Boolean(data[item.key]);
       }
+      const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
+      if (richTheaterToggle) richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(data));
     } catch (err) {
       console.error('Error loading feature settings:', err);
     }
@@ -601,6 +620,30 @@ async function init() {
         }
       });
     }
+
+    const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
+    richTheaterToggle?.addEventListener('change', async () => {
+      try {
+        const flags = mediaProviderFlagsForRichTheaterExperience(richTheaterToggle.checked);
+        await chrome.storage.sync.set(mediaProviderFlagStorageUpdate(flags));
+        await notifyAllTabs();
+      } catch (err) {
+        console.error('Error saving Rich Theater Experience setting:', err);
+      }
+    });
+
+    const detailsToggle = document.getElementById('rich-theater-experience-details') as HTMLButtonElement | null;
+    const richTheaterInfo = detailsToggle?.closest('.feature-info');
+    detailsToggle?.addEventListener('click', () => {
+      const expanded = !richTheaterInfo?.classList.contains('rte-popover-open');
+      richTheaterInfo?.classList.toggle('rte-popover-open', expanded);
+      detailsToggle.setAttribute('aria-expanded', String(expanded));
+    });
+    document.addEventListener('click', (event) => {
+      if (!(event.target instanceof Node) || richTheaterInfo?.contains(event.target)) return;
+      richTheaterInfo?.classList.remove('rte-popover-open');
+      detailsToggle?.setAttribute('aria-expanded', 'false');
+    });
   }
 
   await setupWhatsNew();

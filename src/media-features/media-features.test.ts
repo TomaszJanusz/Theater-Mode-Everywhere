@@ -3,20 +3,33 @@ import { describe, it } from 'node:test';
 import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
 import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
-import { isAllowedMediaFetchUrl } from './fetch-allowlist';
-import { defaultMediaProviderFlags, resolveMediaProviderFlags } from './provider-flags';
+import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
+import {
+  defaultMediaProviderFlags,
+  mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsForRichTheaterExperience,
+  resolveMediaProviderFlags,
+  richTheaterExperienceEnabled
+} from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
+import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
+import {
+  findYoutubeHeatmap,
+  isYoutubeWatchJsonUrl,
+  validateYoutubeHeatmap,
+  youtubeHeatmapHarvestMatchesPage
+} from './parsers/youtube-heatmap';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
 import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
 import { parsePatreonPageAssets, pickPatreonPageAssets, applyPatreonCaptionMeta, mergePatreonCaptionTracks } from './parsers/patreon-page';
 import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from './parsers/twitch-storyboard';
-import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
+import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchGraphqlBody, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
 import {
   disneyPlayId,
   isDisneyHost,
@@ -40,7 +53,7 @@ import {
   rankDisneyMediaVideos,
   disneyMediaSeekLooksStuck
 } from './parsers/disney-page';
-import { preferProviderCaptionTracks } from './composite-adapter';
+import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
@@ -246,6 +259,8 @@ describe('youtube storyboard parser', () => {
     assert.equal(first!.image.url, nearby!.image.url);
     assert.equal(first!.image.tileWidth, 160);
     assert.match(first!.image.url, /^https:\/\/i9\.ytimg\.com\/sb\/abc\/storyboard3_L2\/M0\.jpg/);
+    const atDisplayWidth = getStoryboardFrame(set!, 0);
+    assert.equal(atDisplayWidth!.image.tileWidth, 160);
   });
 
   it('rejects non-ytimg hosts', () => {
@@ -583,6 +598,18 @@ describe('fetch allowlist', () => {
       url: 'https://vod-akc-euwest1.media.dssott.com/ps01/playlist.m3u8'
     }), false);
   });
+
+  it('uses one classifier for page fetch and the background broker', () => {
+    const youtube = 'https://www.youtube.com/api/timedtext?v=abc';
+    const disneyBif = 'https://vod-akc-euwest1.media.dssott.com/ps01/thumbnails/roku.bif';
+    const twitchStoryboard = 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json';
+    assert.equal(isAllowedPageFetchUrl(youtube), true);
+    assert.equal(isAllowedBrokerFetchUrl(youtube), true);
+    assert.equal(isAllowedPageFetchUrl(disneyBif), true);
+    assert.equal(isAllowedBrokerFetchUrl(disneyBif), false);
+    assert.equal(isAllowedPageFetchUrl(twitchStoryboard), false);
+    assert.equal(isAllowedBrokerFetchUrl(twitchStoryboard), true);
+  });
 });
 
 describe('patreon page asset parser', () => {
@@ -697,6 +724,58 @@ describe('caption track merge', () => {
   });
 });
 
+describe('F-05 composite adapter isolation', () => {
+  const nativeTrack = {
+    id: 'native:0',
+    language: 'en',
+    label: 'English',
+    kind: 'captions' as const,
+    source: 'native-text-track' as const
+  };
+
+  function stubAdapter(overrides: Partial<import('./types').MediaFeaturesAdapter> = {}): import('./types').MediaFeaturesAdapter {
+    return {
+      probe: async () => ({ captions: true, chapters: false, previews: false }),
+      listCaptionTracks: async () => [nativeTrack],
+      activateCaptionTrack: async () => [],
+      dispose() {},
+      ...overrides
+    };
+  }
+
+  it('keeps native caption tracks when another provider rejects', async () => {
+    const composite = new CompositeMediaAdapter([
+      stubAdapter(),
+      stubAdapter({
+        probe: async () => {
+          throw new Error('provider down');
+        },
+        listCaptionTracks: async () => {
+          throw new Error('provider down');
+        }
+      })
+    ]);
+    const capabilities = await composite.probe();
+    const tracks = await composite.listCaptionTracks();
+    assert.equal(capabilities.captions, true);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].id, 'native:0');
+  });
+
+  it('returns the first drawable heatmap', () => {
+    const composite = new CompositeMediaAdapter([
+      stubAdapter(),
+      stubAdapter({
+        getHeatmap: () => ({
+          source: 'markers',
+          svgPath: 'M 0 96 C 10 20 20 20 30 96 L 1000 100 L 0 100 Z'
+        })
+      })
+    ]);
+    assert.equal(composite.getHeatmap()?.source, 'markers');
+  });
+});
+
 describe('twitch page and storyboard parsers', () => {
   const storyboardJson = JSON.stringify([
     {
@@ -740,6 +819,42 @@ https://captions.twitch.tv/en/635475444.vtt`;
     assert.equal(assets.moments[1].start, 60);
     assert.equal(assets.captions.length, 1);
     assert.equal(assets.captions[0].url, 'https://captions.twitch.tv/en/635475444.vtt');
+  });
+
+  it('does not treat other VODs on the page as chapters for the current video', () => {
+    const html = JSON.stringify({
+      videos: [
+        {
+          id: '111',
+          lengthSeconds: 400,
+          moments: { edges: [
+            { node: { positionMilliseconds: 0, durationMilliseconds: 125000, description: 'Special Events' } },
+            { node: { positionMilliseconds: 125000, durationMilliseconds: 10000, description: 'Just Chatting' } }
+          ] }
+        },
+        {
+          id: '2874024019',
+          lengthSeconds: 14400,
+          moments: { edges: [
+            { node: { positionMilliseconds: 0, durationMilliseconds: 14400000, description: 'Cyberpunk 2077' } }
+          ] }
+        },
+        {
+          id: '222',
+          lengthSeconds: 200,
+          moments: { edges: [
+            { node: { positionMilliseconds: 135000, durationMilliseconds: 19000, description: 'FINAL FANTASY XIV ONLINE' } },
+            { node: { positionMilliseconds: 154000, durationMilliseconds: 60000, description: 'God of War: Ragnarok' } }
+          ] }
+        }
+      ]
+    });
+    const assets = parseTwitchPageAssets(html, 'https://www.twitch.tv/videos/2874024019');
+    assert.equal(assets.moments.length, 1);
+    assert.equal(assets.moments[0].title, 'Cyberpunk 2077');
+    const gql = extractTwitchPayloadFromJson(JSON.parse(html), '2874024019');
+    assert.equal(gql.moments?.length, 1);
+    assert.equal(gql.moments?.[0].title, 'Cyberpunk 2077');
   });
 
   it('maps sprite tiles from seekPreviews JSON', () => {
@@ -812,6 +927,22 @@ https://captions.twitch.tv/en/635475444.vtt`;
     assert.equal(payload.moments?.length, 2);
     assert.equal(payload.moments?.[1].title, 'Boss fight');
     assert.equal(payload.moments?.[1].start, 120);
+  });
+
+  it('keeps caption VTT URLs when GQL also has storyboards', () => {
+    const body = JSON.stringify({
+      data: {
+        video: {
+          id: '635475444',
+          lengthSeconds: 120,
+          seekPreviewsURL: 'https://static-cdn.jtvnw.net/cf_vods/abc/storyboards/635475444-info.json',
+          captionTrack: { url: 'https://captions.twitch.tv/en/635475444.vtt', language: 'en' }
+        }
+      }
+    });
+    const payload = parseTwitchGraphqlBody(body, '635475444');
+    assert.equal(payload.captions?.length, 1);
+    assert.equal(payload.captions?.[0].url, 'https://captions.twitch.tv/en/635475444.vtt');
   });
 
   it('keeps CloudFront seekPreviewsURL and derives it from cf_vods thumbs', () => {
@@ -993,6 +1124,25 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachDisneyAdapter(allOn, 'www.disneyplus.com'), true);
     assert.equal(shouldAttachDisneyAdapter({ ...allOn, disney: false }, 'www.disneyplus.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'example.com'), false);
+  });
+
+  it('maps the global Rich Theater Experience switch onto every provider flag', () => {
+    assert.equal(richTheaterExperienceEnabled(allOn), true);
+    assert.equal(richTheaterExperienceEnabled({ ...allOn, twitch: false }), false);
+    assert.deepEqual(mediaProviderFlagsForRichTheaterExperience(false), {
+      youtube: false,
+      vimeo: false,
+      patreon: false,
+      twitch: false,
+      disney: false
+    });
+    assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
+      youtubeIntegrationEnabled: true,
+      vimeoIntegrationEnabled: true,
+      patreonIntegrationEnabled: true,
+      twitchIntegrationEnabled: true,
+      disneyIntegrationEnabled: true
+    });
   });
 });
 
@@ -1311,5 +1461,131 @@ https://vod-akc-euwest1.media.dssott.com/ps01/video/segment.m4s
     assert.equal(disneyBifTimestampSeconds(10_000, 1), 10);
     assert.equal(disneyBifTimestampSeconds(10, 1000), 10);
     assert.equal(disneyBifTimestampSeconds(10_000, 1000), 10);
+  });
+});
+
+describe('YouTube Most Replayed heatmap parser', () => {
+  const modernTree = {
+    frameworkUpdates: {
+      entityBatchUpdate: {
+        mutations: [{
+          payload: {
+            macroMarkersListEntity: {
+              markersList: {
+                markerType: 'MARKER_TYPE_HEATMAP',
+                markers: [
+                  { startMillis: '0', durationMillis: '2790', intensityScoreNormalized: 1 },
+                  { startMillis: '2790', durationMillis: '2790', intensityScoreNormalized: 0.71 }
+                ]
+              }
+            }
+          }
+        }]
+      }
+    }
+  };
+
+  const legacyTree = {
+    playerOverlays: {
+      playerOverlayRenderer: {
+        decoratedPlayerBarRenderer: {
+          decoratedPlayerBarRenderer: {
+            playerBar: {
+              multiMarkersPlayerBarRenderer: {
+                markersMap: [{
+                  key: 'HEATSEEKER',
+                  value: {
+                    heatmap: {
+                      heatmapRenderer: {
+                        heatMarkers: [
+                          {
+                            heatMarkerRenderer: {
+                              timeRangeStartMillis: 0,
+                              markerDurationMillis: 1620,
+                              heatMarkerIntensityScoreNormalized: 0.4
+                            }
+                          },
+                          {
+                            heatMarkerRenderer: {
+                              timeRangeStartMillis: 1620,
+                              markerDurationMillis: 1620,
+                              heatMarkerIntensityScoreNormalized: 1
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }]
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  it('finds MARKER_TYPE_HEATMAP markers by semantic walk', () => {
+    const found = findYoutubeHeatmap(modernTree);
+    assert.equal(found?.source, 'markers');
+    assert.equal(found?.segments?.length, 2);
+    assert.deepEqual(found?.segments?.[0], { startMs: 0, durationMs: 2790, intensity: 1 });
+    assert.equal(validateYoutubeHeatmap(found?.segments), true);
+  });
+
+  it('finds legacy HEATSEEKER / heatmapRenderer markers', () => {
+    const found = findYoutubeHeatmap(legacyTree);
+    assert.equal(found?.source, 'legacy');
+    assert.equal(found?.segments?.[1]?.intensity, 1);
+    assert.equal(found?.segments?.[1]?.startMs, 1620);
+  });
+
+  it('prefers the modern marker list when both formats exist', () => {
+    const found = findYoutubeHeatmap({ ...modernTree, ...legacyTree });
+    assert.equal(found?.source, 'markers');
+    assert.equal(found?.segments?.[0]?.durationMs, 2790);
+  });
+
+  it('returns null when heatmap data is missing', () => {
+    assert.equal(findYoutubeHeatmap({ videoDetails: { videoId: 'abc' } }), null);
+    assert.equal(validateYoutubeHeatmap([]), false);
+    assert.equal(validateYoutubeHeatmap([{ startMs: 10, durationMs: 0, intensity: 1 }]), false);
+  });
+
+  it('accepts intensity above 1 and still builds a path', () => {
+    assert.equal(validateYoutubeHeatmap([{ startMs: 0, durationMs: 1000, intensity: 1.4 }]), true);
+    const d = heatmapSvgPath([{ startMs: 0, durationMs: 1000, intensity: 1.4 }], 1000);
+    assert.match(d, /^M /);
+    assert.match(d, /Z$/);
+    const ridge = heatmapRidgePath(d);
+    assert.match(ridge, /^M /);
+    assert.doesNotMatch(ridge, /Z$/);
+    assert.doesNotMatch(ridge, /L 1000 100/);
+    assert.doesNotMatch(ridge, /L 0 100/);
+  });
+
+  it('binds harvest to the current watch videoId', () => {
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', 'bbbbbbbbbbb'), false);
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', 'aaaaaaaaaaa'), true);
+    assert.equal(youtubeHeatmapHarvestMatchesPage('aaaaaaaaaaa', null), true);
+  });
+
+  it('accepts InnerTube watch JSON URLs and ignores other hosts', () => {
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/next?prettyPrint=false'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/get_watch'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://www.youtube.com/youtubei/v1/player'), true);
+    assert.equal(isYoutubeWatchJsonUrl('https://gql.twitch.tv/gql'), false);
+    assert.equal(isYoutubeWatchJsonUrl(''), true);
+  });
+
+  it('reads a nonempty modern SVG path and skips empty stubs', () => {
+    const path = 'M 0 96 C 50 10 100 10 150 96 L 1000 100 L 0 100 Z';
+    const root = {
+      querySelectorAll: () => [
+        { getAttribute: (name: string) => (name === 'd' ? '   ' : null) },
+        { getAttribute: (name: string) => (name === 'd' ? path : null) }
+      ]
+    };
+    assert.equal(readRenderedYoutubeHeatmapPath(root as unknown as ParentNode), path);
   });
 });

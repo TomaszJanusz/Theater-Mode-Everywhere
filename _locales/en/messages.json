@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Disabled"
   },
+  "statusDisabledByParent": {
+    "message": "Disabled by $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Inactive (system)"
   },
@@ -121,35 +129,50 @@
   "volumeBoostDescription": {
     "message": "Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Experimental)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service—read more "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "here"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Enable richer integrations with your favorite video services. Availability varies by service."
+  },
   "youtubeIntegrationTitle": {
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Use YouTube captions, chapters, and timeline previews in theater mode. Turn this off to keep theater mode on YouTube without extra requests to YouTube."
+    "message": "Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Use Vimeo chapter markers and timeline previews in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo."
+    "message": "Enables support for chapter markers and thumbnails on the timeline in theater mode."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux."
+    "message": "Enables support for captions and thumbnails on the timeline in theater mode."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs."
+    "message": "Enables support for VOD chapters and thumbnails on the timeline in theater mode."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Use Disney+ captions and timeline previews in theater mode when the player session includes them. Turn this off to keep theater mode on Disney+ without extra requests to Disney CDNs."
+    "message": "Enables support for captions and thumbnails on the timeline in theater mode when the player provides them."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Toggle Subtitles"
   },
+  "increaseSubtitleSize": { "message": "Increase Subtitle Size" },
+  "decreaseSubtitleSize": { "message": "Decrease Subtitle Size" },
   "subtitlesTooltip": {
     "message": "Subtitles <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Subtitles off"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Loading subtitles..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Couldn't load subtitles"
@@ -293,19 +321,19 @@
     "message": "What's New"
   },
   "whatsNewLead": {
-    "message": "Here's what changed recently:"
+    "message": "Meet Rich Theater Experience, with extra playback tools for supported video services."
   },
-  "whatsNewItemFit": {
-    "message": "Fit, Fill, and Stretch modes in theater mode, with a toolbar button and the Z shortcut."
+  "whatsNewItemCaptions": {
+    "message": "Better captions: choose a track, customize how subtitles look, and keep your preferred language for each site."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Switch Video on Page now explains when switching is unavailable because the page has only one player."
+  "whatsNewItemChapters": {
+    "message": "More context on the timeline: jump between chapters and see YouTube's Most Replayed moments."
   },
-  "whatsNewItemSettings": {
-    "message": "Settings now include Report a Bug and a Privacy Thing promo."
+  "whatsNewItemPreviews": {
+    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players."
   },
   "whatsNewThanks": {
-    "message": "Thanks to Denis for the suggestions and feedback :)"
+    "message": "Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It's still experimental, so some features may vary by service :)"
   },
   "dialogAcknowledge": {
     "message": "Got it"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Volume Down (5%)"
+  },
+  "toggleMute": {
+    "message": "Toggle mute"
   },
   "frameFullscreenPipTitle": {
     "message": "Frame, Fullscreen & PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "muteHud": {
+    "message": "Mute"
+  },
+  "unmuteHud": {
+    "message": "Unmute"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "Subtitle options"
+  },
+  "subtitleFont": {
+    "message": "Font"
   },
   "subtitleTextColor": {
     "message": "Text"
