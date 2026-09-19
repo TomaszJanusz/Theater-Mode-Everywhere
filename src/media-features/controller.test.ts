@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { MediaFeaturesController, type MediaFeaturesBindings } from './controller';
-import type { CaptionCue, CaptionTrack, MediaFeaturesAdapter } from './types';
+import type { CaptionActivationResult, CaptionCue, CaptionTrack, MediaFeaturesAdapter } from './types';
 import type { CaptionLanguagePreference } from './caption-preference';
 
 class TokenList {
@@ -54,7 +54,11 @@ function fakeButton(): HTMLButtonElement {
   } as unknown as HTMLButtonElement;
 }
 
-function createController(adapter: Partial<MediaFeaturesAdapter> & Pick<MediaFeaturesAdapter, 'listCaptionTracks' | 'activateCaptionTrack'>, extras: Partial<MediaFeaturesBindings> = {}) {
+type TestAdapter = Omit<Partial<MediaFeaturesAdapter>, 'activateCaptionTrack'>
+  & Pick<MediaFeaturesAdapter, 'listCaptionTracks'>
+  & { activateCaptionTrack(id: string | null): Promise<CaptionActivationResult | CaptionCue[] | null> };
+
+function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBindings> = {}) {
   const ccBtn = extras.ccBtn || fakeButton();
   const noopRenderer = {
     setCues() {},
@@ -62,18 +66,31 @@ function createController(adapter: Partial<MediaFeaturesAdapter> & Pick<MediaFea
     setStyle() {},
     dispose() {}
   };
+  const activateCaptionTrack = adapter.activateCaptionTrack;
+  const normalizedAdapter: MediaFeaturesAdapter = {
+    probe: async () => ({ captions: true, chapters: false, previews: false }),
+    getChapters: async () => [],
+    dispose() {},
+    ...adapter,
+    async activateCaptionTrack(id) {
+      const result = await activateCaptionTrack(id);
+      if (result && !Array.isArray(result)) return result;
+      if (id === null) return { status: 'off', delivery: 'none', cues: [] };
+      const tracks = await adapter.listCaptionTracks();
+      const track = tracks.find((item) => item.id === id);
+      if (track?.delivery === 'host') return { status: 'active', delivery: 'host', cues: [] };
+      return result && result.length > 0
+        ? { status: 'active', delivery: 'overlay', cues: result }
+        : { status: 'failed', delivery: 'none', cues: [] };
+    }
+  };
   const controller = new MediaFeaturesController({
     video: { currentTime: 0, duration: 100 } as HTMLVideoElement,
     ccMenu: { replaceChildren() {}, classList: new TokenList(), style: {} } as unknown as HTMLDivElement,
     scrubberTrack: { appendChild() { return null; } } as unknown as HTMLElement,
     t: (key) => key,
     renderer: noopRenderer,
-    adapter: {
-      probe: async () => ({ captions: true, chapters: false, previews: false }),
-      getChapters: async () => [],
-      dispose() {},
-      ...adapter
-    },
+    adapter: normalizedAdapter,
     ...extras,
     ccBtn
   });
@@ -322,13 +339,103 @@ describe('MediaFeaturesController captions toggle', () => {
   it('keeps overlay captions when the media element empties on the same title', async () => {
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK],
-      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      activateCaptionTrack: async (id) => id
+        ? { status: 'active', delivery: 'overlay', cues: SAMPLE_CUES }
+        : { status: 'off', delivery: 'none', cues: [] },
       mediaId: () => 'same-title'
     });
     await controller.refresh();
     await controller.activate(SAMPLE_TRACK.id);
     assert.equal(ccBtn.classList.contains('active'), true);
     assert.equal(controller.retainCaptionsOnElementReset(), true);
+  });
+
+  it('turns captions off when the selected track disappears on refresh', async () => {
+    let tracks: CaptionTrack[] = [SAMPLE_TRACK];
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => tracks,
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      mediaId: () => 'same-title'
+    });
+    await controller.refresh();
+    await controller.activate(SAMPLE_TRACK.id);
+    tracks = [];
+    await controller.refresh();
+    assert.equal(ccBtn.classList.contains('active'), false);
+  });
+
+  it('invalidates an active track when media identity changes to null', async () => {
+    let mediaId: string | null = 'movie-one';
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => mediaId ? [SAMPLE_TRACK] : [],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      mediaId: () => mediaId
+    });
+    await controller.refresh();
+    await controller.activate(SAMPLE_TRACK.id);
+    mediaId = null;
+    await controller.refresh();
+    assert.equal(ccBtn.classList.contains('active'), false);
+  });
+
+  it('rejects a completed activation from the previous media generation', async () => {
+    let mediaId = 'movie-one';
+    let finishActivation!: () => void;
+    const activationGate = new Promise<void>((resolve) => { finishActivation = resolve; });
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => {
+        if (!id) return [];
+        await activationGate;
+        return SAMPLE_CUES;
+      },
+      mediaId: () => mediaId
+    });
+    await controller.refresh();
+    const pending = controller.activate(SAMPLE_TRACK.id);
+    await delay(0);
+    mediaId = 'movie-two';
+    await controller.refresh();
+    finishActivation();
+    assert.equal(await pending, 'off');
+    assert.equal(ccBtn.classList.contains('active'), false);
+  });
+
+  it('keeps CC active during a normal gap between overlay cues', async () => {
+    const updates: number[] = [];
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : [])
+    }, {
+      renderer: {
+        setCues() {},
+        update: (time) => updates.push(time),
+        setStyle() {},
+        dispose() {}
+      }
+    });
+    await controller.refresh();
+    await controller.activate(SAMPLE_TRACK.id);
+    controller.updateTime(10);
+    assert.equal(ccBtn.classList.contains('active'), true);
+    assert.ok(updates.includes(10));
+  });
+
+  it('turns CC off when a dynamic cue window cannot be refreshed', async () => {
+    const hud: string[] = [];
+    const { controller, ccBtn } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      refreshCaptionCues: async () => ({ status: 'failed', delivery: 'none', cues: [] })
+    }, {
+      onCaptionHud: (payload) => hud.push(payload.result)
+    });
+    await controller.refresh();
+    await controller.activate(SAMPLE_TRACK.id);
+    controller.updateTime(50);
+    await delay(0);
+    assert.equal(ccBtn.classList.contains('active'), false);
+    assert.ok(hud.includes('failed'));
   });
 
   it('F-03 does not let a stale refresh retry list captions after adapter rebind', async () => {
@@ -353,7 +460,9 @@ describe('MediaFeaturesController captions toggle', () => {
         calls.push('fresh-list');
         return [SAMPLE_TRACK];
       },
-      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      activateCaptionTrack: async (id) => id
+        ? { status: 'active', delivery: 'overlay', cues: SAMPLE_CUES }
+        : { status: 'off', delivery: 'none', cues: [] },
       getChapters: async () => [],
       dispose() {
         calls.push('fresh-dispose');

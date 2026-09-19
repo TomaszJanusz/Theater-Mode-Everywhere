@@ -8,7 +8,7 @@ import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderF
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
 import { heatmapRidgePath } from './parsers/youtube-heatmap-path';
-import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
+import type { CaptionActivationResult, CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
@@ -68,6 +68,7 @@ export class MediaFeaturesController {
   private tracks: CaptionTrack[] = [];
   private chapters: Chapter[] = [];
   private activeTrackId: string | null = null;
+  private captionState: 'off' | 'loading' | 'active' = 'off';
   private usingOverlayCaptions = false;
   private disposed = false;
   private refreshInFlight = false;
@@ -87,6 +88,10 @@ export class MediaFeaturesController {
   private activateGeneration = 0;
   private sessionEpoch = 0;
   private activateInFlight = false;
+  private captionCueRefreshInFlight = false;
+  private lastCaptionCueRefreshAt = 0;
+  private lastCaptionCueTime = Number.NaN;
+  private captionDiagnostics: Array<Record<string, unknown>> = [];
   private dialogAbort = new AbortController();
 
   constructor(bindings: MediaFeaturesBindings) {
@@ -185,6 +190,7 @@ export class MediaFeaturesController {
     this.chapters = [];
     this.heatmap = null;
     this.activeTrackId = null;
+    this.captionState = 'off';
     this.usingOverlayCaptions = false;
     this.renderer.setCues([]);
     setOverlayCaptionsClass(false);
@@ -200,6 +206,25 @@ export class MediaFeaturesController {
     this.activateGeneration += 1;
     if (!this.dialogAbort.signal.aborted) this.dialogAbort.abort();
     this.dialogAbort = new AbortController();
+  }
+
+  private recordCaptionTransition(reason: string, details: Record<string, unknown> = {}): void {
+    const track = this.activeTrackId
+      ? this.tracks.find((item) => item.id === this.activeTrackId)
+      : undefined;
+    const entry = {
+      at: Date.now(),
+      reason,
+      mediaId: this.mediaId,
+      trackId: this.activeTrackId,
+      state: this.captionState,
+      generation: this.activateGeneration,
+      provider: track?.source || null,
+      ...details
+    };
+    this.captionDiagnostics.push(entry);
+    if (this.captionDiagnostics.length > 20) this.captionDiagnostics.shift();
+    console.debug('[Theater Everywhere] Caption state:', entry);
   }
 
   private isCurrent(epoch: number, adapter: MediaFeaturesAdapter): boolean {
@@ -250,13 +275,17 @@ export class MediaFeaturesController {
         errors.push(providerError('network-failed', { capability: 'captions', cause: err, epoch }));
       }
       if (!this.isCurrent(epoch, adapter)) return;
-      const mediaChanged = Boolean(previousId && this.mediaId && previousId !== this.mediaId);
-      if (mediaChanged) {
+      const mediaChanged = previousId !== this.mediaId;
+      const activeTrackMissing = Boolean(this.activeTrackId && !this.tracks.some((track) => track.id === this.activeTrackId));
+      if (mediaChanged || activeTrackMissing) {
         this.activateGeneration += 1;
+        if (activeTrackMissing) void adapter.activateCaptionTrack(null);
         this.activeTrackId = null;
+        this.captionState = 'off';
         this.usingOverlayCaptions = false;
         this.renderer.setCues([]);
         setOverlayCaptionsClass(false);
+        this.recordCaptionTransition(mediaChanged ? 'media-changed' : 'track-missing', { previousId });
       }
       this.renderChapterMarks();
       this.renderHeatmap();
@@ -434,7 +463,7 @@ export class MediaFeaturesController {
   }
 
   private captionsAreOn(): boolean {
-    return this.activeTrackId !== null;
+    return this.captionState === 'active' && this.activeTrackId !== null;
   }
 
   private updateCcState(): void {
@@ -594,24 +623,25 @@ export class MediaFeaturesController {
     if (this.disposed) return this.captionsAreOn() ? 'on' : 'off';
     const gen = ++this.activateGeneration;
     this.activateInFlight = true;
+    this.captionState = id ? 'loading' : 'off';
+    this.updateCcState();
     const persist = options?.persist !== false;
     if (id && options?.hud === true) {
       this.onCaptionHud?.({ result: 'loading' });
     }
     try {
-      let overlayCues: Awaited<ReturnType<MediaFeaturesAdapter['activateCaptionTrack']>> = [];
+      let activation: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
       try {
-        overlayCues = await this.adapter.activateCaptionTrack(id);
+        activation = await this.adapter.activateCaptionTrack(id);
       } catch (err) {
         console.error('[Theater Everywhere] Caption activate failed:', err);
-        overlayCues = [];
+        activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       if (this.disposed || gen !== this.activateGeneration) {
         return this.captionsAreOn() ? 'on' : 'off';
       }
       const selected = id ? this.tracks.find((item) => item.id === id) : undefined;
-      const hostManaged = selected?.delivery === 'host';
-      let on = Boolean(id && (hostManaged || (overlayCues && overlayCues.length > 0)));
+      let on = Boolean(id && selected && activation.status === 'active');
       if (id && !on) {
         try {
           await this.adapter.activateCaptionTrack(null);
@@ -621,13 +651,21 @@ export class MediaFeaturesController {
         if (this.disposed || gen !== this.activateGeneration) {
           return this.captionsAreOn() ? 'on' : 'off';
         }
-        overlayCues = [];
+        activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       this.activeTrackId = on ? id : null;
-      this.usingOverlayCaptions = on && !hostManaged;
-      this.renderer.setCues(on && !hostManaged ? overlayCues || [] : []);
-      setOverlayCaptionsClass(on && !hostManaged);
+      this.captionState = on ? 'active' : 'off';
+      this.usingOverlayCaptions = on && activation.delivery === 'overlay';
+      this.renderer.setCues(this.usingOverlayCaptions ? activation.cues : []);
+      setOverlayCaptionsClass(this.usingOverlayCaptions);
       if (on) this.renderer.update(displayMediaTime(this.video));
+      this.recordCaptionTransition(on ? 'activated' : id ? 'activation-failed' : 'deactivated', {
+        delivery: activation.delivery,
+        cueCount: activation.cues.length,
+        cueStart: activation.cues[0]?.start ?? null,
+        cueEnd: activation.cues.at(-1)?.end ?? null,
+        provider: selected?.source || null
+      });
       this.persistAfterActivate(id, on, persist);
       this.updateCcState();
       this.renderCcMenu();
@@ -671,7 +709,39 @@ export class MediaFeaturesController {
   }
 
   updateTime(time: number): void {
-    if (this.usingOverlayCaptions) this.renderer.update(time);
+    if (!this.usingOverlayCaptions) return;
+    this.renderer.update(time);
+    if (!this.adapter.refreshCaptionCues || !this.activeTrackId || this.captionCueRefreshInFlight) return;
+    const now = Date.now();
+    const seeked = Number.isFinite(this.lastCaptionCueTime) && Math.abs(time - this.lastCaptionCueTime) > 15;
+    this.lastCaptionCueTime = time;
+    if (!seeked && now - this.lastCaptionCueRefreshAt < 5000) return;
+    this.lastCaptionCueRefreshAt = now;
+    this.captionCueRefreshInFlight = true;
+    const generation = this.activateGeneration;
+    const trackId = this.activeTrackId;
+    void this.adapter.refreshCaptionCues(trackId, time).then((result) => {
+      if (!result || this.disposed || generation !== this.activateGeneration || trackId !== this.activeTrackId) return;
+      if (result.status === 'active' && result.delivery === 'overlay') {
+        this.renderer.setCues(result.cues);
+        this.renderer.update(time);
+        return;
+      }
+      this.activeTrackId = null;
+      this.captionState = 'off';
+      this.usingOverlayCaptions = false;
+      this.renderer.setCues([]);
+      setOverlayCaptionsClass(false);
+      this.updateCcState();
+      this.renderCcMenu();
+      this.recordCaptionTransition('cue-refresh-failed', { time });
+      this.emitCaptionHud('failed', true);
+      this.onCaptionChange?.();
+    }).catch((error) => {
+      console.error('[Theater Everywhere] Caption cue refresh failed:', error);
+    }).finally(() => {
+      this.captionCueRefreshInFlight = false;
+    });
   }
 
   retainCaptionsOnElementReset(): boolean {

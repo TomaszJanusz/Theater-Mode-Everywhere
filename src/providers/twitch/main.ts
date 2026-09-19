@@ -3,6 +3,7 @@ import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import {
   parseTwitchGraphqlBody,
+  TWITCH_CAPTIONS_ACK_EVENT,
   TWITCH_CAPTIONS_EVENT,
   TWITCH_HOST_CAPTION_ID
 } from '../../media-features/parsers/twitch-page';
@@ -203,18 +204,29 @@ function syncTwitchHostCaptionTrack(): boolean {
   return false;
 }
 
-function setTwitchClosedCaptionsEnabled(enabled: boolean): void {
+function setTwitchClosedCaptionsEnabled(enabled: boolean): boolean {
   const state = readTwitchPlayerCaptionState();
   if (state.setter) {
     try {
       state.setter(enabled);
-      return;
+      return true;
     } catch {
       // Fall through to the player CC button.
     }
   }
   const button = document.querySelector('button[aria-label^="Captions"]');
-  if (button instanceof HTMLElement) button.click();
+  if (!(button instanceof HTMLElement)) return false;
+  const pressed = button.getAttribute('aria-pressed');
+  const label = button.getAttribute('aria-label')?.toLowerCase() || '';
+  const current = pressed === 'true' || /\b(on|enabled)\b/.test(label)
+    ? true
+    : pressed === 'false' || /\b(off|disabled)\b/.test(label)
+      ? false
+      : null;
+  if (current === null) return false;
+  if (current === enabled) return true;
+  button.click();
+  return true;
 }
 
 export function harvestTwitchGqlBody(body: string): void {
@@ -377,8 +389,12 @@ function applyTwitchHarvestSnapshot(snapshot: {
 
 export function installTwitchMain(): void {
   window.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
-    const enabled = Boolean((event as CustomEvent<{ enabled?: boolean }>).detail?.enabled);
-    setTwitchClosedCaptionsEnabled(enabled);
+    const detail = (event as CustomEvent<{ enabled?: boolean; requestId?: string }>).detail;
+    const enabled = Boolean(detail?.enabled);
+    const applied = setTwitchClosedCaptionsEnabled(enabled);
+    window.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
+      detail: { requestId: detail?.requestId || '', enabled, applied }
+    }));
   }) as EventListener);
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;

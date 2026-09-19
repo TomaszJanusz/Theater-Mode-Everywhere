@@ -15,6 +15,7 @@ import {
 } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import type {
+  CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
   Chapter,
@@ -267,34 +268,35 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
       await requestYoutubePlayerCaptions({ enabled: false });
-      return null;
+      return { status: 'off', delivery: 'none', cues: [] };
     }
     if (!this.snapshot) await this.load();
     if (!this.snapshotMatchesPage()) await this.reload();
     const track = this.tracks.find((item) => item.id === id);
-    if (!track) return null;
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
+    const activationMediaId = this.mediaId();
     const fetchUrl = signYoutubeCaptionUrl(track.baseUrl, readPublishedYoutubeCaptionAuthUrls());
     const cached = cueCache.get(track.baseUrl) || cueCache.get(fetchUrl);
     if (cached && cached.length > 0 && this.snapshotMatchesPage()) {
       await requestYoutubePlayerCaptions({ enabled: false });
-      return cached;
+      return { status: 'active', delivery: 'overlay', cues: cached };
     }
 
     for (const url of captionUrlVariants(fetchUrl)) {
       const body = await fetchCaptionTrack(url);
       if (!body) continue;
       const cues = parseCaptionPayload(body);
-      if (cues.length > 0) {
+      if (cues.length > 0 && activationMediaId === this.mediaId() && this.snapshotMatchesPage()) {
         cueCache.set(track.baseUrl, cues);
         cueCache.set(fetchUrl, cues);
         await requestYoutubePlayerCaptions({ enabled: false });
-        return cues;
+        return { status: 'active', delivery: 'overlay', cues };
       }
     }
-    return [];
+    return { status: 'failed', delivery: 'none', cues: [] };
   }
 
   async getChapters(): Promise<Chapter[]> {

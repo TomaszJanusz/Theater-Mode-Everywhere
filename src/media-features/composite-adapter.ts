@@ -1,6 +1,6 @@
 import { allSettledResults, fulfilledValues } from '../core/result';
 import type {
-  CaptionCue,
+  CaptionActivationResult,
   CaptionTrack,
   Chapter,
   MediaCapabilities,
@@ -55,12 +55,12 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
    * Activates adapters that report the requested track and deactivates the others.
    * Passing `null` deactivates every adapter; failures are isolated so another adapter can respond.
    */
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
       await allSettledResults(this.adapters.map((adapter) => adapter.activateCaptionTrack(null)));
-      return null;
+      return { status: 'off', delivery: 'none', cues: [] };
     }
-    let overlayCues: CaptionCue[] | null = null;
+    let result: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
     for (const adapter of this.adapters) {
       let tracks: CaptionTrack[] = [];
       try {
@@ -70,7 +70,7 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
       }
       try {
         if (tracks.some((track) => track.id === id)) {
-          overlayCues = await adapter.activateCaptionTrack(id);
+          result = await adapter.activateCaptionTrack(id);
         } else {
           await adapter.activateCaptionTrack(null);
         }
@@ -78,7 +78,20 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
         // A failing provider must not prevent native or other captions from activating (F-05).
       }
     }
-    return overlayCues;
+    return result;
+  }
+
+  async refreshCaptionCues(id: string, time: number): Promise<CaptionActivationResult | null> {
+    for (const adapter of this.adapters) {
+      if (!adapter.refreshCaptionCues) continue;
+      try {
+        const tracks = await adapter.listCaptionTracks();
+        if (tracks.some((track) => track.id === id)) return adapter.refreshCaptionCues(id, time);
+      } catch {
+        // Keep looking; a provider refresh failure must not break the composite adapter.
+      }
+    }
+    return null;
   }
 
   /** Returns the first nonempty chapter list, continuing past adapters that fail. */

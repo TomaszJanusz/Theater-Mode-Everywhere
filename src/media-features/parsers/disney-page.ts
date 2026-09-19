@@ -338,7 +338,6 @@ export function parseDisneyHlsVttPlaylist(body: string, baseUrl: string): Disney
     } catch {
       pendingDuration = 0;
     }
-    if (segments.length >= 250) break;
   }
   return segments;
 }

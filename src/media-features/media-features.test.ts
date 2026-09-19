@@ -54,6 +54,7 @@ import {
   disneyMediaSeekLooksStuck
 } from './parsers/disney-page';
 import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
+import { captionSegmentsForWindow, dedupeCaptionCues } from './disney-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
@@ -737,7 +738,7 @@ describe('F-05 composite adapter isolation', () => {
     return {
       probe: async () => ({ captions: true, chapters: false, previews: false }),
       listCaptionTracks: async () => [nativeTrack],
-      activateCaptionTrack: async () => [],
+      activateCaptionTrack: async () => ({ status: 'failed', delivery: 'none', cues: [] }),
       dispose() {},
       ...overrides
     };
@@ -1207,9 +1208,10 @@ describe('native text track overlay', () => {
     const track = new FakeTrack();
     track.cues = [new FakeCue(1, 3, 'Hola')];
     const { adapter, tracks } = createAdapter(track);
-    const cues = await adapter.activateCaptionTrack('native:0');
+    const result = await adapter.activateCaptionTrack('native:0');
     assert.equal(track.mode, 'hidden');
-    assert.equal(cues?.[0].text, 'Hola');
+    assert.equal(result.status, 'active');
+    assert.equal(result.cues[0].text, 'Hola');
     track.mode = 'showing';
     tracks.dispatchChange();
     assert.equal(track.mode, 'hidden');
@@ -1220,8 +1222,8 @@ describe('native text track overlay', () => {
     track.cues = [new FakeCue(1, 3, 'Hola')];
     const { adapter, tracks } = createAdapter(track);
     await adapter.activateCaptionTrack('native:0');
-    const cues = await adapter.activateCaptionTrack(null);
-    assert.equal(cues, null);
+    const result = await adapter.activateCaptionTrack(null);
+    assert.equal(result.status, 'off');
     assert.equal(track.mode, 'disabled');
     track.mode = 'showing';
     tracks.dispatchChange();
@@ -1242,9 +1244,10 @@ Fetched line`, { status: 200 })) as typeof fetch;
         src: 'https://example.com/captions.vtt',
         readyState: 2
       });
-      const cues = await adapter.activateCaptionTrack('native:0');
+      const result = await adapter.activateCaptionTrack('native:0');
       assert.equal(track.mode, 'hidden');
-      assert.equal(cues?.[0].text, 'Fetched line');
+      assert.equal(result.status, 'active');
+      assert.equal(result.cues[0].text, 'Fetched line');
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -1329,6 +1332,23 @@ https://vod-akc-euwest1.media.dssott.com/ps01/video/segment.m4s
     assert.equal(timed[0].start, 0);
     assert.equal(timed[1].start, 275.734);
     assert.equal(timed[1].duration, 275.734);
+
+    const longPlaylist = ['#EXTM3U'];
+    for (let index = 0; index < 320; index++) {
+      longPlaylist.push('#EXTINF:6,', `pts_${index * 6000}.vtt`);
+    }
+    const longSegments = parseDisneyHlsVttPlaylist(longPlaylist.join('\n'), base);
+    assert.equal(longSegments.length, 320);
+    assert.equal(longSegments[319].start, 1914);
+    const lateWindow = captionSegmentsForWindow(longSegments, 1800);
+    assert.ok(lateWindow.length > 0 && lateWindow.length <= 48);
+    assert.ok(lateWindow.some((segment) => segment.start <= 1800 && segment.start + segment.duration >= 1800));
+    assert.ok(lateWindow.every((segment) => segment.start > 1700));
+    assert.deepEqual(dedupeCaptionCues([
+      { start: 10, end: 12, text: 'Boundary' },
+      { start: 10, end: 12, text: 'Boundary' },
+      { start: 13, end: 14, text: 'Next' }
+    ]).map((cue) => cue.text), ['Boundary', 'Next']);
 
     const relative = alignDisneyVttCues(
       [{ start: 1, end: 3, text: 'Hi' }],

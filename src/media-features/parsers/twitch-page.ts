@@ -20,6 +20,7 @@ export type TwitchPageCaption = {
 
 export const TWITCH_HOST_CAPTION_ID = 'twitch:host-cc';
 export const TWITCH_CAPTIONS_EVENT = 'theater-everywhere-twitch-captions';
+export const TWITCH_CAPTIONS_ACK_EVENT = 'theater-everywhere-twitch-captions-ack';
 
 export type TwitchPageAssets = {
   videoId: string | null;

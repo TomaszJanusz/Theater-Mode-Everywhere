@@ -1,7 +1,7 @@
 import { requestMediaProbe, type VimeoPlayerSnapshot } from './probe';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview, type VimeoThumbSprite } from './parsers/vimeo-thumbs';
 import type {
-  CaptionCue,
+  CaptionActivationResult,
   CaptionTrack,
   Chapter,
   MediaCapabilities,
@@ -34,10 +34,12 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
     return [];
   }
 
-  async activateCaptionTrack(_id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     // Vimeo Player SDK cue events are consumed in MAIN world when available.
     // Overlay rendering is handled through native tracks if the embed exposes them.
-    return null;
+    return id === null
+      ? { status: 'off', delivery: 'none', cues: [] }
+      : { status: 'failed', delivery: 'none', cues: [] };
   }
 
   async getChapters(): Promise<Chapter[]> {

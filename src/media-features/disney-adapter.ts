@@ -13,11 +13,13 @@ import {
   readPublishedDisneySnapshot,
   type DisneyBifSet,
   type DisneyPageCaption,
-  type DisneyThumbnailMeta
+  type DisneyThumbnailMeta,
+  type DisneyVttSegment
 } from './parsers/disney-page';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import { requestMediaProbe, requestPageFetch } from './probe';
 import type {
+  CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
   MediaCapabilities,
@@ -28,6 +30,10 @@ import type {
 
 const cueCache = new Map<string, CaptionCue[]>();
 const MAX_BIF_BYTES = 16 * 1024 * 1024;
+const CAPTION_WINDOW_BEHIND_SECONDS = 30;
+const CAPTION_WINDOW_AHEAD_SECONDS = 120;
+const CAPTION_RELOAD_AHEAD_SECONDS = 30;
+const MAX_CAPTION_WINDOW_SEGMENTS = 48;
 
 function looksLikePlaylist(body: string): boolean {
   return /^\s*#EXTM3U/i.test(body);
@@ -138,21 +144,34 @@ function activeVideoTime(): number {
   return Number.isFinite(now) && (now as number) > 0 ? now as number : 0;
 }
 
-function orderSegmentsForTime<T extends { start: number; duration: number }>(segments: T[], time: number): T[] {
-  if (!Number.isFinite(time) || time <= 0 || segments.length < 2) return segments;
+export function captionSegmentsForWindow(segments: DisneyVttSegment[], time: number): DisneyVttSegment[] {
+  const start = Math.max(0, time - CAPTION_WINDOW_BEHIND_SECONDS);
+  const end = time + CAPTION_WINDOW_AHEAD_SECONDS;
+  const selected = segments.filter((segment) => {
+    const segmentEnd = segment.start + Math.max(segment.duration, 1);
+    return segmentEnd >= start && segment.start <= end;
+  });
+  if (selected.length > 0) return selected.slice(0, MAX_CAPTION_WINDOW_SEGMENTS);
   return segments
-    .map((segment, index) => {
-      const end = segment.start + (segment.duration || 0);
-      const covered = time >= segment.start && (segment.duration <= 0 || time <= end + 1);
-      const dist = covered ? 0 : Math.min(Math.abs(time - segment.start), Math.abs(time - end));
-      return { segment, index, dist };
-    })
-    .sort((left, right) => left.dist - right.dist || left.index - right.index)
-    .map((item) => item.segment);
+    .map((segment, index) => ({ segment, index, distance: Math.abs(segment.start - time) }))
+    .sort((left, right) => left.distance - right.distance || left.index - right.index)
+    .slice(0, Math.min(12, MAX_CAPTION_WINDOW_SEGMENTS))
+    .map((item) => item.segment)
+    .sort((left, right) => left.start - right.start);
 }
 
 function sortCues(cues: CaptionCue[]): CaptionCue[] {
   return cues.slice().sort((left, right) => left.start - right.start || left.end - right.end);
+}
+
+export function dedupeCaptionCues(cues: CaptionCue[]): CaptionCue[] {
+  const seen = new Set<string>();
+  return sortCues(cues).filter((cue) => {
+    const key = `${cue.start}:${cue.end}:${cue.text}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export class DisneyAdapter implements MediaFeaturesAdapter {
@@ -168,6 +187,15 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   private previewBlob: string | null = null;
   private bifLoad: Promise<void> | null = null;
   private tracksLoad: Promise<void> | null = null;
+  private activeCaption: {
+    trackId: string;
+    mediaId: string | null;
+    segments: DisneyVttSegment[];
+    cuesBySegment: Map<string, CaptionCue[]>;
+    loadedStart: number;
+    loadedEnd: number;
+  } | null = null;
+  private captionLoadGeneration = 0;
 
   private readHarvest(): void {
     const mediaId = disneyPlayId(window.location.href);
@@ -186,6 +214,13 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
       this.bifLoad = null;
       this.tracksLoad = null;
       cueCache.clear();
+      this.activeCaption = null;
+      this.captionLoadGeneration += 1;
+      if (typeof document !== 'undefined') {
+        for (const video of document.querySelectorAll('video')) {
+          delete (video as HTMLVideoElement).dataset.teDisneyPlayhead;
+        }
+      }
     }
     this.snapshot = {
       mediaId: nextId || undefined,
@@ -281,39 +316,83 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
-    if (id === null) return null;
+  private async loadCaptionWindow(id: string, time: number, force = false): Promise<CaptionActivationResult> {
+    const active = this.activeCaption;
+    if (!active || active.trackId !== id) return { status: 'failed', delivery: 'none', cues: [] };
+    if (!force && time >= active.loadedStart && time <= active.loadedEnd - CAPTION_RELOAD_AHEAD_SECONDS) {
+      return { status: 'active', delivery: 'overlay', cues: dedupeCaptionCues([...active.cuesBySegment.values()].flat()) };
+    }
+    const generation = ++this.captionLoadGeneration;
+    const mediaId = active.mediaId;
+    const selected = captionSegmentsForWindow(active.segments, time);
+    let fetchedAny = false;
+    const missing = selected.filter((segment) => !active.cuesBySegment.has(segment.url));
+    let bodies = await mapPool(missing, 8, (segment) => fetchDisneyText(segment.url, 'caption-track'));
+    if (bodies.some((body) => !body)) {
+      bodies = await mapPool(missing, 8, (segment, index) => (
+        bodies[index] ? Promise.resolve(bodies[index]) : fetchDisneyText(segment.url, 'caption-track')
+      ));
+    }
+    if (generation !== this.captionLoadGeneration || this.mediaId() !== mediaId || this.activeCaption !== active) {
+      return { status: 'failed', delivery: 'none', cues: [] };
+    }
+    for (let index = 0; index < missing.length; index++) {
+      const body = bodies[index];
+      if (!body) continue;
+      fetchedAny = true;
+      const segment = missing[index];
+      active.cuesBySegment.set(
+        segment.url,
+        alignDisneyVttCues(parseCaptionPayload(body), segment.start, segment.duration)
+      );
+    }
+    const selectedUrls = new Set(selected.map((segment) => segment.url));
+    for (const url of active.cuesBySegment.keys()) {
+      if (!selectedUrls.has(url)) active.cuesBySegment.delete(url);
+    }
+    active.loadedStart = selected.length > 0 ? selected[0].start : time;
+    const last = selected.at(-1);
+    active.loadedEnd = last ? last.start + Math.max(last.duration, 1) : time;
+    if (missing.length > 0 && !fetchedAny && active.cuesBySegment.size === 0) {
+      return { status: 'failed', delivery: 'none', cues: [] };
+    }
+    return { status: 'active', delivery: 'overlay', cues: dedupeCaptionCues([...active.cuesBySegment.values()].flat()) };
+  }
+
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    if (id === null) {
+      this.captionLoadGeneration += 1;
+      this.activeCaption = null;
+      return { status: 'off', delivery: 'none', cues: [] };
+    }
     await this.ensureTracks();
     const track = this.tracks.find((item) => item.id === id);
-    if (!track) return null;
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
     const cached = cueCache.get(track.url);
-    if (cached && cached.length > 0) return cached;
+    if (cached && cached.length > 0) return { status: 'active', delivery: 'overlay', cues: cached };
     const playlist = await fetchDisneyText(track.url, 'caption-track');
-    if (!playlist) return [];
+    if (!playlist) return { status: 'failed', delivery: 'none', cues: [] };
     const segments = parseDisneyHlsVttPlaylist(playlist, track.url);
     if (segments.length === 0) {
       const cues = sortCues(parseCaptionPayload(playlist));
       if (cues.length > 0) cueCache.set(track.url, cues);
-      return cues;
+      return cues.length > 0
+        ? { status: 'active', delivery: 'overlay', cues }
+        : { status: 'failed', delivery: 'none', cues: [] };
     }
-    const ordered = orderSegmentsForTime(segments, activeVideoTime());
-    let bodies = await mapPool(ordered, 8, (segment) => fetchDisneyText(segment.url, 'caption-track'));
-    if (bodies.some((body) => !body)) {
-      bodies = await mapPool(ordered, 8, (segment, index) => (
-        bodies[index] ? Promise.resolve(bodies[index]) : fetchDisneyText(segment.url, 'caption-track')
-      ));
-    }
-    const cues: CaptionCue[] = [];
-    let got = 0;
-    for (let i = 0; i < ordered.length; i++) {
-      const body = bodies[i];
-      if (!body) continue;
-      got += 1;
-      cues.push(...alignDisneyVttCues(parseCaptionPayload(body), ordered[i].start, ordered[i].duration));
-    }
-    const sorted = sortCues(cues);
-    if (sorted.length > 0 && got >= segments.length) cueCache.set(track.url, sorted);
-    return sorted;
+    this.activeCaption = {
+      trackId: id,
+      mediaId: this.mediaId(),
+      segments,
+      cuesBySegment: new Map(),
+      loadedStart: Number.POSITIVE_INFINITY,
+      loadedEnd: Number.NEGATIVE_INFINITY
+    };
+    return this.loadCaptionWindow(id, activeVideoTime(), true);
+  }
+
+  refreshCaptionCues(id: string, time: number): Promise<CaptionActivationResult> {
+    return this.loadCaptionWindow(id, time);
   }
 
   async getPreviewSource(): Promise<PreviewSource> {
@@ -370,6 +449,8 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   }
 
   invalidate(): void {
+    this.captionLoadGeneration += 1;
+    this.activeCaption = null;
     this.snapshot = null;
     this.tracks = [];
     this.bif = null;

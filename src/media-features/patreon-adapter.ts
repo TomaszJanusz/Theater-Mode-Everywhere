@@ -12,6 +12,7 @@ import {
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import { requestMediaProbe, requestPageFetch, type PatreonPlayerSnapshot } from './probe';
 import type {
+  CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
   Chapter,
@@ -159,18 +160,20 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
-    if (id === null) return null;
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    if (id === null) return { status: 'off', delivery: 'none', cues: [] };
     if (!this.snapshot) await this.load();
     const track = this.tracks.find((item) => item.id === id);
-    if (!track) return null;
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
     const cached = cueCache.get(track.url);
-    if (cached && cached.length > 0) return cached;
+    if (cached && cached.length > 0) return { status: 'active', delivery: 'overlay', cues: cached };
     const body = await fetchPatreonMedia(track.url, 'caption-track');
-    if (!body) return [];
+    if (!body) return { status: 'failed', delivery: 'none', cues: [] };
     const cues = parseCaptionPayload(body);
     if (cues.length > 0) cueCache.set(track.url, cues);
-    return cues;
+    return cues.length > 0
+      ? { status: 'active', delivery: 'overlay', cues }
+      : { status: 'failed', delivery: 'none', cues: [] };
   }
 
   async getChapters(): Promise<Chapter[]> {

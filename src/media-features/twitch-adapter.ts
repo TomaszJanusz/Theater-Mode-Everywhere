@@ -10,6 +10,7 @@ import {
   isTwitchHost,
   parseTwitchPageAssets,
   twitchPageVideoId,
+  TWITCH_CAPTIONS_ACK_EVENT,
   TWITCH_CAPTIONS_EVENT,
   TWITCH_HOST_CAPTION_ID,
   type TwitchPageCaption,
@@ -18,6 +19,7 @@ import {
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import { requestMediaProbe, requestPageFetch, type TwitchPlayerSnapshot } from './probe';
 import type {
+  CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
   Chapter,
@@ -28,6 +30,35 @@ import type {
 } from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
+const TWITCH_CAPTION_ACK_TIMEOUT_MS = 750;
+
+type TwitchCaptionEventTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
+
+export function requestTwitchHostCaptions(
+  enabled: boolean,
+  target: TwitchCaptionEventTarget = window,
+  timeoutMs = TWITCH_CAPTION_ACK_TIMEOUT_MS
+): Promise<boolean> {
+  const requestId = `te-cc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      target.removeEventListener(TWITCH_CAPTIONS_ACK_EVENT, onAck);
+      target.clearTimeout(timer);
+      resolve(result);
+    };
+    const onAck = (event: Event) => {
+      const detail = (event as CustomEvent<{ requestId?: string; enabled?: boolean; applied?: boolean }>).detail;
+      if (detail?.requestId !== requestId || detail.enabled !== enabled) return;
+      finish(detail.applied === true);
+    };
+    const timer = target.setTimeout(() => finish(false), timeoutMs);
+    target.addEventListener(TWITCH_CAPTIONS_ACK_EVENT, onAck);
+    target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_EVENT, { detail: { enabled, requestId } }));
+  });
+}
 
 function looksLikeStoryboardBody(body: string): boolean {
   const trimmed = body.trim();
@@ -265,25 +296,29 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
-      window.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_EVENT, { detail: { enabled: false } }));
-      return null;
+      await requestTwitchHostCaptions(false);
+      return { status: 'off', delivery: 'none', cues: [] };
     }
     if (!this.snapshot) await this.load();
     const track = this.tracks.find((item) => item.id === id);
-    if (!track) return null;
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
     if (track.delivery === 'host' || track.id === TWITCH_HOST_CAPTION_ID) {
-      window.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_EVENT, { detail: { enabled: true } }));
-      return [];
+      const applied = await requestTwitchHostCaptions(true);
+      return applied
+        ? { status: 'active', delivery: 'host', cues: [] }
+        : { status: 'failed', delivery: 'none', cues: [] };
     }
     const cached = cueCache.get(track.url);
-    if (cached && cached.length > 0) return cached;
+    if (cached && cached.length > 0) return { status: 'active', delivery: 'overlay', cues: cached };
     const body = await fetchTwitchMedia(track.url, 'caption-track');
-    if (!body) return [];
+    if (!body) return { status: 'failed', delivery: 'none', cues: [] };
     const cues = parseCaptionPayload(body);
     if (cues.length > 0) cueCache.set(track.url, cues);
-    return cues;
+    return cues.length > 0
+      ? { status: 'active', delivery: 'overlay', cues }
+      : { status: 'failed', delivery: 'none', cues: [] };
   }
 
   async getChapters(): Promise<Chapter[]> {

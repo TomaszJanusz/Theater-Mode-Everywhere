@@ -11,6 +11,12 @@ export type CaptionCue = {
   words?: CaptionWord[];
 };
 
+export type CaptionActivationResult =
+  | { status: 'active'; delivery: 'overlay'; cues: CaptionCue[] }
+  | { status: 'active'; delivery: 'host'; cues: [] }
+  | { status: 'off'; delivery: 'none'; cues: [] }
+  | { status: 'failed'; delivery: 'none'; cues: [] };
+
 export type CaptionTrackSource =
   | 'native-text-track'
   | 'youtube'
@@ -74,7 +80,8 @@ export type TimelineHeatmap = {
 export interface MediaFeaturesAdapter {
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
-  activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null>;
+  activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
+  refreshCaptionCues?(id: string, time: number): Promise<CaptionActivationResult | null>;
   getChapters?(): Promise<Chapter[]>;
   getHeatmap?(): TimelineHeatmap | null;
   getPreviewSource?(): Promise<PreviewSource>;
