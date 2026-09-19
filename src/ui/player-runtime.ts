@@ -82,6 +82,7 @@ const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
 const uiStore = new PlayerUiStore();
 const refs = createChromeRefs();
+let stopObservingTwitchTheaterStage: (() => void) | null = null;
 
 function ui(): PlayerUiState {
   return uiStore.getState();
@@ -1105,7 +1106,8 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   markTheaterVideo(element);
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
-  session.runtimeScope.add(observeTwitchTheaterStage(window.location.hostname));
+  stopObservingTwitchTheaterStage?.();
+  stopObservingTwitchTheaterStage = observeTwitchTheaterStage(window.location.hostname);
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
@@ -1255,6 +1257,8 @@ function exitTheaterMode(
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
   unmountDisneyTheaterStage();
+  stopObservingTwitchTheaterStage?.();
+  stopObservingTwitchTheaterStage = null;
   unmountTwitchTheaterStage();
 
   refreshHostPlayerLayout();
