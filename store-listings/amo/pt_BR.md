@@ -27,9 +27,9 @@ PRINCIPAIS RECURSOS
 - Lista de exclusão: exclua domínios específicos via popup na barra do navegador ou página de opções para evitar conflitos com o layout nativo da página.
 
 OPERAÇÃO
-- Vídeo HTML5 universal: Funciona com elementos `<video>` HTML5 padrão na web, incluindo players colocados no Shadow DOM.
+- Vídeo HTML5 universal: Funciona com elementos de vídeo HTML5 padrão na web, incluindo players colocados no Shadow DOM.
 - Players incorporados: detecta e amplia vídeos incorporados em frames, como players do YouTube ou Vimeo.
-- Legendas HTML5: exibe faixas `<track>` padrão em sua própria sobreposição de modo cinema para que você possa personalizar sua aparência.
+- Legendas HTML5: exibe faixas de legendas HTML5 padrão em sua própria sobreposição de modo cinema para que você possa personalizar sua aparência.
 - Integrações de plataforma: Rich Theater Experience pode adicionar legendas, capítulos, miniaturas de visualização e muito mais no YouTube, Vimeo, Patreon, Twitch e Disney+. A gama de funções depende do serviço e do vídeo.
 - Transmissões ao vivo: reconhece transmissões AO VIVO e, se o serviço disponibilizar janela DVR, permite retroceder a gravação e retornar ao momento atual.
 - Serviços protegidos por DRM: algumas plataformas limitam o acesso ao player, portanto algumas funções podem estar indisponíveis nelas.

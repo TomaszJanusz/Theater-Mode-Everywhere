@@ -27,9 +27,9 @@ CARACTÉRISTIQUES PRINCIPALES
 - Liste d'exclusion : excluez des domaines spécifiques via une fenêtre contextuelle dans la barre du navigateur ou sur la page d'options pour éviter les conflits avec la mise en page native.
 
 FONCTIONNEMENT
-- Vidéo HTML5 universelle : fonctionne avec les éléments HTML5 `<video>` standard sur le Web, y compris les lecteurs placés dans le Shadow DOM.
+- Vidéo HTML5 universelle : fonctionne avec les éléments vidéo HTML5 standard sur le Web, y compris les lecteurs placés dans le Shadow DOM.
 - Lecteurs intégrés : détecte et agrandit les vidéos intégrées dans des cadres, telles que les lecteurs YouTube ou Vimeo.
-- Sous-titres HTML5 : affiche les pistes `<track>` standard dans leur propre superposition de mode cinéma afin que vous puissiez personnaliser leur apparence.
+- Sous-titres HTML5 : affiche les pistes de sous-titres HTML5 standard dans leur propre superposition de mode cinéma afin que vous puissiez personnaliser leur apparence.
 - Intégrations de plateforme : Rich Theater Experience peut ajouter des sous-titres, des chapitres, des vignettes d'aperçu et bien plus encore sur YouTube, Vimeo, Patreon, Twitch et Disney+. L'éventail des fonctions dépend du service et de la vidéo.
 - Diffusions en direct : reconnaît les diffusions LIVE et, si le service propose une fenêtre DVR, permet de rembobiner l'enregistrement et de revenir au moment actuel.
 - Services protégés par DRM : certaines plateformes limitent l'accès au lecteur, certaines fonctions peuvent donc y être indisponibles.

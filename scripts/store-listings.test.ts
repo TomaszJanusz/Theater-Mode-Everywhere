@@ -102,4 +102,16 @@ describe('store listings', () => {
       }
     }
   });
+
+  it('contains no HTML tags or encoded entities in store copy', () => {
+    for (const locale of locales) {
+      for (const store of ['chrome', 'amo'] as const) {
+        const content = readListing(store, locale);
+        assert.doesNotMatch(content, /<\/?[a-z][^>]*>/i,
+          `${store}/${locale}: HTML tags are unsafe in store copy`);
+        assert.doesNotMatch(content, /&(?:lt|gt|amp|quot|#39);/i,
+          `${store}/${locale}: encoded HTML entity would be shown literally`);
+      }
+    }
+  });
 });

@@ -27,9 +27,9 @@ HAUPTMERKMALE
 - Ausschlussliste: Schließen Sie bestimmte Domänen per Popup in der Browserleiste oder auf der Optionsseite aus, um Konflikte mit dem nativen Seitenlayout zu vermeiden.
 
 BETRIEB
-- Universelles HTML5-Video: Funktioniert mit Standard-HTML5-`<video>`-Elementen im Web, einschließlich Playern, die im Shadow DOM platziert sind.
+- Universelles HTML5-Video: Funktioniert mit Standard-HTML5-Videoelementen im Web, einschließlich Playern, die im Shadow DOM platziert sind.
 - Eingebettete Player: Erkennt und vergrößert Videos, die in Frames eingebettet sind, z. B. YouTube- oder Vimeo-Player.
-- HTML5-Untertitel: Zeigt Standard-`<track>`-Spuren in ihrem eigenen Kinomodus-Overlay an, sodass Sie ihr Erscheinungsbild anpassen können.
+- HTML5-Untertitel: Zeigt Standard-HTML5-Untertitelspuren in ihrem eigenen Kinomodus-Overlay an, sodass Sie ihr Erscheinungsbild anpassen können.
 - Plattformintegrationen: Rich Theater Experience kann Untertitel, Kapitel, Vorschau-Miniaturansichten und mehr auf YouTube, Vimeo, Patreon, Twitch und Disney+ hinzufügen. Der Funktionsumfang ist abhängig von der Dienst und Video.
 - Live-Übertragungen: erkennt LIVE-Übertragungen und ermöglicht Ihnen, die Aufzeichnung zurückzuspulen und zum aktuellen Moment zurückzukehren, wenn der Dienst ein DVR-Fenster bereitstellt.
 - DRM-geschützte Dienste: Einige Plattformen schränken den Zugriff auf den Player ein, sodass einige Funktionen möglicherweise nicht verfügbar sind.

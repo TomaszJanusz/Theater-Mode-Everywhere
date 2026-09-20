@@ -27,9 +27,9 @@ MAIN FEATURES
 - Exclusion list: exclude specific domains via popup in browser bar or options page to avoid conflicts with native page layout.
 
 OPERATION
-- Universal HTML5 Video: Works with standard HTML5 `<video>` elements on the web, including players placed in the Shadow DOM.
+- Universal HTML5 Video: Works with standard HTML5 video elements on the web, including players placed in the Shadow DOM.
 - Embedded Players: Detects and enlarges videos embedded in frames, such as YouTube or Vimeo players.
-- HTML5 Subtitles: Displays standard `<track>` tracks in their own cinema mode overlay so you can customize their appearance.
+- HTML5 Subtitles: Displays standard HTML5 subtitle tracks in their own cinema mode overlay so you can customize their appearance.
 - Platform Integrations: Rich Theater Experience can add subtitles, chapters, preview thumbnails, and more on YouTube, Vimeo, Patreon, Twitch, and Disney+. Available features depend on the service and video.
 - Live broadcasts: recognizes LIVE broadcasts and, if the service provides a DVR window, allows you to rewind the recording and return to the current moment.
 - DRM-protected services: some platforms limit access to the player, so some functions may be unavailable on them.

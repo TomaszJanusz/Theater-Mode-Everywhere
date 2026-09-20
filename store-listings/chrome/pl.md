@@ -27,9 +27,9 @@ GŁÓWNE FUNKCJE
 - Lista wykluczeń: wyklucz konkretne domeny przez popup na pasku przeglądarki albo stronę opcji, aby uniknąć konfliktów z natywnym układem strony.
 
 OBSŁUGA
-- Uniwersalne wideo HTML5: działa ze standardowymi elementami HTML5 `<video>` w internecie, także z odtwarzaczami umieszczonymi w Shadow DOM.
+- Uniwersalne wideo HTML5: działa ze standardowymi elementami wideo HTML5 w internecie, także z odtwarzaczami umieszczonymi w Shadow DOM.
 - Osadzone odtwarzacze: wykrywa i powiększa wideo osadzone w ramkach, na przykład odtwarzacze YouTube lub Vimeo.
-- Napisy HTML5: wyświetla standardowe ścieżki `<track>` we własnej nakładce trybu kinowego, dzięki czemu można dostosować ich wygląd.
+- Napisy HTML5: wyświetla standardowe ścieżki napisów HTML5 we własnej nakładce trybu kinowego, dzięki czemu można dostosować ich wygląd.
 - Integracje z platformami: Rich Theater Experience może dodawać napisy, rozdziały, miniatury podglądu i inne informacje na YouTube, Vimeo, Patreonie, Twitchu i Disney+. Zakres funkcji zależy od serwisu oraz materiału.
 - Transmisje na żywo: rozpoznaje transmisje LIVE i, jeśli serwis udostępnia okno DVR, pozwala przewijać nagranie oraz wrócić do bieżącego momentu.
 - Serwisy chronione DRM: niektóre platformy ograniczają dostęp do odtwarzacza, dlatego część funkcji może być na nich niedostępna.
