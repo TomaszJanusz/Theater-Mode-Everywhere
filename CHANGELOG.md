@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-09-20
 
+Theater Everywhere 1.5.0 is the biggest playback upgrade so far!
+
+Rich TheaterExperience brings service-aware subtitles, chapters, hover previews, and richer timelines to YouTube, Vimeo, Patreon, Twitch, and Disney+, while the core theater mode remains available on any HTML5 video. This release also makes subtitles easier to customize and restore, improves live and DVR playback, and fixes a wide range of player-specific reliability issues.
+
 ### Added
 - Added a media-features layer for captions, chapters, and hover previews, starting with native HTML5 tracks, YouTube description chapters, YouTube session caption tracks, and YouTube storyboard thumbnails.
 - Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
