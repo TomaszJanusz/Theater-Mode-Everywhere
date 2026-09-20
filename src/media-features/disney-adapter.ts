@@ -216,11 +216,6 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
       cueCache.clear();
       this.activeCaption = null;
       this.captionLoadGeneration += 1;
-      if (typeof document !== 'undefined') {
-        for (const video of document.querySelectorAll('video')) {
-          delete (video as HTMLVideoElement).dataset.teDisneyPlayhead;
-        }
-      }
     }
     this.snapshot = {
       mediaId: nextId || undefined,

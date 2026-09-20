@@ -15,6 +15,16 @@ export function readDisneyContentTime(video: HTMLVideoElement | null | undefined
   return null;
 }
 
+export function writeDisneyContentTime(video: HTMLVideoElement | null | undefined, time: unknown): number | null {
+  if (!video || typeof time !== 'number' || !Number.isFinite(time) || time < 0) return null;
+  try {
+    video.dataset[DISNEY_PLAYHEAD_DATASET] = String(time);
+    return time;
+  } catch {
+    return null;
+  }
+}
+
 export const DISNEY_MEDIA_SEEK_STUCK_SECONDS = 15;
 
 // MAIN (`src/mainWorld.ts`) duplicates isUsableDisneyMediaVideo / ranking

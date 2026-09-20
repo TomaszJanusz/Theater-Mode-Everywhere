@@ -1,4 +1,4 @@
-import { DISNEY_CLOCK_EVENT } from '../media-features/parsers/disney-page';
+import { DISNEY_CLOCK_EVENT, writeDisneyContentTime } from '../media-features/parsers/disney-page';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
@@ -1106,11 +1106,13 @@ export function createControls(ctx: PlayerChromeContext) {
     };
 
     let lastDisneyPlayhead = Number.NaN;
-    const onDisneyClock = () => {
-      const playhead = Number(video.dataset.teDisneyPlayhead);
+    const onDisneyClock = (event: Event) => {
+      const eventTime = (event as CustomEvent<{ time?: unknown }>).detail?.time;
+      const published = writeDisneyContentTime(video, eventTime);
+      const playhead = published ?? Number(video.dataset.teDisneyPlayhead);
       updateScrubber();
       updateTimeDisplay();
-      mediaFeatures.updateTime(displayMediaTime(video));
+      mediaFeatures.updateTime(published ?? displayMediaTime(video));
       updateCaptionDock();
       if (Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
         setBuffering(false);

@@ -631,7 +631,9 @@ function publishDisneyPlayhead(video: HTMLVideoElement | null, player: DisneyHiv
       // Dataset may be missing on unexpected hosts.
     }
   }
-  window.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: seconds } }));
+  window.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, {
+    detail: { time: seconds, mediaId: disneyPageMediaId() }
+  }));
   return seconds;
 }
 

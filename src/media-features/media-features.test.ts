@@ -43,6 +43,7 @@ import {
   parseDisneyHlsVttSegments,
   alignDisneyVttCues,
   readDisneyContentTime,
+  writeDisneyContentTime,
   parseDisneyPlaybackPayload,
   parseDisneyThumbnailIndex,
   parseRokuBif,
@@ -1371,6 +1372,10 @@ https://vod-akc-euwest1.media.dssott.com/ps01/video/segment.m4s
     const playheadVideo = { dataset: { teDisneyPlayhead: '3621.5' } } as unknown as HTMLVideoElement;
     assert.equal(readDisneyContentTime(playheadVideo), 3621.5);
     assert.equal(readDisneyContentTime({} as HTMLVideoElement), null);
+    const receivingVideo = { dataset: {} } as unknown as HTMLVideoElement;
+    assert.equal(writeDisneyContentTime(receivingVideo, 1840.25), 1840.25);
+    assert.equal(readDisneyContentTime(receivingVideo), 1840.25);
+    assert.equal(writeDisneyContentTime(receivingVideo, Number.NaN), null);
   });
 
   it('ignores Disney dummy videos and treats a stuck MSE prefix as a failed seek', () => {
