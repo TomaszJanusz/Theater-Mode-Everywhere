@@ -37,7 +37,7 @@ OPERACIÓN
 CÓMO EMPEZAR
 1. Abra un sitio de videos, como una plataforma de transmisión por secuencias, un sitio de noticias o un blog.
 2. Presione `T` para ingresar al modo cine. Asegúrate de no escribir en el cuadro de texto.
-3. Utilice los controles del reproductor o los atajos: `C` activa y desactiva los subtítulos, `Left` y `Right` avanzan o retroceden, y `<` y `>` permiten avanzar fotograma a fotograma.
+3. Utilice los controles del reproductor o los atajos: `C` activa y desactiva los subtítulos, `Left` y `Right` avanzan o retroceden, y los atajos configurables de fotogramas permiten avanzar fotograma a fotograma.
 4. En plataformas compatibles, habilite Rich Theater Experience en la ventana emergente de extensión o en la configuración.
 5. Presione `Escape` o `T` nuevamente para salir del modo teatro.
 

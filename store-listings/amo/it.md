@@ -37,7 +37,7 @@ OPERAZIONE
 COME INIZIARE
 1. Apri un sito di video, come una piattaforma di streaming, un sito di notizie o un blog.
 2. Premere `T` per accedere alla modalità cinema. Assicurati di non scrivere nella casella di testo.
-3. Utilizza i controlli o le scorciatoie del lettore: `C` attiva e disattiva i sottotitoli, `Left` e `Right` spostano la riproduzione e `<` e `>` avanzano fotogramma per fotogramma.
+3. Utilizza i controlli o le scorciatoie del lettore: `C` attiva e disattiva i sottotitoli, `Left` e `Right` spostano la riproduzione e le scorciatoie configurabili avanzano fotogramma per fotogramma.
 4. Sulle piattaforme supportate, abilita Rich Theater Experience nel popup o nelle impostazioni dell'estensione.
 5. Premere nuovamente `Escape` o `T` per uscire dalla modalità teatro.
 

@@ -37,7 +37,7 @@ FONCTIONNEMENT
 COMMENT COMMENCER
 1. Ouvrez un site vidéo, tel qu'une plateforme de streaming, un site d'actualités ou un blog.
 2. Appuyez sur `T` pour accéder au mode cinéma. Assurez-vous de ne pas écrire dans la zone de texte.
-3. Utilisez les commandes ou les raccourcis du lecteur : `C` active et désactive les sous-titres, `Left` et `Right` permettent de naviguer, et `<` et `>` d'avancer image par image.
+3. Utilisez les commandes ou les raccourcis du lecteur : `C` active et désactive les sous-titres, `Left` et `Right` permettent de naviguer, et les raccourcis configurables d'avancer image par image.
 4. Sur les plates-formes prises en charge, activez Rich Theater Experience dans la fenêtre contextuelle ou les paramètres de l'extension.
 5. Appuyez à nouveau sur `Escape` ou `T` pour quitter le mode cinéma.
 

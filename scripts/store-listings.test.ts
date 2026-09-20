@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 const listingsRoot = path.resolve(__dirname, '../store-listings');
 const chromeRoot = path.join(listingsRoot, 'chrome');
 const amoRoot = path.join(listingsRoot, 'amo');
+const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 
 const forbiddenFrameSkippingCopy: Record<string, string[]> = {
   ar: ['تخطي الإطارات'],
@@ -81,6 +82,23 @@ describe('store listings', () => {
     }
   });
 
+  it('keeps Chrome summaries aligned with localized manifest descriptions', () => {
+    for (const locale of locales) {
+      const content = readListing('chrome', locale);
+      const summary = content.match(/## Short summary\n([^\n]+)/)?.[1];
+      assert.ok(summary, `chrome/${locale}: missing short summary`);
+
+      const messages = JSON.parse(
+        readFileSync(path.join(extensionLocalesRoot, locale, 'messages.json'), 'utf8')
+      ) as Record<string, { message?: string }>;
+      assert.equal(
+        messages.extensionDescription?.message,
+        summary,
+        `${locale}: extensionDescription differs from the Chrome short summary`
+      );
+    }
+  });
+
   it('keeps Chrome and AMO copy aligned within each locale', () => {
     for (const locale of locales) {
       assert.equal(
@@ -103,13 +121,13 @@ describe('store listings', () => {
     }
   });
 
-  it('contains no HTML tags or encoded entities in store copy', () => {
+  it('contains no angle brackets or HTML entities in store copy', () => {
     for (const locale of locales) {
       for (const store of ['chrome', 'amo'] as const) {
         const content = readListing(store, locale);
-        assert.doesNotMatch(content, /<\/?[a-z][^>]*>/i,
-          `${store}/${locale}: HTML tags are unsafe in store copy`);
-        assert.doesNotMatch(content, /&(?:lt|gt|amp|quot|#39);/i,
+        assert.doesNotMatch(content, /[<>]/,
+          `${store}/${locale}: angle brackets are unsafe in store copy`);
+        assert.doesNotMatch(content, /&(?:#[0-9]+|#[xX][0-9A-Fa-f]+|[A-Za-z][A-Za-z0-9]+);/,
           `${store}/${locale}: encoded HTML entity would be shown literally`);
       }
     }

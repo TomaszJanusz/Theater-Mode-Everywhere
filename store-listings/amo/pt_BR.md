@@ -37,7 +37,7 @@ OPERAÇÃO
 COMO COMEÇAR
 1. Abra um site de vídeo, como uma plataforma de streaming, site de notícias ou blog.
 2. Pressione `T` para entrar no modo cinema. Certifique-se de não escrever na caixa de texto.
-3. Use os controles ou atalhos do player: `C` ativa e desativa as legendas, `Left` e `Right` avançam ou retrocedem e `<` e `>` movem quadro a quadro.
+3. Use os controles ou atalhos do player: `C` ativa e desativa as legendas, `Left` e `Right` avançam ou retrocedem e os atalhos configuráveis movem quadro a quadro.
 4. Em plataformas suportadas, habilite Rich Theater Experience no pop-up ou nas configurações da extensão.
 5. Pressione `Escape` ou `T` novamente para sair do modo teatro.
 

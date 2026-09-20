@@ -37,7 +37,7 @@ OPERATION
 HOW TO START
 1. Open a video site, such as a streaming platform, news site, or blog.
 2. Press `T` to enter cinema mode. Make sure you are not writing in the text box.
-3. Use the player controls or shortcuts: `C` toggles subtitles, `Left` and `Right` seek, and `<` and `>` step frame by frame.
+3. Use the player controls or shortcuts: `C` toggles subtitles, `Left` and `Right` seek, and the configurable frame-step shortcuts move frame by frame.
 4. On supported platforms, enable Rich Theater Experience in the extension popup or settings.
 5. Press `Escape` or `T` again to exit theater mode.
 

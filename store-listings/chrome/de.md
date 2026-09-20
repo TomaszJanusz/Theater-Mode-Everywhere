@@ -37,7 +37,7 @@ BETRIEB
 WIE MAN BEGINNT
 1. Öffnen Sie eine Video-Site, z. B. eine Streaming-Plattform, eine News-Site oder einen Blog.
 2. Drücken Sie `T`, um in den Kinomodus zu wechseln. Stellen Sie sicher, dass Sie nicht in das Textfeld schreiben.
-3. Verwenden Sie Player-Steuerelemente oder Verknüpfungen: `C` schaltet Untertitel ein und aus, `Left` und `Right` spulen und `<` und `>` gehen Bild für Bild.
+3. Verwenden Sie Player-Steuerelemente oder Verknüpfungen: `C` schaltet Untertitel ein und aus, `Left` und `Right` spulen und die konfigurierbaren Tasten für Einzelbilder gehen Bild für Bild.
 4. Aktivieren Sie auf unterstützten Plattformen Rich Theater Experience im Erweiterungs-Popup oder in den Einstellungen.
 5. Drücken Sie erneut `Escape` oder `T`, um den Kinomodus zu verlassen.
 

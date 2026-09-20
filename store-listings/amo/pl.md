@@ -37,7 +37,7 @@ OBSŁUGA
 JAK ZACZĄĆ
 1. Otwórz stronę z wideo, na przykład platformę streamingową, serwis newsowy albo blog.
 2. Naciśnij `T`, aby przejść do trybu kinowego. Upewnij się, że nie piszesz w polu tekstowym.
-3. Korzystaj z kontrolek odtwarzacza lub skrótów: `C` włącza i wyłącza napisy, `Left` i `Right` przewijają, a `<` i `>` przechodzą po klatkach.
+3. Korzystaj z kontrolek odtwarzacza lub skrótów: `C` włącza i wyłącza napisy, `Left` i `Right` przewijają, a konfigurowalne skróty klatka po klatce pozwalają przechodzić po klatkach.
 4. Na obsługiwanych platformach włącz Rich Theater Experience w popupie rozszerzenia lub w ustawieniach.
 5. Naciśnij `Escape` albo ponownie `T`, aby wyjść z trybu kinowego.
 
