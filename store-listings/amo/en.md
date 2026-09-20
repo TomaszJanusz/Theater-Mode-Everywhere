@@ -4,34 +4,42 @@
 Theater Mode Everywhere
 
 ## Summary
-Maximize any HTML5 video player to fill the browser viewport with a single keypress.
+Expand any HTML5 video to fill the browser. Use custom controls, subtitles, and integrations with popular video services.
 
 ## Description
-Theater Mode Everywhere maximizes any HTML5 video player to fill your entire browser window with a single keypress, giving you a clean, distraction-free cinematic experience.
+Theater Mode Everywhere enlarges HTML5 players to fill the entire browser window, providing a convenient cinematic experience without headers, sidebars, comments and recommendations.
 
-Theater Mode Everywhere is built for anyone who wants to enjoy web videos without the clutter of headers, sidebars, comments, or recommendations. Whether you are watching tutorials, streams, or short clips, you can turn any video page into a cozy theater with a single keystroke.
+Watch tutorials, streams, videos, and short clips with custom playback controls. Use subtitles, keyboard shortcuts, video fit and volume controls, plus additional features on supported platforms.
 
-KEY FEATURES
-- One-Key Immersive Mode: Press `T` to instantly expand the active video to fit the browser viewport. Press it again or `Escape` to return to normal. If there are multiple videos on the page, press `Shift+T` to cycle between them.
-- Video Fit Modes: Press `Z` or use the player button to cycle Fit, Fill, and Stretch, so you can crop letterboxing without another extension.
-- Sleek Custom Player Controls: A clean, modern control bar with vertical pop-up panels for volume and playback speed, glassmorphic tooltips, and remaining/elapsed time indicators.
-- Volume Boost (Up to 300%): Amplify quiet video audio up to 300% using the Web Audio API, with a non-linear slider for precise adjustments and a settings toggle.
-- Visual HUD Feedback: Get elegant animated overlays when adjusting volume, seeking, or toggling play/pause.
-- Shadow DOM Support: Traverses and maximizes video players hidden inside modern shadow roots, improving compatibility with more websites.
-- Custom Shortcuts & Settings: Configure your own keys for toggling, seeking, and frame-stepping. The in-player help overlay makes them easy to review.
-- Exclusion List: Exclude specific domains via the browser toolbar popup or options page to prevent conflicts with native site layouts.
+Optional Rich Theater Experience adds deeper integrations with YouTube, Vimeo, Patreon, Twitch and Disney+. Depending on the site, the extension may display subtitles, chapters, thumbnail previews, and additional information on the timeline. The feature is still experimental, so its capabilities vary between platforms.
 
-WHAT IS SUPPORTED
-- Universal HTML5 Video: Works on standard HTML5 `<video>` elements across the web, including players encapsulated inside Shadow DOM.
-- Embedded Players (iFrames): Detects and expands video elements embedded inside frames, such as YouTube or Vimeo embeds.
-- Non-Standard Subtitles: Standard HTML5 subtitles (`<track>` tags) are supported. If a website renders subtitles through custom overlays, proprietary JavaScript, or sideloaded elements, those subtitles may not display inside the custom overlay.
-- DRM-Protected Services: Some streaming platforms use DRM technologies that restrict video DOM manipulation, which may prevent the extension from scaling the video correctly.
+MAIN FEATURES
+- One-key immersive mode: press `T` to instantly enlarge the active video into browser view. Press again or `Escape` to return. If there are several videos on the page, use `Shift+T` to switch them.
+- Better subtitle support: select a track directly in cinema mode, turn subtitles on and off with the `C` key, and adjust font, size, color, shadow, background and opacity. The extension remembers your preferred language separately for each website.
+- Rich Theater Experience (experimental): enable additional integrations with YouTube, Vimeo, Patreon, Twitch and Disney+. Available features depend on the website and can be managed in the extension popup or in settings.
+- A richer timeline: jump between chapters, preview thumbnails before seeking, and see YouTube's Most Replayed moments.
+- Video Fit: Press `Z` or use the button in the player to toggle Fit, Fill and Stretch and remove black bars without additional extension.
+- Elegant custom controls: modern control bar with vertical volume and playback speed panels, semi-transparent tooltips, and remaining and played time indicators.
+- Volume Boost (up to 300%): Amplify quiet videos up to 300% using the Web Audio API, with a non-linear slider for precise control and a settings toggle.
+- Visual HUD: Elegant animated overlays for changing volume, seeking, and toggling play/pause.
+- Shadow DOM support: finds and magnifies players hidden in modern shadow roots, improving compatibility with more sites.
+- Custom shortcuts and settings: configure keys to toggle theater mode, seek, manage subtitles, resize subtitles, and step frame by frame. In-player help helps you check all the shortcuts.
+- Exclusion list: exclude specific domains via popup in browser bar or options page to avoid conflicts with native page layout.
 
-HOW TO GET STARTED
-1. Open any page with a video, such as a video-sharing platform, news site, or blog.
-2. Press `T` on your keyboard. Make sure you are not typing in a search bar or comment box.
-3. Use the custom controls at the bottom, `Left` / `Right` arrows to seek, and `<` / `>` to step frame-by-frame.
-4. Press `Escape` or `T` to exit theater mode.
+OPERATION
+- Universal HTML5 Video: Works with standard HTML5 `<video>` elements on the web, including players placed in the Shadow DOM.
+- Embedded Players: Detects and enlarges videos embedded in frames, such as YouTube or Vimeo players.
+- HTML5 Subtitles: Displays standard `<track>` tracks in their own cinema mode overlay so you can customize their appearance.
+- Platform Integrations: Rich Theater Experience can add subtitles, chapters, preview thumbnails, and more on YouTube, Vimeo, Patreon, Twitch, and Disney+. Available features depend on the service and video.
+- Live broadcasts: recognizes LIVE broadcasts and, if the service provides a DVR window, allows you to rewind the recording and return to the current moment.
+- DRM-protected services: some platforms limit access to the player, so some functions may be unavailable on them.
+
+HOW TO START
+1. Open a video site, such as a streaming platform, news site, or blog.
+2. Press `T` to enter cinema mode. Make sure you are not writing in the text box.
+3. Use the player controls or shortcuts: `C` toggles subtitles, `Left` and `Right` seek, and `<` and `>` step frame by frame.
+4. On supported platforms, enable Rich Theater Experience in the extension popup or settings.
+5. Press `Escape` or `T` again to exit theater mode.
 
 ## Suggested tags
-video, theater mode, cinema mode, html5 video, fullscreen, picture in picture, volume boost, keyboard shortcuts, youtube, vimeo
+video, theater mode, cinema mode, html5 video, fullscreen, picture in picture, volume boost, keyboard shortcuts, youtube, vimeo, subtitles, streaming, twitch

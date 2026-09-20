@@ -4,33 +4,42 @@
 Theater Mode Everywhere - Modo teatro
 
 ## Short summary
-Expanda qualquer player de vídeo HTML5 para preencher a tela do navegador com uma única tecla.
+Amplie qualquer vídeo HTML5 na janela do seu navegador. Use seus próprios controles, legendas e integração com sites populares.
 
 ## Full description
-O Theater Mode Everywhere maximiza qualquer player de vídeo HTML5 para preencher toda a janela do seu navegador com um único pressionamento de tecla, proporcionando uma experiência cinematográfica limpa e sem distrações.
+Theater Mode Everywhere amplia os players HTML5 para preencher toda a janela do navegador, proporcionando uma experiência cinematográfica conveniente sem cabeçalhos, barras laterais, comentários e recomendações.
 
-O Theater Mode Everywhere foi desenvolvido para quem deseja curtir vídeos na web sem a bagunça de cabeçalhos, barras laterais, comentários ou recomendações. Esteja você assistindo a tutoriais, transmissões ao vivo ou clipes curtos, você pode transformar qualquer página de vídeo em um cinema aconchegante com uma única tecla.
+Assista a tutoriais, transmissões, vídeos e clipes curtos com controles de reprodução personalizados. Aproveite as vantagens das legendas, atalhos de teclado, controles de imagem e volume e recursos adicionais disponíveis em plataformas suportadas.
 
-RECURSOS PRINCIPAIS
-- Modo Imersivo de Uma Tecla: Pressione `T` para expandir instantaneamente o vídeo ativo para caber na tela do navegador. Pressione novamente ou `Escape` para retornar ao normal. Se houver vários vídeos na página, pressione `Shift+T` para alternar entre eles.
-- Controles de Player Personalizados e Elegantes: Uma barra de controle limpa e moderna com painéis verticais flutuantes para volume e velocidade de reprodução, dicas visuais em estilo translúcido (glassmorphism) e indicadores de tempo restante/decorrido.
-- Amplificador de Volume (Até 300%): Amplifique o áudio de vídeos baixos em até 300% usando a Web Audio API, com um controle deslizante não linear para ajustes precisos e uma opção de ativação nas configurações.
-- Feedback Visual no HUD: Receba sobreposições animadas e elegantes ao ajustar o volume, avançar/retroceder ou alternar reprodução/pausa.
-- Suporte a Shadow DOM: Varre e maximiza players de vídeo ocultos dentro de raízes de sombra (shadow roots) modernas, melhorando a compatibilidade com mais sites.
-- Atalhos e Configurações Personalizadas: Configure suas próprias teclas para alternar, avançar/retroceder e avançar quadro a quadro. A sobreposição de ajuda no player facilita a visualização dos atalhos.
-- Lista de Exclusão: Exclua domínios específicos através do menu de ferramentas do navegador ou da página de opções para evitar conflitos com layouts nativos dos sites.
+Rich Theater Experience opcional adiciona integrações mais profundas com YouTube, Vimeo, Patreon, Twitch e Disney+. Dependendo do site, a extensão pode exibir legendas, capítulos, visualizações em miniatura e informações adicionais na linha do tempo. O recurso ainda é experimental, portanto suas capacidades variam entre as plataformas.
 
-O QUE É SUPORTADO
-- Vídeo HTML5 Universal: Funciona em elementos padrão HTML5 `<video>` em toda a web, incluindo players encapsulados em Shadow DOM.
-- Players Incorporados (iFrames): Detecta e expande elementos de vídeo incorporados dentro de frames, como incorporações do YouTube ou Vimeo.
-- Legendas Não Padrão: Legendas HTML5 padrão (tags `<track>`) são suportadas. Se um site renderizar legendas por meio de sobreposições personalizadas, JavaScript proprietário ou elementos carregados externamente, essas legendas podem não ser exibidas dentro do painel personalizado.
-- Serviços Protegidos por DRM: Algumas plataformas de streaming utilizam tecnologias DRM que restringem a manipulação do DOM do vídeo, o que pode impedir a extensão de redimensionar o vídeo corretamente.
+PRINCIPAIS RECURSOS
+- Modo imersivo de uma tecla: pressione `T` para ampliar instantaneamente o vídeo ativo na visualização do navegador. Pressione novamente ou `Escape` para retornar. Se houver vários vídeos na página, use `Shift+T` para trocá-los.
+- Melhor suporte a legendas: selecione uma faixa diretamente no modo cinema, ative e desative as legendas com a tecla `C` e ajuste fonte, tamanho, cor, sombra, fundo e opacidade. A extensão lembra seu idioma preferido separadamente para cada site.
+- Rich Theater Experience (experimental): permite integrações adicionais com YouTube, Vimeo, Patreon, Twitch e Disney+. Os recursos disponíveis dependem do site e podem ser gerenciados no pop-up da extensão ou nas configurações.
+- Uma linha do tempo mais rica: pule entre os capítulos, veja miniaturas antes de avançar ou retroceder e, no YouTube, veja também as partes mais reproduzidas do vídeo.
+- Ajuste de vídeo: pressione `Z` ou use o botão no player para alternar entre Ajustar, Preencher e Esticar e remover barras pretas sem extensão adicional.
+- Controles personalizados elegantes: barra de controle moderna com volumes verticais e painéis de velocidade de reprodução, dicas de ferramentas semitransparentes e indicadores de tempo restante e reproduzido.
+- Aumento de volume (até 300%): aumenta o áudio de vídeos com volume baixo em até 300% usando a API de áudio da Web, com um controle deslizante não linear para configurações precisas e alternância de opções.
+- HUD visual: sobreposições animadas elegantes para alterar o volume, avançar ou retroceder e alternar entre reproduzir/pausar.
+- Suporte Shadow DOM: encontra e amplia players ocultos em raízes sombrias modernas, melhorando a compatibilidade com mais sites.
+- Atalhos e configurações personalizadas: configure teclas para alternar o modo cinema, avançar ou retroceder e gerenciar legendas, redimensionar legendas e mover quadro a quadro. A ajuda do player ajuda você a verificar todos os atalhos.
+- Lista de exclusão: exclua domínios específicos via popup na barra do navegador ou página de opções para evitar conflitos com o layout nativo da página.
+
+OPERAÇÃO
+- Vídeo HTML5 universal: Funciona com elementos `<video>` HTML5 padrão na web, incluindo players colocados no Shadow DOM.
+- Players incorporados: detecta e amplia vídeos incorporados em frames, como players do YouTube ou Vimeo.
+- Legendas HTML5: exibe faixas `<track>` padrão em sua própria sobreposição de modo cinema para que você possa personalizar sua aparência.
+- Integrações de plataforma: Rich Theater Experience pode adicionar legendas, capítulos, miniaturas de visualização e muito mais no YouTube, Vimeo, Patreon, Twitch e Disney+. A gama de funções depende do serviço e do vídeo.
+- Transmissões ao vivo: reconhece transmissões AO VIVO e, se o serviço disponibilizar janela DVR, permite retroceder a gravação e retornar ao momento atual.
+- Serviços protegidos por DRM: algumas plataformas limitam o acesso ao player, portanto algumas funções podem estar indisponíveis nelas.
 
 COMO COMEÇAR
-1. Abra qualquer página com um vídeo, como uma plataforma de compartilhamento de vídeos, site de notícias ou blog.
-2. Pressione `T` no seu teclado. Certifique-se de que não está digitando em uma barra de pesquisa ou campo de comentários.
-3. Use os controles personalizados na parte inferior, as setas `Esquerda` / `Direita` para retroceder/avançar e `<` / `>` para avançar quadro a quadro.
-4. Pressione `Escape` ou `T` para sair do modo teatro.
+1. Abra um site de vídeo, como uma plataforma de streaming, site de notícias ou blog.
+2. Pressione `T` para entrar no modo cinema. Certifique-se de não escrever na caixa de texto.
+3. Use os controles ou atalhos do player: `C` ativa e desativa as legendas, `Left` e `Right` avançam ou retrocedem e `<` e `>` movem quadro a quadro.
+4. Em plataformas suportadas, habilite Rich Theater Experience no pop-up ou nas configurações da extensão.
+5. Pressione `Escape` ou `T` novamente para sair do modo teatro.
 
 ## Suggested keywords
-vídeo, modo teatro, modo cinema, vídeo html5, tela cheia, picture in picture, aumento de volume, atalhos de teclado, youtube, vimeo
+vídeo, modo teatro, modo cinema, vídeo html5, tela cheia, picture in picture, aumento de volume, atalhos de teclado, youtube, vimeo, subtitles, streaming, twitch

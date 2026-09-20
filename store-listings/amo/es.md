@@ -4,33 +4,42 @@
 Theater Mode Everywhere - Modo teatro
 
 ## Summary
-Maximiza cualquier reproductor de video HTML5 para llenar la ventana del navegador con una sola tecla.
+Amplía vídeos HTML5 en el navegador. Usa controles propios, subtítulos e integraciones con servicios populares.
 
 ## Description
-Theater Mode Everywhere maximiza cualquier reproductor de video HTML5 para llenar toda la ventana del navegador con una sola tecla, ofreciendo una experiencia cinematográfica limpia y sin distracciones.
+Theater Mode Everywhere amplía los reproductores HTML5 para llenar toda la ventana del navegador, brindando una experiencia cinematográfica conveniente sin encabezados, barras laterales, comentarios ni recomendaciones.
 
-Theater Mode Everywhere está pensado para quienes quieren disfrutar videos web sin el desorden de cabeceras, barras laterales, comentarios o recomendaciones. Ya estés viendo tutoriales, directos o clips cortos, puedes convertir cualquier página de video en un teatro cómodo con una sola pulsación.
+Vea tutoriales, transmisiones, vídeos y clips cortos con controles de reproducción personalizados. Aproveche los subtítulos, los atajos de teclado, los controles de imagen y volumen, y las funciones adicionales disponibles en las plataformas compatibles.
 
-FUNCIONES PRINCIPALES
-- Modo inmersivo con una tecla: pulsa `T` para expandir al instante el video activo hasta llenar la ventana del navegador. Pulsa de nuevo o usa `Escape` para volver. Si hay varios videos en la página, usa `Shift+T` para alternar entre ellos.
-- Controles personalizados elegantes: una barra moderna con paneles verticales emergentes para volumen y velocidad, ayudas emergentes translúcidas e indicadores de tiempo transcurrido/restante.
-- Amplificación de volumen (hasta 300%): amplifica audio bajo hasta 300% con Web Audio API, con un deslizador no lineal para ajustes precisos y un interruptor en ajustes.
-- Feedback HUD visual: muestra superposiciones animadas al ajustar volumen, saltar por el video o alternar reproducción/pausa.
-- Compatibilidad con Shadow DOM: recorre y maximiza reproductores ocultos dentro de shadow roots modernos para mejorar la compatibilidad.
-- Atajos y ajustes personalizados: configura tus propias teclas para alternar, saltar por el video y avanzar fotograma a fotograma. La ayuda dentro del reproductor facilita revisarlas.
-- Lista de exclusión: excluye dominios concretos desde el popup de la barra del navegador o la página de opciones para evitar conflictos con diseños nativos.
+El Rich Theater Experience opcional agrega integraciones más profundas con YouTube, Vimeo, Patreon, Twitch y Disney+. Dependiendo del sitio, la extensión puede mostrar subtítulos, capítulos, vistas previas en miniatura e información adicional en la línea de tiempo. La función aún es experimental, por lo que sus capacidades varían según la plataforma.
 
-COMPATIBILIDAD
-- Video HTML5 universal: funciona con elementos HTML5 `<video>` estándar en la web, incluidos reproductores encapsulados dentro de Shadow DOM.
-- Reproductores incrustados (iFrames): detecta y expande videos incrustados en frames, como embeds de YouTube o Vimeo.
-- Subtítulos no estándar: se admiten subtítulos HTML5 estándar (etiquetas `<track>`). Si un sitio renderiza subtítulos con overlays personalizados, JavaScript propietario o elementos inyectados, puede que no aparezcan dentro de nuestro overlay.
-- Servicios protegidos por DRM: algunas plataformas usan tecnologías DRM que restringen la manipulación del DOM del video, lo que puede impedir que la extensión lo escale correctamente.
+CARACTERÍSTICAS PRINCIPALES
+- Modo inmersivo de una tecla: presione `T` para ampliar instantáneamente el video activo en la vista del navegador. Presione nuevamente o `Escape` para regresar. Si hay varios videos en la página, use `Shift+T` para cambiarlos.
+- Mejor compatibilidad con subtítulos: seleccione una pista directamente en el modo cine, active y desactive los subtítulos con la tecla `C` y ajuste la fuente, el tamaño, el color, la sombra, el fondo y la opacidad. La extensión recuerda su idioma preferido por separado para cada sitio web.
+- Rich Theater Experience (experimental): habilita integraciones adicionales con YouTube, Vimeo, Patreon, Twitch y Disney+. Las funciones disponibles dependen del sitio web y se pueden administrar en la ventana emergente de extensión o en la configuración.
+- Una línea de tiempo más rica: salte entre capítulos, vea miniaturas antes de avanzar o retroceder y, en YouTube, vea también las partes más reproducidas del vídeo.
+- Ajuste de video: presione `Z` o use el botón en el reproductor para alternar Ajustar, Rellenar y Estirar y eliminar barras negras sin extensión adicional.
+- Elegantes controles personalizados: barra de control moderna con paneles verticales de volumen y velocidad de reproducción, información sobre herramientas semitransparente e indicadores de tiempo restante y reproducido.
+- Aumento de volumen (hasta 300%): aumenta el audio de videos con volumen bajo hasta un 300% utilizando la API Web Audio, con un control deslizante no lineal para configuraciones precisas y un interruptor en las opciones.
+- Visual HUD: superposiciones animadas elegantes para cambiar el volumen, avanzar o retroceder y alternar reproducción/pausa.
+- Compatibilidad con Shadow DOM: encuentra y magnifica reproductores ocultos en raíces de sombra modernas, mejorando la compatibilidad con más sitios.
+- Atajos y configuraciones personalizados: configure teclas para cambiar el modo cine, avanzar o retroceder, gestionar subtítulos, cambiar el tamaño de los subtítulos y avanzar fotograma a fotograma. La ayuda en el reproductor te ayuda a comprobar todos los atajos.
+- Lista de exclusión: excluya dominios específicos mediante una ventana emergente en la barra del navegador o en la página de opciones para evitar conflictos con el diseño de la página nativa.
+
+OPERACIÓN
+- Vídeo HTML5 universal: funciona con elementos HTML5 `<video>` estándar en la web, incluidos los reproductores ubicados en Shadow DOM.
+- Reproductores integrados: Detecta y amplía vídeos incrustados en marcos, como reproductores de YouTube o Vimeo.
+- Subtítulos HTML5: muestra pistas `<track>` estándar en su propia superposición de modo cine para que puedas personalizar su apariencia.
+- Integraciones de plataforma: Rich Theater Experience puede agregar subtítulos, capítulos, miniaturas de vista previa y más en YouTube, Vimeo, Patreon, Twitch y Disney+. La gama de funciones depende del servicio y del vídeo.
+- Transmisiones en vivo: reconoce transmisiones EN VIVO y, si el servicio brinda una ventana DVR, permite rebobinar la grabación y regresar al momento actual.
+- Servicios protegidos por DRM: algunas plataformas limitan el acceso al reproductor, por lo que algunas funciones pueden no estar disponibles en ellas.
 
 CÓMO EMPEZAR
-1. Abre cualquier página con un video, como una plataforma de video, un sitio de noticias o un blog.
-2. Pulsa `T` en el teclado. Asegúrate de no estar escribiendo en una barra de búsqueda o caja de comentarios.
-3. Usa los controles inferiores, las flechas `Izquierda` / `Derecha` para avanzar o retroceder, y `<` / `>` para avanzar fotograma a fotograma.
-4. Pulsa `Escape` o `T` para salir del modo teatro.
+1. Abra un sitio de videos, como una plataforma de transmisión por secuencias, un sitio de noticias o un blog.
+2. Presione `T` para ingresar al modo cine. Asegúrate de no escribir en el cuadro de texto.
+3. Utilice los controles del reproductor o los atajos: `C` activa y desactiva los subtítulos, `Left` y `Right` avanzan o retroceden, y `<` y `>` permiten avanzar fotograma a fotograma.
+4. En plataformas compatibles, habilite Rich Theater Experience en la ventana emergente de extensión o en la configuración.
+5. Presione `Escape` o `T` nuevamente para salir del modo teatro.
 
 ## Suggested tags
-video, modo teatro, modo cine, video html5, pantalla completa, picture in picture, amplificar volumen, atajos de teclado, youtube, vimeo
+video, modo teatro, modo cine, video html5, pantalla completa, picture in picture, amplificar volumen, atajos de teclado, youtube, vimeo, subtitles, streaming, twitch
