@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Wyłączone"
   },
+  "statusDisabledByParent": {
+    "message": "Wyłączone przez $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Nieaktywne (system)"
   },
@@ -121,41 +129,56 @@
   "volumeBoostDescription": {
     "message": "Wzmocnij głośność do 300% za pomocą Web Audio API. Przy pierwszym wejściu w tryb kinowy z tą opcją może pojawić się krótki wskaźnik ładowania."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Eksperymentalne)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+ i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "tutaj"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo. Dostępność różni się zależnie od serwisu."
+  },
   "youtubeIntegrationTitle": {
     "message": "Integracja z YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Napisy, rozdziały i podglądy osi czasu z YouTube w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do YouTube."
+    "message": "Włącza obsługę napisów, rozdziałów, heatmapy Most Replayed i miniaturek na osi czasu w trybie kinowym."
   },
   "vimeoIntegrationTitle": {
     "message": "Integracja z Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Znaczniki rozdziałów i miniaturki osi czasu z Vimeo w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Vimeo."
+    "message": "Włącza obsługę znaczników rozdziałów i miniaturek na osi czasu w trybie kinowym."
   },
   "patreonIntegrationTitle": {
     "message": "Integracja z Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Napisy i podglądy osi czasu z Patreon w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do Mux."
+    "message": "Włącza obsługę napisów i miniaturek na osi czasu w trybie kinowym."
   },
   "twitchIntegrationTitle": {
     "message": "Integracja z Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Rozdziały i podglądy osi czasu z VOD-ów Twitch w trybie kinowym. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Twitch."
+    "message": "Włącza obsługę rozdziałów VOD i miniaturek na osi czasu w trybie kinowym."
   },
   "disneyIntegrationTitle": {
     "message": "Integracja z Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Napisy i podglądy osi czasu z Disney+ w trybie kinowym, gdy sesja odtwarzania je zawiera. Wyłącz, aby zostawić sam tryb kinowy bez dodatkowych zapytań do CDN Disney."
+    "message": "Włącza obsługę napisów i miniaturek na osi czasu w trybie kinowym, gdy odtwarzacz je udostępnia."
   },
   "liveBadge": {
     "message": "NA ŻYWO"
   },
   "jumpToLive": {
-    "message": "Przejdź na żywo"
+    "message": "Wróć do transmisji na żywo"
   },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Włącz/wyłącz napisy"
   },
+  "increaseSubtitleSize": { "message": "Powiększ napisy" },
+  "decreaseSubtitleSize": { "message": "Zmniejsz napisy" },
   "subtitlesTooltip": {
     "message": "Napisy <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Napisy wyłączone"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Ładowanie napisów..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Nie udało się wczytać napisów"
@@ -281,10 +309,10 @@
     "message": "Privacy Thing"
   },
   "privacyThingPopoverBody": {
-    "message": "Oto moje nowe rozszerzenie! Z Privacy Thing sam decydujesz, jakie dane o Tobie widzi dowolna strona: lokalizację, język, strefę czasową i wiele, wiele innych. Redukuje możliwości śledzenia Cię pomiędzy stronami."
+    "message": "Oto moje nowe rozszerzenie! Z Privacy Thing sam decydujesz, jakie dane o Tobie widzi dowolna strona: lokalizację, język, strefę czasową i wiele, wiele innych. Ogranicza śledzenie Cię między stronami."
   },
   "privacyThingPopoverNote": {
-    "message": "Darmowe i otwarte."
+    "message": "Bezpłatne i z otwartym kodem źródłowym."
   },
   "whatsNew": {
     "message": "Co nowego"
@@ -293,19 +321,19 @@
     "message": "Co nowego"
   },
   "whatsNewLead": {
-    "message": "Oto co się ostatnio zmieniło:"
+    "message": "Poznaj Rich Theater Experience z dodatkowymi narzędziami odtwarzania dla obsługiwanych serwisów wideo."
   },
-  "whatsNewItemFit": {
-    "message": "Tryby Dopasuj, Wypełnij i Rozciągnij w trybie kinowym — przycisk na pasku i skrót Z."
+  "whatsNewItemCaptions": {
+    "message": "Lepsze napisy: wybierz ścieżkę, dostosuj ich wygląd i zapamiętaj preferowany język dla każdej witryny."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Przełączanie wideo na stronie informuje, gdy funkcja jest niedostępna, bo jest tylko jeden odtwarzacz."
+  "whatsNewItemChapters": {
+    "message": "Więcej informacji na osi czasu: przechodź między rozdziałami i zobacz najczęściej odtwarzane momenty na YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "W ustawieniach pojawiły się Zgłoś błąd oraz promo Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Podejrzyj przed przewinięciem: najedź na oś czasu, aby zobaczyć miniatury w obsługiwanych odtwarzaczach YouTube, Vimeo, Patreon, Twitch i Disney+."
   },
   "whatsNewThanks": {
-    "message": "Dzięki Denisowi za sugestie i uwagi :)"
+    "message": "Włącz Rich Theater Experience (Experimental) z poziomu popupu rozszerzenia na obsługiwanych stronach lub na stronie Ustawienia. Funkcja jest nadal eksperymentalna, więc niektóre możliwości mogą różnić się zależnie od serwisu :)"
   },
   "dialogAcknowledge": {
     "message": "Rozumiem"
@@ -323,7 +351,7 @@
     "message": "Odtwarzanie i głośność"
   },
   "playPause": {
-    "message": "Odtwórz / pauza"
+    "message": "Odtwórz / wstrzymaj"
   },
   "seekBackward5": {
     "message": "Cofnij (5 s)"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Ciszej (5%)"
+  },
+  "toggleMute": {
+    "message": "Włącz/wyłącz wyciszenie"
   },
   "frameFullscreenPipTitle": {
     "message": "Klatki, pełny ekran i PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pauza"
+  },
+  "muteHud": {
+    "message": "Dźwięk wyciszony"
+  },
+  "unmuteHud": {
+    "message": "Dźwięk przywrócony"
   },
   "pictureInPictureTooltip": {
     "message": "Obraz w obrazie <kbd>$KEY$</kbd>",
@@ -433,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Opcje napisów"
   },
+  "subtitleFont": {
+    "message": "Krój pisma"
+  },
   "subtitleTextColor": {
     "message": "Tekst"
   },
@@ -455,7 +495,7 @@
     "message": "Gotowe"
   },
   "autoGeneratedTrack": {
-    "message": "$1 (auto)",
+    "message": "$1 (automatyczne)",
     "placeholders": {
       "label": {
         "content": "$1"

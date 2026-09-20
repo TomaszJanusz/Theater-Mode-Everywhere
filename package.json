@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsx scripts/build.ts",
-    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/media-features/media-features.test.ts src/media-features/controller.test.ts src/media-features/caption-style.test.ts src/media-features/twitch-adapter.test.ts src/host-play.test.ts src/playback-window.test.ts src/switchable-videos.test.ts src/platform/domain-policy.test.ts src/platform/parent-origin.test.ts src/core/disposable-scope.test.ts src/core/player-session.test.ts src/protocol/frame-handshake.test.ts src/providers/registry.test.ts src/providers/contract.test.ts src/providers/twitch/harvest.test.ts src/ui/store.test.ts src/ui/shortcuts.test.ts src/ui/theater-layout.test.ts src/whatsNew-release.test.ts scripts/bundle-integrity.test.ts scripts/locales.test.ts",
+    "verify:bundles": "tsx scripts/verify-bundles.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "smoke:chromium": "tsx scripts/smoke.ts chromium",
+    "smoke:firefox": "tsx scripts/smoke.ts firefox",
     "store:cws:screenshots": "tsx scripts/render-cws-screenshots.ts"
   },
   "author": "Tomasz Janusz",
@@ -17,6 +22,7 @@
     "@types/chrome": "^0.0.268",
     "@types/node": "^20.12.7",
     "archiver": "^7.0.1",
+    "playwright": "^1.63.0",
     "tsx": "^4.7.2",
     "typescript": "^5.4.5",
     "vite": "^5.2.10"

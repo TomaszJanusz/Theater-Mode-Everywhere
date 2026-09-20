@@ -3,7 +3,7 @@
     "message": "Theater Mode Everywhere - Modo teatro"
   },
   "extensionDescription": {
-    "message": "Maximiza cualquier reproductor de video HTML5 para ocupar la ventana del navegador con una sola tecla."
+    "message": "Maximiza cualquier reproductor de vídeo HTML5 para ocupar la ventana del navegador con una sola tecla."
   },
   "cwsPromoBeforeLabel": {
     "message": "ANTES"
@@ -46,6 +46,14 @@
   },
   "statusDisabled": {
     "message": "Desactivado"
+  },
+  "statusDisabledByParent": {
+    "message": "Desactivado por $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
   },
   "statusInactiveSystem": {
     "message": "Inactivo (sistema)"
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Activa o desactiva funciones opcionales del modo teatro."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Experimental)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Activa integraciones más completas con tus servicios de vídeo favoritos, incluidos YouTube, Twitch, Disney+ y otros. Theater Mode Everywhere puede mostrar información adicional, admitir formatos de subtítulos personalizados y desbloquear funciones específicas de cada servicio. La disponibilidad varía según el servicio; obtén más información "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "aquí"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Activa integraciones más completas con tus servicios de vídeo favoritos. La disponibilidad varía según el servicio."
+  },
   "volumeBoostTitle": {
     "message": "Amplificación de volumen"
   },
@@ -125,31 +148,31 @@
     "message": "Integración de YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Usa subtítulos, capítulos y vistas previas de la línea de tiempo de YouTube en el modo teatro. Desactívala para mantener el modo teatro en YouTube sin peticiones extra a YouTube."
+    "message": "Activa la compatibilidad con subtítulos, capítulos, el mapa Most Replayed y miniaturas en la línea de tiempo en el modo teatro."
   },
   "vimeoIntegrationTitle": {
     "message": "Integración de Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Usa los marcadores de capítulos y las miniaturas de la línea de tiempo de Vimeo en el modo teatro. Desactívala para mantener el modo teatro en Vimeo sin peticiones extra a Vimeo."
+    "message": "Activa la compatibilidad con marcadores de capítulos y miniaturas en la línea de tiempo en el modo teatro."
   },
   "patreonIntegrationTitle": {
     "message": "Integración de Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Usa los subtítulos y las vistas previas de la línea de tiempo de Patreon en el modo teatro. Desactívala para mantener el modo teatro en Patreon sin peticiones extra a Mux."
+    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro."
   },
   "twitchIntegrationTitle": {
     "message": "Integración de Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Usa los capítulos y las vistas previas de la línea de tiempo de los VOD de Twitch en el modo teatro. Desactívala para mantener el modo teatro en Twitch sin peticiones extra a las CDN de Twitch."
+    "message": "Activa la compatibilidad con capítulos de VOD y miniaturas en la línea de tiempo en el modo teatro."
   },
   "disneyIntegrationTitle": {
     "message": "Integración de Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Usa subtítulos y miniaturas de Disney+ en el modo teatro cuando la sesión de reproducción los incluye. Desactívalo para dejar el modo teatro en Disney+ sin peticiones extra a las CDN de Disney."
+    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro cuando el reproductor los ofrece."
   },
   "liveBadge": {
     "message": "EN VIVO"
@@ -185,7 +208,7 @@
     "message": "Aún no hay exclusiones"
   },
   "noExclusionsDescription": {
-    "message": "El modo teatro se activará automáticamente en todas las páginas con video."
+    "message": "El modo teatro se activará automáticamente en todas las páginas con vídeo."
   },
   "removeExclusion": {
     "message": "Eliminar exclusión"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Activar o desactivar subtítulos"
   },
+  "increaseSubtitleSize": { "message": "Aumentar tamaño de subtítulos" },
+  "decreaseSubtitleSize": { "message": "Reducir tamaño de subtítulos" },
   "subtitlesTooltip": {
     "message": "Subtítulos <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Subtítulos desactivados"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Cargando subtítulos..."
   },
   "subtitlesLoadFailedHud": {
     "message": "No se pudieron cargar los subtítulos"
@@ -293,19 +321,19 @@
     "message": "Novedades"
   },
   "whatsNewLead": {
-    "message": "Esto es lo que cambió recientemente:"
+    "message": "Descubre Rich Theater Experience con herramientas de reproducción adicionales para servicios de vídeo compatibles."
   },
-  "whatsNewItemFit": {
-    "message": "Modos Ajustar, Rellenar y Estirar en modo cine, con un botón en la barra y el atajo Z."
+  "whatsNewItemCaptions": {
+    "message": "Mejores subtítulos: elige una pista, personaliza su aspecto y guarda tu idioma preferido para cada sitio."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Cambiar vídeo en la página ahora explica cuándo no está disponible porque solo hay un reproductor."
+  "whatsNewItemChapters": {
+    "message": "Más contexto en la línea de tiempo: salta entre capítulos y descubre los momentos más repetidos de YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "Ajustes ahora incluye Informar de un error y una promo de Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Previsualiza antes de buscar: pasa el cursor por la línea de tiempo para ver miniaturas en reproductores compatibles de YouTube, Vimeo, Patreon, Twitch y Disney+."
   },
   "whatsNewThanks": {
-    "message": "Gracias a Denis por las sugerencias y los comentarios :)"
+    "message": "Activa Rich Theater Experience (Experimental) desde la ventana emergente de la extensión en sitios compatibles o desde la página de Ajustes. Sigue siendo experimental, por lo que algunas funciones pueden variar según el servicio :)"
   },
   "dialogAcknowledge": {
     "message": "Entendido"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Bajar volumen (5%)"
+  },
+  "toggleMute": {
+    "message": "Alternar silencio"
   },
   "frameFullscreenPipTitle": {
     "message": "Fotograma, pantalla completa y PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pausar"
+  },
+  "muteHud": {
+    "message": "Sonido silenciado"
+  },
+  "unmuteHud": {
+    "message": "Sonido activado"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
@@ -433,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Opciones de subtítulos"
   },
+  "subtitleFont": {
+    "message": "Tipografía"
+  },
   "subtitleTextColor": {
     "message": "Texto"
   },
@@ -455,7 +495,7 @@
     "message": "Listo"
   },
   "autoGeneratedTrack": {
-    "message": "$1 (auto)",
+    "message": "$1 (automática)",
     "placeholders": {
       "label": {
         "content": "$1"

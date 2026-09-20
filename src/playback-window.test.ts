@@ -18,11 +18,13 @@ function fakeVideo(init: {
   duration: number;
   currentTime?: number;
   seekable?: Array<{ start: number; end: number }>;
+  paused?: boolean;
 }): HTMLVideoElement {
   const ranges = init.seekable || [];
   return {
     duration: init.duration,
     currentTime: init.currentTime || 0,
+    paused: init.paused ?? false,
     seekable: {
       length: ranges.length,
       start: (index: number) => ranges[index].start,
@@ -408,7 +410,15 @@ describe('playback window', () => {
       seekToMediaTime(video, 3600);
       assert.equal(video.currentTime, before);
       assert.equal(dispatched.length, 1);
-      assert.ok(Math.abs(displayMediaTime(video) - 3600) < 0.5);
+      assert.equal((dispatched[0] as CustomEvent).detail.resumeAfterSeek, true);
+      // Disney+ can report the HTMLMediaElement as paused while the first
+      // host seek is buffering. A rapid second arrow key must retain the
+      // original intent to resume playback.
+      (video as HTMLVideoElement & { paused: boolean }).paused = true;
+      seekToMediaTime(video, 3605);
+      assert.equal(dispatched.length, 2);
+      assert.equal((dispatched[1] as CustomEvent).detail.resumeAfterSeek, true);
+      assert.ok(Math.abs(displayMediaTime(video) - 3605) < 0.5);
     } finally {
       if (previousWindow === undefined) {
         delete (globalThis as { window?: unknown }).window;

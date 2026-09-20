@@ -7,12 +7,15 @@ import { DEFAULT_CAPTION_STYLE } from './caption-style';
 import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderFlags } from './provider-flags';
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
-import type { CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame } from './types';
+import { heatmapRidgePath } from './parsers/youtube-heatmap-path';
+import type { CaptionActivationResult, CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
+import type { MediaSnapshot } from '../core/media-snapshot';
+import { providerError } from '../core/errors';
 
 export type CaptionToggleResult = 'on' | 'off' | 'none' | 'failed';
 
 export type CaptionHudPayload = {
-  result: CaptionToggleResult;
+  result: CaptionToggleResult | 'loading' | 'dismiss';
   label?: string;
 };
 
@@ -38,6 +41,7 @@ export type MediaFeaturesBindings = {
   decorateCaptionDialog?: (overlay: HTMLElement) => void;
   adapter?: MediaFeaturesAdapter;
   renderer?: CaptionOverlayRenderer;
+  onSnapshot?: (snapshot: MediaSnapshot) => void;
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -57,10 +61,14 @@ export class MediaFeaturesController {
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
   private chapterLayer: HTMLDivElement;
+  private heatmapLayer: SVGSVGElement;
+  private heatmapHasData = false;
+  private heatmap: TimelineHeatmap | null = null;
   private t: MediaFeaturesBindings['t'];
   private tracks: CaptionTrack[] = [];
   private chapters: Chapter[] = [];
   private activeTrackId: string | null = null;
+  private captionState: 'off' | 'loading' | 'active' = 'off';
   private usingOverlayCaptions = false;
   private disposed = false;
   private refreshInFlight = false;
@@ -75,9 +83,16 @@ export class MediaFeaturesController {
   private onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
+  private onSnapshot?: (snapshot: MediaSnapshot) => void;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
+  private sessionEpoch = 0;
   private activateInFlight = false;
+  private captionCueRefreshInFlight = false;
+  private lastCaptionCueRefreshAt = 0;
+  private lastCaptionCueTime = Number.NaN;
+  private captionDiagnostics: Array<Record<string, unknown>> = [];
+  private dialogAbort = new AbortController();
 
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
@@ -92,6 +107,7 @@ export class MediaFeaturesController {
     this.onCaptionStyleChange = bindings.onCaptionStyleChange;
     this.onCaptionPreferenceChange = bindings.onCaptionPreferenceChange;
     this.decorateCaptionDialog = bindings.decorateCaptionDialog;
+    this.onSnapshot = bindings.onSnapshot;
     const pref = bindings.captionPreference;
     if (pref && (pref.language || pref.label)) {
       this.lastLanguagePref = {
@@ -108,11 +124,43 @@ export class MediaFeaturesController {
         remove() {},
         appendChild() { return null; }
       } as unknown as HTMLDivElement;
+      this.heatmapLayer = {
+        className: '',
+        classList: { add() {}, remove() {}, toggle() { return false; } },
+        style: { setProperty() {}, removeProperty() {} },
+        replaceChildren() {},
+        remove() {},
+        appendChild() { return null; },
+        setAttribute() {},
+        closest() { return null; }
+      } as unknown as SVGSVGElement;
     } else {
       this.chapterLayer = document.createElement('div');
       this.chapterLayer.className = 'theater-scrubber-chapters';
       bindings.scrubberTrack.appendChild(this.chapterLayer);
+      this.heatmapLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      this.heatmapLayer.setAttribute('class', 'theater-scrubber-heatmap');
+      this.heatmapLayer.setAttribute('viewBox', '0 0 1000 100');
+      this.heatmapLayer.setAttribute('preserveAspectRatio', 'none');
+      this.heatmapLayer.setAttribute('width', '100%');
+      this.heatmapLayer.setAttribute('height', '100%');
+      this.heatmapLayer.setAttribute('aria-hidden', 'true');
+      this.heatmapLayer.setAttribute('overflow', 'visible');
+      const heatmapHost = bindings.scrubberTrack.parentElement || bindings.scrubberTrack;
+      heatmapHost.insertBefore(this.heatmapLayer, heatmapHost.firstChild);
     }
+  }
+
+  setHeatmapHover(ratio: number | null): void {
+    if (typeof document === 'undefined') return;
+    if (ratio == null || !Number.isFinite(ratio) || !this.heatmapHasData) {
+      this.heatmapLayer.style.removeProperty('--theater-heatmap-hover');
+      this.heatmapLayer.classList.remove('theater-scrubber-heatmap-scrubbing');
+      return;
+    }
+    const pct = Math.max(0, Math.min(1, ratio)) * 100;
+    this.heatmapLayer.style.setProperty('--theater-heatmap-hover', `${pct}%`);
+    this.heatmapLayer.classList.add('theater-scrubber-heatmap-scrubbing');
   }
 
   async start(): Promise<void> {
@@ -122,29 +170,77 @@ export class MediaFeaturesController {
   setProviderFlags(flags: MediaProviderFlags): void {
     if (this.disposed || mediaProviderFlagsEqual(this.providerFlags, flags)) return;
     this.providerFlags = flags;
+    this.rebindAdapter(createMediaFeaturesAdapter(this.video, flags));
+  }
+
+  rebindAdapter(adapter: MediaFeaturesAdapter): void {
+    if (this.disposed) return;
     this.adapter.dispose();
-    this.adapter = createMediaFeaturesAdapter(this.video, flags);
+    this.adapter = adapter;
     this.invalidate();
     void this.refresh();
   }
 
   invalidate(): void {
     if (this.disposed) return;
-    this.activateGeneration += 1;
+    this.bumpEpoch();
     this.adapter.invalidate?.();
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
     this.chapters = [];
+    this.heatmap = null;
     this.activeTrackId = null;
+    this.captionState = 'off';
     this.usingOverlayCaptions = false;
     this.renderer.setCues([]);
     setOverlayCaptionsClass(false);
     this.renderChapterMarks();
+    this.renderHeatmap();
     this.updateCcState();
     this.renderCcMenu();
     this.onCaptionChange?.();
   }
 
+  private bumpEpoch(): void {
+    this.sessionEpoch += 1;
+    this.activateGeneration += 1;
+    if (!this.dialogAbort.signal.aborted) this.dialogAbort.abort();
+    this.dialogAbort = new AbortController();
+  }
+
+  private recordCaptionTransition(reason: string, details: Record<string, unknown> = {}): void {
+    const track = this.activeTrackId
+      ? this.tracks.find((item) => item.id === this.activeTrackId)
+      : undefined;
+    const entry = {
+      at: Date.now(),
+      reason,
+      mediaId: this.mediaId,
+      trackId: this.activeTrackId,
+      state: this.captionState,
+      generation: this.activateGeneration,
+      provider: track?.source || null,
+      ...details
+    };
+    this.captionDiagnostics.push(entry);
+    if (this.captionDiagnostics.length > 20) this.captionDiagnostics.shift();
+    console.debug('[Theater Everywhere] Caption state:', entry);
+  }
+
+  private isCurrent(epoch: number, adapter: MediaFeaturesAdapter): boolean {
+    return !this.disposed && this.sessionEpoch === epoch && this.adapter === adapter;
+  }
+
+  private delay(ms: number, epoch: number, adapter: MediaFeaturesAdapter): Promise<boolean> {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(this.isCurrent(epoch, adapter)), ms);
+    });
+  }
+
+  /**
+   * Reloads media metadata and publishes a snapshot for the current adapter epoch.
+   * Concurrent requests queue one follow-up refresh, and stale adapter results are ignored.
+   */
   async refresh(): Promise<void> {
     if (this.disposed) return;
     if (this.refreshInFlight) {
@@ -152,28 +248,47 @@ export class MediaFeaturesController {
       return;
     }
     this.refreshInFlight = true;
+    const epoch = this.sessionEpoch;
+    const adapter = this.adapter;
     const previousId = this.mediaId;
+    const errors: MediaSnapshot['errors'] = [];
     try {
       try {
-        await this.adapter.reload?.();
-        this.mediaId = this.adapter.mediaId?.() || null;
-        this.tracks = await this.adapter.listCaptionTracks();
-        this.chapters = this.adapter.getChapters ? await this.adapter.getChapters() : [];
+        await adapter.reload?.();
+        if (!this.isCurrent(epoch, adapter)) return;
+        this.mediaId = adapter.mediaId?.() || null;
+        this.tracks = await adapter.listCaptionTracks();
+        if (!this.isCurrent(epoch, adapter)) return;
+        this.chapters = adapter.getChapters ? await adapter.getChapters() : [];
+        if (!this.isCurrent(epoch, adapter)) return;
+        try {
+          this.heatmap = adapter.getHeatmap ? adapter.getHeatmap() : null;
+        } catch {
+          this.heatmap = null;
+        }
       } catch (err) {
+        if (!this.isCurrent(epoch, adapter)) return;
         console.error('[Theater Everywhere] Media features probe failed:', err);
         this.tracks = [];
         this.chapters = [];
+        this.heatmap = null;
+        errors.push(providerError('network-failed', { capability: 'captions', cause: err, epoch }));
       }
-      if (this.disposed) return;
-      const mediaChanged = Boolean(previousId && this.mediaId && previousId !== this.mediaId);
-      if (mediaChanged) {
+      if (!this.isCurrent(epoch, adapter)) return;
+      const mediaChanged = previousId !== this.mediaId;
+      const activeTrackMissing = Boolean(this.activeTrackId && !this.tracks.some((track) => track.id === this.activeTrackId));
+      if (mediaChanged || activeTrackMissing) {
         this.activateGeneration += 1;
+        if (activeTrackMissing) void adapter.activateCaptionTrack(null);
         this.activeTrackId = null;
+        this.captionState = 'off';
         this.usingOverlayCaptions = false;
         this.renderer.setCues([]);
         setOverlayCaptionsClass(false);
+        this.recordCaptionTransition(mediaChanged ? 'media-changed' : 'track-missing', { previousId });
       }
       this.renderChapterMarks();
+      this.renderHeatmap();
       this.updateCcState();
       this.renderCcMenu();
       const shouldRestoreCaptions = Boolean(this.captionPreference)
@@ -182,28 +297,39 @@ export class MediaFeaturesController {
       if (shouldRestoreCaptions) {
         let match = pickCaptionTrack(this.tracks, this.captionPreference);
         if (!match) {
-          await new Promise<void>((resolve) => setTimeout(resolve, 700));
-          if (this.disposed || !this.captionPreference) return;
+          if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
           try {
-            this.tracks = await this.adapter.listCaptionTracks();
+            this.tracks = await adapter.listCaptionTracks();
           } catch {
+            if (!this.isCurrent(epoch, adapter)) return;
             this.tracks = [];
           }
+          if (!this.isCurrent(epoch, adapter)) return;
           this.updateCcState();
           this.renderCcMenu();
           match = pickCaptionTrack(this.tracks, this.captionPreference);
         }
         if (match) {
           await this.activate(match.id, { persist: false, hud: 'on' });
-          if (!this.usingOverlayCaptions && !this.disposed) {
-            await new Promise<void>((resolve) => setTimeout(resolve, 700));
-            if (!this.disposed && this.captionPreference) {
-              await this.activate(match.id, { persist: false, hud: 'on' });
-            }
+          if (!this.usingOverlayCaptions && this.isCurrent(epoch, adapter)) {
+            if (!await this.delay(700, epoch, adapter) || !this.captionPreference) return;
+            await this.activate(match.id, { persist: false, hud: 'on' });
           }
         }
       }
     } finally {
+      if (this.isCurrent(epoch, adapter)) {
+        this.onSnapshot?.({
+          capabilities: {
+            captions: this.tracks.length > 0,
+            chapters: this.chapters.length > 0,
+            previews: false
+          },
+          tracks: this.tracks,
+          chapters: this.chapters,
+          errors
+        });
+      }
       this.refreshInFlight = false;
       if (this.refreshQueued && !this.disposed) {
         this.refreshQueued = false;
@@ -226,8 +352,118 @@ export class MediaFeaturesController {
     }
   }
 
+  private renderHeatmap(): void {
+    this.heatmapLayer.replaceChildren();
+    const pathData = this.heatmap?.svgPath || '';
+    this.heatmapHasData = Boolean(pathData);
+    this.syncHeatmapPresence();
+    if (!this.heatmapHasData) {
+      this.setHeatmapHover(null);
+      this.heatmapLayer.classList.remove('theater-scrubber-heatmap-ready');
+      return;
+    }
+    if (typeof document === 'undefined') return;
+    const ns = 'http://www.w3.org/2000/svg';
+    const svgEl = (name: string) => document.createElementNS(ns, name);
+    const defs = svgEl('defs');
+    const addFillGradient = (id: string, stopClass: string): void => {
+      const gradient = svgEl('linearGradient');
+      gradient.setAttribute('id', id);
+      gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+      gradient.setAttribute('x1', '0');
+      gradient.setAttribute('y1', '100');
+      gradient.setAttribute('x2', '0');
+      gradient.setAttribute('y2', '0');
+      const bottom = svgEl('stop');
+      bottom.setAttribute('offset', '0');
+      bottom.setAttribute('class', stopClass);
+      bottom.setAttribute('stop-opacity', '0');
+      const hold = svgEl('stop');
+      hold.setAttribute('offset', '0.1');
+      hold.setAttribute('class', stopClass);
+      hold.setAttribute('stop-opacity', '0');
+      const top = svgEl('stop');
+      top.setAttribute('offset', '1');
+      top.setAttribute('class', stopClass);
+      top.setAttribute('stop-opacity', '0.7');
+      gradient.append(bottom, hold, top);
+      defs.appendChild(gradient);
+    };
+    addFillGradient('theater-heatmap-fill', 'theater-heatmap-fill-white');
+    addFillGradient('theater-heatmap-fill-accent', 'theater-heatmap-fill-accent');
+
+    const mask = svgEl('mask');
+    mask.setAttribute('id', 'theater-heatmap-glow-mask');
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+    mask.setAttribute('x', '-200');
+    mask.setAttribute('y', '-50');
+    mask.setAttribute('width', '1400');
+    mask.setAttribute('height', '160');
+    const maskBg = svgEl('rect');
+    maskBg.setAttribute('x', '-200');
+    maskBg.setAttribute('y', '-50');
+    maskBg.setAttribute('width', '1400');
+    maskBg.setAttribute('height', '160');
+    maskBg.setAttribute('fill', '#ffffff');
+    const maskCut = svgEl('path');
+    maskCut.setAttribute('d', pathData);
+    maskCut.setAttribute('fill', '#000000');
+    mask.append(maskBg, maskCut);
+    defs.appendChild(mask);
+
+    const ridge = heatmapRidgePath(pathData) || pathData;
+    const glowGroup = svgEl('g');
+    glowGroup.setAttribute('mask', 'url(#theater-heatmap-glow-mask)');
+    const glowBlur = svgEl('g');
+    glowBlur.setAttribute('class', 'theater-scrubber-heatmap-glow-layer');
+    const glowPad = svgEl('rect');
+    glowPad.setAttribute('x', '-200');
+    glowPad.setAttribute('y', '-50');
+    glowPad.setAttribute('width', '1400');
+    glowPad.setAttribute('height', '160');
+    glowPad.setAttribute('fill', 'transparent');
+    const glow = svgEl('path');
+    glow.setAttribute('class', 'theater-scrubber-heatmap-glow');
+    glow.setAttribute('d', ridge);
+    glowBlur.append(glowPad, glow);
+    glowGroup.appendChild(glowBlur);
+
+    const remaining = svgEl('g');
+    remaining.setAttribute('class', 'theater-scrubber-heatmap-remaining');
+    const fill = svgEl('path');
+    fill.setAttribute('class', 'theater-scrubber-heatmap-path');
+    fill.setAttribute('d', pathData);
+    fill.setAttribute('fill', 'url(#theater-heatmap-fill)');
+    const stroke = svgEl('path');
+    stroke.setAttribute('class', 'theater-scrubber-heatmap-stroke');
+    stroke.setAttribute('d', ridge);
+    remaining.append(fill, stroke);
+
+    const played = svgEl('g');
+    played.setAttribute('class', 'theater-scrubber-heatmap-played');
+    const playedFill = svgEl('path');
+    playedFill.setAttribute('class', 'theater-scrubber-heatmap-path');
+    playedFill.setAttribute('d', pathData);
+    playedFill.setAttribute('fill', 'url(#theater-heatmap-fill-accent)');
+    const playedStroke = svgEl('path');
+    playedStroke.setAttribute('class', 'theater-scrubber-heatmap-stroke');
+    playedStroke.setAttribute('d', ridge);
+    played.append(playedFill, playedStroke);
+
+    this.heatmapLayer.append(defs, glowGroup, remaining, played);
+    this.heatmapLayer.classList.add('theater-scrubber-heatmap-ready');
+    this.syncHeatmapPresence();
+  }
+
+  private syncHeatmapPresence(): void {
+    if (typeof document === 'undefined') return;
+    const chrome = this.heatmapLayer.closest('.theater-controls-wrapper');
+    chrome?.classList.toggle('theater-has-heatmap', this.heatmapHasData);
+  }
+
   private captionsAreOn(): boolean {
-    return this.activeTrackId !== null && this.usingOverlayCaptions;
+    return this.captionState === 'active' && this.activeTrackId !== null;
   }
 
   private updateCcState(): void {
@@ -316,6 +552,7 @@ export class MediaFeaturesController {
     await openCaptionOptionsDialog({
       t: this.t,
       style: this.captionStyle,
+      signal: this.dialogAbort.signal,
       onChange: (style) => {
         this.setCaptionStyle(style);
         this.onCaptionStyleChange?.(style);
@@ -386,19 +623,25 @@ export class MediaFeaturesController {
     if (this.disposed) return this.captionsAreOn() ? 'on' : 'off';
     const gen = ++this.activateGeneration;
     this.activateInFlight = true;
+    this.captionState = id ? 'loading' : 'off';
+    this.updateCcState();
     const persist = options?.persist !== false;
+    if (id && options?.hud === true) {
+      this.onCaptionHud?.({ result: 'loading' });
+    }
     try {
-      let overlayCues: Awaited<ReturnType<MediaFeaturesAdapter['activateCaptionTrack']>> = [];
+      let activation: CaptionActivationResult = { status: 'failed', delivery: 'none', cues: [] };
       try {
-        overlayCues = await this.adapter.activateCaptionTrack(id);
+        activation = await this.adapter.activateCaptionTrack(id);
       } catch (err) {
         console.error('[Theater Everywhere] Caption activate failed:', err);
-        overlayCues = [];
+        activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       if (this.disposed || gen !== this.activateGeneration) {
         return this.captionsAreOn() ? 'on' : 'off';
       }
-      let on = Boolean(id && overlayCues && overlayCues.length > 0);
+      const selected = id ? this.tracks.find((item) => item.id === id) : undefined;
+      let on = Boolean(id && selected && activation.status === 'active');
       if (id && !on) {
         try {
           await this.adapter.activateCaptionTrack(null);
@@ -408,13 +651,21 @@ export class MediaFeaturesController {
         if (this.disposed || gen !== this.activateGeneration) {
           return this.captionsAreOn() ? 'on' : 'off';
         }
-        overlayCues = [];
+        activation = { status: 'failed', delivery: 'none', cues: [] };
       }
       this.activeTrackId = on ? id : null;
-      this.usingOverlayCaptions = on;
-      this.renderer.setCues(on ? overlayCues : []);
-      setOverlayCaptionsClass(on);
+      this.captionState = on ? 'active' : 'off';
+      this.usingOverlayCaptions = on && activation.delivery === 'overlay';
+      this.renderer.setCues(this.usingOverlayCaptions ? activation.cues : []);
+      setOverlayCaptionsClass(this.usingOverlayCaptions);
       if (on) this.renderer.update(displayMediaTime(this.video));
+      this.recordCaptionTransition(on ? 'activated' : id ? 'activation-failed' : 'deactivated', {
+        delivery: activation.delivery,
+        cueCount: activation.cues.length,
+        cueStart: activation.cues[0]?.start ?? null,
+        cueEnd: activation.cues.at(-1)?.end ?? null,
+        provider: selected?.source || null
+      });
       this.persistAfterActivate(id, on, persist);
       this.updateCcState();
       this.renderCcMenu();
@@ -451,14 +702,46 @@ export class MediaFeaturesController {
         this.emitCaptionHud('none', true);
         return 'none';
       }
-      const result = await this.activateUnlocked(match.id);
+      const result = await this.activateUnlocked(match.id, { hud: true });
       this.emitCaptionHud(result, true);
       return this.captionsAreOn() ? 'on' : 'failed';
     });
   }
 
   updateTime(time: number): void {
-    if (this.usingOverlayCaptions) this.renderer.update(time);
+    if (!this.usingOverlayCaptions) return;
+    this.renderer.update(time);
+    if (!this.adapter.refreshCaptionCues || !this.activeTrackId || this.captionCueRefreshInFlight) return;
+    const now = Date.now();
+    const seeked = Number.isFinite(this.lastCaptionCueTime) && Math.abs(time - this.lastCaptionCueTime) > 15;
+    this.lastCaptionCueTime = time;
+    if (!seeked && now - this.lastCaptionCueRefreshAt < 5000) return;
+    this.lastCaptionCueRefreshAt = now;
+    this.captionCueRefreshInFlight = true;
+    const generation = this.activateGeneration;
+    const trackId = this.activeTrackId;
+    void this.adapter.refreshCaptionCues(trackId, time).then((result) => {
+      if (!result || this.disposed || generation !== this.activateGeneration || trackId !== this.activeTrackId) return;
+      if (result.status === 'active' && result.delivery === 'overlay') {
+        this.renderer.setCues(result.cues);
+        this.renderer.update(time);
+        return;
+      }
+      this.activeTrackId = null;
+      this.captionState = 'off';
+      this.usingOverlayCaptions = false;
+      this.renderer.setCues([]);
+      setOverlayCaptionsClass(false);
+      this.updateCcState();
+      this.renderCcMenu();
+      this.recordCaptionTransition('cue-refresh-failed', { time });
+      this.emitCaptionHud('failed', true);
+      this.onCaptionChange?.();
+    }).catch((error) => {
+      console.error('[Theater Everywhere] Caption cue refresh failed:', error);
+    }).finally(() => {
+      this.captionCueRefreshInFlight = false;
+    });
   }
 
   retainCaptionsOnElementReset(): boolean {
@@ -482,11 +765,14 @@ export class MediaFeaturesController {
 
   dispose(): void {
     this.disposed = true;
-    this.activateGeneration += 1;
+    this.bumpEpoch();
     this.refreshQueued = false;
     setOverlayCaptionsClass(false);
+    this.heatmapHasData = false;
+    this.syncHeatmapPresence();
     this.renderer.dispose();
     this.adapter.dispose();
     this.chapterLayer.remove();
+    this.heatmapLayer.remove();
   }
 }

@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Вимкнено"
   },
+  "statusDisabledByParent": {
+    "message": "Вимкнено через $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Неактивний (система)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Увімкніть або вимкніть додаткові функції режиму кінотеатру."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (експериментальна функція)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Увімкніть розширену інтеграцію з улюбленими відеосервісами, зокрема YouTube, Twitch, Disney+ та іншими. Theater Mode Everywhere може показувати додаткову інформацію, підтримувати власні формати субтитрів і відкривати функції окремих сервісів. Доступність залежить від сервісу - докладніше "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "тут"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Увімкніть розширену інтеграцію з улюбленими відеосервісами. Доступність залежить від сервісу."
+  },
   "volumeBoostTitle": {
     "message": "Посилення звуку"
   },
@@ -125,31 +148,31 @@
     "message": "Інтеграція з YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Субтитри, розділи та прев’ю шкали часу YouTube у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на YouTube без додаткових запитів до YouTube."
+    "message": "Вмикає підтримку субтитрів, розділів, теплокарти Most Replayed та мініатюр на шкалі часу в режимі кінотеатру."
   },
   "vimeoIntegrationTitle": {
     "message": "Інтеграція з Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Мітки розділів і мініатюри шкали часу Vimeo у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Vimeo без додаткових запитів до Vimeo."
+    "message": "Вмикає підтримку міток розділів і мініатюр на шкалі часу в режимі кінотеатру."
   },
   "patreonIntegrationTitle": {
     "message": "Інтеграція з Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Субтитри та прев’ю шкали часу Patreon у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Patreon без додаткових запитів до Mux."
+    "message": "Вмикає підтримку субтитрів та мініатюр на шкалі часу в режимі кінотеатру."
   },
   "twitchIntegrationTitle": {
     "message": "Інтеграція з Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Розділи та прев’ю шкали часу VOD Twitch у режимі кінотеатру. Вимкніть, щоб залишити режим кінотеатру на Twitch без додаткових запитів до CDN Twitch."
+    "message": "Вмикає підтримку розділів VOD і мініатюр на шкалі часу в режимі кінотеатру."
   },
   "disneyIntegrationTitle": {
     "message": "Інтеграція Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Субтитри та прев’ю шкали Disney+ у театральному режимі, якщо вони є в сесії відтворення. Вимкніть, щоб залишити театральний режим на Disney+ без додаткових запитів до CDN Disney."
+    "message": "Вмикає підтримку субтитрів та мініатюр на шкалі часу в режимі кінотеатру, якщо програвач їх надає."
   },
   "liveBadge": {
     "message": "ЕФІР"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Увімкнути або вимкнути субтитри"
   },
+  "increaseSubtitleSize": { "message": "Збільшити розмір субтитрів" },
+  "decreaseSubtitleSize": { "message": "Зменшити розмір субтитрів" },
   "subtitlesTooltip": {
     "message": "Субтитри <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Субтитри вимкнено"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Завантаження субтитрів..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Не вдалося завантажити субтитри"
@@ -293,19 +321,19 @@
     "message": "Що нового"
   },
   "whatsNewLead": {
-    "message": "Ось що змінилося останнім часом:"
+    "message": "Зустрічайте Rich Theater Experience з додатковими інструментами відтворення для підтримуваних відеосервісів."
   },
-  "whatsNewItemFit": {
-    "message": "Режими вписати, заповнити й розтягнути в режимі кіно — кнопка на панелі та скорочення Z."
+  "whatsNewItemCaptions": {
+    "message": "Кращі субтитри: виберіть доріжку, налаштуйте її вигляд і зберігайте бажану мову для кожного сайту."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Перемикання відео на сторінці тепер пояснює, коли воно недоступне, бо на сторінці лише один програвач."
+  "whatsNewItemChapters": {
+    "message": "Більше контексту на часовій шкалі: переходьте між розділами та переглядайте найчастіше відтворювані моменти на YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "У налаштуваннях з’явилися «Повідомити про помилку» та промо Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Переглядайте перед пошуком: наведіть вказівник на часову шкалу, щоб побачити мініатюри в підтримуваних програвачах YouTube, Vimeo, Patreon, Twitch і Disney+."
   },
   "whatsNewThanks": {
-    "message": "Дякуємо Денісу за пропозиції та зауваження :)"
+    "message": "Увімкніть Rich Theater Experience (Experimental) у спливаючому вікні розширення на підтримуваних сайтах або на сторінці налаштувань. Функція все ще експериментальна, тому деякі можливості можуть відрізнятися залежно від сервісу :)"
   },
   "dialogAcknowledge": {
     "message": "Зрозуміло"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Зменшити гучність (5%)"
+  },
+  "toggleMute": {
+    "message": "Увімкнути/вимкнути звук"
   },
   "frameFullscreenPipTitle": {
     "message": "Кадри, повний екран та PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Пауза"
+  },
+  "muteHud": {
+    "message": "Звук вимкнено"
+  },
+  "unmuteHud": {
+    "message": "Звук увімкнено"
   },
   "pictureInPictureTooltip": {
     "message": "Картинка в картинці <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "Параметри субтитрів"
+  },
+  "subtitleFont": {
+    "message": "Шрифт"
   },
   "subtitleTextColor": {
     "message": "Текст"

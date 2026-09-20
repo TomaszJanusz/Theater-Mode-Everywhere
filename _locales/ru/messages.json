@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Отключено"
   },
+  "statusDisabledByParent": {
+    "message": "Отключено из-за $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Неактивно (система)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Включение и отключение дополнительных функций режима кино."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (экспериментальная функция)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Включите расширенную интеграцию с любимыми видеосервисами, включая YouTube, Twitch, Disney+ и другие. Theater Mode Everywhere может показывать дополнительную информацию, поддерживать пользовательские форматы субтитров и открывать функции отдельных сервисов. Доступность зависит от сервиса - подробнее "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "здесь"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Включите расширенную интеграцию с любимыми видеосервисами. Доступность зависит от сервиса."
+  },
   "volumeBoostTitle": {
     "message": "Усиление звука"
   },
@@ -125,31 +148,31 @@
     "message": "Интеграция с YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Субтитры, главы и превью шкалы времени YouTube в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на YouTube без дополнительных запросов к YouTube."
+    "message": "Включает поддержку субтитров, глав, тепловой карты Most Replayed и миниатюр на шкале времени в режиме кинотеатра."
   },
   "vimeoIntegrationTitle": {
     "message": "Интеграция с Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Метки глав и миниатюры шкалы времени Vimeo в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Vimeo без дополнительных запросов к Vimeo."
+    "message": "Включает поддержку меток глав и миниатюр на шкале времени в режиме кинотеатра."
   },
   "patreonIntegrationTitle": {
     "message": "Интеграция с Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Субтитры и превью шкалы времени Patreon в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Patreon без дополнительных запросов к Mux."
+    "message": "Включает поддержку субтитров и миниатюр на шкале времени в режиме кинотеатра."
   },
   "twitchIntegrationTitle": {
     "message": "Интеграция с Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Главы и превью шкалы времени VOD Twitch в режиме кинотеатра. Выключите, чтобы оставить режим кинотеатра на Twitch без дополнительных запросов к CDN Twitch."
+    "message": "Включает поддержку глав VOD и миниатюр на шкале времени в режиме кинотеатра."
   },
   "disneyIntegrationTitle": {
     "message": "Интеграция Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Субтитры и превью шкалы Disney+ в театральном режиме, если они есть в сессии воспроизведения. Выключите, чтобы оставить театральный режим на Disney+ без дополнительных запросов к CDN Disney."
+    "message": "Включает поддержку субтитров и миниатюр на шкале времени в режиме кинотеатра, если плеер их отдаёт."
   },
   "liveBadge": {
     "message": "ЭФИР"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Включить или выключить субтитры"
   },
+  "increaseSubtitleSize": { "message": "Увеличить размер субтитров" },
+  "decreaseSubtitleSize": { "message": "Уменьшить размер субтитров" },
   "subtitlesTooltip": {
     "message": "Субтитры <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Субтитры выключены"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Загрузка субтитров..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Не удалось загрузить субтитры"
@@ -293,19 +321,19 @@
     "message": "Что нового"
   },
   "whatsNewLead": {
-    "message": "Вот что изменилось недавно:"
+    "message": "Познакомьтесь с Rich Theater Experience, дополнительными инструментами воспроизведения для поддерживаемых видеосервисов."
   },
-  "whatsNewItemFit": {
-    "message": "Режимы вписать, заполнить и растянуть в режиме кино — кнопка на панели и сочетание Z."
+  "whatsNewItemCaptions": {
+    "message": "Улучшенные субтитры: выберите дорожку, настройте их вид и сохраните предпочитаемый язык для каждого сайта."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Переключение видео на странице теперь объясняет, когда оно недоступно, потому что на странице только один проигрыватель."
+  "whatsNewItemChapters": {
+    "message": "Больше контекста на шкале времени: переходите между главами и смотрите самые часто воспроизводимые моменты на YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "В настройках появились «Сообщить об ошибке» и промо Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Просматривайте перед поиском: наведите курсор на шкалу времени, чтобы увидеть миниатюры в поддерживаемых проигрывателях YouTube, Vimeo, Patreon, Twitch и Disney+."
   },
   "whatsNewThanks": {
-    "message": "Спасибо Денису за предложения и замечания :)"
+    "message": "Включите Rich Theater Experience (Experimental) во всплывающем окне расширения на поддерживаемых сайтах или на странице настроек. Функция пока экспериментальная, поэтому некоторые возможности могут отличаться в зависимости от сервиса :)"
   },
   "dialogAcknowledge": {
     "message": "Понятно"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "Уменьшить громкость (5%)"
+  },
+  "toggleMute": {
+    "message": "Включить/выключить звук"
   },
   "frameFullscreenPipTitle": {
     "message": "Кадр, полный экран и PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Пауза"
+  },
+  "muteHud": {
+    "message": "Звук выключен"
+  },
+  "unmuteHud": {
+    "message": "Звук включён"
   },
   "pictureInPictureTooltip": {
     "message": "Картинка в картинке <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "Параметры субтитров"
+  },
+  "subtitleFont": {
+    "message": "Шрифт"
   },
   "subtitleTextColor": {
     "message": "Текст"

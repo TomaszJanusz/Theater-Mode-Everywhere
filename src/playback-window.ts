@@ -26,6 +26,7 @@ export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
 const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
 const PENDING_MEDIA_SEEK_MS = 10_000;
 const PENDING_MEDIA_SEEK_ARRIVED_SECONDS = 1.25;
+const HOST_SEEK_RESUME_GRACE_MS = 4_000;
 
 type YoutubePlayerHost = HTMLElement & {
   getVideoData?: () => { isLive?: boolean } | null;
@@ -34,6 +35,8 @@ type YoutubePlayerHost = HTMLElement & {
 export type MediaSeekDetail = {
   live?: boolean;
   time?: number;
+  resumeAfterSeek?: boolean;
+  cancelPendingResume?: boolean;
 };
 
 function youtubePlayerHost(node: Element | null): YoutubePlayerHost | null {
@@ -63,6 +66,8 @@ function youtubeProgressTimes(player: YoutubePlayerHost): { min: number; max: nu
 
 const youtubeWallOffsets = new WeakMap<HTMLVideoElement, number>();
 const pendingMediaSeeks = new WeakMap<HTMLVideoElement, { time: number; until: number }>();
+const pendingNativeSeekResumes = new WeakMap<HTMLVideoElement, () => void>();
+const pendingHostSeekResumes = new WeakMap<HTMLVideoElement, number>();
 
 function rememberYoutubeWallOffset(video: HTMLVideoElement, offset: number): void {
   youtubeWallOffsets.set(video, offset);
@@ -343,6 +348,55 @@ function requestHostMediaSeek(detail: MediaSeekDetail): boolean {
   return true;
 }
 
+function shouldResumeAfterSeek(video: HTMLVideoElement): boolean {
+  if (!video.paused) return true;
+  const until = pendingHostSeekResumes.get(video);
+  if (!until || Date.now() >= until) {
+    pendingHostSeekResumes.delete(video);
+    return false;
+  }
+  return true;
+}
+
+function rememberHostSeekResume(video: HTMLVideoElement, resumeAfterSeek: boolean): void {
+  if (!resumeAfterSeek) {
+    pendingHostSeekResumes.delete(video);
+    return;
+  }
+  pendingHostSeekResumes.set(video, Date.now() + HOST_SEEK_RESUME_GRACE_MS);
+}
+
+function preserveNativePlaybackThroughSeek(video: HTMLVideoElement, resumeAfterSeek: boolean): void {
+  pendingNativeSeekResumes.get(video)?.();
+  if (!resumeAfterSeek || typeof video.addEventListener !== 'function') return;
+
+  let settled = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const cleanup = () => {
+    if (settled) return;
+    settled = true;
+    video.removeEventListener('seeked', resume);
+    video.removeEventListener('canplay', resume);
+    if (timer) clearTimeout(timer);
+    pendingNativeSeekResumes.delete(video);
+  };
+  const resume = () => {
+    if (video.seeking || video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
+    cleanup();
+    if (video.paused) void video.play().catch(() => {});
+  };
+  pendingNativeSeekResumes.set(video, cleanup);
+  video.addEventListener('seeked', resume);
+  video.addEventListener('canplay', resume);
+  timer = setTimeout(resume, 4_000);
+}
+
+export function cancelPendingSeekResume(video: HTMLVideoElement): void {
+  pendingNativeSeekResumes.get(video)?.();
+  pendingHostSeekResumes.delete(video);
+  requestHostMediaSeek({ cancelPendingResume: true });
+}
+
 function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
   return hostLiveHint(video) && Boolean(youtubePlayerFor(video));
 }
@@ -354,15 +408,25 @@ function canSeekDisneyHost(): boolean {
 export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
   const window = playbackWindow(video);
   const target = window.seekable ? clampToWindow(time, window) : time;
+  // Hosts such as Disney+ may transiently expose a paused HTMLMediaElement
+  // while they buffer a seek. Keep the original playback intent across a
+  // burst of arrow-key seeks, rather than treating the second keypress as a
+  // seek requested from the paused state.
+  const resumeAfterSeek = shouldResumeAfterSeek(video);
   rememberPendingMediaSeek(video, target);
   if (canSeekYoutubeLive(video)) {
     if (window.live && isAtLiveEdge(target, window)) {
       if (requestHostMediaSeek({ live: true })) return;
-    } else if (requestHostMediaSeek({ time: target })) {
+    } else if (requestHostMediaSeek({ time: target, resumeAfterSeek })) {
+      rememberHostSeekResume(video, resumeAfterSeek);
       return;
     }
   }
-  if (canSeekDisneyHost() && requestHostMediaSeek({ time: target })) return;
+  if (canSeekDisneyHost() && requestHostMediaSeek({ time: target, resumeAfterSeek })) {
+    rememberHostSeekResume(video, resumeAfterSeek);
+    return;
+  }
+  preserveNativePlaybackThroughSeek(video, resumeAfterSeek);
   video.currentTime = target;
 }
 

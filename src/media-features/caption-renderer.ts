@@ -74,6 +74,7 @@ export class CaptionRenderer {
     this.root.remove();
     const root = document.documentElement.style;
     root.removeProperty('--theater-caption-color');
+    root.removeProperty('--theater-caption-font');
     root.removeProperty('--theater-caption-scale');
     root.removeProperty('--theater-caption-bg');
     root.removeProperty('--theater-caption-shadow');

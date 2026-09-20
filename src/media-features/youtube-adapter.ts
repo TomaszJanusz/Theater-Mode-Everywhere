@@ -1,6 +1,8 @@
 import { parseCaptionPayload } from './parsers/captions';
 import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
+import { heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
+import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
 import {
   normalizeYoutubePlayerResponse,
@@ -13,13 +15,15 @@ import {
 } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import type {
+  CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
   Chapter,
   MediaCapabilities,
   MediaFeaturesAdapter,
   PreviewFrame,
-  PreviewSource
+  PreviewSource,
+  TimelineHeatmap
 } from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
@@ -264,34 +268,35 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id === null) {
       await requestYoutubePlayerCaptions({ enabled: false });
-      return null;
+      return { status: 'off', delivery: 'none', cues: [] };
     }
     if (!this.snapshot) await this.load();
     if (!this.snapshotMatchesPage()) await this.reload();
     const track = this.tracks.find((item) => item.id === id);
-    if (!track) return null;
+    if (!track) return { status: 'failed', delivery: 'none', cues: [] };
+    const activationMediaId = this.mediaId();
     const fetchUrl = signYoutubeCaptionUrl(track.baseUrl, readPublishedYoutubeCaptionAuthUrls());
     const cached = cueCache.get(track.baseUrl) || cueCache.get(fetchUrl);
     if (cached && cached.length > 0 && this.snapshotMatchesPage()) {
       await requestYoutubePlayerCaptions({ enabled: false });
-      return cached;
+      return { status: 'active', delivery: 'overlay', cues: cached };
     }
 
     for (const url of captionUrlVariants(fetchUrl)) {
       const body = await fetchCaptionTrack(url);
       if (!body) continue;
       const cues = parseCaptionPayload(body);
-      if (cues.length > 0) {
+      if (cues.length > 0 && activationMediaId === this.mediaId() && this.snapshotMatchesPage()) {
         cueCache.set(track.baseUrl, cues);
         cueCache.set(fetchUrl, cues);
         await requestYoutubePlayerCaptions({ enabled: false });
-        return cues;
+        return { status: 'active', delivery: 'overlay', cues };
       }
     }
-    return [];
+    return { status: 'failed', delivery: 'none', cues: [] };
   }
 
   async getChapters(): Promise<Chapter[]> {
@@ -300,6 +305,20 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     const fromDescription = parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration);
     if (fromDescription.length > 0) return fromDescription;
     return parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
+  }
+
+  getHeatmap(): TimelineHeatmap | null {
+    if (this.snapshotMatchesPage()) {
+      const stored = this.snapshot?.heatmap;
+      if (stored?.segments && stored.segments.length > 0) {
+        const durationMs = (this.snapshot?.duration || 0) * 1000;
+        const svgPath = heatmapSvgPath(stored.segments, durationMs || undefined);
+        if (svgPath) return { source: stored.source, segments: stored.segments, svgPath };
+      }
+      if (stored?.svgPath) return stored;
+    }
+    const svgPath = readRenderedYoutubeHeatmapPath();
+    return svgPath ? { source: 'svg', svgPath } : null;
   }
 
   async getPreviewSource(): Promise<PreviewSource> {
@@ -311,7 +330,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
 
   getPreviewFrame(time: number, _duration: number): PreviewFrame | null {
     if (!this.storyboards || !this.snapshotMatchesPage()) return null;
-    const targetWidth = Math.round(160 * (window.devicePixelRatio || 1));
+    const targetWidth = Math.round(PREVIEW_DISPLAY_WIDTH * (window.devicePixelRatio || 1));
     return getStoryboardFrame(this.storyboards, time, targetWidth);
   }
 
@@ -322,7 +341,4 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 }
 
-export function isYouTubeHost(hostname = window.location.hostname): boolean {
-  const host = hostname.replace(/^www\./, '');
-  return host === 'youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com' || host.endsWith('.youtube.com');
-}
+export { isYouTubeHost } from '../providers/hosts';

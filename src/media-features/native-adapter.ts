@@ -1,7 +1,7 @@
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
-import type { CaptionCue, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from './types';
+import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from './types';
 
 const TRACK_NONE = 0;
 const TRACK_LOADING = 1;
@@ -41,12 +41,13 @@ export function cuesFromTrack(track: TextTrack): CaptionCue[] {
   for (let i = 0; i < list.length; i++) {
     const cue = list[i];
     if (!isCueLike(cue)) continue;
-    const raw = typeof cue.text === 'string' ? cue.text : '';
+    const like: CueLike = cue;
+    const raw = typeof like.text === 'string' ? like.text : '';
     const text = sanitizeCaptionCueText(raw);
     if (!text) continue;
     cues.push({
-      start: cue.startTime,
-      end: cue.endTime > cue.startTime ? cue.endTime : cue.startTime + 0.001,
+      start: like.startTime,
+      end: like.endTime > like.startTime ? like.endTime : like.startTime + 0.001,
       text
     });
   }
@@ -165,19 +166,19 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     }));
   }
 
-  async activateCaptionTrack(id: string | null): Promise<CaptionCue[] | null> {
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
     if (id === null) {
       this.stopWatching();
       for (const track of tracks) this.setTrackMode(track, 'disabled');
-      return null;
+      return { status: 'off', delivery: 'none', cues: [] };
     }
     const index = Number(id.replace('native:', ''));
     const selected = tracks[index];
     if (!selected) {
       this.stopWatching();
       for (const track of tracks) this.setTrackMode(track, 'disabled');
-      return [];
+      return { status: 'failed', delivery: 'none', cues: [] };
     }
 
     this.overlayTrack = selected;
@@ -198,7 +199,9 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     if (cues.length === 0) {
       cues = await this.fetchCuesFromTrackElement(selected, index);
     }
-    return cues;
+    return cues.length > 0
+      ? { status: 'active', delivery: 'overlay', cues }
+      : { status: 'failed', delivery: 'none', cues: [] };
   }
 
   invalidate(): void {

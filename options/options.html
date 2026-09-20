@@ -44,37 +44,48 @@
             </svg>
             <span data-i18n="reportABug">Report a Bug</span>
           </a>
-          <a href="https://privacything.com" target="_blank" rel="noopener noreferrer" class="icon-btn privacy-thing-chip" aria-describedby="privacy-thing-popover">
-            <privacy-thing-logo
-              variant="horizontal"
-              label="Privacy Thing"
-              animate-icon
-              animate-cursor
-              track-pointer
-              hover-reaction="boop"
-              tap-reaction="jelly"
-            ></privacy-thing-logo>
-            <span id="privacy-thing-popover" class="privacy-thing-popover" role="tooltip">
-              <strong data-i18n="privacyThingPopoverTitle">Privacy Thing</strong>
-              <span data-i18n="privacyThingPopoverBody">Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site.</span>
-              <span class="privacy-thing-popover-note" data-i18n="privacyThingPopoverNote">Free and open source.</span>
-            </span>
-          </a>
         </div>
       </div>
       <p class="subtitle" data-i18n="settingsSubtitle">Configure website exclusions, appearance, and theater mode keyboard shortcuts.</p>
     </header>
 
     <div class="settings-stack">
-      <section class="main-card settings-card appearance-section">
-        <div class="card-heading">
-          <h2 data-i18n="appearanceTitle">Appearance</h2>
-          <p class="card-desc" data-i18n="appearanceDescription">Choose the accent used by controls, sliders, shortcuts, and highlights.</p>
-        </div>
-        <div class="card-body">
-          <div id="accent-color-grid" class="accent-color-grid" role="radiogroup" aria-label="Accent color" data-i18n-aria-label="accentColorLabel"></div>
-        </div>
-      </section>
+      <div class="settings-top-grid">
+        <section class="main-card settings-card appearance-section">
+          <div class="card-heading">
+            <h2 data-i18n="appearanceTitle">Appearance</h2>
+            <p class="card-desc" data-i18n="appearanceDescription">Choose the accent used by controls, sliders, shortcuts, and highlights.</p>
+          </div>
+          <div class="card-body">
+            <div id="accent-color-grid" class="accent-color-grid" role="radiogroup" aria-label="Accent color" data-i18n-aria-label="accentColorLabel"></div>
+          </div>
+        </section>
+
+        <aside class="privacy-thing-panel">
+          <a href="https://privacything.com" target="_blank" rel="noopener noreferrer" class="privacy-thing-card" data-i18n-aria-label="privacyThingLabel">
+            <span class="privacy-thing-card-glow" aria-hidden="true"></span>
+            <span class="privacy-thing-card-header">
+              <privacy-thing-logo
+                variant="horizontal"
+                label="Privacy Thing"
+                animate-icon
+                animate-cursor
+                track-pointer
+                hover-reaction="boop"
+                tap-reaction="jelly"
+              ></privacy-thing-logo>
+            </span>
+            <span class="privacy-thing-card-copy" data-i18n="privacyThingPopoverBody">Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site.</span>
+            <span class="privacy-thing-card-footer">
+              <span data-i18n="privacyThingPopoverNote">Free and open source.</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"></path>
+                <path d="m13 6 6 6-6 6"></path>
+              </svg>
+            </span>
+          </a>
+        </aside>
+      </div>
 
       <section class="main-card settings-card features-section">
         <div class="card-heading">
@@ -94,51 +105,20 @@
           </div>
           <div class="feature-row">
             <div class="feature-info">
-              <label for="youtube-integration-toggle" class="feature-label" data-i18n="youtubeIntegrationTitle">YouTube integration</label>
-              <p class="feature-desc" data-i18n="youtubeIntegrationDescription">Use YouTube captions, chapters, and timeline previews in theater mode. Turn this off to keep theater mode on YouTube without extra requests to YouTube.</p>
+              <div class="feature-title-row">
+                <label for="rich-theater-experience-toggle" class="feature-label" data-i18n="richTheaterExperienceTitle">Rich Theater Experience (Experimental)</label>
+              </div>
+              <p class="feature-desc"><span data-i18n="richTheaterExperienceDescription">Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more </span><button type="button" id="rich-theater-experience-details" class="feature-inline-link" aria-controls="rich-theater-experience-popover" aria-expanded="false" data-i18n="richTheaterExperienceReadMore">here</button><span data-i18n="richTheaterExperienceDescriptionEnd">.</span></p>
+              <div id="rich-theater-experience-popover" class="feature-popover" role="dialog">
+                <p><strong data-i18n="youtubeIntegrationTitle">YouTube integration</strong> - <span data-i18n="youtubeIntegrationDescription">Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode.</span></p>
+                <p><strong data-i18n="vimeoIntegrationTitle">Vimeo integration</strong> - <span data-i18n="vimeoIntegrationDescription">Enables support for chapter markers and thumbnails on the timeline in theater mode.</span></p>
+                <p><strong data-i18n="patreonIntegrationTitle">Patreon integration</strong> - <span data-i18n="patreonIntegrationDescription">Enables support for captions and thumbnails on the timeline in theater mode.</span></p>
+                <p><strong data-i18n="twitchIntegrationTitle">Twitch integration</strong> - <span data-i18n="twitchIntegrationDescription">Enables support for VOD chapters and thumbnails on the timeline in theater mode.</span></p>
+                <p><strong data-i18n="disneyIntegrationTitle">Disney+ integration</strong> - <span data-i18n="disneyIntegrationDescription">Enables support for captions and thumbnails on the timeline in theater mode when the player provides them.</span></p>
+              </div>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="youtube-integration-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="vimeo-integration-toggle" class="feature-label" data-i18n="vimeoIntegrationTitle">Vimeo integration</label>
-              <p class="feature-desc" data-i18n="vimeoIntegrationDescription">Use Vimeo chapter markers in theater mode. Turn this off to keep theater mode on Vimeo without extra requests to Vimeo.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="vimeo-integration-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="patreon-integration-toggle" class="feature-label" data-i18n="patreonIntegrationTitle">Patreon integration</label>
-              <p class="feature-desc" data-i18n="patreonIntegrationDescription">Use Patreon captions and timeline hover previews in theater mode. Turn this off to keep theater mode on Patreon without extra requests to Mux.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="patreon-integration-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="twitch-integration-toggle" class="feature-label" data-i18n="twitchIntegrationTitle">Twitch integration</label>
-              <p class="feature-desc" data-i18n="twitchIntegrationDescription">Use Twitch VOD chapters and timeline hover previews in theater mode. Turn this off to keep theater mode on Twitch without extra requests to Twitch CDNs.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="twitch-integration-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="disney-integration-toggle" class="feature-label" data-i18n="disneyIntegrationTitle">Disney+ integration</label>
-              <p class="feature-desc" data-i18n="disneyIntegrationDescription">Use Disney+ captions and timeline previews in theater mode when the player session includes them. Turn this off to keep theater mode on Disney+ without extra requests to Disney CDNs.</p>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="disney-integration-toggle">
+              <input type="checkbox" id="rich-theater-experience-toggle">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -240,6 +220,28 @@
                 </div>
               </div>
               <div class="shortcut-row">
+                <label for="shortcut-increase-caption-size" data-i18n="increaseSubtitleSize">Increase Subtitle Size</label>
+                <div class="shortcut-input-wrapper">
+                  <input type="text" id="shortcut-increase-caption-size" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                  <button type="button" class="reset-single-btn" data-shortcut="increaseCaptionSize" title="Reset to default" data-i18n-title="resetToDefault">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-row">
+                <label for="shortcut-decrease-caption-size" data-i18n="decreaseSubtitleSize">Decrease Subtitle Size</label>
+                <div class="shortcut-input-wrapper">
+                  <input type="text" id="shortcut-decrease-caption-size" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                  <button type="button" class="reset-single-btn" data-shortcut="decreaseCaptionSize" title="Reset to default" data-i18n-title="resetToDefault">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-row">
                 <label for="shortcut-show-help" data-i18n="showHideHelp">Show/Hide Help</label>
                 <div class="shortcut-input-wrapper">
                   <input type="text" id="shortcut-show-help" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
@@ -303,6 +305,17 @@
                 <div class="shortcut-input-wrapper">
                   <input type="text" id="shortcut-volume-down" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="volumeDown" title="Reset to default" data-i18n-title="resetToDefault">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-row">
+                <label for="shortcut-toggle-mute" data-i18n="toggleMute">Toggle mute</label>
+                <div class="shortcut-input-wrapper">
+                  <input type="text" id="shortcut-toggle-mute" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                  <button type="button" class="reset-single-btn" data-shortcut="toggleMute" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
                     </svg>

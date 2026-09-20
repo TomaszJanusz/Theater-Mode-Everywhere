@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "已禁用"
   },
+  "statusDisabledByParent": {
+    "message": "已被 $1 禁用",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "未启用（系统）"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "开启或关闭可选的剧场模式行为。"
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience（实验性功能）"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "启用与 YouTube、Twitch、Disney+ 等常用视频服务的深度集成。Theater Mode Everywhere 可以显示更多信息、支持自定义字幕格式并解锁各服务的专属功能。功能可用性因服务而异，详情请参阅"
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "此处"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "。"
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "启用与常用视频服务的深度集成。功能可用性因服务而异。"
+  },
   "volumeBoostTitle": {
     "message": "音量增强"
   },
@@ -125,31 +148,31 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "在剧场模式中使用 YouTube 字幕、章节和时间轴预览。关闭后仍可在 YouTube 使用剧场模式，但不会向 YouTube 发起额外请求。"
+    "message": "在剧场模式中启用字幕、章节、最多重播热力图和时间轴缩略图支持。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "在剧场模式中使用 Vimeo 章节标记和时间轴预览。关闭后仍可在 Vimeo 使用剧场模式，但不会向 Vimeo 发起额外请求。"
+    "message": "在剧场模式中启用章节标记和时间轴缩略图支持。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 集成"
   },
   "patreonIntegrationDescription": {
-    "message": "在剧场模式中使用 Patreon 字幕和时间轴预览。关闭后仍可在 Patreon 使用剧场模式，但不会向 Mux 发起额外请求。"
+    "message": "在剧场模式中启用字幕和时间轴缩略图支持。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 集成"
   },
   "twitchIntegrationDescription": {
-    "message": "在剧场模式中使用 Twitch VOD 章节和时间轴预览。关闭后仍可在 Twitch 使用剧场模式，但不会向 Twitch CDN 发起额外请求。"
+    "message": "在剧场模式中启用点播章节和时间轴缩略图支持。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 集成"
   },
   "disneyIntegrationDescription": {
-    "message": "当播放会话包含字幕和进度条预览时，在剧场模式中使用它们。关闭后仍可在 Disney+ 使用剧场模式，且不会向 Disney CDN 发出额外请求。"
+    "message": "当播放器提供这些内容时，在剧场模式中启用字幕和时间轴缩略图支持。"
   },
   "liveBadge": {
     "message": "直播"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "开关字幕"
   },
+  "increaseSubtitleSize": { "message": "增大字幕大小" },
+  "decreaseSubtitleSize": { "message": "减小字幕大小" },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "字幕已关闭"
+  },
+  "subtitlesLoadingHud": {
+    "message": "正在加载字幕..."
   },
   "subtitlesLoadFailedHud": {
     "message": "无法加载字幕"
@@ -293,19 +321,19 @@
     "message": "新功能"
   },
   "whatsNewLead": {
-    "message": "近期更新："
+    "message": "认识 Rich Theater Experience，为受支持的视频服务提供更多播放工具。"
   },
-  "whatsNewItemFit": {
-    "message": "影院模式新增适应、填充和拉伸，可通过工具栏按钮和快捷键 Z 切换。"
+  "whatsNewItemCaptions": {
+    "message": "更好的字幕：选择字幕轨道，自定义字幕外观，并为每个网站保存首选语言。"
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "“切换页面上的视频”现在会说明为何在只有一个播放器时无法切换。"
+  "whatsNewItemChapters": {
+    "message": "时间轴信息更丰富：在章节之间跳转，并查看 YouTube 上重播次数最多的片段。"
   },
-  "whatsNewItemSettings": {
-    "message": "设置中新增了“报告错误”和 Privacy Thing 推广。"
+  "whatsNewItemPreviews": {
+    "message": "搜索前先预览：将鼠标悬停在时间轴上，即可在受支持的 YouTube、Vimeo、Patreon、Twitch 和 Disney+ 播放器中查看视频缩略图。"
   },
   "whatsNewThanks": {
-    "message": "感谢 Denis 的建议和反馈 :)"
+    "message": "可在受支持网站的扩展弹出窗口中，或在设置页面中启用 Rich Theater Experience (Experimental)。该功能仍处于实验阶段，因此部分功能可能因服务而异 :)"
   },
   "dialogAcknowledge": {
     "message": "知道了"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "降低音量（5%）"
+  },
+  "toggleMute": {
+    "message": "切换静音"
   },
   "frameFullscreenPipTitle": {
     "message": "逐帧、全屏和画中画"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "暂停"
+  },
+  "muteHud": {
+    "message": "静音"
+  },
+  "unmuteHud": {
+    "message": "取消静音"
   },
   "pictureInPictureTooltip": {
     "message": "画中画 <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "字幕选项"
+  },
+  "subtitleFont": {
+    "message": "字体"
   },
   "subtitleTextColor": {
     "message": "文字"

@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "無効"
   },
+  "statusDisabledByParent": {
+    "message": "$1 により無効",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "無効 (システム)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "シアターモードのオプション動作の有効/無効を切り替えます。"
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience（試験運用）"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "YouTube、Twitch、Disney+ など、お気に入りの動画サービスとのより高度な連携を有効にします。Theater Mode Everywhere は、追加情報の表示、カスタム字幕形式への対応、サービス固有機能の利用を可能にします。利用できる機能はサービスによって異なります。詳しくは"
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "こちら"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "。"
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "お気に入りの動画サービスとのより高度な連携を有効にします。利用できる機能はサービスによって異なります。"
+  },
   "volumeBoostTitle": {
     "message": "音量ブースト"
   },
@@ -125,31 +148,31 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "シアターモードでYouTubeの字幕、チャプター、タイムラインプレビューを使います。オフにすると、YouTubeへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードで字幕、チャプター、Most Replayed ヒートマップ、タイムラインのサムネイルのサポートを有効にします。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "シアターモードでVimeoのチャプターマーカーとタイムラインプレビューを使います。オフにすると、Vimeoへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードでチャプターマーカーとタイムラインのサムネイルのサポートを有効にします。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon連携"
   },
   "patreonIntegrationDescription": {
-    "message": "シアターモードでPatreonの字幕とタイムラインプレビューを使います。オフにすると、Muxへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch連携"
   },
   "twitchIntegrationDescription": {
-    "message": "シアターモードでTwitchのVODチャプターとタイムラインプレビューを使います。オフにすると、Twitch CDNへの追加リクエストなしでシアターモードだけが残ります。"
+    "message": "シアターモードでVODチャプターとタイムラインのサムネイルのサポートを有効にします。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 連携"
   },
   "disneyIntegrationDescription": {
-    "message": "再生セッションに含まれている場合、シアターモードで Disney+ の字幕とタイムラインプレビューを使います。オフにすると、Disney CDN への追加リクエストなしでシアターモードだけが残ります。"
+    "message": "プレーヤーが提供する場合、シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
   },
   "liveBadge": {
     "message": "配信中"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "字幕のオン/オフ"
   },
+  "increaseSubtitleSize": { "message": "字幕を大きくする" },
+  "decreaseSubtitleSize": { "message": "字幕を小さくする" },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "字幕オフ"
+  },
+  "subtitlesLoadingHud": {
+    "message": "字幕を読み込み中..."
   },
   "subtitlesLoadFailedHud": {
     "message": "字幕を読み込めませんでした"
@@ -293,19 +321,19 @@
     "message": "新着情報"
   },
   "whatsNewLead": {
-    "message": "最近の変更点:"
+    "message": "対応動画サービス向けの追加再生ツール、Rich Theater Experience を紹介します。"
   },
-  "whatsNewItemFit": {
-    "message": "シアターモードのフィット / フィル / ストレッチ。ツールバーのボタンとショートカット Z で切り替えられます。"
+  "whatsNewItemCaptions": {
+    "message": "字幕をもっと便利に: トラックを選び、見た目をカスタマイズし、サイトごとに優先言語を保存できます。"
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "ページ上の動画切り替えは、プレーヤーが1つしかないときに利用できない理由を表示します。"
+  "whatsNewItemChapters": {
+    "message": "タイムラインの情報を充実: チャプター間を移動し、YouTube の最も繰り返し再生された場面を確認できます。"
   },
-  "whatsNewItemSettings": {
-    "message": "設定に「バグを報告」と Privacy Thing の紹介が追加されました。"
+  "whatsNewItemPreviews": {
+    "message": "シーク前にプレビュー: タイムラインにカーソルを合わせると、対応する YouTube、Vimeo、Patreon、Twitch、Disney+ プレーヤーでサムネイルを表示します。"
   },
   "whatsNewThanks": {
-    "message": "Denis さん、ご提案とフィードバックをありがとうございます :)"
+    "message": "対応サイトでは拡張機能のポップアップから、または設定ページから Rich Theater Experience (Experimental) を有効にできます。まだ実験的な機能のため、サービスによって利用できる機能が異なる場合があります :)"
   },
   "dialogAcknowledge": {
     "message": "了解"
@@ -336,6 +364,9 @@
   },
   "volumeDown5": {
     "message": "音量ダウン (5%)"
+  },
+  "toggleMute": {
+    "message": "ミュートを切り替え"
   },
   "frameFullscreenPipTitle": {
     "message": "フレーム送り、全画面、PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "一時停止"
+  },
+  "muteHud": {
+    "message": "ミュート"
+  },
+  "unmuteHud": {
+    "message": "ミュート解除"
   },
   "pictureInPictureTooltip": {
     "message": "ピクチャーインピクチャー <kbd>$KEY$</kbd>",
@@ -432,6 +469,9 @@
   },
   "subtitleOptionsTitle": {
     "message": "字幕オプション"
+  },
+  "subtitleFont": {
+    "message": "フォント"
   },
   "subtitleTextColor": {
     "message": "文字"

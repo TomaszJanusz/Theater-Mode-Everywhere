@@ -47,6 +47,14 @@
   "statusDisabled": {
     "message": "Désactivé"
   },
+  "statusDisabledByParent": {
+    "message": "Désactivé par $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
   "statusInactiveSystem": {
     "message": "Inactif (système)"
   },
@@ -115,6 +123,21 @@
   "featuresDescription": {
     "message": "Activez ou désactivez les comportements facultatifs du mode cinéma."
   },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Expérimental)"
+  },
+  "richTheaterExperienceDescription": {
+    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+ et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
+  },
+  "richTheaterExperienceReadMore": {
+    "message": "ici"
+  },
+  "richTheaterExperienceDescriptionEnd": {
+    "message": "."
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Activez des intégrations plus riches avec vos services vidéo préférés. La disponibilité varie selon le service."
+  },
   "volumeBoostTitle": {
     "message": "Amplificateur de volume"
   },
@@ -125,31 +148,31 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Utiliser les sous-titres, chapitres et aperçus de la timeline YouTube en mode cinéma. Désactivez pour garder le mode cinéma sur YouTube sans requêtes supplémentaires vers YouTube."
+    "message": "Active la prise en charge des sous-titres, des chapitres, de la heatmap Most Replayed et des miniatures sur la timeline en mode cinéma."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Utiliser les marqueurs de chapitres et les aperçus de la timeline Vimeo en mode cinéma. Désactivez pour garder le mode cinéma sur Vimeo sans requêtes supplémentaires vers Vimeo."
+    "message": "Active la prise en charge des marqueurs de chapitres et des miniatures sur la timeline en mode cinéma."
   },
   "patreonIntegrationTitle": {
     "message": "Intégration Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Utiliser les sous-titres et les aperçus de la timeline Patreon en mode cinéma. Désactivez pour garder le mode cinéma sur Patreon sans requêtes supplémentaires vers Mux."
+    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma."
   },
   "twitchIntegrationTitle": {
     "message": "Intégration Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Utiliser les chapitres et les aperçus de la timeline des VOD Twitch en mode cinéma. Désactivez pour garder le mode cinéma sur Twitch sans requêtes supplémentaires vers les CDN Twitch."
+    "message": "Active la prise en charge des chapitres des VOD et des miniatures sur la timeline en mode cinéma."
   },
   "disneyIntegrationTitle": {
     "message": "Intégration Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Utilisez les sous-titres et aperçus Disney+ en mode cinéma lorsque la session de lecture les contient. Désactivez pour garder le mode cinéma sur Disney+ sans requêtes supplémentaires vers les CDN Disney."
+    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
   },
   "liveBadge": {
     "message": "DIRECT"
@@ -223,6 +246,8 @@
   "toggleSubtitles": {
     "message": "Activer ou désactiver les sous-titres"
   },
+  "increaseSubtitleSize": { "message": "Augmenter la taille des sous-titres" },
+  "decreaseSubtitleSize": { "message": "Réduire la taille des sous-titres" },
   "subtitlesTooltip": {
     "message": "Sous-titres <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -244,6 +269,9 @@
   },
   "subtitlesOffHud": {
     "message": "Sous-titres désactivés"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Chargement des sous-titres..."
   },
   "subtitlesLoadFailedHud": {
     "message": "Impossible de charger les sous-titres"
@@ -293,19 +321,19 @@
     "message": "Nouveautés"
   },
   "whatsNewLead": {
-    "message": "Voici ce qui a changé récemment :"
+    "message": "Découvrez Rich Theater Experience, avec des outils de lecture supplémentaires pour les services vidéo pris en charge."
   },
-  "whatsNewItemFit": {
-    "message": "Les modes Ajuster, Remplir et Étirer en mode cinéma, avec un bouton dans la barre et le raccourci Z."
+  "whatsNewItemCaptions": {
+    "message": "De meilleurs sous-titres : choisissez une piste, personnalisez leur apparence et conservez votre langue préférée pour chaque site."
   },
-  "whatsNewItemSwitchVideo": {
-    "message": "Changer de vidéo sur la page explique désormais quand le changement est indisponible parce qu’il n’y a qu’un seul lecteur."
+  "whatsNewItemChapters": {
+    "message": "Plus de contexte sur la chronologie : passez d'un chapitre à l'autre et découvrez les moments les plus rejoués de YouTube."
   },
-  "whatsNewItemSettings": {
-    "message": "Les paramètres incluent désormais Signaler un bug et une promo Privacy Thing."
+  "whatsNewItemPreviews": {
+    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch et Disney+ pris en charge."
   },
   "whatsNewThanks": {
-    "message": "Merci à Denis pour les suggestions et les retours :)"
+    "message": "Activez Rich Theater Experience (Experimental) depuis la fenêtre de l'extension sur les sites pris en charge, ou depuis la page Paramètres. La fonctionnalité est encore expérimentale, certaines fonctions peuvent donc varier selon le service :)"
   },
   "dialogAcknowledge": {
     "message": "Compris"
@@ -326,16 +354,19 @@
     "message": "Lecture / Pause"
   },
   "seekBackward5": {
-    "message": "Reculer (5s)"
+    "message": "Reculer (5 s)"
   },
   "seekForward5": {
-    "message": "Avancer (5s)"
+    "message": "Avancer (5 s)"
   },
   "volumeUp5": {
     "message": "Augmenter le volume (5 %)"
   },
   "volumeDown5": {
     "message": "Diminuer le volume (5 %)"
+  },
+  "toggleMute": {
+    "message": "Activer/désactiver le son"
   },
   "frameFullscreenPipTitle": {
     "message": "Image, plein écran et PiP"
@@ -378,6 +409,12 @@
   },
   "pause": {
     "message": "Pause"
+  },
+  "muteHud": {
+    "message": "Son coupé"
+  },
+  "unmuteHud": {
+    "message": "Son rétabli"
   },
   "pictureInPictureTooltip": {
     "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
@@ -433,6 +470,9 @@
   "subtitleOptionsTitle": {
     "message": "Options des sous-titres"
   },
+  "subtitleFont": {
+    "message": "Police"
+  },
   "subtitleTextColor": {
     "message": "Texte"
   },
@@ -455,7 +495,7 @@
     "message": "Terminé"
   },
   "autoGeneratedTrack": {
-    "message": "$1 (auto)",
+    "message": "$1 (automatique)",
     "placeholders": {
       "label": {
         "content": "$1"

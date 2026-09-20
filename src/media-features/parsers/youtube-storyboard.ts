@@ -1,4 +1,5 @@
 import type { PreviewFrame } from '../types';
+import { PREVIEW_DISPLAY_WIDTH } from '../preview-display';
 
 export type StoryboardLevel = {
   width: number;
@@ -67,7 +68,7 @@ export function parseStoryboardSpec(spec: string, duration = 0): StoryboardSet |
   return { duration, levels };
 }
 
-export function pickStoryboardLevel(set: StoryboardSet, targetWidth = 160): StoryboardLevel {
+export function pickStoryboardLevel(set: StoryboardSet, targetWidth = PREVIEW_DISPLAY_WIDTH): StoryboardLevel {
   let best = set.levels[0];
   let bestDelta = Math.abs(best.width - targetWidth);
   for (const level of set.levels) {
@@ -83,7 +84,7 @@ export function pickStoryboardLevel(set: StoryboardSet, targetWidth = 160): Stor
 export function getStoryboardFrame(
   set: StoryboardSet,
   time: number,
-  targetWidth = 160
+  targetWidth = PREVIEW_DISPLAY_WIDTH
 ): PreviewFrame | null {
   if (!Number.isFinite(time) || time < 0) return null;
   const level = pickStoryboardLevel(set, targetWidth);
