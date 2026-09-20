@@ -9,11 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-09-20
 
-Theater Everywhere 1.5.0 is the biggest playback upgrade so far!
+Theater Everywhere 1.5.0 is the biggest playback upgrade so far. Rich Theater
+Experience brings service-aware subtitles, chapters, hover previews, and richer
+timelines to YouTube, Vimeo, Patreon, Twitch, and Disney+, while the core theater
+mode remains available on any HTML5 video. This release also makes subtitles
+easier to customize and restore, improves live and DVR playback, and fixes a
+wide range of player-specific reliability issues.
 
-Rich TheaterExperience brings service-aware subtitles, chapters, hover previews, and richer timelines to YouTube, Vimeo, Patreon, Twitch, and Disney+, while the core theater mode remains available on any HTML5 video. This release also makes subtitles easier to customize and restore, improves live and DVR playback, and fixes a wide range of player-specific reliability issues.
+**Highlights:**
+- Choose, style, and remember subtitles directly in theater mode.
+- Preview scenes, jump between chapters, and see YouTube's Most Replayed moments on supported services.
+- Navigate live streams and DVR windows with clearer LIVE state and more reliable seeking.
+- Enjoy more consistent controls, HUD feedback, layout isolation, and playback across complex video sites.
 
 ### Added
+
+#### Subtitles and player interface
+
 - Added a media-features layer for captions, chapters, and hover previews, starting with native HTML5 tracks, YouTube description chapters, YouTube session caption tracks, and YouTube storyboard thumbnails.
 - Added word-timed caption rendering for YouTube json3/srv3 tracks, plus subtitle appearance options (text, size, shadow, background) from the CC menu.
 - Remember the selected subtitle language per site (by language code, not the menu label) and turn it back on in later theater sessions.
@@ -23,6 +35,9 @@ Rich TheaterExperience brings service-aware subtitles, chapters, hover previews,
 - Theater chrome now renders in an isolated shadow tree so host page CSS cannot restyle the player UI (including the subtitles menu font).
 - Mute and unmute from the theater speaker button or the default `M` shortcut share one action and show the center HUD, same as play/pause and volume.
 - Caption HUD has a top-right variant (top-left in RTL) with the same 24px edge inset as the control bar. Captions use it for on/off, a spinner with “Loading subtitles…” while a track is fetching, and the loaded track name on a second line.
+
+#### Rich Theater Experience integrations
+
 - Vimeo timeline hover previews now use the same sprite thumbnails as Vimeo's own scrubber.
 - Patreon native Mux videos now use Mux storyboard sprites for timeline hover previews, Mux caption WebVTT when the post has closed captions, plus post-body chapter timestamps when they follow the usual `00:00 Title` pattern.
 - Live streams now show a LIVE badge, map the scrubber onto the DVR `seekable` window when one exists, hide seeking on unseekable live, and hide the speed control on all live. Detection is generic from the media element (`duration === Infinity`, sliding DVR ranges) plus host live hints such as YouTube `getVideoData().isLive`, because YouTube Live reports a growing finite duration that would otherwise look like a VOD. On seekable live, clicking LIVE jumps to the live edge.
@@ -31,6 +46,9 @@ Rich TheaterExperience brings service-aware subtitles, chapters, hover previews,
 - YouTube theater extras now draw the Most Replayed heatmap above the seek bar from watch-page JSON (`MARKER_TYPE_HEATMAP` / legacy `HEATSEEKER`) already loaded by the player, with the native SVG path as fallback. The chart appears when hovering the seek bar, uses a white ridge and a fade-to-transparent fill, and tints the played side to the accent color. The extension does not POST extra InnerTube requests for it.
 
 ### Changed
+
+#### Playback and presentation
+
 - New installs no longer exclude `youtube.com` by default. Website exclusions still apply only to the top-level site, so provider embeds keep working.
 - Privacy policy now describes in-session provider requests for captions and timeline previews.
 - Timeline hover previews now open from the same height as the volume and speed popovers.
@@ -39,12 +57,18 @@ Rich TheaterExperience brings service-aware subtitles, chapters, hover previews,
 - Captions only lift when a control actually overlaps them, instead of always clearing the tallest open overlay.
 - Theater mode now flattens 3D containing blocks on ancestors, so players on sites like Threads fill the viewport instead of staying in the post column.
 - The subtitles menu is compact and scrollable, with a sticky header, so long language lists (Disney+ and similar) keep the top of the menu on screen.
+
+#### Runtime architecture
+
 - MAIN world always installs Space and volume-boost handlers. Fetch/XHR harvest still patches only on provider hosts.
 - `PlayerSession` owns the theater element: enter goes through `rebind`, exit through `dispatch({ type: 'EXIT' })`, and a network EXIT without `sessionId` is ignored.
 - Player chrome is split out of `player-runtime.ts` into `hud`, `help`, `discovery`, `toolbar`, and `controls`, sharing a `PlayerChromeContext` so views do not import `src/providers/*`.
 - Playback keys and chrome clicks go through `PlayerCommand` (`PLAY_PAUSE`, `SEEK_BY`, `TOGGLE_CAPTIONS`, `CYCLE_VIDEO`, `CYCLE_FIT`, `TOGGLE_HELP`) instead of calling host seek/play APIs from the views.
 
 ### Fixed
+
+#### Playback, live video, and controls
+
 - The heatmap accent/white split no longer leaves a 1px white fringe at the hover pin.
 - Pressing play in theater mode on an unstarted Vimeo (or similar) player now clicks the host Play control instead of calling `video.play()` on an empty element, which left a spinner and never attached media.
 - Unmuting from the theater speaker button restores the last audible level (or 100% when the player started at volume 0), instead of leaving autoplay-muted videos silent.
@@ -57,12 +81,21 @@ Rich TheaterExperience brings service-aware subtitles, chapters, hover previews,
 - Live chrome no longer treats a huge or paused-at-zero `seekable` range as a 300,000-hour DVR window; unseekable live now shows `LIVE` and locks the scrubber.
 - Leaving theater mode on YouTube now asks the native player to recompute its chrome width, so the progress bar no longer stays full-viewport.
 - Volume and speed hover bridges no longer steal clicks from the top half of their toolbar buttons.
+
+#### YouTube playlists and subtitles
+
 - Advancing a YouTube playlist no longer keeps the previous video's seek-bar thumbnails, chapters, or overlay captions.
 - Overlay captions reload for the next YouTube playlist item instead of staying enabled with no text.
 - YouTube playlist items no longer show “No subtitles” when the native player has captions: theater was reading the previous video’s `ytInitialPlayerResponse` after SPA navigation, discarding it as stale, and leaving an empty track list. It now prefers the live player response (skipping hidden Shorts leftovers) and a published current-video snapshot.
+
+#### Patreon
+
 - Patreon hover previews now read the signed Mux `storyboard.vtt` from the post payload. Mux Player leaves `.storyboard` empty when a playback token is set without a storyboard token, so theater mode previously had no thumbnails even though the sprites existed.
 - Patreon captions can be turned on from theater mode. Mux keeps subtitle WebVTT off the inner `<video>` until the host CC menu is used; theater mode now loads `stream.mux.com/.../text/*.vtt` from the post payload.
 - Patreon no longer lists the same Mux caption twice (host `English (auto-generated)` plus a generic `Captions` sidecar).
+
+#### Subtitle feedback and player discovery
+
 - Subtitle HUD waits for overlay cues, so `C` and the CC icon stay in sync instead of reporting on before captions exist.
 - Volume boost stays orange only after the Web Audio graph exists, Picture-in-Picture uses the same active color as CC, and LIVE only offers “Go to live” when playback is behind the live edge.
 - Theater mode on players like TikTok that hide the `<video>` under an overlay now keeps native right-click menus: the video is forced visible and clickable, right-button presses are not swallowed, and host `contextmenu` blockers are stopped from reaching the theater video.
@@ -71,6 +104,9 @@ Rich TheaterExperience brings service-aware subtitles, chapters, hover previews,
 - Caption HUD now covers `C`, the CC menu, and a successful auto-restore, names the language when captions turn on, and says the load failed instead of Subtitles off when the track list exists but cues do not.
 - HTML5 subtitle tracks that only have a label (no language code) are remembered per site the same way coded tracks are.
 - Theater chrome no longer flashes unstyled HTML on enter: the player UI lives in a shadow tree, and `content.css` was loaded there with an async `<link>`. The skin is now inlined before the controls are mounted.
+
+#### Disney+ and remaining platform fixes
+
 - Disney+ captions follow the Hive player clock (`playheadPositionMs`) instead of MSE `currentTime`, which is a different timeline and made overlay cues look late or early.
 - Clicking the theater seek bar on Disney+ no longer leaves a stuck spinner: seeks go through the host player API, and a failed HTML5 `currentTime` assignment is no longer used.
 - Disney+ hover previews no longer stick on a gray opening still: theater was keeping the 1-frame `DUB_CARD` BIF that loads after the MAIN timeline file, and MAIN frame timestamps are milliseconds (`multiplier = 1`) rather than seconds.
