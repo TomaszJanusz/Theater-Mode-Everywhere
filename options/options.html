@@ -44,37 +44,48 @@
             </svg>
             <span data-i18n="reportABug">Report a Bug</span>
           </a>
-          <a href="https://privacything.com" target="_blank" rel="noopener noreferrer" class="icon-btn privacy-thing-chip" aria-describedby="privacy-thing-popover">
-            <privacy-thing-logo
-              variant="horizontal"
-              label="Privacy Thing"
-              animate-icon
-              animate-cursor
-              track-pointer
-              hover-reaction="boop"
-              tap-reaction="jelly"
-            ></privacy-thing-logo>
-            <span id="privacy-thing-popover" class="privacy-thing-popover" role="tooltip">
-              <strong data-i18n="privacyThingPopoverTitle">Privacy Thing</strong>
-              <span data-i18n="privacyThingPopoverBody">Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site.</span>
-              <span class="privacy-thing-popover-note" data-i18n="privacyThingPopoverNote">Free and open source.</span>
-            </span>
-          </a>
         </div>
       </div>
       <p class="subtitle" data-i18n="settingsSubtitle">Configure website exclusions, appearance, and theater mode keyboard shortcuts.</p>
     </header>
 
     <div class="settings-stack">
-      <section class="main-card settings-card appearance-section">
-        <div class="card-heading">
-          <h2 data-i18n="appearanceTitle">Appearance</h2>
-          <p class="card-desc" data-i18n="appearanceDescription">Choose the accent used by controls, sliders, shortcuts, and highlights.</p>
-        </div>
-        <div class="card-body">
-          <div id="accent-color-grid" class="accent-color-grid" role="radiogroup" aria-label="Accent color" data-i18n-aria-label="accentColorLabel"></div>
-        </div>
-      </section>
+      <div class="settings-top-grid">
+        <section class="main-card settings-card appearance-section">
+          <div class="card-heading">
+            <h2 data-i18n="appearanceTitle">Appearance</h2>
+            <p class="card-desc" data-i18n="appearanceDescription">Choose the accent used by controls, sliders, shortcuts, and highlights.</p>
+          </div>
+          <div class="card-body">
+            <div id="accent-color-grid" class="accent-color-grid" role="radiogroup" aria-label="Accent color" data-i18n-aria-label="accentColorLabel"></div>
+          </div>
+        </section>
+
+        <aside class="privacy-thing-panel">
+          <a href="https://privacything.com" target="_blank" rel="noopener noreferrer" class="privacy-thing-card" data-i18n-aria-label="privacyThingLabel">
+            <span class="privacy-thing-card-glow" aria-hidden="true"></span>
+            <span class="privacy-thing-card-header">
+              <privacy-thing-logo
+                variant="horizontal"
+                label="Privacy Thing"
+                animate-icon
+                animate-cursor
+                track-pointer
+                hover-reaction="boop"
+                tap-reaction="jelly"
+              ></privacy-thing-logo>
+            </span>
+            <span class="privacy-thing-card-copy" data-i18n="privacyThingPopoverBody">Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site.</span>
+            <span class="privacy-thing-card-footer">
+              <span data-i18n="privacyThingPopoverNote">Free and open source.</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"></path>
+                <path d="m13 6 6 6-6 6"></path>
+              </svg>
+            </span>
+          </a>
+        </aside>
+      </div>
 
       <section class="main-card settings-card features-section">
         <div class="card-heading">
