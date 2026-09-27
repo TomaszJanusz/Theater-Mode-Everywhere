@@ -1,3 +1,4 @@
+import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
@@ -271,14 +272,7 @@ export function normalizeYoutubePlayerResponse(raw: unknown): YoutubePlayerSnaps
   const data = raw as Record<string, any>;
   const videoDetails = data.videoDetails || {};
   const captions = data.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-  const markers = data.markersMap
-    ? Object.values(data.markersMap as Record<string, any>)
-        .flatMap((entry) => entry?.value?.chapters || entry?.chapters || [])
-        .map((chapter: any) => ({
-          startMillis: Number(chapter?.chapterRenderer?.timeRangeStartMillis ?? chapter?.startMillis),
-          title: chapter?.chapterRenderer?.title || chapter?.title
-        }))
-    : [];
+  const markers = findYoutubeChapterMarkers(data);
 
   const captionTracks: YoutubeCaptionMeta[] = captions
     .map((track: any, index: number) => {

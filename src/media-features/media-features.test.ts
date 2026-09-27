@@ -16,7 +16,7 @@ import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptio
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
-import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
+import { findYoutubeChapterMarkers, parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import {
   findYoutubeHeatmap,
@@ -238,10 +238,66 @@ describe('youtube chapter parser', () => {
     assert.equal(chapters[1].end, 702);
   });
 
-  it('rejects a single stamp, missing 00:00, or short segments', () => {
+  it('rejects a single stamp or a list that does not start at 00:00', () => {
     assert.equal(parseYoutubeDescriptionChapters('00:00 A').length, 0);
     assert.equal(parseYoutubeDescriptionChapters('00:10 A\n00:20 B\n00:40 C').length, 0);
-    assert.equal(parseYoutubeDescriptionChapters('00:00 A\n00:05 B\n00:40 C').length, 0);
+  });
+
+  it('keeps chapters when one segment is shorter than 10 seconds', () => {
+    const chapters = parseYoutubeDescriptionChapters(
+      `Chapters!
+
+00:00 - Introduction
+00:04 - Making My Way (to Tom's Diner)
+03:28 - Main Gig: Playing for Time
+1:03:39 - Driving to the edge of the city
+1:12:58 - Plans and Outro`,
+      4541
+    );
+    assert.equal(chapters.length, 5);
+    assert.equal(chapters[0].title, 'Introduction');
+    assert.equal(chapters[1].start, 4);
+    assert.equal(chapters[1].end, 3 * 60 + 28);
+    assert.equal(chapters[3].start, 3600 + 3 * 60 + 39);
+    assert.equal(chapters[4].title, 'Plans and Outro');
+    assert.equal(chapters[4].end, 4541);
+  });
+
+  it('reads player-bar chapters from ytInitialData markersMap', () => {
+    const markers = findYoutubeChapterMarkers({
+      currentVideoEndpoint: { watchEndpoint: { videoId: 'SPFP12ppFqE' } },
+      playerOverlays: {
+        playerOverlayRenderer: {
+          decoratedPlayerBarRenderer: {
+            decoratedPlayerBarRenderer: {
+              playerBar: {
+                multiMarkersPlayerBarRenderer: {
+                  markersMap: [
+                    {
+                      key: 'HEATSEEKER',
+                      value: { heatmap: { heatmapRenderer: { heatMarkers: [] } } }
+                    },
+                    {
+                      key: 'DESCRIPTION_CHAPTERS',
+                      value: {
+                        chapters: [
+                          { chapterRenderer: { title: { simpleText: 'Introduction' }, timeRangeStartMillis: 0 } },
+                          { chapterRenderer: { title: { simpleText: "Making My Way (to Tom's Diner)" }, timeRangeStartMillis: 4000 } }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+    assert.equal(markers.length, 2);
+    assert.equal(markers[0].startMillis, 0);
+    assert.equal(markers[1].startMillis, 4000);
+    assert.equal(markers[1].title, "Making My Way (to Tom's Diner)");
   });
 
   it('drops timestamps past duration', () => {

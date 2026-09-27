@@ -302,9 +302,11 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   async getChapters(): Promise<Chapter[]> {
     if (!this.snapshot) await this.load();
     const duration = this.snapshot?.duration;
-    const fromDescription = parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration);
-    if (fromDescription.length > 0) return fromDescription;
-    return parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
+    // Player-bar chapters are authoritative, including segments under 10s.
+    // Description timestamps cover watches where that marker list is absent.
+    const fromMarkers = parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
+    if (fromMarkers.length > 0) return fromMarkers;
+    return parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration);
   }
 
   getHeatmap(): TimelineHeatmap | null {

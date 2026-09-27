@@ -7,6 +7,7 @@ import {
   youtubePageVideoId,
   type CachedTimedtext
 } from '../../media-features/youtube-caption-url';
+import { findYoutubeChapterMarkers } from '../../media-features/parsers/youtube-chapters';
 import {
   findYoutubeHeatmap,
   isYoutubeWatchJsonUrl,
@@ -491,17 +492,17 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       })
       .filter(Boolean);
 
-    const markers = raw.markersMap
-      ? Object.values(raw.markersMap as Record<string, any>)
-          .flatMap((entry) => entry?.value?.chapters || entry?.chapters || [])
-          .slice(0, 80)
-          .map((chapter: any) => ({
-            startMillis: Number(chapter?.chapterRenderer?.timeRangeStartMillis ?? chapter?.startMillis),
-            title: typeof chapter?.chapterRenderer?.title?.simpleText === 'string'
-              ? chapter.chapterRenderer.title.simpleText.slice(0, 120)
-              : (typeof chapter?.title?.simpleText === 'string' ? chapter.title.simpleText.slice(0, 120) : undefined)
-          }))
-      : [];
+    const pageVideoId = youtubePageVideoId(window.location.href);
+    const playerVideoId = typeof videoDetails.videoId === 'string' ? videoDetails.videoId : null;
+    let markers = findYoutubeChapterMarkers(raw);
+    if (markers.length === 0) {
+      const win = window as Window & { ytInitialData?: unknown };
+      const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
+      const wantId = pageVideoId || playerVideoId;
+      if (!wantId || !initialId || initialId === wantId) {
+        markers = findYoutubeChapterMarkers(win.ytInitialData);
+      }
+    }
 
     const description = typeof videoDetails.shortDescription === 'string'
       ? videoDetails.shortDescription.slice(0, 20000)
