@@ -52,10 +52,16 @@ import { createSessionId } from '../protocol/frame-messages';
 import {
   applyAccentColorPreset,
   resolveAccentColorPreset,
+  horizontalLetterboxPx,
+  objectPositionForPicture,
+  PICTURE_ALIGN_STORAGE_KEY,
+  raisedCaptionsUseBand,
+  resolvePictureAlign,
   resolveVideoFitMode,
   VIDEO_FIT_MODES,
   VIDEO_FIT_STORAGE_KEY,
   videoFitLabel,
+  type PictureAlign,
   type VideoFitMode
 } from './appearance';
 import { applyUiDirection, t } from './messages';
@@ -321,10 +327,27 @@ type SavedInlineStyleState = {
 
 const theaterElementInlineStyleState = new WeakMap<HTMLElement, SavedInlineStyleState>();
 
+function currentPictureFrame() {
+  const element = session.element;
+  const rect = element?.getBoundingClientRect();
+  const video = element instanceof HTMLVideoElement ? element : null;
+  return {
+    videoWidth: video?.videoWidth ?? 0,
+    videoHeight: video?.videoHeight ?? 0,
+    viewportWidth: rect && rect.width > 0 ? rect.width : window.innerWidth,
+    viewportHeight: rect && rect.height > 0 ? rect.height : window.innerHeight,
+  };
+}
+
+function currentObjectPosition(): string {
+  return objectPositionForPicture(ui().videoFit, ui().pictureAlign, currentPictureFrame());
+}
+
 function getTheaterElementInlineStyles(): Record<string, string> {
   return {
     ...THEATER_ELEMENT_INLINE_STYLES,
     'object-fit': ui().videoFit,
+    'object-position': currentObjectPosition(),
   };
 }
 
@@ -348,8 +371,12 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     }
     element.style.setProperty(property, value, 'important');
   });
+  const objectPosition = currentObjectPosition();
   if (element.style.getPropertyValue('--theater-object-fit') !== ui().videoFit) {
     element.style.setProperty('--theater-object-fit', ui().videoFit);
+  }
+  if (element.style.getPropertyValue('--theater-object-position') !== objectPosition) {
+    element.style.setProperty('--theater-object-position', objectPosition);
   }
   for (const property of ['top', 'left'] as const) {
     if (!element.style.getPropertyValue(property)) {
@@ -361,16 +388,36 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     element.style.setProperty('top', '0px', 'important');
     element.style.setProperty('left', '0px', 'important');
   }
+  applyTheaterPictureLayout();
+}
+
+function applyTheaterPictureLayout(): void {
+  const fit = ui().videoFit;
+  const frame = currentPictureFrame();
+  const position = objectPositionForPicture(fit, ui().pictureAlign, frame);
+  document.documentElement.classList.toggle(
+    'theater-everywhere-picture-top',
+    raisedCaptionsUseBand(position, horizontalLetterboxPx(frame))
+  );
+  document.documentElement.style.setProperty('--theater-object-fit', fit);
+  document.documentElement.style.setProperty('--theater-object-position', position);
+  if (session.element) {
+    session.element.style.setProperty('object-fit', fit, 'important');
+    session.element.style.setProperty('--theater-object-fit', fit);
+    session.element.style.setProperty('object-position', position, 'important');
+    session.element.style.setProperty('--theater-object-position', position);
+  }
+  updateCaptionDock();
 }
 
 function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
   uiStore.dispatch({ type: 'SET_VIDEO_FIT', value: mode });
-  const fit = ui().videoFit;
-  document.documentElement.style.setProperty('--theater-object-fit', fit);
-  if (session.element) {
-    session.element.style.setProperty('object-fit', fit, 'important');
-    session.element.style.setProperty('--theater-object-fit', fit);
-  }
+  applyTheaterPictureLayout();
+}
+
+function applyPictureAlign(align: PictureAlign = ui().pictureAlign): void {
+  uiStore.dispatch({ type: 'SET_PICTURE_ALIGN', value: align });
+  applyTheaterPictureLayout();
 }
 
 function applyProviderFlags(next: MediaProviderFlags): void {
@@ -475,6 +522,7 @@ function restoreTheaterElementInlineStyles(element: HTMLElement): void {
   });
 
   element.style.removeProperty('--theater-object-fit');
+  element.style.removeProperty('--theater-object-position');
 
   if (!savedState.hadStyleAttribute && element.getAttribute('style') === '') {
     element.removeAttribute('style');
@@ -557,6 +605,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
+      PICTURE_ALIGN_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
     ]);
@@ -569,6 +618,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       value: {
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
+        pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
@@ -1059,6 +1109,20 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     });
   };
 
+  let pictureLayoutScheduled = false;
+  const schedulePictureLayout = (): void => {
+    if (pictureLayoutScheduled) return;
+    pictureLayoutScheduled = true;
+    session.runtimeScope.raf(() => {
+      pictureLayoutScheduled = false;
+      if (session.element !== video) return;
+      applyTheaterPictureLayout();
+    });
+  };
+  session.runtimeScope.listen(window, 'resize', schedulePictureLayout);
+  session.runtimeScope.listen(video, 'resize', schedulePictureLayout);
+  session.runtimeScope.listen(document, 'fullscreenchange', schedulePictureLayout);
+
   session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
   session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
@@ -1256,6 +1320,7 @@ function exitTheaterMode(
   // Restore scrollbars
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
+  document.documentElement.classList.remove('theater-everywhere-picture-top');
   unmountDisneyTheaterStage();
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = null;
@@ -1345,6 +1410,9 @@ export function bootstrapPlayerRuntime(): void {
 
       if (changes[VIDEO_FIT_STORAGE_KEY]) {
         applyTheaterVideoFit(resolveVideoFitMode(changes[VIDEO_FIT_STORAGE_KEY].newValue));
+      }
+      if (changes[PICTURE_ALIGN_STORAGE_KEY]) {
+        applyPictureAlign(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
       }
       if (changes[CAPTION_STYLE_STORAGE_KEY]) {
         applyCaptionStyleToTheater(resolveCaptionStyle(changes[CAPTION_STYLE_STORAGE_KEY].newValue));

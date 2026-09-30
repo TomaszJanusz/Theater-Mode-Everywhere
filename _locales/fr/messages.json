@@ -74,7 +74,22 @@
     "message": "Apparence"
   },
   "appearanceDescription": {
-    "message": "Choisissez la couleur d'accentuation des contrôles, curseurs, raccourcis et surbrillances."
+    "message": "Choisissez la position de l'image et la couleur d'accentuation des contrôles, curseurs, raccourcis et surbrillances."
+  },
+  "pictureAlignLabel": {
+    "message": "Disposition"
+  },
+  "pictureAlignCenter": {
+    "message": "Centrée"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "L'image reste au centre de l'écran. Idéal pour les écrans 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "En haut"
+  },
+  "pictureAlignTopDescription": {
+    "message": "L'image monte, et la bande noire en dessous reste pour les sous-titres. Idéal pour les écrans 16:10 et 4:3."
   },
   "accentColorLabel": {
     "message": "Couleur d'accentuation"

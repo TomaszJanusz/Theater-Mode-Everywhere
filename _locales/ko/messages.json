@@ -74,7 +74,22 @@
     "message": "외관"
   },
   "appearanceDescription": {
-    "message": "컨트롤, 슬라이더, 단축키 및 하이라이트에 사용할 강조 색상을 선택합니다."
+    "message": "화면 위치와 컨트롤, 슬라이더, 단축키, 하이라이트에 쓸 강조 색상을 선택합니다."
+  },
+  "pictureAlignLabel": {
+    "message": "레이아웃"
+  },
+  "pictureAlignCenter": {
+    "message": "가운데"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "영상이 화면 가운데에 있습니다. 16:9 화면에 잘 맞습니다."
+  },
+  "pictureAlignTop": {
+    "message": "위로"
+  },
+  "pictureAlignTopDescription": {
+    "message": "영상이 위로 올라가고, 아래 검은 띠는 자막을 위한 자리입니다. 16:10과 4:3 화면에 잘 맞습니다."
   },
   "accentColorLabel": {
     "message": "강조 색상"

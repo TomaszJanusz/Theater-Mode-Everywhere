@@ -80,6 +80,7 @@ export function theaterVideoNeedsRestyle(element: {
   const style = element.getAttribute('style') ?? '';
   return !style.includes('position:')
     || !style.includes('--theater-object-fit')
+    || !style.includes('--theater-object-position')
     || !(style.includes('background:') || style.includes('background-color:'));
 }
 

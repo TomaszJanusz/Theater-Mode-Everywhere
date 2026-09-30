@@ -1,5 +1,12 @@
 import { resolveCaptionStyle, type CaptionStyle } from '../media-features/caption-style';
-import { DEFAULT_ACCENT_COLOR, DEFAULT_VIDEO_FIT, type AccentColorPreset, type VideoFitMode } from './appearance';
+import {
+  DEFAULT_ACCENT_COLOR,
+  DEFAULT_PICTURE_ALIGN,
+  DEFAULT_VIDEO_FIT,
+  type AccentColorPreset,
+  type PictureAlign,
+  type VideoFitMode
+} from './appearance';
 import { defaultShortcuts, type Shortcuts } from './shortcuts';
 
 export type PlayerUiState = {
@@ -7,6 +14,7 @@ export type PlayerUiState = {
   helpOpen: boolean;
   toolbarVisible: boolean;
   videoFit: VideoFitMode;
+  pictureAlign: PictureAlign;
   accentColor: AccentColorPreset;
   captionStyle: CaptionStyle;
   shortcuts: Shortcuts;
@@ -18,6 +26,7 @@ export type PlayerUiAction =
   | { type: 'SET_HELP_OPEN'; value: boolean }
   | { type: 'SET_TOOLBAR_VISIBLE'; value: boolean }
   | { type: 'SET_VIDEO_FIT'; value: VideoFitMode }
+  | { type: 'SET_PICTURE_ALIGN'; value: PictureAlign }
   | { type: 'SET_ACCENT'; value: AccentColorPreset }
   | { type: 'SET_CAPTION_STYLE'; value: CaptionStyle }
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
@@ -27,6 +36,7 @@ const defaultState = (): PlayerUiState => ({
   helpOpen: false,
   toolbarVisible: false,
   videoFit: DEFAULT_VIDEO_FIT,
+  pictureAlign: DEFAULT_PICTURE_ALIGN,
   accentColor: DEFAULT_ACCENT_COLOR,
   captionStyle: resolveCaptionStyle(null),
   shortcuts: { ...defaultShortcuts }
@@ -38,6 +48,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     && left.helpOpen === right.helpOpen
     && left.toolbarVisible === right.toolbarVisible
     && left.videoFit === right.videoFit
+    && left.pictureAlign === right.pictureAlign
     && left.accentColor === right.accentColor
     && left.captionStyle === right.captionStyle
     && left.shortcuts === right.shortcuts
@@ -61,6 +72,9 @@ function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
       break;
     case 'SET_VIDEO_FIT':
       next = { ...state, videoFit: action.value };
+      break;
+    case 'SET_PICTURE_ALIGN':
+      next = { ...state, pictureAlign: action.value };
       break;
     case 'SET_ACCENT':
       next = { ...state, accentColor: action.value };

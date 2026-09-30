@@ -1,4 +1,11 @@
-import { computeCaptionDockBottom, type DockRect } from '../media-features/caption-dock';
+import {
+  CAPTION_LINE_LIMIT_MIN,
+  computeCaptionDockBottom,
+  raisedCaptionLineLimit,
+  raisedCaptionRestBottom,
+  type DockRect
+} from '../media-features/caption-dock';
+import { horizontalLetterboxPx } from './appearance';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -59,14 +66,39 @@ export function createToolbar(ctx: PlayerChromeContext) {
     };
   }
 
+  function raisedLetterbox(): { band: number; viewportHeight: number } {
+    const element = ctx.session.element;
+    const video = element instanceof HTMLVideoElement ? element : null;
+    const rect = element?.getBoundingClientRect();
+    const viewportWidth = rect && rect.width > 0 ? rect.width : window.innerWidth;
+    const viewportHeight = rect && rect.height > 0 ? rect.height : window.innerHeight;
+    return {
+      band: horizontalLetterboxPx({
+        videoWidth: video?.videoWidth ?? 0,
+        videoHeight: video?.videoHeight ?? 0,
+        viewportWidth,
+        viewportHeight
+      }),
+      viewportHeight
+    };
+  }
+
   function updateCaptionDock(): void {
     if (!ctx.session.element) {
       document.documentElement.style.removeProperty('--theater-caption-bottom');
       return;
     }
 
+    const raised = document.documentElement.classList.contains('theater-everywhere-picture-top');
+    const { band, viewportHeight } = raised ? raisedLetterbox() : { band: 0, viewportHeight: 0 };
+    const placeInBand = raised && band > 0;
     const overlay = ctx.queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
     const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
+    const lineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;
+    const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
+    features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
+
     const captionSize = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
       : null;
@@ -94,7 +126,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
       captionSize,
       obstacles,
       viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight
+      viewportHeight: window.innerHeight,
+      ...(placeInBand ? { restBottom: raisedCaptionRestBottom(band, captionSize?.height ?? 0, viewportHeight) } : {})
     });
     document.documentElement.style.setProperty('--theater-caption-bottom', `${bottom}px`);
   }

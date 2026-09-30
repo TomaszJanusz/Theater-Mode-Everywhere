@@ -74,7 +74,22 @@
     "message": "Wygląd"
   },
   "appearanceDescription": {
-    "message": "Wybierz kolor akcentu używany przez kontrolki, suwaki, skróty i podświetlenia."
+    "message": "Wybierz położenie obrazu oraz akcent kontrolek, suwaków, skrótów i podświetleń."
+  },
+  "pictureAlignLabel": {
+    "message": "Układ"
+  },
+  "pictureAlignCenter": {
+    "message": "Na środku"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "Obraz zostaje na środku ekranu. Najlepsze\u00a0dla\u00a0ekranów\u00a016:9."
+  },
+  "pictureAlignTop": {
+    "message": "U góry"
+  },
+  "pictureAlignTopDescription": {
+    "message": "Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów\u00a016:10 i\u00a04:3."
   },
   "accentColorLabel": {
     "message": "Kolor akcentu"

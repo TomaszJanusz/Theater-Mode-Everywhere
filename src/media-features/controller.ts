@@ -24,7 +24,7 @@ export type CaptionActivateOptions = {
   hud?: boolean | 'on';
 };
 
-export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'dispose'>;
+export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'setMaxLines' | 'dispose'>;
 
 export type MediaFeaturesBindings = {
   video: HTMLVideoElement;
@@ -477,6 +477,11 @@ export class MediaFeaturesController {
   setCaptionStyle(style: CaptionStyle): void {
     this.captionStyle = style;
     this.renderer.setStyle(style);
+  }
+
+  setCaptionLineLimit(maxLines: number): void {
+    if (!this.renderer.setMaxLines(maxLines)) return;
+    if (this.usingOverlayCaptions) this.renderer.update(displayMediaTime(this.video));
   }
 
   renderCcMenu(): void {

@@ -42,6 +42,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   background: #000000 !important;
   background-color: #000000 !important;
   object-fit: var(--theater-object-fit, contain) !important;
+  object-position: var(--theater-object-position, center center) !important;
   opacity: 1 !important;
   pointer-events: auto !important;
   margin: 0 !important;
@@ -972,6 +973,12 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   text-shadow: var(--theater-caption-shadow, none) !important;
 }
 
+/* Raised captions use the video black, with the user's background opacity. */
+:host-context(html.theater-everywhere-html-active.theater-everywhere-picture-top) .theater-caption-overlay-text {
+  background: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
+  background-color: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
+}
+
 .theater-caption-word {
   transition: opacity 0.08s linear !important;
 }
@@ -1116,6 +1123,10 @@ video::cue {
   font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
   font-weight: 500 !important;
   line-height: 1.35 !important;
+}
+
+html.theater-everywhere-html-active.theater-everywhere-picture-top video::cue {
+  background-color: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
 }
 
 video::-webkit-media-text-track-display {

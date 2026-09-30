@@ -74,7 +74,22 @@
     "message": "Apariencia"
   },
   "appearanceDescription": {
-    "message": "Elige el color de acento para controles, deslizadores, atajos y resaltados."
+    "message": "Elige la posición de la imagen y el color de acento para controles, deslizadores, atajos y resaltados."
+  },
+  "pictureAlignLabel": {
+    "message": "Disposición"
+  },
+  "pictureAlignCenter": {
+    "message": "Centrada"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "La imagen se queda en el centro de la pantalla. Mejor para pantallas 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "Arriba"
+  },
+  "pictureAlignTopDescription": {
+    "message": "La imagen sube y la banda negra de abajo queda para los subtítulos. Mejor para pantallas 16:10 y 4:3."
   },
   "accentColorLabel": {
     "message": "Color de acento"

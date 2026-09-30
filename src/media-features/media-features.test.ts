@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
-import { computeCaptionDockBottom, CAPTION_DOCK_REST_BOTTOM } from './caption-dock';
+import {
+  computeCaptionDockBottom,
+  CAPTION_DOCK_RAISED_CENTER_GAP,
+  CAPTION_DOCK_RAISED_EDGE,
+  CAPTION_DOCK_REST_BOTTOM,
+  raisedCaptionLineLimit,
+  raisedCaptionRestBottom
+} from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
 import {
@@ -1097,6 +1104,35 @@ describe('caption dock', () => {
       ...viewport
     });
     assert.equal(bottom, CAPTION_DOCK_REST_BOTTOM);
+  });
+
+  it('keeps a 16:10 band snug and centers a deeper letterbox', () => {
+    assert.equal(raisedCaptionRestBottom(100, 88, 1000), 12);
+    assert.equal(raisedCaptionRestBottom(120, 88, 1200), 32);
+    assert.equal(raisedCaptionRestBottom(134, 88, 900), 23);
+    assert.equal(raisedCaptionRestBottom(300, 88, 1200), 300 - 88 - CAPTION_DOCK_RAISED_CENTER_GAP);
+    assert.equal(raisedCaptionRestBottom(100, 130, 1000), CAPTION_DOCK_RAISED_EDGE);
+    assert.equal(raisedCaptionRestBottom(220, 88), 132);
+    assert.equal(computeCaptionDockBottom({
+      captionSize: { width: 240, height: 88 },
+      obstacles: [],
+      viewportWidth: 1280,
+      viewportHeight: 800,
+      restBottom: raisedCaptionRestBottom(220, 88, 800)
+    }), 220 - 88 - CAPTION_DOCK_RAISED_CENTER_GAP);
+    assert.equal(computeCaptionDockBottom({
+      captionSize: { width: 240, height: 88 },
+      obstacles: [{ left: 24, right: 1256, top: 700, bottom: 776 }],
+      viewportWidth: 1280,
+      viewportHeight: 800,
+      restBottom: raisedCaptionRestBottom(100, 88, 1000)
+    }), 800 - 700 + 12);
+  });
+
+  it('allows a third caption line only when the letterbox can hold it', () => {
+    assert.equal(raisedCaptionLineLimit(100, 40), 2);
+    assert.equal(raisedCaptionLineLimit(180, 40), 3);
+    assert.equal(raisedCaptionLineLimit(50, 40), 2);
   });
 });
 

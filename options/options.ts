@@ -9,6 +9,13 @@ import {
   type AccentColorPreset
 } from '../src/accentTheme';
 import {
+  DEFAULT_PICTURE_ALIGN,
+  PICTURE_ALIGN_STORAGE_KEY,
+  PICTURE_ALIGNS,
+  resolvePictureAlign,
+  type PictureAlign
+} from '../src/ui/appearance';
+import {
   definePrivacyThingLogo,
   type PrivacyThingLogoElement
 } from '@privacy-thing/brand';
@@ -155,6 +162,7 @@ async function init() {
 
   // Load and bind appearance controls
   renderAccentColorOptions(DEFAULT_ACCENT_COLOR);
+  renderPictureAlignOptions(DEFAULT_PICTURE_ALIGN);
   await loadAndRenderAppearance();
 
   // Handle Form Submit
@@ -381,14 +389,113 @@ async function init() {
 
   async function loadAndRenderAppearance() {
     try {
-      const data = await safeGetStorage(ACCENT_COLOR_STORAGE_KEY);
+      const data = await safeGetStorage([ACCENT_COLOR_STORAGE_KEY, PICTURE_ALIGN_STORAGE_KEY]);
       const selectedPreset = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
       applyAccentColorPreset(document.documentElement, selectedPreset);
       renderAccentColorOptions(selectedPreset);
+      renderPictureAlignOptions(resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]));
     } catch (err) {
       console.error('Error loading appearance settings:', err);
       applyAccentColorPreset(document.documentElement, DEFAULT_ACCENT_COLOR);
       renderAccentColorOptions(DEFAULT_ACCENT_COLOR);
+      renderPictureAlignOptions(DEFAULT_PICTURE_ALIGN);
+    }
+  }
+
+  function pictureAlignIcon(align: PictureAlign): SVGSVGElement {
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('viewBox', '0 0 160 132');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('picture-align-icon');
+
+    const bezel = document.createElementNS(svgNs, 'rect');
+    bezel.setAttribute('x', '10');
+    bezel.setAttribute('y', '10');
+    bezel.setAttribute('width', '140');
+    bezel.setAttribute('height', '112');
+    bezel.setAttribute('rx', '10');
+    bezel.setAttribute('fill', 'none');
+    bezel.setAttribute('stroke', 'currentColor');
+    bezel.setAttribute('stroke-width', '2');
+
+    const stage = document.createElementNS(svgNs, 'rect');
+    stage.setAttribute('x', '14');
+    stage.setAttribute('y', '14');
+    stage.setAttribute('width', '132');
+    stage.setAttribute('height', '104');
+    stage.setAttribute('rx', '6');
+    stage.setAttribute('fill', '#09090b');
+
+    const picture = document.createElementNS(svgNs, 'rect');
+    picture.setAttribute('x', '22');
+    picture.setAttribute('y', align === 'top' ? '18' : '34');
+    picture.setAttribute('width', '116');
+    picture.setAttribute('height', '64');
+    picture.setAttribute('rx', '4');
+    picture.setAttribute('fill', 'currentColor');
+    picture.setAttribute('fill-opacity', '0.14');
+    picture.setAttribute('stroke', 'currentColor');
+    picture.setAttribute('stroke-width', '2');
+
+    svg.append(bezel, stage, picture);
+
+    if (align === 'top') {
+      const bar = document.createElementNS(svgNs, 'rect');
+      bar.setAttribute('x', '40');
+      bar.setAttribute('y', '98');
+      bar.setAttribute('width', '80');
+      bar.setAttribute('height', '7');
+      bar.setAttribute('rx', '3.5');
+      bar.setAttribute('fill', 'currentColor');
+      svg.append(bar);
+    }
+
+    return svg;
+  }
+
+  function renderPictureAlignOptions(selected: PictureAlign) {
+    const grid = document.getElementById('picture-align-grid') as HTMLElement | null;
+    if (!grid) return;
+
+    grid.textContent = '';
+
+    PICTURE_ALIGNS.forEach(align => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'picture-align-btn';
+      button.dataset.pictureAlign = align;
+      button.setAttribute('role', 'radio');
+      const name = document.createElement('span');
+      name.className = 'picture-align-name';
+      name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
+      const description = document.createElement('span');
+      description.className = 'picture-align-desc';
+      description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
+      const copy = document.createElement('span');
+      copy.className = 'picture-align-copy';
+      copy.append(name, description);
+      button.setAttribute('aria-checked', align === selected ? 'true' : 'false');
+      if (align === selected) button.classList.add('selected');
+      button.append(pictureAlignIcon(align), copy);
+      button.addEventListener('click', () => {
+        void savePictureAlign(align);
+      });
+      grid.appendChild(button);
+    });
+  }
+
+  async function savePictureAlign(align: PictureAlign) {
+    try {
+      renderPictureAlignOptions(align);
+
+      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+        return;
+      }
+
+      await chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: align });
+    } catch (err) {
+      console.error('Error saving picture alignment:', err);
     }
   }
 

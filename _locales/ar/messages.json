@@ -74,7 +74,22 @@
     "message": "المظهر"
   },
   "appearanceDescription": {
-    "message": "اختر لون الإبراز المستخدم لعناصر التحكم، وأشرطة التمرير، والاختصارات، والتحديدات."
+    "message": "اختر موضع الصورة ولون الإبراز المستخدم لعناصر التحكم، وأشرطة التمرير، والاختصارات، والتحديدات."
+  },
+  "pictureAlignLabel": {
+    "message": "التخطيط"
+  },
+  "pictureAlignCenter": {
+    "message": "في الوسط"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "تبقى الصورة في وسط الشاشة. الأنسب للشاشات 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "للأعلى"
+  },
+  "pictureAlignTopDescription": {
+    "message": "ترتفع الصورة إلى الأعلى، ويبقى الشريط الأسود تحتها للترجمات. الأنسب للشاشات 16:10 و4:3."
   },
   "accentColorLabel": {
     "message": "لون الإبراز"

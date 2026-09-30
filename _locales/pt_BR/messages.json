@@ -74,7 +74,22 @@
     "message": "Aparência"
   },
   "appearanceDescription": {
-    "message": "Escolha a cor de destaque usada pelos controles, seletores, atalhos e marcações."
+    "message": "Escolha a posição da imagem e a cor de destaque dos controles, seletores, atalhos e marcações."
+  },
+  "pictureAlignLabel": {
+    "message": "Layout"
+  },
+  "pictureAlignCenter": {
+    "message": "Centralizada"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "A imagem fica no centro da tela. Melhor para telas 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "No topo"
+  },
+  "pictureAlignTopDescription": {
+    "message": "A imagem sobe, e a faixa preta abaixo fica para as legendas. Melhor para telas 16:10 e 4:3."
   },
   "accentColorLabel": {
     "message": "Cor de destaque"

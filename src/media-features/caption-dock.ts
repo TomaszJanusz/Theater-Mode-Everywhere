@@ -8,6 +8,49 @@ export type DockRect = {
 export const CAPTION_DOCK_REST_BOTTOM = 48;
 export const CAPTION_DOCK_MIN_BOTTOM = 24;
 export const CAPTION_DOCK_GAP = 12;
+/** Closest a raised caption block sits to the screen edge. */
+export const CAPTION_DOCK_RAISED_EDGE = 8;
+/**
+ * 16:9 on 16:10 leaves a band of exactly 1/10 the frame.
+ * Bands up to this fraction stay snug under the picture; the extra 0.005 absorbs a pixel of measurement noise.
+ */
+export const CAPTION_DOCK_SNUG_BAND_RATIO = 0.105;
+/** Deepest air kept between the picture and a block centered in a taller letterbox. */
+export const CAPTION_DOCK_RAISED_CENTER_GAP = 48;
+export const CAPTION_LINE_LIMIT_MIN = 2;
+export const CAPTION_LINE_LIMIT_MAX = 3;
+
+/**
+ * A 16:10-sized band keeps the block snug under the picture.
+ * A deeper band centers it in the black, and never more than `centerGap` below the picture.
+ * Without a frame height the block stays snug, which is the previous resting rule.
+ */
+export function raisedCaptionRestBottom(
+  bandHeight: number,
+  captionHeight: number,
+  viewportHeight = 0,
+  edge = CAPTION_DOCK_RAISED_EDGE,
+  centerGap = CAPTION_DOCK_RAISED_CENTER_GAP
+): number {
+  if (!(bandHeight > 0) || !(captionHeight > 0)) return edge;
+  const snug = Math.max(edge, Math.round(bandHeight - captionHeight));
+  if (!(viewportHeight > 0) || bandHeight / viewportHeight <= CAPTION_DOCK_SNUG_BAND_RATIO) return snug;
+  const slack = bandHeight - captionHeight;
+  if (!(slack > 0)) return edge;
+  const gap = Math.min(slack / 2, centerGap);
+  return Math.max(edge, Math.round(slack - gap));
+}
+
+/** How many caption rows fit in the letterbox, clamped to two or three. */
+export function raisedCaptionLineLimit(
+  bandHeight: number,
+  lineHeight: number,
+  edge = CAPTION_DOCK_RAISED_EDGE
+): number {
+  if (!(bandHeight > 0) || !(lineHeight > 0)) return CAPTION_LINE_LIMIT_MIN;
+  const fitted = Math.floor((bandHeight - edge) / lineHeight);
+  return Math.min(CAPTION_LINE_LIMIT_MAX, Math.max(CAPTION_LINE_LIMIT_MIN, fitted));
+}
 
 export function centeredCaptionRect(
   width: number,

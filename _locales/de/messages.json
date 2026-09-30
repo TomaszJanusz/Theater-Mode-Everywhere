@@ -74,7 +74,22 @@
     "message": "Darstellung"
   },
   "appearanceDescription": {
-    "message": "Wähle die Akzentfarbe für Bedienelemente, Regler, Kürzel und Hervorhebungen."
+    "message": "Wähle die Bildposition und die Akzentfarbe für Bedienelemente, Regler, Kürzel und Hervorhebungen."
+  },
+  "pictureAlignLabel": {
+    "message": "Layout"
+  },
+  "pictureAlignCenter": {
+    "message": "Zentriert"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "Das Bild bleibt in der Mitte des Bildschirms. Am besten für 16:9-Bildschirme."
+  },
+  "pictureAlignTop": {
+    "message": "Oben"
+  },
+  "pictureAlignTopDescription": {
+    "message": "Das Bild rückt nach oben. Das schwarze Band darunter ist für Untertitel. Am besten für 16:10- und 4:3-Bildschirme."
   },
   "accentColorLabel": {
     "message": "Akzentfarbe"

@@ -94,6 +94,7 @@ export function applyCaptionStyle(target: HTMLElement, style: CaptionStyle): voi
   target.style.setProperty('--theater-caption-font', captionFontFamily(style.fontPreset));
   target.style.setProperty('--theater-caption-scale', String(style.fontScale));
   target.style.setProperty('--theater-caption-bg', hexToRgba(style.backgroundColor, style.backgroundOpacity));
+  target.style.setProperty('--theater-caption-bg-alpha', String(style.backgroundOpacity));
   target.style.setProperty(
     '--theater-caption-shadow',
     style.dropShadow ? `3px 3px 1px rgba(0, 0, 0, ${style.shadowOpacity})` : 'none'
