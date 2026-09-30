@@ -7,7 +7,8 @@ import {
   CAPTION_DOCK_RAISED_EDGE,
   CAPTION_DOCK_REST_BOTTOM,
   raisedCaptionLineLimit,
-  raisedCaptionRestBottom
+  raisedCaptionRestBottom,
+  raisedCaptionRowCount
 } from './caption-dock';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
 import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
@@ -1106,13 +1107,18 @@ describe('caption dock', () => {
     assert.equal(bottom, CAPTION_DOCK_REST_BOTTOM);
   });
 
-  it('keeps a 16:10 band snug and centers a deeper letterbox', () => {
-    assert.equal(raisedCaptionRestBottom(100, 88, 1000), 12);
-    assert.equal(raisedCaptionRestBottom(120, 88, 1200), 32);
+  it('centers one or two rows in a 16:10 band and pins three to the bottom', () => {
+    assert.equal(raisedCaptionRowCount(50, 38), 1);
+    assert.equal(raisedCaptionRowCount(88, 38), 2);
+    assert.equal(raisedCaptionRowCount(126, 38), 3);
+    assert.equal(raisedCaptionRestBottom(120, 50, 1200), 35);
+    assert.equal(raisedCaptionRestBottom(120, 88, 1200), 16);
+    assert.equal(raisedCaptionRestBottom(120, 88, 1200, CAPTION_DOCK_RAISED_EDGE, CAPTION_DOCK_RAISED_CENTER_GAP, 3), CAPTION_DOCK_RAISED_EDGE);
+    assert.equal(raisedCaptionRestBottom(100, 88, 1000), CAPTION_DOCK_RAISED_EDGE);
     assert.equal(raisedCaptionRestBottom(134, 88, 900), 23);
     assert.equal(raisedCaptionRestBottom(300, 88, 1200), 300 - 88 - CAPTION_DOCK_RAISED_CENTER_GAP);
     assert.equal(raisedCaptionRestBottom(100, 130, 1000), CAPTION_DOCK_RAISED_EDGE);
-    assert.equal(raisedCaptionRestBottom(220, 88), 132);
+    assert.equal(raisedCaptionRestBottom(220, 88), 66);
     assert.equal(computeCaptionDockBottom({
       captionSize: { width: 240, height: 88 },
       obstacles: [],

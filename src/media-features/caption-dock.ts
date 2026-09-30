@@ -12,30 +12,43 @@ export const CAPTION_DOCK_GAP = 12;
 export const CAPTION_DOCK_RAISED_EDGE = 8;
 /**
  * 16:9 on 16:10 leaves a band of exactly 1/10 the frame.
- * Bands up to this fraction stay snug under the picture; the extra 0.005 absorbs a pixel of measurement noise.
+ * Bands up to this fraction use the short-band rule; the extra 0.005 absorbs a pixel of measurement noise.
  */
 export const CAPTION_DOCK_SNUG_BAND_RATIO = 0.105;
+/** Vertical padding of `.theater-caption-overlay-text` (6px + 6px). */
+export const CAPTION_BLOCK_PADDING_Y = 12;
 /** Deepest air kept between the picture and a block centered in a taller letterbox. */
 export const CAPTION_DOCK_RAISED_CENTER_GAP = 48;
 export const CAPTION_LINE_LIMIT_MIN = 2;
 export const CAPTION_LINE_LIMIT_MAX = 3;
 
+/** Visual rows in a caption block, from its border-box height and the text line height. */
+export function raisedCaptionRowCount(captionHeight: number, lineHeight: number): number {
+  if (!(captionHeight > 0) || !(lineHeight > 0)) return 2;
+  const rows = Math.round((captionHeight - CAPTION_BLOCK_PADDING_Y) / lineHeight);
+  return Math.max(1, rows);
+}
+
 /**
- * A 16:10-sized band keeps the block snug under the picture.
- * A deeper band centers it in the black, and never more than `centerGap` below the picture.
- * Without a frame height the block stays snug, which is the previous resting rule.
+ * A short 16:10 band centers one or two rows and pins three or more to the screen edge.
+ * A deeper band centers a short block, and never more than `centerGap` below the picture.
+ * Without a frame height the block uses the short-band rule.
  */
 export function raisedCaptionRestBottom(
   bandHeight: number,
   captionHeight: number,
   viewportHeight = 0,
   edge = CAPTION_DOCK_RAISED_EDGE,
-  centerGap = CAPTION_DOCK_RAISED_CENTER_GAP
+  centerGap = CAPTION_DOCK_RAISED_CENTER_GAP,
+  rowCount = 2
 ): number {
   if (!(bandHeight > 0) || !(captionHeight > 0)) return edge;
-  const snug = Math.max(edge, Math.round(bandHeight - captionHeight));
-  if (!(viewportHeight > 0) || bandHeight / viewportHeight <= CAPTION_DOCK_SNUG_BAND_RATIO) return snug;
   const slack = bandHeight - captionHeight;
+  const shortBand = !(viewportHeight > 0) || bandHeight / viewportHeight <= CAPTION_DOCK_SNUG_BAND_RATIO;
+  if (shortBand) {
+    if (rowCount >= 3 || !(slack > 0)) return edge;
+    return Math.max(edge, Math.round(slack / 2));
+  }
   if (!(slack > 0)) return edge;
   const gap = Math.min(slack / 2, centerGap);
   return Math.max(edge, Math.round(slack - gap));

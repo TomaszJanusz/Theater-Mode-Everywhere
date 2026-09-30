@@ -53,7 +53,7 @@ describe('picture align', () => {
     assert.ok(besideTabs > fullWindow);
     assert.equal(Math.round(besideTabs), 134);
     assert.equal(raisedCaptionRestBottom(besideTabs, 88, content.viewportHeight), 23);
-    assert.equal(raisedCaptionRestBottom(horizontalLetterboxPx(widescreen), 88, widescreen.viewportHeight), 32);
+    assert.equal(raisedCaptionRestBottom(horizontalLetterboxPx(widescreen), 88, widescreen.viewportHeight), 16);
   });
 
   it('falls back to centered alignment', () => {
