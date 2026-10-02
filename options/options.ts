@@ -454,9 +454,51 @@ async function init() {
     return svg;
   }
 
+  function pictureAlignButtons(grid: HTMLElement): HTMLButtonElement[] {
+    return Array.from(grid.querySelectorAll<HTMLButtonElement>('.picture-align-btn'));
+  }
+
+  function syncPictureAlignButtons(grid: HTMLElement, selected: PictureAlign): boolean {
+    const buttons = pictureAlignButtons(grid);
+    if (buttons.length !== PICTURE_ALIGNS.length) return false;
+    for (const button of buttons) {
+      const align = button.dataset.pictureAlign === 'top' ? 'top' : 'center';
+      const on = align === selected;
+      button.setAttribute('aria-checked', on ? 'true' : 'false');
+      button.classList.toggle('selected', on);
+      button.tabIndex = on ? 0 : -1;
+      const name = button.querySelector('.picture-align-name');
+      const description = button.querySelector('.picture-align-desc');
+      if (name) name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
+      if (description) description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
+    }
+    return true;
+  }
+
+  function bindPictureAlignKeys(grid: HTMLElement): void {
+    if (grid.dataset.keysBound === 'true') return;
+    grid.dataset.keysBound = 'true';
+    grid.addEventListener('keydown', (event) => {
+      const buttons = pictureAlignButtons(grid);
+      const index = buttons.findIndex((button) => button === document.activeElement);
+      if (index < 0) return;
+      let next = index;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % buttons.length;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + buttons.length) % buttons.length;
+      else if (event.key === ' ' || event.key === 'Enter') next = index;
+      else return;
+      event.preventDefault();
+      const align = buttons[next].dataset.pictureAlign === 'top' ? 'top' : 'center';
+      buttons[next].focus();
+      void savePictureAlign(align);
+    });
+  }
+
   function renderPictureAlignOptions(selected: PictureAlign) {
     const grid = document.getElementById('picture-align-grid') as HTMLElement | null;
     if (!grid) return;
+    bindPictureAlignKeys(grid);
+    if (syncPictureAlignButtons(grid, selected)) return;
 
     grid.textContent = '';
 
@@ -466,6 +508,7 @@ async function init() {
       button.className = 'picture-align-btn';
       button.dataset.pictureAlign = align;
       button.setAttribute('role', 'radio');
+      button.tabIndex = align === selected ? 0 : -1;
       const name = document.createElement('span');
       name.className = 'picture-align-name';
       name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
