@@ -58,10 +58,11 @@ export function raisedCaptionRestBottom(
 export function raisedCaptionLineLimit(
   bandHeight: number,
   lineHeight: number,
-  edge = CAPTION_DOCK_RAISED_EDGE
+  edge = CAPTION_DOCK_RAISED_EDGE,
+  paddingY = CAPTION_BLOCK_PADDING_Y
 ): number {
   if (!(bandHeight > 0) || !(lineHeight > 0)) return CAPTION_LINE_LIMIT_MIN;
-  const fitted = Math.floor((bandHeight - edge) / lineHeight);
+  const fitted = Math.floor((bandHeight - edge - paddingY) / lineHeight);
   return Math.min(CAPTION_LINE_LIMIT_MAX, Math.max(CAPTION_LINE_LIMIT_MIN, fitted));
 }
 

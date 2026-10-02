@@ -8,7 +8,7 @@ export class CaptionRenderer {
   private root: HTMLDivElement;
   private text: HTMLDivElement;
   private cues: CaptionCue[] = [];
-  private lastLineKey = '';
+  private lastLineKey: string | null = '';
   private lastWordKey = '';
   private maxLines = 2;
   private style: CaptionStyle = { ...DEFAULT_CAPTION_STYLE };
@@ -36,7 +36,7 @@ export class CaptionRenderer {
     const next = maxLines >= 3 ? 3 : 2;
     if (next === this.maxLines) return false;
     this.maxLines = next;
-    this.lastLineKey = '';
+    this.lastLineKey = null;
     this.lastWordKey = '';
     return true;
   }

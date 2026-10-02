@@ -1151,6 +1151,8 @@ describe('caption dock', () => {
     assert.equal(raisedCaptionLineLimit(100, 40), 2);
     assert.equal(raisedCaptionLineLimit(180, 40), 3);
     assert.equal(raisedCaptionLineLimit(50, 40), 2);
+    assert.equal(raisedCaptionLineLimit(125, 37.8), 2);
+    assert.equal(raisedCaptionLineLimit(140, 40), 3);
   });
 });
 
