@@ -6,7 +6,10 @@ export type FrameMessageType =
   | 'FRAME_ENTER'
   | 'FRAME_EXIT'
   | 'FRAME_EXITED'
-  | 'PLAYBACK_COMMAND';
+  | 'PLAYBACK_COMMAND'
+  | 'PLAYLIST_NAV_QUERY'
+  | 'PLAYLIST_NAV_STATE'
+  | 'PLAYLIST_NAV_GO';
 
 export type FrameEnvelope = {
   v: typeof FRAME_PROTOCOL_V;
@@ -80,6 +83,9 @@ function isFrameMessageType(value: unknown): value is FrameMessageType {
     || value === 'FRAME_EXIT'
     || value === 'FRAME_EXITED'
     || value === 'PLAYBACK_COMMAND'
+    || value === 'PLAYLIST_NAV_QUERY'
+    || value === 'PLAYLIST_NAV_STATE'
+    || value === 'PLAYLIST_NAV_GO'
   );
 }
 

@@ -22,6 +22,7 @@ import {
   mediaHasSource,
   toggleVideoPlayback
 } from '../host-play';
+import { findPlaylistActions, type PlaylistDirection } from '../playlist-nav';
 import {
   cancelPendingSeekResume,
   seekBy,
@@ -238,6 +239,53 @@ function executeCommand(command: PlayerCommand): void {
   }
 }
 
+function emptyPlaylistNav(): { previous: boolean; next: boolean } {
+  return { previous: false, next: false };
+}
+
+function localPlaylistActions(): ReturnType<typeof findPlaylistActions> {
+  const video = session.element?.tagName === 'VIDEO' ? session.element as HTMLVideoElement : null;
+  const root = video ? playlistSearchRoot(video) : document;
+  return findPlaylistActions(root, video);
+}
+
+function playlistSearchRoot(video: HTMLVideoElement): ParentNode {
+  const root = video.getRootNode();
+  if (root instanceof ShadowRoot || root instanceof Document) return root;
+  return video.ownerDocument;
+}
+
+function playlistNavigationAvailable(): { previous: boolean; next: boolean } {
+  const local = localPlaylistActions();
+  return {
+    previous: local.some((action) => action.direction === 'previous') || refs.parentPlaylistNav.previous,
+    next: local.some((action) => action.direction === 'next') || refs.parentPlaylistNav.next
+  };
+}
+
+function requestParentPlaylistNav(): void {
+  if (window.parent === window || !session.id) return;
+  frames.postToParent('PLAYLIST_NAV_QUERY', session.id, {});
+}
+
+function activatePlaylistStep(direction: PlaylistDirection): void {
+  const local = localPlaylistActions().find((action) => action.direction === direction);
+  if (local) {
+    local.activate();
+    return;
+  }
+  if (window.parent !== window && session.id && refs.parentPlaylistNav[direction]) {
+    frames.postToParent('PLAYLIST_NAV_GO', session.id, { direction });
+  }
+}
+
+function playlistNavFromPayload(payload: Record<string, unknown>): { previous: boolean; next: boolean } {
+  return {
+    previous: payload.previous === true,
+    next: payload.next === true
+  };
+}
+
 function bindChromeActions(): void {
   Object.assign(ctx.actions, {
     applyTheaterElementInlineStyles,
@@ -279,7 +327,10 @@ function bindChromeActions(): void {
     triggerVolumeIndicator,
     triggerStatusIndicator,
     triggerPlaybackIndicator,
-    seekHostTime: seekToMediaTime
+    seekHostTime: seekToMediaTime,
+    playlistNavigationAvailable,
+    requestParentPlaylistNav,
+    activatePlaylistStep
   });
 }
 
@@ -953,6 +1004,23 @@ function initialize(): void {
           stopImmediatePropagation: () => {}
         } as KeyboardEvent, video);
       }
+    } else if (envelope.type === 'PLAYLIST_NAV_QUERY' && fromChild) {
+      const actions = findPlaylistActions(document);
+      const iframe = iframes.find((item) => item.contentWindow === event.source);
+      if (iframe) {
+        frames.postToChildIframe(iframe, 'PLAYLIST_NAV_STATE', envelope.sessionId, {
+          previous: actions.some((action) => action.direction === 'previous'),
+          next: actions.some((action) => action.direction === 'next')
+        }, envelope.nonce);
+      }
+    } else if (envelope.type === 'PLAYLIST_NAV_STATE' && fromParent) {
+      refs.parentPlaylistNav = playlistNavFromPayload(envelope.payload);
+      window.dispatchEvent(new CustomEvent('theater-everywhere-playlist-nav'));
+    } else if (envelope.type === 'PLAYLIST_NAV_GO' && fromChild) {
+      const direction = envelope.payload.direction;
+      if (direction === 'previous' || direction === 'next') {
+        findPlaylistActions(document).find((action) => action.direction === direction)?.activate();
+      }
     }
   };
   session.runtimeScope.listen(window, 'message', listeners.message!);
@@ -1280,6 +1348,7 @@ function exitTheaterMode(
     }
   }
 
+  refs.parentPlaylistNav = emptyPlaylistNav();
   session.finishExit();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: false });
   updateCaptionDock();

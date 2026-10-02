@@ -429,6 +429,10 @@ html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
 }
 
 /* Control Buttons */
+.theater-control-btn[hidden] {
+  display: none !important;
+}
+
 .theater-control-btn {
   background: none !important;
   border: 1px solid transparent !important;

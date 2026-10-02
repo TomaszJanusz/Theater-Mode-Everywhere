@@ -410,6 +410,12 @@
   "pause": {
     "message": "إيقاف مؤقت"
   },
+  "previousVideo": {
+    "message": "السابق"
+  },
+  "nextVideo": {
+    "message": "التالي"
+  },
   "muteHud": {
     "message": "كتم الصوت"
   },
