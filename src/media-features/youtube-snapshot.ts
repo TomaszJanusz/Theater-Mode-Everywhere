@@ -45,7 +45,11 @@ export function firstMatchingYoutubeSnapshot(
       match = snapshot;
       continue;
     }
-    if (!match.heatmap?.segments?.length && snapshot.heatmap?.segments?.length) {
+    if (
+      !match.heatmap?.segments?.length
+      && snapshot.heatmap?.segments?.length
+      && match.videoId === snapshot.videoId
+    ) {
       match = { ...match, heatmap: snapshot.heatmap };
     }
   }
