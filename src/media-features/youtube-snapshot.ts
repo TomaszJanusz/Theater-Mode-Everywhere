@@ -37,9 +37,17 @@ export function firstMatchingYoutubeSnapshot(
   pageVideoId: string | null,
   candidates: Array<YoutubePlayerSnapshot | null | undefined>
 ): YoutubePlayerSnapshot | null {
+  let match: YoutubePlayerSnapshot | null = null;
   for (const snapshot of candidates) {
     if (!snapshot) continue;
-    if (!snapshot.videoId || !pageVideoId || snapshot.videoId === pageVideoId) return snapshot;
+    if (snapshot.videoId && pageVideoId && snapshot.videoId !== pageVideoId) continue;
+    if (!match) {
+      match = snapshot;
+      continue;
+    }
+    if (!match.heatmap?.segments?.length && snapshot.heatmap?.segments?.length) {
+      match = { ...match, heatmap: snapshot.heatmap };
+    }
   }
-  return null;
+  return match;
 }

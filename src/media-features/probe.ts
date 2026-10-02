@@ -28,6 +28,7 @@ export type YoutubePlayerSnapshot = {
     source: 'markers' | 'legacy' | 'svg';
     segments?: Array<{ startMs: number; durationMs: number; intensity: number }>;
     svgPath?: string;
+    floor?: number;
   };
 };
 
@@ -241,6 +242,7 @@ function normalizeYoutubeHeatmap(raw: unknown): YoutubePlayerSnapshot['heatmap']
     source?: unknown;
     segments?: unknown;
     svgPath?: unknown;
+    floor?: unknown;
   };
   const source = data.source;
   if (source !== 'markers' && source !== 'legacy' && source !== 'svg') return undefined;
@@ -259,11 +261,14 @@ function normalizeYoutubeHeatmap(raw: unknown): YoutubePlayerSnapshot['heatmap']
   const svgPath = typeof data.svgPath === 'string' && data.svgPath.trim().length > 20
     ? data.svgPath.trim()
     : undefined;
+  const floor = Number(data.floor);
+  const usableFloor = Number.isFinite(floor) && floor > 0 && floor < 1 ? floor : undefined;
   if (!segments?.length && !svgPath) return undefined;
   return {
     source,
     ...(segments && segments.length > 0 ? { segments } : {}),
-    ...(svgPath ? { svgPath } : {})
+    ...(svgPath ? { svgPath } : {}),
+    ...(usableFloor ? { floor: usableFloor } : {})
   };
 }
 

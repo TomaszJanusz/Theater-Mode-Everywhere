@@ -452,6 +452,18 @@ describe('youtube page video identity', () => {
     };
     assert.equal(firstMatchingYoutubeSnapshot('sigA04sdSMQ', [stale, current])?.videoId, 'sigA04sdSMQ');
     assert.equal(firstMatchingYoutubeSnapshot('sigA04sdSMQ', [stale, null])?.videoId, undefined);
+    const withHeat = firstMatchingYoutubeSnapshot('sigA04sdSMQ', [
+      current,
+      {
+        videoId: 'sigA04sdSMQ',
+        heatmap: {
+          source: 'markers' as const,
+          segments: [{ startMs: 0, durationMs: 1000, intensity: 1 }]
+        }
+      }
+    ]);
+    assert.equal(withHeat?.captionTracks?.[0]?.language, 'en');
+    assert.equal(withHeat?.heatmap?.segments?.[0]?.intensity, 1);
     const published = readPublishedYoutubeSnapshot({
       querySelector: () => ({ textContent: JSON.stringify(current) })
     } as Pick<ParentNode, 'querySelector'>);
@@ -1710,5 +1722,69 @@ describe('YouTube Most Replayed heatmap parser', () => {
       ]
     };
     assert.equal(readRenderedYoutubeHeatmapPath(root as unknown as ParentNode), path);
+  });
+
+  it('places each chapter heatmap in its own span instead of stretching the first one', () => {
+    const container = { getBoundingClientRect: () => ({ left: 0, width: 1000 }) };
+    const chapterPath = (d: string, left: number, width: number) => ({
+      getAttribute: (name: string) => (name === 'd' ? d : null),
+      closest: (selector: string) => {
+        if (selector === '.ytp-heat-map-container') return container;
+        if (selector === '.ytp-heat-map-chapter') {
+          return { getBoundingClientRect: () => ({ left, width }) };
+        }
+        return null;
+      }
+    });
+    const root = {
+      querySelectorAll: () => [
+        chapterPath('M 0.0,100.0 C 500.0,10.0 500.0,10.0 1000.0,100.0', 0, 200),
+        chapterPath('M 0.0,100.0 C 500.0,20.0 500.0,20.0 1000.0,100.0', 800, 200)
+      ]
+    };
+    const d = readRenderedYoutubeHeatmapPath(root as unknown as ParentNode) || '';
+    assert.match(d, /100,10/);
+    assert.match(d, /900,20/);
+    assert.doesNotMatch(d, /500\.0,10/);
+  });
+
+  it('does not use the first chapter path when later chapters cannot be measured', () => {
+    const path = 'M 0.0,100.0 C 500.0,10.0 500.0,10.0 1000.0,100.0';
+    const root = {
+      querySelectorAll: () => [
+        { getAttribute: () => path },
+        { getAttribute: () => 'M 0.0,100.0 C 500.0,20.0 500.0,20.0 1000.0,100.0' }
+      ]
+    };
+    assert.equal(readRenderedYoutubeHeatmapPath(root as unknown as ParentNode), null);
+  });
+
+  it('lifts quiet bins to the player floor', () => {
+    const d = heatmapSvgPath([{ startMs: 0, durationMs: 1000, intensity: 0 }], 1000, 0.1);
+    assert.match(d, /500 90/);
+  });
+
+  it('keeps the heatmap for the current video when a playlist neighbor comes first', () => {
+    const marker = (intensity: number) => ({
+      startMillis: '0',
+      durationMillis: '1000',
+      intensityScoreNormalized: intensity
+    });
+    const found = findYoutubeHeatmap({
+      other: {
+        externalVideoId: 'aaaaaaaaaaa',
+        markersList: { markerType: 'MARKER_TYPE_HEATMAP', markers: [marker(0.2), marker(0.2)] }
+      },
+      current: {
+        externalVideoId: 'D7V0Oda3DAA',
+        markersList: {
+          markerType: 'MARKER_TYPE_HEATMAP',
+          markers: [marker(1), marker(0.4)],
+          markersMetadata: { heatmapMetadata: { minHeightDp: 4, maxHeightDp: 40 } }
+        }
+      }
+    }, 'D7V0Oda3DAA');
+    assert.equal(found?.segments?.[0]?.intensity, 1);
+    assert.equal(found?.floor, 0.1);
   });
 });

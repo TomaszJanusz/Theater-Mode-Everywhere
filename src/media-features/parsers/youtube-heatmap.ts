@@ -10,10 +10,13 @@ export type YoutubeHeatmap = {
   source: YoutubeHeatmapSource;
   segments?: YoutubeHeatmapSegment[];
   svgPath?: string;
+  /** Minimum bar height as a fraction of the chart, from heatmapMetadata. */
+  floor?: number;
 };
 
-const MAX_WALK_NODES = 12000;
+const MAX_WALK_NODES = 80000;
 const MAX_WALK_DEPTH = 40;
+const MAX_WALK_ARRAY = 8000;
 const MAX_HEATMAP_SEGMENTS = 400;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -72,38 +75,70 @@ export function validateYoutubeHeatmap(segments: YoutubeHeatmapSegment[] | null 
   ));
 }
 
-export function findYoutubeHeatmap(root: unknown): YoutubeHeatmap | null {
-  let markers: YoutubeHeatmapSegment[] | null = null;
+function heatmapFloor(obj: Record<string, unknown>): number {
+  const meta = asRecord(asRecord(obj.markersMetadata)?.heatmapMetadata);
+  const minDp = toFiniteNumber(meta?.minHeightDp);
+  const maxDp = toFiniteNumber(meta?.maxHeightDp);
+  if (minDp == null || maxDp == null || maxDp <= 0) return 0;
+  return Math.min(0.95, Math.max(0, minDp / maxDp));
+}
+
+type ModernHeatmapCandidate = {
+  segments: YoutubeHeatmapSegment[];
+  videoId: string | null;
+  floor: number;
+};
+
+export function findYoutubeHeatmap(root: unknown, pageVideoId?: string | null): YoutubeHeatmap | null {
+  const modern: ModernHeatmapCandidate[] = [];
   let legacy: YoutubeHeatmapSegment[] | null = null;
   let nodes = 0;
+  let done = false;
 
-  function walk(value: unknown, depth: number): void {
-    if (markers && legacy) return;
+  function walk(value: unknown, depth: number, videoId: string | null): void {
+    if (done) return;
     if (!value || typeof value !== 'object' || depth > MAX_WALK_DEPTH || nodes++ > MAX_WALK_NODES) return;
     if (typeof Node !== 'undefined' && value instanceof Node) return;
 
     if (Array.isArray(value)) {
-      const limit = Math.min(value.length, 2500);
-      for (let i = 0; i < limit; i++) walk(value[i], depth + 1);
+      const limit = Math.min(value.length, MAX_WALK_ARRAY);
+      for (let i = 0; i < limit; i++) walk(value[i], depth + 1, videoId);
       return;
     }
 
     const obj = value as Record<string, unknown>;
-    if (!markers && obj.markerType === 'MARKER_TYPE_HEATMAP') {
+    const ownId = typeof obj.externalVideoId === 'string'
+      && obj.externalVideoId.length > 0
+      && obj.externalVideoId.length <= 20
+      ? obj.externalVideoId
+      : videoId;
+    if (obj.markerType === 'MARKER_TYPE_HEATMAP') {
       const found = normalizeModernMarkers(obj.markers);
-      if (validateYoutubeHeatmap(found)) markers = found;
+      if (validateYoutubeHeatmap(found)) {
+        modern.push({ segments: found, videoId: ownId, floor: heatmapFloor(obj) });
+        if (!pageVideoId || ownId === pageVideoId) done = true;
+      }
     }
-    if (!legacy) {
+    if (!done && !legacy) {
       const renderer = asRecord(obj.heatmapRenderer);
       const found = renderer ? normalizeLegacyMarkers(renderer.heatMarkers) : [];
       if (validateYoutubeHeatmap(found)) legacy = found;
     }
-    if (markers && legacy) return;
-    for (const child of Object.values(obj)) walk(child, depth + 1);
+    if (done) return;
+    for (const child of Object.values(obj)) walk(child, depth + 1, ownId);
   }
 
-  walk(root, 0);
-  if (markers) return { source: 'markers', segments: markers };
+  walk(root, 0, null);
+  const chosen = pageVideoId
+    ? modern.find((item) => item.videoId === pageVideoId) || modern.find((item) => !item.videoId)
+    : modern[0];
+  if (chosen) {
+    return {
+      source: 'markers',
+      segments: chosen.segments,
+      ...(chosen.floor > 0 ? { floor: chosen.floor } : {})
+    };
+  }
   if (legacy) return { source: 'legacy', segments: legacy };
   return null;
 }
