@@ -1115,12 +1115,14 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     pictureLayoutScheduled = true;
     session.runtimeScope.raf(() => {
       pictureLayoutScheduled = false;
-      if (session.element !== video) return;
+      if (session.element?.tagName !== 'VIDEO') return;
       applyTheaterPictureLayout();
     });
   };
   session.runtimeScope.listen(window, 'resize', schedulePictureLayout);
-  session.runtimeScope.listen(video, 'resize', schedulePictureLayout);
+  session.runtimeScope.listen(document, 'resize', (event: Event) => {
+    if (event.target === session.element) schedulePictureLayout();
+  }, true);
   session.runtimeScope.listen(document, 'fullscreenchange', schedulePictureLayout);
 
   session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
