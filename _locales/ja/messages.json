@@ -410,6 +410,12 @@
   "pause": {
     "message": "一時停止"
   },
+  "previousVideo": {
+    "message": "前へ"
+  },
+  "nextVideo": {
+    "message": "次へ"
+  },
   "muteHud": {
     "message": "ミュート"
   },

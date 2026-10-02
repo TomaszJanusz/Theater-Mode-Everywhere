@@ -410,6 +410,12 @@
   "pause": {
     "message": "일시정지"
   },
+  "previousVideo": {
+    "message": "이전"
+  },
+  "nextVideo": {
+    "message": "다음"
+  },
   "muteHud": {
     "message": "음소거"
   },

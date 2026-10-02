@@ -212,6 +212,55 @@ export function createControls(ctx: PlayerChromeContext) {
       executeCommand({ type: 'PLAY_PAUSE' });
     });
 
+    const previousIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <rect x="4" y="5" width="2.2" height="14" rx="0.4"></rect>
+        <path d="M19 5.5 8.5 12 19 18.5z"></path>
+      </svg>
+    `;
+    const nextIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M5 5.5 15.5 12 5 18.5z"></path>
+        <rect x="17.8" y="5" width="2.2" height="14" rx="0.4"></rect>
+      </svg>
+    `;
+
+    const previousBtn = document.createElement('button');
+    previousBtn.type = 'button';
+    previousBtn.className = 'theater-control-btn playlist-prev-btn';
+    previousBtn.hidden = true;
+    setIcon(previousBtn, previousIcon);
+    bindCustomTooltip(previousBtn, () => t('previousVideo'));
+    previousBtn.addEventListener('click', () => {
+      ctx.actions.activatePlaylistStep('previous');
+    });
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'theater-control-btn playlist-next-btn';
+    nextBtn.hidden = true;
+    setIcon(nextBtn, nextIcon);
+    bindCustomTooltip(nextBtn, () => t('nextVideo'));
+    nextBtn.addEventListener('click', () => {
+      ctx.actions.activatePlaylistStep('next');
+    });
+
+    const syncPlaylistButtons = () => {
+      const available = ctx.actions.playlistNavigationAvailable();
+      previousBtn.hidden = !available.previous;
+      nextBtn.hidden = !available.next;
+      previousBtn.setAttribute('aria-label', t('previousVideo'));
+      nextBtn.setAttribute('aria-label', t('nextVideo'));
+    };
+    syncPlaylistButtons();
+    ctx.actions.requestParentPlaylistNav();
+    const playlistNavTimer = window.setInterval(() => {
+      ctx.actions.requestParentPlaylistNav();
+      syncPlaylistButtons();
+    }, 400);
+    controlsScope.add(() => window.clearInterval(playlistNavTimer));
+    controlsScope.listen(window, 'theater-everywhere-playlist-nav', syncPlaylistButtons);
+
     // Volume Container
     const volumeContainer = document.createElement('div');
     volumeContainer.className = 'theater-volume-container';
@@ -424,6 +473,8 @@ export function createControls(ctx: PlayerChromeContext) {
     };
 
     leftSec.appendChild(playPauseBtn);
+    leftSec.appendChild(previousBtn);
+    leftSec.appendChild(nextBtn);
     leftSec.appendChild(volumeContainer);
     leftSec.appendChild(timeDisplay);
 
