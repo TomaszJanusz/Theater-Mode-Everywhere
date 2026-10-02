@@ -33,7 +33,9 @@ export function isVimeoShowcaseStepHref(href: string | null | undefined): boolea
   if (!href) return false;
   try {
     const url = new URL(href, 'https://vimeo.com');
-    return /^\/showcase\/[^/]+\/?$/.test(url.pathname) && url.searchParams.has('video');
+    return url.origin === 'https://vimeo.com'
+      && /^\/showcase\/[^/]+\/?$/.test(url.pathname)
+      && url.searchParams.has('video');
   } catch {
     return false;
   }

@@ -201,6 +201,7 @@ describe('playlist navigation availability', () => {
     assert.equal(isVimeoShowcaseStepHref('/showcase/1574596?video=2782153'), true);
     assert.equal(isVimeoShowcaseStepHref('https://vimeo.com/showcase/1574596'), false);
     assert.equal(isVimeoShowcaseStepHref('https://vimeo.com/76979871'), false);
+    assert.equal(isVimeoShowcaseStepHref('https://evil.example/showcase/1574596?video=1'), false);
     assert.equal(isVimeoShowcaseStepHref(null), false);
   });
 });

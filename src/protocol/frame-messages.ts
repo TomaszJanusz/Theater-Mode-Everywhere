@@ -163,6 +163,13 @@ export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTr
     if (!context.activeSessionId) return true;
     return envelope.sessionId === context.activeSessionId;
   }
+  if (
+    envelope.type === 'PLAYLIST_NAV_QUERY'
+    || envelope.type === 'PLAYLIST_NAV_STATE'
+    || envelope.type === 'PLAYLIST_NAV_GO'
+  ) {
+    return hasValidCredentials;
+  }
   if (context.activeSessionId && envelope.sessionId !== context.activeSessionId) return false;
   if (context.activeNonce && envelope.nonce !== context.activeNonce) return false;
   return true;

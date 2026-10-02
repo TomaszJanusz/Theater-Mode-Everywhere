@@ -88,6 +88,30 @@ describe('F-01 frame session handshake', () => {
     assert.equal(readFrameEnvelope({ type: 'theater-everywhere-exit-down' }), null);
   });
 
+  it('rejects playlist navigation without the active theater session', () => {
+    const sessionId = createSessionId();
+    const nonce = createSessionId();
+    for (const type of ['PLAYLIST_NAV_QUERY', 'PLAYLIST_NAV_STATE', 'PLAYLIST_NAV_GO'] as const) {
+      const envelope = createFrameMessage(type, sessionId, { direction: 'next' }, nonce, 'https://ads.example');
+      assert.equal(isTrustedFrameEnvelope(envelope, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: true,
+        fromParent: false,
+        fromChild: true,
+        activeSessionId: null,
+        activeNonce: null
+      }), false);
+      assert.equal(isTrustedFrameEnvelope(envelope, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: true,
+        fromParent: false,
+        fromChild: true,
+        activeSessionId: sessionId,
+        activeNonce: nonce
+      }), true);
+    }
+  });
+
   it('rejects child FRAME_TOGGLE without the active session', () => {
     const sessionId = createSessionId();
     const nonce = createSessionId();
