@@ -27,6 +27,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   resetToDefault: 'Reset to default',
   play: 'Play',
   pause: 'Pause',
+  previousVideo: 'Previous',
+  nextVideo: 'Next',
   muteHud: 'Mute',
   unmuteHud: 'Unmute',
   pictureInPictureTooltip: 'Picture-in-Picture <kbd>$1</kbd>',

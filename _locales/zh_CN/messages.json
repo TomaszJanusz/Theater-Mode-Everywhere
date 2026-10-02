@@ -425,6 +425,12 @@
   "pause": {
     "message": "暂停"
   },
+  "previousVideo": {
+    "message": "上一个"
+  },
+  "nextVideo": {
+    "message": "下一个"
+  },
   "muteHud": {
     "message": "静音"
   },

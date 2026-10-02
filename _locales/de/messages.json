@@ -425,6 +425,12 @@
   "pause": {
     "message": "Pause"
   },
+  "previousVideo": {
+    "message": "Vorheriges"
+  },
+  "nextVideo": {
+    "message": "Nächstes"
+  },
   "muteHud": {
     "message": "Stumm"
   },

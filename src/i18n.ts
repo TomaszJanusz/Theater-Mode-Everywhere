@@ -125,6 +125,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   madeInPoland: 'Made with <span class="heart">❤</span> in 🇵🇱',
   play: 'Play',
   pause: 'Pause',
+  previousVideo: 'Previous',
+  nextVideo: 'Next',
   muteHud: 'Mute',
   unmuteHud: 'Unmute',
   pictureInPictureTooltip: 'Picture-in-Picture <kbd>$1</kbd>',
