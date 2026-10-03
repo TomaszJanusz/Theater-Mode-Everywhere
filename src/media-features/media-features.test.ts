@@ -476,6 +476,36 @@ describe('youtube page video identity', () => {
     ]);
     assert.equal(otherVideo?.videoId, 'one');
     assert.equal(otherVideo?.heatmap, undefined);
+    const anonymous = firstMatchingYoutubeSnapshot(null, [
+      { captionTracks: current.captionTracks },
+      {
+        heatmap: {
+          source: 'markers' as const,
+          segments: [{ startMs: 0, durationMs: 1000, intensity: 0.4 }]
+        }
+      }
+    ]);
+    assert.equal(anonymous?.captionTracks?.[0]?.language, 'en');
+    assert.equal(anonymous?.heatmap, undefined);
+    const identified = firstMatchingYoutubeSnapshot('sigA04sdSMQ', [
+      {
+        captionTracks: [{
+          id: 'stale',
+          language: 'pl',
+          label: 'Polish',
+          kind: 'captions' as const,
+          baseUrl: 'https://www.youtube.com/api/timedtext?v=old'
+        }],
+        heatmap: {
+          source: 'markers' as const,
+          segments: [{ startMs: 0, durationMs: 1000, intensity: 0.7 }]
+        }
+      },
+      current
+    ]);
+    assert.equal(identified?.videoId, 'sigA04sdSMQ');
+    assert.equal(identified?.captionTracks?.[0]?.language, 'en');
+    assert.equal(identified?.heatmap?.segments?.[0]?.intensity, 0.7);
     const published = readPublishedYoutubeSnapshot({
       querySelector: () => ({ textContent: JSON.stringify(current) })
     } as Pick<ParentNode, 'querySelector'>);
