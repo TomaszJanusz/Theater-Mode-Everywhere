@@ -138,7 +138,9 @@ html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
   pointer-events: none !important;
 }
 
-/* Covers the page while the video element has no frame or loses its viewport pin. */
+/* Sits directly behind the video. object-fit does not paint the raised
+ * letterbox, and a playlist handoff can leave the page showing through
+ * while the video has no frame or loses its viewport pin. */
 #theater-everywhere-stage {
   position: fixed !important;
   inset: 0 !important;
