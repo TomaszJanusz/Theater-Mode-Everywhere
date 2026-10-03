@@ -74,7 +74,22 @@
     "message": "外观"
   },
   "appearanceDescription": {
-    "message": "选择用于控件、滑块、快捷键和高亮的强调色。"
+    "message": "选择画面位置，以及控件、滑块、快捷键和高亮所用的强调色。"
+  },
+  "pictureAlignLabel": {
+    "message": "布局"
+  },
+  "pictureAlignCenter": {
+    "message": "居中"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "画面留在屏幕中央。适合 16:9 屏幕。"
+  },
+  "pictureAlignTop": {
+    "message": "靠上"
+  },
+  "pictureAlignTopDescription": {
+    "message": "画面靠上，下方的黑边留给字幕。适合 16:10 和 4:3 屏幕。"
   },
   "accentColorLabel": {
     "message": "强调色"

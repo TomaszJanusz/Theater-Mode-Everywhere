@@ -1,4 +1,15 @@
-import { computeCaptionDockBottom, type DockRect } from '../media-features/caption-dock';
+import {
+  CAPTION_DOCK_RAISED_CENTER_GAP,
+  CAPTION_DOCK_RAISED_EDGE,
+  CAPTION_DOCK_REST_BOTTOM,
+  CAPTION_LINE_LIMIT_MIN,
+  computeCaptionDockBottom,
+  raisedCaptionLineLimit,
+  raisedCaptionRestBottom,
+  raisedCaptionRowCount,
+  type DockRect
+} from '../media-features/caption-dock';
+import { horizontalLetterboxPx } from './appearance';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -59,14 +70,42 @@ export function createToolbar(ctx: PlayerChromeContext) {
     };
   }
 
+  function raisedLetterbox(): { band: number; viewportHeight: number } {
+    const element = ctx.session.element;
+    const video = element instanceof HTMLVideoElement ? element : null;
+    const rect = element?.getBoundingClientRect();
+    const viewportWidth = rect && rect.width > 0 ? rect.width : window.innerWidth;
+    const viewportHeight = rect && rect.height > 0 ? rect.height : window.innerHeight;
+    return {
+      band: horizontalLetterboxPx({
+        videoWidth: video?.videoWidth ?? 0,
+        videoHeight: video?.videoHeight ?? 0,
+        viewportWidth,
+        viewportHeight
+      }),
+      viewportHeight
+    };
+  }
+
+  let captionDockLifted = false;
+  const captionDockMotion = new WeakMap<HTMLElement, boolean>();
+
   function updateCaptionDock(): void {
     if (!ctx.session.element) {
       document.documentElement.style.removeProperty('--theater-caption-bottom');
       return;
     }
 
+    const raised = document.documentElement.classList.contains('theater-everywhere-picture-top');
+    const { band, viewportHeight } = raised ? raisedLetterbox() : { band: 0, viewportHeight: 0 };
+    const placeInBand = raised && band > 0;
     const overlay = ctx.queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
     const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
+    const lineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;
+    const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
+    features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
+
     const captionSize = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
       : null;
@@ -90,13 +129,39 @@ export function createToolbar(ctx: PlayerChromeContext) {
       });
     }
 
+    const rows = captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2;
+    const restBottom = placeInBand
+      ? raisedCaptionRestBottom(
+        band,
+        captionSize?.height ?? 0,
+        viewportHeight,
+        CAPTION_DOCK_RAISED_EDGE,
+        CAPTION_DOCK_RAISED_CENTER_GAP,
+        rows
+      )
+      : undefined;
     const bottom = computeCaptionDockBottom({
       captionSize,
       obstacles,
       viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight
+      viewportHeight: window.innerHeight,
+      ...(restBottom !== undefined ? { restBottom } : {})
     });
-    document.documentElement.style.setProperty('--theater-caption-bottom', `${bottom}px`);
+    const lifted = restBottom !== undefined ? bottom > restBottom : bottom > CAPTION_DOCK_REST_BOTTOM;
+    // The bottom ease exists to clear the control bar. A row change at rest must
+    // land in the same frame as the new height, or the block slides up or down.
+    const animateBottom = lifted || captionDockLifted;
+    if (overlay && captionDockMotion.get(overlay) !== animateBottom) {
+      if (animateBottom) overlay.style.removeProperty('transition');
+      else overlay.style.setProperty('transition', 'opacity 0.15s ease', 'important');
+      void overlay.offsetWidth;
+      captionDockMotion.set(overlay, animateBottom);
+    }
+    captionDockLifted = lifted;
+    const nextBottom = `${bottom}px`;
+    if (document.documentElement.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {
+      document.documentElement.style.setProperty('--theater-caption-bottom', nextBottom);
+    }
   }
 
   function hideToolbar(): void {

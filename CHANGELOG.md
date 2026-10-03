@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added a Layout setting in Appearance: Centered or Raised. Raised pins a widescreen picture to the top of a taller screen (16:10, 4:3) so the spare black sits below for captions and controls. Fill and Stretch stay centered, and the saved Raised choice returns when Video Fit is set back to Fit.
+- Raised captions sit in that black band. One or two lines stay vertically centered in a short 16:10 letterbox. Three or more lines stick to the bottom of the screen. A deeper band still centers a short block, never more than 48px below the picture. Up to three lines show when the band is tall enough.
+- Raised caption backgrounds use the video black at the opacity chosen in subtitle options.
+
+### Changed
+
+- Settings Appearance is now a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
+
+### Fixed
+
+- Raised no longer pulls captions to the screen edge, or paints an opaque black caption background, before the letterbox can be measured.
+- Raised captions on a 16:10 screen no longer slide up or down when the number of lines changes. That motion was the control-bar transition chasing the caption height.
+
 ## [1.5.0] - 2026-09-20
 
 Theater Everywhere 1.5.0 is the biggest playback upgrade so far. Rich Theater

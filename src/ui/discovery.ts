@@ -57,6 +57,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       background: #000000 !important;
       background-color: #000000 !important;
       object-fit: var(--theater-object-fit, contain) !important;
+      object-position: var(--theater-object-position, center center) !important;
       opacity: 1 !important;
       pointer-events: auto !important;
       margin: 0 !important;

@@ -74,7 +74,22 @@
     "message": "外観"
   },
   "appearanceDescription": {
-    "message": "コントロール、スライダー、ショートカット、ハイライトに使用するアクセントカラーを選択します。"
+    "message": "映像の位置と、コントロール、スライダー、ショートカット、ハイライトに使うアクセントカラーを選びます。"
+  },
+  "pictureAlignLabel": {
+    "message": "レイアウト"
+  },
+  "pictureAlignCenter": {
+    "message": "中央"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "映像は画面の中央に残ります。16:9の画面向きです。"
+  },
+  "pictureAlignTop": {
+    "message": "上寄せ"
+  },
+  "pictureAlignTopDescription": {
+    "message": "映像は上に寄り、下の黒い帯は字幕のための場所です。16:10と4:3の画面向きです。"
   },
   "accentColorLabel": {
     "message": "アクセントカラー"

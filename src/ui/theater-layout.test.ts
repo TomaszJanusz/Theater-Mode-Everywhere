@@ -84,7 +84,7 @@ describe('theater video restyle guard', () => {
     assert.equal(
       theaterVideoNeedsRestyle({
         hasAttribute: (name) => name === 'data-theater-everywhere',
-        getAttribute: () => 'position: fixed; --theater-object-fit: contain; background: #000000;'
+        getAttribute: () => 'position: fixed; --theater-object-fit: contain; --theater-object-position: center center; background: #000000;'
       }),
       false
     );

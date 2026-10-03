@@ -64,6 +64,7 @@ function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBin
     setCues() {},
     update() {},
     setStyle() {},
+    setMaxLines() { return false; },
     dispose() {}
   };
   const activateCaptionTrack = adapter.activateCaptionTrack;
@@ -411,6 +412,7 @@ describe('MediaFeaturesController captions toggle', () => {
         setCues() {},
         update: (time) => updates.push(time),
         setStyle() {},
+        setMaxLines() { return false; },
         dispose() {}
       }
     });

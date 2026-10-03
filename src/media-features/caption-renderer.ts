@@ -8,8 +8,9 @@ export class CaptionRenderer {
   private root: HTMLDivElement;
   private text: HTMLDivElement;
   private cues: CaptionCue[] = [];
-  private lastLineKey = '';
+  private lastLineKey: string | null = '';
   private lastWordKey = '';
+  private maxLines = 2;
   private style: CaptionStyle = { ...DEFAULT_CAPTION_STYLE };
 
   constructor(private onChange?: () => void) {
@@ -28,6 +29,16 @@ export class CaptionRenderer {
     this.style = style;
     applyCaptionStyle(this.root, style);
     applyCaptionStyle(document.documentElement, style);
+  }
+
+  /** Returns true when the next update must redraw because the row cap changed. */
+  setMaxLines(maxLines: number): boolean {
+    const next = maxLines >= 3 ? 3 : 2;
+    if (next === this.maxLines) return false;
+    this.maxLines = next;
+    this.lastLineKey = null;
+    this.lastWordKey = '';
+    return true;
   }
 
   setCues(cues: CaptionCue[] | null): void {
@@ -52,7 +63,7 @@ export class CaptionRenderer {
       }
       return;
     }
-    const active = visibleCaptionLines(this.cues, time, 2);
+    const active = visibleCaptionLines(this.cues, time, this.maxLines);
     const lineKey = active.map((cue) => cue.text).join('\n');
     if (lineKey !== this.lastLineKey) {
       this.lastLineKey = lineKey;
@@ -77,6 +88,7 @@ export class CaptionRenderer {
     root.removeProperty('--theater-caption-font');
     root.removeProperty('--theater-caption-scale');
     root.removeProperty('--theater-caption-bg');
+    root.removeProperty('--theater-caption-bg-alpha');
     root.removeProperty('--theater-caption-shadow');
   }
 
@@ -98,7 +110,7 @@ export class CaptionRenderer {
     if (words.length === 0) return;
     const states: string[] = [];
     let cursor = 0;
-    for (const cue of visibleCaptionLines(this.cues, time, 2)) {
+    for (const cue of visibleCaptionLines(this.cues, time, this.maxLines)) {
       if (!cueHasWordTimings(cue) || !cue.words) continue;
       for (let i = 0; i < cue.words.length; i++) {
         const span = words[cursor++];

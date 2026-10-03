@@ -314,7 +314,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
       const stored = this.snapshot?.heatmap;
       if (stored?.segments && stored.segments.length > 0) {
         const durationMs = (this.snapshot?.duration || 0) * 1000;
-        const svgPath = heatmapSvgPath(stored.segments, durationMs || undefined);
+        const svgPath = heatmapSvgPath(stored.segments, durationMs || undefined, stored.floor || 0);
         if (svgPath) return { source: stored.source, segments: stored.segments, svgPath };
       }
       if (stored?.svgPath) return stored;

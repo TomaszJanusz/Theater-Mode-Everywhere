@@ -74,7 +74,22 @@
     "message": "Aspetto"
   },
   "appearanceDescription": {
-    "message": "Scegli il colore di accento utilizzato per controlli, cursori, scorciatoie ed evidenziazioni."
+    "message": "Scegli la posizione dell'immagine e il colore di accento per controlli, cursori, scorciatoie ed evidenziazioni."
+  },
+  "pictureAlignLabel": {
+    "message": "Layout"
+  },
+  "pictureAlignCenter": {
+    "message": "Centrata"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "L'immagine resta al centro dello schermo. Ideale per gli schermi 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "In alto"
+  },
+  "pictureAlignTopDescription": {
+    "message": "L'immagine sale, e la banda nera sotto resta per i sottotitoli. Ideale per gli schermi 16:10 e 4:3."
   },
   "accentColorLabel": {
     "message": "Colore di accento"

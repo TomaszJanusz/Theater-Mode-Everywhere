@@ -52,6 +52,7 @@ function rememberYoutubeHeatmap(found: YoutubeHeatmap, videoId: string | null): 
     && prev.segments?.[0]?.startMs === segments[0]?.startMs
     && prev.segments?.[0]?.intensity === segments[0]?.intensity
     && prev.segments?.[segments.length - 1]?.intensity === segments[segments.length - 1]?.intensity
+    && prev.floor === found.floor
   );
   youtubeHeatmapHarvest = { ...found, videoId, segments };
   return !same;
@@ -64,27 +65,35 @@ function dropStaleYoutubeHeatmapHarvest(): void {
   }
 }
 
+function heatmapPayload(found: YoutubeHeatmap): YoutubeHeatmap {
+  return {
+    source: found.source,
+    ...(found.segments ? { segments: found.segments } : {}),
+    ...(found.floor && found.floor > 0 ? { floor: found.floor } : {})
+  };
+}
+
 function heatmapForCurrentPage(playerRaw: unknown): YoutubeHeatmap | undefined {
   dropStaleYoutubeHeatmapHarvest();
   const pageId = youtubePageVideoId(window.location.href);
   const win = window as Window & { ytInitialData?: unknown };
-  const fromInitial = findYoutubeHeatmap(win.ytInitialData);
+  const fromInitial = findYoutubeHeatmap(win.ytInitialData, pageId);
   const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
   if (fromInitial?.segments && youtubeHeatmapHarvestMatchesPage(pageId, initialId)) {
     rememberYoutubeHeatmap(fromInitial, pageId || initialId);
-    return { source: fromInitial.source, segments: fromInitial.segments };
+    return heatmapPayload(fromInitial);
   }
-  const fromPlayer = findYoutubeHeatmap(playerRaw);
+  const fromPlayer = findYoutubeHeatmap(playerRaw, pageId);
   const playerId = youtubeWatchJsonVideoId(playerRaw) || youtubeResponseVideoId(playerRaw);
   if (fromPlayer?.segments && youtubeHeatmapHarvestMatchesPage(pageId, playerId)) {
     rememberYoutubeHeatmap(fromPlayer, pageId || playerId);
-    return { source: fromPlayer.source, segments: fromPlayer.segments };
+    return heatmapPayload(fromPlayer);
   }
   if (
     youtubeHeatmapHarvest?.segments
     && youtubeHeatmapHarvestMatchesPage(pageId, youtubeHeatmapHarvest.videoId)
   ) {
-    return { source: youtubeHeatmapHarvest.source, segments: youtubeHeatmapHarvest.segments };
+    return heatmapPayload(youtubeHeatmapHarvest);
   }
   return undefined;
 }
@@ -93,7 +102,7 @@ export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
   if (!youtubeIntegrationEnabled()) return;
   if (!isYouTubeHost(window.location.hostname)) return;
   if (url && !isYoutubeWatchJsonUrl(url, window.location.href)) return;
-  const found = findYoutubeHeatmap(data);
+  const found = findYoutubeHeatmap(data, youtubePageVideoId(window.location.href));
   if (!found?.segments) return;
   const pageId = youtubePageVideoId(window.location.href);
   const jsonId = youtubeWatchJsonVideoId(data);
