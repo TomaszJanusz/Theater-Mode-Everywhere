@@ -428,6 +428,9 @@
   "previousVideo": {
     "message": "前へ"
   },
+  "backToStart": {
+    "message": "最初に戻る"
+  },
   "nextVideo": {
     "message": "次へ"
   },

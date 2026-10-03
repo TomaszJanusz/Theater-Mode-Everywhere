@@ -8,6 +8,8 @@ export type PlaylistPreview = {
 export type PlaylistNavState = {
   previous: boolean;
   next: boolean;
+  /** YouTube's previous control restarts the current video once playback has left the start. */
+  previousRestarts: boolean;
   previousPreview: PlaylistPreview | null;
   nextPreview: PlaylistPreview | null;
 };
@@ -16,6 +18,8 @@ export type PlaylistAction = {
   direction: PlaylistDirection;
   activate: () => void;
   preview: PlaylistPreview | null;
+  /** The host previous control will restart the current item instead of stepping back. */
+  restarts?: boolean;
 };
 
 export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase';
@@ -86,7 +90,7 @@ export function usableControlIndexes(
 }
 
 export function emptyPlaylistNav(): PlaylistNavState {
-  return { previous: false, next: false, previousPreview: null, nextPreview: null };
+  return { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null };
 }
 
 export function sanitizePlaylistPreview(title: string, imageUrl: string): PlaylistPreview | null {
@@ -165,9 +169,17 @@ export function playlistNavStateFromActions(actions: PlaylistAction[]): Playlist
   return {
     previous: Boolean(previous),
     next: Boolean(next),
-    previousPreview: previous?.preview ?? null,
+    previousRestarts: Boolean(previous?.restarts),
+    previousPreview: previous?.restarts ? null : (previous?.preview ?? null),
     nextPreview: next?.preview ?? null
   };
+}
+
+/** YouTube drops the previous-item preview when that button will restart the current video. */
+export function youtubePreviousRestarts(element: { getAttribute(name: string): string | null }): boolean {
+  const image = element.getAttribute('data-preview')?.trim() || '';
+  const title = element.getAttribute('data-tooltip-text')?.trim() || '';
+  return !image || !title;
 }
 
 export function findPlaylistActions(root: ParentNode, video?: HTMLVideoElement | null): PlaylistAction[] {
@@ -179,9 +191,17 @@ export function findPlaylistActions(root: ParentNode, video?: HTMLVideoElement |
   const width = viewportWidth(root);
   return usableControlIndexes(controls.map((entry) => entry.snapshot), width).map(({ index, direction }) => {
     const entry = controls[index];
+    const preview = entry ? stepPreview(entry.element, entry.snapshot.provider, direction, page, videoJsNeighbors) : null;
+    const restarts = Boolean(
+      entry
+      && direction === 'previous'
+      && entry.snapshot.provider === 'youtube'
+      && youtubePreviousRestarts(entry.element)
+    );
     return {
       direction,
-      preview: entry ? stepPreview(entry.element, entry.snapshot.provider, direction, page, videoJsNeighbors) : null,
+      preview: restarts ? null : preview,
+      restarts,
       activate: () => {
         entry?.element.click();
       }

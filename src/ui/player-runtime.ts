@@ -272,6 +272,7 @@ function playlistNavigationAvailable(): PlaylistNavState {
   return {
     previous: local.previous || refs.parentPlaylistNav.previous,
     next: local.next || refs.parentPlaylistNav.next,
+    previousRestarts: local.previous ? local.previousRestarts : refs.parentPlaylistNav.previousRestarts,
     previousPreview: local.previous ? local.previousPreview : refs.parentPlaylistNav.previousPreview,
     nextPreview: local.next ? local.nextPreview : refs.parentPlaylistNav.nextPreview
   };
@@ -308,7 +309,10 @@ function playlistNavFromPayload(payload: Record<string, unknown>): PlaylistNavSt
   return {
     previous,
     next,
-    previousPreview: previous ? playlistPreviewFromPayload(payload.previousPreview) : null,
+    previousRestarts: previous && payload.previousRestarts === true,
+    previousPreview: previous && payload.previousRestarts !== true
+      ? playlistPreviewFromPayload(payload.previousPreview)
+      : null,
     nextPreview: next ? playlistPreviewFromPayload(payload.nextPreview) : null
   };
 }

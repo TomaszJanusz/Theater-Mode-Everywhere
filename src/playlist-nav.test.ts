@@ -5,8 +5,10 @@ import ts from 'typescript';
 import {
   isVimeoShowcaseStepHref,
   neighborPreviews,
+  playlistNavStateFromActions,
   sanitizePlaylistPreview,
   usableControlIndexes,
+  youtubePreviousRestarts,
   type ObservedPlaylistControl
 } from './playlist-nav';
 
@@ -196,6 +198,29 @@ describe('playlist navigation availability', () => {
     assert.deepEqual(picked.map((entry) => entry.direction), ['previous', 'next']);
     assert.equal(picked[0]?.index, 1);
     assert.equal(picked[1]?.index, 0);
+  });
+
+  it('treats a YouTube previous control without a preview as restarting the current video', () => {
+    const button = (attrs: Record<string, string>) => ({
+      getAttribute: (name: string) => attrs[name] ?? null
+    });
+    assert.equal(youtubePreviousRestarts(button({
+      'data-preview': 'https://i.ytimg.com/vi/a/mqdefault.jpg',
+      'data-tooltip-text': 'The essence of calculus'
+    })), false);
+    assert.equal(youtubePreviousRestarts(button({ 'data-tooltip-title': 'Replay' })), true);
+    assert.deepEqual(playlistNavStateFromActions([{
+      direction: 'previous',
+      preview: null,
+      restarts: true,
+      activate() { /* host click */ }
+    }]), {
+      previous: true,
+      next: false,
+      previousRestarts: true,
+      previousPreview: null,
+      nextPreview: null
+    });
   });
 
   it('keeps a playlist preview only when both a title and an https thumbnail exist', () => {

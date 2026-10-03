@@ -428,6 +428,9 @@
   "previousVideo": {
     "message": "이전"
   },
+  "backToStart": {
+    "message": "처음으로"
+  },
   "nextVideo": {
     "message": "다음"
   },

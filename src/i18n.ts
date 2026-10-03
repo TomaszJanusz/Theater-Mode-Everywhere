@@ -126,6 +126,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   play: 'Play',
   pause: 'Pause',
   previousVideo: 'Previous',
+  backToStart: 'Back to start',
   nextVideo: 'Next',
   muteHud: 'Mute',
   unmuteHud: 'Unmute',

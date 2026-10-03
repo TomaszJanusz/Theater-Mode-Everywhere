@@ -428,6 +428,9 @@
   "previousVideo": {
     "message": "Precedente"
   },
+  "backToStart": {
+    "message": "Torna all'inizio"
+  },
   "nextVideo": {
     "message": "Successivo"
   },
