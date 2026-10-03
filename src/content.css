@@ -1556,17 +1556,17 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   flex: 0 0 54px !important;
   min-height: 54.6px !important;
   box-sizing: border-box !important;
-  background: rgba(15, 15, 15, 0.72) !important;
+  background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   color: #ffffff !important;
   text-decoration: none !important;
   cursor: pointer !important;
   pointer-events: none !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
 .theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-home-pill {
@@ -1575,8 +1575,22 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 
 .theater-home-pill:hover,
 .theater-home-pill:focus-visible {
-  background: rgba(45, 45, 45, 0.88) !important;
-  border-color: rgba(255, 255, 255, 0.45) !important;
+  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
+  ) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  color: var(--accent-color, #ffffff) !important;
+}
+
+.theater-home-pill:active {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
+  ) !important;
 }
 
 .theater-home-pill:focus-visible {
@@ -1596,10 +1610,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   min-width: 0 !important;
   width: max-content !important;
   max-width: min(720px, calc(100vw - 114px)) !important;
-  background: rgba(15, 15, 15, 0.72) !important;
+  background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
   padding: 12px 20px !important;
   display: flex !important;
@@ -1614,7 +1628,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   user-select: none !important;
 }
 
