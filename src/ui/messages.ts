@@ -30,6 +30,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   previousVideo: 'Previous',
   backToStart: 'Back to start',
   nextVideo: 'Next',
+  homepage: 'Homepage',
   muteHud: 'Mute',
   unmuteHud: 'Unmute',
   pictureInPictureTooltip: 'Picture-in-Picture <kbd>$1</kbd>',

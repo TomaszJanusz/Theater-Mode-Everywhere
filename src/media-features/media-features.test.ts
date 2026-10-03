@@ -25,6 +25,58 @@ import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './co
 import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
+import { DisneyAdapter } from './disney-adapter';
+import { YouTubeAdapter } from './youtube-adapter';
+
+describe('immediate provider titles', () => {
+  it('reads published titles without loading captions and rejects a previous video', () => {
+    const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    try {
+      for (const provider of [
+        {
+          adapter: new DisneyAdapter(),
+          url: 'https://www.disneyplus.com/play/00000000-0000-4000-8000-000000000001',
+          scriptId: '#theater-everywhere-disney-snapshot',
+          idKey: 'mediaId',
+          currentId: '00000000-0000-4000-8000-000000000001',
+          previousId: '00000000-0000-4000-8000-000000000002'
+        },
+        {
+          adapter: new YouTubeAdapter(),
+          url: 'https://www.youtube.com/watch?v=D7V0Oda3DAA',
+          scriptId: '#theater-everywhere-youtube-snapshot',
+          idKey: 'videoId',
+          currentId: 'D7V0Oda3DAA',
+          previousId: 'sigA04sdSMQ'
+        }
+      ]) {
+        let id = provider.currentId;
+        Object.defineProperty(globalThis, 'window', {
+          configurable: true,
+          value: { location: { href: provider.url } }
+        });
+        Object.defineProperty(globalThis, 'document', {
+          configurable: true,
+          value: {
+            querySelector: (selector: string) => selector === provider.scriptId
+              ? { textContent: JSON.stringify({ [provider.idKey]: id, title: '  Night Drive  ' }) }
+              : null,
+            querySelectorAll: () => []
+          }
+        });
+        assert.equal(provider.adapter.getTitle(), 'Night Drive');
+        id = provider.previousId;
+        assert.equal(provider.adapter.getTitle(), null);
+      }
+    } finally {
+      if (windowDescriptor) Object.defineProperty(globalThis, 'window', windowDescriptor);
+      else Reflect.deleteProperty(globalThis, 'window');
+      if (documentDescriptor) Object.defineProperty(globalThis, 'document', documentDescriptor);
+      else Reflect.deleteProperty(globalThis, 'document');
+    }
+  });
+});
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { findYoutubeChapterMarkers, parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';

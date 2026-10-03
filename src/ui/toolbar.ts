@@ -10,7 +10,7 @@ import {
   type DockRect
 } from '../media-features/caption-dock';
 import { horizontalLetterboxPx } from './appearance';
-import { TITLE_HUD_CLASS } from './hud';
+import { HEADER_HUD_CLASS } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -30,7 +30,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const isScrubberDragging = controls.querySelector('.theater-scrubber-container.dragging') !== null;
     const hasKeyboardFocus = ctx.refs.toolbarKeyboardInteractionActive && controls.querySelector(':focus-visible') !== null;
 
-    return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || ctx.ui().helpOpen;
+    const header = ctx.queryPlayerUi(`.${HEADER_HUD_CLASS}`);
+    const headerActive = header?.matches(':hover, :focus-within');
+    return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || Boolean(headerActive) || ctx.ui().helpOpen;
   }
 
   function closeTheaterPopovers(): void {
@@ -176,7 +178,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
 
     closeTheaterPopovers();
     controls.classList.remove('visible');
-    ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`)?.classList.remove('visible');
+    const header = ctx.queryPlayerUi<HTMLElement>(`.${HEADER_HUD_CLASS}`);
+    if (header) header.inert = true;
     if (ctx.session.element.tagName === 'VIDEO') {
       ctx.session.element.classList.remove('controls-visible');
     }
@@ -197,7 +200,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }
 
     controls.classList.add('visible');
-    ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`)?.classList.add('visible');
+    const header = ctx.queryPlayerUi<HTMLElement>(`.${HEADER_HUD_CLASS}`);
+    if (header) header.inert = false;
     if (ctx.session.element && ctx.session.element.tagName === 'VIDEO') {
       ctx.session.element.classList.add('controls-visible');
     }

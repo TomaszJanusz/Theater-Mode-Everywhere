@@ -1,7 +1,10 @@
 import { sanitizeContentTitle } from '../media-features/content-title';
+import { discoverParentOrigin } from '../platform/parent-origin';
+import { serviceHomeUrl } from '../platform/service-home';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
+export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -288,7 +291,34 @@ export function createHud(ctx: PlayerChromeContext) {
     }, displayDuration);
   }
 
+  function createPlayerHeader(): HTMLElement {
+    let header = ctx.queryPlayerUi(`.${HEADER_HUD_CLASS}`) as HTMLElement | null;
+    if (!header) {
+      header = document.createElement('div');
+      header.className = HEADER_HUD_CLASS;
+      ctx.paintOverlay(header);
+      // The containing page is the active service when the video is embedded.
+      const homeUrl = serviceHomeUrl(discoverParentOrigin() || window.location.href);
+      if (homeUrl) {
+        const home = document.createElement('a');
+        home.className = 'theater-home-pill';
+        home.href = homeUrl;
+        home.target = '_top';
+        home.title = ctx.t('homepage');
+        home.setAttribute('aria-label', ctx.t('homepage'));
+        home.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>';
+        home.addEventListener('click', (event) => event.stopPropagation());
+        home.addEventListener('dblclick', (event) => event.stopPropagation());
+        header.appendChild(home);
+      }
+      header.inert = !ctx.ui().toolbarVisible;
+      ctx.mountPlayerUi(header);
+    }
+    return header;
+  }
+
   function syncContentTitle(title: string | null): void {
+    const header = createPlayerHeader();
     const cleaned = sanitizeContentTitle(title);
     const existing = ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`) as HTMLElement | null;
     if (!cleaned) {
@@ -311,13 +341,11 @@ export function createHud(ctx: PlayerChromeContext) {
       track.appendChild(text);
       viewport.appendChild(track);
       overlay.appendChild(viewport);
-      ctx.mountPlayerUi(overlay);
+      header.appendChild(overlay);
     }
 
     const text = overlay.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)');
     if (text && text.textContent !== cleaned) text.textContent = cleaned;
-    const controls = ctx.queryPlayerUi('.theater-controls-wrapper');
-    overlay.classList.toggle('visible', Boolean(controls?.classList.contains('visible')));
     layoutTitleMarquee(overlay);
   }
 
@@ -354,6 +382,7 @@ export function createHud(ctx: PlayerChromeContext) {
     triggerStatusIndicator,
     triggerPlaybackIndicator,
     triggerCaptionHud,
+    createPlayerHeader,
     syncContentTitle
   };
 }

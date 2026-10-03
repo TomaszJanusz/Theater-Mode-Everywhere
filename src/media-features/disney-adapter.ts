@@ -434,6 +434,13 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   }
 
   getTitle(): string | null {
+    const pageId = disneyPlayId(window.location.href);
+    const harvested = readPublishedDisneySnapshot();
+    if (!pageId || !harvested?.mediaId || harvested.mediaId === pageId) {
+      const title = sanitizeContentTitle(harvested?.title);
+      if (title) return title;
+    }
+    if (pageId && this.snapshot?.mediaId && this.snapshot.mediaId !== pageId) return null;
     return sanitizeContentTitle(this.snapshot?.title);
   }
 

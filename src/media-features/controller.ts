@@ -87,6 +87,7 @@ export class MediaFeaturesController {
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
   private onSnapshot?: (snapshot: MediaSnapshot) => void;
   private onTitle?: (title: string | null) => void;
+  private publishedTitle: string | null | undefined;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
   private sessionEpoch = 0;
@@ -203,6 +204,7 @@ export class MediaFeaturesController {
     this.updateCcState();
     this.renderCcMenu();
     this.onCaptionChange?.();
+    this.publishedTitle = null;
     this.onTitle?.(null);
   }
 
@@ -236,6 +238,19 @@ export class MediaFeaturesController {
     return !this.disposed && this.sessionEpoch === epoch && this.adapter === adapter;
   }
 
+  private publishTitle(epoch: number, adapter: MediaFeaturesAdapter): void {
+    if (!this.isCurrent(epoch, adapter)) return;
+    let title: string | null = null;
+    try {
+      title = sanitizeContentTitle(adapter.getTitle?.());
+    } catch {
+      // Title metadata is optional and must not interrupt caption loading.
+    }
+    if (title === this.publishedTitle) return;
+    this.publishedTitle = title;
+    this.onTitle?.(title);
+  }
+
   private delay(ms: number, epoch: number, adapter: MediaFeaturesAdapter): Promise<boolean> {
     return new Promise((resolve) => {
       setTimeout(() => resolve(this.isCurrent(epoch, adapter)), ms);
@@ -258,9 +273,12 @@ export class MediaFeaturesController {
     const previousId = this.mediaId;
     const errors: MediaSnapshot['errors'] = [];
     try {
+      // Available metadata should paint before any caption network requests.
+      this.publishTitle(epoch, adapter);
       try {
         await adapter.reload?.();
         if (!this.isCurrent(epoch, adapter)) return;
+        this.publishTitle(epoch, adapter);
         this.mediaId = adapter.mediaId?.() || null;
         this.tracks = await adapter.listCaptionTracks();
         if (!this.isCurrent(epoch, adapter)) return;
@@ -324,13 +342,7 @@ export class MediaFeaturesController {
       }
     } finally {
       if (this.isCurrent(epoch, adapter)) {
-        let title: string | null = null;
-        try {
-          title = sanitizeContentTitle(adapter.getTitle?.());
-        } catch {
-          title = null;
-        }
-        this.onTitle?.(title);
+        this.publishTitle(epoch, adapter);
         this.onSnapshot?.({
           capabilities: {
             captions: this.tracks.length > 0,

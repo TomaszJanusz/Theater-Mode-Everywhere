@@ -345,6 +345,7 @@ function bindChromeActions(): void {
     persistVideoFitMode,
     applyTheaterVideoFit,
     showCaptionHud,
+    createPlayerHeader: hud.createPlayerHeader,
     syncContentTitle,
     executeCommand,
     findBestVideo,

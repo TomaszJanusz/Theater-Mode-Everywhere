@@ -789,7 +789,6 @@ export function createControls(ctx: PlayerChromeContext) {
     });
     wrapper._mediaFeatures = mediaFeatures;
     mediaFeatures.setCaptionStyle(ui().captionStyle);
-    void mediaFeatures.start();
     updateCaptionDock();
 
     bindCustomTooltip(ccBtn, () => {
@@ -925,6 +924,8 @@ export function createControls(ctx: PlayerChromeContext) {
     wrapper.appendChild(controlsRow);
 
     mountPlayerUi(wrapper);
+    ctx.actions.createPlayerHeader();
+    void mediaFeatures.start();
 
     // Scrubber updates
     let isDragging = false;
@@ -1427,7 +1428,8 @@ export function createControls(ctx: PlayerChromeContext) {
     // Reveal controls for mouse, touch, pen, and keyboard users.
     document.addEventListener('pointermove', showToolbar, { passive: true });
     document.addEventListener('pointerdown', showToolbar, { passive: true });
-    wrapper.addEventListener('focusin', showToolbar);
+    // All player chrome, including the home pill, uses the same focus handler.
+    controlsScope.listen(wrapper.getRootNode(), 'focusin', showToolbar);
     showToolbar();
   }
 

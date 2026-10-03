@@ -244,7 +244,13 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 
   getTitle(): string | null {
-    return sanitizeContentTitle(this.snapshot?.title);
+    const pageId = youtubePageVideoId(window.location.href);
+    const snapshot = firstMatchingYoutubeSnapshot(pageId, [
+      readPublishedYoutubeSnapshot(),
+      readYoutubeSnapshotFromDom(),
+      this.snapshot
+    ]);
+    return sanitizeContentTitle(snapshot?.title);
   }
 
   private snapshotMatchesPage(): boolean {
