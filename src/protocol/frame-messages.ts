@@ -3,6 +3,7 @@ export const FRAME_PROTOCOL_V = 1 as const;
 
 export type FrameMessageType =
   | 'FRAME_TOGGLE'
+  | 'FRAME_FULLSCREEN'
   | 'FRAME_ENTER'
   | 'FRAME_EXIT'
   | 'FRAME_EXITED'
@@ -79,6 +80,7 @@ export function createFrameMessage(
 function isFrameMessageType(value: unknown): value is FrameMessageType {
   return (
     value === 'FRAME_TOGGLE'
+    || value === 'FRAME_FULLSCREEN'
     || value === 'FRAME_ENTER'
     || value === 'FRAME_EXIT'
     || value === 'FRAME_EXITED'
@@ -155,7 +157,7 @@ export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTr
   if (envelope.type === 'FRAME_ENTER') {
     return hasValidCredentials || context.trustedOrigin;
   }
-  if (envelope.type === 'FRAME_TOGGLE') {
+  if (envelope.type === 'FRAME_TOGGLE' || envelope.type === 'FRAME_FULLSCREEN') {
     if (context.fromParent) return hasValidCredentials || context.trustedOrigin;
     return hasValidCredentials;
   }

@@ -937,6 +937,11 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       toggleTheaterMode();
+    } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      claimFullscreenShortcut();
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
       if (ui().helpOpen) {
@@ -990,7 +995,6 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
-    if (!session.element) return;
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
       (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
@@ -1001,6 +1005,13 @@ function initialize(): void {
     if (isEditable) return;
     if (theaterDialogOpen()) return;
     const shortcuts = ui().shortcuts || defaultShortcuts;
+    if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!session.element) return;
     if (matchesShortcut(event, shortcuts.playPause)) {
       event.preventDefault();
       event.stopPropagation();
@@ -1071,6 +1082,8 @@ function initialize(): void {
 
     if (envelope.type === 'FRAME_TOGGLE') {
       toggleTheaterMode();
+    } else if (envelope.type === 'FRAME_FULLSCREEN') {
+      claimFullscreenShortcut();
     } else if (envelope.type === 'FRAME_ENTER' && fromChild) {
       const iframe = iframes.find((item) => item.contentWindow === event.source);
       if (iframe) enterTheaterMode(iframe, envelope.sessionId, envelope.nonce);
@@ -1153,6 +1166,49 @@ function destroy(): void {
   listeners.playbackIntent = null;
 
   refs.isInitialized = false;
+}
+
+function fullscreenVideo(): HTMLVideoElement | null {
+  const active = refs.activeVideo;
+  if (active && isElementInDOMDeep(active)) return active;
+  return findBestVideo();
+}
+
+function enterElementFullscreen(video: HTMLVideoElement): void {
+  const wasPlaying = !video.paused;
+  const resume = () => {
+    if (wasPlaying && video.paused) video.play().catch(() => {});
+  };
+  video.requestFullscreen()
+    .then(() => {
+      setTimeout(resume, 150);
+    })
+    .catch(() => {
+      const parent = video.parentElement;
+      if (!parent || parent === document.body || parent === document.documentElement) return;
+      parent.requestFullscreen()
+        .then(() => {
+          setTimeout(resume, 150);
+        })
+        .catch(() => {});
+    });
+}
+
+function claimFullscreenShortcut(): void {
+  if (session.hasUi) {
+    refs.currentToggleFullscreen?.();
+    return;
+  }
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+    return;
+  }
+  const video = fullscreenVideo();
+  if (video) {
+    enterElementFullscreen(video);
+    return;
+  }
+  frames.postToAllChildren('FRAME_FULLSCREEN', createSessionId(), {}, createSessionId());
 }
 
 function toggleTheaterMode(): void {

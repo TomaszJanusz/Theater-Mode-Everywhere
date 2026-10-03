@@ -115,47 +115,52 @@ describe('F-01 frame session handshake', () => {
   it('rejects child FRAME_TOGGLE without the active session', () => {
     const sessionId = createSessionId();
     const nonce = createSessionId();
-    const toggle = createFrameMessage('FRAME_TOGGLE', sessionId, {}, nonce, 'https://ads.example');
-    assert.equal(isTrustedFrameEnvelope(toggle, {
-      eventOrigin: 'https://ads.example',
-      trustedOrigin: false,
-      fromParent: false,
-      fromChild: true,
-      activeSessionId: null,
-      activeNonce: null
-    }), false);
-    assert.equal(isTrustedFrameEnvelope(toggle, {
-      eventOrigin: 'https://ads.example',
-      trustedOrigin: false,
-      fromParent: false,
-      fromChild: true,
-      activeSessionId: sessionId,
-      activeNonce: nonce
-    }), true);
-    assert.equal(isTrustedFrameEnvelope(toggle, {
-      eventOrigin: 'https://ads.example',
-      trustedOrigin: false,
-      fromParent: true,
-      fromChild: false,
-      activeSessionId: null,
-      activeNonce: null
-    }), false);
-    assert.equal(isTrustedFrameEnvelope(toggle, {
-      eventOrigin: 'https://ads.example',
-      trustedOrigin: true,
-      fromParent: true,
-      fromChild: false,
-      activeSessionId: null,
-      activeNonce: null
-    }), true);
-    assert.equal(isTrustedFrameEnvelope(toggle, {
-      eventOrigin: 'https://ads.example',
-      trustedOrigin: false,
-      fromParent: true,
-      fromChild: false,
-      activeSessionId: sessionId,
-      activeNonce: nonce
-    }), true);
+    const messages = [
+      createFrameMessage('FRAME_TOGGLE', sessionId, {}, nonce, 'https://ads.example'),
+      createFrameMessage('FRAME_FULLSCREEN', sessionId, {}, nonce, 'https://ads.example')
+    ];
+    for (const message of messages) {
+      assert.equal(isTrustedFrameEnvelope(message, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: false,
+        fromParent: false,
+        fromChild: true,
+        activeSessionId: null,
+        activeNonce: null
+      }), false);
+      assert.equal(isTrustedFrameEnvelope(message, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: false,
+        fromParent: false,
+        fromChild: true,
+        activeSessionId: sessionId,
+        activeNonce: nonce
+      }), true);
+      assert.equal(isTrustedFrameEnvelope(message, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: false,
+        fromParent: true,
+        fromChild: false,
+        activeSessionId: null,
+        activeNonce: null
+      }), false);
+      assert.equal(isTrustedFrameEnvelope(message, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: true,
+        fromParent: true,
+        fromChild: false,
+        activeSessionId: null,
+        activeNonce: null
+      }), true);
+      assert.equal(isTrustedFrameEnvelope(message, {
+        eventOrigin: 'https://ads.example',
+        trustedOrigin: false,
+        fromParent: true,
+        fromChild: false,
+        activeSessionId: sessionId,
+        activeNonce: nonce
+      }), true);
+    }
   });
 
   it('rejects unauthenticated FRAME_ENTER without a trusted origin policy', () => {

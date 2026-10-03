@@ -61,6 +61,7 @@ export function createHelp(ctx: PlayerChromeContext) {
         title: ctx.t('generalControlsTitle'),
         items: [
           { label: ctx.t('toggleTheaterMode'), key: shortcuts.toggle },
+          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
@@ -88,7 +89,6 @@ export function createHelp(ctx: PlayerChromeContext) {
         items: [
           { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
           { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
-          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
           { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
         ]
       }
