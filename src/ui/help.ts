@@ -74,6 +74,8 @@ export function createHelp(ctx: PlayerChromeContext) {
         title: ctx.t('playbackVolumeControlsTitle'),
         items: [
           { label: ctx.t('playPause'), key: shortcuts.playPause },
+          { label: ctx.t('previousVideo'), key: shortcuts.previousVideo },
+          { label: ctx.t('nextVideo'), key: shortcuts.nextVideo },
           { label: ctx.t('seekBackward5'), key: shortcuts.seekBack },
           { label: ctx.t('seekForward5'), key: shortcuts.seekForward },
           { label: ctx.t('volumeUp5'), key: shortcuts.volumeUp },

@@ -19,7 +19,7 @@ import {
   mediaHasSource,
   requestVideoPlay
 } from '../host-play';
-import type { PlaylistDirection } from '../playlist-nav';
+import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
 
 export interface BoostedVideoElement extends HTMLVideoElement {
   _audioCtx?: AudioContext;
@@ -42,7 +42,7 @@ export type ChromeRefs = {
   volumeBoostEnabled: boolean;
   providerFlags: MediaProviderFlags;
   helpOverlay: HTMLElement | null;
-  parentPlaylistNav: { previous: boolean; next: boolean };
+  parentPlaylistNav: PlaylistNavState;
 };
 
 export type PlayerChromeActions = {
@@ -86,7 +86,7 @@ export type PlayerChromeActions = {
   triggerStatusIndicator(text: string, icon: string): void;
   triggerPlaybackIndicator(action: 'play' | 'pause'): void;
   seekHostTime(video: HTMLVideoElement, time: number): void;
-  playlistNavigationAvailable(): { previous: boolean; next: boolean };
+  playlistNavigationAvailable(): PlaylistNavState;
   requestParentPlaylistNav(): void;
   activatePlaylistStep(direction: PlaylistDirection): void;
 };
@@ -130,7 +130,7 @@ export function createChromeRefs(): ChromeRefs {
     volumeBoostEnabled: false,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,
-    parentPlaylistNav: { previous: false, next: false }
+    parentPlaylistNav: { previous: false, next: false, previousPreview: null, nextPreview: null }
   };
 }
 

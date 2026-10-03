@@ -9,6 +9,7 @@ import {
   isVideoAtLiveEdge,
   MAX_LIVE_DVR_SECONDS,
   playbackWindow,
+  presentPlaybackWindow,
   ratioToTime,
   seekToLive,
   timeToRatio,
@@ -63,7 +64,11 @@ export function createControls(ctx: PlayerChromeContext) {
   const seekHostTime = (video: HTMLVideoElement, time: number) => ctx.actions.seekHostTime(video, time);
   const tooltipState: TooltipState = { element: null };
 
-  function bindCustomTooltip(button: HTMLButtonElement, getTooltipText: () => string): void {
+  function bindCustomTooltip(
+    button: HTMLButtonElement,
+    getTooltipText: () => string,
+    getPreview?: () => { title: string; imageUrl: string } | null
+  ): void {
     button.removeAttribute('title');
 
     const show = () => {
@@ -73,9 +78,36 @@ export function createControls(ctx: PlayerChromeContext) {
         paintOverlay(tooltipState.element);
         mountPlayerUi(tooltipState.element);
       }
-    
-      const rawText = getTooltipText();
-      setTooltipContent(tooltipState.element, rawText);
+
+      const preview = getPreview?.() ?? null;
+      tooltipState.element.classList.toggle('theater-playlist-preview', Boolean(preview));
+      if (preview) {
+        tooltipState.element.replaceChildren();
+        const image = document.createElement('img');
+        image.className = 'theater-playlist-preview-image';
+        image.alt = '';
+        image.referrerPolicy = 'no-referrer';
+        image.src = preview.imageUrl;
+        image.addEventListener('error', () => image.remove(), { once: true });
+        const title = document.createElement('div');
+        title.className = 'theater-playlist-preview-title';
+        title.textContent = preview.title;
+        const action = document.createElement('div');
+        action.className = 'theater-playlist-preview-action';
+        const actionLabel = document.createElement('span');
+        actionLabel.className = 'theater-playlist-preview-action-label';
+        const actionKeys = document.createElement('span');
+        actionKeys.className = 'theater-playlist-preview-keys';
+        actionKeys.dir = 'ltr';
+        const shortcutText = getTooltipText();
+        const shortcutKeysAt = shortcutText.indexOf('<kbd>');
+        actionLabel.textContent = (shortcutKeysAt === -1 ? shortcutText : shortcutText.slice(0, shortcutKeysAt)).trim();
+        if (shortcutKeysAt !== -1) setTooltipContent(actionKeys, shortcutText.slice(shortcutKeysAt));
+        action.append(actionLabel, actionKeys);
+        tooltipState.element.append(image, title, action);
+      } else {
+        setTooltipContent(tooltipState.element, getTooltipText());
+      }
       tooltipState.element.classList.add('visible');
     
       // Position
@@ -230,7 +262,21 @@ export function createControls(ctx: PlayerChromeContext) {
     previousBtn.className = 'theater-control-btn playlist-prev-btn';
     previousBtn.hidden = true;
     setIcon(previousBtn, previousIcon);
-    bindCustomTooltip(previousBtn, () => t('previousVideo'));
+    const playlistPreview = (direction: 'previous' | 'next') => {
+      const available = ctx.actions.playlistNavigationAvailable();
+      return direction === 'previous' ? available.previousPreview : available.nextPreview;
+    };
+    const playlistShortcutText = (direction: 'previous' | 'next') => {
+      const shortcut = direction === 'previous' ? ui().shortcuts.previousVideo : ui().shortcuts.nextVideo;
+      const keys = shortcut.split('+').filter(Boolean).map((part) => `<kbd>${part}</kbd>`).join('+');
+      return `${t(direction === 'previous' ? 'previousVideo' : 'nextVideo')} ${keys}`;
+    };
+    const playlistLabel = (direction: 'previous' | 'next') => {
+      const preview = playlistPreview(direction);
+      const name = t(direction === 'previous' ? 'previousVideo' : 'nextVideo');
+      return preview ? `${name}: ${preview.title}` : name;
+    };
+    bindCustomTooltip(previousBtn, () => playlistShortcutText('previous'), () => playlistPreview('previous'));
     previousBtn.addEventListener('click', () => {
       ctx.actions.activatePlaylistStep('previous');
     });
@@ -240,7 +286,7 @@ export function createControls(ctx: PlayerChromeContext) {
     nextBtn.className = 'theater-control-btn playlist-next-btn';
     nextBtn.hidden = true;
     setIcon(nextBtn, nextIcon);
-    bindCustomTooltip(nextBtn, () => t('nextVideo'));
+    bindCustomTooltip(nextBtn, () => playlistShortcutText('next'), () => playlistPreview('next'));
     nextBtn.addEventListener('click', () => {
       ctx.actions.activatePlaylistStep('next');
     });
@@ -249,8 +295,8 @@ export function createControls(ctx: PlayerChromeContext) {
       const available = ctx.actions.playlistNavigationAvailable();
       previousBtn.hidden = !available.previous;
       nextBtn.hidden = !available.next;
-      previousBtn.setAttribute('aria-label', t('previousVideo'));
-      nextBtn.setAttribute('aria-label', t('nextVideo'));
+      previousBtn.setAttribute('aria-label', playlistLabel('previous'));
+      nextBtn.setAttribute('aria-label', playlistLabel('next'));
     };
     syncPlaylistButtons();
     ctx.actions.requestParentPlaylistNav();
@@ -410,8 +456,17 @@ export function createControls(ctx: PlayerChromeContext) {
     timeDisplay.style.cursor = 'pointer';
     timeDisplay.textContent = '0:00 / 0:00';
 
+    let stableWindow: ReturnType<typeof playbackWindow> | null = null;
+    const playbackForChrome = (): ReturnType<typeof playbackWindow> | null => {
+      const next = playbackWindow(video);
+      const presented = presentPlaybackWindow(stableWindow, next);
+      if (presented.live || presented.seekable) stableWindow = presented;
+      if (!(next.live || next.seekable) && stableWindow) return null;
+      return presented;
+    };
+
     const formatTime = (secs: number): string => {
-      const total = playbackWindow(video).end;
+      const total = stableWindow?.end ?? secs;
       const span = Number.isFinite(total) && total > 0 && total !== Infinity ? total : secs;
       if (isNaN(secs) || !isFinite(secs)) secs = 0;
       const h = Math.floor(secs / 3600);
@@ -426,7 +481,8 @@ export function createControls(ctx: PlayerChromeContext) {
     let showRemainingTime = false;
     timeDisplay.addEventListener('click', (e) => {
       e.stopPropagation();
-      const window = playbackWindow(video);
+      const window = playbackForChrome();
+      if (!window) return;
       if (window.live) {
         if (window.seekable) seekToLive(video);
         return;
@@ -436,7 +492,8 @@ export function createControls(ctx: PlayerChromeContext) {
     });
 
     const syncLiveChrome = () => {
-      const window = playbackWindow(video);
+      const window = playbackForChrome();
+      if (!window) return;
       const locked = window.live && !window.seekable;
       const canJumpToLive = window.live && window.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, window);
@@ -456,7 +513,8 @@ export function createControls(ctx: PlayerChromeContext) {
     };
 
     const updateTimeDisplay = () => {
-      const window = playbackWindow(video);
+      const window = playbackForChrome();
+      if (!window) return;
       const cur = displayMediaTime(video);
       syncLiveChrome();
       if (window.live) {
@@ -888,7 +946,8 @@ export function createControls(ctx: PlayerChromeContext) {
     };
 
     const updateScrubber = () => {
-      const window = playbackWindow(video);
+      const window = playbackForChrome();
+      if (!window) return;
       const cur = video.currentTime || 0;
       syncLiveChrome();
 
@@ -914,7 +973,7 @@ export function createControls(ctx: PlayerChromeContext) {
     updateScrubber();
 
     const updateTooltip = (clientX: number) => {
-      const window = playbackWindow(video);
+      const window = playbackForChrome() ?? playbackWindow(video);
       if (!window.seekable) return;
       const rect = scrubberContainer.getBoundingClientRect();
       if (rect.width === 0) return;
@@ -1138,8 +1197,17 @@ export function createControls(ctx: PlayerChromeContext) {
     // Buffering / Loading State Helper
     let bufferingTimeout: number | null = null;
 
-    const setBuffering = (isBuffering: boolean) => {
+    const setBuffering = (isBuffering: boolean, immediate = false) => {
       if (isBuffering) {
+        if (immediate) {
+          if (bufferingTimeout) {
+            clearTimeout(bufferingTimeout);
+            bufferingTimeout = null;
+          }
+          loadingIndicator.classList.add('visible');
+          scrubberContainer.classList.add('buffering');
+          return;
+        }
         if (bufferingTimeout || loadingIndicator.classList.contains('visible')) return;
         bufferingTimeout = window.setTimeout(() => {
           loadingIndicator.classList.add('visible');
@@ -1212,6 +1280,7 @@ export function createControls(ctx: PlayerChromeContext) {
       updateScrubber();
       updateTimeDisplay();
       updateCaptionDock();
+      setBuffering(true, true);
     };
     const onPageMediaChange = () => {
       void mediaFeatures.refresh();

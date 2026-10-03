@@ -7,6 +7,7 @@ import {
   isAtLiveEdge,
   isVideoAtLiveEdge,
   playbackWindow,
+  presentPlaybackWindow,
   ratioToTime,
   seekBy,
   seekToLive,
@@ -309,6 +310,19 @@ describe('playback window', () => {
     assert.equal(window.seekable, false);
     assert.equal(timeToRatio(0, window), 1);
     assert.equal(isAtLiveEdge(0, window), true);
+  });
+
+  it('does not present a video with no duration yet as live', () => {
+    const unsettled = playbackWindow(fakeVideo({ duration: Number.NaN }));
+    assert.equal(unsettled.live, false);
+    assert.equal(unsettled.seekable, false);
+    const held = presentPlaybackWindow(
+      playbackWindow(fakeVideo({ duration: 1009, currentTime: 8 })),
+      unsettled
+    );
+    assert.equal(held.live, false);
+    assert.equal(held.end, 1009);
+    assert.equal(presentPlaybackWindow(held, playbackWindow(fakeVideo({ duration: 6 }))).end, 6);
   });
 
   it('ignores bogus live seekable ranges that are not a DVR window', () => {

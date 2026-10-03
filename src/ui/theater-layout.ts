@@ -1,6 +1,7 @@
 import { isDisneyHost, isTwitchHost } from '../providers/hosts';
 import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
+export const THEATER_STAGE_ID = 'theater-everywhere-stage';
 export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
 export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
@@ -81,6 +82,18 @@ export function theaterVideoNeedsRestyle(element: {
   return !style.includes('position:')
     || !style.includes('--theater-object-fit')
     || !(style.includes('background:') || style.includes('background-color:'));
+}
+
+export function mountTheaterStage(): void {
+  if (document.getElementById(THEATER_STAGE_ID)) return;
+  const stage = document.createElement('div');
+  stage.id = THEATER_STAGE_ID;
+  stage.setAttribute('aria-hidden', 'true');
+  document.documentElement.appendChild(stage);
+}
+
+export function unmountTheaterStage(): void {
+  document.getElementById(THEATER_STAGE_ID)?.remove();
 }
 
 export function mountDisneyTheaterStage(hostname: string): void {

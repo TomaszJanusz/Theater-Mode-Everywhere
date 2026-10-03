@@ -22,7 +22,15 @@ import {
   mediaHasSource,
   toggleVideoPlayback
 } from '../host-play';
-import { findPlaylistActions, type PlaylistDirection } from '../playlist-nav';
+import {
+  emptyPlaylistNav,
+  findPlaylistActions,
+  playlistNavStateFromActions,
+  sanitizePlaylistPreview,
+  type PlaylistDirection,
+  type PlaylistNavState,
+  type PlaylistPreview
+} from '../playlist-nav';
 import {
   cancelPendingSeekResume,
   seekBy,
@@ -34,11 +42,13 @@ import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
+  mountTheaterStage,
   mountTwitchTheaterStage,
   observeTwitchTheaterStage,
   theaterVideoNeedsRestyle,
   unmarkTheaterVideo,
   unmountDisneyTheaterStage,
+  unmountTheaterStage,
   unmountTwitchTheaterStage
 } from './theater-layout';
 import {
@@ -239,10 +249,6 @@ function executeCommand(command: PlayerCommand): void {
   }
 }
 
-function emptyPlaylistNav(): { previous: boolean; next: boolean } {
-  return { previous: false, next: false };
-}
-
 function localPlaylistActions(): ReturnType<typeof findPlaylistActions> {
   const video = session.element?.tagName === 'VIDEO' ? session.element as HTMLVideoElement : null;
   const root = video ? playlistSearchRoot(video) : document;
@@ -255,11 +261,13 @@ function playlistSearchRoot(video: HTMLVideoElement): ParentNode {
   return video.ownerDocument;
 }
 
-function playlistNavigationAvailable(): { previous: boolean; next: boolean } {
-  const local = localPlaylistActions();
+function playlistNavigationAvailable(): PlaylistNavState {
+  const local = playlistNavStateFromActions(localPlaylistActions());
   return {
-    previous: local.some((action) => action.direction === 'previous') || refs.parentPlaylistNav.previous,
-    next: local.some((action) => action.direction === 'next') || refs.parentPlaylistNav.next
+    previous: local.previous || refs.parentPlaylistNav.previous,
+    next: local.next || refs.parentPlaylistNav.next,
+    previousPreview: local.previous ? local.previousPreview : refs.parentPlaylistNav.previousPreview,
+    nextPreview: local.next ? local.nextPreview : refs.parentPlaylistNav.nextPreview
   };
 }
 
@@ -279,10 +287,23 @@ function activatePlaylistStep(direction: PlaylistDirection): void {
   }
 }
 
-function playlistNavFromPayload(payload: Record<string, unknown>): { previous: boolean; next: boolean } {
+function playlistPreviewFromPayload(value: unknown): PlaylistPreview | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  return sanitizePlaylistPreview(
+    typeof record.title === 'string' ? record.title : '',
+    typeof record.imageUrl === 'string' ? record.imageUrl : ''
+  );
+}
+
+function playlistNavFromPayload(payload: Record<string, unknown>): PlaylistNavState {
+  const previous = payload.previous === true;
+  const next = payload.next === true;
   return {
-    previous: payload.previous === true,
-    next: payload.next === true
+    previous,
+    next,
+    previousPreview: previous ? playlistPreviewFromPayload(payload.previousPreview) : null,
+    nextPreview: next ? playlistPreviewFromPayload(payload.nextPreview) : null
   };
 }
 
@@ -682,6 +703,16 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     const willPlay = !mediaHasSource(video) || video.paused;
     executeCommand({ type: 'PLAY_PAUSE' });
     triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
+  } else if (!e.repeat && matchesShortcut(e, shortcuts.previousVideo) && playlistNavigationAvailable().previous) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    activatePlaylistStep('previous');
+  } else if (!e.repeat && matchesShortcut(e, shortcuts.nextVideo) && playlistNavigationAvailable().next) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    activatePlaylistStep('next');
   } else if (matchesShortcut(e, shortcuts.seekBack)) {
     e.preventDefault();
     e.stopPropagation();
@@ -879,6 +910,8 @@ function initialize(): void {
             metaKey: event.metaKey
           });
           if (matchesShortcut(event, shortcuts.playPause) ||
+              matchesShortcut(event, shortcuts.previousVideo) ||
+              matchesShortcut(event, shortcuts.nextVideo) ||
               matchesShortcut(event, shortcuts.seekBack) ||
               matchesShortcut(event, shortcuts.seekForward) ||
               matchesShortcut(event, shortcuts.frameBack) ||
@@ -1008,10 +1041,13 @@ function initialize(): void {
       const actions = findPlaylistActions(document);
       const iframe = iframes.find((item) => item.contentWindow === event.source);
       if (iframe) {
-        frames.postToChildIframe(iframe, 'PLAYLIST_NAV_STATE', envelope.sessionId, {
-          previous: actions.some((action) => action.direction === 'previous'),
-          next: actions.some((action) => action.direction === 'next')
-        }, envelope.nonce);
+        frames.postToChildIframe(
+          iframe,
+          'PLAYLIST_NAV_STATE',
+          envelope.sessionId,
+          playlistNavStateFromActions(actions),
+          envelope.nonce
+        );
       }
     } else if (envelope.type === 'PLAYLIST_NAV_STATE' && fromParent) {
       refs.parentPlaylistNav = playlistNavFromPayload(envelope.payload);
@@ -1127,6 +1163,13 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     });
   };
 
+  const holdViewport = (): void => {
+    if (session.element !== video) return;
+    refreshTheaterAncestors(video);
+    stabilizeLayout(video, true);
+  };
+  session.runtimeScope.listen(video, 'emptied', holdViewport);
+  session.runtimeScope.listen(document, 'yt-navigate-start', holdViewport);
   session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
   session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
@@ -1159,6 +1202,29 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   session.runtimeScope.add(() => styleObserver.disconnect());
 }
 
+function refreshTheaterAncestors(element: HTMLElement): void {
+  const next: HTMLElement[] = [];
+  let parent: Node | null = element.parentNode;
+  while (parent && parent !== document.documentElement) {
+    if (parent instanceof ShadowRoot) {
+      injectStylesIntoShadowRoot(parent);
+      parent = parent.host;
+      continue;
+    }
+    if (parent instanceof HTMLElement) {
+      parent.classList.add('theater-everywhere-parent-active');
+      next.push(parent);
+    }
+    parent = parent.parentNode;
+  }
+  for (const previous of refs.ancestorsList) {
+    if (previous?.classList && !next.includes(previous)) {
+      previous.classList.remove('theater-everywhere-parent-active');
+    }
+  }
+  refs.ancestorsList = next;
+}
+
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
   if (session.element) return;
 
@@ -1172,6 +1238,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   markTheaterVideo(element);
+  mountTheaterStage();
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
   stopObservingTwitchTheaterStage?.();
@@ -1239,21 +1306,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     });
   }
 
-  // Traverse ancestors and apply override class (crossing shadow boundaries)
-  refs.ancestorsList = [];
-  let parent: Node | null = element.parentNode;
-  while (parent && parent !== document.documentElement) {
-    if (parent instanceof ShadowRoot) {
-      injectStylesIntoShadowRoot(parent);
-      parent = parent.host;
-    } else {
-      if (parent instanceof HTMLElement) {
-        parent.classList.add('theater-everywhere-parent-active');
-        refs.ancestorsList.push(parent);
-      }
-      parent = parent.parentNode;
-    }
-  }
+  refreshTheaterAncestors(element);
 
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');
@@ -1324,6 +1377,7 @@ function exitTheaterMode(
   // Restore scrollbars
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
+  unmountTheaterStage();
   unmountDisneyTheaterStage();
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = null;

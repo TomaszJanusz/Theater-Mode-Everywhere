@@ -5,6 +5,8 @@ export interface Shortcuts {
   seekForward: string;
   cycle: string;
   playPause: string;
+  previousVideo: string;
+  nextVideo: string;
   frameBack: string;
   frameForward: string;
   toggleFullscreen: string;
@@ -26,6 +28,8 @@ export const defaultShortcuts: Shortcuts = {
   seekForward: 'ArrowRight',
   cycle: 'Shift+T',
   playPause: 'Space',
+  previousVideo: 'Shift+P',
+  nextVideo: 'Shift+N',
   frameBack: '<',
   frameForward: '>',
   toggleFullscreen: 'F',

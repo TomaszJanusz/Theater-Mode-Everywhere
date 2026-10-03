@@ -4,6 +4,8 @@ import { describe, it } from 'node:test';
 import ts from 'typescript';
 import {
   isVimeoShowcaseStepHref,
+  neighborPreviews,
+  sanitizePlaylistPreview,
   usableControlIndexes,
   type ObservedPlaylistControl
 } from './playlist-nav';
@@ -196,6 +198,28 @@ describe('playlist navigation availability', () => {
     assert.equal(picked[1]?.index, 0);
   });
 
+  it('keeps a playlist preview only when both a title and an https thumbnail exist', () => {
+    assert.deepEqual(
+      sanitizePlaylistPreview('  Derivative formulas  ', 'https://i.ytimg.com/vi/S0_qX4VJhMQ/mqdefault.jpg'),
+      { title: 'Derivative formulas', imageUrl: 'https://i.ytimg.com/vi/S0_qX4VJhMQ/mqdefault.jpg' }
+    );
+    assert.equal(sanitizePlaylistPreview('Next', 'javascript:alert(1)'), null);
+    assert.equal(sanitizePlaylistPreview('', 'https://i.ytimg.com/vi/x/mqdefault.jpg'), null);
+    assert.equal(sanitizePlaylistPreview('Title', 'http://i.ytimg.com/vi/x/mqdefault.jpg'), null);
+  });
+
+  it('picks the previous and next publication by playlist position', () => {
+    const items = [
+      { position: 1, title: 'The essence of calculus', imageUrl: 'https://i.ytimg.com/vi/a/mqdefault.jpg' },
+      { position: 2, title: 'The paradox of the derivative', imageUrl: 'https://i.ytimg.com/vi/b/mqdefault.jpg' },
+      { position: 3, title: 'Derivative formulas', imageUrl: 'https://i.ytimg.com/vi/c/mqdefault.jpg' }
+    ];
+    assert.equal(neighborPreviews(items, 2).previous?.title, 'The essence of calculus');
+    assert.equal(neighborPreviews(items, 2).next?.title, 'Derivative formulas');
+    assert.equal(neighborPreviews(items, 1).previous, null);
+    assert.equal(neighborPreviews(items, 3).next, null);
+  });
+
   it('recognizes Vimeo showcase step links and ignores pagination', () => {
     assert.equal(isVimeoShowcaseStepHref('https://vimeo.com/showcase/1574596?video=5124854'), true);
     assert.equal(isVimeoShowcaseStepHref('/showcase/1574596?video=2782153'), true);
@@ -223,18 +247,24 @@ describe('playlist navigation DOM', () => {
         await page.setContent(`<!doctype html><body>
           <div id="movie_player">
             <video id="player"></video>
-            <a class="ytp-prev-button ytp-button" role="button" aria-disabled="false">Previous</a>
-            <a class="ytp-next-button ytp-button ytp-playlist-ui" role="button" aria-disabled="false" aria-label="Next (SHIFT+n)">Next</a>
+            <a class="ytp-prev-button ytp-button" role="button" aria-disabled="false" data-preview="https://i.ytimg.com/vi/WUvTyaaNkzM/mqdefault.jpg" data-tooltip-text="The essence of calculus">Previous</a>
+            <a class="ytp-next-button ytp-button ytp-playlist-ui" role="button" aria-disabled="false" aria-label="Next (SHIFT+n)" data-preview="https://i.ytimg.com/vi/S0_qX4VJhMQ/mqdefault.jpg" data-tooltip-text="Derivative formulas through geometry">Next</a>
             <button class="ytp-button ytp-endscreen-next" aria-label="Next" style="display:none">End</button>
           </div>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions };', type: 'module' });
+        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
         const read = () => page.evaluate(() => {
-          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; activate: () => void }> } }).__playlist;
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null; activate: () => void }> } }).__playlist;
           const video = document.querySelector('#player') as HTMLVideoElement;
           return api.findPlaylistActions(document, video).map((action) => action.direction);
         });
         assert.deepEqual(await read(), ['previous', 'next']);
+        const youtubePreviews = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string; imageUrl: string } | null }> } }).__playlist;
+          const video = document.querySelector('#player') as HTMLVideoElement;
+          return api.findPlaylistActions(document, video).map((action) => action.preview?.title ?? null);
+        });
+        assert.deepEqual(youtubePreviews, ['The essence of calculus', 'Derivative formulas through geometry']);
 
         await page.evaluate(() => {
           const prev = document.querySelector('.ytp-prev-button') as HTMLElement;
@@ -252,8 +282,29 @@ describe('playlist navigation DOM', () => {
             <button class="vjs-next-video" title="Next video"></button>
           </div>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions };', type: 'module' });
+        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
         assert.deepEqual(await read(), ['next']);
+        await page.setContent(`<!doctype html><body>
+          <div class="video">
+            <img src="https://framatube.org/lazy-static/thumbnails/previous.jpg" alt="">
+            <a class="video-info-name" title="Resurrecting Software Freedom Day" href="/w/p/list?playlistPosition=1">Resurrecting Software Freedom Day</a>
+          </div>
+          <div class="video">
+            <img src="https://framatube.org/lazy-static/thumbnails/current.jpg" alt="">
+            <a class="video-info-name" title="AI in a closing world" href="/w/p/list?playlistPosition=2">AI in a closing world</a>
+          </div>
+          <div class="video">
+            <img src="https://framatube.org/lazy-static/thumbnails/next.jpg" alt="">
+            <a class="video-info-name" title="Making a libre movie" href="/w/p/list?playlistPosition=3">Making a libre movie</a>
+          </div>
+        </body>`, { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        const peerTube = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { peerTubeNeighborPreviews: (root: ParentNode, href: string) => { previous: { title: string } | null; next: { title: string } | null } } }).__playlist;
+          return api.peerTubeNeighborPreviews(document, 'https://framatube.org/w/p/list?playlistPosition=2');
+        });
+        assert.equal(peerTube.previous?.title, 'Resurrecting Software Freedom Day');
+        assert.equal(peerTube.next?.title, 'Making a libre movie');
 
         await page.setContent(`<!doctype html><body>
           <video id="player"></video>
@@ -267,9 +318,20 @@ describe('playlist navigation DOM', () => {
           <video id="player" width="304" height="143"></video>
           <button aria-label="Previous page">Page</button>
           <button aria-label="Next video" data-href="https://vimeo.com/showcase/1574596?video=5124854" style="position:fixed;left:1208px;top:328px;width:48px;height:48px"></button>
+          <a href="https://vimeo.com/showcase/1574596?video=5124854">
+            <img src="https://i.vimeocdn.com/video/17932561-example-d_360x203?r=pad" alt="">
+            <img src="https://i.vimeocdn.com/portrait/1_72x72" alt="Author">
+            <p>AS ONE</p>
+            <p>makoto yabuki</p>
+          </a>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions };', type: 'module' });
+        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
         assert.deepEqual(await read(), ['next']);
+        const vimeoTitle = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode) => Array<{ preview: { title: string } | null }> } }).__playlist;
+          return api.findPlaylistActions(document)[0]?.preview?.title ?? null;
+        });
+        assert.equal(vimeoTitle, 'AS ONE');
 
         const clicked = await page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode) => Array<{ direction: string; activate: () => void }> } }).__playlist;
