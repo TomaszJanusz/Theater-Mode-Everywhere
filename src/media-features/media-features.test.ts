@@ -21,7 +21,7 @@ import {
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
-import { vimeoPageTitle } from './content-title';
+import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
@@ -420,6 +420,85 @@ https://image.mux.com/Dk8pvMnvTeqDk9dy5nqmXz02MM4YtdElW/storyboard.jpg#xywh=256,
 00:00:00.000 --> 00:00:05.000
 https://evil.example/storyboard.jpg#xywh=0,0,256,160
 `), null);
+  });
+});
+
+describe('disney playing title', () => {
+  const venomId = '6f5b1fff-75da-44f6-9553-412699bf4065';
+  const phoenixId = '180356b5-0596-4333-891f-e48c526a0803';
+  const collection = {
+    items: [
+      { id: venomId, text: { title: { full: 'Venom' } } },
+      { id: phoenixId, text: { title: { full: 'X-Men: Mroczna Phoenix' } } }
+    ]
+  };
+
+  it('keeps a collection mate from replacing the film that is playing', () => {
+    assert.equal(findDisneyContentTitle(collection), 'Venom');
+    assert.equal(findDisneyContentTitle(collection, phoenixId), 'X-Men: Mroczna Phoenix');
+    assert.equal(findDisneyContentTitle(collection, '00000000-0000-4000-8000-000000000000'), null);
+  });
+
+  it('follows the player chrome when the browse title is still Venom', () => {
+    const resolved = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: null,
+      title: 'Venom',
+      source: 'page',
+      playerChrome: 'X-Men: Mroczna Phoenix',
+      playbackTitle: null,
+      documentTitle: 'Venom | Disney+',
+      openGraphTitle: 'Venom'
+    });
+    assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
+    assert.equal(resolved.source, 'chrome');
+    assert.equal(resolved.changed, true);
+  });
+
+  it('prefers the document title over a stale open-graph title', () => {
+    const resolved = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: null,
+      title: 'Venom',
+      source: 'page',
+      playerChrome: null,
+      playbackTitle: null,
+      documentTitle: 'X-Men: Mroczna Phoenix | Disney+',
+      openGraphTitle: 'Venom'
+    });
+    assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
+    assert.equal(resolved.source, 'page');
+  });
+
+  it('lets the playback title replace a stale page title', () => {
+    const resolved = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'Venom',
+      source: 'page',
+      playerChrome: null,
+      playbackTitle: 'X-Men: Mroczna Phoenix',
+      documentTitle: 'Venom | Disney+',
+      openGraphTitle: 'Venom'
+    });
+    assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
+    assert.equal(resolved.source, 'playback');
+  });
+
+  it('does not let the open-graph title replace the player chrome', () => {
+    const resolved = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'X-Men: Mroczna Phoenix',
+      source: 'chrome',
+      playerChrome: 'X-Men: Mroczna Phoenix',
+      playbackTitle: 'Venom',
+      documentTitle: 'Venom | Disney+',
+      openGraphTitle: 'Venom'
+    });
+    assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
+    assert.equal(resolved.source, 'chrome');
+    assert.equal(resolved.changed, false);
   });
 });
 

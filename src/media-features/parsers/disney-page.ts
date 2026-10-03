@@ -502,7 +502,7 @@ export function parseDisneyPlaybackPayload(raw: unknown, mediaId?: string | null
 
   walk(raw, 0);
 
-  const title = findDisneyContentTitle(raw) || undefined;
+  const title = findDisneyContentTitle(raw, mediaId) || undefined;
 
   return {
     mediaId: mediaId || undefined,

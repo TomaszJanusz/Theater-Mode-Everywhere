@@ -1,4 +1,9 @@
-import { findDisneyContentTitle, sanitizeContentTitle } from '../../media-features/content-title';
+import {
+  findDisneyContentTitle,
+  resolveDisneyTitle,
+  stripDisneySiteTitle,
+  type DisneyTitleSource
+} from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
@@ -41,6 +46,9 @@ const DISNEY_SEEK_RETRY_MS = 1500;
 
 let disneyHarvest: DisneyHarvest = { captions: [] };
 let disneyHarvestNotifyTimer = 0;
+let disneyTitlePlayId: string | null = null;
+let disneyTitleSource: DisneyTitleSource | null = null;
+let disneyPlaybackTitle: string | null = null;
 let cachedDisneyPlayer: DisneyHivePlayer | null = null;
 let cachedDisneyPlayerHost: Element | null = null;
 const disneyClockBoundPlayers = new WeakSet<object>();
@@ -149,17 +157,82 @@ function extractDisneyThumbnail(raw: unknown): { width: number; height: number; 
   return best;
 }
 
-function readDisneyDomTitle(): string | null {
-  const og = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
-  const raw = sanitizeContentTitle(og) || sanitizeContentTitle(document.title);
-  if (!raw) return null;
-  const stripped = raw
-    .replace(/\s*[|–-]\s*Disney\+$/i, '')
-    .replace(/^watch\s+/i, '')
-    .trim();
-  const title = sanitizeContentTitle(stripped);
-  if (!title || /^(disney\+?|home|watch|search)$/i.test(title)) return null;
-  return title;
+const DISNEY_CHROME_TITLE_SELECTOR = '[data-testid*="title" i], [class*="title" i], h1, h2, h3';
+const DISNEY_CHROME_REJECT_RE = /^(?:play|pause|odtwórz|wstrzymaj|napisy|subtitles|audio|ustawienia|settings|wstecz|back|wróć|wroc|fullscreen|pełny ekran|mute|wycisz|cc|hd|ad|sdh|\d{1,2}:\d{2}(?::\d{2})?)$/i;
+
+function disneyChromeLabel(el: Element): string | null {
+  const structural = [...el.children].some((child) => !/^(?:SPAN|ABBR|B|I|STRONG|EM)$/.test(child.tagName));
+  if (structural) return null;
+  const text = stripDisneySiteTitle(el.textContent);
+  if (!text || DISNEY_CHROME_REJECT_RE.test(text)) return null;
+  return text;
+}
+
+function considerDisneyChromeTitle(
+  el: Element,
+  best: { text: string; rank: number; top: number } | null
+): { text: string; rank: number; top: number } | null {
+  const hook = `${el.getAttribute('data-testid') || ''} ${typeof el.className === 'string' ? el.className : ''}`;
+  if (/subtitle|caption|timed-text|toast|up-next|upnext/i.test(hook)) return best;
+  const titled = /title/i.test(hook);
+  const heading = /^H[1-3]$/.test(el.tagName);
+  if (!titled && !heading) return best;
+  const text = disneyChromeLabel(el);
+  if (!text) return best;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 8 || rect.height < 8) return best;
+  const rank = titled ? 2 : 1;
+  const candidate = { text, rank, top: rect.top };
+  if (!best || rank > best.rank || (rank === best.rank && candidate.top < best.top - 8)) return candidate;
+  return best;
+}
+
+function visitDisneyChromeRoot(
+  root: ParentNode,
+  depth: number,
+  best: { text: string; rank: number; top: number } | null
+): { text: string; rank: number; top: number } | null {
+  if (depth > 6) return best;
+  let next = best;
+  for (const el of root.querySelectorAll(DISNEY_CHROME_TITLE_SELECTOR)) {
+    next = considerDisneyChromeTitle(el, next);
+  }
+  for (const el of root.querySelectorAll('*')) {
+    if (el.shadowRoot) next = visitDisneyChromeRoot(el.shadowRoot, depth + 1, next);
+  }
+  return next;
+}
+
+/** Title Disney draws in the player header, not the browse page behind it. */
+function readDisneyPlayerChromeTitle(): string | null {
+  const hosts = document.querySelectorAll('disney-web-player, .DxcOverlay');
+  let best: { text: string; rank: number; top: number } | null = null;
+  for (const host of hosts) {
+    if (host.shadowRoot) best = visitDisneyChromeRoot(host.shadowRoot, 0, best);
+    best = visitDisneyChromeRoot(host, 0, best);
+  }
+  return best?.text || null;
+}
+
+function syncDisneyDisplayedTitle(): boolean {
+  const playId = disneyPageMediaId();
+  const previousPlayId = disneyTitlePlayId;
+  if (playId !== previousPlayId) disneyPlaybackTitle = null;
+  const resolved = resolveDisneyTitle({
+    playId,
+    previousPlayId,
+    title: disneyHarvest.title || null,
+    source: disneyTitleSource,
+    playerChrome: readDisneyPlayerChromeTitle(),
+    playbackTitle: disneyPlaybackTitle,
+    documentTitle: document.title,
+    openGraphTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')
+  });
+  disneyTitlePlayId = playId;
+  disneyTitleSource = resolved.source;
+  if (!resolved.changed) return false;
+  disneyHarvest.title = resolved.title || undefined;
+  return true;
 }
 
 function extractDisneyHarvest(raw: unknown): {
@@ -207,7 +280,7 @@ function extractDisneyHarvest(raw: unknown): {
   };
   walk(raw, 0);
   const storyboardUrl = thumbnail?.bifUrl || storyboards[0];
-  const title = findDisneyContentTitle(raw) || undefined;
+  const title = findDisneyContentTitle(raw, disneyPageMediaId()) || undefined;
   if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title) return null;
   return {
     title,
@@ -228,6 +301,9 @@ function resetDisneyHarvest(mediaId?: string): void {
     }
   }
   disneyHarvest = { mediaId, captions: [] };
+  disneyPlaybackTitle = null;
+  disneyTitleSource = null;
+  disneyTitlePlayId = mediaId || null;
 }
 
 function rememberDisneyBif(buffer: ArrayBuffer, url?: string): void {
@@ -309,9 +385,24 @@ function mergeDisneyHarvest(next: {
   }
   if (mediaId) disneyHarvest.mediaId = mediaId;
   let changed = false;
-  if (next.title && !disneyHarvest.title) {
-    disneyHarvest.title = next.title;
-    changed = true;
+  if (next.title) {
+    disneyPlaybackTitle = next.title;
+    const resolved = resolveDisneyTitle({
+      playId: mediaId,
+      previousPlayId: mediaId,
+      title: disneyHarvest.title || null,
+      source: disneyTitleSource,
+      playerChrome: null,
+      playbackTitle: next.title,
+      documentTitle: null,
+      openGraphTitle: null
+    });
+    if (resolved.changed || resolved.source !== disneyTitleSource) {
+      disneyHarvest.title = resolved.title || undefined;
+      disneyTitleSource = resolved.source;
+      disneyTitlePlayId = mediaId;
+      changed = true;
+    }
   }
   if (next.duration && next.duration !== disneyHarvest.duration) {
     disneyHarvest.duration = next.duration;
@@ -381,8 +472,7 @@ export function readDisneySnapshot(): Record<string, unknown> | null {
       resetDisneyHarvest(mediaId);
     }
     if (mediaId) disneyHarvest.mediaId = mediaId;
-    const domTitle = readDisneyDomTitle();
-    if (domTitle && domTitle !== disneyHarvest.title) disneyHarvest.title = domTitle;
+    syncDisneyDisplayedTitle();
     publishDisneyHarvest();
     if (!disneyHarvest.duration && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl && !disneyHarvest.title) {
       return mediaId ? { mediaId } : null;
@@ -706,6 +796,7 @@ function ensureDisneyClock(): void {
     const next = findDisneyHivePlayer(active);
     bindDisneyPlayerClock(next);
     publishDisneyPlayhead(active, next);
+    if (syncDisneyDisplayedTitle()) notifyDisneyHarvest();
   }, 250);
 }
 
