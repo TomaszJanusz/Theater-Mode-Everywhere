@@ -107,14 +107,28 @@ async function theaterEntered(page: Page): Promise<boolean> {
 }
 
 async function assertTheaterToggle(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const state = { releases: 0 };
+    (window as Window & { theaterShortcutSpy?: typeof state }).theaterShortcutSpy = state;
+    document.addEventListener('keyup', (event) => { if (event.key === 't') state.releases++; });
+  });
   await page.click('video#player');
-  await page.keyboard.press('t');
+  await page.keyboard.down('t');
+  // Repeated keydown used to toggle again after the 200ms transition guard.
+  // Explicit repeat also works with Firefox's synthetic keyboard transport.
+  await delay(300);
+  await page.dispatchEvent('video#player', 'keydown', { key: 't', code: 'KeyT', repeat: true, bubbles: true });
+  await page.keyboard.up('t');
   await page.waitForFunction(({ videoClass, htmlClass }) => {
     const video = document.querySelector('video#player');
     return Boolean(video?.classList.contains(videoClass) || document.documentElement.classList.contains(htmlClass));
   }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS }, { timeout: 10_000 });
 
   if (!await theaterEntered(page)) fail('Theater mode did not activate after T.');
+  const hostReleases = await page.evaluate(() => (window as Window & {
+    theaterShortcutSpy?: { releases: number }
+  }).theaterShortcutSpy?.releases);
+  if (hostReleases !== 0) fail('The host received the T keyup and could toggle its own theater mode.');
 
   const pausedBefore = await page.evaluate(() => {
     const video = document.querySelector('video#player') as HTMLVideoElement | null;
@@ -134,6 +148,17 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     await delay(200);
   }
 
+  await page.keyboard.press('t');
+  await page.waitForFunction((videoClass) => !document.querySelector('video#player')?.classList.contains(videoClass),
+    THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  if (await page.evaluate(() => (window as Window & { theaterShortcutSpy?: { releases: number } }).theaterShortcutSpy?.releases) !== 0) {
+    fail('The host received the T keyup after exiting theater mode.');
+  }
+  await delay(250);
+  await page.keyboard.press('t');
+  await page.waitForFunction((videoClass) => document.querySelector('video#player')?.classList.contains(videoClass),
+    THEATER_VIDEO_CLASS, { timeout: 10_000 });
+
   await page.keyboard.press('Escape');
   await page.waitForFunction(({ videoClass, htmlClass }) => {
     const video = document.querySelector('video#player');
@@ -143,11 +168,14 @@ async function assertTheaterToggle(page: Page): Promise<void> {
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
   const cssPath = path.join(unpackedDir, 'content.css');
-  const jsPath = path.join(unpackedDir, 'content.js');
   await page.addStyleTag({ path: cssPath });
-  const source = readFileSync(jsPath, 'utf8');
-  const isModule = /^\s*export\b/m.test(source) || /^\s*import\b/m.test(source);
-  await page.addScriptTag({ path: jsPath, type: isModule ? 'module' : undefined });
+  // The packaged extension loads both worlds. Space is handled in MAIN, so
+  // injecting only content.js does not exercise the actual playback runtime.
+  // Function scopes prevent fixture/page globals from colliding with bundles.
+  for (const name of ['mainWorld.js', 'content.js']) {
+    const source = readFileSync(path.join(unpackedDir, name), 'utf8');
+    await page.addScriptTag({ content: `(function () {\n${source}\n})();` });
+  }
   await delay(400);
 }
 
@@ -340,11 +368,12 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
   const browser = await firefox.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    page.on('pageerror', (error) => console.error('smoke:firefox page error:', error.message));
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await injectBundledPlayer(page, unpackedDir);
     await assertTheaterToggle(page);
-    console.log('smoke:firefox passed (injected bundled content.js; sideload of unsigned MV3 xpi is blocked)');
+    console.log('smoke:firefox passed (injected bundled MAIN/content scripts; unsigned MV3 xpi sideload is blocked)');
   } finally {
     await browser.close();
   }

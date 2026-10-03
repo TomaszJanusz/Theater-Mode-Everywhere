@@ -16,6 +16,8 @@ import {
   youtubeIntegrationEnabled
 } from '../providers/youtube/main';
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
+import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
+import { readTencentSnapshot } from '../providers/tencent/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
   captureTwitchNetworkResponse,
@@ -364,8 +366,17 @@ export function installMainWorldRuntime(): void {
     }
     publishYoutubeProbeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch, disney }
+      detail: { requestId, youtube, vimeo, patreon, twitch, disney, tencent: readTencentSnapshot() }
     }));
+    // Bilibili needs asynchronous metadata. Keep the original fast probe for
+    // other adapters and deliver Bilibili's result through its own event.
+    if (bilibiliIntegrationEnabled()) {
+      void readBilibiliSnapshot().then((bilibili) => {
+        window.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-probe-result', {
+          detail: { requestId, bilibili }
+        }));
+      }).catch(() => {});
+    }
   });
 
   function pageFetchAllowed(url: string): boolean {
@@ -376,6 +387,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'patreon') return patreonIntegrationEnabled();
     if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
+    if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();
     return false;
   }
 

@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Activa integraciones más completas con tus servicios de vídeo favoritos, incluidos YouTube, Twitch, Disney+ y otros. Theater Mode Everywhere puede mostrar información adicional, admitir formatos de subtítulos personalizados y desbloquear funciones específicas de cada servicio. La disponibilidad varía según el servicio; obtén más información "
+    "message": "Activa integraciones más completas con tus servicios de vídeo favoritos, incluidos YouTube, Twitch, Disney+, Bilibili, Tencent Video y otros. Theater Mode Everywhere puede mostrar información adicional, admitir formatos de subtítulos personalizados y desbloquear funciones específicas de cada servicio. La disponibilidad varía según el servicio; obtén más información "
   },
   "richTheaterExperienceReadMore": {
     "message": "aquí"
@@ -188,6 +188,18 @@
   },
   "disneyIntegrationDescription": {
     "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro cuando el reproductor los ofrece."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Integración con Bilibili"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Importa el título, los subtítulos, los capítulos y las miniaturas cuando están disponibles. Algunos subtítulos requieren iniciar sesión en Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Integración con Tencent Video"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Importa el título del episodio. Permite controlar la reproducción y pasar al siguiente episodio cuando está disponible; los subtítulos usan las pistas HTML5 del reproductor."
   },
   "liveBadge": {
     "message": "EN VIVO"
@@ -345,7 +357,7 @@
     "message": "Más contexto en la línea de tiempo: salta entre capítulos y descubre los momentos más repetidos de YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Previsualiza antes de buscar: pasa el cursor por la línea de tiempo para ver miniaturas en reproductores compatibles de YouTube, Vimeo, Patreon, Twitch y Disney+."
+    "message": "Previsualiza antes de buscar: pasa el cursor por la línea de tiempo para ver miniaturas en reproductores compatibles de YouTube, Vimeo, Patreon, Twitch, Disney+ y Bilibili."
   },
   "whatsNewThanks": {
     "message": "Activa Rich Theater Experience (Experimental) desde la ventana emergente de la extensión en sitios compatibles o desde la página de Ajustes. Sigue siendo experimental, por lo que algunas funciones pueden variar según el servicio :)"

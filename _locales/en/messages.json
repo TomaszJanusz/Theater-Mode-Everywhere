@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
+    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Bilibili, Tencent Video, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
   },
   "richTheaterExperienceReadMore": {
     "message": "here"
@@ -188,6 +188,18 @@
   },
   "disneyIntegrationDescription": {
     "message": "Enables support for captions and thumbnails on the timeline in theater mode when the player provides them."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Bilibili integration"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Imports the video title, subtitles, chapters, and timeline thumbnails when available. Some subtitles require signing in to Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Tencent Video integration"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Imports the episode title. Playback and next-episode controls work when available; subtitles use the player's HTML5 tracks."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -345,7 +357,7 @@
     "message": "More context on the timeline: jump between chapters and see YouTube's Most Replayed moments."
   },
   "whatsNewItemPreviews": {
-    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players."
+    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, Disney+, and Bilibili players."
   },
   "whatsNewThanks": {
     "message": "Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It's still experimental, so some features may vary by service :)"

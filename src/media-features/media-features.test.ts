@@ -1451,13 +1451,15 @@ describe('caption language preference', () => {
 describe('provider integration flags', () => {
   const allOn = defaultMediaProviderFlags();
 
-  it('defaults YouTube, Vimeo, Patreon, Twitch, and Disney+ extras on', () => {
+  it('defaults every provider integration on', () => {
     assert.deepEqual(resolveMediaProviderFlags(undefined), {
       youtube: true,
       vimeo: true,
       patreon: true,
       twitch: true,
-      disney: true
+      disney: true,
+      bilibili: true,
+      tencent: true
     });
     assert.deepEqual(resolveMediaProviderFlags({}), allOn);
   });
@@ -1500,15 +1502,26 @@ describe('provider integration flags', () => {
       vimeo: false,
       patreon: false,
       twitch: false,
-      disney: false
+      disney: false,
+      bilibili: false,
+      tencent: false
     });
     assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
       youtubeIntegrationEnabled: true,
       vimeoIntegrationEnabled: true,
       patreonIntegrationEnabled: true,
       twitchIntegrationEnabled: true,
-      disneyIntegrationEnabled: true
+      disneyIntegrationEnabled: true,
+      bilibiliIntegrationEnabled: true,
+      tencentIntegrationEnabled: true
     });
+  });
+
+  it('keeps newly added integrations off for an existing RTE-off installation', () => {
+    const data = { youtubeIntegrationEnabled: false, vimeoIntegrationEnabled: false,
+      patreonIntegrationEnabled: false, twitchIntegrationEnabled: false, disneyIntegrationEnabled: false };
+    assert.deepEqual(resolveMediaProviderFlags(data), mediaProviderFlagsForRichTheaterExperience(false));
+    assert.equal(resolveMediaProviderFlags({ ...data, bilibiliIntegrationEnabled: true }).bilibili, true);
   });
 });
 

@@ -872,6 +872,7 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
@@ -937,7 +938,7 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      toggleTheaterMode();
+      if (!event.repeat) toggleTheaterMode();
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
@@ -996,6 +997,7 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
       (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
@@ -1006,14 +1008,23 @@ function initialize(): void {
     if (isEditable) return;
     if (theaterDialogOpen()) return;
     const shortcuts = ui().shortcuts || defaultShortcuts;
-    if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
+    // Host players can handle shortcuts on keyup or keypress. Claim the entire
+    // toggle gesture even after it has just exited our theater session.
+    if (matchesShortcut(event, shortcuts.toggle) || matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       return;
     }
     if (!session.element) return;
-    if (matchesShortcut(event, shortcuts.playPause)) {
+    // Tencent performs play/pause and seek on keyup; suppress host follow-up
+    // events for every shortcut already handled by our theater controls.
+    const theaterShortcuts = [shortcuts.playPause, shortcuts.seekBack, shortcuts.seekForward,
+      shortcuts.frameBack, shortcuts.frameForward, shortcuts.volumeUp, shortcuts.volumeDown,
+      shortcuts.toggleMute, shortcuts.togglePiP, shortcuts.cycle, shortcuts.cycleFit,
+      shortcuts.toggleCaptions, shortcuts.increaseCaptionSize, shortcuts.decreaseCaptionSize,
+      shortcuts.showHelp, shortcuts.previousVideo, shortcuts.nextVideo, shortcuts.exit];
+    if (theaterShortcuts.some((shortcut) => matchesShortcut(event, shortcut))) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
