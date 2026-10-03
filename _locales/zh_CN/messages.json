@@ -413,6 +413,9 @@
   "previousVideo": {
     "message": "上一个"
   },
+  "backToStart": {
+    "message": "回到开头"
+  },
   "nextVideo": {
     "message": "下一个"
   },

@@ -413,6 +413,9 @@
   "previousVideo": {
     "message": "السابق"
   },
+  "backToStart": {
+    "message": "العودة إلى البداية"
+  },
   "nextVideo": {
     "message": "التالي"
   },

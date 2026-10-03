@@ -264,16 +264,23 @@ export function createControls(ctx: PlayerChromeContext) {
     setIcon(previousBtn, previousIcon);
     const playlistPreview = (direction: 'previous' | 'next') => {
       const available = ctx.actions.playlistNavigationAvailable();
+      if (direction === 'previous' && available.previousRestarts) return null;
       return direction === 'previous' ? available.previousPreview : available.nextPreview;
+    };
+    const playlistActionName = (direction: 'previous' | 'next') => {
+      if (direction === 'previous' && ctx.actions.playlistNavigationAvailable().previousRestarts) {
+        return t('backToStart');
+      }
+      return t(direction === 'previous' ? 'previousVideo' : 'nextVideo');
     };
     const playlistShortcutText = (direction: 'previous' | 'next') => {
       const shortcut = direction === 'previous' ? ui().shortcuts.previousVideo : ui().shortcuts.nextVideo;
       const keys = shortcut.split('+').filter(Boolean).map((part) => `<kbd>${part}</kbd>`).join('+');
-      return `${t(direction === 'previous' ? 'previousVideo' : 'nextVideo')} ${keys}`;
+      return `${playlistActionName(direction)} ${keys}`;
     };
     const playlistLabel = (direction: 'previous' | 'next') => {
       const preview = playlistPreview(direction);
-      const name = t(direction === 'previous' ? 'previousVideo' : 'nextVideo');
+      const name = playlistActionName(direction);
       return preview ? `${name}: ${preview.title}` : name;
     };
     bindCustomTooltip(previousBtn, () => playlistShortcutText('previous'), () => playlistPreview('previous'));

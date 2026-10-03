@@ -130,7 +130,7 @@ export function createChromeRefs(): ChromeRefs {
     volumeBoostEnabled: false,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,
-    parentPlaylistNav: { previous: false, next: false, previousPreview: null, nextPreview: null }
+    parentPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null }
   };
 }
 

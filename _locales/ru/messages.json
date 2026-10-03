@@ -413,6 +413,9 @@
   "previousVideo": {
     "message": "Предыдущее"
   },
+  "backToStart": {
+    "message": "В начало"
+  },
   "nextVideo": {
     "message": "Следующее"
   },
