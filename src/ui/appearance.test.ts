@@ -38,6 +38,11 @@ describe('picture align', () => {
     assert.equal(raisedCaptionsUseBand('center top', horizontalLetterboxPx(unknown)), false);
     assert.equal(raisedCaptionsUseBand('center top', horizontalLetterboxPx(widescreen)), true);
     assert.equal(raisedCaptionsUseBand('center center', horizontalLetterboxPx(widescreen)), false);
+    const sliver: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1082 };
+    assert.equal(horizontalLetterboxPx(sliver), 2);
+    assert.equal(pictureHasLetterbox(sliver), false);
+    assert.equal(objectPositionForPicture('contain', 'top', sliver), 'center center');
+    assert.equal(raisedCaptionsUseBand('center top', horizontalLetterboxPx(sliver)), false);
   });
 
   it('measures the band beside a 150px vertical tab column', () => {

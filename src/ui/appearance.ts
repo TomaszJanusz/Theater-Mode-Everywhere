@@ -4,6 +4,7 @@ import {
   resolveAccentColorPreset,
   type AccentColorPreset
 } from '../accentTheme';
+import { raisedCaptionBandMin } from '../media-features/caption-dock';
 import { t } from './messages';
 
 export { applyAccentColorPreset, DEFAULT_ACCENT_COLOR, resolveAccentColorPreset };
@@ -44,9 +45,6 @@ export type PictureFrame = {
   viewportHeight: number;
 };
 
-/** Spare height below this is treated as no letterbox, so resize does not flicker on the boundary. */
-const LETTERBOX_MIN_PX = 1;
-
 /** Height of the horizontal bar under a fitted picture. Unknown sizes report no measurable band. */
 export function horizontalLetterboxPx(frame: PictureFrame): number {
   const { videoWidth, videoHeight, viewportWidth, viewportHeight } = frame;
@@ -56,18 +54,19 @@ export function horizontalLetterboxPx(frame: PictureFrame): number {
 }
 
 /**
- * A fitted picture leaves a horizontal bar when the viewport is taller than the video.
- * Unknown sizes keep the stored Raised choice until the frame can be measured.
+ * A fitted picture leaves a usable bar when the viewport is taller than the video
+ * by at least one minimum caption block. A sliver stays centered so captions do
+ * not cover the picture. Unknown sizes keep the stored Raised choice until measured.
  */
 export function pictureHasLetterbox(frame: PictureFrame): boolean {
   const { videoWidth, videoHeight, viewportWidth, viewportHeight } = frame;
   if (!(videoWidth > 0 && videoHeight > 0 && viewportWidth > 0 && viewportHeight > 0)) return true;
-  return horizontalLetterboxPx(frame) > LETTERBOX_MIN_PX;
+  return horizontalLetterboxPx(frame) >= raisedCaptionBandMin();
 }
 
-/** Caption chrome follows a measured band. An unmeasured frame can stay `center top` without the black caption treatment. */
+/** Caption chrome follows a measured band that can hold the block. An unmeasured frame can stay `center top` without that treatment. */
 export function raisedCaptionsUseBand(position: string, bandHeight: number): boolean {
-  return position === 'center top' && bandHeight > 0;
+  return position === 'center top' && bandHeight >= raisedCaptionBandMin();
 }
 
 /** Letterbox alignment inside a full-viewport video box. Fill, stretch, and a window without a bottom bar stay centered. */

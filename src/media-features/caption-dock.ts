@@ -21,6 +21,18 @@ export const CAPTION_BLOCK_PADDING_Y = 12;
 export const CAPTION_DOCK_RAISED_CENTER_GAP = 48;
 export const CAPTION_LINE_LIMIT_MIN = 2;
 export const CAPTION_LINE_LIMIT_MAX = 3;
+/** Default `.theater-caption-overlay-text` line box: 28px font at 1.35 line-height. */
+export const CAPTION_DEFAULT_LINE_HEIGHT = 37.8;
+
+/** Smallest letterbox that holds the minimum caption block clear of the picture. */
+export function raisedCaptionBandMin(
+  lineHeight = CAPTION_DEFAULT_LINE_HEIGHT,
+  edge = CAPTION_DOCK_RAISED_EDGE,
+  paddingY = CAPTION_BLOCK_PADDING_Y
+): number {
+  if (!(lineHeight > 0)) return edge + paddingY;
+  return CAPTION_LINE_LIMIT_MIN * lineHeight + paddingY + edge;
+}
 
 /** Visual rows in a caption block, from its border-box height and the text line height. */
 export function raisedCaptionRowCount(captionHeight: number, lineHeight: number): number {
