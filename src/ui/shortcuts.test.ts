@@ -22,6 +22,11 @@ function key(partial: {
 
 describe('shortcut matching', () => {
   it('defaults mute to M', () => {
+    assert.equal(defaultShortcuts.previousVideo, 'Shift+P');
+    assert.equal(defaultShortcuts.nextVideo, 'Shift+N');
+    assert.equal(matchesShortcut(key({ key: 'P', shiftKey: true, code: 'KeyP' }), 'Shift+P'), true);
+    assert.equal(matchesShortcut(key({ key: 'P', code: 'KeyP' }), 'Shift+P'), false);
+    assert.equal(matchesShortcut(key({ key: 'N', shiftKey: true, code: 'KeyN' }), 'Shift+N'), true);
     assert.equal(defaultShortcuts.toggleMute, 'M');
     assert.equal(defaultShortcuts.increaseCaptionSize, '+');
     assert.equal(defaultShortcuts.decreaseCaptionSize, '-');

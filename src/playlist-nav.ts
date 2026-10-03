@@ -1,8 +1,21 @@
 export type PlaylistDirection = 'previous' | 'next';
 
+export type PlaylistPreview = {
+  title: string;
+  imageUrl: string;
+};
+
+export type PlaylistNavState = {
+  previous: boolean;
+  next: boolean;
+  previousPreview: PlaylistPreview | null;
+  nextPreview: PlaylistPreview | null;
+};
+
 export type PlaylistAction = {
   direction: PlaylistDirection;
   activate: () => void;
+  preview: PlaylistPreview | null;
 };
 
 export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase';
@@ -72,17 +85,108 @@ export function usableControlIndexes(
   });
 }
 
+export function emptyPlaylistNav(): PlaylistNavState {
+  return { previous: false, next: false, previousPreview: null, nextPreview: null };
+}
+
+export function sanitizePlaylistPreview(title: string, imageUrl: string): PlaylistPreview | null {
+  const cleanTitle = title.replace(/\s+/g, ' ').trim();
+  if (!cleanTitle || cleanTitle.length > 180) return null;
+  let url: URL;
+  try {
+    url = new URL(imageUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' || url.href.length > 2000) return null;
+  return { title: cleanTitle, imageUrl: url.href };
+}
+
+export function neighborPreviews(
+  items: Array<{ position: number; title: string; imageUrl: string }>,
+  currentPosition: number
+): { previous: PlaylistPreview | null; next: PlaylistPreview | null } {
+  const byPosition = new Map<number, PlaylistPreview>();
+  for (const item of items) {
+    if (byPosition.has(item.position)) continue;
+    const preview = sanitizePlaylistPreview(item.title, item.imageUrl);
+    if (preview) byPosition.set(item.position, preview);
+  }
+  return {
+    previous: byPosition.get(currentPosition - 1) ?? null,
+    next: byPosition.get(currentPosition + 1) ?? null
+  };
+}
+
+export function peerTubeNeighborPreviews(
+  root: ParentNode,
+  pageHref: string
+): { previous: PlaylistPreview | null; next: PlaylistPreview | null } {
+  const current = playlistPosition(pageHref);
+  if (current == null) return { previous: null, next: null };
+  const items: Array<{ position: number; title: string; imageUrl: string }> = [];
+  root.querySelectorAll('a.video-info-name').forEach((node) => {
+    if (!(node instanceof HTMLAnchorElement)) return;
+    const position = playlistPosition(node.getAttribute('href'));
+    if (position == null) return;
+    const imageUrl = thumbnailNear(node);
+    if (!imageUrl) return;
+    items.push({
+      position,
+      title: node.getAttribute('title') || node.textContent || '',
+      imageUrl
+    });
+  });
+  return neighborPreviews(items, current);
+}
+
+export function vimeoShowcasePreview(root: ParentNode, stepHref: string | null): PlaylistPreview | null {
+  const videoId = showcaseVideoId(stepHref);
+  if (!videoId) return null;
+  for (const node of root.querySelectorAll('a[href*="video="]')) {
+    if (!(node instanceof HTMLAnchorElement)) continue;
+    if (showcaseVideoId(node.getAttribute('href')) !== videoId) continue;
+    const image = [...node.querySelectorAll('img')].find((item) => {
+      return /\/video\//.test(item.currentSrc || item.getAttribute('src') || '');
+    });
+    if (!image) continue;
+    const preview = sanitizePlaylistPreview(
+      node.querySelector('p')?.textContent || '',
+      image.currentSrc || image.getAttribute('src') || ''
+    );
+    if (preview) return preview;
+  }
+  return null;
+}
+
+export function playlistNavStateFromActions(actions: PlaylistAction[]): PlaylistNavState {
+  const previous = actions.find((action) => action.direction === 'previous');
+  const next = actions.find((action) => action.direction === 'next');
+  return {
+    previous: Boolean(previous),
+    next: Boolean(next),
+    previousPreview: previous?.preview ?? null,
+    nextPreview: next?.preview ?? null
+  };
+}
+
 export function findPlaylistActions(root: ParentNode, video?: HTMLVideoElement | null): PlaylistAction[] {
   const scope = scopedRoot(root, video);
   const scoped = readControls(scope);
   const controls = scoped.length > 0 || scope === root ? scoped : readControls(root);
+  const page = previewRoot(root);
+  const videoJsNeighbors = peerTubeNeighborPreviews(page, pageHref(page));
   const width = viewportWidth(root);
-  return usableControlIndexes(controls.map((entry) => entry.snapshot), width).map(({ index, direction }) => ({
-    direction,
-    activate: () => {
-      controls[index]?.element.click();
-    }
-  }));
+  return usableControlIndexes(controls.map((entry) => entry.snapshot), width).map(({ index, direction }) => {
+    const entry = controls[index];
+    return {
+      direction,
+      preview: entry ? stepPreview(entry.element, entry.snapshot.provider, direction, page, videoJsNeighbors) : null,
+      activate: () => {
+        entry?.element.click();
+      }
+    };
+  });
 }
 
 function scopedRoot(root: ParentNode, video?: HTMLVideoElement | null): ParentNode {
@@ -169,4 +273,68 @@ function isHostStepUsable(control: ObservedPlaylistControl): boolean {
 
 function centerOf(control: ObservedPlaylistControl): number {
   return control.x + control.width / 2;
+}
+
+function previewRoot(root: ParentNode): ParentNode {
+  if (root instanceof ShadowRoot) return root.host.ownerDocument;
+  return root;
+}
+
+function pageHref(root: ParentNode): string {
+  const view = root instanceof Document
+    ? root.defaultView
+    : root instanceof ShadowRoot
+      ? root.host.ownerDocument.defaultView
+      : null;
+  return view?.location.href || '';
+}
+
+function stepPreview(
+  element: HTMLElement,
+  provider: PlaylistProvider,
+  direction: PlaylistDirection,
+  page: ParentNode,
+  videoJsNeighbors: { previous: PlaylistPreview | null; next: PlaylistPreview | null }
+): PlaylistPreview | null {
+  if (provider === 'youtube') {
+    return sanitizePlaylistPreview(
+      element.getAttribute('data-tooltip-text') || '',
+      element.getAttribute('data-preview') || ''
+    );
+  }
+  if (provider === 'videojs') return videoJsNeighbors[direction];
+  if (provider === 'vimeo-showcase') return vimeoShowcasePreview(page, element.getAttribute('data-href'));
+  return null;
+}
+
+function playlistPosition(href: string | null | undefined): number | null {
+  if (!href) return null;
+  try {
+    const value = Number(new URL(href, 'https://playlist.local').searchParams.get('playlistPosition'));
+    return Number.isInteger(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function showcaseVideoId(href: string | null | undefined): string | null {
+  if (!href || !isVimeoShowcaseStepHref(href)) return null;
+  try {
+    return new URL(href, 'https://vimeo.com').searchParams.get('video');
+  } catch {
+    return null;
+  }
+}
+
+function thumbnailNear(anchor: HTMLElement): string | null {
+  let node: HTMLElement | null = anchor;
+  for (let depth = 0; depth < 6 && node; depth += 1) {
+    node = node.parentElement;
+    if (!node) return null;
+    if (node.querySelectorAll('a.video-info-name').length !== 1) continue;
+    const image = [...node.querySelectorAll('img')].find((item) => (item.currentSrc || item.getAttribute('src') || '').trim());
+    if (!image) continue;
+    return image.currentSrc || image.getAttribute('src') || null;
+  }
+  return null;
 }

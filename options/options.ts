@@ -60,6 +60,8 @@ interface Shortcuts {
   seekForward: string;
   cycle: string;
   playPause: string;
+  previousVideo: string;
+  nextVideo: string;
   frameBack: string;
   frameForward: string;
   toggleFullscreen: string;
@@ -81,6 +83,8 @@ const defaultShortcuts: Shortcuts = {
   seekForward: 'ArrowRight',
   cycle: 'Shift+T',
   playPause: 'Space',
+  previousVideo: 'Shift+P',
+  nextVideo: 'Shift+N',
   frameBack: '<',
   frameForward: '>',
   toggleFullscreen: 'F',
@@ -567,6 +571,8 @@ async function init() {
     const seekForwardInput = document.getElementById('shortcut-seek-forward') as HTMLInputElement;
     const cycleInput = document.getElementById('shortcut-cycle') as HTMLInputElement;
     const playPauseInput = document.getElementById('shortcut-play-pause') as HTMLInputElement;
+    const previousVideoInput = document.getElementById('shortcut-previous-video') as HTMLInputElement;
+    const nextVideoInput = document.getElementById('shortcut-next-video') as HTMLInputElement;
     const frameBackInput = document.getElementById('shortcut-frame-back') as HTMLInputElement;
     const frameForwardInput = document.getElementById('shortcut-frame-forward') as HTMLInputElement;
     const toggleFullscreenInput = document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement;
@@ -586,6 +592,8 @@ async function init() {
     if (seekForwardInput) seekForwardInput.value = shortcuts.seekForward || defaultShortcuts.seekForward;
     if (cycleInput) cycleInput.value = shortcuts.cycle || defaultShortcuts.cycle;
     if (playPauseInput) playPauseInput.value = shortcuts.playPause || defaultShortcuts.playPause;
+    if (previousVideoInput) previousVideoInput.value = shortcuts.previousVideo || defaultShortcuts.previousVideo;
+    if (nextVideoInput) nextVideoInput.value = shortcuts.nextVideo || defaultShortcuts.nextVideo;
     if (frameBackInput) frameBackInput.value = shortcuts.frameBack || defaultShortcuts.frameBack;
     if (frameForwardInput) frameForwardInput.value = shortcuts.frameForward || defaultShortcuts.frameForward;
     if (toggleFullscreenInput) toggleFullscreenInput.value = shortcuts.toggleFullscreen || defaultShortcuts.toggleFullscreen;
@@ -666,6 +674,8 @@ async function init() {
           else if (shortcutId === 'shortcut-seek-forward') shortcuts.seekForward = shortcutStr;
           else if (shortcutId === 'shortcut-cycle') shortcuts.cycle = shortcutStr;
           else if (shortcutId === 'shortcut-play-pause') shortcuts.playPause = shortcutStr;
+          else if (shortcutId === 'shortcut-previous-video') shortcuts.previousVideo = shortcutStr;
+          else if (shortcutId === 'shortcut-next-video') shortcuts.nextVideo = shortcutStr;
           else if (shortcutId === 'shortcut-frame-back') shortcuts.frameBack = shortcutStr;
           else if (shortcutId === 'shortcut-frame-forward') shortcuts.frameForward = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-fullscreen') shortcuts.toggleFullscreen = shortcutStr;

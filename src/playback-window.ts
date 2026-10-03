@@ -287,7 +287,22 @@ export function playbackWindow(
   const unknownVod = unknownLengthVodWindow(video);
   if (unknownVod) return unknownVod;
 
-  return liveWindow(video);
+  // Infinity with no VOD prefix is a live stream. NaN is only "not loaded yet".
+  if (video.duration === Number.POSITIVE_INFINITY) return liveWindow(video);
+  return {
+    start: 0,
+    end: 0,
+    duration: 0,
+    seekable: false,
+    live: false
+  };
+}
+
+/** Keep the last real VOD or live window while the element has no timeline yet. */
+export function presentPlaybackWindow(previous: PlaybackWindow | null, next: PlaybackWindow): PlaybackWindow {
+  if (next.live || next.seekable) return next;
+  if (previous && (previous.live || previous.seekable)) return previous;
+  return next;
 }
 
 export function clampToWindow(time: number, window: PlaybackWindow): number {
