@@ -138,10 +138,23 @@ html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
   pointer-events: none !important;
 }
 
+/* The video plane does not paint its object-fit bar, so a raised 16:10 frame
+ * would show the page in the caption band. This layer sits directly behind it. */
+#theater-everywhere-stage {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000000 !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+}
+
 /* Hide scrollbars on the document when theater mode is active */
 .theater-everywhere-body-active,
 .theater-everywhere-html-active {
   overflow: hidden !important;
+  background: #000000 !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: none !important;

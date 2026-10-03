@@ -33,11 +33,13 @@ import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
+  mountTheaterStage,
   mountTwitchTheaterStage,
   observeTwitchTheaterStage,
   theaterVideoNeedsRestyle,
   unmarkTheaterVideo,
   unmountDisneyTheaterStage,
+  unmountTheaterStage,
   unmountTwitchTheaterStage
 } from './theater-layout';
 import {
@@ -1170,6 +1172,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   markTheaterVideo(element);
+  mountTheaterStage();
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
   stopObservingTwitchTheaterStage?.();
@@ -1323,6 +1326,7 @@ function exitTheaterMode(
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
   document.documentElement.classList.remove('theater-everywhere-picture-top');
+  unmountTheaterStage();
   unmountDisneyTheaterStage();
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = null;
