@@ -1,3 +1,4 @@
+import { sanitizeContentTitle } from './content-title';
 import { requestMediaProbe, type VimeoPlayerSnapshot } from './probe';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview, type VimeoThumbSprite } from './parsers/vimeo-thumbs';
 import type {
@@ -72,6 +73,10 @@ export class VimeoAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.snapshot?.videoId || null;
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
   }
 
   async reload(): Promise<void> {

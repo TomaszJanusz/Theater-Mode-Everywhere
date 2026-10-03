@@ -48,7 +48,8 @@ export function firstMatchingYoutubeSnapshot(
     if (!match.videoId && pageVideoId && snapshot.videoId === pageVideoId) {
       match = {
         ...snapshot,
-        heatmap: snapshot.heatmap?.segments?.length ? snapshot.heatmap : match.heatmap
+        heatmap: snapshot.heatmap?.segments?.length ? snapshot.heatmap : match.heatmap,
+        title: snapshot.title || match.title
       };
       continue;
     }
@@ -60,6 +61,13 @@ export function firstMatchingYoutubeSnapshot(
       && match.videoId === snapshot.videoId
     ) {
       match = { ...match, heatmap: snapshot.heatmap };
+    }
+    if (
+      !match.title
+      && snapshot.title
+      && (!match.videoId || !snapshot.videoId || match.videoId === snapshot.videoId)
+    ) {
+      match = { ...match, title: snapshot.title };
     }
   }
   return match;

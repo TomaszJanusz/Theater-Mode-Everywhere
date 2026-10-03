@@ -21,6 +21,8 @@ import {
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
+import { vimeoPageTitle } from './content-title';
+import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
@@ -421,6 +423,24 @@ https://evil.example/storyboard.jpg#xywh=0,0,256,160
   });
 });
 
+describe('vimeo page title', () => {
+  it('prefers the open-graph title and strips the site suffix', () => {
+    assert.equal(
+      vimeoPageTitle('Les Bêtes', 'Verify to continue', 'Les Bêtes | Videos & Movies on Vimeo'),
+      'Les Bêtes'
+    );
+    assert.equal(
+      vimeoPageTitle(null, 'Verify to continue', 'Les Bêtes | Videos & Movies on Vimeo'),
+      'Les Bêtes'
+    );
+  });
+
+  it('ignores the marketing homepage and login gates', () => {
+    assert.equal(vimeoPageTitle('Vimeo', 'Vimeo - All-in-One Video Platform', 'Vimeo'), null);
+    assert.equal(vimeoPageTitle(null, 'Log in', 'Join'), null);
+  });
+});
+
 describe('youtube page video identity', () => {
   it('reads watch, shorts, embed, live, and youtu.be URLs', () => {
     assert.equal(youtubePageVideoId('https://www.youtube.com/watch?v=abc123&list=PLtest'), 'abc123');
@@ -435,6 +455,18 @@ describe('youtube page video identity', () => {
     assert.equal(youtubeSnapshotMatchesPage('sameVideo', 'sameVideo'), true);
     assert.equal(youtubeSnapshotMatchesPage(undefined, 'newVideo'), true);
     assert.equal(youtubeSnapshotMatchesPage('oldVideo', null), true);
+  });
+
+  it('keeps the player-response title on the youtube snapshot', () => {
+    const snapshot = normalizeYoutubePlayerResponse({
+      videoDetails: { videoId: 'abc123def45', title: '  Night   Drive  ', lengthSeconds: '12' },
+      microformat: { playerMicroformatRenderer: { title: { simpleText: 'Ignored' } } }
+    });
+    assert.equal(snapshot?.title, 'Night Drive');
+    assert.equal(normalizeYoutubePlayerResponse({
+      videoDetails: { videoId: 'abc123def45' },
+      microformat: { playerMicroformatRenderer: { title: { simpleText: 'From the microformat' } } }
+    })?.title, 'From the microformat');
   });
 
   it('prefers a published current-video snapshot over a stale playlist boot response', () => {
@@ -464,6 +496,15 @@ describe('youtube page video identity', () => {
     ]);
     assert.equal(withHeat?.captionTracks?.[0]?.language, 'en');
     assert.equal(withHeat?.heatmap?.segments?.[0]?.intensity, 1);
+    const titled = firstMatchingYoutubeSnapshot('sigA04sdSMQ', [
+      { videoId: 'sigA04sdSMQ', heatmap: { source: 'svg', svgPath: 'M 0 0' } },
+      { videoId: 'sigA04sdSMQ', title: 'Current watch' }
+    ]);
+    assert.equal(titled?.title, 'Current watch');
+    assert.equal(firstMatchingYoutubeSnapshot('sigA04sdSMQ', [
+      { videoId: 'sigA04sdSMQ', title: 'Keep me' },
+      { videoId: 'otherVideo0001', title: 'Someone else' }
+    ])?.title, 'Keep me');
     const otherVideo = firstMatchingYoutubeSnapshot(null, [
       { videoId: 'one' },
       {
@@ -895,6 +936,19 @@ describe('F-05 composite adapter isolation', () => {
     ]);
     assert.equal(composite.getHeatmap()?.source, 'markers');
   });
+
+  it('prefers the host provider title over a native element title', () => {
+    const composite = new CompositeMediaAdapter([
+      stubAdapter({ getTitle: () => 'Native label' }),
+      stubAdapter({ getTitle: () => '  Provider title  ' })
+    ]);
+    assert.equal(composite.getTitle(), 'Provider title');
+    const nativeOnly = new CompositeMediaAdapter([
+      stubAdapter({ getTitle: () => 'Lecture 3' }),
+      stubAdapter({ getTitle: () => null })
+    ]);
+    assert.equal(nativeOnly.getTitle(), 'Lecture 3');
+  });
 });
 
 describe('twitch page and storyboard parsers', () => {
@@ -1104,6 +1158,30 @@ https://captions.twitch.tv/en/635475444.vtt`;
     assert.equal(payload.moments?.length, 2);
     assert.equal(payload.moments?.[1].title, 'Cyberpunk 2077');
     assert.equal(payload.moments?.[1].start, 5005);
+  });
+
+  it('reads a VOD title without promoting a moment label', () => {
+    const payload = extractTwitchPayloadFromJson({
+      data: {
+        video: {
+          id: '99',
+          title: 'Speedrun',
+          lengthSeconds: 120,
+          moments: {
+            edges: [{
+              node: {
+                positionMilliseconds: 0,
+                durationMilliseconds: 1000,
+                description: 'Intro',
+                title: 'Not the video'
+              }
+            }]
+          }
+        }
+      }
+    }, '99');
+    assert.equal(payload.title, 'Speedrun');
+    assert.equal(payload.moments?.[0].title, 'Intro');
   });
 });
 
@@ -1439,6 +1517,11 @@ describe('disney page parser', () => {
     assert.equal(parsed.duration, 7080);
     assert.equal(parsed.captions.length, 0);
     assert.equal(parsed.masterUrl, 'https://vod-akc-euwest1.media.dssott.com/ps01/una-ctr-all-abc.m3u8');
+    const titled = parseDisneyPlaybackPayload({
+      text: { title: { full: 'Loki' } },
+      stream: { runtimeMillis: 7_080_000 }
+    });
+    assert.equal(titled.title, 'Loki');
     assert.equal(isSafeDisneyMasterUrl(parsed.masterUrl!), true);
     assert.equal(isSafeDisneyCaptionUrl('https://disney.api.edge.bamgrid.com/explore/v1.0'), false);
     assert.equal(isSafeDisneyCaptionUrl('https://vod-akc-euwest1.media.dssott.com/ps01/text/pl.vtt'), true);

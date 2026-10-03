@@ -71,6 +71,7 @@ export type PlayerChromeActions = {
   persistVideoFitMode(mode: VideoFitMode): void;
   applyTheaterVideoFit(mode?: VideoFitMode): void;
   showCaptionHud(payload: CaptionHudPayload): void;
+  syncContentTitle(title: string | null): void;
   executeCommand(command: PlayerCommand): void;
   findBestVideo(): HTMLVideoElement | null;
   findAllVideosDeep(root?: Document | ShadowRoot): HTMLVideoElement[];

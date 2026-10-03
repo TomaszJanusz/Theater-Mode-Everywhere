@@ -1,3 +1,4 @@
+import { sanitizeContentTitle } from '../content-title';
 import { isSafeTwitchStoryboardJsonUrl } from './twitch-storyboard';
 import { isTwitchHost } from '../../providers/hosts';
 
@@ -24,6 +25,7 @@ export const TWITCH_CAPTIONS_ACK_EVENT = 'theater-everywhere-twitch-captions-ack
 
 export type TwitchPageAssets = {
   videoId: string | null;
+  title?: string;
   duration?: number;
   seekPreviewsURL?: string;
   moments: TwitchPageMoment[];
@@ -218,6 +220,24 @@ function momentTitleFromNode(node: Record<string, unknown>): string {
   return typeof title === 'string' ? title.trim() : '';
 }
 
+function twitchContentTitle(record: Record<string, unknown>): string | null {
+  if (record.positionMilliseconds != null) return null;
+  let raw: unknown = record.title;
+  const settings = record.broadcastSettings;
+  if (typeof raw !== 'string' && settings && typeof settings === 'object') {
+    raw = (settings as { title?: unknown }).title;
+  }
+  if (typeof raw !== 'string') return null;
+  const looksLikeVideo = record.lengthSeconds != null
+    || typeof record.seekPreviewsURL === 'string'
+    || record.moments != null
+    || record.previewThumbnailURL != null
+    || record.animatedPreviewURL != null
+    || settings != null;
+  if (!looksLikeVideo) return null;
+  return sanitizeContentTitle(raw);
+}
+
 function momentsFromNode(node: Record<string, unknown>): TwitchPageMoment[] {
   let source: Record<string, unknown>[] = [];
   if (Array.isArray(node.moments)) {
@@ -257,6 +277,7 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
     seekPreviewsURL?: string;
     duration?: number;
     moments: TwitchPageMoment[];
+    title?: string;
   }> = [];
   let budget = 4000;
 
@@ -276,13 +297,15 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
     if (hasVideoFields) {
       const id = record.id != null ? String(record.id).replace(/^v/i, '') : '';
       const length = Number(record.lengthSeconds ?? record.length);
+      const title = twitchContentTitle(record) || undefined;
       videos.push({
         id,
         seekPreviewsURL: typeof record.seekPreviewsURL === 'string'
           ? canonicalizeTwitchStoryboardUrl(record.seekPreviewsURL) || undefined
           : undefined,
         duration: Number.isFinite(length) && length > 0 ? length : undefined,
-        moments: momentsFromNode(record)
+        moments: momentsFromNode(record),
+        ...(title ? { title } : {})
       });
     }
     for (const value of Object.values(record)) walk(value, depth + 1);
@@ -308,8 +331,10 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
     }
   }
   moments.sort((left, right) => left.start - right.start);
+  const title = pool.find((video) => video.title)?.title;
   return {
     videoId: pool.find((video) => video.id)?.id || videoId || null,
+    ...(title ? { title } : {}),
     duration: pool.find((video) => video.duration)?.duration,
     seekPreviewsURL: pool.find((video) => video.seekPreviewsURL)?.seekPreviewsURL,
     moments: moments.slice(0, 80),

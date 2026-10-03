@@ -1,4 +1,5 @@
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
+import { sanitizeContentTitle } from './content-title';
 import { CaptionRenderer } from './caption-renderer';
 import { openCaptionOptionsDialog } from './caption-options-dialog';
 import { chapterAtTime } from './cue-index';
@@ -42,6 +43,7 @@ export type MediaFeaturesBindings = {
   adapter?: MediaFeaturesAdapter;
   renderer?: CaptionOverlayRenderer;
   onSnapshot?: (snapshot: MediaSnapshot) => void;
+  onTitle?: (title: string | null) => void;
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -84,6 +86,7 @@ export class MediaFeaturesController {
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
   private onSnapshot?: (snapshot: MediaSnapshot) => void;
+  private onTitle?: (title: string | null) => void;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
   private sessionEpoch = 0;
@@ -108,6 +111,7 @@ export class MediaFeaturesController {
     this.onCaptionPreferenceChange = bindings.onCaptionPreferenceChange;
     this.decorateCaptionDialog = bindings.decorateCaptionDialog;
     this.onSnapshot = bindings.onSnapshot;
+    this.onTitle = bindings.onTitle;
     const pref = bindings.captionPreference;
     if (pref && (pref.language || pref.label)) {
       this.lastLanguagePref = {
@@ -199,6 +203,7 @@ export class MediaFeaturesController {
     this.updateCcState();
     this.renderCcMenu();
     this.onCaptionChange?.();
+    this.onTitle?.(null);
   }
 
   private bumpEpoch(): void {
@@ -319,6 +324,13 @@ export class MediaFeaturesController {
       }
     } finally {
       if (this.isCurrent(epoch, adapter)) {
+        let title: string | null = null;
+        try {
+          title = sanitizeContentTitle(adapter.getTitle?.());
+        } catch {
+          title = null;
+        }
+        this.onTitle?.(title);
         this.onSnapshot?.({
           capabilities: {
             captions: this.tracks.length > 0,

@@ -57,6 +57,7 @@ export function createControls(ctx: PlayerChromeContext) {
     ctx.actions.persistCaptionStyle(style);
   };
   const showCaptionHud = (payload: Parameters<typeof ctx.actions.showCaptionHud>[0]) => ctx.actions.showCaptionHud(payload);
+  const syncContentTitle = (title: string | null) => ctx.actions.syncContentTitle(title);
   const executeCommand = (command: PlayerCommand) => ctx.actions.executeCommand(command);
   const exitTheaterMode = () => ctx.actions.exitTheaterMode();
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
@@ -783,7 +784,8 @@ export function createControls(ctx: PlayerChromeContext) {
       },
       onSnapshot: (snapshot) => {
         session.publishSnapshot(snapshot, session.currentEpoch);
-      }
+      },
+      onTitle: syncContentTitle
     });
     wrapper._mediaFeatures = mediaFeatures;
     mediaFeatures.setCaptionStyle(ui().captionStyle);

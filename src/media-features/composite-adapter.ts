@@ -147,6 +147,23 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return null;
   }
 
+  /**
+   * Host adapters are registered after native, so the last nonempty title is the
+   * provider currently reporting this playback.
+   */
+  getTitle(): string | null {
+    let title: string | null = null;
+    for (const adapter of this.adapters) {
+      try {
+        const next = adapter.getTitle?.()?.trim();
+        if (next) title = next;
+      } catch {
+        // A provider that cannot name the video must not hide another provider's title.
+      }
+    }
+    return title;
+  }
+
   /** Reloads every adapter without rejecting when an individual reload fails. */
   async reload(): Promise<void> {
     await allSettledResults(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));

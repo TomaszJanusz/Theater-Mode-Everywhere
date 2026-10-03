@@ -1,3 +1,4 @@
+import { sanitizeContentTitle } from '../../media-features/content-title';
 import { isAllowedMediaFetchUrl } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isPatreonHost } from '../hosts';
@@ -14,6 +15,17 @@ function findMuxPlayer(): any | null {
     node = node instanceof ShadowRoot ? node.host : node.parentNode;
   }
   return document.querySelector('mux-player');
+}
+
+function readPatreonPostTitle(): string | null {
+  const selectors = ['[data-tag="post-title"]', 'h1'];
+  for (const selector of selectors) {
+    const title = sanitizeContentTitle(document.querySelector(selector)?.textContent);
+    if (title) return title;
+  }
+  const og = sanitizeContentTitle(document.querySelector('meta[property="og:title"]')?.getAttribute('content'));
+  if (!og) return null;
+  return sanitizeContentTitle(og.replace(/\s*\|\s*Patreon$/i, ''));
 }
 
 function readPatreonPostText(): string {
@@ -214,9 +226,11 @@ export function readPatreonSnapshot(): Record<string, unknown> | null {
       );
     }
     const description = readPatreonPostText();
-    if (!storyboardUrl && chapters.length === 0 && captionTracks.length === 0 && !description) return null;
+    const title = readPatreonPostTitle();
+    if (!storyboardUrl && chapters.length === 0 && captionTracks.length === 0 && !description && !title) return null;
     return {
       playbackId: playbackId || page?.playbackId || undefined,
+      ...(title ? { title } : {}),
       duration: Number(player?.duration) || undefined,
       storyboardUrl: storyboardUrl || undefined,
       description: description || undefined,

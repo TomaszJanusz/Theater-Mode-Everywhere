@@ -10,6 +10,7 @@ import {
   type DockRect
 } from '../media-features/caption-dock';
 import { horizontalLetterboxPx } from './appearance';
+import { TITLE_HUD_CLASS } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -175,6 +176,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
 
     closeTheaterPopovers();
     controls.classList.remove('visible');
+    ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`)?.classList.remove('visible');
     if (ctx.session.element.tagName === 'VIDEO') {
       ctx.session.element.classList.remove('controls-visible');
     }
@@ -195,6 +197,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }
 
     controls.classList.add('visible');
+    ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`)?.classList.add('visible');
     if (ctx.session.element && ctx.session.element.tagName === 'VIDEO') {
       ctx.session.element.classList.add('controls-visible');
     }

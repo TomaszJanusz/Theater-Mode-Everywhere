@@ -17,6 +17,7 @@ import {
   type DisneyVttSegment
 } from './parsers/disney-page';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
+import { sanitizeContentTitle } from './content-title';
 import { requestMediaProbe, requestPageFetch } from './probe';
 import type {
   CaptionActivationResult,
@@ -177,6 +178,7 @@ export function dedupeCaptionCues(cues: CaptionCue[]): CaptionCue[] {
 export class DisneyAdapter implements MediaFeaturesAdapter {
   private snapshot: {
     mediaId?: string;
+    title?: string;
     duration?: number;
     masterUrl?: string;
     storyboardUrl?: string;
@@ -217,8 +219,10 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
       this.activeCaption = null;
       this.captionLoadGeneration += 1;
     }
+    const sameMedia = Boolean(this.snapshot?.mediaId && nextId && this.snapshot.mediaId === nextId);
     this.snapshot = {
       mediaId: nextId || undefined,
+      title: sanitizeContentTitle(harvested?.title) || (sameMedia ? this.snapshot?.title : undefined),
       duration: harvested?.duration || this.snapshot?.duration,
       masterUrl,
       storyboardUrl: bifUrl,
@@ -427,6 +431,10 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.snapshot?.mediaId || disneyPlayId(window.location.href);
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
   }
 
   async reload(): Promise<void> {

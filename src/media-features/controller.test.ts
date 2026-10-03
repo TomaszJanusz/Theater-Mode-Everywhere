@@ -491,6 +491,22 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.deepEqual(seen, [{ captions: true, errorCount: 0 }]);
   });
 
+  it('publishes the adapter title after refresh and clears it on invalidate', async () => {
+    const titles: Array<string | null> = [];
+    const { controller } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
+      getTitle: () => '  Night Drive  '
+    }, {
+      onTitle: (title) => {
+        titles.push(title);
+      }
+    });
+    await controller.refresh();
+    controller.invalidate();
+    assert.deepEqual(titles, ['Night Drive', null]);
+  });
+
   it('accepts a heatmap from the adapter without breaking caption refresh', async () => {
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK],

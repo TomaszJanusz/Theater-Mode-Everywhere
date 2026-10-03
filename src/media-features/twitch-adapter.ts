@@ -17,6 +17,7 @@ import {
   type TwitchPageMoment
 } from './parsers/twitch-page';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
+import { sanitizeContentTitle } from './content-title';
 import { requestMediaProbe, requestPageFetch, type TwitchPlayerSnapshot } from './probe';
 import type {
   CaptionActivationResult,
@@ -192,6 +193,7 @@ function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
   try {
     const data = JSON.parse(raw) as {
       videoId?: string;
+      title?: string;
       duration?: number | string;
       seekPreviewsURL?: string;
       moments?: TwitchPlayerSnapshot['moments'];
@@ -203,9 +205,11 @@ function readTwitchHarvestFromDom(): TwitchPlayerSnapshot | null {
     const captionTracks = Array.isArray(data.captionTracks)
       ? data.captionTracks
       : Array.isArray(data.captions) ? data.captions : [];
-    if (!data.videoId && moments.length === 0 && !data.seekPreviewsURL && captionTracks.length === 0) return null;
+    const title = sanitizeContentTitle(data.title) || undefined;
+    if (!data.videoId && moments.length === 0 && !data.seekPreviewsURL && captionTracks.length === 0 && !title) return null;
     return {
       videoId: data.videoId || undefined,
+      ...(title ? { title } : {}),
       duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
       seekPreviewsURL: data.seekPreviewsURL || undefined,
       moments,
@@ -225,7 +229,10 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
   async load(): Promise<void> {
     const pageVideoId = twitchPageVideoId(window.location.href);
     if (!pageVideoId) {
-      this.snapshot = { videoId: undefined };
+      const probed = await requestMediaProbe(800);
+      const harvested = readTwitchHarvestFromDom();
+      const title = sanitizeContentTitle(probed.twitch?.title) || sanitizeContentTitle(harvested?.title) || undefined;
+      this.snapshot = { videoId: undefined, ...(title ? { title } : {}) };
       this.storyboard = null;
       this.tracks = [];
       this.moments = [];
@@ -242,6 +249,10 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
         .filter((url): url is string => Boolean(url))
     );
     const duration = probed.twitch?.duration || harvested?.duration || page.duration;
+    const title = sanitizeContentTitle(probed.twitch?.title)
+      || sanitizeContentTitle(harvested?.title)
+      || sanitizeContentTitle(page.title)
+      || undefined;
     this.moments = mergeMoments(
       [...(probed.twitch?.moments || []), ...(harvested?.moments || [])],
       page.moments
@@ -252,6 +263,7 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
     );
     this.snapshot = {
       videoId: probed.twitch?.videoId || page.videoId || pageVideoId,
+      ...(title ? { title } : {}),
       duration,
       seekPreviewsURL: seekCandidates[0],
       moments: this.moments.map((moment) => ({
@@ -347,6 +359,10 @@ export class TwitchAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.snapshot?.videoId || twitchPageVideoId(window.location.href);
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
   }
 
   async reload(): Promise<void> {

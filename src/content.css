@@ -1526,6 +1526,107 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transition: opacity 0.2s ease !important;
 }
 
+/* Persistent content title. Same glass as the caption HUD, larger type, top-left. */
+.theater-everywhere-title-hud {
+  position: fixed !important;
+  top: 24px !important;
+  inset-inline-start: 24px !important;
+  inset-inline-end: auto !important;
+  width: max-content !important;
+  max-width: min(720px, calc(100vw - 48px)) !important;
+  transform: translateY(-8px) !important;
+  background: rgba(15, 15, 15, 0.72) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 12px !important;
+  padding: 12px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  opacity: 0 !important;
+  user-select: none !important;
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.theater-everywhere-title-hud.visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.theater-everywhere-title-hud.marquee {
+  width: min(720px, calc(100vw - 48px)) !important;
+}
+
+.theater-title-hud-viewport {
+  overflow: hidden !important;
+  width: max-content !important;
+  max-width: 100% !important;
+}
+
+.theater-everywhere-title-hud.marquee .theater-title-hud-viewport {
+  width: 100% !important;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent) !important;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent) !important;
+}
+
+.theater-everywhere-title-hud[dir="rtl"].marquee .theater-title-hud-viewport {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent) !important;
+  mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent) !important;
+}
+
+.theater-title-hud-track {
+  display: flex !important;
+  width: max-content !important;
+  white-space: nowrap !important;
+}
+
+.theater-everywhere-title-hud.visible.marquee .theater-title-hud-track {
+  animation: theater-title-marquee var(--theater-title-duration, 12s) linear infinite !important;
+}
+
+.theater-everywhere-title-hud[dir="rtl"].visible.marquee .theater-title-hud-track {
+  animation-name: theater-title-marquee-rtl !important;
+}
+
+.theater-title-hud-text {
+  display: block !important;
+  flex: none !important;
+  white-space: nowrap !important;
+  line-height: 1.3 !important;
+}
+
+.theater-everywhere-title-hud.marquee .theater-title-hud-text {
+  padding-inline-end: 72px !important;
+}
+
+@keyframes theater-title-marquee {
+  0%, 8% { transform: translateX(0); }
+  92%, 100% { transform: translateX(-50%); }
+}
+
+@keyframes theater-title-marquee-rtl {
+  0%, 8% { transform: translateX(0); }
+  92%, 100% { transform: translateX(50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-everywhere-title-hud.visible.marquee .theater-title-hud-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 .theater-everywhere-volume-overlay.boosted {
   border-color: rgba(245, 158, 11, 0.4) !important;
 }

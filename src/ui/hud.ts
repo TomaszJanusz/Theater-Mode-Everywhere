@@ -1,4 +1,7 @@
+import { sanitizeContentTitle } from '../media-features/content-title';
 import type { PlayerChromeContext } from './runtime-context';
+
+export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -285,11 +288,72 @@ export function createHud(ctx: PlayerChromeContext) {
     }, displayDuration);
   }
 
+  function syncContentTitle(title: string | null): void {
+    const cleaned = sanitizeContentTitle(title);
+    const existing = ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`) as HTMLElement | null;
+    if (!cleaned) {
+      existing?.remove();
+      return;
+    }
+
+    let overlay = existing;
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = TITLE_HUD_CLASS;
+      overlay.setAttribute('aria-hidden', 'true');
+      ctx.paintOverlay(overlay);
+      const viewport = document.createElement('div');
+      viewport.className = 'theater-title-hud-viewport';
+      const track = document.createElement('div');
+      track.className = 'theater-title-hud-track';
+      const text = document.createElement('span');
+      text.className = 'theater-title-hud-text';
+      track.appendChild(text);
+      viewport.appendChild(track);
+      overlay.appendChild(viewport);
+      ctx.mountPlayerUi(overlay);
+    }
+
+    const text = overlay.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)');
+    if (text && text.textContent !== cleaned) text.textContent = cleaned;
+    const controls = ctx.queryPlayerUi('.theater-controls-wrapper');
+    overlay.classList.toggle('visible', Boolean(controls?.classList.contains('visible')));
+    layoutTitleMarquee(overlay);
+  }
+
+  function layoutTitleMarquee(overlay: HTMLElement): void {
+    const track = overlay.querySelector('.theater-title-hud-track') as HTMLElement | null;
+    const text = track?.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)') as HTMLElement | null;
+    const viewport = overlay.querySelector('.theater-title-hud-viewport') as HTMLElement | null;
+    if (!track || !text || !viewport) return;
+
+    overlay.classList.remove('marquee');
+    track.querySelector('.theater-title-hud-text-clone')?.remove();
+    overlay.style.removeProperty('--theater-title-duration');
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    const viewWidth = viewport.clientWidth;
+    const textWidth = text.scrollWidth;
+    if (reduceMotion || viewWidth <= 0 || textWidth <= viewWidth + 1) return;
+
+    overlay.classList.add('marquee');
+    const clone = text.cloneNode(true) as HTMLElement;
+    clone.classList.add('theater-title-hud-text-clone');
+    clone.setAttribute('aria-hidden', 'true');
+    track.appendChild(clone);
+
+    const travel = text.offsetWidth;
+    const scrollSeconds = travel / 80;
+    const duration = Math.min(16, Math.max(6, scrollSeconds / 0.84));
+    overlay.style.setProperty('--theater-title-duration', `${duration.toFixed(2)}s`);
+  }
+
   return {
     triggerSeekIndicator,
     triggerVolumeIndicator,
     triggerStatusIndicator,
     triggerPlaybackIndicator,
-    triggerCaptionHud
+    triggerCaptionHud,
+    syncContentTitle
   };
 }

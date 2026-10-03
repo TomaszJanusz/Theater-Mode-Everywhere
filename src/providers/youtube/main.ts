@@ -18,6 +18,7 @@ import {
 import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import { sanitizeContentTitle, youtubePlayerTitle } from '../../media-features/content-title';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isYouTubeHost } from '../hosts';
 
@@ -469,16 +470,36 @@ function pickYoutubePlayerResponse(): unknown {
   return pageId ? null : (live || boot || config);
 }
 
+function usableYoutubeDomTitle(value: string | null): string | null {
+  if (!value || /^youtube$/i.test(value)) return null;
+  return value;
+}
+
+function readYoutubeDomTitle(): string | null {
+  const heading = document.querySelector(
+    'h1.ytd-watch-metadata yt-formatted-string, h1.ytd-watch-metadata, #title h1, .ytp-title-link'
+  );
+  const fromHeading = usableYoutubeDomTitle(sanitizeContentTitle(heading?.textContent));
+  if (fromHeading) return fromHeading;
+  const og = usableYoutubeDomTitle(sanitizeContentTitle(
+    document.querySelector('meta[name="title"], meta[property="og:title"]')?.getAttribute('content')
+  ));
+  if (og) return og;
+  return usableYoutubeDomTitle(sanitizeContentTitle(document.title.replace(/\s+-\s+YouTube$/i, '')));
+}
+
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
   try {
     const raw = pickYoutubePlayerResponse() as any;
     const heatmap = heatmapForCurrentPage(raw);
+    const domTitle = readYoutubeDomTitle() || undefined;
     if (!raw || typeof raw !== 'object') {
-      if (!heatmap) return null;
+      if (!heatmap && !domTitle) return null;
       const videoId = youtubePageVideoId(window.location.href);
       return {
         ...(videoId ? { videoId: videoId.slice(0, 20) } : {}),
-        heatmap
+        ...(domTitle ? { title: domTitle } : {}),
+        ...(heatmap ? { heatmap } : {})
       };
     }
 
@@ -516,9 +537,11 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
     const description = typeof videoDetails.shortDescription === 'string'
       ? videoDetails.shortDescription.slice(0, 20000)
       : undefined;
+    const title = youtubePlayerTitle(videoDetails, raw?.microformat?.playerMicroformatRenderer?.title) || domTitle;
 
     return {
       videoId: typeof videoDetails.videoId === 'string' ? videoDetails.videoId.slice(0, 20) : undefined,
+      ...(title ? { title } : {}),
       duration: Number(videoDetails.lengthSeconds) || undefined,
       description,
       captionTracks,

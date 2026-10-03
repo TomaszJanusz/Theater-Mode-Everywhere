@@ -1,3 +1,4 @@
+import { findDisneyContentTitle, sanitizeContentTitle } from '../content-title';
 import type { CaptionCue } from '../types';
 
 export const DISNEY_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-disney-snapshot';
@@ -126,6 +127,7 @@ export type DisneyBifSet = {
 
 export type DisneyPlaybackAssets = {
   mediaId?: string;
+  title?: string;
   duration?: number;
   masterUrl?: string;
   captions: DisneyPageCaption[];
@@ -500,8 +502,11 @@ export function parseDisneyPlaybackPayload(raw: unknown, mediaId?: string | null
 
   walk(raw, 0);
 
+  const title = findDisneyContentTitle(raw) || undefined;
+
   return {
     mediaId: mediaId || undefined,
+    title,
     duration: namedDurations.length > 0 ? Math.max(...namedDurations) : undefined,
     masterUrl,
     captions: [],
@@ -583,9 +588,11 @@ export function readPublishedDisneySnapshot(
         }
       : (storyboardUrl ? { width: 480, height: 270, intervalMs: 10_000, bifUrl: storyboardUrl } : undefined);
     const mediaId = typeof data.mediaId === 'string' && UUID_RE.test(data.mediaId) ? data.mediaId.toLowerCase() : undefined;
-    if (!mediaId && !masterUrl && !storyboardUrl && !bifBlobUrl && !(Number.isFinite(duration) && duration > 0)) return null;
+    const title = sanitizeContentTitle(data.title) || undefined;
+    if (!mediaId && !masterUrl && !storyboardUrl && !bifBlobUrl && !(Number.isFinite(duration) && duration > 0) && !title) return null;
     return {
       mediaId,
+      title,
       duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
       masterUrl,
       captions: [],

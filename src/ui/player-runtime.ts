@@ -132,7 +132,8 @@ const {
   triggerVolumeIndicator,
   triggerStatusIndicator,
   triggerPlaybackIndicator,
-  triggerCaptionHud
+  triggerCaptionHud,
+  syncContentTitle
 } = hud;
 const {
   showToolbar,
@@ -344,6 +345,7 @@ function bindChromeActions(): void {
     persistVideoFitMode,
     applyTheaterVideoFit,
     showCaptionHud,
+    syncContentTitle,
     executeCommand,
     findBestVideo,
     findAllVideosDeep,

@@ -13,6 +13,7 @@ import {
   type YoutubeCaptionMeta,
   type YoutubePlayerSnapshot
 } from './probe';
+import { sanitizeContentTitle } from './content-title';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import type {
   CaptionActivationResult,
@@ -240,6 +241,10 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.snapshot?.videoId || null;
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
   }
 
   private snapshotMatchesPage(): boolean {

@@ -1,3 +1,4 @@
+import { findDisneyContentTitle, sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
@@ -12,6 +13,7 @@ export function disneyIntegrationEnabled(): boolean {
 
 type DisneyHarvest = {
   mediaId?: string;
+  title?: string;
   duration?: number;
   masterUrl?: string;
   storyboardUrl?: string;
@@ -147,7 +149,21 @@ function extractDisneyThumbnail(raw: unknown): { width: number; height: number; 
   return best;
 }
 
+function readDisneyDomTitle(): string | null {
+  const og = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+  const raw = sanitizeContentTitle(og) || sanitizeContentTitle(document.title);
+  if (!raw) return null;
+  const stripped = raw
+    .replace(/\s*[|–-]\s*Disney\+$/i, '')
+    .replace(/^watch\s+/i, '')
+    .trim();
+  const title = sanitizeContentTitle(stripped);
+  if (!title || /^(disney\+?|home|watch|search)$/i.test(title)) return null;
+  return title;
+}
+
 function extractDisneyHarvest(raw: unknown): {
+  title?: string;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -191,8 +207,10 @@ function extractDisneyHarvest(raw: unknown): {
   };
   walk(raw, 0);
   const storyboardUrl = thumbnail?.bifUrl || storyboards[0];
-  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl) return null;
+  const title = findDisneyContentTitle(raw) || undefined;
+  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title) return null;
   return {
+    title,
     duration: namedDurations.length > 0 ? Math.max(...namedDurations) : undefined,
     masterUrl,
     captions,
@@ -252,12 +270,13 @@ function publishDisneyHarvest(): void {
     return;
   }
   const mediaId = disneyHarvest.mediaId || disneyPageMediaId() || undefined;
-  if (!mediaId && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl && !disneyHarvest.duration) {
+  if (!mediaId && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl && !disneyHarvest.duration && !disneyHarvest.title) {
     publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, null);
     return;
   }
   publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, {
     mediaId,
+    title: disneyHarvest.title,
     duration: disneyHarvest.duration,
     masterUrl: disneyHarvest.masterUrl,
     storyboardUrl: disneyHarvest.storyboardUrl,
@@ -277,6 +296,7 @@ function notifyDisneyHarvest(): void {
 }
 
 function mergeDisneyHarvest(next: {
+  title?: string;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -289,6 +309,10 @@ function mergeDisneyHarvest(next: {
   }
   if (mediaId) disneyHarvest.mediaId = mediaId;
   let changed = false;
+  if (next.title && !disneyHarvest.title) {
+    disneyHarvest.title = next.title;
+    changed = true;
+  }
   if (next.duration && next.duration !== disneyHarvest.duration) {
     disneyHarvest.duration = next.duration;
     changed = true;
@@ -357,12 +381,15 @@ export function readDisneySnapshot(): Record<string, unknown> | null {
       resetDisneyHarvest(mediaId);
     }
     if (mediaId) disneyHarvest.mediaId = mediaId;
+    const domTitle = readDisneyDomTitle();
+    if (domTitle && domTitle !== disneyHarvest.title) disneyHarvest.title = domTitle;
     publishDisneyHarvest();
-    if (!disneyHarvest.duration && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl) {
+    if (!disneyHarvest.duration && !disneyHarvest.masterUrl && !disneyHarvest.storyboardUrl && !disneyHarvest.bifBlobUrl && !disneyHarvest.title) {
       return mediaId ? { mediaId } : null;
     }
     return {
       mediaId,
+      ...(disneyHarvest.title ? { title: disneyHarvest.title } : {}),
       duration: disneyHarvest.duration,
       masterUrl: disneyHarvest.masterUrl,
       storyboardUrl: disneyHarvest.storyboardUrl,

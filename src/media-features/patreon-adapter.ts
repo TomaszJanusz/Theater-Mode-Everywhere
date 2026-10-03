@@ -10,6 +10,7 @@ import {
   type PatreonPageCaption
 } from './parsers/patreon-page';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
+import { sanitizeContentTitle } from './content-title';
 import { requestMediaProbe, requestPageFetch, type PatreonPlayerSnapshot } from './probe';
 import type {
   CaptionActivationResult,
@@ -119,6 +120,7 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
     );
     this.snapshot = {
       playbackId: probed.patreon?.playbackId || page?.playbackId,
+      title: probed.patreon?.title,
       duration: probed.patreon?.duration,
       storyboardUrl: page?.storyboardVttUrl || page?.storyboardJsonUrl || probed.patreon?.storyboardUrl,
       description: probed.patreon?.description,
@@ -211,6 +213,10 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
 
   mediaId(): string | null {
     return this.snapshot?.playbackId || null;
+  }
+
+  getTitle(): string | null {
+    return sanitizeContentTitle(this.snapshot?.title);
   }
 
   async reload(): Promise<void> {

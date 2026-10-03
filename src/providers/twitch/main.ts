@@ -1,3 +1,4 @@
+import { sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
@@ -15,6 +16,7 @@ export function twitchIntegrationEnabled(): boolean {
 
 type TwitchHarvest = {
   videoId?: string;
+  title?: string;
   duration?: number;
   seekPreviewsURL?: string;
   moments: Array<{ startTime: number; endTime?: number; title: string }>;
@@ -72,6 +74,7 @@ function canonicalizeTwitchStoryboardUrl(url: string): string | null {
 function publishTwitchHarvest(): void {
   const payload = JSON.stringify({
     videoId: twitchHarvest.videoId || '',
+    title: twitchHarvest.title || '',
     duration: twitchHarvest.duration || '',
     seekPreviewsURL: twitchHarvest.seekPreviewsURL || '',
     moments: twitchHarvest.moments,
@@ -253,6 +256,11 @@ export function harvestTwitchGqlBody(body: string): void {
       changed = true;
     }
   }
+  const parsedTitle = sanitizeContentTitle(parsed.title);
+  if (parsedTitle && parsedTitle !== twitchHarvest.title) {
+    twitchHarvest.title = parsedTitle;
+    changed = true;
+  }
   for (const caption of parsed.captions || []) {
     if (twitchHarvest.captions.some((entry) => entry.url === caption.url && entry.id === caption.id)) continue;
     twitchHarvest.captions.push(caption);
@@ -296,14 +304,26 @@ export function harvestTwitchXhr(url: string, body: string | null, xhr: XMLHttpR
   }
 }
 
+function readTwitchDomTitle(): string | null {
+  const node = document.querySelector('[data-a-target="stream-title"], [data-a-target="video-title"]');
+  const fromNode = sanitizeContentTitle(node?.getAttribute('title')) || sanitizeContentTitle(node?.textContent);
+  if (fromNode) return fromNode;
+  const og = sanitizeContentTitle(document.querySelector('meta[property="og:title"]')?.getAttribute('content'));
+  if (!og) return null;
+  return sanitizeContentTitle(og.replace(/\s+-\s+Twitch$/i, ''));
+}
+
 export function readTwitchSnapshot(): Record<string, unknown> | null {
   try {
     if (!isTwitchHost(window.location.hostname)) return null;
     const videoId = twitchPageVideoId(window.location.href);
-    if (!videoId) return { videoId: undefined };
-    if (twitchHarvest.videoId && twitchHarvest.videoId !== videoId) {
+    if (videoId && twitchHarvest.videoId && twitchHarvest.videoId !== videoId) {
       twitchHarvest = { videoId, moments: [], captions: [] };
+    } else if (!videoId && twitchHarvest.videoId) {
+      twitchHarvest = { moments: [], captions: [] };
     }
+    const title = sanitizeContentTitle(twitchHarvest.title) || readTwitchDomTitle() || undefined;
+    if (!videoId) return { videoId: undefined, ...(title ? { title } : {}) };
     const urls: string[] = [];
     const seenUrls = new Set<string>();
     const addUrl = (raw?: string | null) => {
@@ -325,6 +345,7 @@ export function readTwitchSnapshot(): Record<string, unknown> | null {
     syncTwitchHostCaptionTrack();
     return {
       videoId,
+      ...(title ? { title } : {}),
       duration: twitchHarvest.duration,
       seekPreviewsURL,
       moments: [...twitchHarvest.moments],
@@ -351,6 +372,7 @@ function postTwitchHarvestSnapshotToTop(): void {
       type: 'theater-everywhere-twitch-harvest-snapshot',
       snapshot: {
         videoId: twitchHarvest.videoId,
+        title: twitchHarvest.title,
         duration: twitchHarvest.duration,
         seekPreviewsURL: twitchHarvest.seekPreviewsURL,
         moments: twitchHarvest.moments
@@ -363,6 +385,7 @@ function postTwitchHarvestSnapshotToTop(): void {
 
 function applyTwitchHarvestSnapshot(snapshot: {
   videoId?: string;
+  title?: string;
   duration?: number;
   seekPreviewsURL?: string;
   moments?: TwitchHarvest['moments'];
@@ -370,6 +393,11 @@ function applyTwitchHarvestSnapshot(snapshot: {
   let changed = false;
   if (snapshot.videoId && snapshot.videoId !== twitchHarvest.videoId) {
     twitchHarvest = { videoId: snapshot.videoId, moments: [], captions: [] };
+    changed = true;
+  }
+  const title = sanitizeContentTitle(snapshot.title);
+  if (title && title !== twitchHarvest.title) {
+    twitchHarvest.title = title;
     changed = true;
   }
   if (snapshot.duration && snapshot.duration !== twitchHarvest.duration) {

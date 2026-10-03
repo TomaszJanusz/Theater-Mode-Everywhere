@@ -1,3 +1,4 @@
+import { sanitizeContentTitle } from './content-title';
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
@@ -144,6 +145,11 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
 
   constructor(video: HTMLVideoElement) {
     this.video = video;
+  }
+
+  getTitle(): string | null {
+    const titled = this.video as HTMLVideoElement & { getAttribute?: (name: string) => string | null; title?: string };
+    return sanitizeContentTitle(titled.getAttribute?.('title') || titled.title);
   }
 
   async probe(): Promise<MediaCapabilities> {

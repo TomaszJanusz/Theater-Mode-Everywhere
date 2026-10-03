@@ -1,3 +1,4 @@
+import { youtubePlayerTitle } from './content-title';
 import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 
@@ -19,6 +20,7 @@ export type YoutubeCaptionMeta = {
 
 export type YoutubePlayerSnapshot = {
   videoId?: string;
+  title?: string;
   duration?: number;
   description?: string;
   captionTracks?: YoutubeCaptionMeta[];
@@ -45,6 +47,7 @@ export type VimeoThumbPreview = {
 export type VimeoPlayerSnapshot = {
   duration?: number;
   videoId?: string;
+  title?: string;
   textTracks?: Array<{ id?: string | number; label?: string; language?: string; kind?: string }>;
   chapters?: Array<{ startTime?: number; title?: string }>;
   thumbPreview?: VimeoThumbPreview;
@@ -61,6 +64,7 @@ export type PatreonCaptionMeta = {
 
 export type PatreonPlayerSnapshot = {
   playbackId?: string;
+  title?: string;
   duration?: number;
   storyboardUrl?: string;
   description?: string;
@@ -80,6 +84,7 @@ export type TwitchCaptionMeta = {
 
 export type TwitchPlayerSnapshot = {
   videoId?: string;
+  title?: string;
   duration?: number;
   seekPreviewsURL?: string;
   moments?: Array<{ startTime?: number; endTime?: number; title?: string }>;
@@ -95,6 +100,7 @@ export type DisneyCaptionMeta = {
 
 export type DisneyPlayerSnapshot = {
   mediaId?: string;
+  title?: string;
   duration?: number;
   masterUrl?: string;
   storyboardUrl?: string;
@@ -297,8 +303,11 @@ export function normalizeYoutubePlayerResponse(raw: unknown): YoutubePlayerSnaps
     })
     .filter(Boolean) as YoutubeCaptionMeta[];
 
+  const title = youtubePlayerTitle(videoDetails, data.microformat?.playerMicroformatRenderer?.title) || undefined;
+
   return {
     videoId: typeof videoDetails.videoId === 'string' ? videoDetails.videoId : undefined,
+    title,
     duration: Number(videoDetails.lengthSeconds) || undefined,
     description: typeof videoDetails.shortDescription === 'string' ? videoDetails.shortDescription : undefined,
     captionTracks,
