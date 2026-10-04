@@ -519,6 +519,8 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.evaluate(() => document.getElementById('other-player')!.remove());
   await page.keyboard.press('Escape');
   await controls.waitFor({ state: 'detached' });
+  // T deliberately ignores toggles within 200ms; fast runners can reach this re-entry inside that window.
+  await delay(250);
   await page.keyboard.press('t');
   await waitForChrome(true, true, true);
   if (await page.locator('.switch-video-btn').count()) fail('Unavailable switching remained after returning to a single player.');
