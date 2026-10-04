@@ -236,6 +236,39 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.mouse.move(640, 300);
   await waitForChrome(true, true, false);
   await delay(400);
+  const settingsLayout = await page.evaluate(() => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    return ['.controls-visibility-toggle', '.help-btn', '.video-fit-btn'].map((selector) => {
+      const row = root.querySelector(selector)!;
+      const label = row.querySelector('.theater-settings-label')!.getBoundingClientRect();
+      const keys = row.querySelector('.theater-settings-keys')!.getBoundingClientRect();
+      const detail = row.querySelector('.theater-settings-detail')!.getBoundingClientRect();
+      return {
+        selector,
+        kbds: [...row.querySelectorAll('.theater-settings-keys kbd')].map((key) => key.textContent),
+        joiner: [...row.querySelector('.theater-settings-keys')!.childNodes]
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.textContent)
+          .join(''),
+        value: row.querySelector('.theater-settings-detail')!.textContent ?? '',
+        shortcutInValue: Boolean(row.querySelector('.theater-settings-detail kbd')),
+        labelToKeys: Math.round(keys.left - label.right),
+        keysToValue: detail.width === 0 ? null : Math.round(detail.left - keys.right),
+      };
+    });
+  });
+  const [pinLayout, helpLayout, fitLayout] = settingsLayout;
+  if (!pinLayout || !helpLayout || !fitLayout
+    || pinLayout.shortcutInValue || helpLayout.shortcutInValue || fitLayout.shortcutInValue
+    || pinLayout.kbds.join('+') !== 'Shift+H' || pinLayout.joiner !== '+'
+    || helpLayout.kbds.join('+') !== 'H' || helpLayout.value !== ''
+    || fitLayout.kbds.join('+') !== 'Z' || fitLayout.value === ''
+    || pinLayout.value === ''
+    || pinLayout.labelToKeys > 16
+    || pinLayout.keysToValue === null
+    || pinLayout.keysToValue <= pinLayout.labelToKeys) {
+    fail(`Player settings should keep shortcuts beside the name and values on the right: ${JSON.stringify(settingsLayout)}`);
+  }
   if (process.env.THEATER_SMOKE_SCREENSHOT) {
     await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-settings.png') });
   }

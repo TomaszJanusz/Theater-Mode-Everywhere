@@ -1,5 +1,6 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import type { PlayerChromeContext } from './runtime-context';
+import { shortcutDisplayParts } from './shortcuts';
 
 /** Close the nonmodal settings panel, optionally returning keyboard focus to its trigger. */
 export function closePlayerSettings(root: ParentNode, restoreFocus = false): boolean {
@@ -57,25 +58,30 @@ export function createPlayerSettings(ctx: PlayerChromeContext, scope: Disposable
     row.type = 'button';
     row.classList.add('theater-settings-row');
     row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    const main = document.createElement('span');
+    main.className = 'theater-settings-main';
     const text = document.createElement('span');
     text.className = 'theater-settings-label';
     text.textContent = label;
+    const keys = document.createElement('span');
+    keys.className = 'theater-settings-keys';
+    keys.dir = 'ltr';
+    main.append(text, keys);
     const detail = document.createElement('span');
     detail.className = 'theater-settings-detail';
-    row.append(text, detail);
+    row.append(main, detail);
     panel.append(row);
     return {
       update(shortcut: string, value?: string) {
+        keys.replaceChildren();
+        shortcutDisplayParts(shortcut).forEach((part, index) => {
+          if (index > 0) keys.append('+');
+          const key = document.createElement('kbd');
+          key.textContent = part;
+          keys.append(key);
+        });
         detail.replaceChildren();
-        if (value) {
-          const state = document.createElement('span');
-          state.textContent = value;
-          detail.append(state);
-        }
-        const key = document.createElement('kbd');
-        key.dir = 'ltr';
-        key.textContent = shortcut;
-        detail.append(key);
+        if (value) detail.textContent = value;
         row.setAttribute('aria-keyshortcuts', shortcut);
       }
     };
