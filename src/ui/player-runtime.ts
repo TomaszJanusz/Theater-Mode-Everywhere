@@ -250,6 +250,9 @@ function executeCommand(command: PlayerCommand): void {
     case 'CYCLE_VIDEO':
       cycleTheaterVideo(command.direction);
       break;
+    case 'CYCLE_LAYOUT':
+      cyclePictureLayout();
+      break;
     case 'CYCLE_FIT':
       cycleVideoFit();
       break;
@@ -569,6 +572,21 @@ function toggleControlsPin(): void {
     }
   } catch (error) {
     console.error('[Theater Everywhere] Could not save controls visibility:', error);
+  }
+}
+
+function cyclePictureLayout(): void {
+  const next: PictureAlign = ui().pictureAlign === 'center' ? 'top' : 'center';
+  applyPictureAlign(next);
+  triggerStatusIndicator(t(next === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_FIT_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: next }).catch(error => {
+        console.error('[Theater Everywhere] Could not save picture layout:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save picture layout:', error);
   }
 }
 
@@ -985,6 +1003,14 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
+      return;
+    }
+
+    if (session.element && matchesShortcut(event, shortcuts.cycleLayout)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_LAYOUT' });
       return;
     }
 

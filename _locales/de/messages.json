@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Deine Tastenkürzel wurden nicht geändert. Versuche es erneut."
+  },
+  "cyclePictureLayout": {
+    "message": "Bildlayout wechseln"
   }
 }

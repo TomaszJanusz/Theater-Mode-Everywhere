@@ -25,6 +25,7 @@ describe('shortcut matching', () => {
   it('adds the pin shortcut to older settings without conflicting with help or losing custom keys', () => {
     const oldSettings = withShortcutDefaults({ showHelp: 'H', toggle: 'Ctrl+T' });
     assert.equal(oldSettings.toggleControlsPin, 'Shift+H');
+    assert.equal(oldSettings.cycleLayout, 'Shift+L');
     assert.equal(oldSettings.toggle, 'Ctrl+T');
     const pin = key({ key: 'H', code: 'KeyH', shiftKey: true });
     assert.equal(matchesShortcut(pin, oldSettings.toggleControlsPin), true);
@@ -73,6 +74,14 @@ describe('shortcut matching', () => {
 });
 
 describe('shortcut ownership', () => {
+  it('introduces Layout without taking Shift+L from an existing custom binding', () => {
+    const migrated = withShortcutDefaults({ showHelp: 'Shift+L' });
+    assert.equal(migrated.showHelp, 'Shift+L');
+    assert.equal(migrated.cycleLayout, '');
+    assert.deepEqual(shortcutConflicts(migrated, 'cycleLayout', 'Shift+L'), ['showHelp']);
+    const explicit = withShortcutDefaults({ showHelp: 'Shift+L', cycleLayout: 'Shift+L' });
+    assert.equal(explicit.cycleLayout, 'Shift+L'); // Existing explicit duplicates remain visible for user resolution.
+  });
   it('detects runtime aliases and implicit Shift without merging distinct modifiers', () => {
     for (const [a, b] of [['f', 'F'], ['F', 'KeyF'], ['+', '='], ['+', 'Shift+='], ['Ctrl++', 'Ctrl+Equal'], ['<', 'Shift+Comma'], ['Space', 'Spacebar']]) {
       assert.equal(shortcutsConflict(a, b), true, `${a} / ${b}`);

@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "단축키가 변경되지 않았습니다. 다시 시도하세요."
+  },
+  "cyclePictureLayout": {
+    "message": "영상 레이아웃 전환"
   }
 }

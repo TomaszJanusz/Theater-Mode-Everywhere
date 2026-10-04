@@ -43,6 +43,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   createdByHtml: 'Created by <a href="https://tomaszjanusz.dev" target="_blank" rel="noopener noreferrer">Tomasz Janusz</a>',
   appearanceTitle: 'Appearance',
   appearanceDescription: 'Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.',
+  cyclePictureLayout: 'Change picture layout',
   pictureAlignLabel: 'Layout',
   pictureAlignCenter: 'Centered',
   pictureAlignCenterDescription: 'Picture stays in the middle of the screen. Best\u00a0for\u00a016:9\u00a0screens.',

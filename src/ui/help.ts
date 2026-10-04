@@ -84,6 +84,7 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
+          { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
           { label: ctx.t('toggleSubtitles'), key: shortcuts.toggleCaptions },
           { label: ctx.t('increaseSubtitleSize'), key: shortcuts.increaseCaptionSize },
           { label: ctx.t('decreaseSubtitleSize'), key: shortcuts.decreaseCaptionSize },

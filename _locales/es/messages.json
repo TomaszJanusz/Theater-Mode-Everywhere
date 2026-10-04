@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Tus atajos no han cambiado. Inténtalo de nuevo."
+  },
+  "cyclePictureLayout": {
+    "message": "Cambiar la disposición de la imagen"
   }
 }

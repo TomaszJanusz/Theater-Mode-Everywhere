@@ -114,6 +114,7 @@ async function init() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
       if (changes.shortcuts) void shortcutEditor.refresh();
+      if (changes[PICTURE_ALIGN_STORAGE_KEY]) renderPictureAlignOptions(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
         if (toggle) toggle.checked = resolveKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
@@ -432,6 +433,11 @@ async function init() {
       const description = button.querySelector('.picture-align-desc');
       if (name) name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
       if (description) description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
+    }
+    // Keep roving focus on the selected radio when the player changes this preference.
+    const focused = buttons.find((button) => button === document.activeElement);
+    if (focused?.getAttribute('aria-checked') === 'false') {
+      buttons.find((button) => button.getAttribute('aria-checked') === 'true')?.focus();
     }
     return true;
   }

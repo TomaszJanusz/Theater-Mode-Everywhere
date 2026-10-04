@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Сочетания клавиш не изменены. Попробуйте ещё раз."
+  },
+  "cyclePictureLayout": {
+    "message": "Изменить расположение изображения"
   }
 }

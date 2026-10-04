@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Le scorciatoie non sono state modificate. Riprova."
+  },
+  "cyclePictureLayout": {
+    "message": "Cambia disposizione immagine"
   }
 }

@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "ショートカットは変更されていません。もう一度お試しください。"
+  },
+  "cyclePictureLayout": {
+    "message": "映像レイアウトを切り替え"
   }
 }

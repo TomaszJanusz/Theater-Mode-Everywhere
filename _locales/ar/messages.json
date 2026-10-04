@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "لم تتغير اختصاراتك. حاول مرة أخرى."
+  },
+  "cyclePictureLayout": {
+    "message": "تغيير تخطيط الصورة"
   }
 }

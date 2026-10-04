@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Your shortcuts were not changed. Please try again."
+  },
+  "cyclePictureLayout": {
+    "message": "Change picture layout"
   }
 }

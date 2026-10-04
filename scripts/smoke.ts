@@ -195,7 +195,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   const placement = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     const primary = ['play-pause-btn', 'playlist-prev-btn', 'playlist-next-btn', 'volume-btn', 'speed-btn', 'cc-btn', 'pip-btn', 'fullscreen-btn', 'close-btn'];
-    const secondary = ['video-fit-btn', 'controls-visibility-toggle', 'help-btn'];
+    const secondary = ['video-fit-btn', 'picture-layout-btn', 'controls-visibility-toggle', 'help-btn'];
     return [...primary.map(name => ({ name, expected: '.theater-controls-row' })), ...secondary.map(name => ({ name, expected: '.theater-settings-menu' }))]
       .filter(({ name, expected }) => {
         const buttons = root.querySelectorAll(`.${name}`);
@@ -317,6 +317,8 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (!await menu.locator('.video-fit-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab from the trigger skipped open settings.');
   }
+  await page.keyboard.press('Tab');
+  if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
@@ -793,7 +795,90 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
 }
 
 
-async function assertFullscreenAndHelp(page: Page, earlyHost = false): Promise<void> {
+async function assertPictureLayout(page: Page, context?: BrowserContext): Promise<void> {
+  const video = page.locator('video#player');
+  const gear = page.locator('.player-settings-btn');
+  const row = page.locator('.picture-layout-btn');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gear.click();
+  await row.waitFor();
+  if (await row.getAttribute('aria-keyshortcuts') !== 'Shift+L') fail('Layout shortcut is missing from player settings.');
+  const waitPosition = async (position: string) => {
+    await page.waitForFunction(position => getComputedStyle(document.querySelector('video#player')!).objectPosition === position, position, { timeout: 5000 });
+  };
+  await row.click();
+  await waitPosition('50% 0%');
+  if (await row.locator('.theater-settings-detail').innerText() !== 'Raised') fail('Layout row did not update after a click.');
+  await page.keyboard.down('Shift');
+  await page.keyboard.down('l');
+  await page.keyboard.down('l');
+  await page.keyboard.up('l');
+  await page.keyboard.up('Shift');
+  await waitPosition('50% 50%');
+  if (await row.locator('.theater-settings-detail').innerText() !== 'Centered') fail('Held layout shortcut toggled repeatedly.');
+  await page.evaluate(() => {
+    const host = document.createElement('div'); host.id = 'layout-input-test';
+    const input = document.createElement('input'); host.attachShadow({ mode: 'open' }).append(input);
+    document.body.append(host); input.focus();
+  });
+  await page.keyboard.press('Shift+L');
+  if (await video.evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired in a shadow input.');
+  await page.evaluate(() => document.getElementById('layout-input-test')?.remove());
+  if (!await row.isVisible()) await gear.click();
+  const fit = page.locator('.video-fit-btn');
+  await fit.click(); // Fill keeps the chosen layout preference, but centers the picture.
+  await row.click();
+  await waitPosition('50% 50%');
+  await fit.click(); // Stretch.
+  await waitPosition('50% 50%');
+  await fit.click(); // Back to Fit restores Raised.
+  await waitPosition('50% 0%');
+  if (context) {
+    const worker = await extensionWorker(context);
+    const options = await context.newPage();
+    try {
+      await options.goto(new URL('options/options.html', worker.url()).href);
+      await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+      await options.waitForSelector('[data-picture-align="top"][aria-checked="true"]');
+      await options.locator('#shortcut-cycle-layout').press('Shift+K');
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn')?.getAttribute('aria-keyshortcuts') === 'Shift+K');
+      await page.bringToFront();
+      await page.keyboard.press('Shift+L');
+      if (await video.evaluate(video => getComputedStyle(video).objectPosition) !== '50% 0%') fail('Old layout shortcut remained active after customization.');
+      await page.keyboard.press('Shift+K');
+      await waitPosition('50% 50%');
+      await options.waitForSelector('[data-picture-align="center"][aria-checked="true"]');
+      await options.locator('[data-picture-align="center"]').focus();
+      await page.keyboard.press('Shift+K');
+      await waitPosition('50% 0%');
+      await options.waitForFunction(() => document.activeElement?.matches('[data-picture-align="top"][aria-checked="true"][tabindex="0"]'));
+      await options.bringToFront();
+      await options.keyboard.press('Enter');
+      await waitPosition('50% 0%');
+      await options.locator('[data-picture-align="center"]').click();
+      await waitPosition('50% 50%');
+      await options.locator('[data-picture-align="top"]').click();
+      await waitPosition('50% 0%');
+      await options.locator('[data-shortcut="cycleLayout"]').click();
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn')?.getAttribute('aria-keyshortcuts') === 'Shift+L');
+    } finally { await options.close(); }
+    await page.bringToFront();
+    if (!await row.isVisible()) await gear.click();
+  }
+  if (process.env.THEATER_SMOKE_SCREENSHOT) {
+    await page.mouse.move(640, 300);
+    await row.focus();
+    await page.locator('.theater-everywhere-volume-overlay.status-hud').waitFor({ state: 'detached' });
+    await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-layout.png') });
+  }
+  await row.click(); // Restore Centered for the remaining smoke scenarios.
+  await waitPosition('50% 50%');
+  await page.keyboard.press('Escape'); // Close settings while keeping the session active.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  console.log('smoke layout: settings row, repeat/input/help guards, Fit/Fill/Stretch, saved preference and live shortcut updates passed');
+}
+
+async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: BrowserContext): Promise<void> {
   await page.bringToFront();
   await page.locator('video#player').evaluate(async (video: HTMLVideoElement) => {
     video.srcObject = null; video.src = '/vod.webm'; video.loop = true; await video.play();
@@ -806,6 +891,7 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false): Promise<v
   if (earlyHost && await page.evaluate(() => (window as any).hostEntryKeys.filter((key: string) => key === 'KeyF').length) !== hostCountBefore) fail('Host fullscreen keydown was not intercepted.');
   await page.keyboard.press('f');
   await page.waitForFunction(() => !document.fullscreenElement);
+  await assertPictureLayout(page, context);
   await page.keyboard.press('h');
   const help = page.locator('.theater-help-overlay');
   await help.waitFor();
@@ -815,19 +901,21 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false): Promise<v
       rows: overlay.querySelectorAll('.theater-help-row').length,
       closeVisible: overlay.querySelector('.theater-help-close-btn')!.getBoundingClientRect().top >= 0 };
   });
+  await page.keyboard.press('Shift+L');
+  if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
-  if (wide.columns !== 2 || wide.rows !== 21 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  if (wide.columns !== 2 || wide.rows !== 22 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });
   const narrow = await inspect();
-  if (narrow.columns !== 1 || narrow.rows !== 21 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  if (narrow.columns !== 1 || narrow.rows !== 22 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-close-btn').press('Enter');
   await help.waitFor({ state: 'detached' });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.keyboard.press('Escape');
   await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
-  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 21 shortcuts in responsive two/one-column help passed');
+  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 22 shortcuts in responsive two/one-column help passed');
 }
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
@@ -890,6 +978,10 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
   await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
   await page.locator('body').press('f');
   await page.waitForFunction(() => !document.fullscreenElement);
+  await page.locator('body').press('Shift+L');
+  await frame.locator('.picture-layout-btn .theater-settings-detail').filter({ hasText: 'Raised' }).waitFor({ state: 'attached' });
+  await frame.locator('body').press('Shift+L');
+  await frame.locator('.picture-layout-btn .theater-settings-detail').filter({ hasText: 'Centered' }).waitFor({ state: 'attached' });
   // A shortcut focused in the parent must update the child player exactly once.
   await page.locator('body').press('Shift+H');
   await frame.locator('.controls-visibility-toggle[aria-pressed="true"]').waitFor({ state: 'attached' });
@@ -975,7 +1067,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await waitForPlayer(page);
     if (process.env.THEATER_SMOKE_SHORTCUTS_ONLY !== '1') await assertControlsPin(page, context);
     await assertShortcutManagement(page, context);
-    await assertFullscreenAndHelp(page, true);
+    await assertFullscreenAndHelp(page, true, context);
 
     await setBlacklist(context, ['127.0.0.1']);
     await assertBlacklistBlocksTheater(page);

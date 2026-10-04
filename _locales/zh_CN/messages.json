@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "快捷键未更改。请重试。"
+  },
+  "cyclePictureLayout": {
+    "message": "切换画面布局"
   }
 }

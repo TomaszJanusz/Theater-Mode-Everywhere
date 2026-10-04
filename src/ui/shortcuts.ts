@@ -17,6 +17,7 @@ export interface Shortcuts {
   showHelp: string;
   toggleControlsPin: string;
   cycleFit: string;
+  cycleLayout: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
@@ -41,6 +42,7 @@ export const defaultShortcuts: Shortcuts = {
   showHelp: 'H',
   toggleControlsPin: 'Shift+H',
   cycleFit: 'Z',
+  cycleLayout: 'Shift+L',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-'
@@ -54,6 +56,10 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
     // An explicit empty value disables a shortcut; absent values still migrate to defaults.
     if (typeof value === 'string') next[key] = value;
   });
+  // Introducing Layout must not steal Shift+L from an existing custom action.
+  if (typeof saved.cycleLayout !== 'string' && shortcutConflicts(next, 'cycleLayout', next.cycleLayout).length) {
+    next.cycleLayout = '';
+  }
   return next;
 }
 

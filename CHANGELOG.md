@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Change the Centered/Raised picture layout from Player settings or the configurable Shift+L shortcut. The preference is shared with Settings → Appearance.
+
 - Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted.
 
 - Keep the playback controls and progress bar visible in theater mode using Player settings → Always show controls, the configurable Shift+H shortcut, or Settings → Features → Always show controls. The preference is remembered across videos and tabs; the title and cursor still hide when idle.

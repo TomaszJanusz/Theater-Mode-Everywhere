@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Skróty nie zostały zmienione. Spróbuj ponownie."
+  },
+  "cyclePictureLayout": {
+    "message": "Zmień układ obrazu"
   }
 }

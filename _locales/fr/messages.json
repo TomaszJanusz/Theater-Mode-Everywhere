@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Vos raccourcis n’ont pas été modifiés. Réessayez."
+  },
+  "cyclePictureLayout": {
+    "message": "Changer la disposition de l’image"
   }
 }

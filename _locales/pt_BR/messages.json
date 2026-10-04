@@ -630,5 +630,8 @@
   },
   "shortcutSaveErrorDescription": {
     "message": "Seus atalhos não foram alterados. Tente novamente."
+  },
+  "cyclePictureLayout": {
+    "message": "Alterar disposição da imagem"
   }
 }
