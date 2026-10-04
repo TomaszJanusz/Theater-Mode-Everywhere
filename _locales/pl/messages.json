@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Eksperymentalne)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Bilibili, Tencent Video i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
   },
   "richTheaterExperienceReadMore": {
     "message": "tutaj"
@@ -196,10 +196,10 @@
     "message": "Importuje tytuł filmu, napisy, rozdziały i miniatury osi czasu, jeśli są dostępne. Niektóre napisy wymagają zalogowania do Bilibili."
   },
   "tencentIntegrationTitle": {
-    "message": "Integracja z Tencent Video"
+    "message": "Integracja z Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importuje tytuł odcinka. Sterowanie odtwarzaniem i przejście do następnego odcinka działają, jeśli są dostępne; napisy korzystają ze ścieżek HTML5 odtwarzacza."
+    "message": "Importuje tytuły odcinków, napisy SRT/WebVTT i miniatury osi czasu z Tencent Video / WeTV, jeśli są dostępne. Sterowanie odtwarzaniem i przejście do następnego odcinka korzystają z dostępnych funkcji odtwarzacza."
   },
   "liveBadge": {
     "message": "NA ŻYWO"
@@ -357,7 +357,7 @@
     "message": "Więcej informacji na osi czasu: przechodź między rozdziałami i zobacz najczęściej odtwarzane momenty na YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Podejrzyj przed przewinięciem: najedź na oś czasu, aby zobaczyć miniatury w obsługiwanych odtwarzaczach YouTube, Vimeo, Patreon, Twitch, Disney+ i Bilibili."
+    "message": "Podejrzyj przed przewinięciem: najedź na oś czasu, aby zobaczyć miniatury w obsługiwanych odtwarzaczach YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili i Tencent Video / WeTV."
   },
   "whatsNewThanks": {
     "message": "Włącz Rich Theater Experience (Experimental) z poziomu popupu rozszerzenia na obsługiwanych stronach lub na stronie Ustawienia. Funkcja jest nadal eksperymentalna, więc niektóre możliwości mogą różnić się zależnie od serwisu :)"

@@ -1,7 +1,7 @@
 # RTE: Bilibili i Tencent Video
 
 Analiza i weryfikacja: 4 października 2026 r. Zakres Tencent Video obejmuje
-`v.qq.com`; Bilibili obejmuje domenę `bilibili.com` i jej subdomeny.
+`v.qq.com` i międzynarodowy serwis `wetv.vip` (WeTV); Bilibili obejmuje domenę `bilibili.com` i jej subdomeny.
 
 ## Funkcje w interfejsie
 
@@ -9,9 +9,9 @@ Analiza i weryfikacja: 4 października 2026 r. Zakres Tencent Video obejmuje
 | --- | --- | --- |
 | Tryb kinowy, odtwarzanie, głośność, przewijanie | HTML5; poprawiona obsługa skrótów | HTML5; wybór filmu zamiast pustego elementu zapasowego |
 | Tytuł | Metadane bieżącego filmu | Tytuł odcinka bez dopisku reklamowego i nazwy serwisu |
-| Napisy | Ścieżki JSON z API odtwarzacza, renderowane przez RTE | Natywne ścieżki HTML5, jeśli serwis je wystawia |
+| Napisy | Ścieżki JSON z API odtwarzacza, renderowane przez RTE | Dostępne ścieżki SRT/WebVTT z `sfl.fi`, renderowane przez RTE; także natywne HTML5 |
 | Rozdziały | `view_points` z API odtwarzacza, jeśli dostępne | Nie potwierdzono formatu możliwego do importowania |
-| Miniatury osi czasu | `videoshot`: arkusze obrazów i indeks czasowy | Nie potwierdzono formatu możliwego do importowania |
+| Miniatury osi czasu | `videoshot`: arkusze obrazów i indeks czasowy | Arkusze `vl.vi[].pl[].pd` z metadanych ThumbPlayer |
 | Poprzedni/następny materiał | Dostępne przyciski odtwarzacza | Dostępny przycisk następnego odcinka |
 | Mapa popularności | Nie zaimportowano | Nie zaimportowano |
 
@@ -56,32 +56,78 @@ nie są częścią tego wdrożenia.
 
 ## Tencent Video
 
-Na stronie testowej odtwarzacz ThumbPlayer/SuperPlayer wystawiał dwa elementy
-`video`: jeden ze źródłem i pusty element zapasowy. Istniejący mechanizm
-wyboru odtwarzacza odrzuca zapasowy element i poprawnie rozszerza film.
+Odtwarzacz ThumbPlayer/SuperPlayer wystawia także zapasowe elementy `video`.
+Zapasowy element może zachować źródło i rozmiary z poprzedniego odtwarzania,
+pozostając ukryty. Wybór odtwarzacza pomija teraz ukryte elementy wewnątrz
+`.txp_videos_container`, aby `[T]` wskazywał właściwy film. Przy zmianie
+jakości odtwarzacz może zamieniać dwa nadal podłączone elementy; RTE podąża
+za widocznym filmem i usuwa obserwatory poprzedniego elementu.
 
-Adapter RTE importuje identyfikator z `VIDEO_INFO.vid` i tytuł z metadanych
-lub dokumentu. Uwzględnia różne postacie tytułu przed i po uruchomieniu
+Adapter RTE importuje identyfikator z bieżącego adresu, `VIDEO_INFO.vid`
+lub danych strony WeTV oraz tytuł z metadanych lub dokumentu. Uwzględnia różne postacie tytułu przed i po uruchomieniu
 odtwarzacza. Następny odcinek jest dostępny przez aktywny `.txp_btn_next_u`
-lub `.txp_btn_next`; ukryte i zablokowane przyciski są pomijane.
+lub `.txp_btn_next`, a na WeTV przez `[data-role="wetv-player-ctrl-next"]`;
+ukryte i zablokowane przyciski są pomijane.
 
 Kod oryginalnego odtwarzacza wykonuje odtwarzanie i przewijanie przy
-`keyup`. RTE przechwytuje teraz także zdarzenia kończące obsługiwane skróty.
+`keyup`. RTE przechwytuje teraz także zdarzenia kończące skróty, których `keydown`
+faktycznie obsłużyło. Niedostępna nawigacja odcinków pozostaje dostępna
+dla strony, a `Escape` jest przechwytywany również przy zmienionym skrócie wyjścia.
 `T` nie przełącza trybu wielokrotnie przy przytrzymaniu; jego `keyup` jest
 przechwytywany również po wyjściu z trybu kinowego. Wpisywanie w polach
 tekstowych i zdarzenia kompozycji IME pozostają obsługiwane przez stronę.
 
-Import niestandardowych napisów, rozdziałów i miniaturek Tencent pozostaje
-kierunkiem dalszej integracji. Na badanym materiale nie potwierdzono danych
-umożliwiających taki import. Wymaga to weryfikacji kolejnych materiałów,
-w tym materiału wystawiającego wybór języka i podglądy osi czasu.
+Dalsze badanie potwierdziło format napisów i miniaturek na WeTV oraz miniaturki
+na `v.qq.com`. Bieżący adapter obsługuje oba serwisy. `getvinfo` przekazuje
+napisy w `sfl.fi`: identyfikator, język, nazwę, `captionType`, `url` i adresy
+zapasowe. Typ `3` oznacza WebVTT, typ `1` — SRT. Ścieżki oznaczone `lmt`
+jako ograniczone oraz warianty wypalone w obraz nie są importowane.
+
+Dla WebVTT oryginalny odtwarzacz zamienia końcówkę `.vtt.m3u8` na `.vtt`.
+RTE stosuje tę samą regułę i swój istniejący parser napisów. Pobieranie
+ograniczono do HTTPS, plików SRT/VTT i zaobserwowanych hostów CDN napisów.
+WeTV nie wystawia tych ścieżek jako `video.textTracks`, więc sama obsługa
+natywnego HTML5 nie wystarczała. Podczas używania napisów RTE własna warstwa
+WebVTT odtwarzacza jest ukryta; wyjście z trybu kinowego przywraca jej
+widoczność. Wyłączenie napisów w RTE nie pozostawia drugiej warstwy tekstu.
+
+Metadane są przechwytywane z odpowiedzi `getvinfo`, także z callbacków JSONP.
+Oryginalny callback zachowuje argumenty, kontekst i wynik; treść odpowiedzi
+nie jest wykonywana przez RTE jako kod. WeTV pozwala także odczytać już
+załadowane dane przez `player.getApiBridge().videoInfo.parseData`. Do świata
+content trafiają wyłącznie dane funkcji interfejsu, bez pól konta, adresu IP
+i adresów strumieni filmu. Dane poprzedniego odcinka i późne odpowiedzi
+napisów są odrzucane.
+
+Miniaturki opisują pola `c`, `r`, `w`, `h`, `cd`, `fn`, `url` oraz `lnk`.
+Adres arkusza ma postać `{url}{lnk}.{fn}.{numer}.jpg/0`, a klatka odpowiada
+`floor(czas / cd)`. Numeracja arkuszy zaczyna się od 1. RTE preferuje
+wariant szerokości 160 px, obsługuje kolejne wiersze i arkusze oraz ogranicza
+indeks na końcu filmu. Obrazy pochodzą z `video-caps.puui.qpic.cn` albo
+`video-caps.wetvinfo.com`.
+
+Nie potwierdzono osobnej listy rozdziałów z nazwami i czasami. Dane
+pomijania czołówki i napisów końcowych nie są przedstawiane jako rozdziały.
+
+### Materiały do powtarzalnych prób
+
+| Materiał | Adres | Wynik w sesji bez logowania |
+| --- | --- | --- |
+| Three-Body, odcinek 1 | [WeTV EP1](https://wetv.vip/en/play/h31rop8wfso9jnh/h0045v8ky1m-EP1%3A_Three-Body) | 12 języków napisów plus opcja wyłączenia, angielska ścieżka zawiera 617 cue; arkusze miniaturek |
+| Three-Body, odcinek 2 | [WeTV EP2](https://wetv.vip/en/play/h31rop8wfso9jnh/x0045o8w903-EP2%3A_Three-Body) | 12 języków, 444 cue w angielskiej ścieżce; arkusze miniaturek |
+| 兰香如故, odcinek 1 | [Tencent Video](https://v.qq.com/x/cover/mzc00200803dr6b/c4102g9a01t.html) | Film odtwarza się; metadane miniaturek są dostępne; chińska ścieżka napisów ma `lmt: 1`, więc nie jest importowana |
+| Young Sheldon, sezon 1, odcinek 1 | [Tencent Video](https://v.qq.com/x/cover/mzc00200o04csm0/b0042lllo0k.html) | Blokada regionalna w środowisku testowym, błąd `70013080.1`; brak oceny napisów tego odcinka |
+
+Dostępność materiałów i funkcji może zależeć od regionu oraz konta.
+Pierwsze dwa odcinki WeTV nadawały się do testowania bez konta VIP.
 
 ## Ustawienia i etykiety
 
 Oba adaptery korzystają ze wspólnego przełącznika Rich Theater Experience.
-Nowe flagi zachowują wyłączony RTE w starszych instalacjach. Zaktualizowano
+Nowe flagi zachowują wyłączony RTE w starszych instalacjach i pozostają
+zachowane przy aktualizacji ustawień innych dostawców. Zaktualizowano
 opisy w ustawieniach, teksty zastępcze i katalogi wszystkich 13 języków.
-Tencent nie jest wymieniany jako serwis z obsługiwanymi miniaturkami.
+Etykiety Tencent Video / WeTV uwzględniają teraz import napisów i miniaturek.
 
 ## Weryfikacja i źródła
 
@@ -90,7 +136,9 @@ Tencent nie jest wymieniany jako serwis z obsługiwanymi miniaturkami.
 - Testy adapterów i ustawień: dobór domen, wyłączenie RTE, zmiana `cid`,
   odrzucanie spóźnionych odpowiedzi i oczyszczanie tytułu Tencent.
 - Testy uruchomieniowe: `T`, powtórzenie `keydown`, przechwytywanie `keyup`
-  przy wejściu i wyjściu, Space oraz Escape. Test Chromium korzysta
+  przy wejściu i wyjściu, Space, Escape przy zmienionym skrócie wyjścia,
+  nieobsłużony skrót następnego filmu oraz dwukrotną zamianę wideo ThumbPlayer.
+  Test Chromium korzysta
   z rozszerzenia; diagnostyczny test Firefox wstrzykuje oba zbudowane skrypty.
 - Próby na żywo z kodem zbudowanego rozszerzenia w podglądzie T3:
   [Bilibili](https://www.bilibili.com/video/BV1xx411c7mu/) oraz
@@ -99,10 +147,24 @@ Tencent nie jest wymieniany jako serwis z obsługiwanymi miniaturkami.
   Film Bilibili nie udostępniał napisów ani rozdziałów bez logowania;
   te formaty zweryfikowano testami parserów, a nie sesją zalogowanego konta.
 
+
+- Dalsze próby na żywo z zainstalowanym rozszerzeniem w Chromium: oba podane
+  odcinki WeTV oraz `兰香如故` na Tencent Video. Potwierdzono 12 języków,
+  aktywację angielskich i hiszpańskich napisów, rzeczywiste wyświetlenie cue
+  angielskiej ścieżki, wyłączenie obu warstw napisów przez opcję Off,
+  odtworzenie widoczności napisów strony po Escape, tytuły i podglądy osi czasu
+  oraz przejście przyciskiem RTE z EP1 do EP2 z aktualizacją tytułu.
+  Arkusz WeTV faktycznie ładował się jako obraz 800 × 450 px. Na Tencent
+  zaimportowano miniaturki, a ścieżkę `lmt: 1` poprawnie pominięto.
+- Końcowe kontrole: `pnpm typecheck`, 276 testów, `pnpm build`,
+  `pnpm verify:bundles` i `pnpm smoke`.
+
 Źródła techniczne odczytane z aktualnych odtwarzaczy:
 [Bilibili core](https://s1.hdslb.com/bfs/static/player/main/core.ba67b466.js),
 [Bilibili preview](https://s1.hdslb.com/bfs/static/player/main/widgets/npd.911.a6141530.js),
-[Tencent SuperPlayer](https://vm.gtimg.cn/thumbplayer/superplayer/1.74.0/superplayer-txv-light.js).
+[Tencent SuperPlayer](https://vm.gtimg.cn/thumbplayer/superplayer/1.74.0/superplayer-txv-light.js),
+[WeTV player](https://static.wetvinfo.com/libs/wetv-player/2.8.66/unified-wetv-player.js),
+[WeTV plugins](https://static.wetvinfo.com/libs/wetv-player/2.8.66/plugin-list.js).
 Adresy tych plików i prywatne formaty metadanych mogą zmieniać się wraz
 z aktualizacjami serwisów.
 

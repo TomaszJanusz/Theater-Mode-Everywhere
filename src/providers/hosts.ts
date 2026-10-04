@@ -40,5 +40,6 @@ export function isBilibiliHost(hostname = currentHost()): boolean {
 
 export function isTencentHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
-  return host === 'v.qq.com' || host.endsWith('.v.qq.com');
+  return host === 'v.qq.com' || host.endsWith('.v.qq.com')
+    || host === 'wetv.vip' || host.endsWith('.wetv.vip');
 }

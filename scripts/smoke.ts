@@ -108,9 +108,13 @@ async function theaterEntered(page: Page): Promise<boolean> {
 
 async function assertTheaterToggle(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const state = { releases: 0 };
+    const state = { releases: 0, exits: 0, nextReleases: 0 };
     (window as Window & { theaterShortcutSpy?: typeof state }).theaterShortcutSpy = state;
-    document.addEventListener('keyup', (event) => { if (event.key === 't') state.releases++; });
+    document.addEventListener('keyup', (event) => {
+      if (event.key === 't') state.releases++;
+      if (event.key === 'Escape') state.exits++;
+      if (event.code === 'KeyN') state.nextReleases++;
+    });
   });
   await page.click('video#player');
   await page.keyboard.down('t');
@@ -129,6 +133,13 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     theaterShortcutSpy?: { releases: number }
   }).theaterShortcutSpy?.releases);
   if (hostReleases !== 0) fail('The host received the T keyup and could toggle its own theater mode.');
+
+  await page.keyboard.press('Shift+N');
+  if (await page.evaluate(() => (window as Window & {
+    theaterShortcutSpy?: { nextReleases: number }
+  }).theaterShortcutSpy?.nextReleases) !== 1) {
+    fail('An unavailable next-video shortcut was incorrectly swallowed on keyup.');
+  }
 
   const pausedBefore = await page.evaluate(() => {
     const video = document.querySelector('video#player') as HTMLVideoElement | null;
@@ -164,6 +175,49 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     const video = document.querySelector('video#player');
     return !video?.classList.contains(videoClass) && !document.documentElement.classList.contains(htmlClass);
   }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS }, { timeout: 10_000 });
+  if (await page.evaluate(() => (window as Window & {
+    theaterShortcutSpy?: { exits: number }
+  }).theaterShortcutSpy?.exits) !== 0) {
+    fail('The host received Escape keyup after exiting theater mode.');
+  }
+}
+
+async function assertThumbPlayerSwap(page: Page): Promise<void> {
+  await delay(250);
+  await page.evaluate(() => {
+    const video = document.querySelector('video#player') as HTMLVideoElement;
+    const container = document.createElement('div');
+    container.className = 'txp_videos_container';
+    video.before(container);
+    container.appendChild(video);
+  });
+  await page.keyboard.press('t');
+  await page.waitForFunction(() => document.querySelector('video#player')?.classList.contains('theater-everywhere-video-active'));
+  await page.evaluate(() => {
+    const current = document.querySelector('video#player') as HTMLVideoElement;
+    const replacement = document.createElement('video');
+    replacement.id = 'thumbplayer-replacement';
+    replacement.muted = true;
+    replacement.playsInline = true;
+    replacement.style.width = '640px';
+    replacement.style.height = '360px';
+    current.parentElement!.appendChild(replacement);
+    current.style.visibility = 'hidden';
+    replacement.srcObject = current.srcObject;
+    void replacement.play();
+  });
+  await page.waitForFunction(() => document.querySelector('#thumbplayer-replacement')?.classList.contains('theater-everywhere-video-active'));
+  await page.evaluate(() => {
+    const original = document.querySelector('video#player') as HTMLVideoElement;
+    const replacement = document.querySelector('#thumbplayer-replacement') as HTMLVideoElement;
+    replacement.style.visibility = 'hidden';
+    original.style.visibility = 'visible';
+    void original.play();
+  });
+  await page.waitForFunction(() => document.querySelector('video#player')?.classList.contains('theater-everywhere-video-active'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+  await page.evaluate(() => document.querySelector('#thumbplayer-replacement')?.remove());
 }
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
@@ -289,11 +343,17 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
       ]
     });
 
+    const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+    // Escape is always an exit alias, including with a remapped exit shortcut.
+    await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
+
     const page = context.pages()[0] || await context.newPage();
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertTheaterToggle(page);
     console.log('smoke:chromium local player T/Escape passed');
+    await assertThumbPlayerSwap(page);
+    console.log('smoke:chromium ThumbPlayer video swap passed');
 
     await setBlacklist(context, ['127.0.0.1']);
     await assertBlacklistBlocksTheater(page);
@@ -373,6 +433,7 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
     await waitForPlayer(page);
     await injectBundledPlayer(page, unpackedDir);
     await assertTheaterToggle(page);
+    await assertThumbPlayerSwap(page);
     console.log('smoke:firefox passed (injected bundled MAIN/content scripts; unsigned MV3 xpi sideload is blocked)');
   } finally {
     await browser.close();

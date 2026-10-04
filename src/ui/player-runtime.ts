@@ -15,6 +15,7 @@ import { type CaptionHudPayload } from '../media-features/controller';
 import {
   applyMediaProviderFlagAttrs,
   mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
   resolveMediaProviderFlags,
   type MediaProviderFlags
 } from '../media-features/provider-flags';
@@ -22,6 +23,7 @@ import {
   mediaHasSource,
   toggleVideoPlayback
 } from '../host-play';
+import { isInactiveThumbPlayerVideo } from '../switchable-videos';
 import {
   emptyPlaylistNav,
   findPlaylistActions,
@@ -871,7 +873,8 @@ function initialize(): void {
   session.resetRuntimeScope();
 
   // 1. Keyboard Listener (T and Escape)
-  listeners.keydown = (event: KeyboardEvent) => {
+  const claimedKeyReleases = new Set<string>();
+  const handleKeydown = (event: KeyboardEvent) => {
     if (event.isComposing) return;
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
@@ -990,7 +993,12 @@ function initialize(): void {
       }
     }
   };
+  listeners.keydown = (event: KeyboardEvent) => {
+    handleKeydown(event);
+    if (event.defaultPrevented) claimedKeyReleases.add(event.code || event.key);
+  };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
+  session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
   listeners.playbackIntent = (event: Event) => {
     const action = (event as CustomEvent<{ action?: 'play' | 'pause' }>).detail?.action;
     if (action === 'play' || action === 'pause') triggerPlaybackIndicator(action);
@@ -998,37 +1006,14 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
     if (event.isComposing) return;
-    const activeEl = getActiveElementDeep() as HTMLElement | null;
-    const isEditable = activeEl && (
-      (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
-      activeEl.tagName === 'TEXTAREA' ||
-      activeEl.isContentEditable ||
-      activeEl.getAttribute('role') === 'textbox'
-    );
-    if (isEditable) return;
-    if (theaterDialogOpen()) return;
-    const shortcuts = ui().shortcuts || defaultShortcuts;
-    // Host players can handle shortcuts on keyup or keypress. Claim the entire
-    // toggle gesture even after it has just exited our theater session.
-    if (matchesShortcut(event, shortcuts.toggle) || matchesShortcut(event, shortcuts.toggleFullscreen)) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      return;
-    }
-    if (!session.element) return;
-    // Tencent performs play/pause and seek on keyup; suppress host follow-up
-    // events for every shortcut already handled by our theater controls.
-    const theaterShortcuts = [shortcuts.playPause, shortcuts.seekBack, shortcuts.seekForward,
-      shortcuts.frameBack, shortcuts.frameForward, shortcuts.volumeUp, shortcuts.volumeDown,
-      shortcuts.toggleMute, shortcuts.togglePiP, shortcuts.cycle, shortcuts.cycleFit,
-      shortcuts.toggleCaptions, shortcuts.increaseCaptionSize, shortcuts.decreaseCaptionSize,
-      shortcuts.showHelp, shortcuts.previousVideo, shortcuts.nextVideo, shortcuts.exit];
-    if (theaterShortcuts.some((shortcut) => matchesShortcut(event, shortcut))) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-    }
+    const key = event.code || event.key;
+    if (!claimedKeyReleases.has(key)) return;
+    if (event.type === 'keyup') claimedKeyReleases.delete(key);
+    // Tencent handles playback on release. Suppress only gestures claimed on
+    // keydown, including Escape and T after they have exited the session.
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
   };
   session.runtimeScope.listen(window, 'keyup', listeners.keyup!, true);
   session.runtimeScope.listen(window, 'keypress', listeners.keyup!, true);
@@ -1241,15 +1226,25 @@ function toggleTheaterMode(): void {
 }
 
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  const bindingScope = session.runtimeScope.child();
   const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
+    if (bindingScope.isDisposed) return;
     const current = session.element;
-    if (current?.tagName !== 'VIDEO' || isElementInDOMDeep(current)) return;
+    if (current?.tagName !== 'VIDEO') return;
+    const connected = isElementInDOMDeep(current);
+    if (connected && !isInactiveThumbPlayerVideo(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
       ? candidate
       : findBestVideo();
+    // ThumbPlayer swaps between connected video nodes while changing quality.
+    // Wait for the visible replacement's metadata instead of loading its source ourselves.
+    if (connected && (!replacement || replacement.readyState < 1 || isInactiveThumbPlayerVideo(replacement)
+      || replacement.closest('.txp_videos_container') !== current.closest('.txp_videos_container'))) return;
     if (replacement && replacement !== current) {
+      bindingScope.dispose();
       switchTheaterVideo(replacement);
+      keepTheaterVideoBound(replacement);
     }
   };
 
@@ -1281,7 +1276,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (relayoutHost) hostRelayoutQueued = true;
     if (stabilizeScheduled) return;
     stabilizeScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       stabilizeScheduled = false;
       stabilizeLayout(video, false);
     });
@@ -1291,27 +1286,27 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const schedulePictureLayout = (): void => {
     if (pictureLayoutScheduled) return;
     pictureLayoutScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       pictureLayoutScheduled = false;
       if (session.element?.tagName !== 'VIDEO') return;
       applyTheaterPictureLayout();
     });
   };
-  session.runtimeScope.listen(window, 'resize', schedulePictureLayout);
-  session.runtimeScope.listen(document, 'resize', (event: Event) => {
+  bindingScope.listen(window, 'resize', schedulePictureLayout);
+  bindingScope.listen(document, 'resize', (event: Event) => {
     if (event.target === session.element) schedulePictureLayout();
   }, true);
-  session.runtimeScope.listen(document, 'fullscreenchange', schedulePictureLayout);
+  bindingScope.listen(document, 'fullscreenchange', schedulePictureLayout);
 
   const holdViewport = (): void => {
     if (session.element !== video) return;
     refreshTheaterAncestors(video);
     stabilizeLayout(video, true);
   };
-  session.runtimeScope.listen(video, 'emptied', holdViewport);
-  session.runtimeScope.listen(document, 'yt-navigate-start', holdViewport);
-  session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
-  session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
+  bindingScope.listen(video, 'emptied', holdViewport);
+  bindingScope.listen(document, 'yt-navigate-start', holdViewport);
+  bindingScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
+  bindingScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
     if (!(candidate instanceof HTMLVideoElement)) return;
     if (candidate === session.element) {
@@ -1325,21 +1320,23 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const observer = new MutationObserver(() => {
     if (rebindScheduled) return;
     rebindScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       rebindScheduled = false;
       rebindIfReplaced();
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  session.runtimeScope.add(() => observer.disconnect());
+  bindingScope.add(() => observer.disconnect());
 
   const styleObserver = new MutationObserver(() => {
     if (ignoreStyleMutations > 0 || session.element !== video) return;
+    rebindIfReplaced();
+    if (session.element !== video) return;
     if (!theaterVideoNeedsRestyle(video)) return;
     scheduleStabilize(false);
   });
   styleObserver.observe(video, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
-  session.runtimeScope.add(() => styleObserver.disconnect());
+  bindingScope.add(() => styleObserver.disconnect());
 }
 
 function refreshTheaterAncestors(element: HTMLElement): void {
@@ -1620,13 +1617,7 @@ export function bootstrapPlayerRuntime(): void {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
       }
       if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
-        const merged: Record<string, unknown> = {
-          youtubeIntegrationEnabled: refs.providerFlags.youtube,
-          vimeoIntegrationEnabled: refs.providerFlags.vimeo,
-          patreonIntegrationEnabled: refs.providerFlags.patreon,
-          twitchIntegrationEnabled: refs.providerFlags.twitch,
-          disneyIntegrationEnabled: refs.providerFlags.disney
-        };
+        const merged: Record<string, unknown> = mediaProviderFlagStorageUpdate(refs.providerFlags);
         for (const key of mediaProviderFlagStorageKeys()) {
           if (Object.prototype.hasOwnProperty.call(changes, key)) {
             merged[key] = changes[key].newValue;

@@ -33,9 +33,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 }
 
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly; Tencent reads page metadata.
-  // Neither provider needs interception of the host's fetch/XHR/Response APIs.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'tencent');
+  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili');
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

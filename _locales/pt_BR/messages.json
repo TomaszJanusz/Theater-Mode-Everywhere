@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+, Bilibili, Tencent Video e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço - saiba mais "
+    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço - saiba mais "
   },
   "richTheaterExperienceReadMore": {
     "message": "aqui"
@@ -196,10 +196,10 @@
     "message": "Importa o título, as legendas, os capítulos e as miniaturas quando disponíveis. Algumas legendas exigem login no Bilibili."
   },
   "tencentIntegrationTitle": {
-    "message": "Integração com Tencent Video"
+    "message": "Integração com Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importa o título do episódio. Oferece controles de reprodução e de próximo episódio quando disponíveis; as legendas usam as faixas HTML5 do player."
+    "message": "Importa títulos de episódios, legendas SRT/WebVTT e miniaturas da linha do tempo do Tencent Video / WeTV quando disponíveis. A reprodução e o próximo episódio usam os controles disponíveis do player."
   },
   "liveBadge": {
     "message": "AO VIVO"
@@ -357,7 +357,7 @@
     "message": "Mais contexto na linha do tempo: navegue entre capítulos e veja os momentos mais reproduzidos do YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Veja antes de buscar: passe o cursor sobre a linha do tempo para ver miniaturas em players compatíveis do YouTube, Vimeo, Patreon, Twitch, Disney+ e Bilibili."
+    "message": "Veja antes de buscar: passe o cursor sobre a linha do tempo para ver miniaturas em players compatíveis do YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili e Tencent Video / WeTV."
   },
   "whatsNewThanks": {
     "message": "Ative o Rich Theater Experience (Experimental) pelo pop-up da extensão em sites compatíveis ou pela página de Configurações. O recurso ainda é experimental, portanto algumas funções podem variar conforme o serviço :)"

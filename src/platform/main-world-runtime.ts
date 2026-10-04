@@ -1,4 +1,4 @@
-import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
+import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
@@ -17,7 +17,7 @@ import {
 } from '../providers/youtube/main';
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
-import { readTencentSnapshot } from '../providers/tencent/main';
+import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
   captureTwitchNetworkResponse,
@@ -62,6 +62,7 @@ export function installMainWorldRuntime(): void {
           captureTimedtextResponse(url, clone);
           captureTwitchNetworkResponse(url, clone);
           captureDisneyNetworkResponse(url, clone);
+          captureTencentNetworkResponse(url, clone);
         } catch {
           // Harvest must not break the page's fetch.
         }
@@ -83,6 +84,7 @@ export function installMainWorldRuntime(): void {
             const url = this.url || '';
             harvestTwitchResponseJson(url, data);
             harvestDisneyData(url, data);
+            harvestTencentData(url, data);
             harvestYoutubeHeatmapJson(url, data);
           } catch {
             // Ignore harvest failures from host JSON parsing.
@@ -102,6 +104,7 @@ export function installMainWorldRuntime(): void {
             const url = this.url || '';
             harvestTwitchResponseText(url, text);
             harvestDisneyBody(url, text);
+            harvestTencentBody(url, text);
             harvestYoutubeHeatmapText(url, text);
           } catch {
             // Ignore harvest failures from host text parsing.
@@ -142,6 +145,8 @@ export function installMainWorldRuntime(): void {
         if (body) cacheTimedtextBody(url, body);
         harvestTwitchXhr(url, body, this);
         if (body) harvestDisneyBody(url, body);
+        if (body) harvestTencentBody(url, body);
+        if (this.responseType === 'json') harvestTencentData(url, this.response);
         if (body) harvestYoutubeHeatmapText(url, body);
       });
       return originalXhrSend.apply(this, arguments as unknown as Parameters<XMLHttpRequest['send']>);
@@ -170,6 +175,7 @@ export function installMainWorldRuntime(): void {
     installYoutubeMain();
     installTwitchMain();
     installDisneyMain();
+    installTencentMain();
   }
 
   let pendingVideo: HTMLVideoElement | null = null;
@@ -388,6 +394,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
     if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();
+    if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     return false;
   }
 
@@ -415,6 +422,8 @@ export function installMainWorldRuntime(): void {
         ? fetchTimedtextWithPot(url)
         : fetch(url, { credentials: 'omit' }).then(async (response) => {
             if (!response.ok) return null;
+            const request = classifyMediaFetchUrl(url, window.location.href);
+            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
             const buffer = await response.arrayBuffer();
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
