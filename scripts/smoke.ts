@@ -322,6 +322,9 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   const helpClose = page.locator('.theater-help-close-btn');
   await helpClose.waitFor();
   if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help left focus on the settings gear.');
+  const pinnedDuringHelp = await pin.getAttribute('aria-pressed');
+  await page.keyboard.press('Shift+H');
+  if (await pin.getAttribute('aria-pressed') !== pinnedDuringHelp) fail('Controls visibility preference changed behind help.');
   for (const key of ['Tab', 'Shift+Tab', 'Shift+Tab']) {
     await page.keyboard.press(key);
     if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help let Tab reach controls behind the overlay.');

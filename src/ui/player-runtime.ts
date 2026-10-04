@@ -965,7 +965,7 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      if (!event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
       return;
     }
 
