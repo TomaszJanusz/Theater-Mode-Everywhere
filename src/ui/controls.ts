@@ -945,7 +945,6 @@ export function createControls(ctx: PlayerChromeContext) {
     `);
     helpBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      settings.close();
       showHelpOverlay();
     });
     const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'));

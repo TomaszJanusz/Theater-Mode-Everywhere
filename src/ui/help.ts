@@ -2,6 +2,9 @@ import { defaultShortcuts, shortcutDisplayParts } from './shortcuts';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
+  let returnFocus: HTMLElement | null = null;
+  let returnToSettings = false;
+
   function toggleHelpOverlay(): void {
     const overlay = ctx.queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
     if (overlay) {
@@ -13,6 +16,11 @@ export function createHelp(ctx: PlayerChromeContext) {
 
   function showHelpOverlay(): void {
     if (ctx.refs.helpOverlay) return;
+
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    returnFocus = active instanceof HTMLElement ? active : null;
+    returnToSettings = Boolean(returnFocus?.closest('.theater-settings-menu, .player-settings-btn'));
 
     ctx.actions.closeTheaterPopovers();
     ctx.actions.showToolbar();
@@ -152,6 +160,15 @@ export function createHelp(ctx: PlayerChromeContext) {
     ctx.refs.helpOverlay.remove();
     ctx.refs.helpOverlay = null;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
+    const target = returnToSettings
+      ? ctx.queryPlayerUi<HTMLElement>('.player-settings-btn')
+      : returnFocus;
+    returnFocus = null;
+    returnToSettings = false;
+    if (target?.isConnected && target.getClientRects().length
+        && !target.closest('[inert]') && getComputedStyle(target).visibility !== 'hidden') {
+      target.focus();
+    }
     ctx.actions.scheduleToolbarHide();
   }
 

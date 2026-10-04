@@ -296,6 +296,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.locator('.theater-help-overlay').waitFor();
   if (await menu.isVisible()) fail('Settings stayed open over keyboard help.');
   await page.keyboard.press('Escape');
+  if (!await gear.evaluate(button => button.matches(':focus'))) fail('Closing row-opened help did not focus the settings trigger.');
   await gear.press('Enter');
   await page.keyboard.press('h');
   await page.locator('.theater-help-overlay').waitFor();
@@ -304,6 +305,16 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)) {
     fail('One Escape did not dismiss shortcut-opened help while retaining theater mode.');
   }
+  if (!await gear.evaluate(button => button.matches(':focus'))) fail('Closing help from a settings row did not focus the gear.');
+  await page.keyboard.press('Tab');
+  if (!await page.locator('.close-btn').evaluate(button => button.matches(':focus'))) fail('Tab after help closure restarted outside the toolbar.');
+  // Keyboard activation of the help row also returns to the gear, not a hidden row.
+  await gear.press('Enter');
+  await menu.locator('.help-btn').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('.theater-help-close-btn').press('Enter');
+  if (await page.locator('.theater-help-overlay').count() || await menu.isVisible()
+      || !await gear.evaluate(button => button.matches(':focus'))) fail('Enter closing row-opened help lost focus or reopened settings.');
   // Escape restores the gear; opening help from there must transfer focus into help.
   await gear.press('Enter');
   await page.keyboard.press('Escape');
@@ -327,6 +338,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)) {
     fail('One Escape did not close help after blocked gear activation.');
   }
+  if (!await gear.evaluate(button => button.matches(':focus'))) fail('Escape from help did not restore the gear.');
   // Open help from the gear while the menu is open; Space natively closes help.
   await gear.press('Enter');
   await page.keyboard.press('Shift+Tab');
@@ -338,6 +350,13 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       || await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedDuringHelp) {
     fail('Space on help close activated hidden settings or playback.');
   }
+  if (!await gear.evaluate(button => button.matches(':focus'))) fail('Space closing help did not restore focus to the gear.');
+  // Other connected controls retain their own focus, rather than always using the gear.
+  await page.locator('.cc-btn').focus();
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.keyboard.press('Escape');
+  if (!await page.locator('.cc-btn').evaluate(button => button.matches(':focus'))) fail('Help did not restore its original toolbar control.');
   await gear.press('Enter');
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
