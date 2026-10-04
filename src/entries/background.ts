@@ -105,6 +105,15 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
     fetchAllowlistedCaption(String(message.url || '')).then(sendResponse);
     return true;
   }
+  if (message && message.action === 'open-options-page') {
+    chrome.runtime.openOptionsPage()
+      .then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => {
+        console.error('[Theater Everywhere] Error opening options page:', error);
+        sendResponse({ ok: false });
+      });
+    return true;
+  }
   if (message && message.action === 'getBrowserTheme') {
     if (isFirefox) {
       browser.theme.getCurrent()

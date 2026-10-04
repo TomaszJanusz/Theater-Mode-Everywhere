@@ -1,5 +1,6 @@
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   playerSettingsLabel: "Player settings",
+  extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",
   controlsVisibilityOn: "On",
   controlsVisibilityOff: "Off",

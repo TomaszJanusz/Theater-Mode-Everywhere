@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "Wył."
+  },
+  "extensionSettingsLabel": {
+    "message": "Ustawienia rozszerzenia"
   }
 }

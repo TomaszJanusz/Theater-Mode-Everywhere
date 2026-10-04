@@ -321,6 +321,10 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
   await page.keyboard.press('Tab');
+  if (!await menu.locator('.extension-settings-btn').evaluate(button => button.matches(':focus'))) {
+    fail('Tab skipped extension settings.');
+  }
+  await page.keyboard.press('Tab');
   if (await menu.isVisible() || !await page.locator('.close-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab from the last settings row did not close the panel and reach the next toolbar action.');
   }
@@ -598,6 +602,26 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.mouse.move(640, 300);
 
   if (context) {
+    await page.mouse.move(640, 300);
+    await waitForChrome(true, true, false);
+    await gear.click();
+    await menu.waitFor({ state: 'visible' });
+    const extensionRow = await menu.locator('.extension-settings-btn').evaluate((row) => ({
+      keys: row.querySelectorAll('kbd').length,
+      value: row.querySelector('.theater-settings-detail')?.textContent ?? '',
+      shortcut: row.getAttribute('aria-keyshortcuts')
+    }));
+    if (extensionRow.keys !== 0 || extensionRow.value !== '' || extensionRow.shortcut) {
+      fail(`Extension settings row should not show a shortcut or value: ${JSON.stringify(extensionRow)}`);
+    }
+    const openedOptions = context.waitForEvent('page', { timeout: 10_000 });
+    await menu.locator('.extension-settings-btn').click();
+    const opened = await openedOptions;
+    await opened.waitForLoadState('domcontentloaded');
+    if (!opened.url().includes('options/options.html')) fail(`Extension settings opened ${opened.url()}`);
+    await opened.close();
+    await page.bringToFront();
+
     // Actual extension storage, reload, and the settings page share the same preference.
     const worker = await extensionWorker(context);
     const saved = await worker.evaluate(async () => (await chrome.storage.sync.get('keepControlsVisible')).keepControlsVisible);

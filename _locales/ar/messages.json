@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "إيقاف"
+  },
+  "extensionSettingsLabel": {
+    "message": "إعدادات الإضافة"
   }
 }

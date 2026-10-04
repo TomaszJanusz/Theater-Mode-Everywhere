@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "No"
+  },
+  "extensionSettingsLabel": {
+    "message": "Ajustes de la extensión"
   }
 }

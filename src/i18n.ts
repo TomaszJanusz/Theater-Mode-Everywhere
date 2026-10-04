@@ -1,5 +1,6 @@
 export const FALLBACK_MESSAGES: Record<string, string> = {
   playerSettingsLabel: "Player settings",
+  extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",
   controlsVisibilityOn: "On",
   controlsVisibilityOff: "Off",

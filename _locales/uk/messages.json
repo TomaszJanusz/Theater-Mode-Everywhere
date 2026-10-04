@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "Вимк."
+  },
+  "extensionSettingsLabel": {
+    "message": "Налаштування розширення"
   }
 }

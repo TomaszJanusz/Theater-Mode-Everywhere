@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "꺼짐"
+  },
+  "extensionSettingsLabel": {
+    "message": "확장 프로그램 설정"
   }
 }

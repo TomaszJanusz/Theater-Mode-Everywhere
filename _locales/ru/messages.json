@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "Выкл."
+  },
+  "extensionSettingsLabel": {
+    "message": "Настройки расширения"
   }
 }

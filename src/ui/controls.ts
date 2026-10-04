@@ -952,6 +952,37 @@ export function createControls(ctx: PlayerChromeContext) {
     updateHelpRow();
     controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
 
+    const extensionSettingsBtn = document.createElement('button');
+    extensionSettingsBtn.type = 'button';
+    extensionSettingsBtn.className = 'theater-control-btn extension-settings-btn';
+    setIcon(extensionSettingsBtn, `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 21v-7"></path>
+        <path d="M4 10V3"></path>
+        <path d="M12 21v-9"></path>
+        <path d="M12 8V3"></path>
+        <path d="M20 21v-5"></path>
+        <path d="M20 12V3"></path>
+        <path d="M2 14h4"></path>
+        <path d="M10 8h4"></path>
+        <path d="M18 16h4"></path>
+      </svg>
+    `);
+    extensionSettingsBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      settings.close();
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+          chrome.runtime.sendMessage({ action: 'open-options-page' }, () => {
+            void chrome.runtime.lastError;
+          });
+        }
+      } catch {
+        // The player can render where the extension runtime is unavailable.
+      }
+    });
+    settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'));
+
     rightSec.appendChild(closeBtn);
 
     controlsRow.appendChild(leftSec);

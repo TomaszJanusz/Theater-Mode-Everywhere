@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "关闭"
+  },
+  "extensionSettingsLabel": {
+    "message": "扩展程序设置"
   }
 }

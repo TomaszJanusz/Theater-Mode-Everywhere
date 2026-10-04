@@ -589,5 +589,8 @@
   },
   "controlsVisibilityOff": {
     "message": "オフ"
+  },
+  "extensionSettingsLabel": {
+    "message": "拡張機能の設定"
   }
 }
