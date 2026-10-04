@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "Erweiterungseinstellungen"
+  },
+  "shortcutUnassigned": {
+    "message": "Nicht zugewiesen"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Einige Tastenkürzel sind mehreren Aktionen zugewiesen. Bearbeite die markierten Kürzel oder setze sie zurück."
+  },
+  "shortcutConflictTitle": {
+    "message": "Tastenkürzel bereits zugewiesen"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ ist $OWNERS$ zugewiesen. Zu $TARGET$ verschieben? Die bisherigen Aktionen verlieren dieses Tastenkürzel.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Zuweisung beibehalten"
+  },
+  "shortcutReassign": {
+    "message": "Tastenkürzel verschieben"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape ist zum Schließen von Dialogen und Verlassen des Kinomodus reserviert. Wähle ein anderes Tastenkürzel."
+  },
+  "shortcutSaveError": {
+    "message": "Tastenkürzel konnte nicht gespeichert werden"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Deine Tastenkürzel wurden nicht geändert. Versuche es erneut."
+  },
+  "cyclePictureLayout": {
+    "message": "Bildlayout wechseln"
   }
 }

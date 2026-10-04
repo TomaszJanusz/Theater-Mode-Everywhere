@@ -17,6 +17,7 @@ export interface Shortcuts {
   showHelp: string;
   toggleControlsPin: string;
   cycleFit: string;
+  cycleLayout: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
@@ -41,6 +42,7 @@ export const defaultShortcuts: Shortcuts = {
   showHelp: 'H',
   toggleControlsPin: 'Shift+H',
   cycleFit: 'Z',
+  cycleLayout: 'Shift+L',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-'
@@ -51,9 +53,67 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
   if (!saved) return next;
   (Object.keys(defaultShortcuts) as Array<keyof Shortcuts>).forEach((key) => {
     const value = saved[key];
-    if (typeof value === 'string' && value) next[key] = value;
+    // An explicit empty value disables a shortcut; absent values still migrate to defaults.
+    if (typeof value === 'string') next[key] = value;
   });
+  // Introducing Layout must not steal Shift+L from an existing custom action.
+  if (typeof saved.cycleLayout !== 'string' && shortcutConflicts(next, 'cycleLayout', next.cycleLayout).length) {
+    next.cycleLayout = '';
+  }
   return next;
+}
+
+const shiftedKeys = '<>?:"{}|_+~!@#$%^&*()';
+
+export function shortcutFromEvent(event: KeyboardEvent): string {
+  if (event.isComposing || ['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'Dead', 'Unidentified', 'Process'].includes(event.key)) return '';
+  const key = event.key === ' ' || event.key === 'Spacebar' ? 'Space'
+    : event.key.length === 1 ? event.key.toUpperCase() : event.key;
+  return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
+    event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
+    .filter(Boolean).join('+');
+}
+
+function mainKey(shortcut: string): string {
+  return shortcut.split('+').pop() || '+';
+}
+
+/** Compare the events accepted by the runtime, including physical codes and implicit Shift. */
+export function shortcutsConflict(left: string, right: string): boolean {
+  if (!left || !right) return false;
+  const candidates = new Set([mainKey(left), mainKey(right)]);
+  for (const value of [...candidates]) {
+    if (/^Key[A-Z]$/i.test(value)) candidates.add(value.slice(3));
+    if (/^Digit[0-9]$/i.test(value)) candidates.add(value.slice(5));
+    if (['+', '=', 'Equal', 'NumpadAdd'].includes(value)) { candidates.add('+'); candidates.add('='); }
+  }
+  const codes: Record<string, string> = { Space: 'Space', Spacebar: 'Space', ' ': 'Space', '+': 'Equal', '=': 'Equal', '-': 'Minus', '_': 'Minus', '<': 'Comma', '>': 'Period', '?': 'Slash' };
+  for (const key of candidates) {
+    const code = /^[a-z]$/i.test(key) ? `Key${key.toUpperCase()}`
+      : /^[0-9]$/.test(key) ? `Digit${key}` : codes[key] || key;
+    for (let modifiers = 0; modifiers < 16; modifiers++) {
+      const event = { key, code, ctrlKey: Boolean(modifiers & 1), altKey: Boolean(modifiers & 2),
+        shiftKey: Boolean(modifiers & 4), metaKey: Boolean(modifiers & 8) } as KeyboardEvent;
+      if (matchesShortcut(event, left) && matchesShortcut(event, right)) return true;
+    }
+  }
+  return false;
+}
+
+export function shortcutConflicts(shortcuts: Shortcuts, action: keyof Shortcuts, shortcut: string): Array<keyof Shortcuts> {
+  return (Object.keys(defaultShortcuts) as Array<keyof Shortcuts>)
+    .filter(key => key !== action && shortcutsConflict(shortcut, shortcuts[key]));
+}
+
+export function assignShortcut(shortcuts: Shortcuts, action: keyof Shortcuts, shortcut: string): Shortcuts {
+  const next = { ...shortcuts };
+  for (const conflict of shortcutConflicts(shortcuts, action, shortcut)) next[conflict] = '';
+  next[action] = shortcut;
+  return next;
+}
+
+export function isReservedShortcut(action: keyof Shortcuts, shortcut: string): boolean {
+  return action !== 'exit' && ['ESCAPE', 'ESC'].includes(mainKey(shortcut).toUpperCase());
 }
 
 export function shortcutDisplayParts(shortcutStr: string): string[] {

@@ -1,5 +1,5 @@
 /* Options script for Theater Everywhere */
-import { defaultShortcuts, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { createShortcutEditor } from './shortcut-editor';
 import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
@@ -104,8 +104,8 @@ async function init() {
   await loadAndRenderBlacklist();
 
   // Load and bind keyboard shortcuts on startup
-  await loadAndRenderShortcuts();
-  setupShortcutListeners();
+  const shortcutEditor = createShortcutEditor(notifyAllTabs);
+  await shortcutEditor.initialize();
 
   // Load and bind features toggles
   await loadAndRenderFeatures();
@@ -113,6 +113,8 @@ async function init() {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
+      if (changes.shortcuts) void shortcutEditor.refresh();
+      if (changes[PICTURE_ALIGN_STORAGE_KEY]) renderPictureAlignOptions(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
         if (toggle) toggle.checked = resolveKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
@@ -432,6 +434,11 @@ async function init() {
       if (name) name.textContent = t(align === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter');
       if (description) description.textContent = t(align === 'top' ? 'pictureAlignTopDescription' : 'pictureAlignCenterDescription');
     }
+    // Keep roving focus on the selected radio when the player changes this preference.
+    const focused = buttons.find((button) => button === document.activeElement);
+    if (focused?.getAttribute('aria-checked') === 'false') {
+      buttons.find((button) => button.getAttribute('aria-checked') === 'true')?.focus();
+    }
     return true;
   }
 
@@ -519,179 +526,6 @@ async function init() {
   }
 
   // Removed internal declarations (moved to top of file)
-
-  function renderShortcuts(shortcuts: Shortcuts) {
-    const toggleInput = document.getElementById('shortcut-toggle') as HTMLInputElement;
-    const exitInput = document.getElementById('shortcut-exit') as HTMLInputElement;
-    const seekBackInput = document.getElementById('shortcut-seek-back') as HTMLInputElement;
-    const seekForwardInput = document.getElementById('shortcut-seek-forward') as HTMLInputElement;
-    const cycleInput = document.getElementById('shortcut-cycle') as HTMLInputElement;
-    const playPauseInput = document.getElementById('shortcut-play-pause') as HTMLInputElement;
-    const previousVideoInput = document.getElementById('shortcut-previous-video') as HTMLInputElement;
-    const nextVideoInput = document.getElementById('shortcut-next-video') as HTMLInputElement;
-    const frameBackInput = document.getElementById('shortcut-frame-back') as HTMLInputElement;
-    const frameForwardInput = document.getElementById('shortcut-frame-forward') as HTMLInputElement;
-    const toggleFullscreenInput = document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement;
-    const volumeUpInput = document.getElementById('shortcut-volume-up') as HTMLInputElement;
-    const volumeDownInput = document.getElementById('shortcut-volume-down') as HTMLInputElement;
-    const toggleMuteInput = document.getElementById('shortcut-toggle-mute') as HTMLInputElement;
-    const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
-    const controlsPinInput = document.getElementById('shortcut-controls-pin') as HTMLInputElement;
-    const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
-    const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
-    const toggleCaptionsInput = document.getElementById('shortcut-toggle-captions') as HTMLInputElement;
-    const increaseCaptionSizeInput = document.getElementById('shortcut-increase-caption-size') as HTMLInputElement;
-    const decreaseCaptionSizeInput = document.getElementById('shortcut-decrease-caption-size') as HTMLInputElement;
-
-    if (toggleInput) toggleInput.value = shortcuts.toggle || defaultShortcuts.toggle;
-    if (exitInput) exitInput.value = shortcuts.exit || defaultShortcuts.exit;
-    if (seekBackInput) seekBackInput.value = shortcuts.seekBack || defaultShortcuts.seekBack;
-    if (seekForwardInput) seekForwardInput.value = shortcuts.seekForward || defaultShortcuts.seekForward;
-    if (cycleInput) cycleInput.value = shortcuts.cycle || defaultShortcuts.cycle;
-    if (playPauseInput) playPauseInput.value = shortcuts.playPause || defaultShortcuts.playPause;
-    if (previousVideoInput) previousVideoInput.value = shortcuts.previousVideo || defaultShortcuts.previousVideo;
-    if (nextVideoInput) nextVideoInput.value = shortcuts.nextVideo || defaultShortcuts.nextVideo;
-    if (frameBackInput) frameBackInput.value = shortcuts.frameBack || defaultShortcuts.frameBack;
-    if (frameForwardInput) frameForwardInput.value = shortcuts.frameForward || defaultShortcuts.frameForward;
-    if (toggleFullscreenInput) toggleFullscreenInput.value = shortcuts.toggleFullscreen || defaultShortcuts.toggleFullscreen;
-    if (volumeUpInput) volumeUpInput.value = shortcuts.volumeUp || defaultShortcuts.volumeUp;
-    if (volumeDownInput) volumeDownInput.value = shortcuts.volumeDown || defaultShortcuts.volumeDown;
-    if (toggleMuteInput) toggleMuteInput.value = shortcuts.toggleMute || defaultShortcuts.toggleMute;
-    if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
-    if (controlsPinInput) controlsPinInput.value = shortcuts.toggleControlsPin;
-    if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
-    if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
-    if (toggleCaptionsInput) toggleCaptionsInput.value = shortcuts.toggleCaptions || defaultShortcuts.toggleCaptions;
-    if (increaseCaptionSizeInput) increaseCaptionSizeInput.value = shortcuts.increaseCaptionSize || defaultShortcuts.increaseCaptionSize;
-    if (decreaseCaptionSizeInput) decreaseCaptionSizeInput.value = shortcuts.decreaseCaptionSize || defaultShortcuts.decreaseCaptionSize;
-  }
-
-  async function loadAndRenderShortcuts() {
-    try {
-      const data = await safeGetStorage('shortcuts');
-      renderShortcuts(withShortcutDefaults(data.shortcuts || {}));
-    } catch (err) {
-      console.error('Error loading shortcuts, using defaults:', err);
-      renderShortcuts(defaultShortcuts);
-    }
-  }
-
-  function getShortcutString(e: KeyboardEvent): string {
-    const parts: string[] = [];
-    if (e.ctrlKey && e.key !== 'Control') parts.push('Ctrl');
-    if (e.altKey && e.key !== 'Alt') parts.push('Alt');
-    if (e.shiftKey && e.key !== 'Shift') parts.push('Shift');
-    if (e.metaKey && e.key !== 'Meta') parts.push('Meta');
-    
-    // Add the main key
-    if (e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift' && e.key !== 'Meta') {
-      let keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
-      if (keyName === ' ') {
-        keyName = 'Space';
-      }
-      parts.push(keyName);
-    }
-    
-    return parts.join('+');
-  }
-
-  function setupShortcutListeners() {
-    // 1. Keyboard recording listener
-    const inputs = document.querySelectorAll('.shortcut-input') as NodeListOf<HTMLInputElement>;
-    inputs.forEach(input => {
-      input.addEventListener('keydown', async (e: KeyboardEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const isModifierOnly = ['Control', 'Alt', 'Shift', 'Meta'].includes(e.key);
-        if (isModifierOnly) {
-          const tempParts: string[] = [];
-          if (e.ctrlKey) tempParts.push('Ctrl');
-          if (e.altKey) tempParts.push('Alt');
-          if (e.shiftKey) tempParts.push('Shift');
-          if (e.metaKey) tempParts.push('Meta');
-          tempParts.push('...');
-          input.value = tempParts.join('+');
-          return;
-        }
-
-        const shortcutStr = getShortcutString(e);
-        if (!shortcutStr) return;
-
-        input.value = shortcutStr;
-
-        // Save to storage
-        try {
-          const data = await safeGetStorage('shortcuts');
-          const shortcuts = withShortcutDefaults(data.shortcuts || {});
-
-          const shortcutId = input.id;
-          if (shortcutId === 'shortcut-toggle') shortcuts.toggle = shortcutStr;
-          else if (shortcutId === 'shortcut-exit') shortcuts.exit = shortcutStr;
-          else if (shortcutId === 'shortcut-seek-back') shortcuts.seekBack = shortcutStr;
-          else if (shortcutId === 'shortcut-seek-forward') shortcuts.seekForward = shortcutStr;
-          else if (shortcutId === 'shortcut-cycle') shortcuts.cycle = shortcutStr;
-          else if (shortcutId === 'shortcut-play-pause') shortcuts.playPause = shortcutStr;
-          else if (shortcutId === 'shortcut-previous-video') shortcuts.previousVideo = shortcutStr;
-          else if (shortcutId === 'shortcut-next-video') shortcuts.nextVideo = shortcutStr;
-          else if (shortcutId === 'shortcut-frame-back') shortcuts.frameBack = shortcutStr;
-          else if (shortcutId === 'shortcut-frame-forward') shortcuts.frameForward = shortcutStr;
-          else if (shortcutId === 'shortcut-toggle-fullscreen') shortcuts.toggleFullscreen = shortcutStr;
-          else if (shortcutId === 'shortcut-volume-up') shortcuts.volumeUp = shortcutStr;
-          else if (shortcutId === 'shortcut-volume-down') shortcuts.volumeDown = shortcutStr;
-          else if (shortcutId === 'shortcut-toggle-mute') shortcuts.toggleMute = shortcutStr;
-          else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
-          else if (shortcutId === 'shortcut-controls-pin') shortcuts.toggleControlsPin = shortcutStr;
-          else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
-          else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
-          else if (shortcutId === 'shortcut-toggle-captions') shortcuts.toggleCaptions = shortcutStr;
-          else if (shortcutId === 'shortcut-increase-caption-size') shortcuts.increaseCaptionSize = shortcutStr;
-          else if (shortcutId === 'shortcut-decrease-caption-size') shortcuts.decreaseCaptionSize = shortcutStr;
-
-          await chrome.storage.sync.set({ shortcuts });
-          await notifyAllTabs();
-        } catch (err) {
-          console.error('Error saving shortcut:', err);
-        }
-      });
-    });
-
-    // 2. Individual reset buttons listener
-    const singleResetBtns = document.querySelectorAll('.reset-single-btn') as NodeListOf<HTMLButtonElement>;
-    singleResetBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const shortcutKey = btn.getAttribute('data-shortcut') as keyof Shortcuts;
-        if (!shortcutKey || !defaultShortcuts[shortcutKey]) return;
-
-        try {
-          const data = await safeGetStorage('shortcuts');
-          const shortcuts = withShortcutDefaults(data.shortcuts || {});
-
-          shortcuts[shortcutKey] = defaultShortcuts[shortcutKey];
-
-          await chrome.storage.sync.set({ shortcuts });
-          await loadAndRenderShortcuts();
-          await notifyAllTabs();
-        } catch (err) {
-          console.error(`Error resetting individual shortcut ${shortcutKey}:`, err);
-        }
-      });
-    });
-
-    // 3. Reset all to defaults button listener
-    const resetBtn = document.getElementById('reset-shortcuts-btn') as HTMLButtonElement | null;
-    if (resetBtn) {
-      resetBtn.addEventListener('click', async () => {
-        try {
-          await chrome.storage.sync.set({ shortcuts: defaultShortcuts });
-          await loadAndRenderShortcuts();
-          await notifyAllTabs();
-        } catch (err) {
-          console.error('Error resetting shortcuts:', err);
-        }
-      });
-    }
-  }
 
   // --- Features ---
   async function loadAndRenderFeatures() {

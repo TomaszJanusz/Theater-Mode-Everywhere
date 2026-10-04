@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "Ajustes de la extensión"
+  },
+  "shortcutUnassigned": {
+    "message": "Sin asignar"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Algunos atajos están asignados a varias acciones. Edita o restablece los atajos resaltados."
+  },
+  "shortcutConflictTitle": {
+    "message": "Atajo ya asignado"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ está asignado a $OWNERS$. ¿Moverlo a $TARGET$? Las acciones anteriores perderán este atajo.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Mantener asignación"
+  },
+  "shortcutReassign": {
+    "message": "Mover atajo"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape está reservado para cerrar diálogos y salir del modo cine. Elige otro atajo."
+  },
+  "shortcutSaveError": {
+    "message": "No se pudo guardar el atajo"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Tus atajos no han cambiado. Inténtalo de nuevo."
+  },
+  "cyclePictureLayout": {
+    "message": "Cambiar la disposición de la imagen"
   }
 }

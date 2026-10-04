@@ -752,7 +752,7 @@ export function createControls(ctx: PlayerChromeContext) {
     closeBtn.className = 'theater-control-btn close-btn';
   
     bindCustomTooltip(closeBtn, () => {
-      const toggleKey = escapeHtml((ui().shortcuts.toggle || 'T').toUpperCase());
+      const toggleKey = escapeHtml((ui().shortcuts.toggle || t('shortcutUnassigned')).toUpperCase());
       const exitKey = escapeHtml(ui().shortcuts.exit === 'Escape' ? 'Esc' : (ui().shortcuts.exit || 'Esc'));
       return t('exitTheaterModeTooltip', [toggleKey, exitKey]);
     });
@@ -886,6 +886,19 @@ export function createControls(ctx: PlayerChromeContext) {
     ));
     updateFitRow();
     controlsScope.add(ctx.uiStore.subscribe(updateFitRow));
+
+    const layoutBtn = document.createElement('button');
+    layoutBtn.className = 'theater-control-btn picture-layout-btn';
+    setIcon(layoutBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="7" rx="1"/><path d="M8 17h8"/></svg>`);
+    layoutBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      executeCommand({ type: 'CYCLE_LAYOUT' });
+    });
+    const layoutRow = settings.addRow(layoutBtn, t('pictureAlignLabel'));
+    const updateLayoutRow = () => layoutRow.update(ui().shortcuts.cycleLayout,
+      t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'));
+    updateLayoutRow();
+    controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     // Switch Video Button (Only if there are multiple real video players on the page)
     const videosOnPage = selectSwitchableVideos(findAllVideosDeep(document), video);

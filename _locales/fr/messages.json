@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "Paramètres de l'extension"
+  },
+  "shortcutUnassigned": {
+    "message": "Non attribué"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Certains raccourcis sont attribués à plusieurs actions. Modifiez ou réinitialisez les raccourcis signalés."
+  },
+  "shortcutConflictTitle": {
+    "message": "Raccourci déjà attribué"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ est attribué à $OWNERS$. Le déplacer vers $TARGET$ ? Les actions précédentes perdront ce raccourci.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Conserver l’attribution"
+  },
+  "shortcutReassign": {
+    "message": "Déplacer le raccourci"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Échap est réservé à la fermeture des fenêtres et à la sortie du mode cinéma. Choisissez un autre raccourci."
+  },
+  "shortcutSaveError": {
+    "message": "Impossible d’enregistrer le raccourci"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Vos raccourcis n’ont pas été modifiés. Réessayez."
+  },
+  "cyclePictureLayout": {
+    "message": "Changer la disposition de l’image"
   }
 }

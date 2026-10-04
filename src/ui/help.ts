@@ -71,6 +71,9 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
+    const generalColumn = document.createElement('div');
+    const playbackColumn = document.createElement('div');
+    generalColumn.className = playbackColumn.className = 'theater-help-column';
 
     const groups = [
       {
@@ -81,6 +84,7 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
+          { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
           { label: ctx.t('toggleSubtitles'), key: shortcuts.toggleCaptions },
           { label: ctx.t('increaseSubtitleSize'), key: shortcuts.increaseCaptionSize },
           { label: ctx.t('decreaseSubtitleSize'), key: shortcuts.decreaseCaptionSize },
@@ -133,6 +137,7 @@ export function createHelp(ctx: PlayerChromeContext) {
         keyWrapper.dir = 'ltr';
 
         const keys = shortcutDisplayParts(item.key);
+        if (!keys.length) keyWrapper.textContent = ctx.t('shortcutUnassigned');
         keys.forEach((k, idx) => {
           if (idx > 0) {
             keyWrapper.appendChild(document.createTextNode(' + '));
@@ -147,8 +152,9 @@ export function createHelp(ctx: PlayerChromeContext) {
         groupEl.appendChild(row);
       });
 
-      grid.appendChild(groupEl);
+      (group === groups[0] ? generalColumn : playbackColumn).appendChild(groupEl);
     });
+    grid.append(generalColumn, playbackColumn);
 
     card.appendChild(grid);
     overlay.appendChild(card);

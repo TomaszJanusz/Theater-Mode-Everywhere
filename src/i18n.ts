@@ -1,4 +1,14 @@
 export const FALLBACK_MESSAGES: Record<string, string> = {
+  shortcutUnassigned: "Not assigned",
+  shortcutExistingConflicts: "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts.",
+  shortcutConflictTitle: "Shortcut already assigned",
+  shortcutConflictDescription: "$1 is assigned to $2. Move it to $3? The previous actions will no longer have this shortcut.",
+  shortcutKeepAssignment: "Keep current assignment",
+  shortcutReassign: "Move shortcut",
+  shortcutEscapeReserved: "Escape is reserved for closing dialogs and exiting theater mode. Choose another shortcut for this action.",
+  shortcutSaveError: "Shortcut could not be saved",
+  shortcutSaveErrorDescription: "Your shortcuts were not changed. Please try again.",
+
   playerSettingsLabel: "Player settings",
   extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",
@@ -33,6 +43,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   createdByHtml: 'Created by <a href="https://tomaszjanusz.dev" target="_blank" rel="noopener noreferrer">Tomasz Janusz</a>',
   appearanceTitle: 'Appearance',
   appearanceDescription: 'Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.',
+  cyclePictureLayout: 'Change picture layout',
   pictureAlignLabel: 'Layout',
   pictureAlignCenter: 'Centered',
   pictureAlignCenterDescription: 'Picture stays in the middle of the screen. Best\u00a0for\u00a016:9\u00a0screens.',

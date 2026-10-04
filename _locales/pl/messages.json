@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "Ustawienia rozszerzenia"
+  },
+  "shortcutUnassigned": {
+    "message": "Nieprzypisany"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Niektóre skróty są przypisane do kilku akcji. Edytuj lub zresetuj wyróżnione skróty, aby usunąć konflikty."
+  },
+  "shortcutConflictTitle": {
+    "message": "Skrót jest już przypisany"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ jest przypisany do: $OWNERS$. Przenieść go do: $TARGET$? Poprzednie akcje stracą ten skrót.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Zachowaj przypisanie"
+  },
+  "shortcutReassign": {
+    "message": "Przenieś skrót"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape służy do zamykania okien i wyjścia z trybu kinowego. Wybierz inny skrót dla tej akcji."
+  },
+  "shortcutSaveError": {
+    "message": "Nie udało się zapisać skrótu"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Skróty nie zostały zmienione. Spróbuj ponownie."
+  },
+  "cyclePictureLayout": {
+    "message": "Zmień układ obrazu"
   }
 }

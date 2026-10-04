@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "扩展程序设置"
+  },
+  "shortcutUnassigned": {
+    "message": "未分配"
+  },
+  "shortcutExistingConflicts": {
+    "message": "部分快捷键已分配给多个操作。请编辑或重置突出显示的快捷键。"
+  },
+  "shortcutConflictTitle": {
+    "message": "快捷键已分配"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ 已分配给 $OWNERS$。要将其移至 $TARGET$ 吗？原来的操作将失去此快捷键。",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "保留当前分配"
+  },
+  "shortcutReassign": {
+    "message": "移动快捷键"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape 用于关闭对话框和退出影院模式。请为此操作选择其他快捷键。"
+  },
+  "shortcutSaveError": {
+    "message": "无法保存快捷键"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "快捷键未更改。请重试。"
+  },
+  "cyclePictureLayout": {
+    "message": "切换画面布局"
   }
 }

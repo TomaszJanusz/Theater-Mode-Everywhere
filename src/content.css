@@ -1425,7 +1425,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
   width: 90% !important;
-  max-width: 480px !important;
+  max-width: 800px !important;
+  max-height: calc(100dvh - 48px) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
   padding: 24px !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
   animation: theaterScaleIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
@@ -1469,10 +1472,22 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-help-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 28px !important;
+  direction: inherit !important;
+}
+
+.theater-help-column {
   display: flex !important;
   flex-direction: column !important;
   gap: 20px !important;
-  direction: inherit !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .theater-help-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .theater-help-card { padding: 16px !important; max-height: calc(100dvh - 24px) !important; }
 }
 
 .theater-help-group {
@@ -1502,11 +1517,14 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
+  gap: 12px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   direction: inherit !important;
 }
 
 .theater-help-label {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
   font-size: 13px !important;
   color: #d4d4d8 !important;
   font-weight: 500 !important;
@@ -1514,9 +1532,13 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-help-key-wrapper {
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  max-width: 60% !important;
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
+  flex-shrink: 0 !important;
   color: #71717a !important;
   font-size: 11px !important;
   font-weight: 500 !important;

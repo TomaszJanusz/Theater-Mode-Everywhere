@@ -592,5 +592,46 @@
   },
   "extensionSettingsLabel": {
     "message": "Налаштування розширення"
+  },
+  "shortcutUnassigned": {
+    "message": "Не призначено"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Деякі сполучення клавіш призначені кільком діям. Змініть або скиньте виділені сполучення."
+  },
+  "shortcutConflictTitle": {
+    "message": "Сполучення вже призначене"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ призначено для $OWNERS$. Перенести до $TARGET$? Попередні дії втратять це сполучення.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Зберегти призначення"
+  },
+  "shortcutReassign": {
+    "message": "Перенести сполучення"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape зарезервовано для закриття вікон і виходу з режиму кінотеатру. Виберіть інше сполучення."
+  },
+  "shortcutSaveError": {
+    "message": "Не вдалося зберегти сполучення"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Сполучення клавіш не змінено. Спробуйте ще раз."
+  },
+  "cyclePictureLayout": {
+    "message": "Змінити розташування зображення"
   }
 }
