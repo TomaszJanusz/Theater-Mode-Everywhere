@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Stworzono z <span class=\"heart\">❤</span> w 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Zawsze pokazuj kontrolki"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Zachowaj widoczność kontrolek odtwarzania i paska postępu w trybie kinowym. Tytuł i kursor nadal chowają się przy bezczynności."
+  },
+  "toggleControlsPin": {
+    "message": "Przypnij/Odepnij kontrolki"
+  },
+  "pinControlsTooltip": {
+    "message": "Przypnij kontrolki <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Odepnij kontrolki <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Kontrolki przypięte"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Kontrolki chowają się automatycznie"
   }
 }

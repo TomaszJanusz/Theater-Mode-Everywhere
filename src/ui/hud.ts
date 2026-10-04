@@ -311,6 +311,7 @@ export function createHud(ctx: PlayerChromeContext) {
         home.addEventListener('dblclick', (event) => event.stopPropagation());
         header.appendChild(home);
       }
+      header.classList.toggle('visible', ctx.ui().toolbarVisible);
       header.inert = !ctx.ui().toolbarVisible;
       ctx.mountPlayerUi(header);
     }

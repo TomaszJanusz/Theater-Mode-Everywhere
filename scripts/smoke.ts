@@ -127,7 +127,8 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     return Boolean(video?.paused);
   });
   if (pausedAfter === pausedBefore) {
-    fail('Space did not toggle playback in theater mode on a non-provider host.');
+    const diagnostics = await page.locator('video#player').evaluate((video: HTMLVideoElement) => ({ paused: video.paused, time: video.currentTime, ready: video.readyState, source: Boolean(video.srcObject), error: video.error?.message }));
+    fail(`Space did not toggle playback (before=${pausedBefore}, after=${pausedAfter}): ${JSON.stringify(diagnostics)}`);
   }
   if (!pausedAfter) {
     await page.keyboard.press('Space');
@@ -141,13 +142,179 @@ async function assertTheaterToggle(page: Page): Promise<void> {
   }, { videoClass: THEATER_VIDEO_CLASS, htmlClass: THEATER_HTML_CLASS }, { timeout: 10_000 });
 }
 
+async function assertControlsPin(page: Page, context?: BrowserContext): Promise<void> {
+  const pin = page.locator('.controls-pin-btn');
+  const controls = page.locator('.theater-controls-wrapper');
+  const waitForChrome = async (pinned: boolean, visible: boolean, headerVisible: boolean) => {
+    await page.waitForFunction(({ pinned, visible, headerVisible }) => {
+      const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+      const bar = root?.querySelector('.theater-controls-wrapper');
+      const button = root?.querySelector('.controls-pin-btn');
+      const header = root?.querySelector('.theater-everywhere-header-hud');
+      return Boolean(bar && button && header
+        && button.getAttribute('aria-pressed') === String(pinned)
+        && bar.classList.contains('visible') === visible
+        && header.classList.contains('visible') === headerVisible
+        && (header as HTMLElement).inert === !headerVisible);
+    }, { pinned, visible, headerVisible });
+  };
+
+  await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.play());
+  await page.locator('video#player').evaluate((video: HTMLVideoElement) => {
+    const track = video.addTextTrack('subtitles', 'Smoke captions', 'en');
+    track.addCue(new VTTCue(0, 3600, 'Pinned controls keep captions clear'));
+    track.mode = 'hidden';
+  });
+  await page.locator('video#player').click();
+  await page.keyboard.press('t');
+  await page.keyboard.press('c');
+  await page.locator('.theater-caption-overlay.visible').waitFor();
+  await page.mouse.move(640, 300);
+  await waitForChrome(false, true, true);
+  await waitForChrome(false, false, false);
+
+  // Pin an already hidden bar, suppress repeats, and keep the header idle.
+  await page.keyboard.down('Shift');
+  await page.keyboard.down('h');
+  await pin.waitFor();
+  await page.keyboard.down('h');
+  await page.keyboard.up('h');
+  await page.keyboard.up('Shift');
+  await waitForChrome(true, true, false);
+  const timeBefore = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.currentTime);
+  await delay(2800);
+  await waitForChrome(true, true, false);
+  const timeAfter = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.currentTime);
+  if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT });
+  if (timeAfter <= timeBefore) fail('Playback stopped while controls were pinned.');
+  const idle = await page.evaluate(() => {
+    const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+    const header = root?.querySelector('.theater-everywhere-header-hud');
+    const home = root?.querySelector('.theater-home-pill');
+    return {
+      cursorHidden: document.documentElement.classList.contains('theater-everywhere-cursor-hidden'),
+      headerOpacity: header ? getComputedStyle(header).opacity : null,
+      homePointerEvents: home ? getComputedStyle(home).pointerEvents : null,
+      captionsLifted: document.querySelector('video#player')?.classList.contains('controls-visible'),
+      captionBottom: parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'))
+    };
+  });
+  if (!idle.cursorHidden || idle.headerOpacity !== '0' || idle.homePointerEvents !== 'none'
+      || !idle.captionsLifted || !(idle.captionBottom > 48)) {
+    fail(`Pinned idle chrome or caption clearance is incorrect: ${JSON.stringify(idle)}`);
+  }
+
+  // Editable fields must not consume the shortcut.
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.id = 'pin-test-input';
+    document.body.appendChild(input);
+    input.focus();
+  });
+  await page.keyboard.press('Shift+H');
+  if (await pin.getAttribute('aria-pressed') !== 'true') fail('Pin shortcut fired in an input.');
+  await page.evaluate(() => document.getElementById('pin-test-input')?.remove());
+
+  // Keyboard focus keeps Home reachable, and hovering the bar keeps the cursor usable.
+  await pin.focus();
+  await page.keyboard.press('Tab');
+  await waitForChrome(true, true, true);
+  await delay(2800);
+  await waitForChrome(true, true, true);
+  await page.evaluate(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.activeElement as HTMLElement | null)?.blur());
+  await pin.hover();
+  await delay(2800);
+  const cursorHiddenOverControls = await page.evaluate(() =>
+    document.documentElement.classList.contains('theater-everywhere-cursor-hidden'));
+  if (cursorHiddenOverControls || await pin.evaluate((el) => getComputedStyle(el).cursor) === 'none') {
+    fail('Cursor is hidden over a pinned control.');
+  }
+  await page.mouse.move(640, 300);
+  await waitForChrome(true, true, false);
+
+  // Idle header changes must not dismiss the menu on the pinned playback bar.
+  await page.locator('.cc-btn').click();
+  await page.mouse.move(640, 300);
+  await waitForChrome(true, true, false);
+  if (!await page.locator('.theater-cc-menu.visible').count()) fail('Idle chrome dismissed the pinned captions menu.');
+  await page.locator('.cc-btn').click();
+  await page.mouse.move(640, 300);
+
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => Boolean(document.fullscreenElement));
+  await waitForChrome(true, true, false);
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => !document.fullscreenElement);
+
+  // Rebuild the UI, retaining the saved/local preference.
+  await page.keyboard.press('Escape');
+  await controls.waitFor({ state: 'detached' });
+  await page.keyboard.press('t');
+  await waitForChrome(true, true, true);
+  await waitForChrome(true, true, false);
+
+  if (context) {
+    // Actual extension storage, reload, and the settings page share the same preference.
+    const worker = await extensionWorker(context);
+    const saved = await worker.evaluate(async () => (await chrome.storage.sync.get('keepControlsVisible')).keepControlsVisible);
+    if (saved !== true) fail('Pin preference was not persisted.');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await page.locator('video#player').click();
+    await page.keyboard.press('t');
+    await waitForChrome(true, true, true);
+    await waitForChrome(true, true, false);
+    const options = await context.newPage();
+    try {
+      await options.goto(new URL('options/options.html', worker.url()).href);
+      await options.locator('.te-dialog-btn-primary').click();
+      const toggle = options.locator('#keep-controls-visible-toggle');
+      await toggle.waitFor({ state: 'attached' });
+      await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
+      await options.locator('label.toggle-switch').filter({ has: toggle }).click();
+      await waitForChrome(false, true, true);
+      await waitForChrome(false, false, false);
+      await page.keyboard.press('Shift+H');
+      await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
+      await waitForChrome(true, true, false);
+      await options.locator('#shortcut-controls-pin').press('Shift+U');
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleControlsPin === 'Shift+U');
+      await options.locator('#shortcut-toggle-mute').press('Control+M');
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'Ctrl+M');
+      await options.waitForFunction(() => (document.getElementById('shortcut-controls-pin') as HTMLInputElement)?.value === 'Shift+U');
+      const shortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
+      if (shortcuts.toggleControlsPin !== 'Shift+U' || shortcuts.toggleMute !== 'Ctrl+M') {
+        fail('Editing another shortcut lost the custom pin shortcut.');
+      }
+      await page.keyboard.press('Shift+U');
+      await waitForChrome(false, true, true);
+      await worker.evaluate(async () => { await chrome.storage.sync.remove('shortcuts'); });
+      // Existing shortcut-removal behavior does not reset the live runtime: reload below.
+    } finally {
+      await options.close();
+    }
+  } else {
+    await page.keyboard.press('Shift+H');
+    await waitForChrome(false, true, true);
+  }
+  await waitForChrome(false, false, false);
+  await page.keyboard.press('Escape');
+  await controls.waitFor({ state: 'detached' });
+  if (await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-cursor-hidden'))) {
+    fail('Exiting theater mode left the cursor hidden.');
+  }
+  console.log(`smoke controls pin: idle, playback, repeat, input, focus, hover, captions, popovers, fullscreen and rebuild${context ? ', persistence and settings' : ''} passed`);
+}
+
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
   const cssPath = path.join(unpackedDir, 'content.css');
-  const jsPath = path.join(unpackedDir, 'content.js');
   await page.addStyleTag({ path: cssPath });
-  const source = readFileSync(jsPath, 'utf8');
-  const isModule = /^\s*export\b/m.test(source) || /^\s*import\b/m.test(source);
-  await page.addScriptTag({ path: jsPath, type: isModule ? 'module' : undefined });
+  for (const filename of ['mainWorld.js', 'content.js']) {
+    const source = readFileSync(path.join(unpackedDir, filename), 'utf8');
+    const isModule = /^\s*export\b/m.test(source) || /^\s*import\b/m.test(source);
+    // Content scripts have their own global scope; preserve it in the injected fallback.
+    await page.addScriptTag({ content: isModule ? source : `(() => {\n${source}\n})();`, type: isModule ? 'module' : undefined });
+  }
   await delay(400);
 }
 
@@ -190,6 +357,11 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
       || childDoc?.documentElement.classList.contains('theater-everywhere-html-active')
     );
   }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  // A shortcut focused in the parent must update the child player exactly once.
+  await page.locator('body').press('Shift+H');
+  await frame.locator('.controls-pin-btn[aria-pressed="true"]').waitFor();
+  await frame.locator('body').press('Shift+H');
+  await frame.locator('.controls-pin-btn[aria-pressed="false"]').waitFor();
   await page.keyboard.press('Escape');
   await page.waitForFunction((videoClass) => {
     const iframe = document.querySelector('#child');
@@ -266,6 +438,9 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await waitForPlayer(page);
     await assertTheaterToggle(page);
     console.log('smoke:chromium local player T/Escape passed');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertControlsPin(page, context);
 
     await setBlacklist(context, ['127.0.0.1']);
     await assertBlacklistBlocksTheater(page);
@@ -295,6 +470,7 @@ async function tryFirefoxSideload(origin: string): Promise<boolean> {
   mkdirSync(extensionsDir, { recursive: true });
   copyFileSync(xpiSource, path.join(extensionsDir, 'theater-everywhere@tomaszjanusz.dev.xpi'));
   let context: BrowserContext | null = null;
+  let sideloadVerified = false;
   try {
     context = await firefox.launchPersistentContext(userDataDir, {
       headless: true,
@@ -314,11 +490,14 @@ async function tryFirefoxSideload(origin: string): Promise<boolean> {
     await delay(1500);
     const entered = await theaterEntered(page);
     if (!entered) return false;
+    sideloadVerified = true;
     await page.keyboard.press('Escape');
     await delay(500);
+    await assertControlsPin(page);
     console.log('smoke:firefox passed (sideloaded MV3 xpi)');
     return true;
-  } catch {
+  } catch (error) {
+    if (sideloadVerified) throw error;
     return false;
   } finally {
     await context?.close();
@@ -340,11 +519,14 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
   const browser = await firefox.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
+    page.on('console', (message) => { if (message.type() === 'error') console.warn('Firefox console:', message.text()); });
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await injectBundledPlayer(page, unpackedDir);
     await assertTheaterToggle(page);
-    console.log('smoke:firefox passed (injected bundled content.js; sideload of unsigned MV3 xpi is blocked)');
+    await assertControlsPin(page);
+    console.log('smoke:firefox passed (injected bundled mainWorld.js and content.js; sideload of unsigned MV3 xpi is blocked)');
   } finally {
     await browser.close();
   }

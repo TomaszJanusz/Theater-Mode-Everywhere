@@ -1,4 +1,6 @@
 /* Options script for Theater Everywhere */
+import { defaultShortcuts, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
   ACCENT_COLOR_OPTIONS,
@@ -53,62 +55,6 @@ function configurePrivacyThingLogo(): void {
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
 
-interface Shortcuts {
-  toggle: string;
-  exit: string;
-  seekBack: string;
-  seekForward: string;
-  cycle: string;
-  playPause: string;
-  previousVideo: string;
-  nextVideo: string;
-  frameBack: string;
-  frameForward: string;
-  toggleFullscreen: string;
-  volumeUp: string;
-  volumeDown: string;
-  toggleMute: string;
-  togglePiP: string;
-  showHelp: string;
-  cycleFit: string;
-  toggleCaptions: string;
-  increaseCaptionSize: string;
-  decreaseCaptionSize: string;
-}
-
-const defaultShortcuts: Shortcuts = {
-  toggle: 'T',
-  exit: 'Escape',
-  seekBack: 'ArrowLeft',
-  seekForward: 'ArrowRight',
-  cycle: 'Shift+T',
-  playPause: 'Space',
-  previousVideo: 'Shift+P',
-  nextVideo: 'Shift+N',
-  frameBack: '<',
-  frameForward: '>',
-  toggleFullscreen: 'F',
-  volumeUp: 'ArrowUp',
-  volumeDown: 'ArrowDown',
-  toggleMute: 'M',
-  togglePiP: 'P',
-  showHelp: 'H',
-  cycleFit: 'Z',
-  toggleCaptions: 'C',
-  increaseCaptionSize: '+',
-  decreaseCaptionSize: '-'
-};
-
-function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
-  const next = { ...defaultShortcuts };
-  if (!saved) return next;
-  (Object.keys(defaultShortcuts) as Array<keyof Shortcuts>).forEach((key) => {
-    const value = saved[key];
-    if (typeof value === 'string' && value) next[key] = value;
-  });
-  return next;
-}
-
 function safeGetStorage(keys: string | string[]): Promise<any> {
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
@@ -140,6 +86,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
+  { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, fallback: false },
   { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false }
 ] as const;
 
@@ -163,6 +110,15 @@ async function init() {
   // Load and bind features toggles
   await loadAndRenderFeatures();
   setupFeatureListeners();
+  if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'sync') return;
+      if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
+        const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
+        if (toggle) toggle.checked = resolveKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
+      }
+    });
+  }
 
   // Load and bind appearance controls
   renderAccentColorOptions(DEFAULT_ACCENT_COLOR);
@@ -580,6 +536,7 @@ async function init() {
     const volumeDownInput = document.getElementById('shortcut-volume-down') as HTMLInputElement;
     const toggleMuteInput = document.getElementById('shortcut-toggle-mute') as HTMLInputElement;
     const togglePiPInput = document.getElementById('shortcut-toggle-pip') as HTMLInputElement;
+    const controlsPinInput = document.getElementById('shortcut-controls-pin') as HTMLInputElement;
     const showHelpInput = document.getElementById('shortcut-show-help') as HTMLInputElement;
     const cycleFitInput = document.getElementById('shortcut-cycle-fit') as HTMLInputElement;
     const toggleCaptionsInput = document.getElementById('shortcut-toggle-captions') as HTMLInputElement;
@@ -601,6 +558,7 @@ async function init() {
     if (volumeDownInput) volumeDownInput.value = shortcuts.volumeDown || defaultShortcuts.volumeDown;
     if (toggleMuteInput) toggleMuteInput.value = shortcuts.toggleMute || defaultShortcuts.toggleMute;
     if (togglePiPInput) togglePiPInput.value = shortcuts.togglePiP || defaultShortcuts.togglePiP;
+    if (controlsPinInput) controlsPinInput.value = shortcuts.toggleControlsPin;
     if (showHelpInput) showHelpInput.value = shortcuts.showHelp || defaultShortcuts.showHelp;
     if (cycleFitInput) cycleFitInput.value = shortcuts.cycleFit || defaultShortcuts.cycleFit;
     if (toggleCaptionsInput) toggleCaptionsInput.value = shortcuts.toggleCaptions || defaultShortcuts.toggleCaptions;
@@ -683,6 +641,7 @@ async function init() {
           else if (shortcutId === 'shortcut-volume-down') shortcuts.volumeDown = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-mute') shortcuts.toggleMute = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-pip') shortcuts.togglePiP = shortcutStr;
+          else if (shortcutId === 'shortcut-controls-pin') shortcuts.toggleControlsPin = shortcutStr;
           else if (shortcutId === 'shortcut-show-help') shortcuts.showHelp = shortcutStr;
           else if (shortcutId === 'shortcut-cycle-fit') shortcuts.cycleFit = shortcutStr;
           else if (shortcutId === 'shortcut-toggle-captions') shortcuts.toggleCaptions = shortcutStr;
@@ -742,7 +701,8 @@ async function init() {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
         if (!toggle) continue;
         if (data[item.key] === undefined) toggle.checked = item.fallback;
-        else toggle.checked = Boolean(data[item.key]);
+        else toggle.checked = item.key === KEEP_CONTROLS_VISIBLE_STORAGE_KEY
+          ? resolveKeepControlsVisible(data[item.key]) : Boolean(data[item.key]);
       }
       const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
       if (richTheaterToggle) richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(data));

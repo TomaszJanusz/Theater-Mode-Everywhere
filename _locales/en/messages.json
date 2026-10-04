@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Made with <span class=\"heart\">❤</span> in 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Always show controls"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle."
+  },
+  "toggleControlsPin": {
+    "message": "Pin/Unpin Controls"
+  },
+  "pinControlsTooltip": {
+    "message": "Pin controls <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Unpin controls <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Controls pinned"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Controls auto-hide"
   }
 }

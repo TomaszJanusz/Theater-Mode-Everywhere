@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Hecho con <span class=\"heart\">❤</span> en 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Mostrar siempre los controles"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
+  },
+  "toggleControlsPin": {
+    "message": "Fijar/Soltar controles"
+  },
+  "pinControlsTooltip": {
+    "message": "Fijar controles <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Soltar controles <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Controles fijados"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Los controles se ocultan automáticamente"
   }
 }

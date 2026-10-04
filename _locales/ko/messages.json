@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "폴란드 🇵🇱에서 <span class=\"heart\">❤</span>을 담아 제작"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "컨트롤 항상 표시"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "극장 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
+  },
+  "toggleControlsPin": {
+    "message": "컨트롤 고정/해제"
+  },
+  "pinControlsTooltip": {
+    "message": "컨트롤 고정 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "컨트롤 고정 해제 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "컨트롤 고정됨"
+  },
+  "controlsUnpinnedHud": {
+    "message": "컨트롤 자동 숨김"
   }
 }

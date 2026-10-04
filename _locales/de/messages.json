@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Mit <span class=\"heart\">❤</span> in 🇵🇱 gemacht"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Steuerelemente immer anzeigen"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Wiedergabesteuerung und Fortschrittsbalken im Kinomodus sichtbar halten. Titel und Mauszeiger werden bei Inaktivität weiterhin ausgeblendet."
+  },
+  "toggleControlsPin": {
+    "message": "Steuerelemente anheften/lösen"
+  },
+  "pinControlsTooltip": {
+    "message": "Steuerelemente anheften <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Steuerelemente lösen <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Steuerelemente angeheftet"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Steuerelemente werden automatisch ausgeblendet"
   }
 }

@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "ポーランド 🇵🇱 で <span class=\"heart\">❤</span> を込めて制作"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "操作バーを常に表示"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "シアターモードで再生コントロールと進行状況バーを常に表示します。操作がないとタイトルとカーソルは引き続き非表示になります。"
+  },
+  "toggleControlsPin": {
+    "message": "操作バーの固定を切り替え"
+  },
+  "pinControlsTooltip": {
+    "message": "操作バーを固定 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "操作バーの固定を解除 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "操作バーを固定しました"
+  },
+  "controlsUnpinnedHud": {
+    "message": "操作バーを自動的に非表示にします"
   }
 }

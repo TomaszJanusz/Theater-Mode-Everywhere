@@ -94,6 +94,7 @@ import {
   type BoostedVideoElement
 } from './runtime-context';
 import { createToolbar } from './toolbar';
+import { CONTROLS_PIN_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -249,6 +250,9 @@ function executeCommand(command: PlayerCommand): void {
       break;
     case 'CYCLE_FIT':
       cycleVideoFit();
+      break;
+    case 'TOGGLE_CONTROLS_PIN':
+      toggleControlsPin();
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -543,6 +547,29 @@ function persistVideoFitMode(mode: VideoFitMode): void {
   }
 }
 
+function applyKeepControlsVisible(value: unknown): void {
+  const next = resolveKeepControlsVisible(value);
+  if (next === ui().keepControlsVisible) return;
+  uiStore.dispatch({ type: 'SET_KEEP_CONTROLS_VISIBLE', value: next });
+  if (next) toolbar.refreshToolbarVisibility();
+  else showToolbar();
+}
+
+function toggleControlsPin(): void {
+  const next = !ui().keepControlsVisible;
+  applyKeepControlsVisible(next);
+  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_PIN_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: next }).catch((error) => {
+        console.error('[Theater Everywhere] Could not save controls visibility:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save controls visibility:', error);
+  }
+}
+
 function cycleVideoFit(): void {
   const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
   const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
@@ -681,6 +708,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
+      KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
       ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
@@ -702,6 +730,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
     });
+    applyKeepControlsVisible(data[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]);
     applyTheaterVideoFit(ui().videoFit);
     applyCaptionStyleToTheater(ui().captionStyle);
     refs.captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
@@ -884,6 +913,14 @@ function initialize(): void {
     if (theaterDialogOpen()) return;
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
+
+    if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+      return;
+    }
 
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
       event.preventDefault();
@@ -1586,6 +1623,10 @@ export function bootstrapPlayerRuntime(): void {
 
       if (changes.blacklist) {
         void checkBlacklistAndInit();
+      }
+
+      if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
+        applyKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
       }
 
       if (changes.shortcuts?.newValue) {

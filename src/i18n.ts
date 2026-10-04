@@ -1,4 +1,11 @@
 export const FALLBACK_MESSAGES: Record<string, string> = {
+  keepControlsVisibleTitle: "Always show controls",
+  keepControlsVisibleDescription: "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.",
+  toggleControlsPin: "Pin/Unpin Controls",
+  pinControlsTooltip: "Pin controls <kbd>$1</kbd>",
+  unpinControlsTooltip: "Unpin controls <kbd>$1</kbd>",
+  controlsPinnedHud: "Controls pinned",
+  controlsUnpinnedHud: "Controls auto-hide",
   extensionName: 'Theater Mode Everywhere',
   extensionDescription: 'Maximize any HTML5 video player to fill the browser viewport with a single keypress.',
   cwsPromoBeforeLabel: 'BEFORE',

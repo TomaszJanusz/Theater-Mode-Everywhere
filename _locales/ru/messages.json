@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Сделано с <span class=\"heart\">❤</span> в 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Всегда показывать элементы управления"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Элементы управления воспроизведением и шкала прогресса остаются видимыми в режиме кинотеатра. Заголовок и курсор по-прежнему скрываются при бездействии."
+  },
+  "toggleControlsPin": {
+    "message": "Закрепить/Открепить элементы управления"
+  },
+  "pinControlsTooltip": {
+    "message": "Закрепить элементы управления <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Открепить элементы управления <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Элементы управления закреплены"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Элементы управления скрываются автоматически"
   }
 }

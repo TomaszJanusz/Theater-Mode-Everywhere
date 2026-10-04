@@ -13,6 +13,7 @@ export type PlayerUiState = {
   theaterActive: boolean;
   helpOpen: boolean;
   toolbarVisible: boolean;
+  keepControlsVisible: boolean;
   videoFit: VideoFitMode;
   pictureAlign: PictureAlign;
   accentColor: AccentColorPreset;
@@ -25,6 +26,7 @@ export type PlayerUiAction =
   | { type: 'SET_THEATER_ACTIVE'; value: boolean }
   | { type: 'SET_HELP_OPEN'; value: boolean }
   | { type: 'SET_TOOLBAR_VISIBLE'; value: boolean }
+  | { type: 'SET_KEEP_CONTROLS_VISIBLE'; value: boolean }
   | { type: 'SET_VIDEO_FIT'; value: VideoFitMode }
   | { type: 'SET_PICTURE_ALIGN'; value: PictureAlign }
   | { type: 'SET_ACCENT'; value: AccentColorPreset }
@@ -35,6 +37,7 @@ const defaultState = (): PlayerUiState => ({
   theaterActive: false,
   helpOpen: false,
   toolbarVisible: false,
+  keepControlsVisible: false,
   videoFit: DEFAULT_VIDEO_FIT,
   pictureAlign: DEFAULT_PICTURE_ALIGN,
   accentColor: DEFAULT_ACCENT_COLOR,
@@ -47,6 +50,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     left.theaterActive === right.theaterActive
     && left.helpOpen === right.helpOpen
     && left.toolbarVisible === right.toolbarVisible
+    && left.keepControlsVisible === right.keepControlsVisible
     && left.videoFit === right.videoFit
     && left.pictureAlign === right.pictureAlign
     && left.accentColor === right.accentColor
@@ -69,6 +73,9 @@ function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
       break;
     case 'SET_TOOLBAR_VISIBLE':
       next = { ...state, toolbarVisible: action.value };
+      break;
+    case 'SET_KEEP_CONTROLS_VISIBLE':
+      next = { ...state, keepControlsVisible: action.value };
       break;
     case 'SET_VIDEO_FIT':
       next = { ...state, videoFit: action.value };

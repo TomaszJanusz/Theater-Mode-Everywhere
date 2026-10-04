@@ -68,6 +68,7 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('toggleSubtitles'), key: shortcuts.toggleCaptions },
           { label: ctx.t('increaseSubtitleSize'), key: shortcuts.increaseCaptionSize },
           { label: ctx.t('decreaseSubtitleSize'), key: shortcuts.decreaseCaptionSize },
+          { label: ctx.t('toggleControlsPin'), key: shortcuts.toggleControlsPin },
           { label: ctx.t('showHideHelp'), key: shortcuts.showHelp }
         ]
       },

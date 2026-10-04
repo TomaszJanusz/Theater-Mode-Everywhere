@@ -1042,7 +1042,8 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 
 /* Subtitles CC active state styling */
 .theater-control-btn.cc-btn.active,
-.theater-control-btn.pip-btn.active {
+.theater-control-btn.pip-btn.active,
+.theater-control-btn.controls-pin-btn.active {
   color: var(--accent-color, #6366f1) !important;
 }
 
@@ -1543,8 +1544,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
-/* The control bar is the single visibility source for the whole player chrome. */
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud {
+/* Header activity is independent of a pinned playback bar. */
+.theater-everywhere-header-hud.visible {
   opacity: 1 !important;
   transform: translateY(0) !important;
 }
@@ -1569,7 +1570,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-home-pill {
+.theater-everywhere-header-hud.visible .theater-home-pill {
   pointer-events: auto !important;
 }
 
@@ -1674,7 +1675,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   animation-name: theater-title-marquee-rtl !important;
 }
 
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-everywhere-title-hud.marquee .theater-title-hud-track {
+.theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee .theater-title-hud-track {
   animation-play-state: running !important;
 }
 

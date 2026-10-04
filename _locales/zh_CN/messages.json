@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "用 <span class=\"heart\">❤</span> 制造于 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "始终显示控件"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "在影院模式下保持播放控件和进度条可见。空闲时标题和光标仍会自动隐藏。"
+  },
+  "toggleControlsPin": {
+    "message": "固定/取消固定控件"
+  },
+  "pinControlsTooltip": {
+    "message": "固定控件 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "取消固定控件 <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "控件已固定"
+  },
+  "controlsUnpinnedHud": {
+    "message": "控件自动隐藏"
   }
 }

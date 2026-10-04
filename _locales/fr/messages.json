@@ -558,5 +558,36 @@
   },
   "madeInPoland": {
     "message": "Fait avec <span class=\"heart\">❤</span> en 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Toujours afficher les commandes"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Gardez les commandes de lecture et la barre de progression visibles en mode cinéma. Le titre et le curseur se masquent toujours en cas d’inactivité."
+  },
+  "toggleControlsPin": {
+    "message": "Épingler/Détacher les commandes"
+  },
+  "pinControlsTooltip": {
+    "message": "Épingler les commandes <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "unpinControlsTooltip": {
+    "message": "Détacher les commandes <kbd>$SHORTCUT$</kbd>",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsPinnedHud": {
+    "message": "Commandes épinglées"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Masquage automatique des commandes"
   }
 }

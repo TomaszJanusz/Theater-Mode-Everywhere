@@ -18,6 +18,7 @@ import {
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
+import { CONTROLS_PIN_ICON } from './controls-visibility';
 import type { BoostedVideoElement, PlayerChromeContext } from './runtime-context';
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
@@ -896,6 +897,28 @@ export function createControls(ctx: PlayerChromeContext) {
 
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
+
+    const pinBtn = document.createElement('button');
+    pinBtn.type = 'button';
+    pinBtn.className = 'theater-control-btn controls-pin-btn';
+    setIcon(pinBtn, CONTROLS_PIN_ICON);
+    const updatePinButton = () => {
+      const pinned = ui().keepControlsVisible;
+      pinBtn.classList.toggle('active', pinned);
+      pinBtn.setAttribute('aria-pressed', String(pinned));
+      pinBtn.setAttribute('aria-label', t('keepControlsVisibleTitle'));
+      pinBtn.setAttribute('aria-keyshortcuts', ui().shortcuts.toggleControlsPin);
+    };
+    bindCustomTooltip(pinBtn, () => t(
+      ui().keepControlsVisible ? 'unpinControlsTooltip' : 'pinControlsTooltip', ui().shortcuts.toggleControlsPin
+    ));
+    pinBtn.addEventListener('click', (event) => {
+      blurMouseToggle(event, pinBtn);
+      executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+    });
+    updatePinButton();
+    controlsScope.add(ctx.uiStore.subscribe(updatePinButton));
+    rightSec.appendChild(pinBtn);
 
     // Help Button (Keyboard shortcuts listing)
     const helpBtn = document.createElement('button');

@@ -1,4 +1,11 @@
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
+  keepControlsVisibleTitle: "Always show controls",
+  keepControlsVisibleDescription: "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.",
+  toggleControlsPin: "Pin/Unpin Controls",
+  pinControlsTooltip: "Pin controls <kbd>$1</kbd>",
+  unpinControlsTooltip: "Unpin controls <kbd>$1</kbd>",
+  controlsPinnedHud: "Controls pinned",
+  controlsUnpinnedHud: "Controls auto-hide",
   keyboardShortcutsTitle: 'Keyboard Shortcuts',
   generalControlsTitle: 'General Controls',
   toggleTheaterMode: 'Toggle Theater Mode',

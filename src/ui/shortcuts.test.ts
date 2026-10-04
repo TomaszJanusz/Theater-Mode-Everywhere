@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { defaultShortcuts, matchesShortcut, shortcutDisplayParts } from './shortcuts';
+import { defaultShortcuts, matchesShortcut, shortcutDisplayParts, withShortcutDefaults } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -21,6 +21,17 @@ function key(partial: {
 }
 
 describe('shortcut matching', () => {
+  it('adds the pin shortcut to older settings without conflicting with help or losing custom keys', () => {
+    const oldSettings = withShortcutDefaults({ showHelp: 'H', toggle: 'Ctrl+T' });
+    assert.equal(oldSettings.toggleControlsPin, 'Shift+H');
+    assert.equal(oldSettings.toggle, 'Ctrl+T');
+    const pin = key({ key: 'H', code: 'KeyH', shiftKey: true });
+    assert.equal(matchesShortcut(pin, oldSettings.toggleControlsPin), true);
+    assert.equal(matchesShortcut(pin, oldSettings.showHelp), false);
+    const custom = withShortcutDefaults({ ...oldSettings, toggleControlsPin: 'Shift+U' });
+    assert.equal(withShortcutDefaults({ ...custom, toggleMute: 'Ctrl+M' }).toggleControlsPin, 'Shift+U');
+  });
+
   it('defaults mute to M', () => {
     assert.equal(defaultShortcuts.previousVideo, 'Shift+P');
     assert.equal(defaultShortcuts.nextVideo, 'Shift+N');
