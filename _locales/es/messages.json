@@ -193,7 +193,7 @@
     "message": "Integración con Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Muestra el título del material actual y cambia los idiomas de subtítulos del reproductor en el modo teatro. Los capítulos y las miniaturas de la línea de tiempo no están disponibles."
+    "message": "Muestra el título del material actual y cambia los idiomas de subtítulos del reproductor en el modo teatro cuando el reproductor tiene un renderizador de subtítulos activo. Los capítulos y las miniaturas de la línea de tiempo no están disponibles."
   },
   "liveBadge": {
     "message": "EN VIVO"

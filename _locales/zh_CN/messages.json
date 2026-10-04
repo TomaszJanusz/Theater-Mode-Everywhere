@@ -193,7 +193,7 @@
     "message": "Netflix 集成"
   },
   "netflixIntegrationDescription": {
-    "message": "在剧场模式中显示当前内容的标题，并切换播放器的字幕语言。不支持章节和时间轴缩略图。"
+    "message": "在剧场模式中显示当前内容的标题，并在播放器有活动的字幕渲染器时切换字幕语言。不支持章节和时间轴缩略图。"
   },
   "liveBadge": {
     "message": "直播"

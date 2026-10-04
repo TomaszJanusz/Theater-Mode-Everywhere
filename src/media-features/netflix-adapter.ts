@@ -87,28 +87,40 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
   }
 
   async probe(): Promise<MediaCapabilities> {
-    const tracks = selectableNetflixTextTracks(this.read()?.tracks || []);
+    const snapshot = this.read();
+    const tracks = snapshot?.captions === false ? [] : selectableNetflixTextTracks(snapshot?.tracks || []);
     return { captions: tracks.length > 0, chapters: false, previews: false };
   }
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
-    return selectableNetflixTextTracks(this.read()?.tracks || []).map(toCaptionTrack);
+    const snapshot = this.read();
+    if (snapshot?.captions === false) return [];
+    return selectableNetflixTextTracks(snapshot?.tracks || []).map(toCaptionTrack);
   }
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
-    const tracks = this.read()?.tracks || [];
-    const target = selectNetflixCaptionTarget(tracks, id == null ? null : bareTrackId(id));
-    if (!target) return { status: 'failed', delivery: 'none', cues: [] };
-    const trackId = target.none ? null : target.id;
+    if (id != null) {
+      const snapshot = this.read();
+      if (snapshot?.captions === false) return { status: 'failed', delivery: 'none', cues: [] };
+      const target = selectNetflixCaptionTarget(snapshot?.tracks || [], bareTrackId(id));
+      if (!target || target.none) return { status: 'failed', delivery: 'none', cues: [] };
+      let ok = false;
+      try {
+        ok = await requestNetflixHostCaption(target.id);
+      } catch {
+        ok = false;
+      }
+      if (!ok) return { status: 'failed', delivery: 'none', cues: [] };
+      return { status: 'active', delivery: 'host', cues: [] };
+    }
     let ok = false;
     try {
-      ok = await requestNetflixHostCaption(trackId);
+      ok = await requestNetflixHostCaption(null);
     } catch {
       ok = false;
     }
     if (!ok) return { status: 'failed', delivery: 'none', cues: [] };
-    if (trackId == null) return { status: 'off', delivery: 'none', cues: [] };
-    return { status: 'active', delivery: 'host', cues: [] };
+    return { status: 'off', delivery: 'none', cues: [] };
   }
 
   getChapters(): Promise<never[]> {

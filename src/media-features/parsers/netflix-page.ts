@@ -24,6 +24,7 @@ export type NetflixTextTrack = {
 export type NetflixSnapshot = {
   videoId?: string;
   title?: string;
+  captions?: boolean;
   tracks: NetflixTextTrack[];
   selectedTrackId?: string;
 };
@@ -167,10 +168,25 @@ export function netflixLiveTrackId(api: NetflixCaptionApi): string | null {
 }
 
 /**
+ * A loading `.player-timedtext` node is not support. The public HTML5 fallback
+ * mounts that node and then removes it when playback starts. fallbackMode true
+ * is a reliable negative. Unknown loading state is also a negative: the node
+ * alone must not acknowledge a language.
+ */
+export function netflixHostCaptionsAvailable(input: {
+  rendererMounted: boolean;
+  fallbackMode: boolean | null;
+  playerLoading: boolean | null;
+}): boolean {
+  if (input.fallbackMode === true) return false;
+  if (input.playerLoading !== false) return false;
+  return input.rendererMounted;
+}
+
+/**
  * A language is applied only when the same object reports that track id afterwards
- * and Netflix has mounted `.player-timedtext`. Returning from the setter is not
- * enough: the public MP4 player can leave React's selected track on Off and never
- * paint a cue. Off is applied when the live track is the off track.
+ * and host captions are available. Returning from the setter is not enough.
+ * Off is applied when the live track is the off track.
  */
 export function applyNetflixPlayerCaption(
   api: NetflixCaptionApi,
@@ -233,12 +249,14 @@ export function parseNetflixCaptionAck(detail: unknown): NetflixCaptionAck | nul
 export function netflixHarvestKey(state: {
   videoId?: string | null;
   title?: string | null;
+  captions?: boolean | null;
   selectedTrackId?: string | null;
   tracks: Array<Pick<NetflixTextTrack, 'id' | 'kind' | 'forced' | 'none'>>;
 }): string {
   return JSON.stringify({
     videoId: state.videoId ?? null,
     title: state.title ?? null,
+    captions: state.captions === true,
     selectedTrackId: state.selectedTrackId ?? null,
     tracks: state.tracks.map((track) => [track.id, track.kind, track.forced === true, track.none === true])
   });
@@ -302,12 +320,14 @@ export function readPublishedNetflixSnapshot(
     if (!data || typeof data !== 'object') return null;
     const videoId = netflixVideoId(data.videoId) || undefined;
     const title = stripNetflixSiteTitle(data.title) || undefined;
-    const tracks = parsePublishedNetflixTracks(data.tracks);
-    const selectedTrackId = netflixTrackId(data.selectedTrackId) || undefined;
-    if (!videoId && !title && tracks.length === 0) return null;
+    const captions = data.captions === false ? false : data.captions === true ? true : undefined;
+    const tracks = captions === false ? [] : parsePublishedNetflixTracks(data.tracks);
+    const selectedTrackId = captions === false ? undefined : netflixTrackId(data.selectedTrackId) || undefined;
+    if (!videoId && !title && tracks.length === 0 && captions !== false) return null;
     return {
       ...(videoId ? { videoId } : {}),
       ...(title ? { title } : {}),
+      ...(captions === undefined ? {} : { captions }),
       tracks,
       ...(selectedTrackId ? { selectedTrackId } : {})
     };

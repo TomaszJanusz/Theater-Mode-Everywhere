@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   applyNetflixPlayerCaption,
   chooseNetflixRawTrack,
+  netflixHostCaptionsAvailable,
   netflixHarvestKey,
   netflixSnapshotMatchesVideo,
   parseNetflixCaptionRequest,
@@ -177,5 +178,26 @@ describe('netflix public player metadata', () => {
     assert.equal(applyNetflixPlayerCaption(noRenderer, 'T:2:1;1;pl;0;0;0;0;', true), true);
     assert.equal(applyNetflixPlayerCaption(noRenderer, null, false), true);
     assert.equal((calls.at(-1) as { displayName?: string }).displayName, 'wył.');
+  });
+
+  it('does not treat a loading or fallback renderer as caption support', () => {
+    assert.equal(netflixHostCaptionsAvailable({ rendererMounted: true, fallbackMode: true, playerLoading: false }), false);
+    assert.equal(netflixHostCaptionsAvailable({ rendererMounted: true, fallbackMode: null, playerLoading: true }), false);
+    assert.equal(netflixHostCaptionsAvailable({ rendererMounted: true, fallbackMode: null, playerLoading: null }), false);
+    assert.equal(netflixHostCaptionsAvailable({ rendererMounted: false, fallbackMode: false, playerLoading: false }), false);
+    assert.equal(netflixHostCaptionsAvailable({ rendererMounted: true, fallbackMode: null, playerLoading: false }), true);
+    const blocked = publishedNetflixPayload({
+      videoId: '82779520',
+      title: 'Stranger Things',
+      captions: false,
+      tracks: parseNetflixTextTracks(publicTracks)
+    });
+    assert.equal(blocked?.captions, false);
+    assert.deepEqual(blocked?.tracks, []);
+    const snapshot = readPublishedNetflixSnapshot({
+      querySelector: () => ({ textContent: JSON.stringify(blocked) })
+    });
+    assert.equal(snapshot?.captions, false);
+    assert.equal(snapshot?.tracks.length, 0);
   });
 });

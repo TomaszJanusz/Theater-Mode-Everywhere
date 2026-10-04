@@ -118,4 +118,43 @@ describe('Netflix caption request bridge', () => {
     }));
     assert.equal(parseNetflixCaptionRequest({ requestId: 'te-nf-abcdefgh', trackId: null } as unknown as string), null);
   });
+
+  it('sends Off after captions are withdrawn and does not activate a language', async () => {
+    const payload = publishedNetflixPayload({
+      videoId: '82779520',
+      title: 'Stranger Things',
+      captions: false,
+      tracks: parseNetflixTextTracks(rawTracks)
+    });
+    const node = { textContent: JSON.stringify(payload) };
+    Object.assign(globalThis, {
+      document: {
+        querySelector: (selector: string) => (selector === `#${NETFLIX_SNAPSHOT_ID}` ? node : null)
+      }
+    });
+    const target = new TestWindow();
+    const requested: Array<string | null> = [];
+    target.addEventListener(NETFLIX_CAPTION_EVENT, ((event: Event) => {
+      const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
+      assert.ok(request);
+      requested.push(request?.trackId ?? null);
+      target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+        detail: netflixCaptionAckDetail({ requestId: request!.requestId, ok: true })
+      }));
+    }) as EventListener);
+    const previous = globalThis.window;
+    Object.assign(globalThis, { window: target });
+    try {
+      const adapter = new NetflixAdapter();
+      assert.deepEqual(await adapter.listCaptionTracks(), []);
+      assert.deepEqual(await adapter.activateCaptionTrack(null), { status: 'off', delivery: 'none', cues: [] });
+      assert.deepEqual(
+        await adapter.activateCaptionTrack('netflix:T:2:1;1;pl;0;0;0;0;'),
+        { status: 'failed', delivery: 'none', cues: [] }
+      );
+      assert.deepEqual(requested, [null]);
+    } finally {
+      Object.assign(globalThis, { window: previous });
+    }
+  });
 });

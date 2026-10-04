@@ -8,6 +8,7 @@ import {
   netflixCaptionAckDetail,
   netflixCaptionList,
   netflixHarvestKey,
+  netflixHostCaptionsAvailable,
   type NetflixCaptionApi,
   netflixSnapshotMatchesVideo,
   netflixVideoId,
@@ -29,6 +30,7 @@ export function netflixIntegrationEnabled(): boolean {
 type NetflixHarvest = {
   videoId?: string;
   title?: string;
+  captions?: boolean;
   tracks: NetflixTextTrack[];
   selectedTrackId?: string;
 };
@@ -91,7 +93,11 @@ function playerTitleFromProps(props: PlayerProps): string | null {
 
 type PlayerFiber = {
   memoizedProps?: PlayerProps;
-  stateNode?: PlayerProps & { player?: PlayerProps; _player?: PlayerProps };
+  stateNode?: PlayerProps & {
+    player?: PlayerProps;
+    _player?: PlayerProps;
+    state?: { fallbackMode?: unknown; uiState?: unknown };
+  };
   child?: PlayerFiber;
   sibling?: PlayerFiber;
 };
@@ -140,8 +146,32 @@ function captionApis(root: HTMLElement): NetflixCaptionApi[] {
   return found;
 }
 
-function netflixCaptionRendererMounted(): boolean {
-  return document.querySelector('.player-timedtext') instanceof HTMLElement;
+function netflixCaptionSupport(root: HTMLElement | null): {
+  rendererMounted: boolean;
+  fallbackMode: boolean | null;
+  playerLoading: boolean | null;
+} {
+  const rendererMounted = document.querySelector('.player-timedtext') instanceof HTMLElement;
+  let fallbackMode: boolean | null = null;
+  let sawLoading = false;
+  let sawSettled = false;
+  if (root) {
+    for (const fiber of playerFibers(root)) {
+      const state = fiber.stateNode?.state;
+      if (!state) continue;
+      if (typeof state.fallbackMode === 'boolean') fallbackMode = state.fallbackMode;
+      if (state.uiState === 'loading') sawLoading = true;
+      else if (typeof state.uiState === 'string') sawSettled = true;
+    }
+    const layout = root.querySelector('.PlayerControlsNeo__layout');
+    if (layout?.classList.contains('PlayerControlsNeo__layout--loading')) sawLoading = true;
+    else if (layout) sawSettled = true;
+  }
+  return {
+    rendererMounted,
+    fallbackMode,
+    playerLoading: sawSettled ? false : sawLoading ? true : null
+  };
 }
 
 function controlTitle(): string | null {
@@ -154,11 +184,15 @@ function controlTitle(): string | null {
 }
 
 export function publishedNetflixPayload(state: NetflixHarvest): Record<string, unknown> | null {
-  if (!state.videoId && !state.title && state.tracks.length === 0) return null;
+  const blocked = state.captions === false;
+  if (!state.videoId && !state.title && state.tracks.length === 0 && !blocked) return null;
+  const tracks = blocked ? [] : state.tracks;
   return {
     ...(state.videoId ? { videoId: state.videoId } : {}),
     ...(state.title ? { title: state.title } : {}),
-    tracks: state.tracks.map((track) => ({
+    ...(state.captions === true ? { captions: true } : {}),
+    ...(blocked ? { captions: false } : {}),
+    tracks: tracks.map((track) => ({
       id: track.id,
       language: track.language,
       label: track.label,
@@ -166,7 +200,7 @@ export function publishedNetflixPayload(state: NetflixHarvest): Record<string, u
       forced: track.forced,
       none: track.none
     })),
-    ...(state.selectedTrackId ? { selectedTrackId: state.selectedTrackId } : {})
+    ...(!blocked && state.selectedTrackId ? { selectedTrackId: state.selectedTrackId } : {})
   };
 }
 
@@ -227,8 +261,10 @@ function syncHarvest(): void {
     harvest = { tracks: [] };
     previousVideoId = videoId;
   }
-  const tracks = parseNetflixTextTracks(props?.textTracks);
-  const selectedTrackId = typeof props?.selectedTextTrack?.trackId === 'string'
+  const support = netflixCaptionSupport(root);
+  const captions = netflixHostCaptionsAvailable(support);
+  const tracks = captions ? parseNetflixTextTracks(props?.textTracks) : [];
+  const selectedTrackId = captions && typeof props?.selectedTextTrack?.trackId === 'string'
     ? props.selectedTextTrack.trackId
     : undefined;
   const title = resolveNetflixTitle({
@@ -242,6 +278,7 @@ function syncHarvest(): void {
   const nextHarvest: NetflixHarvest = {
     ...(videoId ? { videoId } : {}),
     ...(title ? { title: sanitizeContentTitle(title) || undefined } : {}),
+    captions,
     tracks,
     ...(selectedTrackId ? { selectedTrackId } : {})
   };
@@ -256,10 +293,10 @@ function applyCaptionRequest(trackId: string | null): boolean {
   if (!netflixIntegrationEnabled()) return false;
   const root = playerRoot();
   if (!root) return false;
-  const rendererMounted = netflixCaptionRendererMounted();
+  const captionsAvailable = netflixHostCaptionsAvailable(netflixCaptionSupport(root));
   const apis = captionApis(root);
   for (const api of apis) {
-    if (!applyNetflixPlayerCaption(api, trackId, rendererMounted)) continue;
+    if (!applyNetflixPlayerCaption(api, trackId, captionsAvailable)) continue;
     syncHarvest();
     return true;
   }

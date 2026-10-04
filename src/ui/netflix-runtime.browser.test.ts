@@ -151,9 +151,35 @@ describe('netflix runtime browser regressions', () => {
         document.body.appendChild(host);
         const shadow = host.attachShadow({ mode: 'open' });
         const button = document.createElement('button');
-        shadow.appendChild(button);
+        const icon = document.createElement('button');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const iconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        svg.append(iconPath);
+        icon.append(svg);
+        const textButton = document.createElement('button');
+        const text = document.createElement('span');
+        textButton.append(text);
+        const label = document.createElement('label');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        const slider = document.createElement('span');
+        label.append(box, slider);
+        const anchor = document.createElement('a');
+        anchor.href = '#home';
+        shadow.append(button, icon, textButton, label, anchor);
         const seen = [];
+        let changes = 0;
+        let iconClicks = 0;
+        let textClicks = 0;
         button.addEventListener('click', (event) => seen.push(event.composed ? 'composed' : 'closed'));
+        icon.addEventListener('click', () => { iconClicks += 1; });
+        textButton.addEventListener('click', () => { textClicks += 1; });
+        box.addEventListener('change', () => { changes += 1; });
+        let anchorClicks = 0;
+        anchor.addEventListener('click', (event) => {
+          anchorClicks += 1;
+          event.preventDefault();
+        });
         window.addEventListener('click', window.relayNetflixShadowClick, true);
         let swallowed = 0;
         window.addEventListener('click', (event) => {
@@ -163,13 +189,41 @@ describe('netflix runtime browser regressions', () => {
           }
         }, true);
         button.click();
+        iconPath.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+        text.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+        box.click();
+        const direct = { checked: box.checked, changes };
+        box.checked = false;
+        changes = 0;
+        slider.click();
+        const viaSlider = { checked: box.checked, changes };
+        const hashBefore = location.hash;
+        anchor.click();
         const outside = document.createElement('button');
         document.body.appendChild(outside);
         outside.click();
-        return { seen, swallowed };
-      })()`) as { seen: string[]; swallowed: number };
+        return { seen, swallowed, direct, viaSlider, anchorClicks, hash: location.hash, hashBefore, iconClicks, textClicks };
+      })()`) as {
+        seen: string[];
+        swallowed: number;
+        direct: { checked: boolean; changes: number };
+        viaSlider: { checked: boolean; changes: number };
+        anchorClicks: number;
+        hash: string;
+        hashBefore: string;
+        iconClicks: number;
+        textClicks: number;
+      };
       assert.deepEqual(clicks.seen, ['closed']);
+      assert.equal(clicks.iconClicks, 1);
+      assert.equal(clicks.textClicks, 1);
       assert.equal(clicks.swallowed, 1);
+      assert.equal(clicks.direct.checked, true);
+      assert.equal(clicks.direct.changes, 1);
+      assert.equal(clicks.viaSlider.checked, true);
+      assert.equal(clicks.viaSlider.changes, 1);
+      assert.equal(clicks.anchorClicks, 1);
+      assert.equal(clicks.hash, clicks.hashBefore);
 
       const boot = async (html: string): Promise<number> => {
         const bootPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
