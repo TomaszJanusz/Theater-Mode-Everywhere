@@ -21,6 +21,9 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     const overlay = document.createElement('div');
     overlay.className = 'theater-help-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', ctx.t('keyboardShortcutsTitle'));
     ctx.paintOverlay(overlay);
 
     overlay.addEventListener('click', (e) => {
@@ -141,6 +144,7 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     ctx.refs.helpOverlay = overlay;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
+    closeBtn.focus();
   }
 
   function hideHelpOverlay(): void {

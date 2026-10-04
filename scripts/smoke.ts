@@ -304,6 +304,46 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)) {
     fail('One Escape did not dismiss shortcut-opened help while retaining theater mode.');
   }
+  // Escape restores the gear; opening help from there must transfer focus into help.
+  await gear.press('Enter');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('h');
+  const helpClose = page.locator('.theater-help-close-btn');
+  await helpClose.waitFor();
+  if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help left focus on the settings gear.');
+  for (const key of ['Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help let Tab reach controls behind the overlay.');
+  }
+  const pausedDuringHelp = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
+  // Even programmatic focus behind help cannot activate a hidden settings control.
+  await gear.focus();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('Enter');
+  if (await menu.isVisible() || !await page.locator('.theater-help-overlay').count()) {
+    fail('A focused gear activated settings underneath help.');
+  }
+  await page.keyboard.press('Escape');
+  if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)) {
+    fail('One Escape did not close help after blocked gear activation.');
+  }
+  // Open help from the gear while the menu is open; Space natively closes help.
+  await gear.press('Enter');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.keyboard.press('Space');
+  if (await page.locator('.theater-help-overlay').count() || await menu.isVisible()
+      || !await theaterEntered(page)
+      || await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedDuringHelp) {
+    fail('Space on help close activated hidden settings or playback.');
+  }
+  await gear.press('Enter');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  if (await menu.isVisible() || !await page.locator('.fullscreen-btn').evaluate(button => button.matches(':focus'))) {
+    fail('Leaving the open gear toward fullscreen did not dismiss settings.');
+  }
   await gear.click();
   await page.locator('.cc-btn').click();
   if (await menu.isVisible()) fail('Captions did not dismiss player settings.');

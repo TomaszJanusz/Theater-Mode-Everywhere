@@ -46,10 +46,12 @@ export function createPlayerSettings(ctx: PlayerChromeContext, scope: Disposable
     ctx.actions.showToolbar();
     ctx.actions.updateCaptionDock();
   });
-  scope.listen(panel, 'focusout', (event: FocusEvent) => {
+  const closeOnFocusLeave = (event: FocusEvent) => {
     const next = (event as FocusEvent).relatedTarget;
     if (next instanceof Node && next !== button && !panel.contains(next)) close();
-  });
+  };
+  scope.listen(panel, 'focusout', closeOnFocusLeave);
+  scope.listen(button, 'focusout', closeOnFocusLeave);
 
   function addRow(row: HTMLButtonElement, label: string) {
     row.type = 'button';

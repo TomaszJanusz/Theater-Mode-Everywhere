@@ -915,8 +915,26 @@ function initialize(): void {
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
+    // Help owns keyboard focus; do not activate toolbar controls behind it.
+    if (ui().helpOpen) {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
+        return;
+      }
+      if ((event.key === ' ' || event.key === 'Enter')
+          && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+        if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
+
     // Let native settings buttons activate with Space/Enter instead of toggling playback.
-    if (activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1054,7 +1072,14 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
     const activeEl = getActiveElementDeep() as HTMLElement | null;
-    if (activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+    if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
+        && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+      if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();

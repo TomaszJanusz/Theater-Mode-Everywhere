@@ -2,6 +2,7 @@ import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchU
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
+import { queryPlayerUi } from '../ui/root';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -303,6 +304,8 @@ export function installMainWorldRuntime(): void {
     const video = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (!(video instanceof HTMLVideoElement)) return;
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
+    // The content world owns help focus and native activation of its close button.
+    if (queryPlayerUi('.theater-help-overlay')) return;
     // Settings buttons own native Space activation, including through the UI's shadow root.
     if (event.composedPath().some(node => node instanceof Element
         && node.matches('.theater-settings-menu, .player-settings-btn'))) return;
