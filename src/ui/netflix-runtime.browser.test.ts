@@ -65,7 +65,7 @@ describe('netflix runtime browser regressions', () => {
         <div id="hidden-hero"><video id="hero"></video></div>
         <div id="modal-wrap" class="nf-player-container"><video id="modal"></video></div>
         <video id="visible"></video>
-        <div id="shell" style="position:fixed; mask-image: linear-gradient(#000, transparent); background-image: linear-gradient(#111, #222); background-color: rgb(1, 2, 3);"><video id="pinned"></video></div>
+        <div id="shell" style="position:fixed; will-change: transform; mask-image: linear-gradient(#000, transparent); background-image: linear-gradient(#111, #222); background-color: rgb(1, 2, 3);"><video id="pinned"></video></div>
       </body>`, { waitUntil: 'domcontentloaded' });
       await page.addScriptTag({
         content: `${playback}\n${stage}\nwindow.__nf = { readNetflixVideoFacts, netflixPlaybackRank, shouldFollowNetflixVideo, createNetflixVideoBinding, holdNetflixViewport, releaseNetflixViewport };`,
@@ -118,23 +118,30 @@ describe('netflix runtime browser regressions', () => {
         const shell = document.querySelector('#shell');
         const before = {
           mask: shell.style.getPropertyValue('mask-image'),
+          willChange: shell.style.getPropertyValue('will-change'),
           backgroundImage: shell.style.getPropertyValue('background-image'),
           backgroundColor: shell.style.getPropertyValue('background-color')
         };
         window.__nf.holdNetflixViewport(document.querySelector('#pinned'));
+        const held = shell.style.getPropertyValue('will-change');
         window.__nf.releaseNetflixViewport();
         return {
           before,
+          held,
           after: {
             mask: shell.style.getPropertyValue('mask-image'),
+            willChange: shell.style.getPropertyValue('will-change'),
             backgroundImage: shell.style.getPropertyValue('background-image'),
             backgroundColor: shell.style.getPropertyValue('background-color')
           }
         };
       })()`) as {
-        before: { mask: string; backgroundImage: string; backgroundColor: string };
-        after: { mask: string; backgroundImage: string; backgroundColor: string };
+        before: { mask: string; willChange: string; backgroundImage: string; backgroundColor: string };
+        held: string;
+        after: { mask: string; willChange: string; backgroundImage: string; backgroundColor: string };
       };
+      assert.equal(restored.held, 'auto');
+      assert.equal(restored.after.willChange, restored.before.willChange);
       assert.equal(restored.after.mask, restored.before.mask);
       assert.equal(restored.after.backgroundImage, restored.before.backgroundImage);
       assert.equal(restored.after.backgroundColor, restored.before.backgroundColor);

@@ -74,6 +74,14 @@ describe('netflix fixed containing block', () => {
     assert.equal(computedStyleCreatesFixedContainingBlock(clear), false);
   });
 
+  it('treats will-change transform as a containing block and clears it', () => {
+    assert.equal(computedStyleCreatesFixedContainingBlock({
+      ...clear,
+      willChange: 'transform'
+    }), true);
+    assert.equal(NETFLIX_CONTAINMENT_VALUES['will-change'], 'auto');
+  });
+
   it('treats a hero mask gradient as a containing block', () => {
     assert.equal(computedStyleCreatesFixedContainingBlock({
       ...clear,

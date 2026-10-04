@@ -178,6 +178,58 @@ describe('netflix public player metadata', () => {
     assert.equal(applyNetflixPlayerCaption(noRenderer, 'T:2:1;1;pl;0;0;0;0;', true), true);
     assert.equal(applyNetflixPlayerCaption(noRenderer, null, false), true);
     assert.equal((calls.at(-1) as { displayName?: string }).displayName, 'wył.');
+
+    const getterMiss = {
+      textTracks: publicTracks,
+      selectedTextTrack: publicTracks[1],
+      getTimedTextTrack: () => null as unknown as typeof selected,
+      setTimedTextTrack(track: unknown) {
+        calls.push(track);
+      }
+    };
+    const missed = calls.length;
+    assert.equal(applyNetflixPlayerCaption(getterMiss, 'T:2:1;1;pl;0;0;0;0;', true), false);
+    assert.equal(calls.length, missed + 1);
+
+    const getterThrows = {
+      textTracks: publicTracks,
+      selectedTextTrack: publicTracks[1],
+      getTimedTextTrack() {
+        throw new Error('unavailable');
+      },
+      setTimedTextTrack(track: unknown) {
+        calls.push(track);
+      }
+    };
+    assert.equal(applyNetflixPlayerCaption(getterThrows, 'T:2:1;1;pl;0;0;0;0;', true), false);
+
+    const propsOnly = {
+      textTracks: publicTracks,
+      selectedTextTrack: publicTracks[1],
+      setTimedTextTrack() {}
+    };
+    assert.equal(applyNetflixPlayerCaption(propsOnly, 'T:2:1;1;pl;0;0;0;0;', true), true);
+
+    let idLive: { id?: string } | null = null;
+    let appliedId = '';
+    const idOnly = [{
+      id: 'T:2:1;1;pl;0;0;0;0;',
+      bcp47: 'pl',
+      displayName: 'polski',
+      rawTrackType: 'SUBTITLES',
+      isForcedNarrative: false,
+      isNoneTrack: false
+    }];
+    const idApi = {
+      textTracks: idOnly,
+      getTimedTextTrack: () => idLive,
+      setTimedTextTrack(track: unknown) {
+        idLive = track as { id?: string };
+        appliedId = idLive.id || '';
+      }
+    };
+    assert.equal(applyNetflixPlayerCaption(idApi, 'T:2:1;1;pl;0;0;0;0;', true), true);
+    assert.equal(appliedId, 'T:2:1;1;pl;0;0;0;0;');
   });
 
   it('does not treat a loading or fallback renderer as caption support', () => {

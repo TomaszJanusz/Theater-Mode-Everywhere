@@ -24,6 +24,7 @@ export const NETFLIX_CONTAINMENT_VALUES: Record<string, string> = {
   'clip-path': 'none',
   'mask-image': 'none',
   '-webkit-mask-image': 'none',
+  'will-change': 'auto',
   overflow: 'visible'
 };
 

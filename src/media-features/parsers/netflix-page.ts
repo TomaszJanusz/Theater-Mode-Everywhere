@@ -135,9 +135,9 @@ export function chooseNetflixRawTrack(rawTracks: unknown, trackId: string | null
 
 export type NetflixCaptionApi = {
   textTracks?: unknown;
-  selectedTextTrack?: { trackId?: unknown } | null;
+  selectedTextTrack?: { trackId?: unknown; id?: unknown } | null;
   setTimedTextTrack?: (track: unknown) => unknown;
-  getTimedTextTrack?: () => { trackId?: unknown } | null;
+  getTimedTextTrack?: () => { trackId?: unknown; id?: unknown } | null;
   getTimedTextTrackList?: () => unknown;
 };
 
@@ -153,18 +153,23 @@ export function netflixCaptionList(api: NetflixCaptionApi): unknown {
   return api.textTracks;
 }
 
+function rawTrackKey(track: { trackId?: unknown; id?: unknown } | null | undefined): string | null {
+  const key = track?.trackId ?? track?.id;
+  return typeof key === 'string' ? key : null;
+}
+
 export function netflixLiveTrackId(api: NetflixCaptionApi): string | null {
-  let live: { trackId?: unknown } | null | undefined;
+  let live: { trackId?: unknown; id?: unknown } | null | undefined;
   if (typeof api.getTimedTextTrack === 'function') {
     try {
       live = api.getTimedTextTrack();
     } catch {
       live = null;
     }
+  } else {
+    live = api.selectedTextTrack;
   }
-  if (!live) live = api.selectedTextTrack;
-  const trackId = live?.trackId;
-  return typeof trackId === 'string' ? trackId : null;
+  return rawTrackKey(live);
 }
 
 /**
@@ -197,7 +202,7 @@ export function applyNetflixPlayerCaption(
   if (trackId != null && !rendererMounted) return false;
   const raw = chooseNetflixRawTrack(netflixCaptionList(api), trackId);
   if (!raw || typeof api.setTimedTextTrack !== 'function') return false;
-  const requestedId = (raw as { trackId?: unknown }).trackId;
+  const requestedId = rawTrackKey(raw as { trackId?: unknown; id?: unknown });
   if (typeof requestedId !== 'string') return false;
   try {
     api.setTimedTextTrack(raw);
