@@ -1384,3 +1384,12 @@ body.te-dialog-open {
     animation: none;
   }
 }
+.shortcut-input[aria-invalid="true"] {
+  border-color: #f59e0b;
+}
+
+.shortcut-conflict-status {
+  color: #d97706;
+  font-size: 13px;
+  margin: 0 0 16px;
+}

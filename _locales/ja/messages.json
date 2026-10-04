@@ -592,5 +592,43 @@
   },
   "extensionSettingsLabel": {
     "message": "拡張機能の設定"
+  },
+  "shortcutUnassigned": {
+    "message": "未割り当て"
+  },
+  "shortcutExistingConflicts": {
+    "message": "一部のショートカットが複数の操作に割り当てられています。強調表示された項目を編集するかリセットしてください。"
+  },
+  "shortcutConflictTitle": {
+    "message": "ショートカットは使用中です"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ は $OWNERS$ に割り当てられています。$TARGET$ に移しますか？以前の操作ではこのショートカットが使えなくなります。",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "現在の割り当てを保持"
+  },
+  "shortcutReassign": {
+    "message": "ショートカットを移す"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape はダイアログを閉じる操作とシアターモードの終了に使用します。別のショートカットを選択してください。"
+  },
+  "shortcutSaveError": {
+    "message": "ショートカットを保存できませんでした"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "ショートカットは変更されていません。もう一度お試しください。"
   }
 }

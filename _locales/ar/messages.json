@@ -592,5 +592,43 @@
   },
   "extensionSettingsLabel": {
     "message": "إعدادات الإضافة"
+  },
+  "shortcutUnassigned": {
+    "message": "غير معيّن"
+  },
+  "shortcutExistingConflicts": {
+    "message": "بعض الاختصارات معيّنة لعدة إجراءات. عدّل الاختصارات المميزة أو أعد ضبطها."
+  },
+  "shortcutConflictTitle": {
+    "message": "الاختصار معيّن بالفعل"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ معيّن لـ $OWNERS$. هل تريد نقله إلى $TARGET$؟ ستفقد الإجراءات السابقة هذا الاختصار.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "الاحتفاظ بالتعيين"
+  },
+  "shortcutReassign": {
+    "message": "نقل الاختصار"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape مخصص لإغلاق النوافذ والخروج من وضع المسرح. اختر اختصارًا آخر."
+  },
+  "shortcutSaveError": {
+    "message": "تعذر حفظ الاختصار"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "لم تتغير اختصاراتك. حاول مرة أخرى."
   }
 }

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted.
+
 - Keep the playback controls and progress bar visible in theater mode using Player settings → Always show controls, the configurable Shift+H shortcut, or Settings → Features → Always show controls. The preference is remembered across videos and tabs; the title and cursor still hide when idle.
 
 - Added a Layout setting in Appearance: Centered or Raised. Raised pins a widescreen picture to the top of a taller screen (16:10, 4:3) so the spare black sits below for captions and controls. Fill and Stretch stay centered, and the saved Raised choice returns when Video Fit is set back to Fit.
@@ -17,10 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.
+
 - Group video fit, player switching, controls visibility and keyboard help in a labeled player settings panel. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Controls visibility uses a player-with-bottom-bar symbol.
 - Settings Appearance is now a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
 
 ### Fixed
+
+- The configured fullscreen shortcut now enters TME with its controls and intercepts host player shortcuts, just like the theater shortcut. Held keys no longer toggle either mode repeatedly.
+- Shortcut edits from multiple Settings tabs are serialized; single-shortcut resets also validate conflicts.
 
 - Raised no longer pulls captions to the screen edge, or paints an opaque black caption background, before the letterbox can be measured.
 - Raised captions on a 16:10 screen no longer slide up or down when the number of lines changes. That motion was the control-bar transition chasing the caption height.

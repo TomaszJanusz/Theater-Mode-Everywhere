@@ -752,7 +752,7 @@ export function createControls(ctx: PlayerChromeContext) {
     closeBtn.className = 'theater-control-btn close-btn';
   
     bindCustomTooltip(closeBtn, () => {
-      const toggleKey = escapeHtml((ui().shortcuts.toggle || 'T').toUpperCase());
+      const toggleKey = escapeHtml((ui().shortcuts.toggle || t('shortcutUnassigned')).toUpperCase());
       const exitKey = escapeHtml(ui().shortcuts.exit === 'Escape' ? 'Esc' : (ui().shortcuts.exit || 'Esc'));
       return t('exitTheaterModeTooltip', [toggleKey, exitKey]);
     });

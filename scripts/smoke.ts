@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -657,7 +658,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       await page.keyboard.press('Shift+U');
       await waitForChrome(false, true, true);
       await worker.evaluate(async () => { await chrome.storage.sync.remove('shortcuts'); });
-      // Existing shortcut-removal behavior does not reset the live runtime: reload below.
+      // Removing the saved map restores canonical defaults in the live runtime.
     } finally {
       await options.close();
     }
@@ -672,6 +673,141 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     fail('Exiting theater mode left the cursor hidden.');
   }
   console.log(`smoke controls pin: idle, playback, repeat, input, focus, hover, captions, popovers, fullscreen and rebuild${context ? ', persistence and settings' : ''} passed`);
+}
+
+async function assertShortcutManagement(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
+  const options = await context.newPage();
+  const second = await context.newPage();
+  const screenshot = async (target: Page, suffix: string) => {
+    if (process.env.THEATER_SMOKE_SCREENSHOT) await target.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, `-${suffix}.png`) });
+  };
+  try {
+    await options.goto(new URL('options/options.html', worker.url()).href);
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle-mute').press('f');
+    const dialog = options.locator('.te-dialog-overlay');
+    await dialog.waitFor();
+    await options.waitForFunction(() => document.activeElement?.classList.contains('te-dialog-btn-secondary'));
+    await dialog.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
+    await screenshot(options, 'shortcut-conflict');
+    await options.keyboard.press('Enter'); // Safe initial focus preserves the existing owner.
+    await dialog.waitFor({ state: 'detached' });
+    if (await options.locator('#shortcut-toggle-mute').inputValue() !== 'M') fail('Cancelling a shortcut conflict changed the assignment.');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle-mute').press('f');
+    await dialog.locator('.te-dialog-btn-primary').click();
+    await options.waitForFunction(async () => {
+      const { shortcuts } = await chrome.storage.sync.get('shortcuts');
+      return shortcuts?.toggleMute === 'F' && shortcuts?.toggleFullscreen === '';
+    });
+    await options.waitForFunction(() => (document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement).value === '');
+    await options.reload();
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    if (await options.locator('#shortcut-toggle-fullscreen').inputValue() !== '') fail('Unassigned shortcut reverted to its default on reload.');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('[data-shortcut="toggleFullscreen"]').click();
+    await dialog.waitFor();
+    await options.keyboard.press('Escape');
+    await dialog.waitFor({ state: 'detached' });
+    if (await options.locator('#shortcut-toggle-fullscreen').inputValue() !== '') fail('Single reset bypassed conflict validation.');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('[data-shortcut="toggleFullscreen"]').click();
+    await dialog.locator('.te-dialog-btn-primary').click();
+    await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleFullscreen === 'F');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle-fullscreen').press('Tab');
+    if (await options.locator('#shortcut-toggle-fullscreen').evaluate(el => el === document.activeElement)) fail('Shortcut recording trapped Tab.');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle-mute').press('Escape');
+    await dialog.waitFor();
+    if (!(await dialog.innerText()).includes('reserved')) fail('Escape was not protected as a safety exit key.');
+    await dialog.locator('.te-dialog-btn-primary').click();
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#reset-shortcuts-btn').click();
+    await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'M');
+    await second.goto(new URL('options/options.html', worker.url()).href);
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await second.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await Promise.all([options.locator('#shortcut-toggle-mute').press('Control+M'), second.locator('#shortcut-controls-pin').press('Shift+U')]);
+    await options.waitForFunction(async () => {
+      const { shortcuts } = await chrome.storage.sync.get('shortcuts');
+      return shortcuts?.toggleMute === 'Ctrl+M' && shortcuts?.toggleControlsPin === 'Shift+U';
+    });
+    // Live custom entry keys replace their defaults without a reload.
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle-fullscreen').press('g');
+    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.locator('#shortcut-toggle').press('Shift+T');
+    await dialog.locator('.te-dialog-btn-primary').click(); // Move from Cycle video.
+    await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggle === 'Shift+T');
+    await page.waitForFunction(() => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"fullscreen":"G"') && document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"toggle":"Shift+T"'));
+    await page.bringToFront();
+    await page.locator('video#player').click();
+    await page.keyboard.press('f');
+    if (await theaterEntered(page)) fail('The old fullscreen key still activates TME.');
+    await page.keyboard.press('g');
+    await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
+    await page.locator('.theater-controls-wrapper').waitFor();
+    if (await page.evaluate(() => (window as any).hostEntryKeys.includes('KeyG'))) fail('Early host window capture won over the configured fullscreen shortcut.');
+    await page.keyboard.down('g');
+    await page.keyboard.down('g'); // repeat must be claimed but must not reopen fullscreen.
+    await page.keyboard.up('g');
+    await page.waitForFunction(() => !document.fullscreenElement);
+    await page.keyboard.press('Escape');
+    await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
+    await delay(250); // Existing theater-entry debounce.
+    await page.keyboard.press('Shift+T');
+    try { await page.locator('.theater-controls-wrapper').waitFor(); } catch (error) {
+      console.error('Custom theater diagnostics', await page.evaluate(() => ({ config: document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts'), classes: document.documentElement.className, active: document.activeElement?.outerHTML, hostKeys: (window as any).hostEntryKeys })));
+      throw error;
+    }
+    await page.keyboard.press('Escape');
+    await worker.evaluate(async () => { await chrome.storage.sync.remove('shortcuts'); });
+    await page.waitForFunction(() => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"toggle":"T"'));
+  } finally {
+    await options.close(); await second.close();
+  }
+  console.log('smoke shortcuts: conflict cancel/transfer, unbinding, reset, Tab, reserved Escape, concurrent tabs and live custom fullscreen/theater keys passed');
+}
+
+
+async function assertFullscreenAndHelp(page: Page, earlyHost = false): Promise<void> {
+  await page.bringToFront();
+  await page.locator('video#player').evaluate(async (video: HTMLVideoElement) => {
+    video.srcObject = null; video.src = '/vod.webm'; video.loop = true; await video.play();
+  });
+  await page.locator('video#player').click();
+  const hostCountBefore = await page.evaluate(() => (window as any).hostEntryKeys.filter((key: string) => key === 'KeyF').length);
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
+  await page.locator('.theater-controls-wrapper').waitFor();
+  if (earlyHost && await page.evaluate(() => (window as any).hostEntryKeys.filter((key: string) => key === 'KeyF').length) !== hostCountBefore) fail('Host fullscreen keydown was not intercepted.');
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => !document.fullscreenElement);
+  await page.keyboard.press('h');
+  const help = page.locator('.theater-help-overlay');
+  await help.waitFor();
+  const inspect = () => help.evaluate(overlay => {
+    const grid = overlay.querySelector('.theater-help-grid')!;
+    return { columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+      rows: overlay.querySelectorAll('.theater-help-row').length,
+      closeVisible: overlay.querySelector('.theater-help-close-btn')!.getBoundingClientRect().top >= 0 };
+  });
+  const wide = await inspect();
+  if (wide.columns !== 2 || wide.rows !== 21 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
+  if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
+  await page.setViewportSize({ width: 540, height: 480 });
+  const narrow = await inspect();
+  if (narrow.columns !== 1 || narrow.rows !== 21 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  await page.locator('.theater-help-close-btn').press('Enter');
+  await help.waitFor({ state: 'detached' });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.keyboard.press('Escape');
+  await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
+  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 21 shortcuts in responsive two/one-column help passed');
 }
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
@@ -705,9 +841,10 @@ async function assertBlacklistBlocksTheater(page: Page): Promise<void> {
   await page.click('video#player');
   await page.keyboard.press('t');
   await delay(800);
-  if (await theaterEntered(page)) {
-    fail('Theater mode activated on a blacklisted host.');
-  }
+  if (await theaterEntered(page)) fail('Theater mode activated on a blacklisted host.');
+  await page.keyboard.press('f');
+  if (await theaterEntered(page) || await page.evaluate(() => Boolean(document.fullscreenElement))) fail('Fullscreen captured a key on a blacklisted host.');
+  if (await page.evaluate(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'))) fail('Blacklisting retained the early shortcut configuration.');
 }
 
 async function assertIframeHandshake(page: Page, origin: string): Promise<void> {
@@ -725,6 +862,14 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
       || childDoc?.documentElement.classList.contains('theater-everywhere-html-active')
     );
   }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  await page.waitForFunction(videoClass => document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS);
+  // Make parent focus explicit; a body without tabindex leaves focus in the iframe.
+  await page.locator('body').evaluate(body => { body.tabIndex = -1; });
+  // Parent focus in an iframe session must still toggle TME document fullscreen.
+  await page.locator('body').press('f');
+  await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
+  await page.locator('body').press('f');
+  await page.waitForFunction(() => !document.fullscreenElement);
   // A shortcut focused in the parent must update the child player exactly once.
   await page.locator('body').press('Shift+H');
   await frame.locator('.controls-visibility-toggle[aria-pressed="true"]').waitFor({ state: 'attached' });
@@ -808,7 +953,9 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     console.log('smoke:chromium local player T/Escape passed');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
-    await assertControlsPin(page, context);
+    if (process.env.THEATER_SMOKE_SHORTCUTS_ONLY !== '1') await assertControlsPin(page, context);
+    await assertShortcutManagement(page, context);
+    await assertFullscreenAndHelp(page, true);
 
     await setBlacklist(context, ['127.0.0.1']);
     await assertBlacklistBlocksTheater(page);
@@ -899,6 +1046,7 @@ async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> 
     await injectBundledPlayer(page, unpackedDir);
     await assertTheaterToggle(page);
     await assertControlsPin(page);
+    await assertFullscreenAndHelp(page);
     console.log('smoke:firefox passed (injected bundled mainWorld.js and content.js; sideload of unsigned MV3 xpi is blocked)');
   } finally {
     await browser.close();

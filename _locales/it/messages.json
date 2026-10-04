@@ -592,5 +592,43 @@
   },
   "extensionSettingsLabel": {
     "message": "Impostazioni dell'estensione"
+  },
+  "shortcutUnassigned": {
+    "message": "Non assegnata"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Alcune scorciatoie sono assegnate a più azioni. Modifica o ripristina quelle evidenziate."
+  },
+  "shortcutConflictTitle": {
+    "message": "Scorciatoia già assegnata"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ è assegnata a $OWNERS$. Spostarla su $TARGET$? Le azioni precedenti perderanno questa scorciatoia.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Mantieni assegnazione"
+  },
+  "shortcutReassign": {
+    "message": "Sposta scorciatoia"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape è riservato alla chiusura delle finestre e all’uscita dalla modalità cinema. Scegli un’altra scorciatoia."
+  },
+  "shortcutSaveError": {
+    "message": "Impossibile salvare la scorciatoia"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Le scorciatoie non sono state modificate. Riprova."
   }
 }

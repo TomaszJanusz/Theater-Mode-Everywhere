@@ -77,6 +77,7 @@ import {
 } from './appearance';
 import { applyUiDirection, t } from './messages';
 import { defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
@@ -900,8 +901,18 @@ function initialize(): void {
 
   session.resetRuntimeScope();
 
+  const publishEntryShortcuts = () => {
+    const config = JSON.stringify({ toggle: ui().shortcuts.toggle, fullscreen: ui().shortcuts.toggleFullscreen });
+    if (document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) !== config) {
+      document.documentElement.setAttribute(ENTRY_SHORTCUT_ATTRIBUTE, config);
+    }
+  };
+  session.runtimeScope.add(uiStore.subscribe(publishEntryShortcuts));
+  publishEntryShortcuts();
+
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
@@ -1021,12 +1032,12 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      toggleTheaterMode();
+      if (!event.repeat) toggleTheaterMode();
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      claimFullscreenShortcut();
+      if (!event.repeat) claimFullscreenShortcut();
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
       if (ui().helpOpen) {
@@ -1074,6 +1085,18 @@ function initialize(): void {
     }
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
+  session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
+    if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
+    try {
+      const data = JSON.parse((event as CustomEvent<string>).detail);
+      if (!data || typeof data.key !== 'string' || typeof data.code !== 'string'
+          || !['ctrlKey', 'altKey', 'shiftKey', 'metaKey', 'repeat'].every(key => typeof data[key] === 'boolean')) return;
+      const key = new KeyboardEvent('keydown', { ...data, cancelable: true });
+      if (!matchesShortcut(key, ui().shortcuts.toggle) && !matchesShortcut(key, ui().shortcuts.toggleFullscreen)) return;
+      listeners.keydown?.(key);
+      if (key.defaultPrevented) event.preventDefault();
+    } catch { /* Ignore malformed page events. */ }
+  });
   listeners.playbackIntent = (event: Event) => {
     const action = (event as CustomEvent<{ action?: 'play' | 'pause' }>).detail?.action;
     if (action === 'play' || action === 'pause') triggerPlaybackIndicator(action);
@@ -1263,6 +1286,7 @@ function destroy(): void {
   }
 
   session.resetRuntimeScope();
+  document.documentElement.removeAttribute(ENTRY_SHORTCUT_ATTRIBUTE);
   listeners.keydown = null;
   listeners.keyup = null;
   listeners.mousemove = null;
@@ -1281,29 +1305,11 @@ function fullscreenVideo(): HTMLVideoElement | null {
   return findBestVideo();
 }
 
-function enterElementFullscreen(video: HTMLVideoElement): void {
-  const wasPlaying = !video.paused;
-  const resume = () => {
-    if (wasPlaying && video.paused) video.play().catch(() => {});
-  };
-  video.requestFullscreen()
-    .then(() => {
-      setTimeout(resume, 150);
-    })
-    .catch(() => {
-      const parent = video.parentElement;
-      if (!parent || parent === document.body || parent === document.documentElement) return;
-      parent.requestFullscreen()
-        .then(() => {
-          setTimeout(resume, 150);
-        })
-        .catch(() => {});
-    });
-}
-
 function claimFullscreenShortcut(): void {
   if (session.hasUi) {
-    refs.currentToggleFullscreen?.();
+    if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
+    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
     return;
   }
   if (document.fullscreenElement) {
@@ -1312,7 +1318,8 @@ function claimFullscreenShortcut(): void {
   }
   const video = fullscreenVideo();
   if (video) {
-    enterElementFullscreen(video);
+    enterTheaterMode(video);
+    refs.currentToggleFullscreen?.();
     return;
   }
   frames.postToAllChildren('FRAME_FULLSCREEN', createSessionId(), {}, createSessionId());
@@ -1698,7 +1705,7 @@ export function bootstrapPlayerRuntime(): void {
         applyKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
       }
 
-      if (changes.shortcuts?.newValue) {
+      if (changes.shortcuts) {
         uiStore.dispatch({ type: 'SET_SHORTCUTS', value: withShortcutDefaults(changes.shortcuts.newValue || {}) });
       }
       if (changes[ACCENT_COLOR_STORAGE_KEY]) {
