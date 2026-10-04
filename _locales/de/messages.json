@@ -193,7 +193,7 @@
     "message": "Netflix-Integration"
   },
   "netflixIntegrationDescription": {
-    "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um. Kapitel und Zeitachsen-Miniaturen bleiben aus, solange Netflix sie nicht bereitstellt."
+    "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um. Kapitel und Zeitachsen-Miniaturen werden nicht unterstützt."
   },
   "liveBadge": {
     "message": "LIVE"

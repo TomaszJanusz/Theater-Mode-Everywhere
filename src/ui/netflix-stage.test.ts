@@ -81,10 +81,13 @@ describe('netflix fixed containing block', () => {
     }), true);
   });
 
-  it('clears scale as well as transform, because transform none alone left the used matrix', () => {
+  it('clears the dialog transition that kept the identity matrix, and keeps mask longhands', () => {
+    assert.equal(NETFLIX_CONTAINMENT_VALUES.transition, 'none');
     assert.equal(NETFLIX_CONTAINMENT_VALUES.transform, 'none');
     assert.equal(NETFLIX_CONTAINMENT_VALUES.scale, 'none');
+    assert.equal(NETFLIX_CONTAINMENT_VALUES['mask-image'], 'none');
+    assert.equal(NETFLIX_CONTAINMENT_VALUES['-webkit-mask-image'], 'none');
+    assert.equal('mask' in NETFLIX_CONTAINMENT_VALUES, false);
     assert.equal(NETFLIX_CONTAINMENT_VALUES.overflow, 'visible');
-    assert.equal(NETFLIX_CONTAINMENT_VALUES.transition, 'none');
   });
 });

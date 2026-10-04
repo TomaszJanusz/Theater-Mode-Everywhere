@@ -193,7 +193,7 @@
     "message": "Integrazione Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità teatro. Capitoli e miniature della timeline restano disattivati finché Netflix non li fornisce."
+    "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità teatro. Capitoli e miniature della timeline non sono supportati."
   },
   "liveBadge": {
     "message": "LIVE"

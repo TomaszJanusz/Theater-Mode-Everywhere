@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  chooseNetflixRawTrack,
+  netflixHarvestKey,
   netflixSnapshotMatchesVideo,
+  parseNetflixCaptionRequest,
   parseNetflixTextTracks,
+  parsePublishedNetflixTracks,
   readPublishedNetflixSnapshot,
   resolveNetflixTitle,
   selectableNetflixTextTracks,
   selectNetflixCaptionTarget,
   stripNetflixSiteTitle
 } from './parsers/netflix-page';
+import { publishedNetflixPayload } from '../providers/netflix/main';
 
 const publicTracks = [
   {
@@ -81,13 +86,18 @@ describe('netflix public player metadata', () => {
   });
 
   it('reads a published snapshot without keeping unsafe track ids', () => {
+    const published = publishedNetflixPayload({
+      videoId: '82779520',
+      title: 'Stranger Things',
+      tracks: parseNetflixTextTracks(publicTracks),
+      selectedTrackId: 'T:2:1;1;pl;0;0;0;0;'
+    });
     const root = {
       querySelector: () => ({
         textContent: JSON.stringify({
-          videoId: 82779520,
+          ...published,
           title: 'Oglądaj: Stranger Things | Netflix',
-          tracks: publicTracks,
-          selectedTrackId: 'T:2:1;1;pl;0;0;0;0;'
+          videoId: 82779520
         })
       })
     };
@@ -95,6 +105,43 @@ describe('netflix public player metadata', () => {
     assert.equal(snapshot?.videoId, '82779520');
     assert.equal(snapshot?.title, 'Stranger Things');
     assert.equal(snapshot?.tracks.length, 3);
+    assert.equal(snapshot?.tracks.find((track) => track.language === 'en')?.kind, 'captions');
+    assert.equal(snapshot?.tracks.find((track) => track.none)?.forced, true);
     assert.equal(snapshot?.selectedTrackId, 'T:2:1;1;pl;0;0;0;0;');
+    assert.equal(selectableNetflixTextTracks(snapshot?.tracks || []).some((track) => track.none), false);
+  });
+
+  it('keeps a translated off track out of the selectable list after a snapshot round-trip', () => {
+    const published = [{
+      id: 'T:2:0;1;pl;1;1;0;0;',
+      language: 'pl',
+      label: 'Podtytuły wyłączone',
+      kind: 'subtitles',
+      forced: true,
+      none: true
+    }, {
+      id: 'T:2:1;1;en;0;0;0;0;',
+      language: 'en',
+      label: 'English',
+      kind: 'captions',
+      forced: false,
+      none: false
+    }];
+    const tracks = parsePublishedNetflixTracks(published);
+    assert.equal(tracks[0].none, true);
+    assert.equal(tracks[0].forced, true);
+    assert.equal(tracks[1].kind, 'captions');
+    assert.deepEqual(selectableNetflixTextTracks(tracks).map((track) => track.language), ['en']);
+    assert.equal(parseNetflixTextTracks(published).find((track) => track.language === 'en')?.kind, 'subtitles');
+  });
+
+  it('treats a missing player id as the same harvest as an unset one', () => {
+    const empty = { tracks: [] as Array<{ id: string; kind: 'subtitles'; forced: boolean; none: boolean }> };
+    assert.equal(netflixHarvestKey({ ...empty, videoId: null, title: null }), netflixHarvestKey(empty));
+    assert.equal(selectNetflixCaptionTarget(parseNetflixTextTracks(publicTracks), 'T:2:0;1;pl;1;1;0;0;'), null);
+    const off = chooseNetflixRawTrack(publicTracks, null) as { displayName?: string; isForcedNarrative?: boolean };
+    assert.equal(off.displayName, 'wył.');
+    assert.equal(off.isForcedNarrative, true);
+    assert.equal(parseNetflixCaptionRequest({ requestId: 'te-nf-abc', trackId: null }), null);
   });
 });

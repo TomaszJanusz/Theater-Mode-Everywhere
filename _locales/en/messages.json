@@ -193,7 +193,7 @@
     "message": "Netflix integration"
   },
   "netflixIntegrationDescription": {
-    "message": "Shows the current title and switches the player's subtitle languages in theater mode. Chapters and timeline thumbnails stay off unless Netflix provides them."
+    "message": "Shows the current title and switches the player's subtitle languages in theater mode. Chapters and timeline thumbnails are not supported."
   },
   "liveBadge": {
     "message": "LIVE"

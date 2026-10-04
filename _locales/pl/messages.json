@@ -193,7 +193,7 @@
     "message": "Integracja z Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Pokazuje tytuł bieżącego materiału i przełącza języki napisów odtwarzacza w trybie kinowym. Rozdziały i miniatury na osi czasu pozostają wyłączone, dopóki Netflix ich nie udostępni."
+    "message": "Pokazuje tytuł bieżącego materiału i przełącza języki napisów odtwarzacza w trybie kinowym. Rozdziały i miniatury na osi czasu nie są obsługiwane."
   },
   "liveBadge": {
     "message": "NA ŻYWO"

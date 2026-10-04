@@ -193,7 +193,7 @@
     "message": "Intégration Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma. Les chapitres et les miniatures de la timeline restent masqués tant que Netflix ne les fournit pas."
+    "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma. Les chapitres et les miniatures de la timeline ne sont pas pris en charge."
   },
   "liveBadge": {
     "message": "DIRECT"

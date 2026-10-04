@@ -55,7 +55,7 @@ import {
   unmountTwitchTheaterStage
 } from './theater-layout';
 import { holdNetflixViewport, releaseNetflixViewport } from './netflix-stage';
-import { readNetflixVideoFacts, shouldFollowNetflixVideo } from './netflix-playback';
+import { createNetflixVideoBinding, readNetflixVideoFacts, shouldFollowNetflixVideo } from './netflix-playback';
 import {
   queryPlayerUi,
   queryPlayerUiAll
@@ -1240,6 +1240,30 @@ function toggleTheaterMode(): void {
 }
 
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  let videoScope = session.runtimeScope.child();
+
+  const bindVideo = (target: HTMLVideoElement): void => {
+    videoScope.dispose();
+    videoScope = session.runtimeScope.child();
+    const holdViewport = (): void => {
+      if (session.element !== target) return;
+      refreshTheaterAncestors(target);
+      stabilizeLayout(target, true);
+    };
+    videoScope.listen(target, 'emptied', holdViewport);
+    videoScope.listen(target, 'loadedmetadata', () => {
+      if (session.element !== target) return;
+      scheduleStabilize(true);
+    });
+    const styleObserver = new MutationObserver(() => {
+      if (ignoreStyleMutations > 0 || session.element !== target) return;
+      if (!theaterVideoNeedsRestyle(target)) return;
+      scheduleStabilize(false);
+    });
+    styleObserver.observe(target, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
+    videoScope.add(() => styleObserver.disconnect());
+  };
+
   const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
     const current = session.element;
     if (current?.tagName !== 'VIDEO' || isElementInDOMDeep(current)) return;
@@ -1249,6 +1273,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       : findBestVideo();
     if (replacement && replacement !== current) {
       switchTheaterVideo(replacement);
+      if (session.element === replacement) bindVideo(replacement);
     }
   };
 
@@ -1282,9 +1307,13 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     stabilizeScheduled = true;
     session.runtimeScope.raf(() => {
       stabilizeScheduled = false;
-      stabilizeLayout(video, false);
+      const target = session.element;
+      if (!(target instanceof HTMLVideoElement)) return;
+      stabilizeLayout(target, false);
     });
   };
+
+  bindVideo(video);
 
   let pictureLayoutScheduled = false;
   const schedulePictureLayout = (): void => {
@@ -1302,14 +1331,12 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   }, true);
   session.runtimeScope.listen(document, 'fullscreenchange', schedulePictureLayout);
 
-  const holdViewport = (): void => {
-    if (session.element !== video) return;
-    refreshTheaterAncestors(video);
-    stabilizeLayout(video, true);
-  };
-  session.runtimeScope.listen(video, 'emptied', holdViewport);
-  session.runtimeScope.listen(document, 'yt-navigate-start', holdViewport);
-  session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
+  session.runtimeScope.listen(document, 'yt-navigate-start', () => {
+    const target = session.element;
+    if (!(target instanceof HTMLVideoElement)) return;
+    refreshTheaterAncestors(target);
+    stabilizeLayout(target, true);
+  });
   session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
     if (!(candidate instanceof HTMLVideoElement)) return;
@@ -1320,34 +1347,51 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     rebindIfReplaced(candidate);
   }, true);
 
+  let structuralPending = false;
   let rebindScheduled = false;
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((records) => {
+    if (records.some((record) => record.type === 'childList')) structuralPending = true;
     if (rebindScheduled) return;
     rebindScheduled = true;
     session.runtimeScope.raf(() => {
       rebindScheduled = false;
+      const structural = structuralPending;
+      structuralPending = false;
       rebindIfReplaced();
-      if (isNetflixHost() && session.element instanceof HTMLVideoElement && isElementInDOMDeep(session.element)) {
-        const next = findBestVideo();
-        if (next && next !== session.element && shouldFollowNetflixVideo(readNetflixVideoFacts(session.element), readNetflixVideoFacts(next))) {
-          switchTheaterVideo(next);
-        } else {
-          refreshTheaterAncestors(session.element);
-          holdNetflixViewport(session.element);
-        }
-      }
+      if (!structural || !isNetflixHost()) return;
+      if (!(session.element instanceof HTMLVideoElement) || !isElementInDOMDeep(session.element)) return;
+      refreshTheaterAncestors(session.element);
+      holdNetflixViewport(session.element);
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   session.runtimeScope.add(() => observer.disconnect());
 
-  const styleObserver = new MutationObserver(() => {
-    if (ignoreStyleMutations > 0 || session.element !== video) return;
-    if (!theaterVideoNeedsRestyle(video)) return;
-    scheduleStabilize(false);
-  });
-  styleObserver.observe(video, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
-  session.runtimeScope.add(() => styleObserver.disconnect());
+  if (isNetflixHost()) {
+    const binding = createNetflixVideoBinding({
+      root: document.documentElement,
+      current: () => (
+        session.element instanceof HTMLVideoElement && isElementInDOMDeep(session.element)
+          ? session.element
+          : null
+      ),
+      pick: () => findBestVideo(),
+      shouldSwitch: (current, next) => shouldFollowNetflixVideo(
+        readNetflixVideoFacts(current),
+        readNetflixVideoFacts(next)
+      ),
+      onSwitch: (next) => {
+        switchTheaterVideo(next);
+        if (session.element === next) bindVideo(next);
+      },
+      onStabilize: (target) => {
+        if (session.element !== target || !theaterVideoNeedsRestyle(target)) return;
+        scheduleStabilize(false);
+      }
+    });
+    binding.bind(video);
+    session.runtimeScope.add(() => binding.dispose());
+  }
 }
 
 function refreshTheaterAncestors(element: HTMLElement): void {

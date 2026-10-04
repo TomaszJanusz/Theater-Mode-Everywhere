@@ -2,9 +2,11 @@ import { sanitizeContentTitle } from '../content-title';
 
 export const NETFLIX_SNAPSHOT_ID = 'theater-everywhere-netflix-snapshot';
 export const NETFLIX_CAPTION_EVENT = 'theater-everywhere-netflix-caption';
+export const NETFLIX_CAPTION_ACK_EVENT = 'theater-everywhere-netflix-caption-ack';
 export const NETFLIX_HARVEST_EVENT = 'theater-everywhere-netflix-harvest';
 
 const TRACK_ID_RE = /^[A-Za-z0-9:_;.\-]{1,80}$/;
+const CAPTION_REQUEST_ID_RE = /^te-nf-[a-z0-9-]{8,60}$/;
 const OFF_LABEL_RE = /^(?:off|none|wył\.?|wyl\.?|wyłączone|wylaczone|aus|desactivado|désactivé|desactive|spento|オフ|끄기|выкл\.?|вимк\.?|关闭|關)$/i;
 const SITE_TITLE_SUFFIX_RE = /\s*[|–—-]\s*(?:oficjalna witryna netflix|official (?:site|website)|site officiel|sitio oficial|sito ufficiale|offizielle webseite|netflix)$/i;
 const SITE_TITLE_PREFIX_RE = /^(?:oglądaj|ogladaj|watch|regarder|schauen|ver|mira|assistir|смотреть|дивіться|观看|視聴)\s*:\s*/i;
@@ -24,6 +26,16 @@ export type NetflixSnapshot = {
   title?: string;
   tracks: NetflixTextTrack[];
   selectedTrackId?: string;
+};
+
+export type NetflixCaptionRequest = {
+  requestId: string;
+  trackId: string | null;
+};
+
+export type NetflixCaptionAck = {
+  requestId: string;
+  ok: boolean;
 };
 
 export function netflixTrackId(value: unknown): string | null {
@@ -75,8 +87,103 @@ export function parseNetflixTextTracks(raw: unknown): NetflixTextTrack[] {
   return tracks;
 }
 
+/** Snapshot JSON uses the normalized fields. The raw player parser must not read it. */
+export function parsePublishedNetflixTracks(raw: unknown): NetflixTextTrack[] {
+  if (!Array.isArray(raw)) return [];
+  const tracks: NetflixTextTrack[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+    const id = netflixTrackId(record.id);
+    if (!id || seen.has(id)) continue;
+    const label = sanitizeContentTitle(record.label) || '';
+    const language = typeof record.language === 'string' ? record.language.trim().slice(0, 16) : '';
+    const none = record.none === true || isNetflixOffTrack({ label, none: record.none });
+    if (!label && !none) continue;
+    const kind = record.kind === 'captions' || record.kind === 'subtitles' ? record.kind : 'subtitles';
+    seen.add(id);
+    tracks.push({
+      id,
+      language,
+      label: label || 'Off',
+      kind,
+      forced: record.forced === true,
+      none
+    });
+    if (tracks.length >= 40) break;
+  }
+  return tracks;
+}
+
 export function selectableNetflixTextTracks(tracks: NetflixTextTrack[]): NetflixTextTrack[] {
   return tracks.filter((track) => !track.none);
+}
+
+export function chooseNetflixRawTrack(rawTracks: unknown, trackId: string | null): unknown | null {
+  const tracks = parseNetflixTextTracks(rawTracks);
+  const target = selectNetflixCaptionTarget(tracks, trackId);
+  if (!target || !Array.isArray(rawTracks)) return null;
+  for (const item of rawTracks) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as { trackId?: unknown; id?: unknown };
+    if (record.trackId === target.id || record.id === target.id) return item;
+  }
+  return null;
+}
+
+export function netflixCaptionRequestDetail(request: NetflixCaptionRequest): string {
+  return JSON.stringify({ requestId: request.requestId, trackId: request.trackId });
+}
+
+export function parseNetflixCaptionRequest(detail: unknown): NetflixCaptionRequest | null {
+  if (typeof detail !== 'string' || detail.length > 180) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(detail);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  if (typeof record.requestId !== 'string' || !CAPTION_REQUEST_ID_RE.test(record.requestId)) return null;
+  if (record.trackId === null) return { requestId: record.requestId, trackId: null };
+  const trackId = netflixTrackId(record.trackId);
+  if (!trackId) return null;
+  return { requestId: record.requestId, trackId };
+}
+
+export function netflixCaptionAckDetail(ack: NetflixCaptionAck): string {
+  return JSON.stringify({ requestId: ack.requestId, ok: ack.ok === true });
+}
+
+export function parseNetflixCaptionAck(detail: unknown): NetflixCaptionAck | null {
+  if (typeof detail !== 'string' || detail.length > 120) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(detail);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  if (typeof record.requestId !== 'string' || !CAPTION_REQUEST_ID_RE.test(record.requestId)) return null;
+  if (typeof record.ok !== 'boolean') return null;
+  return { requestId: record.requestId, ok: record.ok };
+}
+
+export function netflixHarvestKey(state: {
+  videoId?: string | null;
+  title?: string | null;
+  selectedTrackId?: string | null;
+  tracks: Array<Pick<NetflixTextTrack, 'id' | 'kind' | 'forced' | 'none'>>;
+}): string {
+  return JSON.stringify({
+    videoId: state.videoId ?? null,
+    title: state.title ?? null,
+    selectedTrackId: state.selectedTrackId ?? null,
+    tracks: state.tracks.map((track) => [track.id, track.kind, track.forced === true, track.none === true])
+  });
 }
 
 export function selectNetflixCaptionTarget(
@@ -137,7 +244,7 @@ export function readPublishedNetflixSnapshot(
     if (!data || typeof data !== 'object') return null;
     const videoId = netflixVideoId(data.videoId) || undefined;
     const title = stripNetflixSiteTitle(data.title) || undefined;
-    const tracks = parseNetflixTextTracks(data.tracks);
+    const tracks = parsePublishedNetflixTracks(data.tracks);
     const selectedTrackId = netflixTrackId(data.selectedTrackId) || undefined;
     if (!videoId && !title && tracks.length === 0) return null;
     return {

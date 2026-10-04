@@ -60,10 +60,6 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
 .theater-everywhere-parent-active {
   position: relative !important;
   overflow: visible !important;
-  /* Netflix animates transform for 533ms. Until that finishes the used
-   * value is still a matrix, which keeps position:fixed inside the dialog. */
-  transition: none !important;
-  animation: none !important;
   transform: none !important;
   translate: none !important;
   rotate: none !important;
@@ -154,8 +150,9 @@ html.theater-everywhere-netflix-stage [role="dialog"] {
   transform: none !important;
   scale: none !important;
   transition: none !important;
+  animation: none !important;
   filter: none !important;
-  mask: none !important;
+  mask-image: none !important;
 }
 
 html.theater-everywhere-netflix-stage .PlayerControls--control-element,

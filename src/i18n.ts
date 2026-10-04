@@ -60,7 +60,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   disneyIntegrationTitle: 'Disney+ integration',
   disneyIntegrationDescription: 'Enables support for captions and thumbnails on the timeline in theater mode when the player provides them.',
   netflixIntegrationTitle: 'Netflix integration',
-  netflixIntegrationDescription: 'Shows the current title and switches the player\'s subtitle languages in theater mode. Chapters and timeline thumbnails stay off unless Netflix provides them.',
+  netflixIntegrationDescription: 'Shows the current title and switches the player\'s subtitle languages in theater mode. Chapters and timeline thumbnails are not supported.',
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',

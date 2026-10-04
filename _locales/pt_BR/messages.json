@@ -193,7 +193,7 @@
     "message": "Integração com a Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Mostra o título do material atual e alterna os idiomas de legenda do player no modo teatro. Capítulos e miniaturas da linha do tempo ficam desativados até que a Netflix os forneça."
+    "message": "Mostra o título do material atual e alterna os idiomas de legenda do player no modo teatro. Capítulos e miniaturas da linha do tempo não são suportados."
   },
   "liveBadge": {
     "message": "AO VIVO"

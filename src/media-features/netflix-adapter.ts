@@ -1,5 +1,8 @@
 import {
+  NETFLIX_CAPTION_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
+  netflixCaptionRequestDetail,
+  parseNetflixCaptionAck,
   readPublishedNetflixSnapshot,
   selectableNetflixTextTracks,
   selectNetflixCaptionTarget,
@@ -30,6 +33,46 @@ function bareTrackId(id: string): string {
   return id.startsWith('netflix:') ? id.slice('netflix:'.length) : id;
 }
 
+const NETFLIX_CAPTION_ACK_TIMEOUT_MS = 750;
+
+type NetflixCaptionTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
+
+export function netflixCaptionRequestId(): string {
+  return `te-nf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Isolated content and the page MAIN world cannot share a mutable object on
+ * CustomEvent.detail. Firefox denies that crossing. Both sides pass a JSON string.
+ */
+export function requestNetflixHostCaption(
+  trackId: string | null,
+  target: NetflixCaptionTarget = window,
+  timeoutMs = NETFLIX_CAPTION_ACK_TIMEOUT_MS
+): Promise<boolean> {
+  const requestId = netflixCaptionRequestId();
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      target.removeEventListener(NETFLIX_CAPTION_ACK_EVENT, onAck);
+      target.clearTimeout(timer);
+      resolve(ok);
+    };
+    const onAck = (event: Event) => {
+      const ack = parseNetflixCaptionAck((event as CustomEvent<unknown>).detail);
+      if (!ack || ack.requestId !== requestId) return;
+      finish(ack.ok);
+    };
+    const timer = target.setTimeout(() => finish(false), timeoutMs);
+    target.addEventListener(NETFLIX_CAPTION_ACK_EVENT, onAck);
+    target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_EVENT, {
+      detail: netflixCaptionRequestDetail({ requestId, trackId })
+    }));
+  });
+}
+
 export class NetflixAdapter implements MediaFeaturesAdapter {
   private read(): NetflixSnapshot | null {
     return readPublishedNetflixSnapshot();
@@ -55,15 +98,16 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     const tracks = this.read()?.tracks || [];
     const target = selectNetflixCaptionTarget(tracks, id == null ? null : bareTrackId(id));
-    if (id != null && !target) return { status: 'failed', delivery: 'none', cues: [] };
-    const detail: { trackId: string | null; ok: boolean } = { trackId: target?.id || null, ok: false };
+    if (!target) return { status: 'failed', delivery: 'none', cues: [] };
+    const trackId = target.none ? null : target.id;
+    let ok = false;
     try {
-      window.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_EVENT, { detail }));
+      ok = await requestNetflixHostCaption(trackId);
     } catch {
-      return { status: 'failed', delivery: 'none', cues: [] };
+      ok = false;
     }
-    if (!detail.ok) return { status: 'failed', delivery: 'none', cues: [] };
-    if (id == null) return { status: 'off', delivery: 'none', cues: [] };
+    if (!ok) return { status: 'failed', delivery: 'none', cues: [] };
+    if (trackId == null) return { status: 'off', delivery: 'none', cues: [] };
     return { status: 'active', delivery: 'host', cues: [] };
   }
 
@@ -72,7 +116,7 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
   }
 
   async getPreviewSource(): Promise<PreviewSource> {
-    return { kind: 'none', reason: 'not-provided' };
+    return { kind: 'none', reason: 'unsupported' };
   }
 
   async reload(): Promise<void> {

@@ -1,13 +1,17 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import {
+  NETFLIX_CAPTION_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
   NETFLIX_HARVEST_EVENT,
   NETFLIX_SNAPSHOT_ID,
+  chooseNetflixRawTrack,
+  netflixCaptionAckDetail,
+  netflixHarvestKey,
   netflixSnapshotMatchesVideo,
   netflixVideoId,
+  parseNetflixCaptionRequest,
   parseNetflixTextTracks,
   resolveNetflixTitle,
-  selectNetflixCaptionTarget,
   stripNetflixSiteTitle,
   type NetflixTextTrack
 } from '../../media-features/parsers/netflix-page';
@@ -111,23 +115,53 @@ function controlTitle(): string | null {
   return null;
 }
 
+export function publishedNetflixPayload(state: NetflixHarvest): Record<string, unknown> | null {
+  if (!state.videoId && !state.title && state.tracks.length === 0) return null;
+  return {
+    ...(state.videoId ? { videoId: state.videoId } : {}),
+    ...(state.title ? { title: state.title } : {}),
+    tracks: state.tracks.map((track) => ({
+      id: track.id,
+      language: track.language,
+      label: track.label,
+      kind: track.kind,
+      forced: track.forced,
+      none: track.none
+    })),
+    ...(state.selectedTrackId ? { selectedTrackId: state.selectedTrackId } : {})
+  };
+}
+
 function publishHarvest(): void {
-  const payload = harvest.videoId || harvest.title || harvest.tracks.length
-    ? {
-      ...(harvest.videoId ? { videoId: harvest.videoId } : {}),
-      ...(harvest.title ? { title: harvest.title } : {}),
-      tracks: harvest.tracks.map((track) => ({
-        id: track.id,
-        language: track.language,
-        label: track.label,
-        kind: track.kind,
-        forced: track.forced,
-        none: track.none
-      })),
-      ...(harvest.selectedTrackId ? { selectedTrackId: harvest.selectedTrackId } : {})
-    }
-    : null;
+  const payload = publishedNetflixPayload(harvest);
+  const serialized = payload == null ? null : JSON.stringify(payload);
+  const existing = document.getElementById(NETFLIX_SNAPSHOT_ID);
+  const current = existing ? existing.textContent : null;
+  if (serialized === current) return;
+  if (serialized == null && !existing) return;
   publishHiddenJson(NETFLIX_SNAPSHOT_ID, payload);
+}
+
+export function netflixMutationIsOwnSnapshot(records: Array<{
+  target: Node;
+  addedNodes?: ArrayLike<Node>;
+  removedNodes?: ArrayLike<Node>;
+}>): boolean {
+  if (records.length === 0) return false;
+  return records.every((record) => {
+    if (nodeInsideSnapshot(record.target)) return true;
+    const nodes = [
+      ...Array.from(record.addedNodes || []),
+      ...Array.from(record.removedNodes || [])
+    ];
+    return nodes.length > 0 && nodes.every((node) => nodeInsideSnapshot(node));
+  });
+}
+
+function nodeInsideSnapshot(node: Node): boolean {
+  if (node instanceof Element && node.id === NETFLIX_SNAPSHOT_ID) return true;
+  const element = node instanceof Element ? node : node.parentElement;
+  return Boolean(element && (element.id === NETFLIX_SNAPSHOT_ID || element.closest(`#${NETFLIX_SNAPSHOT_ID}`)));
 }
 
 function notifyHarvest(): void {
@@ -167,19 +201,15 @@ function syncHarvest(): void {
     controlTitle: controlTitle(),
     documentTitle: document.title
   });
-  const changed = videoId !== harvest.videoId
-    || title !== harvest.title
-    || selectedTrackId !== harvest.selectedTrackId
-    || tracks.length !== harvest.tracks.length
-    || tracks.some((track, index) => track.id !== harvest.tracks[index]?.id);
-  harvest = {
+  const nextHarvest: NetflixHarvest = {
     ...(videoId ? { videoId } : {}),
     ...(title ? { title: sanitizeContentTitle(title) || undefined } : {}),
     tracks,
     ...(selectedTrackId ? { selectedTrackId } : {})
   };
+  if (netflixHarvestKey(harvest) === netflixHarvestKey(nextHarvest)) return;
+  harvest = nextHarvest;
   previousVideoId = videoId;
-  if (!changed) return;
   publishHarvest();
   notifyHarvest();
 }
@@ -189,15 +219,7 @@ function applyCaptionRequest(trackId: string | null): boolean {
   const root = playerRoot();
   const props = root ? findPlayerProps(root) : null;
   if (!props || typeof props.setTimedTextTrack !== 'function') return false;
-  const tracks = parseNetflixTextTracks(props.textTracks);
-  const target = selectNetflixCaptionTarget(tracks, trackId);
-  if (!target) return false;
-  const rawTracks = Array.isArray(props.textTracks) ? props.textTracks : [];
-  const raw = rawTracks.find((item) => {
-    if (!item || typeof item !== 'object') return false;
-    const id = (item as { trackId?: unknown }).trackId;
-    return id === target.id;
-  });
+  const raw = chooseNetflixRawTrack(props.textTracks, trackId);
   if (!raw) return false;
   try {
     props.setTimedTextTrack(raw);
@@ -223,12 +245,17 @@ export function readNetflixSnapshot(): Record<string, unknown> | null {
 export function installNetflixMain(): void {
   if (!isNetflixHost()) return;
   window.addEventListener(NETFLIX_CAPTION_EVENT, (event: Event) => {
-    const detail = (event as CustomEvent<{ trackId?: string | null; ok?: boolean }>).detail;
-    if (!detail || typeof detail !== 'object') return;
-    const trackId = typeof detail.trackId === 'string' ? detail.trackId : null;
-    detail.ok = applyCaptionRequest(detail.trackId === undefined ? null : trackId);
+    const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
+    if (!request) return;
+    const ok = applyCaptionRequest(request.trackId);
+    window.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+      detail: netflixCaptionAckDetail({ requestId: request.requestId, ok })
+    }));
   });
-  const observer = new MutationObserver(() => syncHarvest());
+  const observer = new MutationObserver((records) => {
+    if (netflixMutationIsOwnSnapshot(records)) return;
+    syncHarvest();
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.setInterval(syncHarvest, 1500);
   syncHarvest();

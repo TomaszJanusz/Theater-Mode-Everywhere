@@ -1,9 +1,14 @@
 /**
- * Netflix's title modal keeps `transform: scale(1)` on `[role=dialog]`.
- * That identity transform is still a containing block for `position: fixed`,
- * so a viewport-sized video stays inside the player box and the page paints
- * around it. Setting `transform: none` alone left the used transform in place
- * until `scale` was cleared as well.
+ * Netflix's title dialog computes `transform: matrix(1, 0, 0, 1, 0, 0)` from
+ * `transform: scale(1)`. That identity matrix is a containing block for
+ * `position: fixed`. The dialog also transitions `transform` for 533ms, so
+ * `transform: none` alone leaves the matrix in place until the transition
+ * ends. `transition: none` is what clears it in the same turn. `scale` was
+ * already `none` on the measured dialog; it is still reset because a separate
+ * scale property would be its own containing block.
+ *
+ * Containment uses mask-image longhands. Setting or removing the `mask`
+ * shorthand drops an inline `mask-image` on the way out.
  */
 export const NETFLIX_CONTAINMENT_VALUES: Record<string, string> = {
   transition: 'none',
@@ -17,7 +22,8 @@ export const NETFLIX_CONTAINMENT_VALUES: Record<string, string> = {
   perspective: 'none',
   contain: 'none',
   'clip-path': 'none',
-  mask: 'none',
+  'mask-image': 'none',
+  '-webkit-mask-image': 'none',
   overflow: 'visible'
 };
 

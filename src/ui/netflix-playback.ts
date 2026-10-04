@@ -32,16 +32,108 @@ export function shouldFollowNetflixVideo(current: NetflixVideoFacts, candidate: 
 
 export function readNetflixVideoFacts(video: HTMLVideoElement): NetflixVideoFacts {
   const rect = video.getBoundingClientRect();
-  const style = getComputedStyle(video);
-  const opacity = Number(style.opacity);
-  const width = Math.max(0, rect.width);
-  const height = Math.max(0, rect.height);
+  let opacity = 1;
+  let blurred = false;
+  let hidden = false;
+  let node: HTMLElement | null = video;
+  while (node && node !== document.documentElement) {
+    const style = getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden') hidden = true;
+    const nodeOpacity = Number(style.opacity);
+    if (Number.isFinite(nodeOpacity)) opacity *= nodeOpacity;
+    if (style.filter.includes('blur')) blurred = true;
+    node = node.parentElement;
+  }
+  const width = hidden ? 0 : Math.max(0, rect.width);
+  const height = hidden ? 0 : Math.max(0, rect.height);
   return {
     inPlayer: Boolean(video.closest('.nf-player-container, [data-uia="player"]')),
-    playing: !video.paused && !video.ended && video.readyState > 2,
+    playing: !hidden && !video.paused && !video.ended && video.readyState > 2,
     visibleArea: width * height,
-    opacity: Number.isFinite(opacity) ? opacity : 1,
-    blurred: style.filter.includes('blur'),
-    usable: width >= 80 && height >= 80 && opacity > 0.05
+    opacity,
+    blurred,
+    usable: !hidden && width >= 80 && height >= 80 && opacity > 0.05
+  };
+}
+
+export type NetflixVideoBinding = {
+  bind(video: HTMLVideoElement): void;
+  listeningTo(): HTMLVideoElement | null;
+  dispose(): void;
+};
+
+/**
+ * Follows the visible Netflix video. Style and class changes hide a modal
+ * without adding or removing nodes, so childList alone misses them.
+ * Listeners are dropped from the previous element when the target changes.
+ */
+export function createNetflixVideoBinding(options: {
+  root: Node;
+  current: () => HTMLVideoElement | null;
+  pick: () => HTMLVideoElement | null;
+  shouldSwitch: (current: HTMLVideoElement, next: HTMLVideoElement) => boolean;
+  onSwitch: (next: HTMLVideoElement) => void;
+  onStabilize?: (video: HTMLVideoElement) => void;
+}): NetflixVideoBinding {
+  let bound: HTMLVideoElement | null = null;
+  let disposed = false;
+  let scheduled = false;
+  let videoCleanups: Array<() => void> = [];
+
+  const clearVideo = (): void => {
+    for (const cleanup of videoCleanups) cleanup();
+    videoCleanups = [];
+  };
+
+  const bind = (video: HTMLVideoElement): void => {
+    if (disposed) return;
+    clearVideo();
+    bound = video;
+    const onMeta = (): void => {
+      if (bound === video) options.onStabilize?.(video);
+    };
+    video.addEventListener('loadedmetadata', onMeta);
+    videoCleanups.push(() => video.removeEventListener('loadedmetadata', onMeta));
+    const styleObserver = new MutationObserver(() => {
+      if (bound === video) options.onStabilize?.(video);
+    });
+    styleObserver.observe(video, { attributes: true, attributeFilter: ['style'] });
+    videoCleanups.push(() => styleObserver.disconnect());
+  };
+
+  const follow = (): void => {
+    const active = options.current();
+    if (!active || !active.isConnected) return;
+    const next = options.pick();
+    if (!next || next === active || !next.isConnected) return;
+    if (!options.shouldSwitch(active, next)) return;
+    options.onSwitch(next);
+    if (options.current() === next) bind(next);
+  };
+
+  const observer = new MutationObserver(() => {
+    if (scheduled || disposed) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      if (!disposed) follow();
+    });
+  });
+  observer.observe(options.root, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class', 'hidden']
+  });
+
+  return {
+    bind,
+    listeningTo: () => bound,
+    dispose() {
+      disposed = true;
+      observer.disconnect();
+      clearVideo();
+      bound = null;
+    }
   };
 }
