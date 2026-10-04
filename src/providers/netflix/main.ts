@@ -100,11 +100,19 @@ type PlayerFiber = {
   };
   child?: PlayerFiber;
   sibling?: PlayerFiber;
+  return?: PlayerFiber;
 };
 
-function playerFibers(root: HTMLElement): PlayerFiber[] {
+const CAPTION_SUPPORT_PARENT_LIMIT = 8;
+
+function reactFiber(root: HTMLElement): PlayerFiber | null {
   const key = Object.keys(root).find((name) => name.startsWith('__reactFiber') || name.startsWith('__reactInternalInstance'));
   const fiber = key ? (root as unknown as Record<string, PlayerFiber>)[key] : null;
+  return fiber && typeof fiber === 'object' ? fiber : null;
+}
+
+function playerFibers(root: HTMLElement): PlayerFiber[] {
+  const fiber = reactFiber(root);
   if (!fiber) return [];
   const seen = new Set<object>();
   const stack: PlayerFiber[] = [fiber];
@@ -146,31 +154,40 @@ function captionApis(root: HTMLElement): NetflixCaptionApi[] {
   return found;
 }
 
+function readCaptionSupportState(fiber: PlayerFiber, support: { fallbackTrue: boolean; fallbackFalse: boolean; loading: boolean; settled: boolean }): void {
+  const state = fiber.stateNode?.state;
+  if (!state || typeof state !== 'object') return;
+  if (state.fallbackMode === true) support.fallbackTrue = true;
+  else if (state.fallbackMode === false) support.fallbackFalse = true;
+  if (state.uiState === 'loading') support.loading = true;
+  else if (typeof state.uiState === 'string') support.settled = true;
+}
+
 function netflixCaptionSupport(root: HTMLElement | null): {
   rendererMounted: boolean;
   fallbackMode: boolean | null;
   playerLoading: boolean | null;
 } {
   const rendererMounted = document.querySelector('.player-timedtext') instanceof HTMLElement;
-  let fallbackMode: boolean | null = null;
-  let sawLoading = false;
-  let sawSettled = false;
+  const support = { fallbackTrue: false, fallbackFalse: false, loading: false, settled: false };
   if (root) {
-    for (const fiber of playerFibers(root)) {
-      const state = fiber.stateNode?.state;
-      if (!state) continue;
-      if (typeof state.fallbackMode === 'boolean') fallbackMode = state.fallbackMode;
-      if (state.uiState === 'loading') sawLoading = true;
-      else if (typeof state.uiState === 'string') sawSettled = true;
+    for (const fiber of playerFibers(root)) readCaptionSupportState(fiber, support);
+    let parent = reactFiber(root)?.return;
+    const seen = new Set<object>();
+    for (let i = 0; parent && i < CAPTION_SUPPORT_PARENT_LIMIT; i += 1) {
+      if (typeof parent !== 'object' || seen.has(parent)) break;
+      seen.add(parent);
+      readCaptionSupportState(parent, support);
+      parent = parent.return;
     }
     const layout = root.querySelector('.PlayerControlsNeo__layout');
-    if (layout?.classList.contains('PlayerControlsNeo__layout--loading')) sawLoading = true;
-    else if (layout) sawSettled = true;
+    if (layout?.classList.contains('PlayerControlsNeo__layout--loading')) support.loading = true;
+    else if (layout) support.settled = true;
   }
   return {
     rendererMounted,
-    fallbackMode,
-    playerLoading: sawSettled ? false : sawLoading ? true : null
+    fallbackMode: support.fallbackTrue ? true : support.fallbackFalse ? false : null,
+    playerLoading: support.loading ? true : support.settled ? false : null
   };
 }
 

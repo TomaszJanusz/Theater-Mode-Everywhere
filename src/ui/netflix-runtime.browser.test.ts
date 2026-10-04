@@ -266,4 +266,138 @@ describe('netflix runtime browser regressions', () => {
       await browser.close();
     }
   });
+
+  it('treats fallback and loading on a return ancestor as unavailable while Off still applies', async () => {
+    let executable = '';
+    const { chromium } = await import('playwright');
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      return;
+    }
+    if (!existsSync(executable)) return;
+
+    const bundle = esbuildBundle();
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      page.setDefaultTimeout(4000);
+      await page.route('https://www.netflix.com/**', (route) => route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: `<!doctype html><title>Oglądaj: Stranger Things | Oficjalna witryna Netflix</title><body>
+          <div class="nf-player-container">
+            <div class="PlayerControlsNeo__layout"></div>
+            <div class="player-timedtext"></div>
+            <video></video>
+          </div>
+        </body>`
+      }));
+      await page.goto('https://www.netflix.com/pl/title/80057281', { waitUntil: 'domcontentloaded' });
+      await page.evaluate(`(() => {
+        const off = {
+          trackId: 'T:2:0;1;pl;1;1;0;0;',
+          bcp47: 'pl',
+          displayName: 'wył.',
+          rawTrackType: 'SUBTITLES',
+          isForcedNarrative: true,
+          isNoneTrack: false
+        };
+        const polish = {
+          trackId: 'T:2:1;1;pl;0;0;0;0;',
+          bcp47: 'pl',
+          displayName: 'polski',
+          rawTrackType: 'SUBTITLES',
+          isForcedNarrative: false,
+          isNoneTrack: false
+        };
+        const rawTracks = [off, polish];
+        let live = off;
+        const sets = [];
+        const api = {
+          videoId: '82779520',
+          textTracks: rawTracks,
+          getTimedTextTrackList: () => rawTracks,
+          getTimedTextTrack: () => live,
+          setTimedTextTrack: (track) => { sets.push(track.displayName); live = track; }
+        };
+        const blank = () => ({});
+        const rootFiber = blank();
+        let cursor = rootFiber;
+        for (let n = 0; n < 24; n += 1) {
+          const child = blank();
+          cursor.child = child;
+          cursor = child;
+        }
+        const apiFiber = blank();
+        apiFiber.memoizedProps = api;
+        cursor.sibling = apiFiber;
+        const stale = blank();
+        stale.stateNode = { state: { fallbackMode: false, uiState: 'ps' } };
+        apiFiber.sibling = stale;
+        let parent = rootFiber;
+        for (let n = 0; n < 3; n += 1) {
+          const next = blank();
+          parent.return = next;
+          parent = next;
+        }
+        parent.stateNode = { state: { fallbackMode: true, uiState: 'loading' } };
+        const later = blank();
+        later.stateNode = { state: { fallbackMode: false, uiState: 'ps' } };
+        parent.return = later;
+        document.querySelector('.nf-player-container').__reactFiber$ancestor = rootFiber;
+        window.__nfSets = sets;
+      })()`);
+      await page.addScriptTag({ content: bundle });
+      const result = await page.evaluate(`(() => {
+        const snapshotNode = document.getElementById('theater-everywhere-netflix-snapshot');
+        const snapshot = snapshotNode ? JSON.parse(snapshotNode.textContent) : null;
+        const request = (requestId, trackId) => {
+          let ack = null;
+          const onAck = (event) => { ack = JSON.parse(event.detail); };
+          window.addEventListener('theater-everywhere-netflix-caption-ack', onAck);
+          window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-caption', {
+            detail: JSON.stringify({ requestId, trackId })
+          }));
+          window.removeEventListener('theater-everywhere-netflix-caption-ack', onAck);
+          return ack;
+        };
+        const before = window.__nfSets.slice();
+        const language = request('te-nf-langparent1', 'T:2:1;1;pl;0;0;0;0;');
+        const afterLanguage = window.__nfSets.slice();
+        const off = request('te-nf-offparent01', null);
+        return {
+          captions: snapshot && snapshot.captions,
+          tracks: snapshot && snapshot.tracks.length,
+          renderer: document.querySelector('.player-timedtext') instanceof HTMLElement,
+          layoutLoading: document.querySelector('.PlayerControlsNeo__layout').classList.contains('PlayerControlsNeo__layout--loading'),
+          before,
+          language,
+          afterLanguage,
+          off,
+          applied: window.__nfSets.slice()
+        };
+      })()`) as {
+        captions: boolean;
+        tracks: number;
+        renderer: boolean;
+        layoutLoading: boolean;
+        before: string[];
+        language: { ok?: boolean } | null;
+        afterLanguage: string[];
+        off: { ok?: boolean } | null;
+        applied: string[];
+      };
+      assert.equal(result.renderer, true);
+      assert.equal(result.layoutLoading, false);
+      assert.equal(result.captions, false);
+      assert.equal(result.tracks, 0);
+      assert.equal(result.language?.ok, false);
+      assert.deepEqual(result.afterLanguage, result.before);
+      assert.equal(result.off?.ok, true);
+      assert.deepEqual(result.applied, ['wył.']);
+    } finally {
+      await browser.close();
+    }
+  });
 });

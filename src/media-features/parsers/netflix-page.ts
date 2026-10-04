@@ -168,10 +168,10 @@ export function netflixLiveTrackId(api: NetflixCaptionApi): string | null {
 }
 
 /**
- * A loading `.player-timedtext` node is not support. The public HTML5 fallback
- * mounts that node and then removes it when playback starts. fallbackMode true
- * is a reliable negative. Unknown loading state is also a negative: the node
- * alone must not acknowledge a language.
+ * fallbackMode true and an explicit loading state are negatives. Loading wins
+ * over a settled uiState or a layout that no longer has the loading class.
+ * Unknown loading is a negative too. A mounted renderer means the host may
+ * accept a logical track selection. It does not mean a cue was painted.
  */
 export function netflixHostCaptionsAvailable(input: {
   rendererMounted: boolean;
@@ -185,8 +185,9 @@ export function netflixHostCaptionsAvailable(input: {
 
 /**
  * A language is applied only when the same object reports that track id afterwards
- * and host captions are available. Returning from the setter is not enough.
- * Off is applied when the live track is the off track.
+ * and host captions are available. That match is a logical selection. It does
+ * not mean `.player-timedtext` painted a cue. Off is applied when the live
+ * track is the off track.
  */
 export function applyNetflixPlayerCaption(
   api: NetflixCaptionApi,
