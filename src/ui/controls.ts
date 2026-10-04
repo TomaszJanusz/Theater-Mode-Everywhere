@@ -1473,6 +1473,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
   // Cleans up custom controls
   function destroyCustomControls(): void {
+    ctx.actions.hideHelpOverlay();
     const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
     if (wrapper?._videoListenersCleanup) {
       wrapper._videoListenersCleanup();

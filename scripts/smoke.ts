@@ -357,6 +357,12 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await helpClose.waitFor();
   await page.keyboard.press('Escape');
   if (!await page.locator('.cc-btn').evaluate(button => button.matches(':focus'))) fail('Help did not restore its original toolbar control.');
+  await page.locator('.cc-btn').click();
+  await page.locator('.theater-cc-menu.visible button').first().focus();
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.keyboard.press('Escape');
+  if (!await page.locator('.cc-btn').evaluate(button => button.matches(':focus'))) fail('Help did not return a hidden caption menu item to its trigger.');
   await gear.press('Enter');
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
@@ -492,14 +498,56 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   }
   await switchButton.click();
   await page.waitForFunction(() => document.querySelector('#other-player')!.classList.contains('theater-everywhere-video-active'));
+  const assertHelpAfterRebuild = async () => {
+    if (await page.locator('.theater-help-overlay').count()) fail('Help remained mounted after rebuilding controls.');
+    await gear.focus();
+    await page.keyboard.press('Tab');
+    if (!await page.locator('.close-btn').evaluate(button => button.matches(':focus'))) fail('Detached help trapped Tab after a player rebuild.');
+    await gear.focus();
+    await page.keyboard.press('h');
+    await helpClose.waitFor();
+    await page.keyboard.press('Escape');
+    if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)
+        || !await gear.evaluate(button => button.matches(':focus'))) fail('Help did not reopen and close normally after a player rebuild.');
+  };
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
   await page.keyboard.press('Shift+T');
   await page.waitForFunction(() => document.querySelector('video#player')!.classList.contains('theater-everywhere-video-active'));
+  await assertHelpAfterRebuild();
   await waitForChrome(true, true, true);
   await page.evaluate(() => document.getElementById('other-player')!.remove());
   await page.keyboard.press('Escape');
   await controls.waitFor({ state: 'detached' });
   await page.keyboard.press('t');
   if (await page.locator('.switch-video-btn').count()) fail('Unavailable switching remained after returning to a single player.');
+
+  // Host-driven video replacement while help owns focus must clear the same state.
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.locator('video#player').evaluate(async (original: HTMLVideoElement) => {
+    const replacement = document.createElement('video');
+    replacement.id = 'player';
+    replacement.muted = true;
+    replacement.playsInline = true;
+    replacement.srcObject = original.srcObject;
+    original.replaceWith(replacement);
+    await replacement.play();
+  });
+  await page.waitForFunction(() => document.querySelector('video#player')!.classList.contains('theater-everywhere-video-active'));
+  await assertHelpAfterRebuild();
+  // Recover if a host removes just the overlay node without rebuilding controls.
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.locator('.theater-help-overlay').evaluate(overlay => overlay.remove());
+  await page.keyboard.press('Tab');
+  if (!await page.locator('.close-btn').evaluate(button => button.matches(':focus'))) fail('Host-removed help left a hidden Tab trap.');
+  await page.keyboard.press('h');
+  await helpClose.waitFor();
+  await page.keyboard.press('Escape');
+  if (!await theaterEntered(page)) fail('Disconnected help recovery exited theater.');
+  await page.evaluate(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.activeElement as HTMLElement | null)?.blur());
+  await page.mouse.move(640, 300);
 
   if (context) {
     // Actual extension storage, reload, and the settings page share the same preference.

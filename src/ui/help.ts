@@ -3,7 +3,7 @@ import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
   let returnFocus: HTMLElement | null = null;
-  let returnToSettings = false;
+  let returnTrigger: string | null = null;
 
   function toggleHelpOverlay(): void {
     const overlay = ctx.queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
@@ -15,12 +15,15 @@ export function createHelp(ctx: PlayerChromeContext) {
   }
 
   function showHelpOverlay(): void {
-    if (ctx.refs.helpOverlay) return;
+    if (ctx.refs.helpOverlay?.isConnected) return;
+    if (ctx.refs.helpOverlay) hideHelpOverlay();
 
     let active = document.activeElement;
     while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
     returnFocus = active instanceof HTMLElement ? active : null;
-    returnToSettings = Boolean(returnFocus?.closest('.theater-settings-menu, .player-settings-btn'));
+    returnTrigger = returnFocus?.closest('.theater-settings-menu, .player-settings-btn')
+      ? '.player-settings-btn'
+      : returnFocus?.closest('.theater-cc-menu') ? '.cc-btn' : null;
 
     ctx.actions.closeTheaterPopovers();
     ctx.actions.showToolbar();
@@ -156,15 +159,15 @@ export function createHelp(ctx: PlayerChromeContext) {
   }
 
   function hideHelpOverlay(): void {
-    if (!ctx.refs.helpOverlay) return;
-    ctx.refs.helpOverlay.remove();
+    if (!ctx.refs.helpOverlay && !ctx.ui().helpOpen) return;
+    ctx.refs.helpOverlay?.remove();
     ctx.refs.helpOverlay = null;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
-    const target = returnToSettings
-      ? ctx.queryPlayerUi<HTMLElement>('.player-settings-btn')
+    const target = returnTrigger
+      ? ctx.queryPlayerUi<HTMLElement>(returnTrigger)
       : returnFocus;
     returnFocus = null;
-    returnToSettings = false;
+    returnTrigger = null;
     if (target?.isConnected && target.getClientRects().length
         && !target.closest('[inert]') && getComputedStyle(target).visibility !== 'hidden') {
       target.focus();
