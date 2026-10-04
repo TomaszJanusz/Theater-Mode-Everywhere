@@ -2,6 +2,9 @@ import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchU
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
+import { queryPlayerUi } from '../ui/root';
+import { matchesShortcut } from '../ui/shortcuts';
+import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -263,6 +266,37 @@ export function installMainWorldRuntime(): void {
     return Boolean(video.querySelector('source[src]'));
   }
 
+  // Installed at document_start, before page handlers. The content world remains the command owner.
+  const claimedEntryKeys = new Set<string>();
+  function captureEntryShortcut(event: KeyboardEvent): void {
+    const identity = event.code || event.key;
+    if (event.type !== 'keydown') {
+      if (!claimedEntryKeys.has(identity)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.type === 'keyup') claimedEntryKeys.delete(identity);
+      return;
+    }
+    if (event.isComposing || event.composedPath().some(isEditableKeyboardTarget)
+        || document.querySelector('.te-dialog-overlay') || queryPlayerUi('.te-dialog-overlay')) return;
+    let config: { toggle?: unknown; fullscreen?: unknown };
+    try { config = JSON.parse(document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) || '{}'); }
+    catch { return; }
+    if (!config || !(typeof config.toggle === 'string' && matchesShortcut(event, config.toggle))
+        && !(typeof config.fullscreen === 'string' && matchesShortcut(event, config.fullscreen))) return;
+    const relay = new CustomEvent(ENTRY_SHORTCUT_EVENT, { cancelable: true, detail: JSON.stringify({
+      key: event.key, code: event.code, ctrlKey: event.ctrlKey, altKey: event.altKey,
+      shiftKey: event.shiftKey, metaKey: event.metaKey, repeat: event.repeat
+    }) });
+    window.dispatchEvent(relay);
+    if (!relay.defaultPrevented) return;
+    claimedEntryKeys.add(identity);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+  for (const type of ['keydown', 'keyup', 'keypress'] as const) window.addEventListener(type, captureEntryShortcut, true);
+  window.addEventListener('blur', () => claimedEntryKeys.clear());
+
   function looksLikeHostPlayButton(el: HTMLElement): boolean {
     if (el.id === 'theater-everywhere-ui' || el.closest('#theater-everywhere-ui')) return false;
     const className = el.className.toString();
@@ -309,6 +343,11 @@ export function installMainWorldRuntime(): void {
     const video = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (!(video instanceof HTMLVideoElement)) return;
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
+    // The content world owns help focus and native activation of its close button.
+    if (queryPlayerUi('.theater-help-overlay')) return;
+    // Settings buttons own native Space activation, including through the UI's shadow root.
+    if (event.composedPath().some(node => node instanceof Element
+        && node.matches('.theater-settings-menu, .player-settings-btn'))) return;
     const isSpace = event.key === ' ' || event.code === 'Space';
     if (!isSpace) return;
     event.preventDefault();

@@ -568,5 +568,76 @@
   },
   "madeInPoland": {
     "message": "폴란드 🇵🇱에서 <span class=\"heart\">❤</span>을 담아 제작"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "컨트롤 항상 표시"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "극장 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
+  },
+  "toggleControlsPin": {
+    "message": "컨트롤 표시 전환"
+  },
+  "controlsPinnedHud": {
+    "message": "컨트롤 항상 표시"
+  },
+  "controlsUnpinnedHud": {
+    "message": "컨트롤 자동 숨김"
+  },
+  "playerSettingsLabel": {
+    "message": "플레이어 설정"
+  },
+  "videoFitLabel": {
+    "message": "영상 맞춤"
+  },
+  "controlsVisibilityOn": {
+    "message": "켜짐"
+  },
+  "controlsVisibilityOff": {
+    "message": "꺼짐"
+  },
+  "extensionSettingsLabel": {
+    "message": "확장 프로그램 설정"
+  },
+  "shortcutUnassigned": {
+    "message": "할당되지 않음"
+  },
+  "shortcutExistingConflicts": {
+    "message": "일부 단축키가 여러 동작에 할당되어 있습니다. 강조된 단축키를 수정하거나 초기화하세요."
+  },
+  "shortcutConflictTitle": {
+    "message": "이미 할당된 단축키"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$은(는) $OWNERS$에 할당되어 있습니다. $TARGET$(으)로 이동할까요? 이전 동작에서는 이 단축키를 사용할 수 없게 됩니다.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "현재 할당 유지"
+  },
+  "shortcutReassign": {
+    "message": "단축키 이동"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape는 대화상자 닫기와 극장 모드 종료에 사용됩니다. 다른 단축키를 선택하세요."
+  },
+  "shortcutSaveError": {
+    "message": "단축키를 저장할 수 없습니다"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "단축키가 변경되지 않았습니다. 다시 시도하세요."
+  },
+  "cyclePictureLayout": {
+    "message": "영상 레이아웃 전환"
   }
 }

@@ -568,5 +568,76 @@
   },
   "madeInPoland": {
     "message": "Made with <span class=\"heart\">❤</span> in 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Always show controls"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle."
+  },
+  "toggleControlsPin": {
+    "message": "Toggle controls visibility"
+  },
+  "controlsPinnedHud": {
+    "message": "Controls always visible"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Controls auto-hide"
+  },
+  "playerSettingsLabel": {
+    "message": "Player settings"
+  },
+  "videoFitLabel": {
+    "message": "Video fit"
+  },
+  "controlsVisibilityOn": {
+    "message": "On"
+  },
+  "controlsVisibilityOff": {
+    "message": "Off"
+  },
+  "extensionSettingsLabel": {
+    "message": "Extension settings"
+  },
+  "shortcutUnassigned": {
+    "message": "Not assigned"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts."
+  },
+  "shortcutConflictTitle": {
+    "message": "Shortcut already assigned"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ is assigned to $OWNERS$. Move it to $TARGET$? The previous actions will no longer have this shortcut.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Keep current assignment"
+  },
+  "shortcutReassign": {
+    "message": "Move shortcut"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape is reserved for closing dialogs and exiting theater mode. Choose another shortcut for this action."
+  },
+  "shortcutSaveError": {
+    "message": "Shortcut could not be saved"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Your shortcuts were not changed. Please try again."
+  },
+  "cyclePictureLayout": {
+    "message": "Change picture layout"
   }
 }

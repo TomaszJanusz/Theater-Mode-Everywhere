@@ -2,6 +2,10 @@ import { defaultShortcuts, shortcutDisplayParts } from './shortcuts';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
+  let returnFocus: HTMLElement | null = null;
+  let returnTrigger: string | null = null;
+  let removalObserver: MutationObserver | null = null;
+
   function toggleHelpOverlay(): void {
     const overlay = ctx.queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
     if (overlay) {
@@ -12,14 +16,26 @@ export function createHelp(ctx: PlayerChromeContext) {
   }
 
   function showHelpOverlay(): void {
-    if (ctx.refs.helpOverlay) return;
+    if (ctx.refs.helpOverlay?.isConnected) return;
+    if (ctx.refs.helpOverlay) hideHelpOverlay(false);
 
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    returnFocus = active instanceof HTMLElement ? active : null;
+    returnTrigger = returnFocus?.closest('.theater-settings-menu, .player-settings-btn')
+      ? '.player-settings-btn'
+      : returnFocus?.closest('.theater-cc-menu') ? '.cc-btn' : null;
+
+    ctx.actions.closeTheaterPopovers();
     ctx.actions.showToolbar();
 
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;
 
     const overlay = document.createElement('div');
     overlay.className = 'theater-help-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', ctx.t('keyboardShortcutsTitle'));
     ctx.paintOverlay(overlay);
 
     overlay.addEventListener('click', (e) => {
@@ -47,7 +63,7 @@ export function createHelp(ctx: PlayerChromeContext) {
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
   `;
-    closeBtn.addEventListener('click', hideHelpOverlay);
+    closeBtn.addEventListener('click', () => hideHelpOverlay());
 
     header.appendChild(title);
     header.appendChild(closeBtn);
@@ -55,6 +71,9 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
+    const generalColumn = document.createElement('div');
+    const playbackColumn = document.createElement('div');
+    generalColumn.className = playbackColumn.className = 'theater-help-column';
 
     const groups = [
       {
@@ -65,9 +84,11 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
+          { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
           { label: ctx.t('toggleSubtitles'), key: shortcuts.toggleCaptions },
           { label: ctx.t('increaseSubtitleSize'), key: shortcuts.increaseCaptionSize },
           { label: ctx.t('decreaseSubtitleSize'), key: shortcuts.decreaseCaptionSize },
+          { label: ctx.t('toggleControlsPin'), key: shortcuts.toggleControlsPin },
           { label: ctx.t('showHideHelp'), key: shortcuts.showHelp }
         ]
       },
@@ -116,6 +137,7 @@ export function createHelp(ctx: PlayerChromeContext) {
         keyWrapper.dir = 'ltr';
 
         const keys = shortcutDisplayParts(item.key);
+        if (!keys.length) keyWrapper.textContent = ctx.t('shortcutUnassigned');
         keys.forEach((k, idx) => {
           if (idx > 0) {
             keyWrapper.appendChild(document.createTextNode(' + '));
@@ -130,8 +152,9 @@ export function createHelp(ctx: PlayerChromeContext) {
         groupEl.appendChild(row);
       });
 
-      grid.appendChild(groupEl);
+      (group === groups[0] ? generalColumn : playbackColumn).appendChild(groupEl);
     });
+    grid.append(generalColumn, playbackColumn);
 
     card.appendChild(grid);
     overlay.appendChild(card);
@@ -139,13 +162,34 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     ctx.refs.helpOverlay = overlay;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
+    // Host removals are not user dismissals: clear modal state without moving focus.
+    removalObserver = new MutationObserver(() => {
+      if (!overlay.isConnected) hideHelpOverlay(false);
+    });
+    removalObserver.observe(overlay.parentNode!, { childList: true });
+    const root = overlay.getRootNode();
+    if (root instanceof ShadowRoot && root.host.parentNode) {
+      removalObserver.observe(root.host.parentNode, { childList: true });
+    }
+    closeBtn.focus();
   }
 
-  function hideHelpOverlay(): void {
-    if (!ctx.refs.helpOverlay) return;
-    ctx.refs.helpOverlay.remove();
+  function hideHelpOverlay(restoreFocus = true): void {
+    if (!ctx.refs.helpOverlay && !ctx.ui().helpOpen) return;
+    removalObserver?.disconnect();
+    removalObserver = null;
+    ctx.refs.helpOverlay?.remove();
     ctx.refs.helpOverlay = null;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
+    const target = returnTrigger
+      ? ctx.queryPlayerUi<HTMLElement>(returnTrigger)
+      : returnFocus;
+    returnFocus = null;
+    returnTrigger = null;
+    if (restoreFocus && target?.isConnected && target.getClientRects().length
+        && !target.closest('[inert]') && getComputedStyle(target).visibility !== 'hidden') {
+      target.focus();
+    }
     ctx.actions.scheduleToolbarHide();
   }
 

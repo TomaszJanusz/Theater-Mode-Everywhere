@@ -568,5 +568,76 @@
   },
   "madeInPoland": {
     "message": "Зроблено з <span class=\"heart\">❤</span> в 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Завжди показувати елементи керування"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Елементи керування відтворенням і смуга прогресу залишаються видимими в режимі кінотеатру. Заголовок і курсор і далі ховаються під час бездіяльності."
+  },
+  "toggleControlsPin": {
+    "message": "Перемкнути видимість елементів керування"
+  },
+  "controlsPinnedHud": {
+    "message": "Елементи керування завжди видимі"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Елементи керування ховаються автоматично"
+  },
+  "playerSettingsLabel": {
+    "message": "Налаштування програвача"
+  },
+  "videoFitLabel": {
+    "message": "Розмір відео"
+  },
+  "controlsVisibilityOn": {
+    "message": "Увімк."
+  },
+  "controlsVisibilityOff": {
+    "message": "Вимк."
+  },
+  "extensionSettingsLabel": {
+    "message": "Налаштування розширення"
+  },
+  "shortcutUnassigned": {
+    "message": "Не призначено"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Деякі сполучення клавіш призначені кільком діям. Змініть або скиньте виділені сполучення."
+  },
+  "shortcutConflictTitle": {
+    "message": "Сполучення вже призначене"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ призначено для $OWNERS$. Перенести до $TARGET$? Попередні дії втратять це сполучення.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Зберегти призначення"
+  },
+  "shortcutReassign": {
+    "message": "Перенести сполучення"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape зарезервовано для закриття вікон і виходу з режиму кінотеатру. Виберіть інше сполучення."
+  },
+  "shortcutSaveError": {
+    "message": "Не вдалося зберегти сполучення"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Сполучення клавіш не змінено. Спробуйте ще раз."
+  },
+  "cyclePictureLayout": {
+    "message": "Змінити розташування зображення"
   }
 }

@@ -82,6 +82,7 @@ import {
 } from './appearance';
 import { applyUiDirection, t } from './messages';
 import { defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
@@ -99,6 +100,8 @@ import {
   type BoostedVideoElement
 } from './runtime-context';
 import { createToolbar } from './toolbar';
+import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
+import { closePlayerSettings } from './player-settings';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -252,8 +255,14 @@ function executeCommand(command: PlayerCommand): void {
     case 'CYCLE_VIDEO':
       cycleTheaterVideo(command.direction);
       break;
+    case 'CYCLE_LAYOUT':
+      cyclePictureLayout();
+      break;
     case 'CYCLE_FIT':
       cycleVideoFit();
+      break;
+    case 'TOGGLE_CONTROLS_PIN':
+      toggleControlsPin();
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -553,6 +562,44 @@ function persistVideoFitMode(mode: VideoFitMode): void {
   }
 }
 
+function applyKeepControlsVisible(value: unknown): void {
+  const next = resolveKeepControlsVisible(value);
+  if (next === ui().keepControlsVisible) return;
+  uiStore.dispatch({ type: 'SET_KEEP_CONTROLS_VISIBLE', value: next });
+  if (next) toolbar.refreshToolbarVisibility();
+  else showToolbar();
+}
+
+function toggleControlsPin(): void {
+  const next = !ui().keepControlsVisible;
+  applyKeepControlsVisible(next);
+  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_VISIBILITY_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: next }).catch((error) => {
+        console.error('[Theater Everywhere] Could not save controls visibility:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save controls visibility:', error);
+  }
+}
+
+function cyclePictureLayout(): void {
+  const next: PictureAlign = ui().pictureAlign === 'center' ? 'top' : 'center';
+  applyPictureAlign(next);
+  triggerStatusIndicator(t(next === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_FIT_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: next }).catch(error => {
+        console.error('[Theater Everywhere] Could not save picture layout:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save picture layout:', error);
+  }
+}
+
 function cycleVideoFit(): void {
   const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
   const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
@@ -691,6 +738,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
+      KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
       ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
@@ -712,6 +760,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
     });
+    applyKeepControlsVisible(data[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]);
     applyTheaterVideoFit(ui().videoFit);
     applyCaptionStyleToTheater(ui().captionStyle);
     refs.captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
@@ -880,8 +929,27 @@ function initialize(): void {
 
   session.resetRuntimeScope();
 
+  const publishEntryShortcuts = () => {
+    const config = JSON.stringify({ toggle: ui().shortcuts.toggle, fullscreen: ui().shortcuts.toggleFullscreen });
+    if (document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) !== config) {
+      document.documentElement.setAttribute(ENTRY_SHORTCUT_ATTRIBUTE, config);
+    }
+  };
+  session.runtimeScope.add(uiStore.subscribe(publishEntryShortcuts));
+  publishEntryShortcuts();
+
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
@@ -895,11 +963,64 @@ function initialize(): void {
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
+    // Help owns keyboard focus; do not activate toolbar controls behind it.
+    if (ui().helpOpen) {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
+        return;
+      }
+      if ((event.key === ' ' || event.key === 'Enter')
+          && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+        if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
+
+    // Let native settings buttons activate with Space/Enter instead of toggling playback.
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+
+    if (event.key === 'Escape' || event.key === 'Esc') {
+      const controls = queryPlayerUi('.theater-controls-wrapper');
+      if (controls && closePlayerSettings(controls, true)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        updateCaptionDock();
+        return;
+      }
+    }
+
+    if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+      return;
+    }
+
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
+      return;
+    }
+
+    if (session.element && matchesShortcut(event, shortcuts.cycleLayout)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_LAYOUT' });
       return;
     }
 
@@ -947,12 +1068,12 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      toggleTheaterMode();
+      if (!event.repeat) toggleTheaterMode();
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      claimFullscreenShortcut();
+      if (!event.repeat) claimFullscreenShortcut();
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
       if (ui().helpOpen) {
@@ -1000,13 +1121,47 @@ function initialize(): void {
     }
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
+  session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
+    if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
+    try {
+      const data = JSON.parse((event as CustomEvent<string>).detail);
+      if (!data || typeof data.key !== 'string' || typeof data.code !== 'string'
+          || !['ctrlKey', 'altKey', 'shiftKey', 'metaKey', 'repeat'].every(key => typeof data[key] === 'boolean')) return;
+      const key = new KeyboardEvent('keydown', { ...data, cancelable: true });
+      if (!matchesShortcut(key, ui().shortcuts.toggle) && !matchesShortcut(key, ui().shortcuts.toggleFullscreen)) return;
+      listeners.keydown?.(key);
+      if (key.defaultPrevented) event.preventDefault();
+    } catch { /* Ignore malformed page events. */ }
+  });
   listeners.playbackIntent = (event: Event) => {
     const action = (event as CustomEvent<{ action?: 'play' | 'pause' }>).detail?.action;
     if (action === 'play' || action === 'pause') triggerPlaybackIndicator(action);
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
+    if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
+        && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+      if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     const isEditable = activeEl && (
       (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
       activeEl.tagName === 'TEXTAREA' ||
@@ -1167,6 +1322,7 @@ function destroy(): void {
   }
 
   session.resetRuntimeScope();
+  document.documentElement.removeAttribute(ENTRY_SHORTCUT_ATTRIBUTE);
   listeners.keydown = null;
   listeners.keyup = null;
   listeners.mousemove = null;
@@ -1185,29 +1341,11 @@ function fullscreenVideo(): HTMLVideoElement | null {
   return findBestVideo();
 }
 
-function enterElementFullscreen(video: HTMLVideoElement): void {
-  const wasPlaying = !video.paused;
-  const resume = () => {
-    if (wasPlaying && video.paused) video.play().catch(() => {});
-  };
-  video.requestFullscreen()
-    .then(() => {
-      setTimeout(resume, 150);
-    })
-    .catch(() => {
-      const parent = video.parentElement;
-      if (!parent || parent === document.body || parent === document.documentElement) return;
-      parent.requestFullscreen()
-        .then(() => {
-          setTimeout(resume, 150);
-        })
-        .catch(() => {});
-    });
-}
-
 function claimFullscreenShortcut(): void {
   if (session.hasUi) {
-    refs.currentToggleFullscreen?.();
+    if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
+    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
     return;
   }
   if (document.fullscreenElement) {
@@ -1216,7 +1354,8 @@ function claimFullscreenShortcut(): void {
   }
   const video = fullscreenVideo();
   if (video) {
-    enterElementFullscreen(video);
+    enterTheaterMode(video);
+    refs.currentToggleFullscreen?.();
     return;
   }
   frames.postToAllChildren('FRAME_FULLSCREEN', createSessionId(), {}, createSessionId());
@@ -1655,7 +1794,11 @@ export function bootstrapPlayerRuntime(): void {
         void checkBlacklistAndInit();
       }
 
-      if (changes.shortcuts?.newValue) {
+      if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
+        applyKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
+      }
+
+      if (changes.shortcuts) {
         uiStore.dispatch({ type: 'SET_SHORTCUTS', value: withShortcutDefaults(changes.shortcuts.newValue || {}) });
       }
       if (changes[ACCENT_COLOR_STORAGE_KEY]) {

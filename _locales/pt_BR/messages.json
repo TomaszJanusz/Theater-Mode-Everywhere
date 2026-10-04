@@ -568,5 +568,76 @@
   },
   "madeInPoland": {
     "message": "Feito com <span class=\"heart\">❤</span> na 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Sempre mostrar os controles"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo cinema. O título e o cursor continuam se ocultando durante a inatividade."
+  },
+  "toggleControlsPin": {
+    "message": "Alternar visibilidade dos controles"
+  },
+  "controlsPinnedHud": {
+    "message": "Controles sempre visíveis"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Os controles se ocultam automaticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Configurações do player"
+  },
+  "videoFitLabel": {
+    "message": "Ajuste do vídeo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sim"
+  },
+  "controlsVisibilityOff": {
+    "message": "Não"
+  },
+  "extensionSettingsLabel": {
+    "message": "Configurações da extensão"
+  },
+  "shortcutUnassigned": {
+    "message": "Não atribuído"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Alguns atalhos estão atribuídos a várias ações. Edite ou redefina os atalhos destacados."
+  },
+  "shortcutConflictTitle": {
+    "message": "Atalho já atribuído"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ está atribuído a $OWNERS$. Mover para $TARGET$? As ações anteriores perderão este atalho.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Manter atribuição"
+  },
+  "shortcutReassign": {
+    "message": "Mover atalho"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape é reservado para fechar diálogos e sair do modo cinema. Escolha outro atalho."
+  },
+  "shortcutSaveError": {
+    "message": "Não foi possível salvar o atalho"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Seus atalhos não foram alterados. Tente novamente."
+  },
+  "cyclePictureLayout": {
+    "message": "Alterar disposição da imagem"
   }
 }
