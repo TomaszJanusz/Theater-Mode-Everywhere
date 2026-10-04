@@ -303,6 +303,9 @@ export function installMainWorldRuntime(): void {
     const video = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (!(video instanceof HTMLVideoElement)) return;
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
+    // Settings buttons own native Space activation, including through the UI's shadow root.
+    if (event.composedPath().some(node => node instanceof Element
+        && node.matches('.theater-settings-menu, .player-settings-btn'))) return;
     const isSpace = event.key === ' ' || event.code === 'Space';
     if (!isSpace) return;
     event.preventDefault();

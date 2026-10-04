@@ -1043,8 +1043,70 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 /* Subtitles CC active state styling */
 .theater-control-btn.cc-btn.active,
 .theater-control-btn.pip-btn.active,
-.theater-control-btn.controls-pin-btn.active {
+.theater-control-btn.controls-visibility-toggle.active {
   color: var(--accent-color, #6366f1) !important;
+}
+
+/* Labeled secondary actions; primary playback controls stay on the bar. */
+.theater-settings-menu {
+  position: absolute !important;
+  inset-inline-end: 0 !important;
+  bottom: calc(100% + 10px) !important;
+  display: none !important;
+  flex-direction: column !important;
+  width: 340px !important;
+  max-width: calc(100vw - 48px) !important;
+  max-height: calc(100vh - 110px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  box-sizing: border-box !important;
+  background: rgba(20, 20, 20, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  z-index: 2000000000 !important;
+  pointer-events: auto !important;
+}
+
+.theater-settings-menu.visible { display: flex !important; }
+
+.theater-settings-row {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 40px !important;
+  flex: 0 0 auto !important;
+  gap: 10px !important;
+  padding: 8px !important;
+  justify-content: flex-start !important;
+  text-align: start !important;
+  color: #f8fafc !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+.theater-settings-row svg { flex: 0 0 18px !important; }
+.theater-settings-label { flex: 1 1 auto !important; min-width: 0 !important; overflow-wrap: anywhere !important; }
+.theater-settings-detail {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.theater-settings-detail kbd {
+  font-family: inherit !important;
+  font-size: 11px !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  overflow-wrap: anywhere !important;
+  white-space: nowrap !important;
+}
+.theater-settings-row:focus-visible,
+.player-settings-btn:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: -2px !important;
 }
 
 /* Subtitles CC popover menu */

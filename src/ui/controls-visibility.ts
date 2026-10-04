@@ -14,7 +14,7 @@ export type ChromeActivity = {
   helpOpen: boolean;
 };
 
-/** The pin holds the playback bar; keyboard focus still holds all player chrome. */
+/** Always-visible controls hold the playback bar; keyboard focus holds all player chrome. */
 export function resolveChromeVisibility(activity: ChromeActivity) {
   const interaction = activity.controlsHovered || activity.scrubberDragging;
   const accessibleChrome = activity.keyboardFocused || activity.headerActive || activity.helpOpen;
@@ -26,4 +26,4 @@ export function resolveChromeVisibility(activity: ChromeActivity) {
   };
 }
 
-export const CONTROLS_PIN_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3 21 8l-4 1-3 5 1 3-2 2-8-8 2-2 3 1 5-3Z"/><path d="m9 15-6 6"/></svg>`;
+export const CONTROLS_VISIBILITY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15h18"/><path d="M7 17.5h4m5 0h1"/></svg>`;

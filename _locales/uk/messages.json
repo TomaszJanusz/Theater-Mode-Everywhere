@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Увімкнути або вимкнути субтитри"
   },
-  "increaseSubtitleSize": { "message": "Збільшити розмір субтитрів" },
-  "decreaseSubtitleSize": { "message": "Зменшити розмір субтитрів" },
+  "increaseSubtitleSize": {
+    "message": "Збільшити розмір субтитрів"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Зменшити розмір субтитрів"
+  },
   "subtitlesTooltip": {
     "message": "Субтитри <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Елементи керування відтворенням і смуга прогресу залишаються видимими в режимі кінотеатру. Заголовок і курсор і далі ховаються під час бездіяльності."
   },
   "toggleControlsPin": {
-    "message": "Закріпити/Відкріпити елементи керування"
-  },
-  "pinControlsTooltip": {
-    "message": "Закріпити елементи керування <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Відкріпити елементи керування <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Перемкнути видимість елементів керування"
   },
   "controlsPinnedHud": {
-    "message": "Елементи керування закріплено"
+    "message": "Елементи керування завжди видимі"
   },
   "controlsUnpinnedHud": {
     "message": "Елементи керування ховаються автоматично"
+  },
+  "playerSettingsLabel": {
+    "message": "Налаштування програвача"
+  },
+  "videoFitLabel": {
+    "message": "Розмір відео"
+  },
+  "controlsVisibilityOn": {
+    "message": "Увімк."
+  },
+  "controlsVisibilityOff": {
+    "message": "Вимк."
   }
 }

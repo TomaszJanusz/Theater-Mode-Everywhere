@@ -1,0 +1,82 @@
+import type { DisposableScope } from '../core/disposable-scope';
+import type { PlayerChromeContext } from './runtime-context';
+
+/** Close the nonmodal settings panel, optionally returning keyboard focus to its trigger. */
+export function closePlayerSettings(root: ParentNode, restoreFocus = false): boolean {
+  const panel = root.querySelector<HTMLElement>('.theater-settings-menu.visible');
+  if (!panel) return false;
+  const trigger = root.querySelector<HTMLButtonElement>('.player-settings-btn');
+  const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
+  panel.classList.remove('visible');
+  trigger?.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) trigger?.focus();
+  else if (active instanceof HTMLElement && panel.contains(active)) active.blur();
+  return true;
+}
+
+export function createPlayerSettings(ctx: PlayerChromeContext, scope: DisposableScope) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'theater-control-btn player-settings-btn';
+  button.setAttribute('aria-label', ctx.t('playerSettingsLabel'));
+  button.setAttribute('aria-haspopup', 'dialog');
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-controls', 'theater-player-settings');
+  ctx.actions.setIcon(button, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.5 3-2 1.2-2.8-1L1.2 10.5l2.3 2v2.3l-2.3 2 2.5 4.3 2.8-1 2 1.2.5 3h6l.5-3 2-1.2 2.8 1 2.5-4.3-2.3-2v-2.3l2.3-2-2.5-4.3-2.8 1-2-1.2L15 3Z" transform="translate(2 0) scale(.83)"/><circle cx="12" cy="12" r="3"/></svg>`);
+
+  const panel = document.createElement('div');
+  panel.id = 'theater-player-settings';
+  panel.className = 'theater-settings-menu';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', ctx.t('playerSettingsLabel'));
+  ctx.paintOverlay(panel);
+
+  const close = (restoreFocus = false) => {
+    const closed = closePlayerSettings(panel.getRootNode() as ParentNode, restoreFocus);
+    if (closed) ctx.actions.updateCaptionDock();
+    return closed;
+  };
+  button.addEventListener('click', (event) => {
+    if (close()) return;
+    ctx.actions.closeTheaterPopovers();
+    panel.classList.add('visible');
+    button.setAttribute('aria-expanded', 'true');
+    if (event.detail === 0) panel.querySelector<HTMLButtonElement>('button')?.focus();
+    else button.blur();
+    ctx.actions.showToolbar();
+    ctx.actions.updateCaptionDock();
+  });
+  scope.listen(panel, 'focusout', (event: FocusEvent) => {
+    const next = (event as FocusEvent).relatedTarget;
+    if (next instanceof Node && next !== button && !panel.contains(next)) close();
+  });
+
+  function addRow(row: HTMLButtonElement, label: string) {
+    row.type = 'button';
+    row.classList.add('theater-settings-row');
+    row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.className = 'theater-settings-label';
+    text.textContent = label;
+    const detail = document.createElement('span');
+    detail.className = 'theater-settings-detail';
+    row.append(text, detail);
+    panel.append(row);
+    return {
+      update(shortcut: string, value?: string) {
+        detail.replaceChildren();
+        if (value) {
+          const state = document.createElement('span');
+          state.textContent = value;
+          detail.append(state);
+        }
+        const key = document.createElement('kbd');
+        key.dir = 'ltr';
+        key.textContent = shortcut;
+        detail.append(key);
+        row.setAttribute('aria-keyshortcuts', shortcut);
+      }
+    };
+  }
+  return { button, panel, close, addRow };
+}

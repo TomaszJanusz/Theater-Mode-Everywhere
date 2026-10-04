@@ -12,6 +12,7 @@ import {
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
+import { closePlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -28,6 +29,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   function closeTheaterPopovers(): void {
+    const controls = ctx.queryPlayerUi('.theater-controls-wrapper');
+    if (controls) closePlayerSettings(controls);
     ctx.queryPlayerUi('.theater-cc-menu')?.classList.remove('visible');
     for (const el of ctx.queryPlayerUiAll<HTMLElement>(
       '.theater-volume-container button, .theater-volume-container input, .theater-speed-container button, .theater-speed-container input'
@@ -113,6 +116,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     for (const selector of [
       '.theater-scrubber-tooltip.visible',
       '.theater-cc-menu.visible',
+      '.theater-settings-menu.visible',
       '.theater-button-tooltip.visible',
       '.theater-volume-container:hover .theater-volume-panel',
       '.theater-speed-container:hover .theater-speed-panel',

@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "자막 켜기/끄기"
   },
-  "increaseSubtitleSize": { "message": "자막 크기 키우기" },
-  "decreaseSubtitleSize": { "message": "자막 크기 줄이기" },
+  "increaseSubtitleSize": {
+    "message": "자막 크기 키우기"
+  },
+  "decreaseSubtitleSize": {
+    "message": "자막 크기 줄이기"
+  },
   "subtitlesTooltip": {
     "message": "자막 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "극장 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
   },
   "toggleControlsPin": {
-    "message": "컨트롤 고정/해제"
-  },
-  "pinControlsTooltip": {
-    "message": "컨트롤 고정 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "컨트롤 고정 해제 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "컨트롤 표시 전환"
   },
   "controlsPinnedHud": {
-    "message": "컨트롤 고정됨"
+    "message": "컨트롤 항상 표시"
   },
   "controlsUnpinnedHud": {
     "message": "컨트롤 자동 숨김"
+  },
+  "playerSettingsLabel": {
+    "message": "플레이어 설정"
+  },
+  "videoFitLabel": {
+    "message": "영상 맞춤"
+  },
+  "controlsVisibilityOn": {
+    "message": "켜짐"
+  },
+  "controlsVisibilityOff": {
+    "message": "꺼짐"
   }
 }

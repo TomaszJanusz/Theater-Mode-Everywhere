@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Untertitel umschalten"
   },
-  "increaseSubtitleSize": { "message": "Untertitel vergrößern" },
-  "decreaseSubtitleSize": { "message": "Untertitel verkleinern" },
+  "increaseSubtitleSize": {
+    "message": "Untertitel vergrößern"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Untertitel verkleinern"
+  },
   "subtitlesTooltip": {
     "message": "Untertitel <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Wiedergabesteuerung und Fortschrittsbalken im Kinomodus sichtbar halten. Titel und Mauszeiger werden bei Inaktivität weiterhin ausgeblendet."
   },
   "toggleControlsPin": {
-    "message": "Steuerelemente anheften/lösen"
-  },
-  "pinControlsTooltip": {
-    "message": "Steuerelemente anheften <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Steuerelemente lösen <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Sichtbarkeit der Steuerelemente umschalten"
   },
   "controlsPinnedHud": {
-    "message": "Steuerelemente angeheftet"
+    "message": "Steuerelemente immer sichtbar"
   },
   "controlsUnpinnedHud": {
     "message": "Steuerelemente werden automatisch ausgeblendet"
+  },
+  "playerSettingsLabel": {
+    "message": "Player-Einstellungen"
+  },
+  "videoFitLabel": {
+    "message": "Bildanpassung"
+  },
+  "controlsVisibilityOn": {
+    "message": "Ein"
+  },
+  "controlsVisibilityOff": {
+    "message": "Aus"
   }
 }

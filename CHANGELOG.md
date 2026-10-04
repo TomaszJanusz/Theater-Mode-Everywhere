@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Keep the playback controls and progress bar visible in theater mode using the pin button, the configurable Shift+H shortcut, or Settings → Features → Always show controls. The preference is remembered across videos and tabs; the title and cursor still hide when idle.
+- Keep the playback controls and progress bar visible in theater mode using Player settings → Always show controls, the configurable Shift+H shortcut, or Settings → Features → Always show controls. The preference is remembered across videos and tabs; the title and cursor still hide when idle.
 
 - Added a Layout setting in Appearance: Centered or Raised. Raised pins a widescreen picture to the top of a taller screen (16:10, 4:3) so the spare black sits below for captions and controls. Fill and Stretch stay centered, and the saved Raised choice returns when Video Fit is set back to Fit.
 - Raised captions sit in that black band. One or two lines stay vertically centered in a short 16:10 letterbox. Three or more lines stick to the bottom of the screen. A deeper band still centers a short block, never more than 48px below the picture. Up to three lines show when the band is tall enough.
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Group video fit, player switching, controls visibility and keyboard help in a labeled player settings panel. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Controls visibility uses a player-with-bottom-bar symbol.
 - Settings Appearance is now a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
 
 ### Fixed

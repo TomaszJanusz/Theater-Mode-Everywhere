@@ -94,7 +94,8 @@ import {
   type BoostedVideoElement
 } from './runtime-context';
 import { createToolbar } from './toolbar';
-import { CONTROLS_PIN_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
+import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
+import { closePlayerSettings } from './player-settings';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -558,7 +559,7 @@ function applyKeepControlsVisible(value: unknown): void {
 function toggleControlsPin(): void {
   const next = !ui().keepControlsVisible;
   applyKeepControlsVisible(next);
-  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_PIN_ICON);
+  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_VISIBILITY_ICON);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
       void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: next }).catch((error) => {
@@ -914,6 +915,25 @@ function initialize(): void {
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
+    // Let native settings buttons activate with Space/Enter instead of toggling playback.
+    if (activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+
+    if (event.key === 'Escape' || event.key === 'Esc') {
+      const controls = queryPlayerUi('.theater-controls-wrapper');
+      if (controls && closePlayerSettings(controls, true)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        updateCaptionDock();
+        return;
+      }
+    }
+
     if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
       event.preventDefault();
       event.stopPropagation();
@@ -1034,6 +1054,12 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
     const activeEl = getActiveElementDeep() as HTMLElement | null;
+    if (activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     const isEditable = activeEl && (
       (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
       activeEl.tagName === 'TEXTAREA' ||

@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Ativar ou desativar legendas"
   },
-  "increaseSubtitleSize": { "message": "Aumentar tamanho das legendas" },
-  "decreaseSubtitleSize": { "message": "Diminuir tamanho das legendas" },
+  "increaseSubtitleSize": {
+    "message": "Aumentar tamanho das legendas"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Diminuir tamanho das legendas"
+  },
   "subtitlesTooltip": {
     "message": "Legendas <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo cinema. O título e o cursor continuam se ocultando durante a inatividade."
   },
   "toggleControlsPin": {
-    "message": "Fixar/Desafixar controles"
-  },
-  "pinControlsTooltip": {
-    "message": "Fixar controles <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Desafixar controles <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Alternar visibilidade dos controles"
   },
   "controlsPinnedHud": {
-    "message": "Controles fixados"
+    "message": "Controles sempre visíveis"
   },
   "controlsUnpinnedHud": {
     "message": "Os controles se ocultam automaticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Configurações do player"
+  },
+  "videoFitLabel": {
+    "message": "Ajuste do vídeo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sim"
+  },
+  "controlsVisibilityOff": {
+    "message": "Não"
   }
 }

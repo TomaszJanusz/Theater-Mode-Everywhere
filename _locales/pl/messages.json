@@ -83,13 +83,13 @@
     "message": "Na środku"
   },
   "pictureAlignCenterDescription": {
-    "message": "Obraz zostaje na środku ekranu. Najlepsze\u00a0dla\u00a0ekranów\u00a016:9."
+    "message": "Obraz zostaje na środku ekranu. Najlepsze dla ekranów 16:9."
   },
   "pictureAlignTop": {
     "message": "U góry"
   },
   "pictureAlignTopDescription": {
-    "message": "Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów\u00a016:10 i\u00a04:3."
+    "message": "Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów 16:10 i 4:3."
   },
   "accentColorLabel": {
     "message": "Kolor akcentu"
@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Włącz/wyłącz napisy"
   },
-  "increaseSubtitleSize": { "message": "Powiększ napisy" },
-  "decreaseSubtitleSize": { "message": "Zmniejsz napisy" },
+  "increaseSubtitleSize": {
+    "message": "Powiększ napisy"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Zmniejsz napisy"
+  },
   "subtitlesTooltip": {
     "message": "Napisy <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Zachowaj widoczność kontrolek odtwarzania i paska postępu w trybie kinowym. Tytuł i kursor nadal chowają się przy bezczynności."
   },
   "toggleControlsPin": {
-    "message": "Przypnij/Odepnij kontrolki"
-  },
-  "pinControlsTooltip": {
-    "message": "Przypnij kontrolki <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Odepnij kontrolki <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Przełącz widoczność kontrolek"
   },
   "controlsPinnedHud": {
-    "message": "Kontrolki przypięte"
+    "message": "Kontrolki zawsze widoczne"
   },
   "controlsUnpinnedHud": {
     "message": "Kontrolki chowają się automatycznie"
+  },
+  "playerSettingsLabel": {
+    "message": "Ustawienia odtwarzacza"
+  },
+  "videoFitLabel": {
+    "message": "Dopasowanie obrazu"
+  },
+  "controlsVisibilityOn": {
+    "message": "Wł."
+  },
+  "controlsVisibilityOff": {
+    "message": "Wył."
   }
 }

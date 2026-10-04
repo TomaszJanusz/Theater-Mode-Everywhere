@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Включить или выключить субтитры"
   },
-  "increaseSubtitleSize": { "message": "Увеличить размер субтитров" },
-  "decreaseSubtitleSize": { "message": "Уменьшить размер субтитров" },
+  "increaseSubtitleSize": {
+    "message": "Увеличить размер субтитров"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Уменьшить размер субтитров"
+  },
   "subtitlesTooltip": {
     "message": "Субтитры <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Элементы управления воспроизведением и шкала прогресса остаются видимыми в режиме кинотеатра. Заголовок и курсор по-прежнему скрываются при бездействии."
   },
   "toggleControlsPin": {
-    "message": "Закрепить/Открепить элементы управления"
-  },
-  "pinControlsTooltip": {
-    "message": "Закрепить элементы управления <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Открепить элементы управления <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Переключить видимость элементов управления"
   },
   "controlsPinnedHud": {
-    "message": "Элементы управления закреплены"
+    "message": "Элементы управления всегда видны"
   },
   "controlsUnpinnedHud": {
     "message": "Элементы управления скрываются автоматически"
+  },
+  "playerSettingsLabel": {
+    "message": "Настройки проигрывателя"
+  },
+  "videoFitLabel": {
+    "message": "Размер видео"
+  },
+  "controlsVisibilityOn": {
+    "message": "Вкл."
+  },
+  "controlsVisibilityOff": {
+    "message": "Выкл."
   }
 }

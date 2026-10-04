@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Activar o desactivar subtítulos"
   },
-  "increaseSubtitleSize": { "message": "Aumentar tamaño de subtítulos" },
-  "decreaseSubtitleSize": { "message": "Reducir tamaño de subtítulos" },
+  "increaseSubtitleSize": {
+    "message": "Aumentar tamaño de subtítulos"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Reducir tamaño de subtítulos"
+  },
   "subtitlesTooltip": {
     "message": "Subtítulos <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
   },
   "toggleControlsPin": {
-    "message": "Fijar/Soltar controles"
-  },
-  "pinControlsTooltip": {
-    "message": "Fijar controles <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "Soltar controles <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "Alternar visibilidad de los controles"
   },
   "controlsPinnedHud": {
-    "message": "Controles fijados"
+    "message": "Controles siempre visibles"
   },
   "controlsUnpinnedHud": {
     "message": "Los controles se ocultan automáticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Ajustes del reproductor"
+  },
+  "videoFitLabel": {
+    "message": "Ajuste del vídeo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sí"
+  },
+  "controlsVisibilityOff": {
+    "message": "No"
   }
 }

@@ -14,6 +14,7 @@ export function createHelp(ctx: PlayerChromeContext) {
   function showHelpOverlay(): void {
     if (ctx.refs.helpOverlay) return;
 
+    ctx.actions.closeTheaterPopovers();
     ctx.actions.showToolbar();
 
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;

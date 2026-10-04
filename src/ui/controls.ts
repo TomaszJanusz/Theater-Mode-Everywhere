@@ -18,7 +18,8 @@ import {
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
-import { CONTROLS_PIN_ICON } from './controls-visibility';
+import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
+import { createPlayerSettings } from './player-settings';
 import type { BoostedVideoElement, PlayerChromeContext } from './runtime-context';
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
@@ -548,6 +549,8 @@ export function createControls(ctx: PlayerChromeContext) {
     // Right Controls Section
     const rightSec = document.createElement('div');
     rightSec.className = 'theater-controls-right';
+    const settings = createPlayerSettings(ctx, controlsScope);
+    bindCustomTooltip(settings.button, () => t('playerSettingsLabel'));
 
     // Playback Speed Controls
     const speedContainer = document.createElement('div');
@@ -815,6 +818,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
     ccBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      settings.close();
       if (!ccMenu.classList.contains('visible')) {
         mediaFeatures.renderCcMenu();
         ccMenu.classList.add('visible');
@@ -832,6 +836,8 @@ export function createControls(ctx: PlayerChromeContext) {
       const inCc = eventPathIncludes(e, ccMenu) || eventPathIncludes(e, ccBtn);
       const inVolume = eventPathMatches(e, '.theater-volume-container');
       const inSpeed = eventPathMatches(e, '.theater-speed-container');
+      const inSettings = eventPathIncludes(e, settings.panel) || eventPathIncludes(e, settings.button);
+      if (!inSettings) settings.close();
       if (!inCc) ccMenu.classList.remove('visible');
       if (!inVolume) {
         volumeBtn.blur();
@@ -858,7 +864,6 @@ export function createControls(ctx: PlayerChromeContext) {
 
     const fitBtn = document.createElement('button');
     fitBtn.className = 'theater-control-btn video-fit-btn';
-    bindCustomTooltip(fitBtn, () => t('videoFitTooltip', ui().shortcuts.cycleFit));
     const updateFitButtonIcon = () => {
       setIcon(fitBtn, `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -875,14 +880,18 @@ export function createControls(ctx: PlayerChromeContext) {
       e.stopPropagation();
       executeCommand({ type: 'CYCLE_FIT' });
     });
-    rightSec.appendChild(fitBtn);
+    const fitRow = settings.addRow(fitBtn, t('videoFitLabel'));
+    const updateFitRow = () => fitRow.update(ui().shortcuts.cycleFit, t(
+      ui().videoFit === 'cover' ? 'videoFitCover' : ui().videoFit === 'fill' ? 'videoFitFill' : 'videoFitContain'
+    ));
+    updateFitRow();
+    controlsScope.add(ctx.uiStore.subscribe(updateFitRow));
 
     // Switch Video Button (Only if there are multiple real video players on the page)
     const videosOnPage = selectSwitchableVideos(findAllVideosDeep(document), video);
     if (videosOnPage.length > 1) {
       const switchVideoBtn = document.createElement('button');
       switchVideoBtn.className = 'theater-control-btn switch-video-btn';
-      bindCustomTooltip(switchVideoBtn, () => t('switchVideoTooltip', ui().shortcuts.cycle));
       setIcon(switchVideoBtn, `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
@@ -890,40 +899,43 @@ export function createControls(ctx: PlayerChromeContext) {
       `);
       switchVideoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        settings.close();
         executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
       });
-      rightSec.appendChild(switchVideoBtn);
+      const switchRow = settings.addRow(switchVideoBtn, t('cycleSwitchVideo'));
+      const updateSwitchRow = () => switchRow.update(ui().shortcuts.cycle);
+      updateSwitchRow();
+      controlsScope.add(ctx.uiStore.subscribe(updateSwitchRow));
     }
 
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
 
+    rightSec.append(settings.button, settings.panel);
+
     const pinBtn = document.createElement('button');
     pinBtn.type = 'button';
-    pinBtn.className = 'theater-control-btn controls-pin-btn';
-    setIcon(pinBtn, CONTROLS_PIN_ICON);
+    pinBtn.className = 'theater-control-btn controls-visibility-toggle';
+    setIcon(pinBtn, CONTROLS_VISIBILITY_ICON);
+    const pinRow = settings.addRow(pinBtn, t('keepControlsVisibleTitle'));
     const updatePinButton = () => {
       const pinned = ui().keepControlsVisible;
       pinBtn.classList.toggle('active', pinned);
       pinBtn.setAttribute('aria-pressed', String(pinned));
       pinBtn.setAttribute('aria-label', t('keepControlsVisibleTitle'));
       pinBtn.setAttribute('aria-keyshortcuts', ui().shortcuts.toggleControlsPin);
+      pinRow.update(ui().shortcuts.toggleControlsPin, t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'));
     };
-    bindCustomTooltip(pinBtn, () => t(
-      ui().keepControlsVisible ? 'unpinControlsTooltip' : 'pinControlsTooltip', ui().shortcuts.toggleControlsPin
-    ));
     pinBtn.addEventListener('click', (event) => {
       blurMouseToggle(event, pinBtn);
       executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
     });
     updatePinButton();
     controlsScope.add(ctx.uiStore.subscribe(updatePinButton));
-    rightSec.appendChild(pinBtn);
 
     // Help Button (Keyboard shortcuts listing)
     const helpBtn = document.createElement('button');
     helpBtn.className = 'theater-control-btn help-btn';
-    bindCustomTooltip(helpBtn, () => t('keyboardShortcutsTooltip', ui().shortcuts.showHelp));
     setIcon(helpBtn, `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
@@ -933,9 +945,13 @@ export function createControls(ctx: PlayerChromeContext) {
     `);
     helpBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      settings.close();
       showHelpOverlay();
     });
-    rightSec.appendChild(helpBtn);
+    const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'));
+    const updateHelpRow = () => helpRow.update(ui().shortcuts.showHelp);
+    updateHelpRow();
+    controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
 
     rightSec.appendChild(closeBtn);
 

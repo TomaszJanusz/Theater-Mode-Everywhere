@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "开关字幕"
   },
-  "increaseSubtitleSize": { "message": "增大字幕大小" },
-  "decreaseSubtitleSize": { "message": "减小字幕大小" },
+  "increaseSubtitleSize": {
+    "message": "增大字幕大小"
+  },
+  "decreaseSubtitleSize": {
+    "message": "减小字幕大小"
+  },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "在影院模式下保持播放控件和进度条可见。空闲时标题和光标仍会自动隐藏。"
   },
   "toggleControlsPin": {
-    "message": "固定/取消固定控件"
-  },
-  "pinControlsTooltip": {
-    "message": "固定控件 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "取消固定控件 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "切换控件可见性"
   },
   "controlsPinnedHud": {
-    "message": "控件已固定"
+    "message": "控件始终可见"
   },
   "controlsUnpinnedHud": {
     "message": "控件自动隐藏"
+  },
+  "playerSettingsLabel": {
+    "message": "播放器设置"
+  },
+  "videoFitLabel": {
+    "message": "画面适配"
+  },
+  "controlsVisibilityOn": {
+    "message": "开启"
+  },
+  "controlsVisibilityOff": {
+    "message": "关闭"
   }
 }

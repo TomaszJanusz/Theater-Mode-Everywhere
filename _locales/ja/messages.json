@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "字幕のオン/オフ"
   },
-  "increaseSubtitleSize": { "message": "字幕を大きくする" },
-  "decreaseSubtitleSize": { "message": "字幕を小さくする" },
+  "increaseSubtitleSize": {
+    "message": "字幕を大きくする"
+  },
+  "decreaseSubtitleSize": {
+    "message": "字幕を小さくする"
+  },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -566,28 +570,24 @@
     "message": "シアターモードで再生コントロールと進行状況バーを常に表示します。操作がないとタイトルとカーソルは引き続き非表示になります。"
   },
   "toggleControlsPin": {
-    "message": "操作バーの固定を切り替え"
-  },
-  "pinControlsTooltip": {
-    "message": "操作バーを固定 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
-  },
-  "unpinControlsTooltip": {
-    "message": "操作バーの固定を解除 <kbd>$SHORTCUT$</kbd>",
-    "placeholders": {
-      "shortcut": {
-        "content": "$1"
-      }
-    }
+    "message": "コントロールの表示を切り替え"
   },
   "controlsPinnedHud": {
-    "message": "操作バーを固定しました"
+    "message": "コントロールを常に表示"
   },
   "controlsUnpinnedHud": {
     "message": "操作バーを自動的に非表示にします"
+  },
+  "playerSettingsLabel": {
+    "message": "プレーヤー設定"
+  },
+  "videoFitLabel": {
+    "message": "映像の表示方法"
+  },
+  "controlsVisibilityOn": {
+    "message": "オン"
+  },
+  "controlsVisibilityOff": {
+    "message": "オフ"
   }
 }
