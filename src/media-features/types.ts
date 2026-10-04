@@ -24,7 +24,8 @@ export type CaptionTrackSource =
   | 'dailymotion'
   | 'patreon'
   | 'twitch'
-  | 'disney';
+  | 'disney'
+  | 'netflix';
 
 export type CaptionTrack = {
   id: string;

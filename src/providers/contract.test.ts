@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { NativeTextTrackAdapter } from './native/adapter';
 import { DisneyAdapter } from './disney/adapter';
+import { NetflixAdapter } from './netflix/adapter';
 import { PatreonAdapter } from './patreon/adapter';
 import { TwitchAdapter } from './twitch/adapter';
 import { VimeoAdapter } from './vimeo/adapter';
 import { YouTubeAdapter } from './youtube/adapter';
 import { readDisneySnapshot } from './disney/main';
+import { readNetflixSnapshot } from './netflix/main';
 import { readPatreonSnapshot } from './patreon/main';
 import { readTwitchSnapshot } from './twitch/main';
 import { readVimeoSnapshot } from './vimeo/main';
@@ -18,7 +20,8 @@ const adapters = [
   ['vimeo', VimeoAdapter],
   ['patreon', PatreonAdapter],
   ['twitch', TwitchAdapter],
-  ['disney', DisneyAdapter]
+  ['disney', DisneyAdapter],
+  ['netflix', NetflixAdapter]
 ] as const;
 
 const snapshots = [
@@ -26,7 +29,8 @@ const snapshots = [
   ['vimeo', readVimeoSnapshot],
   ['patreon', readPatreonSnapshot],
   ['twitch', readTwitchSnapshot],
-  ['disney', readDisneySnapshot]
+  ['disney', readDisneySnapshot],
+  ['netflix', readNetflixSnapshot]
 ] as const;
 
 describe('provider contracts', () => {

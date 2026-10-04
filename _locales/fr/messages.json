@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Expérimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+ et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
+    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
   },
   "richTheaterExperienceReadMore": {
     "message": "ici"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Intégration Netflix"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma. Les chapitres et les miniatures de la timeline restent masqués tant que Netflix ne les fournit pas."
   },
   "liveBadge": {
     "message": "DIRECT"
@@ -261,8 +267,12 @@
   "toggleSubtitles": {
     "message": "Activer ou désactiver les sous-titres"
   },
-  "increaseSubtitleSize": { "message": "Augmenter la taille des sous-titres" },
-  "decreaseSubtitleSize": { "message": "Réduire la taille des sous-titres" },
+  "increaseSubtitleSize": {
+    "message": "Augmenter la taille des sous-titres"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Réduire la taille des sous-titres"
+  },
   "subtitlesTooltip": {
     "message": "Sous-titres <kbd>$KEY$</kbd>",
     "placeholders": {

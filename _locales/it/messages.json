@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Sperimentale)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+ e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
+    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+, Netflix e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
   },
   "richTheaterExperienceReadMore": {
     "message": "qui"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità teatro quando il lettore li fornisce."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Integrazione Netflix"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità teatro. Capitoli e miniature della timeline restano disattivati finché Netflix non li fornisce."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -261,8 +267,12 @@
   "toggleSubtitles": {
     "message": "Attiva o disattiva i sottotitoli"
   },
-  "increaseSubtitleSize": { "message": "Aumenta dimensione sottotitoli" },
-  "decreaseSubtitleSize": { "message": "Riduci dimensione sottotitoli" },
+  "increaseSubtitleSize": {
+    "message": "Aumenta dimensione sottotitoli"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Riduci dimensione sottotitoli"
+  },
   "subtitlesTooltip": {
     "message": "Sottotitoli <kbd>$KEY$</kbd>",
     "placeholders": {

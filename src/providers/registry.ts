@@ -1,4 +1,4 @@
-import { isDisneyHost, isPatreonHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isDisneyHost, isNetflixHost, isPatreonHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
@@ -17,7 +17,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname) },
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
-  { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) }
+  { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },
+  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname) }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {

@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimentell)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+ und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
   },
   "richTheaterExperienceReadMore": {
     "message": "hier"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix-Integration"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um. Kapitel und Zeitachsen-Miniaturen bleiben aus, solange Netflix sie nicht bereitstellt."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -261,8 +267,12 @@
   "toggleSubtitles": {
     "message": "Untertitel umschalten"
   },
-  "increaseSubtitleSize": { "message": "Untertitel vergrößern" },
-  "decreaseSubtitleSize": { "message": "Untertitel verkleinern" },
+  "increaseSubtitleSize": {
+    "message": "Untertitel vergrößern"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Untertitel verkleinern"
+  },
   "subtitlesTooltip": {
     "message": "Untertitel <kbd>$KEY$</kbd>",
     "placeholders": {

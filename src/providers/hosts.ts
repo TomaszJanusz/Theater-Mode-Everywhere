@@ -32,3 +32,8 @@ export function isDisneyHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
 }
+
+export function isNetflixHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'netflix.com' || host.endsWith('.netflix.com');
+}

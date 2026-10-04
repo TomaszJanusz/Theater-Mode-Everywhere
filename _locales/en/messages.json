@@ -83,13 +83,13 @@
     "message": "Centered"
   },
   "pictureAlignCenterDescription": {
-    "message": "Picture stays in the middle of the screen. Best\u00a0for\u00a016:9\u00a0screens."
+    "message": "Picture stays in the middle of the screen. Best for 16:9 screens."
   },
   "pictureAlignTop": {
     "message": "Raised"
   },
   "pictureAlignTopDescription": {
-    "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3\u00a0screens."
+    "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3 screens."
   },
   "accentColorLabel": {
     "message": "Accent color"
@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
+    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
   },
   "richTheaterExperienceReadMore": {
     "message": "here"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Enables support for captions and thumbnails on the timeline in theater mode when the player provides them."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix integration"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Shows the current title and switches the player's subtitle languages in theater mode. Chapters and timeline thumbnails stay off unless Netflix provides them."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -261,8 +267,12 @@
   "toggleSubtitles": {
     "message": "Toggle Subtitles"
   },
-  "increaseSubtitleSize": { "message": "Increase Subtitle Size" },
-  "decreaseSubtitleSize": { "message": "Decrease Subtitle Size" },
+  "increaseSubtitleSize": {
+    "message": "Increase Subtitle Size"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Decrease Subtitle Size"
+  },
   "subtitlesTooltip": {
     "message": "Subtitles <kbd>$KEY$</kbd>",
     "placeholders": {

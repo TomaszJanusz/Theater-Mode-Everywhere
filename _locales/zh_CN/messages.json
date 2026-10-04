@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience（实验性功能）"
   },
   "richTheaterExperienceDescription": {
-    "message": "启用与 YouTube、Twitch、Disney+ 等常用视频服务的深度集成。Theater Mode Everywhere 可以显示更多信息、支持自定义字幕格式并解锁各服务的专属功能。功能可用性因服务而异，详情请参阅"
+    "message": "启用与 YouTube、Twitch、Disney+、Netflix 等常用视频服务的深度集成。Theater Mode Everywhere 可以显示更多信息、支持自定义字幕格式并解锁各服务的专属功能。功能可用性因服务而异，详情请参阅"
   },
   "richTheaterExperienceReadMore": {
     "message": "此处"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "当播放器提供这些内容时，在剧场模式中启用字幕和时间轴缩略图支持。"
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix 集成"
+  },
+  "netflixIntegrationDescription": {
+    "message": "在剧场模式中显示当前内容的标题，并切换播放器的字幕语言。除非 Netflix 提供，否则不显示章节和时间轴缩略图。"
   },
   "liveBadge": {
     "message": "直播"
@@ -261,8 +267,12 @@
   "toggleSubtitles": {
     "message": "开关字幕"
   },
-  "increaseSubtitleSize": { "message": "增大字幕大小" },
-  "decreaseSubtitleSize": { "message": "减小字幕大小" },
+  "increaseSubtitleSize": {
+    "message": "增大字幕大小"
+  },
+  "decreaseSubtitleSize": {
+    "message": "减小字幕大小"
+  },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {

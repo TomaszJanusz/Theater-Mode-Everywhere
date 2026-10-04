@@ -38,6 +38,11 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
+import {
+  installNetflixMain,
+  netflixIntegrationEnabled,
+  readNetflixSnapshot
+} from '../providers/netflix/main';
 
 export function installMainWorldRuntime(): void {
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
@@ -168,6 +173,7 @@ export function installMainWorldRuntime(): void {
     installYoutubeMain();
     installTwitchMain();
     installDisneyMain();
+    installNetflixMain();
   }
 
   let pendingVideo: HTMLVideoElement | null = null;
@@ -337,6 +343,7 @@ export function installMainWorldRuntime(): void {
     let patreon: Record<string, unknown> | null = null;
     let twitch: Record<string, unknown> | null = null;
     let disney: Record<string, unknown> | null = null;
+    let netflix: Record<string, unknown> | null = null;
     try {
       youtube = youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null;
     } catch {
@@ -362,9 +369,14 @@ export function installMainWorldRuntime(): void {
     } catch {
       disney = null;
     }
+    try {
+      netflix = netflixIntegrationEnabled() ? readNetflixSnapshot() : null;
+    } catch {
+      netflix = null;
+    }
     publishYoutubeProbeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch, disney }
+      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix }
     }));
   });
 

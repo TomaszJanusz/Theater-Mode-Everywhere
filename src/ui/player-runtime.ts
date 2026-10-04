@@ -15,6 +15,7 @@ import { type CaptionHudPayload } from '../media-features/controller';
 import {
   applyMediaProviderFlagAttrs,
   mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
   resolveMediaProviderFlags,
   type MediaProviderFlags
 } from '../media-features/provider-flags';
@@ -37,20 +38,24 @@ import {
   seekToMediaTime
 } from '../playback-window';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
-import { isTwitchHost } from '../providers/hosts';
+import { isNetflixHost, isTwitchHost } from '../providers/hosts';
 import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
+  mountNetflixTheaterStage,
   mountTheaterStage,
   mountTwitchTheaterStage,
   observeTwitchTheaterStage,
   theaterVideoNeedsRestyle,
   unmarkTheaterVideo,
   unmountDisneyTheaterStage,
+  unmountNetflixTheaterStage,
   unmountTheaterStage,
   unmountTwitchTheaterStage
 } from './theater-layout';
+import { holdNetflixViewport, releaseNetflixViewport } from './netflix-stage';
+import { readNetflixVideoFacts, shouldFollowNetflixVideo } from './netflix-playback';
 import {
   queryPlayerUi,
   queryPlayerUiAll
@@ -467,6 +472,10 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     element.style.setProperty('top', '0px', 'important');
     element.style.setProperty('left', '0px', 'important');
   }
+  if (isNetflixHost() && element.tagName === 'VIDEO') {
+    holdNetflixViewport(element);
+    applyTheaterViewportPin(element);
+  }
   applyTheaterPictureLayout();
 }
 
@@ -480,6 +489,7 @@ function applyTheaterPictureLayout(): void {
   );
   document.documentElement.style.setProperty('--theater-object-fit', fit);
   document.documentElement.style.setProperty('--theater-object-position', position);
+  document.documentElement.style.setProperty('--theater-letterbox', `${Math.round(horizontalLetterboxPx(frame))}px`);
   if (session.element) {
     session.element.style.setProperty('object-fit', fit, 'important');
     session.element.style.setProperty('--theater-object-fit', fit);
@@ -1317,6 +1327,15 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     session.runtimeScope.raf(() => {
       rebindScheduled = false;
       rebindIfReplaced();
+      if (isNetflixHost() && session.element instanceof HTMLVideoElement && isElementInDOMDeep(session.element)) {
+        const next = findBestVideo();
+        if (next && next !== session.element && shouldFollowNetflixVideo(readNetflixVideoFacts(session.element), readNetflixVideoFacts(next))) {
+          switchTheaterVideo(next);
+        } else {
+          refreshTheaterAncestors(session.element);
+          holdNetflixViewport(session.element);
+        }
+      }
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -1370,6 +1389,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   mountTheaterStage();
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
+  mountNetflixTheaterStage(window.location.hostname);
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = observeTwitchTheaterStage(window.location.hostname);
   applyTheaterElementInlineStyles(element);
@@ -1512,6 +1532,9 @@ function exitTheaterMode(
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = null;
   unmountTwitchTheaterStage();
+  releaseNetflixViewport();
+  unmountNetflixTheaterStage();
+  document.documentElement.style.removeProperty('--theater-letterbox');
 
   refreshHostPlayerLayout();
 
@@ -1610,11 +1633,7 @@ export function bootstrapPlayerRuntime(): void {
       }
       if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
         const merged: Record<string, unknown> = {
-          youtubeIntegrationEnabled: refs.providerFlags.youtube,
-          vimeoIntegrationEnabled: refs.providerFlags.vimeo,
-          patreonIntegrationEnabled: refs.providerFlags.patreon,
-          twitchIntegrationEnabled: refs.providerFlags.twitch,
-          disneyIntegrationEnabled: refs.providerFlags.disney
+          ...mediaProviderFlagStorageUpdate(refs.providerFlags)
         };
         for (const key of mediaProviderFlagStorageKeys()) {
           if (Object.prototype.hasOwnProperty.call(changes, key)) {

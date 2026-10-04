@@ -1363,6 +1363,7 @@ export function createControls(ctx: PlayerChromeContext) {
     window.addEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
+    window.addEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
     window.addEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
     video.addEventListener('volumechange', onVolumeChange);
     video.addEventListener('ratechange', onRateChange);
@@ -1389,6 +1390,7 @@ export function createControls(ctx: PlayerChromeContext) {
       window.removeEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
+      window.removeEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
       window.removeEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
       video.removeEventListener('volumechange', onVolumeChange);
       video.removeEventListener('ratechange', onRateChange);

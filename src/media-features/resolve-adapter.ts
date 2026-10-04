@@ -2,6 +2,7 @@ import { CompositeMediaAdapter } from './composite-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
 import { DisneyAdapter } from '../providers/disney/adapter';
 import { NativeTextTrackAdapter } from '../providers/native/adapter';
+import { NetflixAdapter } from '../providers/netflix/adapter';
 import { PatreonAdapter } from '../providers/patreon/adapter';
 import { TwitchAdapter } from '../providers/twitch/adapter';
 import { VimeoAdapter } from '../providers/vimeo/adapter';
@@ -29,6 +30,10 @@ export function shouldAttachDisneyAdapter(flags: MediaProviderFlags, hostname?: 
   return shouldAttachProvider('disney', flags, hostname);
 }
 
+export function shouldAttachNetflixAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
+  return shouldAttachProvider('netflix', flags, hostname);
+}
+
 export function createMediaFeaturesAdapter(
   video: HTMLVideoElement,
   flags: MediaProviderFlags = defaultMediaProviderFlags()
@@ -39,5 +44,6 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
+  if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
   return new CompositeMediaAdapter(adapters);
 }

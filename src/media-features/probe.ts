@@ -114,12 +114,27 @@ export type DisneyPlayerSnapshot = {
   captionTracks?: DisneyCaptionMeta[];
 };
 
+export type NetflixProbeSnapshot = {
+  videoId?: string;
+  title?: string;
+  tracks?: Array<{
+    id: string;
+    language: string;
+    label: string;
+    kind?: string;
+    forced?: boolean;
+    none?: boolean;
+  }>;
+  selectedTrackId?: string;
+};
+
 export type MediaProbeSnapshot = {
   youtube?: YoutubePlayerSnapshot | null;
   vimeo?: VimeoPlayerSnapshot | null;
   patreon?: PatreonPlayerSnapshot | null;
   twitch?: TwitchPlayerSnapshot | null;
   disney?: DisneyPlayerSnapshot | null;
+  netflix?: NetflixProbeSnapshot | null;
 };
 
 type ProbeRequest = {
@@ -152,7 +167,8 @@ export function requestMediaProbe(timeoutMs = 800): Promise<MediaProbeSnapshot> 
         vimeo: snapshot.vimeo ?? null,
         patreon: snapshot.patreon ?? null,
         twitch: snapshot.twitch ?? null,
-        disney: snapshot.disney ?? null
+        disney: snapshot.disney ?? null,
+        netflix: snapshot.netflix ?? null
       });
     };
 
