@@ -525,16 +525,18 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   // Host-driven video replacement while help owns focus must clear the same state.
   await page.keyboard.press('h');
   await helpClose.waitFor();
-  await page.locator('video#player').evaluate(async (original: HTMLVideoElement) => {
+  await page.locator('video#player').evaluate((original: HTMLVideoElement) => {
     const replacement = document.createElement('video');
     replacement.id = 'player';
     replacement.muted = true;
     replacement.playsInline = true;
     replacement.srcObject = original.srcObject;
     original.replaceWith(replacement);
-    await replacement.play();
   });
-  await page.waitForFunction(() => document.querySelector('video#player')!.classList.contains('theater-everywhere-video-active'));
+  await page.waitForFunction(() => {
+    const video = document.querySelector<HTMLVideoElement>('video#player')!;
+    return video.classList.contains('theater-everywhere-video-active') && video.readyState >= 2 && !video.paused;
+  });
   await assertHelpAfterRebuild();
   // Recover if a host removes just the overlay node without rebuilding controls.
   await page.keyboard.press('h');
