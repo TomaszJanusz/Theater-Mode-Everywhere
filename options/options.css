@@ -1385,7 +1385,7 @@ body.te-dialog-open {
   }
 }
 .shortcut-input[aria-invalid="true"] {
-  border-color: #f59e0b;
+  border-color: #f59e0b !important;
 }
 
 .shortcut-conflict-status {

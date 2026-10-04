@@ -686,6 +686,26 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
   try {
     await options.goto(new URL('options/options.html', worker.url()).href);
     await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    // Legacy/synced duplicates must be visibly marked, including while focused.
+    const previousShortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
+    await worker.evaluate(async shortcuts => {
+      await chrome.storage.sync.set({ shortcuts: { ...shortcuts, toggleMute: 'F', toggleFullscreen: 'F' } });
+    }, previousShortcuts);
+    await options.locator('#shortcut-conflict-status').waitFor({ state: 'visible' });
+    const assertConflictColor = async () => {
+      await options.waitForFunction(() => ['shortcut-toggle-mute', 'shortcut-toggle-fullscreen'].every(id => {
+        const input = document.getElementById(id)!;
+        return input.getAttribute('aria-invalid') === 'true' && getComputedStyle(input).borderTopColor === 'rgb(245, 158, 11)';
+      }), null, { timeout: 3000 });
+    };
+    await assertConflictColor();
+    await options.locator('#shortcut-toggle-mute').focus();
+    await assertConflictColor();
+    await worker.evaluate(async shortcuts => {
+      if (shortcuts) await chrome.storage.sync.set({ shortcuts });
+      else await chrome.storage.sync.remove('shortcuts');
+    }, previousShortcuts);
+    await options.waitForSelector('#shortcut-toggle-mute[aria-invalid="false"]');
     await options.locator('#shortcut-toggle-mute').press('f');
     const dialog = options.locator('.te-dialog-overlay');
     await dialog.waitFor();
