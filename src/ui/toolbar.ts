@@ -164,6 +164,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   function applyVisibility(active: boolean): void {
+    if (ctx.ui().helpOpen && !ctx.refs.helpOverlay?.isConnected) ctx.actions.hideHelpOverlay(false);
     const controls = ctx.queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
     if (!controls || !ctx.session.element) return;
     const header = ctx.queryPlayerUi<HTMLElement>(`.${HEADER_HUD_CLASS}`);

@@ -58,7 +58,7 @@ export type PlayerChromeActions = {
   updateCaptionDock(): void;
   closeTheaterPopovers(): void;
   blurMouseToggle(event: MouseEvent, button: HTMLElement): void;
-  hideHelpOverlay(): void;
+  hideHelpOverlay(restoreFocus?: boolean): void;
   showHelpOverlay(): void;
   toggleHelpOverlay(): void;
   applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void;

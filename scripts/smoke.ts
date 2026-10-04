@@ -520,6 +520,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Escape');
   await controls.waitFor({ state: 'detached' });
   await page.keyboard.press('t');
+  await waitForChrome(true, true, true);
   if (await page.locator('.switch-video-btn').count()) fail('Unavailable switching remained after returning to a single player.');
 
   // Host-driven video replacement while help owns focus must clear the same state.
@@ -539,9 +540,16 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   });
   await assertHelpAfterRebuild();
   // Recover if a host removes just the overlay node without rebuilding controls.
+  await gear.focus();
   await page.keyboard.press('h');
   await helpClose.waitFor();
   await page.locator('.theater-help-overlay').evaluate(overlay => overlay.remove());
+  await page.keyboard.press('Enter');
+  if (await menu.isVisible() || await gear.evaluate(button => button.matches(':focus'))) fail('Host-removed help restored and activated the settings trigger.');
+  await page.mouse.move(640, 300);
+  await waitForChrome(true, true, false);
+  // Set an explicit starting focus instead of assuming page focus returns to the gear.
+  await gear.focus();
   await page.keyboard.press('Tab');
   if (!await page.locator('.close-btn').evaluate(button => button.matches(':focus'))) fail('Host-removed help left a hidden Tab trap.');
   await page.keyboard.press('h');

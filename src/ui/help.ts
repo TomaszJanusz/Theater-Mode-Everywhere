@@ -4,6 +4,7 @@ import type { PlayerChromeContext } from './runtime-context';
 export function createHelp(ctx: PlayerChromeContext) {
   let returnFocus: HTMLElement | null = null;
   let returnTrigger: string | null = null;
+  let removalObserver: MutationObserver | null = null;
 
   function toggleHelpOverlay(): void {
     const overlay = ctx.queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
@@ -16,7 +17,7 @@ export function createHelp(ctx: PlayerChromeContext) {
 
   function showHelpOverlay(): void {
     if (ctx.refs.helpOverlay?.isConnected) return;
-    if (ctx.refs.helpOverlay) hideHelpOverlay();
+    if (ctx.refs.helpOverlay) hideHelpOverlay(false);
 
     let active = document.activeElement;
     while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
@@ -62,7 +63,7 @@ export function createHelp(ctx: PlayerChromeContext) {
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>
   `;
-    closeBtn.addEventListener('click', hideHelpOverlay);
+    closeBtn.addEventListener('click', () => hideHelpOverlay());
 
     header.appendChild(title);
     header.appendChild(closeBtn);
@@ -155,11 +156,22 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     ctx.refs.helpOverlay = overlay;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
+    // Host removals are not user dismissals: clear modal state without moving focus.
+    removalObserver = new MutationObserver(() => {
+      if (!overlay.isConnected) hideHelpOverlay(false);
+    });
+    removalObserver.observe(overlay.parentNode!, { childList: true });
+    const root = overlay.getRootNode();
+    if (root instanceof ShadowRoot && root.host.parentNode) {
+      removalObserver.observe(root.host.parentNode, { childList: true });
+    }
     closeBtn.focus();
   }
 
-  function hideHelpOverlay(): void {
+  function hideHelpOverlay(restoreFocus = true): void {
     if (!ctx.refs.helpOverlay && !ctx.ui().helpOpen) return;
+    removalObserver?.disconnect();
+    removalObserver = null;
     ctx.refs.helpOverlay?.remove();
     ctx.refs.helpOverlay = null;
     ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
@@ -168,7 +180,7 @@ export function createHelp(ctx: PlayerChromeContext) {
       : returnFocus;
     returnFocus = null;
     returnTrigger = null;
-    if (target?.isConnected && target.getClientRects().length
+    if (restoreFocus && target?.isConnected && target.getClientRects().length
         && !target.closest('[inert]') && getComputedStyle(target).visibility !== 'hidden') {
       target.focus();
     }

@@ -902,7 +902,15 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
-    if (ui().helpOpen && !refs.helpOverlay?.isConnected) hideHelpOverlay();
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
@@ -1072,7 +1080,15 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
-    if (ui().helpOpen && !refs.helpOverlay?.isConnected) hideHelpOverlay();
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
         && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
