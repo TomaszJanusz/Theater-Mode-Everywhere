@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Включить или выключить субтитры"
   },
-  "increaseSubtitleSize": { "message": "Увеличить размер субтитров" },
-  "decreaseSubtitleSize": { "message": "Уменьшить размер субтитров" },
+  "increaseSubtitleSize": {
+    "message": "Увеличить размер субтитров"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Уменьшить размер субтитров"
+  },
   "subtitlesTooltip": {
     "message": "Субтитры <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -558,5 +562,35 @@
   },
   "madeInPoland": {
     "message": "Сделано с <span class=\"heart\">❤</span> в 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Всегда показывать элементы управления"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Элементы управления воспроизведением и шкала прогресса остаются видимыми в режиме кинотеатра. Заголовок и курсор по-прежнему скрываются при бездействии."
+  },
+  "toggleControlsPin": {
+    "message": "Переключить видимость элементов управления"
+  },
+  "controlsPinnedHud": {
+    "message": "Элементы управления всегда видны"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Элементы управления скрываются автоматически"
+  },
+  "playerSettingsLabel": {
+    "message": "Настройки проигрывателя"
+  },
+  "videoFitLabel": {
+    "message": "Размер видео"
+  },
+  "controlsVisibilityOn": {
+    "message": "Вкл."
+  },
+  "controlsVisibilityOff": {
+    "message": "Выкл."
+  },
+  "extensionSettingsLabel": {
+    "message": "Настройки расширения"
   }
 }

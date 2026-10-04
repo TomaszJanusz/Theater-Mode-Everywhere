@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Ativar ou desativar legendas"
   },
-  "increaseSubtitleSize": { "message": "Aumentar tamanho das legendas" },
-  "decreaseSubtitleSize": { "message": "Diminuir tamanho das legendas" },
+  "increaseSubtitleSize": {
+    "message": "Aumentar tamanho das legendas"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Diminuir tamanho das legendas"
+  },
   "subtitlesTooltip": {
     "message": "Legendas <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -558,5 +562,35 @@
   },
   "madeInPoland": {
     "message": "Feito com <span class=\"heart\">❤</span> na 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Sempre mostrar os controles"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo cinema. O título e o cursor continuam se ocultando durante a inatividade."
+  },
+  "toggleControlsPin": {
+    "message": "Alternar visibilidade dos controles"
+  },
+  "controlsPinnedHud": {
+    "message": "Controles sempre visíveis"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Os controles se ocultam automaticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Configurações do player"
+  },
+  "videoFitLabel": {
+    "message": "Ajuste do vídeo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sim"
+  },
+  "controlsVisibilityOff": {
+    "message": "Não"
+  },
+  "extensionSettingsLabel": {
+    "message": "Configurações da extensão"
   }
 }

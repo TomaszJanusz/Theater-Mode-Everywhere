@@ -15,6 +15,7 @@ export interface Shortcuts {
   toggleMute: string;
   togglePiP: string;
   showHelp: string;
+  toggleControlsPin: string;
   cycleFit: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
@@ -38,6 +39,7 @@ export const defaultShortcuts: Shortcuts = {
   toggleMute: 'M',
   togglePiP: 'P',
   showHelp: 'H',
+  toggleControlsPin: 'Shift+H',
   cycleFit: 'Z',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',

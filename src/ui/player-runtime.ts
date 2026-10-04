@@ -94,6 +94,8 @@ import {
   type BoostedVideoElement
 } from './runtime-context';
 import { createToolbar } from './toolbar';
+import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
+import { closePlayerSettings } from './player-settings';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -249,6 +251,9 @@ function executeCommand(command: PlayerCommand): void {
       break;
     case 'CYCLE_FIT':
       cycleVideoFit();
+      break;
+    case 'TOGGLE_CONTROLS_PIN':
+      toggleControlsPin();
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -543,6 +548,29 @@ function persistVideoFitMode(mode: VideoFitMode): void {
   }
 }
 
+function applyKeepControlsVisible(value: unknown): void {
+  const next = resolveKeepControlsVisible(value);
+  if (next === ui().keepControlsVisible) return;
+  uiStore.dispatch({ type: 'SET_KEEP_CONTROLS_VISIBLE', value: next });
+  if (next) toolbar.refreshToolbarVisibility();
+  else showToolbar();
+}
+
+function toggleControlsPin(): void {
+  const next = !ui().keepControlsVisible;
+  applyKeepControlsVisible(next);
+  triggerStatusIndicator(t(next ? 'controlsPinnedHud' : 'controlsUnpinnedHud'), CONTROLS_VISIBILITY_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [KEEP_CONTROLS_VISIBLE_STORAGE_KEY]: next }).catch((error) => {
+        console.error('[Theater Everywhere] Could not save controls visibility:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save controls visibility:', error);
+  }
+}
+
 function cycleVideoFit(): void {
   const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
   const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
@@ -681,6 +709,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
+      KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
       ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
@@ -702,6 +731,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
     });
+    applyKeepControlsVisible(data[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]);
     applyTheaterVideoFit(ui().videoFit);
     applyCaptionStyleToTheater(ui().captionStyle);
     refs.captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
@@ -872,6 +902,15 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   listeners.keydown = (event: KeyboardEvent) => {
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = activeEl && (
@@ -884,6 +923,51 @@ function initialize(): void {
     if (theaterDialogOpen()) return;
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
+
+    // Help owns keyboard focus; do not activate toolbar controls behind it.
+    if (ui().helpOpen) {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
+        return;
+      }
+      if ((event.key === ' ' || event.key === 'Enter')
+          && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+        if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
+
+    // Let native settings buttons activate with Space/Enter instead of toggling playback.
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+
+    if (event.key === 'Escape' || event.key === 'Esc') {
+      const controls = queryPlayerUi('.theater-controls-wrapper');
+      if (controls && closePlayerSettings(controls, true)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        updateCaptionDock();
+        return;
+      }
+    }
+
+    if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
+      return;
+    }
 
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
       event.preventDefault();
@@ -996,7 +1080,29 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
+    if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
+      hideHelpOverlay(false);
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
+    if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
+        && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+      if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+        && (event.key === ' ' || event.key === 'Enter')) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     const isEditable = activeEl && (
       (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
       activeEl.tagName === 'TEXTAREA' ||
@@ -1586,6 +1692,10 @@ export function bootstrapPlayerRuntime(): void {
 
       if (changes.blacklist) {
         void checkBlacklistAndInit();
+      }
+
+      if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
+        applyKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
       }
 
       if (changes.shortcuts?.newValue) {

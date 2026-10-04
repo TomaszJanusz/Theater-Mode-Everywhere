@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "字幕のオン/オフ"
   },
-  "increaseSubtitleSize": { "message": "字幕を大きくする" },
-  "decreaseSubtitleSize": { "message": "字幕を小さくする" },
+  "increaseSubtitleSize": {
+    "message": "字幕を大きくする"
+  },
+  "decreaseSubtitleSize": {
+    "message": "字幕を小さくする"
+  },
   "subtitlesTooltip": {
     "message": "字幕 <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -558,5 +562,35 @@
   },
   "madeInPoland": {
     "message": "ポーランド 🇵🇱 で <span class=\"heart\">❤</span> を込めて制作"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "操作バーを常に表示"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "シアターモードで再生コントロールと進行状況バーを常に表示します。操作がないとタイトルとカーソルは引き続き非表示になります。"
+  },
+  "toggleControlsPin": {
+    "message": "コントロールの表示を切り替え"
+  },
+  "controlsPinnedHud": {
+    "message": "コントロールを常に表示"
+  },
+  "controlsUnpinnedHud": {
+    "message": "操作バーを自動的に非表示にします"
+  },
+  "playerSettingsLabel": {
+    "message": "プレーヤー設定"
+  },
+  "videoFitLabel": {
+    "message": "映像の表示方法"
+  },
+  "controlsVisibilityOn": {
+    "message": "オン"
+  },
+  "controlsVisibilityOff": {
+    "message": "オフ"
+  },
+  "extensionSettingsLabel": {
+    "message": "拡張機能の設定"
   }
 }

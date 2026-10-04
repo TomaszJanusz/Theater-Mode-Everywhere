@@ -98,6 +98,16 @@
         <div class="card-body">
           <div class="feature-row">
             <div class="feature-info">
+              <label for="keep-controls-visible-toggle" class="feature-label" data-i18n="keepControlsVisibleTitle">Always show controls</label>
+              <p class="feature-desc" data-i18n="keepControlsVisibleDescription">Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="keep-controls-visible-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="feature-row">
+            <div class="feature-info">
               <label for="volume-boost-toggle" class="feature-label" data-i18n="volumeBoostTitle">Volume Boost</label>
               <p class="feature-desc" data-i18n="volumeBoostDescription">Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.</p>
             </div>
@@ -238,6 +248,17 @@
                 <div class="shortcut-input-wrapper">
                   <input type="text" id="shortcut-decrease-caption-size" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="decreaseCaptionSize" title="Reset to default" data-i18n-title="resetToDefault">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="shortcut-row">
+                <label for="shortcut-controls-pin" data-i18n="toggleControlsPin">Toggle controls visibility</label>
+                <div class="shortcut-input-wrapper">
+                  <input type="text" id="shortcut-controls-pin" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                  <button type="button" class="reset-single-btn" data-shortcut="toggleControlsPin" title="Reset to default" data-i18n-title="resetToDefault" aria-label="Reset to default" data-i18n-aria-label="resetToDefault">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
                     </svg>

@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Activer ou désactiver les sous-titres"
   },
-  "increaseSubtitleSize": { "message": "Augmenter la taille des sous-titres" },
-  "decreaseSubtitleSize": { "message": "Réduire la taille des sous-titres" },
+  "increaseSubtitleSize": {
+    "message": "Augmenter la taille des sous-titres"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Réduire la taille des sous-titres"
+  },
   "subtitlesTooltip": {
     "message": "Sous-titres <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -558,5 +562,35 @@
   },
   "madeInPoland": {
     "message": "Fait avec <span class=\"heart\">❤</span> en 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Toujours afficher les commandes"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Gardez les commandes de lecture et la barre de progression visibles en mode cinéma. Le titre et le curseur se masquent toujours en cas d’inactivité."
+  },
+  "toggleControlsPin": {
+    "message": "Basculer la visibilité des commandes"
+  },
+  "controlsPinnedHud": {
+    "message": "Commandes toujours visibles"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Masquage automatique des commandes"
+  },
+  "playerSettingsLabel": {
+    "message": "Réglages du lecteur"
+  },
+  "videoFitLabel": {
+    "message": "Ajustement de la vidéo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Oui"
+  },
+  "controlsVisibilityOff": {
+    "message": "Non"
+  },
+  "extensionSettingsLabel": {
+    "message": "Paramètres de l'extension"
   }
 }

@@ -261,8 +261,12 @@
   "toggleSubtitles": {
     "message": "Attiva o disattiva i sottotitoli"
   },
-  "increaseSubtitleSize": { "message": "Aumenta dimensione sottotitoli" },
-  "decreaseSubtitleSize": { "message": "Riduci dimensione sottotitoli" },
+  "increaseSubtitleSize": {
+    "message": "Aumenta dimensione sottotitoli"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Riduci dimensione sottotitoli"
+  },
   "subtitlesTooltip": {
     "message": "Sottotitoli <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -558,5 +562,35 @@
   },
   "madeInPoland": {
     "message": "Fatto con <span class=\"heart\">❤</span> in 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Mostra sempre i controlli"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Mantieni visibili i controlli di riproduzione e la barra di avanzamento in modalità cinema. Il titolo e il cursore si nascondono comunque durante l’inattività."
+  },
+  "toggleControlsPin": {
+    "message": "Attiva/disattiva visibilità dei controlli"
+  },
+  "controlsPinnedHud": {
+    "message": "Controlli sempre visibili"
+  },
+  "controlsUnpinnedHud": {
+    "message": "I controlli si nascondono automaticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Impostazioni del lettore"
+  },
+  "videoFitLabel": {
+    "message": "Adattamento video"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sì"
+  },
+  "controlsVisibilityOff": {
+    "message": "No"
+  },
+  "extensionSettingsLabel": {
+    "message": "Impostazioni dell'estensione"
   }
 }
