@@ -150,6 +150,38 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     fail('An unavailable next-video shortcut was incorrectly swallowed on keyup.');
   }
 
+  const unclaimedReleases = await page.evaluate(`(() => {
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    const releases = [];
+    const observe = (event) => releases.push(event.type + ':' + event.code);
+    document.addEventListener('keyup', observe);
+    document.addEventListener('keypress', observe);
+    const dispatch = (target, key, code, shiftKey = false) => {
+      const options = { key, code, shiftKey, bubbles: true, cancelable: true, composed: true };
+      const down = new KeyboardEvent('keydown', options);
+      // A host listener may cancel keydown before the extension sees it.
+      down.preventDefault();
+      target.dispatchEvent(down);
+      target.dispatchEvent(new KeyboardEvent('keypress', options));
+      target.dispatchEvent(new KeyboardEvent('keyup', options));
+    };
+    input.focus();
+    dispatch(input, 'ArrowRight', 'ArrowRight');
+    input.blur();
+    const video = document.querySelector('video#player');
+    dispatch(video, 'F9', 'F9');
+    dispatch(video, 'P', 'KeyP', true);
+    input.remove();
+    document.removeEventListener('keyup', observe);
+    document.removeEventListener('keypress', observe);
+    return releases;
+  })()`) as string[];
+  const expectedReleases = ['keypress:ArrowRight', 'keyup:ArrowRight', 'keypress:F9', 'keyup:F9', 'keypress:KeyP', 'keyup:KeyP'];
+  if (JSON.stringify(unclaimedReleases) !== JSON.stringify(expectedReleases)) {
+    fail(`Host-cancelled unclaimed keys lost their releases: ${JSON.stringify(unclaimedReleases)}`);
+  }
+
   const pausedBefore = await page.evaluate(() => {
     const video = document.querySelector('video#player') as HTMLVideoElement | null;
     return Boolean(video?.paused);

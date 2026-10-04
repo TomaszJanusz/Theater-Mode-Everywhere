@@ -799,7 +799,7 @@ function theaterDialogOpen(): boolean {
   return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
-function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
+function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
   if (matchesShortcut(e, shortcuts.playPause)) {
@@ -807,7 +807,7 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     e.stopPropagation();
     e.stopImmediatePropagation();
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
-    if (e.key === ' ' || e.code === 'Space') return;
+    if (e.key === ' ' || e.code === 'Space') return true;
     const willPlay = !mediaHasSource(video) || video.paused;
     executeCommand({ type: 'PLAY_PAUSE' });
     triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
@@ -912,7 +912,10 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     e.stopPropagation();
     e.stopImmediatePropagation();
     executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
+  } else {
+    return false;
   }
+  return true;
 }
 
 // Setup event listeners
@@ -932,15 +935,15 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   const claimedKeyReleases = new Set<string>();
-  const handleKeydown = (event: KeyboardEvent) => {
-    if (event.isComposing) return;
+  const handleKeydown = (event: KeyboardEvent): boolean => {
+    if (event.isComposing) return false;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        return;
+        return true;
       }
     }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
@@ -951,8 +954,8 @@ function initialize(): void {
       activeEl.isContentEditable ||
       activeEl.getAttribute('role') === 'textbox'
     );
-    if (isEditable) return;
-    if (theaterDialogOpen()) return;
+    if (isEditable) return false;
+    if (theaterDialogOpen()) return false;
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
@@ -963,14 +966,14 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
-        return;
+        return true;
       }
       if ((event.key === ' ' || event.key === 'Enter')
           && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
         if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        return;
+        return !activeEl.closest('.theater-help-overlay');
       }
     }
 
@@ -979,7 +982,7 @@ function initialize(): void {
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
-      return;
+      return false;
     }
 
     if (event.key === 'Escape' || event.key === 'Esc') {
@@ -989,7 +992,7 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         updateCaptionDock();
-        return;
+        return true;
       }
     }
 
@@ -998,7 +1001,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
@@ -1006,7 +1009,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleLayout)) {
@@ -1014,7 +1017,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_LAYOUT' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleFit)) {
@@ -1022,7 +1025,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_FIT' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.toggleCaptions)) {
@@ -1030,7 +1033,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'TOGGLE_CAPTIONS' });
-      return;
+      return true;
     }
 
     if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
@@ -1038,7 +1041,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
-      return;
+      return true;
     }
 
     if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
@@ -1046,7 +1049,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.showHelp)) {
@@ -1054,7 +1057,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'TOGGLE_HELP' });
-      return;
+      return true;
     }
 
     if (matchesShortcut(event, shortcuts.toggle)) {
@@ -1062,11 +1065,13 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) toggleTheaterMode();
+      return true;
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) claimFullscreenShortcut();
+      return true;
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
       if (ui().helpOpen) {
@@ -1074,16 +1079,18 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         hideHelpOverlay();
+        return true;
       } else if (session.hasUi) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
         exitTheaterMode();
+        return true;
       }
     } else if (session.element) {
       if (session.element.tagName === 'VIDEO') {
         const video = session.element as HTMLVideoElement;
-        handleVideoKey(event, video);
+        return handleVideoKey(event, video);
       } else if (session.element.tagName === 'IFRAME') {
         const iframe = session.element as HTMLIFrameElement;
         if (iframe.contentWindow) {
@@ -1108,14 +1115,16 @@ function initialize(): void {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
+            return true;
           }
         }
       }
     }
+    return false;
   };
   listeners.keydown = (event: KeyboardEvent) => {
-    handleKeydown(event);
-    if (event.defaultPrevented) claimedKeyReleases.add(event.code || event.key);
+    // defaultPrevented can belong to an earlier host listener, not this handler.
+    if (handleKeydown(event)) claimedKeyReleases.add(event.code || event.key);
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
   session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
