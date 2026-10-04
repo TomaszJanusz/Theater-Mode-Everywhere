@@ -1044,8 +1044,101 @@ html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-p
 
 /* Subtitles CC active state styling */
 .theater-control-btn.cc-btn.active,
-.theater-control-btn.pip-btn.active {
+.theater-control-btn.pip-btn.active,
+.theater-control-btn.controls-visibility-toggle.active {
   color: var(--accent-color, #6366f1) !important;
+}
+
+/* Labeled secondary actions; primary playback controls stay on the bar. */
+.theater-settings-menu {
+  position: absolute !important;
+  inset-inline-end: 0 !important;
+  bottom: calc(100% + 10px) !important;
+  display: none !important;
+  flex-direction: column !important;
+  width: 340px !important;
+  max-width: calc(100vw - 48px) !important;
+  max-height: calc(100vh - 110px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  box-sizing: border-box !important;
+  background: rgba(20, 20, 20, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  z-index: 2000000000 !important;
+  pointer-events: auto !important;
+}
+
+.theater-settings-menu.visible { display: flex !important; }
+
+.theater-settings-row {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 40px !important;
+  flex: 0 0 auto !important;
+  gap: 10px !important;
+  padding: 8px !important;
+  justify-content: flex-start !important;
+  text-align: start !important;
+  color: #f8fafc !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+.theater-settings-row svg { flex: 0 0 18px !important; }
+.theater-settings-main {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+.theater-settings-label { flex: 0 1 auto !important; min-width: 0 !important; overflow-wrap: anywhere !important; }
+.theater-settings-keys {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+}
+.theater-settings-keys:empty { display: none !important; }
+.theater-settings-keys kbd {
+  background-color: #27272a !important;
+  border: 1px solid #3f3f46 !important;
+  border-bottom: 2px solid #3f3f46 !important;
+  border-radius: 4px !important;
+  color: #f4f4f5 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  padding: 2px 5px !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+.theater-settings-detail {
+  flex: 0 0 auto !important;
+  margin-inline-start: auto !important;
+  color: #cbd5e1 !important;
+  text-align: end !important;
+  white-space: nowrap !important;
+}
+.theater-settings-row.extension-settings-btn {
+  margin-top: 4px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+.theater-settings-row:focus-visible,
+.player-settings-btn:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: -2px !important;
 }
 
 /* Subtitles CC popover menu */
@@ -1334,7 +1427,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
   width: 90% !important;
-  max-width: 480px !important;
+  max-width: 800px !important;
+  max-height: calc(100dvh - 48px) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
   padding: 24px !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
   animation: theaterScaleIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
@@ -1378,10 +1474,22 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-help-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 28px !important;
+  direction: inherit !important;
+}
+
+.theater-help-column {
   display: flex !important;
   flex-direction: column !important;
   gap: 20px !important;
-  direction: inherit !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .theater-help-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .theater-help-card { padding: 16px !important; max-height: calc(100dvh - 24px) !important; }
 }
 
 .theater-help-group {
@@ -1411,11 +1519,14 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
+  gap: 12px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   direction: inherit !important;
 }
 
 .theater-help-label {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
   font-size: 13px !important;
   color: #d4d4d8 !important;
   font-weight: 500 !important;
@@ -1423,9 +1534,13 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-help-key-wrapper {
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  max-width: 60% !important;
   display: flex !important;
   align-items: center !important;
   gap: 4px !important;
+  flex-shrink: 0 !important;
   color: #71717a !important;
   font-size: 11px !important;
   font-weight: 500 !important;
@@ -1545,8 +1660,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
-/* The control bar is the single visibility source for the whole player chrome. */
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud {
+/* Header activity is independent of a pinned playback bar. */
+.theater-everywhere-header-hud.visible {
   opacity: 1 !important;
   transform: translateY(0) !important;
 }
@@ -1558,27 +1673,41 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   flex: 0 0 54px !important;
   min-height: 54.6px !important;
   box-sizing: border-box !important;
-  background: rgba(15, 15, 15, 0.72) !important;
+  background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   color: #ffffff !important;
   text-decoration: none !important;
   cursor: pointer !important;
   pointer-events: none !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-home-pill {
+.theater-everywhere-header-hud.visible .theater-home-pill {
   pointer-events: auto !important;
 }
 
 .theater-home-pill:hover,
 .theater-home-pill:focus-visible {
-  background: rgba(45, 45, 45, 0.88) !important;
-  border-color: rgba(255, 255, 255, 0.45) !important;
+  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
+  ) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  color: var(--accent-color, #ffffff) !important;
+}
+
+.theater-home-pill:active {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
+  ) !important;
 }
 
 .theater-home-pill:focus-visible {
@@ -1598,10 +1727,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   min-width: 0 !important;
   width: max-content !important;
   max-width: min(720px, calc(100vw - 114px)) !important;
-  background: rgba(15, 15, 15, 0.72) !important;
+  background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
   padding: 12px 20px !important;
   display: flex !important;
@@ -1616,7 +1745,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   user-select: none !important;
 }
 
@@ -1631,14 +1760,20 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-everywhere-title-hud.marquee .theater-title-hud-viewport {
-  width: 100% !important;
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent) !important;
-  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent) !important;
+  /* Fade into the existing pill padding without masking the title's first letter. */
+  box-sizing: border-box !important;
+  flex: none !important;
+  width: calc(100% + 20px) !important;
+  max-width: none !important;
+  margin-inline-start: -20px !important;
+  padding-inline-start: 20px !important;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 28px), transparent) !important;
+  mask-image: linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 28px), transparent) !important;
 }
 
 .theater-everywhere-title-hud[dir="rtl"].marquee .theater-title-hud-viewport {
-  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent) !important;
-  mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent) !important;
+  -webkit-mask-image: linear-gradient(to left, transparent, #000 20px, #000 calc(100% - 28px), transparent) !important;
+  mask-image: linear-gradient(to left, transparent, #000 20px, #000 calc(100% - 28px), transparent) !important;
 }
 
 .theater-title-hud-track {
@@ -1647,12 +1782,17 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   white-space: nowrap !important;
 }
 
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-everywhere-title-hud.marquee .theater-title-hud-track {
+.theater-everywhere-title-hud.marquee .theater-title-hud-track {
   animation: theater-title-marquee var(--theater-title-duration, 12s) linear infinite !important;
+  animation-play-state: paused !important;
 }
 
-.theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-everywhere-title-hud[dir="rtl"].marquee .theater-title-hud-track {
+.theater-everywhere-title-hud[dir="rtl"].marquee .theater-title-hud-track {
   animation-name: theater-title-marquee-rtl !important;
+}
+
+.theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee .theater-title-hud-track {
+  animation-play-state: running !important;
 }
 
 .theater-title-hud-text {
@@ -1677,7 +1817,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theater-controls-wrapper.visible ~ .theater-everywhere-header-hud .theater-everywhere-title-hud.marquee .theater-title-hud-track {
+  .theater-everywhere-title-hud.marquee .theater-title-hud-track {
     animation: none !important;
     transform: none !important;
   }

@@ -273,8 +273,12 @@
   "toggleSubtitles": {
     "message": "Activar o desactivar subtítulos"
   },
-  "increaseSubtitleSize": { "message": "Aumentar tamaño de subtítulos" },
-  "decreaseSubtitleSize": { "message": "Reducir tamaño de subtítulos" },
+  "increaseSubtitleSize": {
+    "message": "Aumentar tamaño de subtítulos"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Reducir tamaño de subtítulos"
+  },
   "subtitlesTooltip": {
     "message": "Subtítulos <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -570,5 +574,76 @@
   },
   "madeInPoland": {
     "message": "Hecho con <span class=\"heart\">❤</span> en 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Mostrar siempre los controles"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
+  },
+  "toggleControlsPin": {
+    "message": "Alternar visibilidad de los controles"
+  },
+  "controlsPinnedHud": {
+    "message": "Controles siempre visibles"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Los controles se ocultan automáticamente"
+  },
+  "playerSettingsLabel": {
+    "message": "Ajustes del reproductor"
+  },
+  "videoFitLabel": {
+    "message": "Ajuste del vídeo"
+  },
+  "controlsVisibilityOn": {
+    "message": "Sí"
+  },
+  "controlsVisibilityOff": {
+    "message": "No"
+  },
+  "extensionSettingsLabel": {
+    "message": "Ajustes de la extensión"
+  },
+  "shortcutUnassigned": {
+    "message": "Sin asignar"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Algunos atajos están asignados a varias acciones. Edita o restablece los atajos resaltados."
+  },
+  "shortcutConflictTitle": {
+    "message": "Atajo ya asignado"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ está asignado a $OWNERS$. ¿Moverlo a $TARGET$? Las acciones anteriores perderán este atajo.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Mantener asignación"
+  },
+  "shortcutReassign": {
+    "message": "Mover atajo"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape está reservado para cerrar diálogos y salir del modo cine. Elige otro atajo."
+  },
+  "shortcutSaveError": {
+    "message": "No se pudo guardar el atajo"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Tus atajos no han cambiado. Inténtalo de nuevo."
+  },
+  "cyclePictureLayout": {
+    "message": "Cambiar la disposición de la imagen"
   }
 }

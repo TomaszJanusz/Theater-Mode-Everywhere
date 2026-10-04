@@ -1,4 +1,6 @@
 import { resolveDomainPolicy } from '../platform/domain-policy';
+import { createShortcutUpdateQueue, readShortcutUpdate } from '../ui/shortcut-updates';
+import { withShortcutDefaults } from '../ui/shortcuts';
 import {
   LEGACY_YOUTUBE_EXCLUSION_MIGRATION_KEY,
   removeLegacyYoutubeExclusion
@@ -100,9 +102,36 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
   }
 }
 
-chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: any) => {
+const shortcutUpdates = createShortcutUpdateQueue({
+  read: async () => withShortcutDefaults((await chrome.storage.sync.get('shortcuts')).shortcuts),
+  write: async shortcuts => { await chrome.storage.sync.set({ shortcuts }); }
+});
+
+chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
+  if (message?.action === 'update-shortcuts') {
+    const request = readShortcutUpdate(message.request);
+    const optionsUrl = chrome.runtime.getURL('options/options.html');
+    if (_sender.url?.split(/[?#]/)[0] !== optionsUrl || !request) {
+      sendResponse({ status: 'error' });
+      return false;
+    }
+    shortcutUpdates.apply(request).then(sendResponse).catch(error => {
+      console.error('[Theater Everywhere] Shortcut update failed:', error);
+      sendResponse({ status: 'error' });
+    });
+    return true;
+  }
   if (message && message.action === 'theater-fetch-media') {
     fetchAllowlistedCaption(String(message.url || '')).then(sendResponse);
+    return true;
+  }
+  if (message && message.action === 'open-options-page') {
+    chrome.runtime.openOptionsPage()
+      .then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => {
+        console.error('[Theater Everywhere] Error opening options page:', error);
+        sendResponse({ ok: false });
+      });
     return true;
   }
   if (message && message.action === 'getBrowserTheme') {

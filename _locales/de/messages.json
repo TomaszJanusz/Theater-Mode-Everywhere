@@ -273,8 +273,12 @@
   "toggleSubtitles": {
     "message": "Untertitel umschalten"
   },
-  "increaseSubtitleSize": { "message": "Untertitel vergrößern" },
-  "decreaseSubtitleSize": { "message": "Untertitel verkleinern" },
+  "increaseSubtitleSize": {
+    "message": "Untertitel vergrößern"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Untertitel verkleinern"
+  },
   "subtitlesTooltip": {
     "message": "Untertitel <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -570,5 +574,76 @@
   },
   "madeInPoland": {
     "message": "Mit <span class=\"heart\">❤</span> in 🇵🇱 gemacht"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Steuerelemente immer anzeigen"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Wiedergabesteuerung und Fortschrittsbalken im Kinomodus sichtbar halten. Titel und Mauszeiger werden bei Inaktivität weiterhin ausgeblendet."
+  },
+  "toggleControlsPin": {
+    "message": "Sichtbarkeit der Steuerelemente umschalten"
+  },
+  "controlsPinnedHud": {
+    "message": "Steuerelemente immer sichtbar"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Steuerelemente werden automatisch ausgeblendet"
+  },
+  "playerSettingsLabel": {
+    "message": "Player-Einstellungen"
+  },
+  "videoFitLabel": {
+    "message": "Bildanpassung"
+  },
+  "controlsVisibilityOn": {
+    "message": "Ein"
+  },
+  "controlsVisibilityOff": {
+    "message": "Aus"
+  },
+  "extensionSettingsLabel": {
+    "message": "Erweiterungseinstellungen"
+  },
+  "shortcutUnassigned": {
+    "message": "Nicht zugewiesen"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Einige Tastenkürzel sind mehreren Aktionen zugewiesen. Bearbeite die markierten Kürzel oder setze sie zurück."
+  },
+  "shortcutConflictTitle": {
+    "message": "Tastenkürzel bereits zugewiesen"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ ist $OWNERS$ zugewiesen. Zu $TARGET$ verschieben? Die bisherigen Aktionen verlieren dieses Tastenkürzel.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Zuweisung beibehalten"
+  },
+  "shortcutReassign": {
+    "message": "Tastenkürzel verschieben"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape ist zum Schließen von Dialogen und Verlassen des Kinomodus reserviert. Wähle ein anderes Tastenkürzel."
+  },
+  "shortcutSaveError": {
+    "message": "Tastenkürzel konnte nicht gespeichert werden"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Deine Tastenkürzel wurden nicht geändert. Versuche es erneut."
+  },
+  "cyclePictureLayout": {
+    "message": "Bildlayout wechseln"
   }
 }

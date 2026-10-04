@@ -11,6 +11,11 @@
 <body>
   <video id="player" muted playsinline></video>
   <script>
+    // Registered by the host before the isolated extension finishes reading settings.
+    window.hostEntryKeys = [];
+    window.addEventListener('keydown', event => {
+      if (['KeyF', 'KeyT', 'KeyG'].includes(event.code)) window.hostEntryKeys.push(event.code);
+    }, true);
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 360;

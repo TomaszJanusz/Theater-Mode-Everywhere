@@ -11,6 +11,8 @@ import {
 } from '../media-features/caption-dock';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
+import { resolveChromeVisibility } from './controls-visibility';
+import { closePlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
@@ -26,16 +28,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }, TOOLBAR_AUTO_HIDE_DELAY_MS);
   }
 
-  function shouldKeepToolbarVisible(controls: HTMLElement): boolean {
-    const isScrubberDragging = controls.querySelector('.theater-scrubber-container.dragging') !== null;
-    const hasKeyboardFocus = ctx.refs.toolbarKeyboardInteractionActive && controls.querySelector(':focus-visible') !== null;
-
-    const header = ctx.queryPlayerUi(`.${HEADER_HUD_CLASS}`);
-    const headerActive = header?.matches(':hover, :focus-within');
-    return controls.matches(':hover') || isScrubberDragging || hasKeyboardFocus || Boolean(headerActive) || ctx.ui().helpOpen;
-  }
-
   function closeTheaterPopovers(): void {
+    const controls = ctx.queryPlayerUi('.theater-controls-wrapper');
+    if (controls) closePlayerSettings(controls);
     ctx.queryPlayerUi('.theater-cc-menu')?.classList.remove('visible');
     for (const el of ctx.queryPlayerUiAll<HTMLElement>(
       '.theater-volume-container button, .theater-volume-container input, .theater-speed-container button, .theater-speed-container input'
@@ -121,6 +116,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     for (const selector of [
       '.theater-scrubber-tooltip.visible',
       '.theater-cc-menu.visible',
+      '.theater-settings-menu.visible',
       '.theater-button-tooltip.visible',
       '.theater-volume-container:hover .theater-volume-panel',
       '.theater-speed-container:hover .theater-speed-panel',
@@ -167,49 +163,57 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }
   }
 
-  function hideToolbar(): void {
-    const controls = ctx.queryPlayerUi('.theater-controls-wrapper') as HTMLElement | null;
+  function applyVisibility(active: boolean): void {
+    if (ctx.ui().helpOpen && !ctx.refs.helpOverlay?.isConnected) ctx.actions.hideHelpOverlay(false);
+    const controls = ctx.queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
     if (!controls || !ctx.session.element) return;
-
-    if (shouldKeepToolbarVisible(controls)) {
-      scheduleToolbarHide();
-      return;
-    }
-
-    closeTheaterPopovers();
-    controls.classList.remove('visible');
     const header = ctx.queryPlayerUi<HTMLElement>(`.${HEADER_HUD_CLASS}`);
-    if (header) header.inert = true;
-    if (ctx.session.element.tagName === 'VIDEO') {
-      ctx.session.element.classList.remove('controls-visible');
+    const visibility = resolveChromeVisibility({
+      active,
+      pinned: ctx.ui().keepControlsVisible,
+      controlsHovered: controls.matches(':hover'),
+      scrubberDragging: controls.querySelector('.theater-scrubber-container.dragging') !== null,
+      keyboardFocused: ctx.refs.toolbarKeyboardInteractionActive
+        && (controls.querySelector(':focus-visible') !== null || Boolean(header?.querySelector(':focus-visible'))),
+      headerActive: Boolean(header?.matches(':hover, :focus-within')),
+      helpOpen: ctx.ui().helpOpen
+    });
+
+    if (!visibility.controlsVisible) {
+      closeTheaterPopovers();
+      ctx.queryPlayerUi('.theater-button-tooltip')?.classList.remove('visible');
     }
-    ctx.queryPlayerUi('.theater-button-tooltip')?.classList.remove('visible');
-    document.documentElement.classList.add(CURSOR_HIDDEN_CLASS);
-    ctx.uiStore.dispatch({ type: 'SET_TOOLBAR_VISIBLE', value: false });
+    controls.classList.toggle('visible', visibility.controlsVisible);
+    if (header) {
+      header.classList.toggle('visible', visibility.headerVisible);
+      header.inert = !visibility.headerVisible;
+    }
+    if (ctx.session.element.tagName === 'VIDEO') {
+      ctx.session.element.classList.toggle('controls-visible', visibility.controlsVisible);
+    }
+    document.documentElement.classList.toggle(CURSOR_HIDDEN_CLASS, !visibility.cursorVisible);
+    ctx.uiStore.dispatch({ type: 'SET_TOOLBAR_VISIBLE', value: visibility.headerVisible });
     updateCaptionDock();
+
+    // Poll held interactions with the same timer, even when the bottom bar is pinned.
+    if (visibility.cursorVisible) scheduleToolbarHide();
+  }
+
+  function hideToolbar(): void {
+    applyVisibility(false);
+  }
+
+  function refreshToolbarVisibility(): void {
+    applyVisibility(ctx.ui().toolbarVisible);
   }
 
   function showToolbar(event?: Event): void {
-    const controls = ctx.queryPlayerUi('.theater-controls-wrapper') as HTMLElement | null;
-    if (!controls) return;
-
     if (event?.type === 'pointermove' || event?.type === 'pointerdown') {
       ctx.refs.toolbarKeyboardInteractionActive = false;
     } else if (event?.type === 'focusin') {
       ctx.refs.toolbarKeyboardInteractionActive = ctx.eventPathMatches(event, ':focus-visible');
     }
-
-    controls.classList.add('visible');
-    const header = ctx.queryPlayerUi<HTMLElement>(`.${HEADER_HUD_CLASS}`);
-    if (header) header.inert = false;
-    if (ctx.session.element && ctx.session.element.tagName === 'VIDEO') {
-      ctx.session.element.classList.add('controls-visible');
-    }
-    document.documentElement.classList.remove(CURSOR_HIDDEN_CLASS);
-    ctx.uiStore.dispatch({ type: 'SET_TOOLBAR_VISIBLE', value: true });
-
-    scheduleToolbarHide();
-    updateCaptionDock();
+    applyVisibility(true);
   }
 
   function isPrimaryPointerEvent(event: Event): boolean {
@@ -266,6 +270,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
 
   return {
     scheduleToolbarHide,
+    refreshToolbarVisibility,
     showToolbar,
     hideToolbar,
     updateCaptionDock,

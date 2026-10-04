@@ -1,6 +1,7 @@
 /* Popup script for Theater Everywhere */
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
+import { withShortcutDefaults } from '../src/ui/shortcuts';
 import { parentBlockedEntry, removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
 import {
   mediaProviderFlagStorageKeys,
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const data = await chrome.storage.sync.get('shortcuts');
-    const toggleShortcut = (data.shortcuts && data.shortcuts.toggle) || 'T';
+    const toggleShortcut = withShortcutDefaults(data.shortcuts).toggle || t('shortcutUnassigned');
     const keyCapEl = document.querySelector('.key-cap') as HTMLElement | null;
     if (keyCapEl) {
       keyCapEl.textContent = toggleShortcut;

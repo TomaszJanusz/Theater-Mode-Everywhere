@@ -1,6 +1,6 @@
 export type DialogActionSet =
   | { type: 'acknowledge'; label?: string }
-  | { type: 'choice'; trueLabel?: string; falseLabel?: string };
+  | { type: 'choice'; trueLabel?: string; falseLabel?: string; initialFocus?: 'confirm' | 'cancel' };
 
 export interface OpenDialogOptions {
   title: string;
@@ -146,7 +146,8 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
     activeDialog = { close };
 
     requestAnimationFrame(() => {
-      buttons[buttons.length - 1]?.focus();
+      const index = options.actions.type === 'choice' && options.actions.initialFocus === 'cancel' ? 0 : buttons.length - 1;
+      buttons[index]?.focus();
     });
   });
 }

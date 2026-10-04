@@ -565,6 +565,7 @@ section h2 {
 }
 
 .shortcut-row {
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -700,7 +701,8 @@ section h2 {
 }
 
 .shortcut-group h3 {
-  grid-row: 1 / span 8;
+  grid-column: 1;
+  grid-row: 1;
   font-size: 11px;
   font-weight: 700;
   color: var(--text-secondary);
@@ -1027,8 +1029,13 @@ section h2 {
     grid-template-columns: 1fr;
   }
 
-  .shortcut-group h3 {
+  .shortcut-group h3,
+  .shortcut-row {
+    grid-column: auto;
     grid-row: auto;
+  }
+
+  .shortcut-group h3 {
     margin-bottom: 4px;
   }
 }
@@ -1376,4 +1383,13 @@ body.te-dialog-open {
   .te-dialog-overlay.is-leaving .te-dialog {
     animation: none;
   }
+}
+.shortcut-input[aria-invalid="true"] {
+  border-color: #f59e0b !important;
+}
+
+.shortcut-conflict-status {
+  color: #d97706;
+  font-size: 13px;
+  margin: 0 0 16px;
 }

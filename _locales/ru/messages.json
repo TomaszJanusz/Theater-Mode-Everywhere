@@ -273,8 +273,12 @@
   "toggleSubtitles": {
     "message": "Включить или выключить субтитры"
   },
-  "increaseSubtitleSize": { "message": "Увеличить размер субтитров" },
-  "decreaseSubtitleSize": { "message": "Уменьшить размер субтитров" },
+  "increaseSubtitleSize": {
+    "message": "Увеличить размер субтитров"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Уменьшить размер субтитров"
+  },
   "subtitlesTooltip": {
     "message": "Субтитры <kbd>$KEY$</kbd>",
     "placeholders": {
@@ -570,5 +574,76 @@
   },
   "madeInPoland": {
     "message": "Сделано с <span class=\"heart\">❤</span> в 🇵🇱"
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Всегда показывать элементы управления"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Элементы управления воспроизведением и шкала прогресса остаются видимыми в режиме кинотеатра. Заголовок и курсор по-прежнему скрываются при бездействии."
+  },
+  "toggleControlsPin": {
+    "message": "Переключить видимость элементов управления"
+  },
+  "controlsPinnedHud": {
+    "message": "Элементы управления всегда видны"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Элементы управления скрываются автоматически"
+  },
+  "playerSettingsLabel": {
+    "message": "Настройки проигрывателя"
+  },
+  "videoFitLabel": {
+    "message": "Размер видео"
+  },
+  "controlsVisibilityOn": {
+    "message": "Вкл."
+  },
+  "controlsVisibilityOff": {
+    "message": "Выкл."
+  },
+  "extensionSettingsLabel": {
+    "message": "Настройки расширения"
+  },
+  "shortcutUnassigned": {
+    "message": "Не назначено"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Некоторые сочетания клавиш назначены нескольким действиям. Измените или сбросьте выделенные сочетания."
+  },
+  "shortcutConflictTitle": {
+    "message": "Сочетание уже назначено"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ назначено для $OWNERS$. Перенести на $TARGET$? Предыдущие действия потеряют это сочетание.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Сохранить назначение"
+  },
+  "shortcutReassign": {
+    "message": "Перенести сочетание"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape зарезервировано для закрытия окон и выхода из режима кинотеатра. Выберите другое сочетание."
+  },
+  "shortcutSaveError": {
+    "message": "Не удалось сохранить сочетание"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Сочетания клавиш не изменены. Попробуйте ещё раз."
+  },
+  "cyclePictureLayout": {
+    "message": "Изменить расположение изображения"
   }
 }

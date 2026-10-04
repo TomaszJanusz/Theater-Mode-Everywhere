@@ -21,7 +21,9 @@ export type PlayerCommand =
   | { type: 'STEP_CAPTION_SIZE'; direction: 1 | -1 }
   | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
   | { type: 'CYCLE_FIT' }
-  | { type: 'TOGGLE_HELP' };
+  | { type: 'CYCLE_LAYOUT' }
+  | { type: 'TOGGLE_HELP' }
+  | { type: 'TOGGLE_CONTROLS_PIN' };
 
 export class PlayerSession {
   private epoch = 0;
