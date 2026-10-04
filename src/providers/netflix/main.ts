@@ -4,9 +4,11 @@ import {
   NETFLIX_CAPTION_EVENT,
   NETFLIX_HARVEST_EVENT,
   NETFLIX_SNAPSHOT_ID,
-  chooseNetflixRawTrack,
+  applyNetflixPlayerCaption,
   netflixCaptionAckDetail,
+  netflixCaptionList,
   netflixHarvestKey,
+  type NetflixCaptionApi,
   netflixSnapshotMatchesVideo,
   netflixVideoId,
   parseNetflixCaptionRequest,
@@ -18,6 +20,7 @@ import {
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isNetflixHost } from '../hosts';
+import { relayNetflixShadowClick } from './shadow-click';
 
 export function netflixIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('netflix');
@@ -49,11 +52,9 @@ function numericAncestorId(start: Element | null): string | null {
   return null;
 }
 
-type PlayerProps = {
+type PlayerProps = NetflixCaptionApi & {
   videoId?: unknown;
-  textTracks?: unknown;
   selectedTextTrack?: { trackId?: unknown; displayName?: unknown };
-  setTimedTextTrack?: (track: unknown) => unknown;
   activeVideo?: unknown;
 };
 
@@ -88,22 +89,59 @@ function playerTitleFromProps(props: PlayerProps): string | null {
   return found[0] || null;
 }
 
-function findPlayerProps(root: HTMLElement): PlayerProps | null {
+type PlayerFiber = {
+  memoizedProps?: PlayerProps;
+  stateNode?: PlayerProps & { player?: PlayerProps; _player?: PlayerProps };
+  child?: PlayerFiber;
+  sibling?: PlayerFiber;
+};
+
+function playerFibers(root: HTMLElement): PlayerFiber[] {
   const key = Object.keys(root).find((name) => name.startsWith('__reactFiber') || name.startsWith('__reactInternalInstance'));
-  const fiber = key ? (root as unknown as Record<string, { memoizedProps?: PlayerProps; child?: unknown; sibling?: unknown }>)[key] : null;
-  if (!fiber) return null;
+  const fiber = key ? (root as unknown as Record<string, PlayerFiber>)[key] : null;
+  if (!fiber) return [];
   const seen = new Set<object>();
-  const stack: Array<{ memoizedProps?: PlayerProps; child?: unknown; sibling?: unknown }> = [fiber];
-  while (stack.length && seen.size < 400) {
+  const stack: PlayerFiber[] = [fiber];
+  const fibers: PlayerFiber[] = [];
+  while (stack.length && seen.size < 800) {
     const node = stack.pop();
     if (!node || typeof node !== 'object' || seen.has(node)) continue;
     seen.add(node);
+    fibers.push(node);
+    if (node.child) stack.push(node.child);
+    if (node.sibling) stack.push(node.sibling);
+  }
+  return fibers;
+}
+
+function findPlayerProps(root: HTMLElement): PlayerProps | null {
+  for (const node of playerFibers(root)) {
     const props = node.memoizedProps;
     if (props && Array.isArray(props.textTracks) && typeof props.setTimedTextTrack === 'function') return props;
-    if (node.child && typeof node.child === 'object') stack.push(node.child as typeof fiber);
-    if (node.sibling && typeof node.sibling === 'object') stack.push(node.sibling as typeof fiber);
   }
   return null;
+}
+
+function captionApis(root: HTMLElement): NetflixCaptionApi[] {
+  const found: NetflixCaptionApi[] = [];
+  const push = (api: NetflixCaptionApi | null | undefined) => {
+    if (!api || typeof api.setTimedTextTrack !== 'function') return;
+    const list = netflixCaptionList(api);
+    if (!Array.isArray(list) || list.length === 0 || found.includes(api)) return;
+    found.push(api);
+  };
+  for (const node of playerFibers(root)) {
+    push(node.memoizedProps);
+    push(node.stateNode);
+    push(node.stateNode?.player);
+    push(node.stateNode?._player);
+  }
+  found.sort((left, right) => Number(typeof right.getTimedTextTrack === 'function') - Number(typeof left.getTimedTextTrack === 'function'));
+  return found;
+}
+
+function netflixCaptionRendererMounted(): boolean {
+  return document.querySelector('.player-timedtext') instanceof HTMLElement;
 }
 
 function controlTitle(): string | null {
@@ -217,17 +255,15 @@ function syncHarvest(): void {
 function applyCaptionRequest(trackId: string | null): boolean {
   if (!netflixIntegrationEnabled()) return false;
   const root = playerRoot();
-  const props = root ? findPlayerProps(root) : null;
-  if (!props || typeof props.setTimedTextTrack !== 'function') return false;
-  const raw = chooseNetflixRawTrack(props.textTracks, trackId);
-  if (!raw) return false;
-  try {
-    props.setTimedTextTrack(raw);
-  } catch {
-    return false;
+  if (!root) return false;
+  const rendererMounted = netflixCaptionRendererMounted();
+  const apis = captionApis(root);
+  for (const api of apis) {
+    if (!applyNetflixPlayerCaption(api, trackId, rendererMounted)) continue;
+    syncHarvest();
+    return true;
   }
-  syncHarvest();
-  return true;
+  return false;
 }
 
 export function readNetflixSnapshot(): Record<string, unknown> | null {
@@ -244,6 +280,7 @@ export function readNetflixSnapshot(): Record<string, unknown> | null {
 
 export function installNetflixMain(): void {
   if (!isNetflixHost()) return;
+  window.addEventListener('click', relayNetflixShadowClick, true);
   window.addEventListener(NETFLIX_CAPTION_EVENT, (event: Event) => {
     const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
     if (!request) return;

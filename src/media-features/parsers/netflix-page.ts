@@ -132,6 +132,64 @@ export function chooseNetflixRawTrack(rawTracks: unknown, trackId: string | null
   return null;
 }
 
+export type NetflixCaptionApi = {
+  textTracks?: unknown;
+  selectedTextTrack?: { trackId?: unknown } | null;
+  setTimedTextTrack?: (track: unknown) => unknown;
+  getTimedTextTrack?: () => { trackId?: unknown } | null;
+  getTimedTextTrackList?: () => unknown;
+};
+
+export function netflixCaptionList(api: NetflixCaptionApi): unknown {
+  if (typeof api.getTimedTextTrackList === 'function') {
+    try {
+      const list = api.getTimedTextTrackList();
+      if (Array.isArray(list) && list.length > 0) return list;
+    } catch {
+      // The HTML5 fallback list getter returns null; props may still hold the array.
+    }
+  }
+  return api.textTracks;
+}
+
+export function netflixLiveTrackId(api: NetflixCaptionApi): string | null {
+  let live: { trackId?: unknown } | null | undefined;
+  if (typeof api.getTimedTextTrack === 'function') {
+    try {
+      live = api.getTimedTextTrack();
+    } catch {
+      live = null;
+    }
+  }
+  if (!live) live = api.selectedTextTrack;
+  const trackId = live?.trackId;
+  return typeof trackId === 'string' ? trackId : null;
+}
+
+/**
+ * A language is applied only when the same object reports that track id afterwards
+ * and Netflix has mounted `.player-timedtext`. Returning from the setter is not
+ * enough: the public MP4 player can leave React's selected track on Off and never
+ * paint a cue. Off is applied when the live track is the off track.
+ */
+export function applyNetflixPlayerCaption(
+  api: NetflixCaptionApi,
+  trackId: string | null,
+  rendererMounted: boolean
+): boolean {
+  if (trackId != null && !rendererMounted) return false;
+  const raw = chooseNetflixRawTrack(netflixCaptionList(api), trackId);
+  if (!raw || typeof api.setTimedTextTrack !== 'function') return false;
+  const requestedId = (raw as { trackId?: unknown }).trackId;
+  if (typeof requestedId !== 'string') return false;
+  try {
+    api.setTimedTextTrack(raw);
+  } catch {
+    return false;
+  }
+  return netflixLiveTrackId(api) === requestedId;
+}
+
 export function netflixCaptionRequestDetail(request: NetflixCaptionRequest): string {
   return JSON.stringify({ requestId: request.requestId, trackId: request.trackId });
 }

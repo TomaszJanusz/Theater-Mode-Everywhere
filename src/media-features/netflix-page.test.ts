@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  applyNetflixPlayerCaption,
   chooseNetflixRawTrack,
   netflixHarvestKey,
   netflixSnapshotMatchesVideo,
@@ -143,5 +144,38 @@ describe('netflix public player metadata', () => {
     assert.equal(off.displayName, 'wył.');
     assert.equal(off.isForcedNarrative, true);
     assert.equal(parseNetflixCaptionRequest({ requestId: 'te-nf-abc', trackId: null }), null);
+  });
+
+  it('does not treat a setter return as an applied subtitle', () => {
+    let selected = publicTracks[0];
+    const calls: unknown[] = [];
+    const stale = {
+      textTracks: publicTracks,
+      selectedTextTrack: publicTracks[0],
+      setTimedTextTrack(track: unknown) {
+        calls.push(track);
+      },
+      getTimedTextTrack: () => selected
+    };
+    assert.equal(applyNetflixPlayerCaption(stale, 'T:2:1;1;pl;0;0;0;0;', true), false);
+    assert.equal((calls[0] as { displayName?: string }).displayName, 'polski');
+    assert.notEqual(typeof calls[0], 'string');
+
+    const noRenderer = {
+      textTracks: publicTracks,
+      getTimedTextTrack: () => selected,
+      setTimedTextTrack(track: unknown) {
+        selected = track as typeof selected;
+        calls.push(track);
+      }
+    };
+    const before = calls.length;
+    assert.equal(applyNetflixPlayerCaption(noRenderer, 'T:2:1;1;pl;0;0;0;0;', false), false);
+    assert.equal(calls.length, before);
+
+    selected = publicTracks[1];
+    assert.equal(applyNetflixPlayerCaption(noRenderer, 'T:2:1;1;pl;0;0;0;0;', true), true);
+    assert.equal(applyNetflixPlayerCaption(noRenderer, null, false), true);
+    assert.equal((calls.at(-1) as { displayName?: string }).displayName, 'wył.');
   });
 });

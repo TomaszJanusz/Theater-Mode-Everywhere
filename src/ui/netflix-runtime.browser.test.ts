@@ -50,6 +50,7 @@ describe('netflix runtime browser regressions', () => {
 
     const playback = compile('./netflix-playback.ts');
     const stage = compile('./netflix-stage.ts');
+    const shadowClick = compile('../providers/netflix/shadow-click.ts');
     const bundle = esbuildBundle();
     const browser = await chromium.launch({ headless: true });
     try {
@@ -139,6 +140,36 @@ describe('netflix runtime browser regressions', () => {
       assert.equal(restored.after.backgroundColor, restored.before.backgroundColor);
       assert.match(restored.after.mask, /gradient/i);
       assert.match(restored.after.backgroundImage, /gradient/i);
+
+      await page.addScriptTag({
+        content: `${shadowClick}\nwindow.relayNetflixShadowClick = relayNetflixShadowClick;`,
+        type: 'module'
+      });
+      const clicks = await page.evaluate(`(() => {
+        const host = document.createElement('div');
+        host.id = 'theater-everywhere-ui';
+        document.body.appendChild(host);
+        const shadow = host.attachShadow({ mode: 'open' });
+        const button = document.createElement('button');
+        shadow.appendChild(button);
+        const seen = [];
+        button.addEventListener('click', (event) => seen.push(event.composed ? 'composed' : 'closed'));
+        window.addEventListener('click', window.relayNetflixShadowClick, true);
+        let swallowed = 0;
+        window.addEventListener('click', (event) => {
+          if (event.composed) {
+            swallowed += 1;
+            event.stopImmediatePropagation();
+          }
+        }, true);
+        button.click();
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        outside.click();
+        return { seen, swallowed };
+      })()`) as { seen: string[]; swallowed: number };
+      assert.deepEqual(clicks.seen, ['closed']);
+      assert.equal(clicks.swallowed, 1);
 
       const boot = async (html: string): Promise<number> => {
         const bootPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });

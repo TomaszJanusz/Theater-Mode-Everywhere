@@ -6,7 +6,7 @@ Measured on the public title page `https://www.netflix.com/pl/title/80057281` (S
 
 - Two hero `<video>` elements stay in the DOM with the modal video. The modal film is the one inside `.nf-player-container`. Hero copies can keep playing or sit paused underneath. One hero is a blurred, low-opacity background.
 - `video.textTracks` was empty. Subtitles are drawn by Netflix in `.player-timedtext`.
-- While the modal player is mounted, its React props include `textTracks`, `getTimedTextTrackList`, and `setTimedTextTrack`. Tracks have `trackId`, `bcp47`, and `displayName`. The Polish off control is labeled `wył.` The same props object is not `window.netflix.appContext.state.playerApp.getAPI().videoPlayer`; that call was not present.
+- The modal player's live API exposes `getTimedTextTrackList` (36 tracks on the Stranger Things trailer, video `82779520`) and `setTimedTextTrack`. Tracks have `trackId`, `bcp47`, and `displayName`. The Polish off control is labeled `wył.` (`isNoneTrack` is false; `isForcedNarrative` is true). React `memoizedProps.textTracks` and `selectedTextTrack` can stay empty or on Off while that API already has the list. The HTML5 fallback methods `setTimedTextTrack` and `getTimedTextTrackList` are stubs (`function(){}` and `return null`). The same object is not `window.netflix.appContext.state.playerApp.getAPI().videoPlayer`; that call was not present.
 - `getTrickPlayURL` / `getTrickPlayFrame` appeared on a player props object, but a later mounted tree did not return a thumbnail URL. No sprite, storyboard, or chapter format was confirmed. Chapters and timeline thumbnails are unsupported.
 - The public player had no `mediaKeys`. That does not say anything about a signed-in title.
 
@@ -22,12 +22,12 @@ The visible hero has a different trap. One ancestor uses `filter: drop-shadow(..
 
 Raised mode keeps `object-fit: contain` and `object-position: center top` (`50% 0%`) on that full-viewport video, so the 16:9 picture stays at the top and the video background fills the lower band. Host subtitles (`.player-timedtext`) are pinned into that band with `--theater-letterbox`. Escape removes the inline containment, the Netflix stage class, and the host-control hide rules.
 
-`setTimedTextTrack` with the Polish track made a dialogue cue appear in `.player-timedtext`. Selecting the `wył.` track suppressed that dialogue. Forced narrative cards can still appear on the off track. Native `video.textTracks` stayed empty. Timeline thumbnails were not available.
+Calling `setTimedTextTrack` with the raw `polski` object changed `getTimedTextTrack()` from `wył.` to `polski`. Passing that same call's return value, or reading React `selectedTextTrack`, does not show that change. The playing media was a progressive MP4 (`nflxso.net` `.mp4`), `video.textTracks` stayed empty, and `.player-timedtext` was absent while the trailer played. Sampled at 15, 30, 45, 60, 75, 90, and 105 seconds, neither Polish nor English produced a cue. There is no visible dialogue to confirm on this public player. Timeline thumbnails were not available.
 
 ## What Theater Mode uses
 
 - Current title from the player, the pressed preview control, or the page title with the Netflix site suffix removed. A new video id does not keep the previous title.
-- Subtitle languages from the host track list. Off is requested as `trackId: null` in a JSON string, and MAIN answers with a separate JSON acknowledgement. Netflix keeps drawing the cues. The extension does not download caption files, manifests, or licenses.
+- Subtitle languages from the host track list. Off is requested as `trackId: null` in a JSON string, and MAIN answers with a separate JSON acknowledgement only when the live track id matches. A language acknowledgement also requires `.player-timedtext` to be mounted, because a setter return does not mean a cue was drawn. On the public trailer that renderer is not mounted, so a language request is not acknowledged. The extension does not download caption files, manifests, or licenses.
 - Chapters and timeline thumbnails are not supported. There is no confirmed preview or chapter format to import.
 - Netflix is included in the Rich Theater Experience switch. Stored settings that turned every older provider off, and have no Netflix key, keep Netflix off too.
 - Netflix is not on the media fetch allowlist.
