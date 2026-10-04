@@ -292,7 +292,11 @@ function playlistNavigationAvailable(): PlaylistNavState {
 
 function requestParentPlaylistNav(): void {
   if (window.parent === window || !session.id) return;
-  frames.postToParent('PLAYLIST_NAV_QUERY', session.id, {});
+  // The existing controls refresh also reports child availability to its parent.
+  const available = session.element?.tagName === 'IFRAME'
+    ? refs.childPlaylistNav
+    : playlistNavigationAvailable();
+  frames.postToParent('PLAYLIST_NAV_QUERY', session.id, available);
 }
 
 function activatePlaylistStep(direction: PlaylistDirection): void {
@@ -1094,24 +1098,29 @@ function initialize(): void {
       } else if (session.element.tagName === 'IFRAME') {
         const iframe = session.element as HTMLIFrameElement;
         if (iframe.contentWindow) {
+          const previous = matchesShortcut(event, shortcuts.previousVideo);
+          const next = matchesShortcut(event, shortcuts.nextVideo);
+          const claimed = matchesShortcut(event, shortcuts.playPause) ||
+            (!event.repeat && previous && refs.childPlaylistNav.previous) ||
+            (!event.repeat && next && refs.childPlaylistNav.next) ||
+            matchesShortcut(event, shortcuts.seekBack) ||
+            matchesShortcut(event, shortcuts.seekForward) ||
+            matchesShortcut(event, shortcuts.frameBack) ||
+            matchesShortcut(event, shortcuts.frameForward) ||
+            matchesShortcut(event, shortcuts.toggleMute) ||
+            matchesShortcut(event, shortcuts.increaseCaptionSize) ||
+            matchesShortcut(event, shortcuts.decreaseCaptionSize);
+          if ((previous || next) && !claimed) return false;
           frames.postToChildIframe(iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), {
             key: event.key,
             code: event.code,
             ctrlKey: event.ctrlKey,
             altKey: event.altKey,
             shiftKey: event.shiftKey,
-            metaKey: event.metaKey
+            metaKey: event.metaKey,
+            repeat: event.repeat
           });
-          if (matchesShortcut(event, shortcuts.playPause) ||
-              matchesShortcut(event, shortcuts.previousVideo) ||
-              matchesShortcut(event, shortcuts.nextVideo) ||
-              matchesShortcut(event, shortcuts.seekBack) ||
-              matchesShortcut(event, shortcuts.seekForward) ||
-              matchesShortcut(event, shortcuts.frameBack) ||
-              matchesShortcut(event, shortcuts.frameForward) ||
-              matchesShortcut(event, shortcuts.toggleMute) ||
-              matchesShortcut(event, shortcuts.increaseCaptionSize) ||
-              matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
+          if (claimed) {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -1285,6 +1294,7 @@ function initialize(): void {
           altKey: envelope.payload.altKey,
           shiftKey: envelope.payload.shiftKey,
           metaKey: envelope.payload.metaKey,
+          repeat: envelope.payload.repeat === true,
           preventDefault: () => {},
           stopPropagation: () => {},
           stopImmediatePropagation: () => {}
@@ -1294,6 +1304,10 @@ function initialize(): void {
       const actions = findPlaylistActions(document);
       const iframe = iframes.find((item) => item.contentWindow === event.source);
       if (iframe) {
+        if (session.element === iframe) {
+          refs.childPlaylistNav = playlistNavFromPayload(envelope.payload);
+          requestParentPlaylistNav();
+        }
         frames.postToChildIframe(
           iframe,
           'PLAYLIST_NAV_STATE',
@@ -1537,6 +1551,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   if (session.element) return;
 
   session.rebind(element, sessionId, nonce);
+  refs.childPlaylistNav = emptyPlaylistNav();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: true });
 
   // If the active video is inside a Shadow DOM, inject styling into its root node
@@ -1712,6 +1727,7 @@ function exitTheaterMode(
   }
 
   refs.parentPlaylistNav = emptyPlaylistNav();
+  refs.childPlaylistNav = emptyPlaylistNav();
   session.finishExit();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: false });
   updateCaptionDock();

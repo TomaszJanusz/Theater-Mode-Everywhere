@@ -1092,6 +1092,47 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
   await page.waitForFunction(videoClass => document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS);
   // Make parent focus explicit; a body without tabindex leaves focus in the iframe.
   await page.locator('body').evaluate(body => { body.tabIndex = -1; });
+  await page.evaluate(`(() => {
+    window.iframeNavigationSpy = { nextReleases: 0, previousReleases: 0, navigation: null };
+    document.addEventListener('keyup', event => {
+      if (event.code === 'KeyN') window.iframeNavigationSpy.nextReleases++;
+      if (event.code === 'KeyP') window.iframeNavigationSpy.previousReleases++;
+    });
+    window.addEventListener('message', event => {
+      if (event.source === document.getElementById('child').contentWindow
+          && event.data?.type === 'PLAYLIST_NAV_QUERY') {
+        window.iframeNavigationSpy.navigation = event.data.payload;
+      }
+    });
+  })()`);
+  await page.locator('body').press('Shift+N');
+  await page.locator('body').press('Shift+P');
+  const releases = await page.evaluate(`({ next: window.iframeNavigationSpy.nextReleases, previous: window.iframeNavigationSpy.previousReleases })`) as { next: number; previous: number };
+  if (releases.next !== 1 || releases.previous !== 1) fail('Unavailable iframe navigation swallowed parent host releases.');
+  await frame.locator('body').evaluate(body => {
+    const button = document.createElement('button');
+    button.id = 'iframe-next';
+    button.className = 'vjs-next-video';
+    button.textContent = 'Next';
+    button.style.cssText = 'position:fixed;left:10px;top:10px;width:50px;height:30px';
+    button.dataset.activations = '0';
+    button.addEventListener('click', () => { button.dataset.activations = String(Number(button.dataset.activations) + 1); });
+    body.appendChild(button);
+  });
+  await page.waitForFunction(`window.iframeNavigationSpy.navigation?.next === true`);
+  await page.locator('body').focus();
+  await page.keyboard.down('Shift');
+  await page.keyboard.down('n');
+  await page.locator('body').dispatchEvent('keydown', { key: 'N', code: 'KeyN', shiftKey: true, repeat: true, bubbles: true, cancelable: true });
+  await page.keyboard.up('n');
+  await page.keyboard.up('Shift');
+  await frame.locator('#iframe-next[data-activations="1"]').waitFor({ state: 'attached' });
+  if (await page.evaluate(`window.iframeNavigationSpy.nextReleases`) !== 1) fail('Available iframe navigation leaked a host release.');
+  await frame.locator('#iframe-next').evaluate((button: HTMLButtonElement) => { button.disabled = true; });
+  await page.waitForFunction(`window.iframeNavigationSpy.navigation?.next === false`);
+  await page.locator('body').press('Shift+N');
+  if (await page.evaluate(`window.iframeNavigationSpy.nextReleases`) !== 2) fail('Disabled iframe navigation retained its shortcut claim.');
+  await frame.locator('#iframe-next').evaluate(button => button.remove());
   // Parent focus in an iframe session must still toggle TME document fullscreen.
   await page.locator('body').press('f');
   await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
