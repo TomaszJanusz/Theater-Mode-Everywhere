@@ -3,6 +3,7 @@ import { MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { normalizeTencentMetadata, tencentRecord, type TencentSnapshot } from '../../media-features/parsers/tencent';
 import { isTencentHost } from '../hosts';
+import { installTencentWasmBridge } from './wasm-bridge';
 
 export type { TencentSnapshot } from '../../media-features/parsers/tencent';
 let harvested: TencentSnapshot | null = null;
@@ -90,7 +91,9 @@ export function captureTencentJsonpScript(url: string): void {
 }
 
 export function installTencentMain(): void {
-  if (!isTencentHost() || metadataObserver) return;
+  if (!isTencentHost()) return;
+  installTencentWasmBridge();
+  if (metadataObserver) return;
   const inspect = (node: Node) => {
     if (!(node instanceof Element)) return;
     if (node instanceof HTMLScriptElement && node.src) captureTencentJsonpScript(node.src);

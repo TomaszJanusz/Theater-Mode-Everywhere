@@ -242,6 +242,48 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }
   }
 
+  function bindWasmCatcher(catcher: HTMLElement): () => void {
+    let clickTimer: number | null = null;
+    const clearClick = () => {
+      if (clickTimer == null) return;
+      window.clearTimeout(clickTimer);
+      clickTimer = null;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!isPrimaryPointerEvent(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      clearClick();
+      clickTimer = window.setTimeout(() => {
+        clickTimer = null;
+        ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
+      }, 280);
+    };
+    const onDoubleClick = (event: MouseEvent) => {
+      if (!isPrimaryPointerEvent(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      clearClick();
+      if (ctx.refs.currentToggleFullscreen) {
+        ctx.refs.currentToggleFullscreen();
+        return;
+      }
+      if (document.fullscreenElement) {
+        void document.exitFullscreen();
+        return;
+      }
+      void document.documentElement.requestFullscreen();
+    };
+    catcher.addEventListener('click', onClick);
+    catcher.addEventListener('dblclick', onDoubleClick);
+    return () => {
+      clearClick();
+      catcher.removeEventListener('click', onClick);
+      catcher.removeEventListener('dblclick', onDoubleClick);
+      catcher.remove();
+    };
+  }
+
   function escapeHtml(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -277,6 +319,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     closeTheaterPopovers,
     blurMouseToggle,
     preventDoubleToggle,
+    bindWasmCatcher,
     escapeHtml,
     setIcon,
     setTooltipContent

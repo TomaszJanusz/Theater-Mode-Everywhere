@@ -5,6 +5,7 @@ export type FrameMessageType =
   | 'FRAME_TOGGLE'
   | 'FRAME_FULLSCREEN'
   | 'FRAME_ENTER'
+  | 'FRAME_HOST_TOGGLE'
   | 'FRAME_EXIT'
   | 'FRAME_EXITED'
   | 'PLAYBACK_COMMAND'
@@ -82,6 +83,7 @@ function isFrameMessageType(value: unknown): value is FrameMessageType {
     value === 'FRAME_TOGGLE'
     || value === 'FRAME_FULLSCREEN'
     || value === 'FRAME_ENTER'
+    || value === 'FRAME_HOST_TOGGLE'
     || value === 'FRAME_EXIT'
     || value === 'FRAME_EXITED'
     || value === 'PLAYBACK_COMMAND'
@@ -154,6 +156,10 @@ export function isTrustedFrameEnvelope(envelope: FrameEnvelope, context: FrameTr
     && envelope.sessionId === context.activeSessionId
     && envelope.nonce === context.activeNonce
   );
+  if (envelope.type === 'FRAME_HOST_TOGGLE') {
+    // The wasm host frame is accepted only by the Tencent DOM matcher, never as an ordinary child.
+    return false;
+  }
   if (envelope.type === 'FRAME_ENTER') {
     return hasValidCredentials || context.trustedOrigin;
   }

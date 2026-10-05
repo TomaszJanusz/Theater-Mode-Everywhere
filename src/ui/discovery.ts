@@ -1,4 +1,5 @@
 import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isTencentWasmFrameDocument } from '../providers/tencent/wasm-player';
 import { isNetflixHost } from '../providers/hosts';
 import { netflixPlaybackRank, readNetflixVideoFacts } from './netflix-playback';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
@@ -38,7 +39,17 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     return videos;
   }
 
+  function injectTencentWasmFrameStyles(shadowRoot: ShadowRoot): void {
+    if (shadowRoot.host?.localName !== 'fake-iframe-video') return;
+    if (shadowRoot.getElementById('theater-everywhere-tencent-wasm-styles')) return;
+    const styleEl = document.createElement('style');
+    styleEl.id = 'theater-everywhere-tencent-wasm-styles';
+    styleEl.textContent = 'iframe, canvas { width: 100% !important; height: 100% !important; }';
+    shadowRoot.appendChild(styleEl);
+  }
+
   function injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void {
+    injectTencentWasmFrameStyles(shadowRoot);
     if (shadowRoot.getElementById('theater-everywhere-shadow-styles')) return;
 
     const styleEl = document.createElement('style');
@@ -178,6 +189,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
   }
 
   function findBestVideo(): HTMLVideoElement | null {
+    if (isTencentWasmFrameDocument()) return null;
     const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
     if (videos.length === 0) return null;
     const pool = selectSwitchableVideos(videos);

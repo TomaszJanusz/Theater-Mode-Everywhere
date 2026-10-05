@@ -4,6 +4,7 @@ import {
   readDisneyContentTime,
   readPublishedDisneySnapshot
 } from './media-features/parsers/disney-page';
+import { isPlaybackSurface, nativeVideoOf, type PlaybackSurface } from './playback-surface';
 
 export type PlaybackWindow = {
   start: number;
@@ -263,10 +264,20 @@ function liveWindow(video: HTMLVideoElement): PlaybackWindow {
   };
 }
 
+function surfacePlaybackWindow(surface: PlaybackSurface): PlaybackWindow {
+  const duration = surface.duration;
+  if (Number.isFinite(duration) && duration > 0) {
+    return { start: 0, end: duration, duration, seekable: true, live: false };
+  }
+  return { start: 0, end: 0, duration: 0, seekable: false, live: false };
+}
+
 export function playbackWindow(
-  video: HTMLVideoElement,
+  media: HTMLVideoElement | PlaybackSurface,
   options?: PlaybackWindowOptions
 ): PlaybackWindow {
+  if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) return surfacePlaybackWindow(media);
+  const video = nativeVideoOf(media) || media as HTMLVideoElement;
   const live = options?.live ?? hostLiveHint(video);
   if (live) return liveWindow(video);
 
@@ -329,14 +340,18 @@ export function isAtLiveEdge(time: number, window: PlaybackWindow, threshold = L
   return window.end - time <= threshold;
 }
 
-export function isVideoAtLiveEdge(video: HTMLVideoElement, window?: PlaybackWindow): boolean {
+export function isVideoAtLiveEdge(media: HTMLVideoElement | PlaybackSurface, window?: PlaybackWindow): boolean {
+  const video = nativeVideoOf(media);
+  if (!video) return false;
   const shown = displayMediaTime(video);
   const pendingAway = Math.abs(shown - (video.currentTime || 0)) > PENDING_MEDIA_SEEK_ARRIVED_SECONDS;
   if (hostIsAtLiveHead(video) && !pendingAway) return true;
   return isAtLiveEdge(shown, window ?? playbackWindow(video));
 }
 
-export function displayMediaTime(video: HTMLVideoElement): number {
+export function displayMediaTime(media: HTMLVideoElement | PlaybackSurface): number {
+  if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) return media.currentTime || 0;
+  const video = nativeVideoOf(media) || media as HTMLVideoElement;
   const now = readDisneyContentTime(video) ?? (video.currentTime || 0);
   const pending = pendingMediaSeeks.get(video);
   if (!pending) return now;
@@ -347,7 +362,9 @@ export function displayMediaTime(video: HTMLVideoElement): number {
   return pending.time;
 }
 
-export function clearPendingMediaSeek(video: HTMLVideoElement): void {
+export function clearPendingMediaSeek(media: HTMLVideoElement | PlaybackSurface): void {
+  const video = nativeVideoOf(media);
+  if (!video) return;
   pendingMediaSeeks.delete(video);
 }
 
@@ -420,7 +437,13 @@ function canSeekDisneyHost(): boolean {
   return isDisneyHost();
 }
 
-export function seekToMediaTime(video: HTMLVideoElement, time: number): void {
+export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time: number): void {
+  if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) {
+    const surfaceWindow = playbackWindow(media);
+    media.currentTime = surfaceWindow.seekable ? clampToWindow(time, surfaceWindow) : time;
+    return;
+  }
+  const video = nativeVideoOf(media) || media as HTMLVideoElement;
   const window = playbackWindow(video);
   const target = window.seekable ? clampToWindow(time, window) : time;
   // Hosts such as Disney+ may transiently expose a paused HTMLMediaElement
@@ -458,9 +481,9 @@ export function seekToLive(video: HTMLVideoElement): boolean {
   return true;
 }
 
-export function seekBy(video: HTMLVideoElement, delta: number): boolean {
-  const window = playbackWindow(video);
+export function seekBy(media: HTMLVideoElement | PlaybackSurface, delta: number): boolean {
+  const window = playbackWindow(media);
   if (!window.seekable) return false;
-  seekToMediaTime(video, displayMediaTime(video) + delta);
+  seekToMediaTime(media, displayMediaTime(media) + delta);
   return true;
 }

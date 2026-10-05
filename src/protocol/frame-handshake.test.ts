@@ -163,6 +163,40 @@ describe('F-01 frame session handshake', () => {
     }
   });
 
+  it('never accepts FRAME_HOST_TOGGLE through the ordinary frame policy', () => {
+    const sessionId = createSessionId();
+    const nonce = createSessionId();
+    const message = createFrameMessage(
+      'FRAME_HOST_TOGGLE',
+      sessionId,
+      { action: 'toggle' },
+      nonce,
+      'https://vm.gtimg.cn'
+    );
+    assert.equal(parseFrameMessage(message)?.type, 'FRAME_HOST_TOGGLE');
+    assert.equal(parseFrameMessage({ ...message, sessionId: '' }), null);
+    assert.equal(parseFrameMessage({ ...message, requestId: '' }), null);
+    assert.equal(parseFrameMessage({ ...message, origin: '' }), null);
+    assert.equal(parseFrameMessage({ ...message, nonce: '' }), null);
+    assert.equal(isTrustedFrameEnvelope(message, {
+      eventOrigin: 'https://vm.gtimg.cn',
+      trustedOrigin: true,
+      fromParent: false,
+      fromChild: true,
+      activeSessionId: sessionId,
+      activeNonce: nonce
+    }), false);
+    const enter = createFrameMessage('FRAME_ENTER', sessionId, {}, nonce, 'https://vm.gtimg.cn');
+    assert.equal(isTrustedFrameEnvelope(enter, {
+      eventOrigin: 'https://vm.gtimg.cn',
+      trustedOrigin: false,
+      fromParent: false,
+      fromChild: false,
+      activeSessionId: null,
+      activeNonce: null
+    }), false);
+  });
+
   it('rejects unauthenticated FRAME_ENTER without a trusted origin policy', () => {
     const enter = createFrameMessage(
       'FRAME_ENTER',

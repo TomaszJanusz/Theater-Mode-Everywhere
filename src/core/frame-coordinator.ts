@@ -8,6 +8,7 @@ import {
   type FrameMessageType
 } from '../protocol/frame-messages';
 import { discoverParentOrigin, resolveParentMessageTarget } from '../platform/parent-origin';
+import { ordinaryChildWindows } from '../providers/tencent/wasm-player';
 
 export class FrameCoordinator {
   private parentOrigin: string | null = null;
@@ -15,7 +16,7 @@ export class FrameCoordinator {
   constructor(private readonly getNonce: () => string) {}
 
   childWindows(): Array<Window | null> {
-    return Array.from(document.querySelectorAll('iframe')).map((iframe) => iframe.contentWindow);
+    return ordinaryChildWindows(document) as Array<Window | null>;
   }
 
   iframeOrigin(iframe: HTMLIFrameElement): string {

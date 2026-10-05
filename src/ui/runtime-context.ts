@@ -20,6 +20,7 @@ import {
   requestVideoPlay
 } from '../host-play';
 import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
+import type { PlaybackSurface } from '../playback-surface';
 
 export interface BoostedVideoElement extends HTMLVideoElement {
   _audioCtx?: AudioContext;
@@ -51,7 +52,7 @@ export type PlayerChromeActions = {
   restoreTheaterElementInlineStyles(element: HTMLElement): void;
   injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void;
   preventDoubleToggle(event: Event): void;
-  createCustomControls(video: HTMLVideoElement): void;
+  createCustomControls(video: HTMLVideoElement | PlaybackSurface): void;
   destroyCustomControls(): void;
   showToolbar(event?: Event): void;
   hideToolbar(): void;
@@ -62,11 +63,11 @@ export type PlayerChromeActions = {
   hideHelpOverlay(restoreFocus?: boolean): void;
   showHelpOverlay(): void;
   toggleHelpOverlay(): void;
-  applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void;
-  rememberAudibleVolume(video: BoostedVideoElement, volume: number): void;
-  restoreAudibleVolume(video: BoostedVideoElement): number;
-  isVideoSilent(video: HTMLVideoElement): boolean;
-  toggleVideoMute(video: HTMLVideoElement): void;
+  applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void;
+  rememberAudibleVolume(video: PlaybackSurface, volume: number): void;
+  restoreAudibleVolume(video: PlaybackSurface): number;
+  isVideoSilent(video: PlaybackSurface): boolean;
+  toggleVideoMute(video: PlaybackSurface): void;
   persistCaptionPreference(pref: CaptionLanguagePreference): void;
   persistCaptionStyle(style: CaptionStyle): void;
   persistVideoFitMode(mode: VideoFitMode): void;
@@ -88,7 +89,7 @@ export type PlayerChromeActions = {
   triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: 'up' | 'down'): void;
   triggerStatusIndicator(text: string, icon: string): void;
   triggerPlaybackIndicator(action: 'play' | 'pause'): void;
-  seekHostTime(video: HTMLVideoElement, time: number): void;
+  seekHostTime(video: PlaybackSurface, time: number): void;
   playlistNavigationAvailable(): PlaylistNavState;
   requestParentPlaylistNav(): void;
   activatePlaylistStep(direction: PlaylistDirection): void;

@@ -181,6 +181,36 @@ html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-tim
   bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
 }
 
+/* Tencent's WASM stage. Visibility keeps the next-episode button clickable. */
+html.theater-everywhere-tencent-stage .txp_player,
+html.theater-everywhere-tencent-stage .txp_videos_container {
+  overflow: visible !important;
+  transform: none !important;
+  clip-path: none !important;
+  contain: none !important;
+}
+
+html.theater-everywhere-tencent-stage .txp-layer,
+html.theater-everywhere-tencent-stage .player-top-vip-slot,
+html.theater-everywhere-tencent-stage .player-top-vip,
+html.theater-everywhere-tencent-stage .plugin_ctrl_txp_bottom,
+html.theater-everywhere-tencent-stage .plugin_ctrl_txp_gradient_bottom,
+html.theater-everywhere-tencent-stage .txp_controls,
+html.theater-everywhere-tencent-stage .txp_top,
+html.theater-everywhere-tencent-stage .plugin_ctrl_txp_top {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.theater-wasm-catcher {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: auto;
+  background: transparent;
+}
+
 /* Sits directly behind the video. object-fit does not paint the raised
  * letterbox, and a playlist handoff can leave the page showing through
  * while the video has no frame or loses its viewport pin. */
