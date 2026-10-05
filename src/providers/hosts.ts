@@ -32,3 +32,14 @@ export function isDisneyHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'disneyplus.com' || host.endsWith('.disneyplus.com');
 }
+
+export function isBilibiliHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'bilibili.com' || host.endsWith('.bilibili.com');
+}
+
+export function isTencentHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'v.qq.com' || host.endsWith('.v.qq.com')
+    || host === 'wetv.vip' || host.endsWith('.wetv.vip');
+}

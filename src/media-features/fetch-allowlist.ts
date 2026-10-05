@@ -1,7 +1,7 @@
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'tencent';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json';
   url: string;
 };
@@ -30,6 +30,18 @@ function parseHttpsUrl(url: string, base?: string): URL | null {
 export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string): boolean {
   const parsed = parseHttpsUrl(request.url, base);
   if (!parsed) return false;
+
+  if (request.provider === 'tencent' && request.kind === 'caption-track') {
+    return !parsed.username && !parsed.password && !parsed.port
+      && ['cffaws.wetvinfo.com', 'subtitle.wetvinfo.com', 'subtitle.tc.qq.com', 'subtitlebk.apdcdn.tc.qq.com'].includes(parsed.hostname)
+      && /\.(vtt|srt)$/i.test(parsed.pathname);
+  }
+
+  if (request.provider === 'bilibili' && request.kind === 'caption-track') {
+    return !parsed.username && !parsed.password && !parsed.port
+      && (parsed.hostname === 'hdslb.com' || parsed.hostname.endsWith('.hdslb.com'))
+      && /^\/bfs\/(?:ai_)?subtitle\/[^?#]+\.json$/i.test(parsed.pathname);
+  }
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') {
     const hostOk = hostnameAllowed(parsed.hostname, [
@@ -94,7 +106,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney'];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'tencent'];
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json'];
 
 export function classifyMediaFetchUrl(url: string, base?: string): MediaFetchRequest | null {

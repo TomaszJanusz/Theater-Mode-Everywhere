@@ -15,6 +15,7 @@ import { type CaptionHudPayload } from '../media-features/controller';
 import {
   applyMediaProviderFlagAttrs,
   mediaProviderFlagStorageKeys,
+  mediaProviderFlagStorageUpdate,
   resolveMediaProviderFlags,
   type MediaProviderFlags
 } from '../media-features/provider-flags';
@@ -22,6 +23,7 @@ import {
   mediaHasSource,
   toggleVideoPlayback
 } from '../host-play';
+import { isInactiveThumbPlayerVideo } from '../switchable-videos';
 import {
   emptyPlaylistNav,
   findPlaylistActions,
@@ -290,7 +292,11 @@ function playlistNavigationAvailable(): PlaylistNavState {
 
 function requestParentPlaylistNav(): void {
   if (window.parent === window || !session.id) return;
-  frames.postToParent('PLAYLIST_NAV_QUERY', session.id, {});
+  // The existing controls refresh also reports child availability to its parent.
+  const available = session.element?.tagName === 'IFRAME'
+    ? refs.childPlaylistNav
+    : playlistNavigationAvailable();
+  frames.postToParent('PLAYLIST_NAV_QUERY', session.id, available);
 }
 
 function activatePlaylistStep(direction: PlaylistDirection): void {
@@ -797,7 +803,7 @@ function theaterDialogOpen(): boolean {
   return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
-function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
+function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
   if (matchesShortcut(e, shortcuts.playPause)) {
@@ -805,7 +811,7 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     e.stopPropagation();
     e.stopImmediatePropagation();
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
-    if (e.key === ' ' || e.code === 'Space') return;
+    if (e.key === ' ' || e.code === 'Space') return true;
     const willPlay = !mediaHasSource(video) || video.paused;
     executeCommand({ type: 'PLAY_PAUSE' });
     triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
@@ -910,7 +916,10 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement) {
     e.stopPropagation();
     e.stopImmediatePropagation();
     executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
+  } else {
+    return false;
   }
+  return true;
 }
 
 // Setup event listeners
@@ -929,15 +938,16 @@ function initialize(): void {
   publishEntryShortcuts();
 
   // 1. Keyboard Listener (T and Escape)
-  listeners.keydown = (event: KeyboardEvent) => {
-    if (event.isComposing) return;
+  const claimedKeyReleases = new Set<string>();
+  const handleKeydown = (event: KeyboardEvent): boolean => {
+    if (event.isComposing) return false;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        return;
+        return true;
       }
     }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
@@ -948,8 +958,8 @@ function initialize(): void {
       activeEl.isContentEditable ||
       activeEl.getAttribute('role') === 'textbox'
     );
-    if (isEditable) return;
-    if (theaterDialogOpen()) return;
+    if (isEditable) return false;
+    if (theaterDialogOpen()) return false;
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
@@ -960,14 +970,14 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
-        return;
+        return true;
       }
       if ((event.key === ' ' || event.key === 'Enter')
           && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
         if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        return;
+        return !activeEl.closest('.theater-help-overlay');
       }
     }
 
@@ -976,7 +986,7 @@ function initialize(): void {
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
-      return;
+      return false;
     }
 
     if (event.key === 'Escape' || event.key === 'Esc') {
@@ -986,7 +996,7 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         updateCaptionDock();
-        return;
+        return true;
       }
     }
 
@@ -995,7 +1005,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CONTROLS_PIN' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycle)) {
@@ -1003,7 +1013,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_VIDEO', direction: 'next' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleLayout)) {
@@ -1011,7 +1021,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'CYCLE_LAYOUT' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.cycleFit)) {
@@ -1019,7 +1029,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_FIT' });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.toggleCaptions)) {
@@ -1027,7 +1037,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'TOGGLE_CAPTIONS' });
-      return;
+      return true;
     }
 
     if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
@@ -1035,7 +1045,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: 1 });
-      return;
+      return true;
     }
 
     if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
@@ -1043,7 +1053,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'STEP_CAPTION_SIZE', direction: -1 });
-      return;
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.showHelp)) {
@@ -1051,7 +1061,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'TOGGLE_HELP' });
-      return;
+      return true;
     }
 
     if (matchesShortcut(event, shortcuts.toggle)) {
@@ -1059,11 +1069,13 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) toggleTheaterMode();
+      return true;
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) claimFullscreenShortcut();
+      return true;
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
       if (ui().helpOpen) {
@@ -1071,46 +1083,60 @@ function initialize(): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
         hideHelpOverlay();
+        return true;
       } else if (session.hasUi) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
         exitTheaterMode();
+        return true;
       }
     } else if (session.element) {
       if (session.element.tagName === 'VIDEO') {
         const video = session.element as HTMLVideoElement;
-        handleVideoKey(event, video);
+        return handleVideoKey(event, video);
       } else if (session.element.tagName === 'IFRAME') {
         const iframe = session.element as HTMLIFrameElement;
         if (iframe.contentWindow) {
+          const previous = matchesShortcut(event, shortcuts.previousVideo);
+          const next = matchesShortcut(event, shortcuts.nextVideo);
+          const claimed = matchesShortcut(event, shortcuts.playPause) ||
+            (!event.repeat && previous && refs.childPlaylistNav.previous) ||
+            (!event.repeat && next && refs.childPlaylistNav.next) ||
+            matchesShortcut(event, shortcuts.seekBack) ||
+            matchesShortcut(event, shortcuts.seekForward) ||
+            matchesShortcut(event, shortcuts.frameBack) ||
+            matchesShortcut(event, shortcuts.frameForward) ||
+            matchesShortcut(event, shortcuts.toggleMute) ||
+            matchesShortcut(event, shortcuts.increaseCaptionSize) ||
+            matchesShortcut(event, shortcuts.decreaseCaptionSize);
+          if ((previous || next) && !claimed) return false;
           frames.postToChildIframe(iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), {
             key: event.key,
             code: event.code,
             ctrlKey: event.ctrlKey,
             altKey: event.altKey,
             shiftKey: event.shiftKey,
-            metaKey: event.metaKey
+            metaKey: event.metaKey,
+            repeat: event.repeat
           });
-          if (matchesShortcut(event, shortcuts.playPause) ||
-              matchesShortcut(event, shortcuts.previousVideo) ||
-              matchesShortcut(event, shortcuts.nextVideo) ||
-              matchesShortcut(event, shortcuts.seekBack) ||
-              matchesShortcut(event, shortcuts.seekForward) ||
-              matchesShortcut(event, shortcuts.frameBack) ||
-              matchesShortcut(event, shortcuts.frameForward) ||
-              matchesShortcut(event, shortcuts.toggleMute) ||
-              matchesShortcut(event, shortcuts.increaseCaptionSize) ||
-              matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
+          if (claimed) {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
+            return true;
           }
         }
       }
     }
+    return false;
+  };
+  listeners.keydown = (event: KeyboardEvent) => {
+    // defaultPrevented can belong to an earlier host listener, not this handler.
+    if (handleKeydown(event)) claimedKeyReleases.add(event.code || event.key);
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
+  session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
   session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
     if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
     try {
@@ -1129,6 +1155,17 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
+    if (event.isComposing) return;
+    const key = event.code || event.key;
+    if (claimedKeyReleases.has(key)) {
+      if (event.type === 'keyup') claimedKeyReleases.delete(key);
+      // Tencent handles playback on release. Suppress only gestures claimed on
+      // keydown, including Escape and T after they have exited the session.
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
@@ -1257,6 +1294,7 @@ function initialize(): void {
           altKey: envelope.payload.altKey,
           shiftKey: envelope.payload.shiftKey,
           metaKey: envelope.payload.metaKey,
+          repeat: envelope.payload.repeat === true,
           preventDefault: () => {},
           stopPropagation: () => {},
           stopImmediatePropagation: () => {}
@@ -1266,6 +1304,10 @@ function initialize(): void {
       const actions = findPlaylistActions(document);
       const iframe = iframes.find((item) => item.contentWindow === event.source);
       if (iframe) {
+        if (session.element === iframe) {
+          refs.childPlaylistNav = playlistNavFromPayload(envelope.payload);
+          requestParentPlaylistNav();
+        }
         frames.postToChildIframe(
           iframe,
           'PLAYLIST_NAV_STATE',
@@ -1369,15 +1411,25 @@ function toggleTheaterMode(): void {
 }
 
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  const bindingScope = session.runtimeScope.child();
   const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
+    if (bindingScope.isDisposed) return;
     const current = session.element;
-    if (current?.tagName !== 'VIDEO' || isElementInDOMDeep(current)) return;
+    if (current?.tagName !== 'VIDEO') return;
+    const connected = isElementInDOMDeep(current);
+    if (connected && !isInactiveThumbPlayerVideo(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
       ? candidate
       : findBestVideo();
+    // ThumbPlayer swaps between connected video nodes while changing quality.
+    // Wait for the visible replacement's metadata instead of loading its source ourselves.
+    if (connected && (!replacement || replacement.readyState < 1 || isInactiveThumbPlayerVideo(replacement)
+      || replacement.closest('.txp_videos_container') !== current.closest('.txp_videos_container'))) return;
     if (replacement && replacement !== current) {
+      bindingScope.dispose();
       switchTheaterVideo(replacement);
+      keepTheaterVideoBound(replacement);
     }
   };
 
@@ -1409,7 +1461,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (relayoutHost) hostRelayoutQueued = true;
     if (stabilizeScheduled) return;
     stabilizeScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       stabilizeScheduled = false;
       stabilizeLayout(video, false);
     });
@@ -1419,27 +1471,27 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const schedulePictureLayout = (): void => {
     if (pictureLayoutScheduled) return;
     pictureLayoutScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       pictureLayoutScheduled = false;
       if (session.element?.tagName !== 'VIDEO') return;
       applyTheaterPictureLayout();
     });
   };
-  session.runtimeScope.listen(window, 'resize', schedulePictureLayout);
-  session.runtimeScope.listen(document, 'resize', (event: Event) => {
+  bindingScope.listen(window, 'resize', schedulePictureLayout);
+  bindingScope.listen(document, 'resize', (event: Event) => {
     if (event.target === session.element) schedulePictureLayout();
   }, true);
-  session.runtimeScope.listen(document, 'fullscreenchange', schedulePictureLayout);
+  bindingScope.listen(document, 'fullscreenchange', schedulePictureLayout);
 
   const holdViewport = (): void => {
     if (session.element !== video) return;
     refreshTheaterAncestors(video);
     stabilizeLayout(video, true);
   };
-  session.runtimeScope.listen(video, 'emptied', holdViewport);
-  session.runtimeScope.listen(document, 'yt-navigate-start', holdViewport);
-  session.runtimeScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
-  session.runtimeScope.listen(document, 'loadedmetadata', (event: Event) => {
+  bindingScope.listen(video, 'emptied', holdViewport);
+  bindingScope.listen(document, 'yt-navigate-start', holdViewport);
+  bindingScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
+  bindingScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
     if (!(candidate instanceof HTMLVideoElement)) return;
     if (candidate === session.element) {
@@ -1453,21 +1505,23 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const observer = new MutationObserver(() => {
     if (rebindScheduled) return;
     rebindScheduled = true;
-    session.runtimeScope.raf(() => {
+    bindingScope.raf(() => {
       rebindScheduled = false;
       rebindIfReplaced();
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  session.runtimeScope.add(() => observer.disconnect());
+  bindingScope.add(() => observer.disconnect());
 
   const styleObserver = new MutationObserver(() => {
     if (ignoreStyleMutations > 0 || session.element !== video) return;
+    rebindIfReplaced();
+    if (session.element !== video) return;
     if (!theaterVideoNeedsRestyle(video)) return;
     scheduleStabilize(false);
   });
   styleObserver.observe(video, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
-  session.runtimeScope.add(() => styleObserver.disconnect());
+  bindingScope.add(() => styleObserver.disconnect());
 }
 
 function refreshTheaterAncestors(element: HTMLElement): void {
@@ -1497,6 +1551,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   if (session.element) return;
 
   session.rebind(element, sessionId, nonce);
+  refs.childPlaylistNav = emptyPlaylistNav();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: true });
 
   // If the active video is inside a Shadow DOM, inject styling into its root node
@@ -1672,6 +1727,7 @@ function exitTheaterMode(
   }
 
   refs.parentPlaylistNav = emptyPlaylistNav();
+  refs.childPlaylistNav = emptyPlaylistNav();
   session.finishExit();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: false });
   updateCaptionDock();
@@ -1752,13 +1808,7 @@ export function bootstrapPlayerRuntime(): void {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
       }
       if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
-        const merged: Record<string, unknown> = {
-          youtubeIntegrationEnabled: refs.providerFlags.youtube,
-          vimeoIntegrationEnabled: refs.providerFlags.vimeo,
-          patreonIntegrationEnabled: refs.providerFlags.patreon,
-          twitchIntegrationEnabled: refs.providerFlags.twitch,
-          disneyIntegrationEnabled: refs.providerFlags.disney
-        };
+        const merged: Record<string, unknown> = mediaProviderFlagStorageUpdate(refs.providerFlags);
         for (const key of mediaProviderFlagStorageKeys()) {
           if (Object.prototype.hasOwnProperty.call(changes, key)) {
             merged[key] = changes[key].newValue;

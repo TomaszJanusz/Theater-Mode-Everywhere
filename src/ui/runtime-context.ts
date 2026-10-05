@@ -43,6 +43,7 @@ export type ChromeRefs = {
   providerFlags: MediaProviderFlags;
   helpOverlay: HTMLElement | null;
   parentPlaylistNav: PlaylistNavState;
+  childPlaylistNav: PlaylistNavState;
 };
 
 export type PlayerChromeActions = {
@@ -132,7 +133,8 @@ export function createChromeRefs(): ChromeRefs {
     volumeBoostEnabled: false,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,
-    parentPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null }
+    parentPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null },
+    childPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null }
   };
 }
 

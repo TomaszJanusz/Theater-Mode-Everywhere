@@ -11,6 +11,7 @@ function fakeVideo(init: {
   src?: string;
   srcObject?: unknown;
   sourceEl?: unknown;
+  visibility?: string;
   hosts?: string[];
   videoWidth?: number;
   videoHeight?: number;
@@ -24,6 +25,7 @@ function fakeVideo(init: {
   const box = init.box || { width: init.clientWidth ?? 880, height: init.clientHeight ?? 495 };
   return {
     currentSrc: init.currentSrc ?? '',
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ visibility: init.visibility ?? 'visible', display: 'block' }) } },
     src: init.src ?? '',
     srcObject: init.srcObject ?? null,
     querySelector: () => init.sourceEl ?? null,
@@ -71,6 +73,15 @@ describe('switchable theater videos', () => {
     assert.equal(isSwitchableTheaterVideo(fakeVideo({
       box: { width: 880, height: 495 }
     })), false);
+  });
+
+  it('ignores a hidden ThumbPlayer standby even when it retains a source and decoded dimensions', () => {
+    const current = fakeVideo({ currentSrc: 'blob:https://v.qq.com/current', readyState: 4, duration: 2812,
+      videoWidth: 1920, videoHeight: 1080, hosts: ['.txp_videos_container'] });
+    const spare = fakeVideo({ currentSrc: 'blob:https://v.qq.com/spare', readyState: 0,
+      videoWidth: 1920, videoHeight: 1080, visibility: 'hidden', hosts: ['.txp_videos_container'] });
+    assert.equal(isSwitchableTheaterVideo(spare), false);
+    assert.deepEqual(selectSwitchableVideos([spare, current]), [current]);
   });
 
   it('ignores a leftover hidden YouTube Shorts player on a watch page', () => {

@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimentell)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+ und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
   },
   "richTheaterExperienceReadMore": {
     "message": "hier"
@@ -188,6 +188,18 @@
   },
   "disneyIntegrationDescription": {
     "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Bilibili-Integration"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Importiert Videotitel, Untertitel, Kapitel und Vorschaubilder, sofern verfügbar. Einige Untertitel erfordern eine Anmeldung bei Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Tencent Video / WeTV-Integration"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Importiert Episodentitel, SRT/WebVTT-Untertitel und Vorschaubilder für die Zeitleiste von Tencent Video / WeTV, sofern verfügbar. Wiedergabe und nächste Episode nutzen die verfügbaren Bedienelemente des Players."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -349,7 +361,7 @@
     "message": "Mehr Kontext auf der Zeitleiste: Springe zwischen Kapiteln und sieh dir die meistwiederholten Momente auf YouTube an."
   },
   "whatsNewItemPreviews": {
-    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten YouTube-, Vimeo-, Patreon-, Twitch- und Disney+-Playern zu sehen."
+    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten Playern von YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili und Tencent Video / WeTV zu sehen."
   },
   "whatsNewThanks": {
     "message": "Aktiviere Rich Theater Experience (Experimental) über das Erweiterungs-Popup auf unterstützten Websites oder auf der Einstellungsseite. Die Funktion ist noch experimentell, daher können einzelne Funktionen je nach Dienst variieren :)"

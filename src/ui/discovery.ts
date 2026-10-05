@@ -1,4 +1,4 @@
-import { selectSwitchableVideos } from '../switchable-videos';
+import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 import { markTheaterVideo, unmarkTheaterVideo } from './theater-layout';
@@ -176,7 +176,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
   }
 
   function findBestVideo(): HTMLVideoElement | null {
-    const videos = findAllVideosDeep(document);
+    const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
     if (videos.length === 0) return null;
     const pool = selectSwitchableVideos(videos);
     const ranked = pool.length > 0 ? pool : videos;

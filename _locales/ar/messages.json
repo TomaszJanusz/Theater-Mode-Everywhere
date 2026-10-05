@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (تجريبية)"
   },
   "richTheaterExperienceDescription": {
-    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
+    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وBilibili, Tencent Video / WeTV وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
   },
   "richTheaterExperienceReadMore": {
     "message": "هنا"
@@ -188,6 +188,18 @@
   },
   "disneyIntegrationDescription": {
     "message": "يفعّل دعم الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "تكامل Bilibili"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "يستورد عنوان الفيديو والترجمات والفصول والصور المصغرة عند توفرها. تتطلب بعض الترجمات تسجيل الدخول إلى Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "تكامل Tencent Video / WeTV"
+  },
+  "tencentIntegrationDescription": {
+    "message": "يستورد عناوين الحلقات وترجمات SRT/WebVTT والصور المصغرة للخط الزمني من Tencent Video / WeTV عند توفرها. يستخدم التشغيل والانتقال إلى الحلقة التالية عناصر التحكم المتاحة في المشغل."
   },
   "liveBadge": {
     "message": "مباشر"
@@ -349,7 +361,7 @@
     "message": "مزيد من السياق على الخط الزمني: انتقل بين الفصول وشاهد أكثر اللحظات إعادةً على YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ المدعومة."
+    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ وBilibili وTencent Video / WeTV المدعومة."
   },
   "whatsNewThanks": {
     "message": "فعّل Rich Theater Experience (Experimental) من نافذة الإضافة على المواقع المدعومة أو من صفحة الإعدادات. ما زالت الميزة تجريبية، لذا قد تختلف بعض الوظائف حسب الخدمة :)"

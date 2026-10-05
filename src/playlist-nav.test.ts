@@ -27,6 +27,18 @@ function control(overrides: Partial<ObservedPlaylistControl> & Pick<ObservedPlay
 }
 
 describe('playlist navigation availability', () => {
+  it('uses enabled Bilibili and Tencent steps and ignores placeholder controls', () => {
+    const controls = [
+      control({ provider: 'bilibili', directionHint: 'previous', className: 'bpx-player-ctrl-prev disabled' }),
+      control({ provider: 'tencent', directionHint: 'next', className: 'txp_btn txp_none txp_disabled' }),
+      control({ provider: 'tencent', directionHint: 'next', className: 'txp_btn txp_btn_next_u' })
+    ];
+    assert.deepEqual(usableControlIndexes(controls, 1280), [{ index: 2, direction: 'next' }]);
+    assert.deepEqual(usableControlIndexes([
+      control({ provider: 'bilibili', directionHint: 'previous' }),
+      control({ provider: 'bilibili', directionHint: 'next', ariaDisabled: 'true' })
+    ], 1280), [{ index: 0, direction: 'previous' }]);
+  });
   it('shows YouTube previous and next only when the player is offering them', () => {
     const playlist = [
       control({
