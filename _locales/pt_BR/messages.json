@@ -199,7 +199,7 @@
     "message": "Integração com Bilibili"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importa o título, as legendas, os capítulos e as miniaturas quando disponíveis. Algumas legendas exigem login no Bilibili."
+    "message": "Importa o título, as legendas, os capítulos, o mapa de popularidade e as miniaturas quando disponíveis. Algumas legendas exigem login no Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Integração com Tencent Video / WeTV"

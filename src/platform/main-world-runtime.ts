@@ -475,6 +475,7 @@ export function installMainWorldRuntime(): void {
             if (!response.ok) return null;
             const request = classifyMediaFetchUrl(url, window.location.href);
             if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
+            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) return null;
             const buffer = await response.arrayBuffer();
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;

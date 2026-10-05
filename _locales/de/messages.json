@@ -199,7 +199,7 @@
     "message": "Bilibili-Integration"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importiert Videotitel, Untertitel, Kapitel und Vorschaubilder, sofern verfügbar. Einige Untertitel erfordern eine Anmeldung bei Bilibili."
+    "message": "Importiert Videotitel, Untertitel, Kapitel, die High-Energy-Fortschrittskarte und Vorschaubilder, sofern verfügbar. Einige Untertitel erfordern eine Anmeldung bei Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV-Integration"

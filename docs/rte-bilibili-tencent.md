@@ -9,11 +9,11 @@ Analiza i weryfikacja: 4 października 2026 r. Zakres Tencent Video obejmuje
 | --- | --- | --- |
 | Tryb kinowy, odtwarzanie, głośność, przewijanie | HTML5; poprawiona obsługa skrótów | HTML5; wybór filmu zamiast pustego elementu zapasowego |
 | Tytuł | Metadane bieżącego filmu | Tytuł odcinka bez dopisku reklamowego i nazwy serwisu |
-| Napisy | Ścieżki JSON z API odtwarzacza, renderowane przez RTE | Dostępne ścieżki SRT/WebVTT z `sfl.fi`, renderowane przez RTE; także natywne HTML5 |
+| Napisy | Lista z protobuf `subtitle/web/view`, a gdy jest pusta — ze ścieżek JSON odtwarzacza; cue JSON, a w razie potrzeby SRT/WebVTT | Dostępne ścieżki SRT/WebVTT z `sfl.fi`, renderowane przez RTE; także natywne HTML5 |
 | Rozdziały | `view_points` z API odtwarzacza, jeśli dostępne | Nie potwierdzono formatu możliwego do importowania |
 | Miniatury osi czasu | `videoshot`: arkusze obrazów i indeks czasowy | Arkusze `vl.vi[].pl[].pd` z metadanych ThumbPlayer |
 | Poprzedni/następny materiał | Dostępne przyciski odtwarzacza | Dostępny przycisk następnego odcinka |
-| Mapa popularności | Nie zaimportowano | Nie zaimportowano |
+| Mapa popularności | Seria `pbp` (高能进度条) rysowana na osi czasu RTE | Nie zaimportowano |
 
 Brak napisów lub rozdziałów dla konkretnego filmu nie oznacza błędu adaptera.
 Bilibili może wymagać zalogowania do udostępnienia napisów. Napisy wypalone
@@ -23,8 +23,10 @@ w obrazie nie są ścieżkami HTML5 i nie można ich przełączać przez RTE.
 
 MAIN odczytuje `window.__INITIAL_STATE__`, identyfikatory `aid` i `cid`, tytuł
 oraz czas trwania bieżącej części. Na żądanie RTE pobiera metadane z
-`https://api.bilibili.com/x/player/v2` oraz
-`https://api.bilibili.com/x/player/videoshot?index=1` w kontekście strony.
+`https://api.bilibili.com/x/player/v2`,
+`https://api.bilibili.com/x/player/videoshot?index=1`,
+`https://api.bilibili.com/x/v2/subtitle/web/view` oraz
+`https://bvc.bilivideo.com/pbp/data?r=loader` w kontekście strony.
 Do odczytu metadanych nie są potrzebne adresy strumieni wideo.
 
 Do świata content trafiają wyłącznie tytuł, identyfikator materiału, opisy
@@ -37,11 +39,24 @@ indeksu jest znacznikiem, a ostatni granicą końcową; nie są dodatkowymi
 kafelkami. Powtarzające się znaczniki czasu w środku indeksu pozostają
 zachowane. Parser obsługuje przejście między arkuszami obrazów.
 
-Napisy wykorzystują `subtitle.subtitles`: `id`/`id_str`, `lan`, `lan_doc`
-i `subtitle_url`. Format JSON `body[].from/to/content` zostaje przekształcony
-na standardowe cue RTE. Pobieranie ograniczono do HTTPS i plików JSON
-w katalogach napisów CDN `hdslb.com`. Rozdziały wykorzystują
-`view_points[].from/to/content`.
+Napisy z `/x/player/v2` często wracają puste, także gdy film ma ścieżki.
+Odtwarzacz bierze listę z protobufa `SubtitleViewReply` pod
+`/x/v2/subtitle/web/view?oid={cid}&pid={aid}&type=1`. RTE czyta tylko
+`SubtitleItem`: identyfikator, język, nazwę, adres i znacznik AI. Pola autora
+są pomijane. Gdy ta lista jest pusta, zostaje zapasowa lista JSON z
+`subtitle.subtitles`.
+
+Adresy `subtitle.bilibili.com` odtwarzacz odkodowuje na
+`aisubtitle.hdslb.com` tym samym przekształceniem XOR, którego używa jego
+własny kod. Ścieżki AI często nie mają końcówki `.json`, ale treść nadal jest
+JSON-em `body[].from/to/content`. Pobieranie ograniczono do HTTPS i katalogów
+napisów CDN `hdslb.com`. Plik SRT albo WebVTT jest parsowany tylko wtedy, gdy
+odpowiedź nie jest JSON-em. Rozdziały wykorzystują `view_points[].from/to/content`.
+
+Mapa popularności to seria z loadera `pbp`: `step_sec` i `events.default`.
+RTE nie ładuje `script_src` z tej odpowiedzi. Wartości są normalizowane do
+szczytu serii i, gdy metadane filmu są dłuższe niż seria, dopełniane zerami
+tak jak pasek odtwarzacza. Wynik trafia na istniejącą warstwę heatmapy osi czasu.
 
 Cache metadanych jest powiązany z `aid:cid` i ma krótki czas ważności.
 Zmiana części filmu lub wyłączenie RTE unieważnia późne wyniki.

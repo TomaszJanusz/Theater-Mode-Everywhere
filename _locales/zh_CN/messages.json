@@ -199,7 +199,7 @@
     "message": "Bilibili 集成"
   },
   "bilibiliIntegrationDescription": {
-    "message": "导入可用的视频标题、字幕、章节和时间轴缩略图。部分字幕需要登录 Bilibili。"
+    "message": "导入可用的视频标题、字幕、章节、高能进度条和时间轴缩略图。部分字幕需要登录 Bilibili。"
   },
   "tencentIntegrationTitle": {
     "message": "腾讯视频 / WeTV 集成"

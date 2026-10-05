@@ -199,7 +199,7 @@
     "message": "Bilibili 연동"
   },
   "bilibiliIntegrationDescription": {
-    "message": "사용 가능한 동영상 제목, 자막, 챕터와 타임라인 미리보기를 가져옵니다. 일부 자막은 Bilibili 로그인이 필요합니다."
+    "message": "사용 가능한 동영상 제목, 자막, 챕터, 하이라이트 진행 막대와 타임라인 미리보기를 가져옵니다. 일부 자막은 Bilibili 로그인이 필요합니다."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 연동"

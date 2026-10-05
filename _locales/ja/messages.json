@@ -199,7 +199,7 @@
     "message": "Bilibili 連携"
   },
   "bilibiliIntegrationDescription": {
-    "message": "利用可能な動画タイトル、字幕、チャプター、タイムラインのサムネイルを取り込みます。一部の字幕には Bilibili へのログインが必要です。"
+    "message": "利用可能な動画タイトル、字幕、チャプター、高能プログレスバー、タイムラインのサムネイルを取り込みます。一部の字幕には Bilibili へのログインが必要です。"
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 連携"

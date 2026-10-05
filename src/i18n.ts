@@ -83,7 +83,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   netflixIntegrationTitle: 'Netflix integration',
   netflixIntegrationDescription: 'Shows the current title and switches the player\'s subtitle languages in theater mode when the player has an active subtitle renderer. Chapters and timeline thumbnails are not supported.',
   bilibiliIntegrationTitle: 'Bilibili integration',
-  bilibiliIntegrationDescription: 'Imports the video title, subtitles, chapters, and timeline thumbnails when available. Some subtitles require signing in to Bilibili.',
+  bilibiliIntegrationDescription: 'Imports the video title, subtitles, chapters, the high-energy progress heatmap, and timeline thumbnails when available. Some subtitles require signing in to Bilibili.',
   tencentIntegrationTitle: 'Tencent Video / WeTV integration',
   tencentIntegrationDescription: "Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls.",
   websiteExclusionsTitle: 'Website Exclusions',
