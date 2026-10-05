@@ -95,22 +95,45 @@ export function createWasmEventWatch(events: readonly string[]) {
       }
       watches.set(element, { count: 1, stops });
     },
-    release(element: WasmEventTarget): void {
+    /** Returns whether listeners remain after this release. */
+    release(element: WasmEventTarget): boolean {
       const current = watches.get(element);
-      if (!current) return;
+      if (!current) return false;
       current.count -= 1;
-      if (current.count > 0) return;
+      if (current.count > 0) return true;
       for (const stop of current.stops) stop();
       watches.delete(element);
+      return false;
     }
   };
 }
 
-const mirrors = createWasmEventWatch(TENCENT_WASM_MEDIA_EVENTS);
+const WASM_ELEMENT_ID = /^[\w-]{8,80}$/;
+
+/** Finds a watched player by the id we assigned, including after it leaves the document. */
+export function createWasmIdWatch(events: readonly string[]) {
+  const mirrors = createWasmEventWatch(events);
+  const byId = new Map<string, WasmEventTarget>();
+  return {
+    watch(id: string, element: WasmEventTarget, emit: (type: string) => void): void {
+      if (!WASM_ELEMENT_ID.test(id)) return;
+      byId.set(id, element);
+      mirrors.watch(element, emit);
+    },
+    release(id: string): void {
+      if (!WASM_ELEMENT_ID.test(id)) return;
+      const element = byId.get(id);
+      if (!element) return;
+      if (!mirrors.release(element)) byId.delete(id);
+    }
+  };
+}
+
+const mirrors = createWasmIdWatch(TENCENT_WASM_MEDIA_EVENTS);
 
 function watchElement(element: WasmApi): void {
   const id = elementId(element);
-  mirrors.watch(element, (type) => {
+  mirrors.watch(id, element, (type) => {
     post(TENCENT_WASM_MIRROR_EVENT, {
       elementId: id,
       type,
@@ -119,8 +142,8 @@ function watchElement(element: WasmApi): void {
   });
 }
 
-function releaseWatch(element: WasmApi): void {
-  mirrors.release(element);
+function releaseWatchedId(id: string): void {
+  mirrors.release(id);
 }
 
 function startPlayback(element: WasmApi): Promise<void> {
@@ -161,13 +184,21 @@ export function installTencentWasmBridge(): void {
   window.addEventListener(TENCENT_WASM_COMMAND_EVENT, (event) => {
     const command = parseDetail((event as CustomEvent<string>).detail) as WasmCommand | null;
     if (!command?.requestId || !command.elementId || !command.op) return;
+    if (command.op === 'unwatch') {
+      releaseWatchedId(command.elementId);
+      post(TENCENT_WASM_RESULT_EVENT, {
+        requestId: command.requestId,
+        elementId: command.elementId,
+        state: null
+      });
+      return;
+    }
     const element = markedElement(command.elementId);
     if (!element) {
       post(TENCENT_WASM_RESULT_EVENT, { requestId: command.requestId, state: null });
       return;
     }
     if (command.op === 'watch') watchElement(element);
-    else if (command.op === 'unwatch') releaseWatch(element);
     else if (command.op === 'play') {
       startPlayback(element).then(
         () => post(TENCENT_WASM_RESULT_EVENT, {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createFrameMessage } from '../../protocol/frame-messages';
 import { isTrustedFrameEnvelope } from '../../protocol/frame-messages';
-import { createWasmEventWatch, openTencentWasmSurface, type WasmTransport } from './wasm-bridge';
+import { createWasmEventWatch, createWasmIdWatch, openTencentWasmSurface, type WasmTransport } from './wasm-bridge';
 import {
   createWasmClock,
   emptyWasmSnapshot,
@@ -211,6 +211,26 @@ describe('tencent wasm bridge lifetime', () => {
     watch.watch(element, (type) => seen.push(type));
     element.emit('timeupdate');
     assert.deepEqual(seen, ['timeupdate', 'timeupdate', 'timeupdate']);
+  });
+
+  it('releases a detached player by id without looking it up in the document', () => {
+    const watch = createWasmIdWatch(['timeupdate']);
+    const element = target();
+    const seen: string[] = [];
+    const id = 'detached-host-1';
+    watch.watch(id, element, (type) => seen.push(type));
+    watch.watch(id, element, () => seen.push('second'));
+    element.emit('timeupdate');
+    watch.release(id);
+    element.emit('timeupdate');
+    assert.deepEqual(seen, ['timeupdate', 'timeupdate']);
+    watch.release(id);
+    element.emit('timeupdate');
+    assert.deepEqual(seen, ['timeupdate', 'timeupdate']);
+    watch.release('not-a-watched-id');
+    watch.watch('bad id', element, () => seen.push('ignored'));
+    element.emit('timeupdate');
+    assert.deepEqual(seen, ['timeupdate', 'timeupdate']);
   });
 
   it('keeps picture-in-picture off when the fake reports support', async () => {
