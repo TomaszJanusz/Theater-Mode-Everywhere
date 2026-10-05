@@ -1,4 +1,4 @@
-import { isDisneyHost, isNetflixHost, isTwitchHost } from '../providers/hosts';
+import { isDisneyHost, isNetflixHost, isTencentHost, isTwitchHost } from '../providers/hosts';
 import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
 export const THEATER_STAGE_ID = 'theater-everywhere-stage';
@@ -6,6 +6,7 @@ export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
 export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
 export const NETFLIX_THEATER_STAGE_CLASS = 'theater-everywhere-netflix-stage';
+export const TENCENT_THEATER_STAGE_CLASS = 'theater-everywhere-tencent-stage';
 
 const VIEWPORT_PIN_EPSILON_PX = 1;
 
@@ -143,4 +144,13 @@ export function mountNetflixTheaterStage(hostname: string): void {
 
 export function unmountNetflixTheaterStage(): void {
   document.documentElement.classList.remove(NETFLIX_THEATER_STAGE_CLASS);
+}
+
+export function mountTencentTheaterStage(hostname: string): void {
+  if (!isTencentHost(hostname)) return;
+  document.documentElement.classList.add(TENCENT_THEATER_STAGE_CLASS);
+}
+
+export function unmountTencentTheaterStage(): void {
+  document.documentElement.classList.remove(TENCENT_THEATER_STAGE_CLASS);
 }

@@ -20,7 +20,8 @@ import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { createPlayerSettings } from './player-settings';
-import type { BoostedVideoElement, PlayerChromeContext } from './runtime-context';
+import type { PlayerChromeContext } from './runtime-context';
+import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _videoListenersCleanup?: () => void;
@@ -49,9 +50,9 @@ export function createControls(ctx: PlayerChromeContext) {
   const setIcon = (el: HTMLElement, svg: string) => ctx.actions.setIcon(el, svg);
   const setTooltipContent = (el: HTMLElement, raw: string) => ctx.actions.setTooltipContent(el, raw);
   const escapeHtml = (s: string) => ctx.actions.escapeHtml(s);
-  const applyVolumeAndBoost = (video: HTMLVideoElement, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
-  const rememberAudibleVolume = (video: BoostedVideoElement, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
-  const isVideoSilent = (video: HTMLVideoElement) => ctx.actions.isVideoSilent(video);
+  const applyVolumeAndBoost = (video: PlaybackSurface, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
+  const rememberAudibleVolume = (video: PlaybackSurface, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
+  const isVideoSilent = (video: PlaybackSurface) => ctx.actions.isVideoSilent(video);
   const persistCaptionPreference = (pref: Parameters<typeof ctx.actions.persistCaptionPreference>[0]) => {
     ctx.actions.persistCaptionPreference(pref);
   };
@@ -64,7 +65,7 @@ export function createControls(ctx: PlayerChromeContext) {
   const exitTheaterMode = () => ctx.actions.exitTheaterMode();
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
   const findAllVideosDeep = (root?: Document | ShadowRoot) => ctx.actions.findAllVideosDeep(root);
-  const seekHostTime = (video: HTMLVideoElement, time: number) => ctx.actions.seekHostTime(video, time);
+  const seekHostTime = (video: PlaybackSurface, time: number) => ctx.actions.seekHostTime(video, time);
   const tooltipState: TooltipState = { element: null };
 
   function bindCustomTooltip(
@@ -150,7 +151,10 @@ export function createControls(ctx: PlayerChromeContext) {
   }
 
   // Creates unified bottom player controls
-  function createCustomControls(video: HTMLVideoElement): void {
+  function createCustomControls(media: HTMLVideoElement | PlaybackSurface): void {
+    const video = coercePlaybackSurface(media);
+    const native = nativeVideoOf(video);
+    const volumeMax = volumeCeiling(video, refs.volumeBoostEnabled);
     destroyCustomControls();
 
     const controlsScope = new DisposableScope();
@@ -341,19 +345,18 @@ export function createControls(ctx: PlayerChromeContext) {
     volumeSlider.type = 'range';
     volumeSlider.className = 'theater-volume-slider theater-vertical-slider';
     volumeSlider.min = '0';
-    volumeSlider.max = refs.volumeBoostEnabled ? '1.5' : '1.0';
+    volumeSlider.max = volumeMax.toFixed(1);
     volumeSlider.step = '0.05';
   
-    const boostedVideo = video as BoostedVideoElement;
-    if (video.volume > 0) rememberAudibleVolume(boostedVideo, video.volume);
-    const initialLogical = boostedVideo._logicalVolume !== undefined
-      ? boostedVideo._logicalVolume
+    if (video.volume > 0) rememberAudibleVolume(video, video.volume);
+    const initialLogical = video.logicalVolume !== undefined
+      ? video.logicalVolume
       : (isVideoSilent(video) ? 0 : video.volume);
     volumeSlider.value = String(initialLogical);
 
     const volumeTick100 = document.createElement('div');
     volumeTick100.className = 'volume-tick-100-vertical';
-    if (!refs.volumeBoostEnabled) {
+    if (volumeMax <= 1) {
       volumeTick100.style.display = 'none';
     }
 
@@ -383,7 +386,7 @@ export function createControls(ctx: PlayerChromeContext) {
     `;
 
     const updateVolumeIcon = () => {
-      const logicalVol = video.muted ? 0 : (boostedVideo._logicalVolume !== undefined ? boostedVideo._logicalVolume : video.volume);
+      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
       if (video.muted || logicalVol === 0) {
         setIcon(volumeBtn, volMutedIcon);
         volumeBtn.style.color = '';
@@ -392,7 +395,7 @@ export function createControls(ctx: PlayerChromeContext) {
         volumeBtn.style.color = '';
       } else {
         setIcon(volumeBtn, volHighIcon);
-        if (logicalVol > 1.0 && video.dataset.theaterBoostReady === 'true') {
+        if (logicalVol > 1.0 && native?.dataset.theaterBoostReady === 'true') {
           volumeBtn.style.color = '#f59e0b';
         } else {
           volumeBtn.style.color = '';
@@ -402,8 +405,8 @@ export function createControls(ctx: PlayerChromeContext) {
     updateVolumeIcon();
 
     const updateVolumeSliderFill = () => {
-      const logicalVol = video.muted ? 0 : (boostedVideo._logicalVolume !== undefined ? boostedVideo._logicalVolume : video.volume);
-      const fillPct = (logicalVol / (refs.volumeBoostEnabled ? 1.5 : 1.0)) * 100;
+      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
+      const fillPct = (logicalVol / volumeMax) * 100;
       const isBoosted = logicalVol > 1.0;
       const activeColor = isBoosted ? '#f59e0b' : 'var(--accent-color, #6366f1)';
       const grad = `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${fillPct}%, rgba(255, 255, 255, 0.2) ${fillPct}%, rgba(255, 255, 255, 0.2) 100%)`;
@@ -417,7 +420,7 @@ export function createControls(ctx: PlayerChromeContext) {
     updateVolumeSliderFill();
 
     const updateVolumeTooltip = () => {
-      const logicalVol = video.muted ? 0 : (boostedVideo._logicalVolume !== undefined ? boostedVideo._logicalVolume : video.volume);
+      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
       if (logicalVol <= 1.0) {
         volumeTooltip.textContent = `${Math.round(logicalVol * 100)}%`;
         volumeTooltip.style.color = '#f8fafc';
@@ -447,12 +450,12 @@ export function createControls(ctx: PlayerChromeContext) {
         val = 1.0;
         volumeSlider.value = '1.0';
       }
-      boostedVideo._logicalVolume = val;
-      rememberAudibleVolume(boostedVideo, val);
+      video.logicalVolume = val;
+      rememberAudibleVolume(video, val);
       if (val > 0 && video.muted) {
         video.muted = false;
       }
-      applyVolumeAndBoost(boostedVideo, val);
+      applyVolumeAndBoost(video, val);
       updateVolumeSliderFill();
       updateVolumeTooltip();
     });
@@ -494,7 +497,7 @@ export function createControls(ctx: PlayerChromeContext) {
       const window = playbackForChrome();
       if (!window) return;
       if (window.live) {
-        if (window.seekable) seekToLive(video);
+        if (window.seekable && native) seekToLive(native);
         return;
       }
       showRemainingTime = !showRemainingTime;
@@ -654,7 +657,7 @@ export function createControls(ctx: PlayerChromeContext) {
     // PiP Button
     const pipBtn = document.createElement('button');
     pipBtn.className = 'theater-control-btn pip-btn';
-    if (!document.pictureInPictureEnabled) {
+    if (!video.capabilities.pictureInPicture || !document.pictureInPictureEnabled) {
       pipBtn.style.display = 'none';
     }
 
@@ -662,16 +665,21 @@ export function createControls(ctx: PlayerChromeContext) {
 
     setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
     const syncPipButton = () => {
-      pipBtn.classList.toggle('active', document.pictureInPictureElement === video);
+      pipBtn.classList.toggle('active', native != null && document.pictureInPictureElement === native);
     };
     syncPipButton();
     video.addEventListener('enterpictureinpicture', syncPipButton);
     video.addEventListener('leavepictureinpicture', syncPipButton);
     pipBtn.addEventListener('click', () => {
+      if (!video.capabilities.pictureInPicture) return;
       if (document.pictureInPictureElement) {
         document.exitPictureInPicture().catch(console.error);
-      } else {
-        video.requestPictureInPicture().catch(console.error);
+        return;
+      }
+      try {
+        void Promise.resolve(video.requestPictureInPicture()).catch(console.error);
+      } catch (error) {
+        console.error('Failed to request Picture-in-Picture:', error);
       }
     });
 
@@ -714,13 +722,16 @@ export function createControls(ctx: PlayerChromeContext) {
           })
           .catch(console.error);
       } else {
-        const target = session.element ? document.documentElement : (video.parentElement || video);
+        const target = session.element
+          ? document.documentElement
+          : (native?.parentElement || native || document.documentElement);
         target.requestFullscreen()
           .then(() => {
             setTimeout(resumeIfPaused, 150);
           })
           .catch(() => {
-            video.requestFullscreen()
+            if (!native || typeof native.requestFullscreen !== 'function') return;
+            native.requestFullscreen()
               .then(() => {
                 setTimeout(resumeIfPaused, 150);
               })
@@ -806,13 +817,13 @@ export function createControls(ctx: PlayerChromeContext) {
       void mediaFeatures.refresh();
     };
 
-    if (video.textTracks) {
-      video.textTracks.addEventListener('change', handleTrackChange);
-      video.textTracks.addEventListener('addtrack', handleTrackChange);
-      video.textTracks.addEventListener('removetrack', handleTrackChange);
+    if (native?.textTracks) {
+      native.textTracks.addEventListener('change', handleTrackChange);
+      native.textTracks.addEventListener('addtrack', handleTrackChange);
+      native.textTracks.addEventListener('removetrack', handleTrackChange);
     }
     const onTrackElementLoad = () => { void mediaFeatures.refresh(); };
-    video.querySelectorAll('track').forEach((trackEl) => {
+    native?.querySelectorAll('track').forEach((trackEl) => {
       trackEl.addEventListener('load', onTrackElementLoad);
     });
 
@@ -864,6 +875,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
     const fitBtn = document.createElement('button');
     fitBtn.className = 'theater-control-btn video-fit-btn';
+    fitBtn.hidden = !video.capabilities.objectFit;
     const updateFitButtonIcon = () => {
       setIcon(fitBtn, `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -880,8 +892,8 @@ export function createControls(ctx: PlayerChromeContext) {
       e.stopPropagation();
       executeCommand({ type: 'CYCLE_FIT' });
     });
-    const fitRow = settings.addRow(fitBtn, t('videoFitLabel'));
-    const updateFitRow = () => fitRow.update(ui().shortcuts.cycleFit, t(
+    const fitRow = video.capabilities.objectFit ? settings.addRow(fitBtn, t('videoFitLabel')) : null;
+    const updateFitRow = () => fitRow?.update(ui().shortcuts.cycleFit, t(
       ui().videoFit === 'cover' ? 'videoFitCover' : ui().videoFit === 'fill' ? 'videoFitFill' : 'videoFitContain'
     ));
     updateFitRow();
@@ -901,7 +913,7 @@ export function createControls(ctx: PlayerChromeContext) {
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     // Switch Video Button (Only if there are multiple real video players on the page)
-    const videosOnPage = selectSwitchableVideos(findAllVideosDeep(document), video);
+    const videosOnPage = native ? selectSwitchableVideos(findAllVideosDeep(document), native) : [];
     if (videosOnPage.length > 1) {
       const switchVideoBtn = document.createElement('button');
       switchVideoBtn.className = 'theater-control-btn switch-video-btn';
@@ -1319,8 +1331,8 @@ export function createControls(ctx: PlayerChromeContext) {
     let lastDisneyPlayhead = Number.NaN;
     const onDisneyClock = (event: Event) => {
       const eventTime = (event as CustomEvent<{ time?: unknown }>).detail?.time;
-      const published = writeDisneyContentTime(video, eventTime);
-      const playhead = published ?? Number(video.dataset.teDisneyPlayhead);
+      const published = native ? writeDisneyContentTime(native, eventTime) : null;
+      const playhead = published ?? Number(native?.dataset.teDisneyPlayhead);
       updateScrubber();
       updateTimeDisplay();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
@@ -1346,7 +1358,7 @@ export function createControls(ctx: PlayerChromeContext) {
       if (!video.paused && !video.seeking && video.readyState >= 3) {
         setBuffering(false);
       }
-      const playhead = Number(video.dataset.teDisneyPlayhead);
+      const playhead = Number(native?.dataset.teDisneyPlayhead);
       if (!video.paused && Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
         setBuffering(false);
       }
@@ -1378,18 +1390,16 @@ export function createControls(ctx: PlayerChromeContext) {
       void mediaFeatures.refresh();
     };
     const onVolumeChange = () => {
-      const boostedVideo = video as BoostedVideoElement;
       if (video.muted) {
         volumeSlider.value = '0';
       } else {
-        if (boostedVideo._logicalVolume !== undefined && boostedVideo._logicalVolume > 1.0 && video.volume === 1.0) {
-          // Keep the slider at the logical volume if currently boosted
-          volumeSlider.value = String(boostedVideo._logicalVolume);
-          rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
+        if (video.logicalVolume !== undefined && video.logicalVolume > 1.0 && video.volume === 1.0) {
+          volumeSlider.value = String(video.logicalVolume);
+          rememberAudibleVolume(video, video.logicalVolume);
         } else {
-          boostedVideo._logicalVolume = video.volume;
+          video.logicalVolume = video.volume;
           volumeSlider.value = String(video.volume);
-          rememberAudibleVolume(boostedVideo, video.volume);
+          rememberAudibleVolume(video, video.volume);
         }
       }
       updateVolumeIcon();
@@ -1409,7 +1419,7 @@ export function createControls(ctx: PlayerChromeContext) {
       if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
       bufferingFailsafe = window.setTimeout(() => {
         bufferingFailsafe = null;
-        if (!video.paused || Number.isFinite(Number(video.dataset.teDisneyPlayhead))) {
+        if (!video.paused || Number.isFinite(Number(native?.dataset.teDisneyPlayhead))) {
           setBuffering(false);
         }
       }, 4000);
@@ -1493,12 +1503,12 @@ export function createControls(ctx: PlayerChromeContext) {
         clearTimeout(bufferingFailsafe);
         bufferingFailsafe = null;
       }
-      if (video.textTracks) {
-        video.textTracks.removeEventListener('change', handleTrackChange);
-        video.textTracks.removeEventListener('addtrack', handleTrackChange);
-        video.textTracks.removeEventListener('removetrack', handleTrackChange);
+      if (native?.textTracks) {
+        native.textTracks.removeEventListener('change', handleTrackChange);
+        native.textTracks.removeEventListener('addtrack', handleTrackChange);
+        native.textTracks.removeEventListener('removetrack', handleTrackChange);
       }
-      video.querySelectorAll('track').forEach((trackEl) => {
+      native?.querySelectorAll('track').forEach((trackEl) => {
         trackEl.removeEventListener('load', onTrackElementLoad);
       });
       mediaFeatures.dispose();

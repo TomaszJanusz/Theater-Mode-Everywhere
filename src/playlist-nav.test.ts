@@ -312,6 +312,47 @@ describe('playlist navigation DOM', () => {
         });
         assert.deepEqual(await read(), []);
 
+        await page.route('https://playlist.example/**', (route) => route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: `<!doctype html><body>
+            <div class="video-js" id="player-root">
+              <video id="player"></video>
+            </div>
+            <button class="vjs-previous-video" title="Previous video"></button>
+            <button class="vjs-next-video" title="Next video"></button>
+            <div class="video">
+              <img src="https://framatube.org/lazy-static/thumbnails/next.jpg" alt="">
+              <a class="video-info-name" title="Making a libre movie" href="/w/p/list?playlistPosition=3">Making a libre movie</a>
+            </div>
+          </body>`
+        }));
+        await page.goto('https://playlist.example/w/p/list?playlistPosition=2', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        const fromDocument = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null }> } }).__playlist;
+          const video = document.querySelector('#player') as HTMLVideoElement;
+          const actions = api.findPlaylistActions(document, video);
+          return {
+            directions: actions.map((action) => action.direction),
+            nextPreview: actions.find((action) => action.direction === 'next')?.preview?.title ?? null
+          };
+        });
+        const fromPlayer = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null }> } }).__playlist;
+          const video = document.querySelector('#player') as HTMLVideoElement;
+          const player = document.querySelector('#player-root') as HTMLElement;
+          const actions = api.findPlaylistActions(player, video);
+          return {
+            directions: actions.map((action) => action.direction),
+            nextPreview: actions.find((action) => action.direction === 'next')?.preview?.title ?? null
+          };
+        });
+        assert.deepEqual(fromDocument.directions, ['previous', 'next']);
+        assert.equal(fromDocument.nextPreview, 'Making a libre movie');
+        assert.deepEqual(fromPlayer.directions, []);
+        assert.equal(fromPlayer.nextPreview, null);
+
         await page.setContent(`<!doctype html><body>
           <div class="video-js">
             <video id="player"></video>

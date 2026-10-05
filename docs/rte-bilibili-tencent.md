@@ -7,7 +7,7 @@ Analiza i weryfikacja: 4 października 2026 r. Zakres Tencent Video obejmuje
 
 | Funkcja | Bilibili | Tencent Video |
 | --- | --- | --- |
-| Tryb kinowy, odtwarzanie, głośność, przewijanie | HTML5; poprawiona obsługa skrótów | HTML5; wybór filmu zamiast pustego elementu zapasowego |
+| Tryb kinowy, odtwarzanie, głośność, przewijanie | HTML5; poprawiona obsługa skrótów | HTML5 oraz `<fake-iframe-video>` jądra WASM; wybór filmu zamiast pustego elementu zapasowego |
 | Tytuł | Metadane bieżącego filmu | Tytuł odcinka bez dopisku reklamowego i nazwy serwisu |
 | Napisy | Lista z protobuf `subtitle/web/view`, a gdy jest pusta — ze ścieżek JSON odtwarzacza; cue JSON, a w razie potrzeby SRT/WebVTT | Dostępne ścieżki SRT/WebVTT z `sfl.fi`, renderowane przez RTE; także natywne HTML5 |
 | Rozdziały | `view_points` z API odtwarzacza, jeśli dostępne | Nie potwierdzono formatu możliwego do importowania |
@@ -127,6 +127,63 @@ indeks na końcu filmu. Obrazy pochodzą z `video-caps.puui.qpic.cn` albo
 Nie potwierdzono osobnej listy rozdziałów z nazwami i czasami. Dane
 pomijania czołówki i napisów końcowych nie są przedstawiane jako rozdziały.
 
+### Odtwarzacz WASM
+
+Na części odtwarzaczy `v.qq.com` i `wetv.vip` ThumbPlayer rysuje obraz przez
+`<fake-iframe-video>` i płótno WASM, a nie przez element `<video>` w dokumencie
+strony. W otwartym shadow roocie leży ramka
+`vm.gtimg.cn/.../fake-video-element-iframe.html`. Grający stan (`paused`,
+`currentTime`, `play()`, `pause()`) jest na elemencie w dokumencie strony.
+`document.querySelectorAll('video')` i `document.querySelectorAll('iframe')`
+tej powierzchni nie widzą. Wewnątrz ramki jest ukryte, puste `<video>`; nie
+jest celem trybu kinowego.
+
+Sonda z 5 października 2026 r. sprawdziła API po wstawieniu elementu
+z `wasm-kernel.js` 1.70.0. W świecie strony są gettery, settery, `play()` /
+`pause()`, zdarzenia odtwarzania i `buffered` jako obiekt z `length`, `start`
+i `end`. W izolowanym świecie content scriptu Chromium te same nazwy są
+`undefined`. Firefox nie został obciążony niepodpisanym rozszerzeniem MV3;
+otoczki Xray ukrywają metody prototypu zdefiniowane przez stronę w ten sam
+sposób. Brakuje też `objectFit`. `requestPictureInPicture` istnieje, ale
+`supportPictureInPicture()` jest fałszywe przy ramce z innej domeny.
+Wzmocnienie przez `volumeGain` i Web Audio nie jest używane.
+
+Sterowanie idzie więc wąskim mostem tylko dla hosta Tencent: content script
+wysyła komendę zdarzeniem z JSON-em, a skrypt świata strony wywołuje metodę
+i odsyła zwykły snapshot, łącznie z zakresami bufora. Zegar `currentTime`
+uzupełnia brakujące `timeupdate` albo `buffered` w tym jednym module i kończy
+się przy pauzie, przewinięciu, zamianie i wyjściu. Nasłuchy mostu w świecie
+strony schodzą razem z powierzchnią. Spacja ma jednego właściciela w świecie
+strony i korzysta z `paused` oraz `play()` / `pause()`, bez wymagania źródła
+HTML. Inny skrót pauzy zostaje w content scripcie, a pusty skrót niczego nie
+wznawia. Przewijanie i głośność do 1 idą tym samym kontraktem.
+Picture-in-Picture zostaje wyłączone, bo atrapa nie jest `HTMLMediaElement`.
+Dopasowanie `object-fit`, wzmocnienie Web Audio i przeładowanie `crossOrigin`
+zostają przy prawdziwym `<video>`.
+
+Kolejność wyboru na hoście Tencent: prawdziwy przełączalny `<video>`, potem
+używalny `<fake-iframe-video>` (podłączony, widoczny, co najmniej 80 px,
+przecięcie z oknem, ramka WASM w otwartym shadow roocie), a na końcu dotychczasowy
+`findBestVideo()`. W dokumencie ramki WASM ten ostatni krok zwraca `null`.
+
+Wejście przypina atrapę do okna klasą `html.theater-everywhere-tencent-stage`.
+Chrom odtwarzacza znika przez `visibility`, nie przez `display: none`, więc
+przycisk następnego odcinka nadal przechodzi `isHostStepUsable()`. Wyjście
+zdejmuje kontrolki, nasłuchy, napisy, pełny ekran, łapacz kliknięć i obserwator
+zamiany także wtedy, gdy element nie jest `<video>`. Zamiana atrapy nie woła
+`switchTheaterVideo()` ani `load()`.
+
+Po kliknięciu obrazu fokus jest w ramce WASM. Ramka wysyła `FRAME_HOST_TOGGLE`
+z akcją `toggle` albo `fullscreen` zamiast włączać tryb kinowy u siebie.
+Rodzic przyjmuje komunikat tylko wtedy, gdy okno nadawcy jest ramką wewnątrz
+shadow root `<fake-iframe-video>`, origin zgadza się ze `src`, adres to znany
+dokument WASM, a strona jest hostem Tencent. Sesja nie musi jeszcze istnieć.
+Ta ramka nie wchodzi do zwykłych okien potomnych, a `FRAME_ENTER` z niej nie
+otwiera trybu kinowego. Po wejściu fokus wraca do dokumentu strony. Łapacz
+kliknięć leży nad obrazem i pod paskiem: klik przełącza odtwarzanie, podwójne
+kliknięcie przełącza pełny ekran dokumentu. Zwykłe `<video>` i zwykła ramka
+zostają na dotychczasowej ścieżce.
+
 ### Materiały do powtarzalnych prób
 
 | Materiał | Adres | Wynik w sesji bez logowania |
@@ -174,8 +231,20 @@ Etykiety Tencent Video / WeTV uwzględniają teraz import napisów i miniaturek.
   oraz przejście przyciskiem RTE z EP1 do EP2 z aktualizacją tytułu.
   Arkusz WeTV faktycznie ładował się jako obraz 800 × 450 px. Na Tencent
   zaimportowano miniaturki, a ścieżkę `lmt: 1` poprawnie pominięto.
-- Końcowe kontrole: `pnpm typecheck`, 276 testów, `pnpm build`,
-  `pnpm verify:bundles` i `pnpm smoke`.
+- Sonda API `<fake-iframe-video>` z 5 października 2026 r.: metody są w świecie
+  strony, a w izolowanym świecie content scriptu Chromium pozostają
+  `undefined`. Test rozszerzenia na atrapie `v.qq.com` z ramką
+  `vm.gtimg.cn` potwierdza `T` ze strony i z ramki, pauzę Spacją raz na
+  naciśnięcie, przewinięcie strzałką raz na naciśnięcie, `F` bez wyjścia
+  z trybu kinowego, wyjście `Escape`, dwukrotną zamianę elementu i powrót
+  do zwykłego `<video>` na innej stronie. Na żywej stronie odcinka testowego
+  w tym środowisku jądro WASM się nie wybiera (`SharedArrayBuffer` niedostępne,
+  `crossOriginIsolated` fałszywe), więc płótna WASM nie sprawdzono na
+  odtwarzaczu produkcyjnym. `T` na tej stronie włączyło tryb kinowy na zwykłym
+  `<video>` i nie dodało klasy sceny WASM.
+- Końcowe kontrole poprzedniego wdrożenia RTE: `pnpm typecheck`, 276 testów,
+  `pnpm build`, `pnpm verify:bundles` i `pnpm smoke`. Ta zmiana: `pnpm typecheck`,
+  `pnpm build` i 320 testów, w tym test rozszerzenia dla atrapy WASM.
 
 Źródła techniczne odczytane z aktualnych odtwarzaczy:
 [Bilibili core](https://s1.hdslb.com/bfs/static/player/main/core.ba67b466.js),

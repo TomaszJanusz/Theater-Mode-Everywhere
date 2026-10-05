@@ -11,6 +11,7 @@ import { shouldAttachProvider } from '../providers/registry';
 import type { MediaFeaturesAdapter } from './types';
 import { BilibiliAdapter } from '../providers/bilibili/adapter';
 import { TencentAdapter } from '../providers/tencent/adapter';
+import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('youtube', flags, hostname);
@@ -37,10 +38,14 @@ export function shouldAttachNetflixAdapter(flags: MediaProviderFlags, hostname?:
 }
 
 export function createMediaFeaturesAdapter(
-  video: HTMLVideoElement,
+  media: HTMLVideoElement | PlaybackSurface,
   flags: MediaProviderFlags = defaultMediaProviderFlags()
 ): MediaFeaturesAdapter {
-  const adapters: MediaFeaturesAdapter[] = [new NativeTextTrackAdapter(video)];
+  const surface = coercePlaybackSurface(media);
+  const adapters: MediaFeaturesAdapter[] = [];
+  if (surface.nativeMedia instanceof HTMLVideoElement) {
+    adapters.push(new NativeTextTrackAdapter(surface.nativeMedia));
+  }
   if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter());
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());

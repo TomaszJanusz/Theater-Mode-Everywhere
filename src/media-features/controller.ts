@@ -8,6 +8,7 @@ import { DEFAULT_CAPTION_STYLE } from './caption-style';
 import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderFlags } from './provider-flags';
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
+import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 import { heatmapRidgePath } from './parsers/youtube-heatmap-path';
 import type { CaptionActivationResult, CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
@@ -28,7 +29,7 @@ export type CaptionActivateOptions = {
 export type CaptionOverlayRenderer = Pick<CaptionRenderer, 'setCues' | 'update' | 'setStyle' | 'setMaxLines' | 'dispose'>;
 
 export type MediaFeaturesBindings = {
-  video: HTMLVideoElement;
+  video: HTMLVideoElement | PlaybackSurface;
   ccBtn: HTMLButtonElement;
   ccMenu: HTMLDivElement;
   scrubberTrack: HTMLElement;
@@ -59,7 +60,7 @@ export type TooltipMediaExtras = {
 export class MediaFeaturesController {
   private adapter: MediaFeaturesAdapter;
   private renderer: CaptionOverlayRenderer;
-  private video: HTMLVideoElement;
+  private video: PlaybackSurface;
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
   private chapterLayer: HTMLDivElement;
@@ -100,9 +101,9 @@ export class MediaFeaturesController {
 
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
-    this.adapter = bindings.adapter || createMediaFeaturesAdapter(bindings.video, this.providerFlags);
+    this.video = coercePlaybackSurface(bindings.video);
+    this.adapter = bindings.adapter || createMediaFeaturesAdapter(this.video, this.providerFlags);
     this.renderer = bindings.renderer || new CaptionRenderer(bindings.onCaptionChange);
-    this.video = bindings.video;
     this.ccBtn = bindings.ccBtn;
     this.ccMenu = bindings.ccMenu;
     this.t = bindings.t;

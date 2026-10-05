@@ -1,3 +1,5 @@
+import { matchesShortcut } from './ui/shortcuts';
+
 const PLAY_CONTROL_SELECTOR =
   'button, [role="button"], .ytp-large-play-button, .vjs-big-play-button, .plyr__control--overlaid';
 
@@ -72,4 +74,36 @@ export function toggleVideoPlayback(video: HTMLVideoElement): void {
     return;
   }
   video.pause();
+}
+
+/**
+ * The page world owns literal Space only when that key is the play/pause shortcut.
+ * A missing shortcut falls back to Space. An explicit empty shortcut stays off.
+ * Any other binding, including `K`, stays with the content script.
+ */
+export function mainWorldOwnsWasmPlayPause(
+  event: Pick<KeyboardEvent, 'key' | 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>,
+  configuredShortcut: string | null
+): boolean {
+  const shortcut = configuredShortcut === null ? 'Space' : configuredShortcut;
+  if (!shortcut) return false;
+  if (event.key !== ' ' && event.code !== 'Space') return false;
+  return matchesShortcut(event as KeyboardEvent, shortcut);
+}
+
+/** Play or pause from `paused` alone. An already playing element is not started again. */
+export function toggleDirectPlayback(media: {
+  paused: boolean;
+  play: () => Promise<unknown> | unknown;
+  pause: () => void;
+}): void {
+  if (!media.paused) {
+    media.pause();
+    return;
+  }
+  try {
+    void Promise.resolve(media.play()).catch(() => {});
+  } catch {
+    // A synchronous play() failure must not break the key handler.
+  }
 }

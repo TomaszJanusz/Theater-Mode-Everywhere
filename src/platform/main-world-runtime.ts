@@ -3,6 +3,8 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { queryPlayerUi } from '../ui/root';
+import { mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import {
@@ -347,15 +349,47 @@ export function installMainWorldRuntime(): void {
     if (hostPlay) hostPlay.click();
   }
 
+  function publishedShortcut(name: string): string | null {
+    try {
+      const config = JSON.parse(document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) || '{}') as Record<string, unknown>;
+      const value = config[name];
+      return typeof value === 'string' ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
-    const video = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
-    if (!(video instanceof HTMLVideoElement)) return;
+    const marked = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     // The content world owns help focus and native activation of its close button.
     if (queryPlayerUi('.theater-help-overlay')) return;
     // Settings buttons own native Space activation, including through the UI's shadow root.
     if (event.composedPath().some(node => node instanceof Element
         && node.matches('.theater-settings-menu, .player-settings-btn'))) return;
+
+    if (isTencentWasmPlayerElement(marked)) {
+      if (!mainWorldOwnsWasmPlayPause(event, publishedShortcut('playPause'))) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (event.type !== 'keydown' || event.repeat) return;
+      const host = marked as HTMLElement & { paused?: boolean; play?: () => unknown; pause?: () => void };
+      if (typeof host.paused !== 'boolean' || typeof host.play !== 'function' || typeof host.pause !== 'function') return;
+      const willPause = host.paused === false;
+      toggleDirectPlayback({
+        paused: host.paused,
+        play: () => host.play?.(),
+        pause: () => host.pause?.()
+      });
+      window.dispatchEvent(new CustomEvent('theater-everywhere-playback-intent', {
+        detail: { action: willPause ? 'pause' : 'play' }
+      }));
+      return;
+    }
+
+    if (!(marked instanceof HTMLVideoElement)) return;
+    const video = marked;
     const isSpace = event.key === ' ' || event.code === 'Space';
     if (!isSpace) return;
     event.preventDefault();

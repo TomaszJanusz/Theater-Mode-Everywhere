@@ -21,9 +21,11 @@ import {
 } from '../media-features/provider-flags';
 import {
   mediaHasSource,
+  toggleDirectPlayback,
   toggleVideoPlayback
 } from '../host-play';
-import { isInactiveThumbPlayerVideo } from '../switchable-videos';
+import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
+import { nativePlaybackSurface, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 import {
   emptyPlaylistNav,
   findPlaylistActions,
@@ -39,12 +41,22 @@ import {
   seekToMediaTime
 } from '../playback-window';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
-import { isNetflixHost, isTwitchHost } from '../providers/hosts';
+import { isNetflixHost, isTencentHost, isTwitchHost } from '../providers/hosts';
+import {
+  isTencentWasmFrameDocument,
+  isTencentWasmPlayerElement,
+  isUsableTencentWasmPlayer,
+  readTencentWasmHostToggle,
+  replacementTencentWasmHost,
+  selectTencentTheaterTarget
+} from '../providers/tencent/wasm-player';
+import { openTencentWasmSurface } from '../providers/tencent/wasm-bridge';
 import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
   mountNetflixTheaterStage,
+  mountTencentTheaterStage,
   mountTheaterStage,
   mountTwitchTheaterStage,
   observeTwitchTheaterStage,
@@ -52,12 +64,14 @@ import {
   unmarkTheaterVideo,
   unmountDisneyTheaterStage,
   unmountNetflixTheaterStage,
+  unmountTencentTheaterStage,
   unmountTheaterStage,
   unmountTwitchTheaterStage
 } from './theater-layout';
 import { holdNetflixViewport, releaseNetflixViewport } from './netflix-stage';
 import { createNetflixVideoBinding, readNetflixVideoFacts, shouldFollowNetflixVideo } from './netflix-playback';
 import {
+  getPlayerUiRoot,
   queryPlayerUi,
   queryPlayerUiAll
 } from './root';
@@ -97,8 +111,7 @@ import {
 import {
   bindRootHelpers,
   createChromeRefs,
-  createPlayerChromeContext,
-  type BoostedVideoElement
+  createPlayerChromeContext
 } from './runtime-context';
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
@@ -149,7 +162,8 @@ const {
   hideToolbar,
   updateCaptionDock,
   closeTheaterPopovers,
-  preventDoubleToggle
+  preventDoubleToggle,
+  bindWasmCatcher
 } = toolbar;
 const { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay } = help;
 const {
@@ -161,62 +175,74 @@ const {
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
 
-function rememberAudibleVolume(video: BoostedVideoElement, volume: number): void {
-  if (volume > 0) video._lastAudibleVolume = volume;
+let wasmSurface: PlaybackSurface | null = null;
+let wasmWatch: { dispose(): void } | null = null;
+let removeWasmCatcher: (() => void) | null = null;
+
+function sessionSurface(): PlaybackSurface | null {
+  if (wasmSurface && session.element === wasmSurface.element) return wasmSurface;
+  if (session.element instanceof HTMLVideoElement) return nativePlaybackSurface(session.element);
+  return null;
 }
 
-function restoreAudibleVolume(video: BoostedVideoElement): number {
-  if (typeof video._lastAudibleVolume === 'number' && video._lastAudibleVolume > 0) {
-    return video._lastAudibleVolume;
+function rememberAudibleVolume(video: PlaybackSurface, volume: number): void {
+  if (volume > 0) video.lastAudibleVolume = volume;
+}
+
+function restoreAudibleVolume(video: PlaybackSurface): number {
+  if (typeof video.lastAudibleVolume === 'number' && video.lastAudibleVolume > 0) {
+    return video.lastAudibleVolume;
   }
-  if (typeof video._logicalVolume === 'number' && video._logicalVolume > 0) {
-    return video._logicalVolume;
+  if (typeof video.logicalVolume === 'number' && video.logicalVolume > 0) {
+    return video.logicalVolume;
   }
   if (video.volume > 0) return video.volume;
   return 1;
 }
 
-function isVideoSilent(video: HTMLVideoElement): boolean {
+function isVideoSilent(video: PlaybackSurface): boolean {
   return video.muted || video.volume === 0;
 }
 
-function toggleVideoMute(video: HTMLVideoElement): void {
-  const boostedVideo = video as BoostedVideoElement;
+function toggleVideoMute(video: PlaybackSurface): void {
   if (isVideoSilent(video)) {
-    const restore = restoreAudibleVolume(boostedVideo);
-    boostedVideo._logicalVolume = restore;
-    rememberAudibleVolume(boostedVideo, restore);
+    const restore = restoreAudibleVolume(video);
+    video.logicalVolume = restore;
+    rememberAudibleVolume(video, restore);
     video.muted = false;
-    applyVolumeAndBoost(boostedVideo, restore);
+    applyVolumeAndBoost(video, restore);
     triggerStatusIndicator(t('unmuteHud'), STATUS_HUD_UNMUTE_ICON);
   } else {
-    const volume = boostedVideo._logicalVolume ?? video.volume;
-    rememberAudibleVolume(boostedVideo, volume);
-    boostedVideo._logicalVolume = volume;
+    const volume = video.logicalVolume ?? video.volume;
+    rememberAudibleVolume(video, volume);
+    video.logicalVolume = volume;
     video.muted = true;
     triggerStatusIndicator(t('muteHud'), STATUS_HUD_MUTE_ICON);
   }
   refs.onVolumeAdjustedCallback?.();
 }
 
-function applyVolumeAndBoost(video: HTMLVideoElement, sliderValue: number): void {
-  if (!video.hasAttribute(THEATER_VIDEO_ATTR)) {
-    video.setAttribute(THEATER_VIDEO_ATTR, '');
+function applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void {
+  if (!video.element.hasAttribute(THEATER_VIDEO_ATTR)) {
+    video.element.setAttribute(THEATER_VIDEO_ATTR, '');
   }
-
-  if (!refs.volumeBoostEnabled || sliderValue <= 1.0) {
-    video.volume = Math.min(1.0, sliderValue);
-    if (video.dataset.theaterBoostActive === 'true') {
-      video.dataset.theaterBoost = '1.0';
+  const ceiling = volumeCeiling(video, refs.volumeBoostEnabled);
+  const value = Math.min(ceiling, Math.max(0, sliderValue));
+  const native = video.nativeMedia instanceof HTMLVideoElement ? video.nativeMedia : null;
+  if (!video.capabilities.volumeBoost || value <= 1) {
+    video.volume = Math.min(1, value);
+    if (native?.dataset.theaterBoostActive === 'true') {
+      native.dataset.theaterBoost = '1.0';
       window.dispatchEvent(new CustomEvent('theater-everywhere-boost-event'));
     }
-  } else {
-    video.volume = 1.0;
-    const multiplier = 1.0 + (sliderValue - 1.0) * 4.0;
-    video.dataset.theaterBoost = multiplier.toFixed(4);
-    video.dataset.theaterBoostActive = 'true';
-    window.dispatchEvent(new CustomEvent('theater-everywhere-boost-event'));
+    return;
   }
+  video.volume = 1;
+  if (!native) return;
+  const multiplier = 1 + (value - 1) * 4;
+  native.dataset.theaterBoost = multiplier.toFixed(4);
+  native.dataset.theaterBoostActive = 'true';
+  window.dispatchEvent(new CustomEvent('theater-everywhere-boost-event'));
 }
 
 function executeCommand(command: PlayerCommand): void {
@@ -227,19 +253,20 @@ function executeCommand(command: PlayerCommand): void {
   if (!session.dispatch(command)) return;
   switch (command.type) {
     case 'PLAY_PAUSE': {
-      const host = session.element;
-      if (host?.tagName === 'VIDEO') {
-        const video = host as HTMLVideoElement;
-        cancelPendingSeekResume(video);
-        toggleVideoPlayback(video);
+      const surface = sessionSurface();
+      if (!surface) break;
+      if (surface.nativeMedia instanceof HTMLVideoElement) {
+        cancelPendingSeekResume(surface.nativeMedia);
+        toggleVideoPlayback(surface.nativeMedia);
+      } else {
+        toggleDirectPlayback(surface);
       }
       break;
     }
     case 'SEEK_BY': {
-      const host = session.element;
-      if (host?.tagName !== 'VIDEO') break;
-      const video = host as HTMLVideoElement;
-      if (seekBy(video, command.delta) && Math.abs(command.delta) >= 5) {
+      const surface = sessionSurface();
+      if (!surface) break;
+      if (seekBy(surface, command.delta) && Math.abs(command.delta) >= 5) {
         triggerSeekIndicator(command.delta < 0 ? 'left' : 'right');
       }
       break;
@@ -273,14 +300,17 @@ function executeCommand(command: PlayerCommand): void {
 
 function localPlaylistActions(): ReturnType<typeof findPlaylistActions> {
   const video = session.element?.tagName === 'VIDEO' ? session.element as HTMLVideoElement : null;
-  const root = video ? playlistSearchRoot(video) : document;
+  const root = session.element ? playlistSearchRoot(session.element) : document;
   return findPlaylistActions(root, video);
 }
 
-function playlistSearchRoot(video: HTMLVideoElement): ParentNode {
-  const root = video.getRootNode();
+function playlistSearchRoot(element: HTMLElement): ParentNode {
+  // Document or shadow root, including a wasm host. findPlaylistActions narrows
+  // to the player when a video is passed, then falls back here for controls and
+  // previews that live outside that container.
+  const root = element.getRootNode();
   if (root instanceof ShadowRoot || root instanceof Document) return root;
-  return video.ownerDocument;
+  return element.ownerDocument;
 }
 
 function playlistNavigationAvailable(): PlaylistNavState {
@@ -606,6 +636,8 @@ function cyclePictureLayout(): void {
 }
 
 function cycleVideoFit(): void {
+  const surface = sessionSurface();
+  if (surface && !surface.capabilities.objectFit) return;
   const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
   const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
   persistVideoFitMode(nextMode);
@@ -812,7 +844,7 @@ function theaterDialogOpen(): boolean {
   return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
-function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
+function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
   if (matchesShortcut(e, shortcuts.playPause)) {
@@ -821,7 +853,8 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
     e.stopImmediatePropagation();
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
     if (e.key === ' ' || e.code === 'Space') return true;
-    const willPlay = !mediaHasSource(video) || video.paused;
+    const native = video.nativeMedia instanceof HTMLVideoElement ? video.nativeMedia : null;
+    const willPlay = native ? (!mediaHasSource(native) || native.paused) : video.paused;
     executeCommand({ type: 'PLAY_PAUSE' });
     triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
   } else if (!e.repeat && matchesShortcut(e, shortcuts.previousVideo) && playlistNavigationAvailable().previous) {
@@ -858,18 +891,17 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    const boostedVideo = video as BoostedVideoElement;
-    if (boostedVideo._logicalVolume === undefined) {
-      boostedVideo._logicalVolume = video.muted ? 0 : video.volume;
+    if (video.logicalVolume === undefined) {
+      video.logicalVolume = video.muted ? 0 : video.volume;
     }
-    const maxVol = refs.volumeBoostEnabled ? 1.5 : 1.0;
-    boostedVideo._logicalVolume = Math.min(maxVol, boostedVideo._logicalVolume + 0.05);
+    const maxVol = volumeCeiling(video, refs.volumeBoostEnabled);
+    video.logicalVolume = Math.min(maxVol, video.logicalVolume + 0.05);
     if (video.muted) {
       video.muted = false;
     }
-    applyVolumeAndBoost(boostedVideo, boostedVideo._logicalVolume);
-    rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
-    triggerVolumeIndicator(boostedVideo._logicalVolume, video.muted, 'up');
+    applyVolumeAndBoost(video, video.logicalVolume);
+    rememberAudibleVolume(video, video.logicalVolume);
+    triggerVolumeIndicator(video.logicalVolume, video.muted, 'up');
     if (refs.onVolumeAdjustedCallback) {
       refs.onVolumeAdjustedCallback();
     }
@@ -877,14 +909,13 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    const boostedVideo = video as BoostedVideoElement;
-    if (boostedVideo._logicalVolume === undefined) {
-      boostedVideo._logicalVolume = video.muted ? 0 : video.volume;
+    if (video.logicalVolume === undefined) {
+      video.logicalVolume = video.muted ? 0 : video.volume;
     }
-    boostedVideo._logicalVolume = Math.max(0.0, boostedVideo._logicalVolume - 0.05);
-    applyVolumeAndBoost(boostedVideo, boostedVideo._logicalVolume);
-    rememberAudibleVolume(boostedVideo, boostedVideo._logicalVolume);
-    triggerVolumeIndicator(boostedVideo._logicalVolume, video.muted, 'down');
+    video.logicalVolume = Math.max(0, video.logicalVolume - 0.05);
+    applyVolumeAndBoost(video, video.logicalVolume);
+    rememberAudibleVolume(video, video.logicalVolume);
+    triggerVolumeIndicator(video.logicalVolume, video.muted, 'down');
     if (refs.onVolumeAdjustedCallback) {
       refs.onVolumeAdjustedCallback();
     }
@@ -897,15 +928,19 @@ function handleVideoKey(e: KeyboardEvent, video: HTMLVideoElement): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    if (document.pictureInPictureEnabled) {
+    if (video.capabilities.pictureInPicture && document.pictureInPictureEnabled) {
       if (document.pictureInPictureElement) {
         document.exitPictureInPicture().catch(err => {
           console.error('[Theater Everywhere] Exit PiP failed:', err);
         });
       } else {
-        video.requestPictureInPicture().catch(err => {
+        try {
+          void Promise.resolve(video.requestPictureInPicture()).catch(err => {
+            console.error('[Theater Everywhere] Request PiP failed:', err);
+          });
+        } catch (err) {
           console.error('[Theater Everywhere] Request PiP failed:', err);
-        });
+        }
       }
     }
   } else if (matchesShortcut(e, shortcuts.toggleFullscreen)) {
@@ -938,7 +973,14 @@ function initialize(): void {
   session.resetRuntimeScope();
 
   const publishEntryShortcuts = () => {
-    const config = JSON.stringify({ toggle: ui().shortcuts.toggle, fullscreen: ui().shortcuts.toggleFullscreen });
+    const shortcuts = ui().shortcuts;
+    const config = JSON.stringify({
+      toggle: shortcuts.toggle,
+      fullscreen: shortcuts.toggleFullscreen,
+      playPause: shortcuts.playPause,
+      seekBack: shortcuts.seekBack,
+      seekForward: shortcuts.seekForward
+    });
     if (document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) !== config) {
       document.documentElement.setAttribute(ENTRY_SHORTCUT_ATTRIBUTE, config);
     }
@@ -1049,7 +1091,7 @@ function initialize(): void {
       return true;
     }
 
-    if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
+    if (session.element && matchesShortcut(event, shortcuts.increaseCaptionSize)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1057,7 +1099,7 @@ function initialize(): void {
       return true;
     }
 
-    if (session.element?.tagName === 'VIDEO' && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
+    if (session.element && matchesShortcut(event, shortcuts.decreaseCaptionSize)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1077,13 +1119,25 @@ function initialize(): void {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      if (!event.repeat) toggleTheaterMode();
+      if (!event.repeat) {
+        if (isTencentWasmFrameDocument()) {
+          frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'toggle' });
+        } else {
+          toggleTheaterMode();
+        }
+      }
       return true;
     } else if (matchesShortcut(event, shortcuts.toggleFullscreen)) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      if (!event.repeat) claimFullscreenShortcut();
+      if (!event.repeat) {
+        if (isTencentWasmFrameDocument()) {
+          frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'fullscreen' });
+        } else {
+          claimFullscreenShortcut();
+        }
+      }
       return true;
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
       // If help overlay is open, close it instead of exiting theater mode
@@ -1101,9 +1155,9 @@ function initialize(): void {
         return true;
       }
     } else if (session.element) {
-      if (session.element.tagName === 'VIDEO') {
-        const video = session.element as HTMLVideoElement;
-        return handleVideoKey(event, video);
+      const surface = sessionSurface();
+      if (surface) {
+        return handleVideoKey(event, surface);
       } else if (session.element.tagName === 'IFRAME') {
         const iframe = session.element as HTMLIFrameElement;
         if (iframe.contentWindow) {
@@ -1277,6 +1331,25 @@ function initialize(): void {
 
   // 4. Cross-iframe postMessage listener
   listeners.message = (event: MessageEvent) => {
+    const hostToggle = readTencentWasmHostToggle(event, {
+      hostname: window.location.hostname,
+      href: window.location.href,
+      root: document
+    });
+    if (hostToggle) {
+      if (hostToggle.action === 'toggle') {
+        if (session.element === hostToggle.host && session.hasUi) exitTheaterMode('local');
+        else if (!session.hasUi) enterTheaterMode(hostToggle.host);
+      } else if (!session.hasUi || session.element === hostToggle.host) {
+        if (!session.hasUi) enterTheaterMode(hostToggle.host);
+        if (session.element === hostToggle.host) {
+          if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
+          else toggleDocumentFullscreen();
+        }
+      }
+      focusTheaterPage();
+      return;
+    }
     const trusted = frames.readTrusted(event, session.id, session.nonce);
     if (!trusted) return;
     const { envelope, fromParent, fromChild } = trusted;
@@ -1307,7 +1380,7 @@ function initialize(): void {
           preventDefault: () => {},
           stopPropagation: () => {},
           stopImmediatePropagation: () => {}
-        } as KeyboardEvent, video);
+        } as KeyboardEvent, nativePlaybackSurface(video));
       }
     } else if (envelope.type === 'PLAYLIST_NAV_QUERY' && fromChild) {
       const actions = findPlaylistActions(document);
@@ -1376,27 +1449,123 @@ function destroy(): void {
   refs.isInitialized = false;
 }
 
-function fullscreenVideo(): HTMLVideoElement | null {
-  const active = refs.activeVideo;
-  if (active && isElementInDOMDeep(active)) return active;
-  return findBestVideo();
+function toggleDocumentFullscreen(): void {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+    return;
+  }
+  document.documentElement.requestFullscreen().catch(() => {});
+}
+
+function focusTheaterPage(): void {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active !== document.body && active !== document.documentElement) {
+    active.blur();
+  }
+  window.focus();
+}
+
+function findTheaterTarget(): HTMLElement | null {
+  if (isTencentWasmFrameDocument()) return null;
+  if (!isTencentHost()) return findBestVideo();
+  const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
+  const pool = selectSwitchableVideos(videos);
+  const best = findBestVideo();
+  const switchable = pool.length > 0 ? (best && pool.includes(best) ? best : pool[0]) : null;
+  const wasm = Array.from(document.querySelectorAll('fake-iframe-video')).find((element) => isUsableTencentWasmPlayer(element)) || null;
+  return selectTencentTheaterTarget({
+    switchable,
+    wasm,
+    fallback: best,
+    wasmFrameDocument: false
+  });
+}
+
+function releaseWasmSession(): void {
+  wasmWatch?.dispose();
+  wasmWatch = null;
+  removeWasmCatcher?.();
+  removeWasmCatcher = null;
+  wasmSurface?.dispose?.();
+  wasmSurface = null;
+}
+
+function mountWasmCatcher(): void {
+  removeWasmCatcher?.();
+  const root = getPlayerUiRoot();
+  const catcher = document.createElement('div');
+  catcher.className = 'theater-wasm-catcher';
+  root.insertBefore(catcher, root.firstChild);
+  removeWasmCatcher = bindWasmCatcher(catcher);
+}
+
+function attachWasmSession(element: HTMLElement): void {
+  if (element.shadowRoot) injectStylesIntoShadowRoot(element.shadowRoot);
+  wasmSurface = openTencentWasmSurface(element);
+  createCustomControls(wasmSurface);
+  mountWasmCatcher();
+  watchTencentWasm(element);
+}
+
+function watchTencentWasm(element: HTMLElement): void {
+  wasmWatch?.dispose();
+  const scope = session.runtimeScope.child();
+  wasmWatch = scope;
+  const observer = new MutationObserver(() => {
+    if (session.element !== element || isElementInDOMDeep(element)) return;
+    const candidates = Array.from(document.querySelectorAll('fake-iframe-video')).filter((item) => isUsableTencentWasmPlayer(item));
+    const next = replacementTencentWasmHost(element, candidates, isElementInDOMDeep);
+    if (next) rebindTencentWasm(next);
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  scope.add(() => observer.disconnect());
+}
+
+function rebindTencentWasm(next: HTMLElement): void {
+  const previous = session.element;
+  wasmWatch?.dispose();
+  wasmWatch = null;
+  destroyCustomControls();
+  removeWasmCatcher?.();
+  removeWasmCatcher = null;
+  wasmSurface?.dispose?.();
+  wasmSurface = null;
+  if (previous) {
+    unmarkTheaterVideo(previous);
+    restoreTheaterElementInlineStyles(previous);
+  }
+  session.rebind(next);
+  session.activate();
+  markTheaterVideo(next);
+  mountTencentTheaterStage(window.location.hostname);
+  applyTheaterElementInlineStyles(next);
+  refreshTheaterAncestors(next);
+  attachWasmSession(next);
+}
+
+function fullscreenTheaterTarget(): HTMLElement | null {
+  if (!isTencentHost()) {
+    const active = refs.activeVideo;
+    if (active && isElementInDOMDeep(active)) return active;
+  }
+  return findTheaterTarget();
 }
 
 function claimFullscreenShortcut(): void {
   if (session.hasUi) {
     if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
-    else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else document.documentElement.requestFullscreen().catch(() => {});
+    else toggleDocumentFullscreen();
     return;
   }
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {});
     return;
   }
-  const video = fullscreenVideo();
-  if (video) {
-    enterTheaterMode(video);
-    refs.currentToggleFullscreen?.();
+  const target = fullscreenTheaterTarget();
+  if (target) {
+    enterTheaterMode(target);
+    if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
+    else toggleDocumentFullscreen();
     return;
   }
   frames.postToAllChildren('FRAME_FULLSCREEN', createSessionId(), {}, createSessionId());
@@ -1410,9 +1579,9 @@ function toggleTheaterMode(): void {
   if (session.hasUi) {
     exitTheaterMode('local');
   } else {
-    const video = findBestVideo();
-    if (video) {
-      enterTheaterMode(video);
+    const target = findTheaterTarget();
+    if (target) {
+      enterTheaterMode(target);
     } else {
       frames.postToAllChildren('FRAME_TOGGLE', createSessionId(), {}, createSessionId());
     }
@@ -1612,6 +1781,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
   mountNetflixTheaterStage(window.location.hostname);
+  if (isTencentWasmPlayerElement(element)) mountTencentTheaterStage(window.location.hostname);
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = observeTwitchTheaterStage(window.location.hostname);
   applyTheaterElementInlineStyles(element);
@@ -1692,6 +1862,9 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   if (element.tagName === 'VIDEO') {
     createCustomControls(element as HTMLVideoElement);
     keepTheaterVideoBound(element as HTMLVideoElement);
+  } else if (isTencentWasmPlayerElement(element)) {
+    attachWasmSession(element);
+    focusTheaterPage();
   }
 }
 
@@ -1727,10 +1900,13 @@ function exitTheaterMode(
       video.removeEventListener(type, preventDoubleToggle, true);
     });
 
-    // Clean up custom controls
-    destroyCustomControls();
     video.classList.remove('controls-visible');
   }
+
+  if (session.element && (session.element.tagName === 'VIDEO' || isTencentWasmPlayerElement(session.element))) {
+    destroyCustomControls();
+  }
+  releaseWasmSession();
 
   if (session.element) {
     unmarkTheaterVideo(session.element);
@@ -1756,6 +1932,7 @@ function exitTheaterMode(
   unmountTwitchTheaterStage();
   releaseNetflixViewport();
   unmountNetflixTheaterStage();
+  unmountTencentTheaterStage();
   document.documentElement.style.removeProperty('--theater-letterbox');
 
   refreshHostPlayerLayout();
