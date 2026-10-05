@@ -1,7 +1,9 @@
 import { sanitizeContentTitle } from '../content-title';
+import { parseCaptionPayload } from './captions';
 import { sanitizeCaptionCueText } from '../sanitize';
-import type { CaptionCue, Chapter, PreviewFrame } from '../types';
+import type { CaptionCue, Chapter, PreviewFrame, TimelineHeatmap } from '../types';
 import { isAllowedMediaFetchUrl } from '../fetch-allowlist';
+import { heatmapSvgPath } from './youtube-heatmap-path';
 
 export type BilibiliCaption = {
   id: string;
@@ -20,6 +22,12 @@ export type BilibiliStoryboard = {
   height: number;
 };
 
+export type BilibiliHeatmap = {
+  stepSec: number;
+  /** Intensities in 0..1, one bucket per stepSec. */
+  values: number[];
+};
+
 export type BilibiliSnapshot = {
   videoId: string;
   title?: string;
@@ -27,6 +35,7 @@ export type BilibiliSnapshot = {
   captionTracks: BilibiliCaption[];
   chapters: Chapter[];
   storyboard: BilibiliStoryboard | null;
+  heatmap: BilibiliHeatmap | null;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -91,38 +100,280 @@ export function bilibiliPreviewFrame(storyboard: BilibiliStoryboard, time: numbe
 
 export function parseBilibiliCaptions(body: string): CaptionCue[] {
   if (body.length > 2 * 1024 * 1024) return [];
+  const trimmed = body.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const data = record(JSON.parse(trimmed));
+      if (!Array.isArray(data.body)) return [];
+      return data.body.slice(0, 20000).flatMap((raw): CaptionCue[] => {
+        const row = record(raw);
+        const start = Number(row.from);
+        const end = Number(row.to);
+        const text = typeof row.content === 'string' ? sanitizeCaptionCueText(row.content).slice(0, 4000) : '';
+        return Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start && text
+          ? [{ start, end, text }] : [];
+      }).sort((a, b) => a.start - b.start);
+    } catch {
+      return [];
+    }
+  }
+  if (!trimmed.includes('-->')) return [];
+  return parseCaptionPayload(trimmed).slice(0, 20000);
+}
+
+/** Zero-padding stops here. Observed samples are kept even when the series is longer. */
+const MAX_HEATMAP_SAMPLES = 8000;
+
+/** High-energy bar from the pbp loader. Ignores script_src; only the numeric series is kept. */
+export function parseBilibiliHeatmap(raw: unknown, durationSec?: number): BilibiliHeatmap | null {
+  const series = heatmapSeries(raw);
+  if (!series) return null;
+  const samples = series.samples;
+  const buckets = durationSec && durationSec > 0 ? Math.floor(durationSec / series.stepSec) : samples.length;
+  const count = buckets > samples.length && buckets <= MAX_HEATMAP_SAMPLES ? buckets : samples.length;
+  const values = samples.concat(Array(Math.max(0, count - samples.length)).fill(0));
+  let max = 0;
+  for (const value of values) if (value > max) max = value;
+  if (!(max > 0)) return null;
+  return { stepSec: series.stepSec, values: values.map((value) => value / max) };
+}
+
+export function bilibiliTimelineHeatmap(snapshot: Pick<BilibiliSnapshot, 'heatmap'> | null): TimelineHeatmap | null {
+  const heat = snapshot?.heatmap;
+  if (!heat?.values.length) return null;
+  const segments = heat.values.map((intensity, index) => ({
+    startMs: index * heat.stepSec * 1000,
+    durationMs: heat.stepSec * 1000,
+    intensity
+  }));
+  const svgPath = heatmapSvgPath(segments, heat.values.length * heat.stepSec * 1000);
+  return svgPath ? { source: 'bilibili', segments, svgPath } : null;
+}
+
+function heatmapSeries(raw: unknown): { stepSec: number; samples: number[] } | null {
+  const root = record(raw);
+  const modules = Array.isArray(root.modules) ? root.modules : [];
+  if (modules.length > 0) {
+    for (const item of modules) {
+      const row = record(item);
+      if (row.load_mode !== 'pbp') continue;
+      const found = seriesFrom(record(record(row.params).data));
+      if (found) return found;
+    }
+    return null;
+  }
+  return seriesFrom(root) || seriesFrom(record(root.data));
+}
+
+function seriesFrom(data: Record<string, unknown>): { stepSec: number; samples: number[] } | null {
+  const stepSec = Number(data.step_sec);
+  if (!Number.isFinite(stepSec) || stepSec <= 0 || stepSec > 600) return null;
+  const events = record(data.events).default;
+  if (!Array.isArray(events) || events.length === 0) return null;
+  const samples: number[] = [];
+  for (const item of events) {
+    // Keep the bucket index. A hole is silence, not a shift of later peaks.
+    // Only real numbers count; numeric strings and booleans must not become peaks.
+    samples.push(typeof item === 'number' && Number.isFinite(item) && item > 0 ? item : 0);
+  }
+  return samples.length ? { stepSec, samples } : null;
+}
+
+// The player rewrites subtitle.bilibili.com paths onto aisubtitle.hdslb.com
+// with these public XOR prefixes before fetching the cue file.
+const SUBTITLE_URL_KEYS: ReadonlyArray<readonly [string, string]> = [
+  ['nP](wOFRvU.+<fjS{jn-!$D|Dz&",zT`', "=CFxYRn{.y|uVyO$uh&sikph?N.ilF/`"],
+  ['Bn"q~|albg@]Go~ACgyDvKnd+)_D}^&J?', "Cu~L!xs~f^&r@'vh=q]q{eeng*sEg^kp#J"]
+];
+
+export function resolveBilibiliSubtitleUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || !value || value.length > 4000) return null;
+  const direct = acceptSubtitleUrl(value);
+  if (direct) return direct;
+  const match = value.match(/^(?:https:)?\/\/subtitle\.bilibili\.com\/([^?#]*)(?:\?([^#]*))?$/i);
+  if (!match?.[1]) return null;
+  let decoded = '';
   try {
-    const data = record(JSON.parse(body));
-    if (!Array.isArray(data.body)) return [];
-    return data.body.slice(0, 20000).flatMap((raw): CaptionCue[] => {
-      const row = record(raw);
-      const start = Number(row.from);
-      const end = Number(row.to);
-      const text = typeof row.content === 'string' ? sanitizeCaptionCueText(row.content).slice(0, 4000) : '';
-      return Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start && text
-        ? [{ start, end, text }] : [];
-    }).sort((a, b) => a.start - b.start);
+    const text = decodeURIComponent(match[1]);
+    for (const [prefix, key] of SUBTITLE_URL_KEYS) {
+      const plain = xorDecode(text, `${key}bilibili`);
+      if (plain.startsWith(prefix)) {
+        decoded = plain.slice(prefix.length);
+        break;
+      }
+    }
   } catch {
-    return [];
+    return null;
+  }
+  if (!decoded.startsWith('/bfs/') || decoded.includes('..') || decoded.includes('%') || /[?#\\]/.test(decoded)) return null;
+  const query = match[2] && /^[\w.~%=&-]{1,2000}$/.test(match[2]) ? `?${match[2]}` : '';
+  return acceptSubtitleUrl(`https://aisubtitle.hdslb.com${decoded}${query}`);
+}
+
+function acceptSubtitleUrl(value: string): string | null {
+  const absolute = value.startsWith('//') ? `https:${value}` : value;
+  if (!isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url: absolute })) return null;
+  const url = bilibiliAssetUrl(absolute);
+  if (!url || !isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url })) return null;
+  return url;
+}
+
+function xorDecode(value: string, key: string): string {
+  let out = '';
+  for (let i = 0; i < value.length; i++) {
+    out += String.fromCharCode(value.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+
+type RawSubtitle = {
+  id: string;
+  language: string;
+  label: string;
+  url: string;
+  autoGenerated: boolean;
+};
+
+function captionTracksFrom(videoId: string, tracks: RawSubtitle[]): BilibiliCaption[] {
+  return tracks.slice(0, 80).flatMap((track) => {
+    const url = resolveBilibiliSubtitleUrl(track.url);
+    if (!url) return [];
+    const language = track.language.slice(0, 40);
+    return [{
+      id: `bilibili:${videoId}:${track.id.slice(0, 80)}`,
+      language,
+      label: sanitizeContentTitle(track.label) || language,
+      url,
+      autoGenerated: track.autoGenerated || language.startsWith('ai-')
+    }];
+  });
+}
+
+function playerSubtitleTracks(playerInfo: unknown): RawSubtitle[] {
+  const tracks = record(record(playerInfo).subtitle).subtitles;
+  if (!Array.isArray(tracks)) return [];
+  return tracks.flatMap((raw, index): RawSubtitle[] => {
+    const track = record(raw);
+    const url = typeof track.subtitle_url === 'string' ? track.subtitle_url : '';
+    if (!url) return [];
+    const language = typeof track.lan === 'string' ? track.lan : '';
+    const id = String(track.id_str || track.id || index);
+    return [{
+      id, language, label: typeof track.lan_doc === 'string' ? track.lan_doc : language, url,
+      autoGenerated: language.startsWith('ai-') || Number(track.ai_type) > 0 || Number(track.type) === 1
+    }];
+  });
+}
+
+/** SubtitleViewReply protobuf from /x/v2/subtitle/web/view. Drops author fields. */
+export function parseBilibiliSubtitleView(bytes: Uint8Array): RawSubtitle[] {
+  if (bytes.byteLength === 0 || bytes.byteLength > 256 * 1024) return [];
+  const reply = readProtobuf(bytes);
+  if (!reply) return [];
+  const video = reply.find((field) => field.id === 1 && field.bytes);
+  if (!video?.bytes?.byteLength) return [];
+  const body = readProtobuf(video.bytes);
+  if (!body) return [];
+  const tracks: RawSubtitle[] = [];
+  for (const field of body) {
+    if (field.id !== 3 || !field.bytes) continue;
+    const item = readProtobuf(field.bytes);
+    if (!item) continue;
+    let id = '';
+    let language = '';
+    let label = '';
+    let url = '';
+    let type = 0;
+    let aiType = 0;
+    for (const part of item) {
+      if (part.id === 1 && part.num !== undefined) id = id || part.num.toString();
+      else if (part.id === 2 && part.bytes) id = utf8(part.bytes) || id;
+      else if (part.id === 3 && part.bytes) language = utf8(part.bytes) || '';
+      else if (part.id === 4 && part.bytes) label = utf8(part.bytes) || '';
+      else if (part.id === 5 && part.bytes) url = utf8(part.bytes) || '';
+      else if (part.id === 7 && part.num !== undefined) type = Number(part.num);
+      else if (part.id === 9 && part.num !== undefined) aiType = Number(part.num);
+    }
+    if (!url) continue;
+    tracks.push({
+      id: id || String(tracks.length),
+      language, label, url,
+      autoGenerated: language.startsWith('ai-') || type === 1 || aiType > 0
+    });
+    if (tracks.length >= 80) break;
+  }
+  return tracks;
+}
+
+type ProtoField = { id: number; num?: bigint; bytes?: Uint8Array };
+
+function readProtobuf(buf: Uint8Array): ProtoField[] | null {
+  const fields: ProtoField[] = [];
+  let offset = 0;
+  while (offset < buf.length) {
+    const key = readVarint(buf, offset);
+    if (!key) return null;
+    offset = key.next;
+    const id = Number(key.value >> 3n);
+    const wire = Number(key.value & 7n);
+    if (!Number.isInteger(id) || id <= 0 || id > 64) return null;
+    if (wire === 0) {
+      const num = readVarint(buf, offset);
+      if (!num) return null;
+      offset = num.next;
+      fields.push({ id, num: num.value });
+    } else if (wire === 2) {
+      const len = readVarint(buf, offset);
+      if (!len || len.value > BigInt(buf.length)) return null;
+      offset = len.next;
+      const size = Number(len.value);
+      if (!Number.isSafeInteger(size) || size < 0 || offset + size > buf.length) return null;
+      fields.push({ id, bytes: buf.subarray(offset, offset + size) });
+      offset += size;
+    } else if (wire === 5) {
+      if (offset + 4 > buf.length) return null;
+      offset += 4;
+    } else if (wire === 1) {
+      if (offset + 8 > buf.length) return null;
+      offset += 8;
+    } else {
+      return null;
+    }
+    if (fields.length > 400) return null;
+  }
+  return fields;
+}
+
+function readVarint(buf: Uint8Array, offset: number): { value: bigint; next: number } | null {
+  let value = 0n;
+  let shift = 0n;
+  let index = offset;
+  while (index < buf.length && shift <= 70n) {
+    const byte = buf[index++];
+    value |= BigInt(byte & 0x7f) << shift;
+    if ((byte & 0x80) === 0) return { value, next: index };
+    shift += 7n;
+  }
+  return null;
+}
+
+function utf8(bytes: Uint8Array): string | null {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return null;
   }
 }
 
 export function normalizeBilibiliSnapshot(
-  videoId: string, title: unknown, duration: number, playerInfo: unknown, videoshot: unknown
+  videoId: string, title: unknown, duration: number, playerInfo: unknown, videoshot: unknown,
+  pbp?: unknown, subtitleView?: Uint8Array | null
 ): BilibiliSnapshot {
   const data = record(playerInfo);
-  const tracks = record(data.subtitle).subtitles;
-  const captionTracks = (Array.isArray(tracks) ? tracks : []).slice(0, 80).flatMap((raw, index): BilibiliCaption[] => {
-    const track = record(raw);
-    const url = bilibiliAssetUrl(track.subtitle_url);
-    if (!url || !isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url })) return [];
-    const language = typeof track.lan === 'string' ? track.lan.slice(0, 40) : '';
-    return [{
-      id: `bilibili:${videoId}:${String(track.id_str || track.id || index).slice(0, 80)}`,
-      language, label: sanitizeContentTitle(track.lan_doc) || language,
-      url, autoGenerated: language.startsWith('ai-') || Number(track.ai_type) > 0
-    }];
-  });
+  const fromView = captionTracksFrom(videoId, subtitleView ? parseBilibiliSubtitleView(subtitleView) : []);
+  const captionTracks = fromView.length
+    ? fromView
+    : captionTracksFrom(videoId, playerSubtitleTracks(playerInfo));
   const chapters = (Array.isArray(data.view_points) ? data.view_points : []).slice(0, 200).flatMap((raw): Chapter[] => {
     const row = record(raw);
     const start = Number(row.from);
@@ -131,9 +382,11 @@ export function normalizeBilibiliSnapshot(
     if (!title || !Number.isFinite(start) || start < 0 || (duration > 0 && start >= duration)) return [];
     return [{ start, ...(Number.isFinite(end) && end > start ? { end } : {}), title, source: 'bilibili', confidence: 'high' }];
   }).sort((a, b) => a.start - b.start);
+  const knownDuration = Number.isFinite(duration) && duration > 0 ? duration : undefined;
   return {
     videoId, title: sanitizeContentTitle(title) || undefined,
-    duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
-    captionTracks, chapters, storyboard: parseBilibiliStoryboard(videoshot)
+    duration: knownDuration,
+    captionTracks, chapters, storyboard: parseBilibiliStoryboard(videoshot),
+    heatmap: parseBilibiliHeatmap(pbp, knownDuration)
   };
 }

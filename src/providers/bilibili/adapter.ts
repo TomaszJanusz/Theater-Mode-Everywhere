@@ -1,7 +1,7 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { bilibiliPreviewFrame, parseBilibiliCaptions, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
+import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, parseBilibiliCaptions, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
-import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
+import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource, TimelineHeatmap } from '../../media-features/types';
 
 export class BilibiliAdapter implements MediaFeaturesAdapter {
   private snapshot: BilibiliSnapshot | null = null;
@@ -42,6 +42,7 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
   }
 
   async getChapters() { await this.load(); return this.snapshot?.chapters || []; }
+  getHeatmap(): TimelineHeatmap | null { return bilibiliTimelineHeatmap(this.snapshot); }
   async getPreviewSource(): Promise<PreviewSource> {
     await this.load();
     return this.snapshot?.storyboard ? { kind: 'sprite', provider: 'bilibili' } : { kind: 'none', reason: 'no-videoshot' };

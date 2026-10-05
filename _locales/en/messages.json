@@ -199,7 +199,7 @@
     "message": "Bilibili integration"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Imports the video title, subtitles, chapters, and timeline thumbnails when available. Some subtitles require signing in to Bilibili."
+    "message": "Imports the video title, subtitles, chapters, the high-energy progress heatmap, and timeline thumbnails when available. Some subtitles require signing in to Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV integration"

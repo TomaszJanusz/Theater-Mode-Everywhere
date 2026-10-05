@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { bilibiliPreviewFrame, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliStoryboard } from '../../media-features/parsers/bilibili';
+import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, normalizeBilibiliSnapshot, parseBilibiliCaptions, parseBilibiliHeatmap, parseBilibiliStoryboard, resolveBilibiliSubtitleUrl } from '../../media-features/parsers/bilibili';
 import { isAllowedMediaFetchUrl, classifyMediaFetchUrl } from '../../media-features/fetch-allowlist';
 import { readBilibiliSnapshot } from './main';
 
@@ -42,6 +42,9 @@ describe('Bilibili RTE', () => {
     ] })), [{ start: 0, end: 1, text: 'First\nline' }, { start: 2, end: 4, text: '你好 & hello' }]);
     assert.deepEqual(parseBilibiliCaptions('<html>login</html>'), []);
     assert.deepEqual(parseBilibiliCaptions('{"body":{}}'), []);
+    assert.deepEqual(parseBilibiliCaptions('1\n00:00:01,000 --> 00:00:02,500\nHello\n'), [
+      { start: 1, end: 2.5, text: 'Hello' }
+    ]);
   });
 
   it('imports only usable subtitle tracks and chapters, keyed to the current part', () => {
@@ -57,15 +60,24 @@ describe('Bilibili RTE', () => {
     assert.equal(snapshot.captionTracks[0].id, 'bilibili:106:3635863:1');
     assert.deepEqual(snapshot.chapters.map(c => c.start), [10]);
     assert.ok(snapshot.storyboard);
+    assert.equal(snapshot.heatmap, null);
   });
 
   it('restricts caption fetches to Bilibili subtitle JSON on the HTTPS CDN', () => {
     const url = 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/track.json?auth_key=signed';
     assert.deepEqual(classifyMediaFetchUrl(url), { provider: 'bilibili', kind: 'caption-track', url });
+    const extensionless = 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc123?auth_key=signed';
+    assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url: extensionless }), true);
     for (const url of ['http://i0.hdslb.com/bfs/subtitle/a.json', 'https://hdslb.com.evil.test/bfs/subtitle/a.json',
-      'https://i0.hdslb.com/bfs/archive/a.json', 'https://user@i0.hdslb.com/bfs/subtitle/a.json']) {
+      'https://i0.hdslb.com/bfs/archive/a.json', 'https://user@i0.hdslb.com/bfs/subtitle/a.json',
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/file.js',
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/../archive/a.json',
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/../track.json',
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/%2e%2e/track.json']) {
       assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibili', kind: 'caption-track', url }), false);
     }
+    assert.equal(resolveBilibiliSubtitleUrl('https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/../track.json'), null);
+    assert.equal(resolveBilibiliSubtitleUrl('https://aisubtitle.hdslb.com/bfs/ai_subtitle/a/%2e%2e/track.json'), null);
   });
 
   it('isolates metadata by cid, discards late responses, and honors RTE-off', async () => {
@@ -90,9 +102,108 @@ describe('Bilibili RTE', () => {
       globalThis.fetch = (async () => new Response(JSON.stringify({ code: 0, data: {} }))) as typeof fetch;
       const fresh = await readBilibiliSnapshot();
       assert.equal(fresh?.videoId, '106:42');
-      assert.equal(requests, 2);
+      assert.equal(requests, 4);
+    } finally {
+      globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
+    }
+  });
+
+  it('builds a scrubber heatmap from pbp samples and ignores the loader script', () => {
+    const heat = parseBilibiliHeatmap({
+      modules: [{ load_mode: 'pbp', script_src: 'https://evil.test/pbp.js',
+        params: { data: { step_sec: 10, events: { default: [0, 5, 10, -1, NaN] } } } }]
+    }, 40);
+    assert.deepEqual(heat, { stepSec: 10, values: [0, 0.5, 1, 0, 0] });
+    assert.deepEqual(parseBilibiliHeatmap({ step_sec: 10, events: { default: [0, 5, -1, 10] } })?.values, [0, 0.5, 0, 1]);
+    assert.deepEqual(parseBilibiliHeatmap({ step_sec: 10, events: { default: [1, true, '100', 10] } })?.values, [0.1, 0, 0, 1]);
+    const long = Array.from({ length: 8001 }, (_, index) => index === 8000 ? 1 : 0);
+    const kept = parseBilibiliHeatmap({ step_sec: 1, events: { default: long } });
+    assert.equal(kept?.values.length, 8001);
+    assert.equal(kept?.values[8000], 1);
+    assert.equal(parseBilibiliHeatmap({ step_sec: 1, events: { default: [5] } }, 9000)?.values.length, 1);
+    const wide = Array.from({ length: 150_000 }, (_, index) => index === 149_999 ? 1 : 0);
+    const wideHeat = parseBilibiliHeatmap({ step_sec: 1, events: { default: wide } });
+    assert.equal(wideHeat?.values.length, 150_000);
+    assert.equal(wideHeat?.values[149_999], 1);
+    const widePath = bilibiliTimelineHeatmap({ heatmap: wideHeat });
+    assert.match(widePath?.svgPath || '', /^M /);
+    assert.match(widePath?.svgPath || '', /Z$/);
+    assert.equal(parseBilibiliHeatmap({ step_sec: 3, events: { default: [0, 0] } }), null);
+    assert.equal(parseBilibiliHeatmap({ modules: [{ load_mode: 'other', params: { data: { step_sec: 1, events: { default: [1] } } } }] }), null);
+    const path = bilibiliTimelineHeatmap({ heatmap: heat });
+    assert.equal(path?.source, 'bilibili');
+    assert.match(path?.svgPath || '', /^M /);
+    assert.match(path?.svgPath || '', /Z$/);
+  });
+
+  it('decodes player subtitle URLs onto the subtitle CDN', () => {
+    const encoded = '//subtitle.bilibili.com/S%13%1BP.%1D%28%29X%2CR%5Ej%1F%25w%0E%02H%5EHO4%14%7B4%08K@%3C%7B%00M%0B%0A%1AM%08%056N6$%0C0&%02%1E%01%09%0E%1A2Vy%11CY%12CP%5DIY%0E%7D%1C%5E%5Es%1DWTZ%0F%08%5B%0B%5CQ%0D%25sJ:1W%1E%1A%1A%1F@a@%2A%1C@%5C@C%08YI%0E%0F?auth_key=fixture';
+    assert.equal(resolveBilibiliSubtitleUrl(encoded),
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/65614096911327252763ca9b080f52cc9e4cc579e854f0a29f0?auth_key=fixture');
+    assert.equal(resolveBilibiliSubtitleUrl('https://evil.test/bfs/ai_subtitle/a.json'), null);
+    assert.equal(resolveBilibiliSubtitleUrl('https://subtitle.bilibili.com.evil.test/x'), null);
+    const snapshot = normalizeBilibiliSnapshot('1:2', 'T', 10, {
+      subtitle: { subtitles: [{ id_str: '9', lan: 'ai-zh', lan_doc: '中文', subtitle_url: encoded }] }
+    }, null);
+    assert.equal(snapshot.captionTracks[0]?.url,
+      'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/65614096911327252763ca9b080f52cc9e4cc579e854f0a29f0?auth_key=fixture');
+    assert.equal(snapshot.captionTracks[0]?.autoGenerated, true);
+  });
+
+  it('prefers the subtitle view and the high-energy bar over an empty player list', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const requested: string[] = [];
+    try {
+      globalThis.window = { location: { hostname: 'www.bilibili.com' }, __INITIAL_STATE__: {
+        aid: 9, cid: 9, videoData: { title: 'Heat', duration: 40 }
+      } } as any;
+      globalThis.document = { documentElement: { hasAttribute: () => false }, querySelector: () => null } as any;
+      globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        requested.push(url);
+        if (url.includes('/pbp/data')) {
+          assert.equal(init?.credentials, 'omit');
+          return new Response(JSON.stringify({ modules: [{ load_mode: 'pbp', script_src: 'https://evil.test/pbp.js',
+            params: { data: { step_sec: 10, events: { default: [0, 5, 10] } } } }] }));
+        }
+        if (url.includes('/subtitle/web/view')) {
+          assert.equal(init?.credentials, 'include');
+          const bytes = subtitleView('//aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc');
+          const body = new ArrayBuffer(bytes.byteLength);
+          new Uint8Array(body).set(bytes);
+          return new Response(body);
+        }
+        return new Response(JSON.stringify({ code: 0, data: url.includes('videoshot') ? shot : { subtitle: { subtitles: [] } } }));
+      }) as typeof fetch;
+      const snapshot = await readBilibiliSnapshot();
+      assert.equal(snapshot?.captionTracks[0]?.language, 'ai-en');
+      assert.equal(snapshot?.captionTracks[0]?.url, 'https://aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc');
+      assert.deepEqual(snapshot?.heatmap?.values, [0, 0.5, 1, 0]);
+      assert.equal(requested.some((url) => url.includes('evil.test')), false);
+      assert.equal(requested.filter((url) => url.includes('/pbp/data')).length, 1);
     } finally {
       globalThis.window = oldWindow; globalThis.document = oldDocument; globalThis.fetch = oldFetch;
     }
   });
 });
+
+function subtitleView(url: string): Uint8Array {
+  const text = (value: string) => [...new TextEncoder().encode(value)];
+  const varint = (value: number) => {
+    const bytes: number[] = [];
+    let rest = value;
+    while (rest > 127) { bytes.push((rest & 0x7f) | 0x80); rest >>>= 7; }
+    bytes.push(rest);
+    return bytes;
+  };
+  const field = (id: number, wire: number) => varint((id << 3) | wire);
+  const str = (id: number, value: string) => {
+    const bytes = text(value);
+    return [...field(id, 2), ...varint(bytes.length), ...bytes];
+  };
+  const message = (id: number, inner: number[]) => [...field(id, 2), ...varint(inner.length), ...inner];
+  const item = [...str(2, '99'), ...str(3, 'ai-en'), ...str(4, 'English'), ...str(5, url), ...field(7, 0), ...varint(1)];
+  return Uint8Array.from(message(1, message(3, item)));
+}

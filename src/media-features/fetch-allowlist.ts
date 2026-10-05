@@ -17,6 +17,19 @@ function hostnameAllowed(hostname: string, allowed: RegExp[]): boolean {
   return allowed.some((pattern) => pattern.test(hostname));
 }
 
+/** JSON subtitle objects on hdslb. AI tracks often have no .json suffix. */
+function isBilibiliSubtitlePath(pathname: string): boolean {
+  if (pathname.includes('\\') || pathname.includes('%') || pathname.split('/').includes('..')) return false;
+  return /^\/bfs\/(?:ai_)?subtitle(?:\/[A-Za-z0-9_-]+)*\/[A-Za-z0-9_-]+(?:\.json)?$/i.test(pathname);
+}
+
+/** Path as written, before URL normalization drops ".." or decodes "%2e%2e". */
+function rawHttpsPath(url: string): string | null {
+  const match = /^https:\/\/[^/?#]*([^?#]*)/i.exec(url.trim());
+  if (!match?.[1]?.startsWith('/')) return null;
+  return match[1];
+}
+
 function parseHttpsUrl(url: string, base?: string): URL | null {
   try {
     const parsed = base ? new URL(url, base) : new URL(url);
@@ -38,9 +51,12 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
   }
 
   if (request.provider === 'bilibili' && request.kind === 'caption-track') {
+    const rawPath = rawHttpsPath(request.url);
     return !parsed.username && !parsed.password && !parsed.port
       && (parsed.hostname === 'hdslb.com' || parsed.hostname.endsWith('.hdslb.com'))
-      && /^\/bfs\/(?:ai_)?subtitle\/[^?#]+\.json$/i.test(parsed.pathname);
+      && rawPath !== null
+      && rawPath === parsed.pathname
+      && isBilibiliSubtitlePath(rawPath);
   }
 
   if (request.provider === 'youtube' && request.kind === 'caption-track') {

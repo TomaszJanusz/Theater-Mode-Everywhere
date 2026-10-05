@@ -10,6 +10,15 @@ const MIN_HEIGHT = 2;
 const MAX_HEIGHT = 94;
 const MIN_SVG_PATH_LENGTH = 20;
 
+function seriesEnd(segments: HeatmapPathSegment[]): number {
+  let end = 0;
+  for (const segment of segments) {
+    const at = segment.startMs + segment.durationMs;
+    if (at > end) end = at;
+  }
+  return end;
+}
+
 function fmt(value: number): string {
   return (Math.round(value * 100) / 100).toString();
 }
@@ -34,7 +43,7 @@ export function heatmapSvgPath(
   if (usable.length === 0) return '';
   const end = durationMs && durationMs > 0
     ? durationMs
-    : Math.max(...usable.map((segment) => segment.startMs + segment.durationMs));
+    : seriesEnd(usable);
   if (!(end > 0)) return '';
 
   const pts = usable.map((segment) => {

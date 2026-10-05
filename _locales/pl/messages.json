@@ -199,7 +199,7 @@
     "message": "Integracja z Bilibili"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importuje tytuł filmu, napisy, rozdziały i miniatury osi czasu, jeśli są dostępne. Niektóre napisy wymagają zalogowania do Bilibili."
+    "message": "Importuje tytuł filmu, napisy, rozdziały, mapę popularności i miniatury osi czasu, jeśli są dostępne. Niektóre napisy wymagają zalogowania do Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Integracja z Tencent Video / WeTV"

@@ -199,7 +199,7 @@
     "message": "Integrazione Bilibili"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importa titolo, sottotitoli, capitoli e miniature quando disponibili. Alcuni sottotitoli richiedono l’accesso a Bilibili."
+    "message": "Importa titolo, sottotitoli, capitoli, la mappa di popolarità e le miniature quando disponibili. Alcuni sottotitoli richiedono l’accesso a Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Integrazione Tencent Video / WeTV"
