@@ -27,6 +27,7 @@ export type CaptionTrackSource =
   | 'disney'
   | 'netflix'
   | 'bilibili'
+  | 'bilibiliIntl'
   | 'tencent';
 
 export type CaptionTrack = {

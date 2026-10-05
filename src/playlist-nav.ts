@@ -22,7 +22,7 @@ export type PlaylistAction = {
   restarts?: boolean;
 };
 
-export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'tencent';
+export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'bilibiliIntl' | 'tencent';
 
 /**
  * Host-control snapshot. The fields are the signals observed on live players:
@@ -210,7 +210,7 @@ export function findPlaylistActions(root: ParentNode, video?: HTMLVideoElement |
 }
 
 function scopedRoot(root: ParentNode, video?: HTMLVideoElement | null): ParentNode {
-  const player = video?.closest('#movie_player, .video-js, .bpx-player-container, .bilibili-player, .txp_player, #internal-player-wrapper');
+  const player = video?.closest('#movie_player, .video-js, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper');
   return player ?? root;
 }
 
@@ -243,6 +243,7 @@ function readControls(root: ParentNode): Array<{ element: HTMLElement; snapshot:
   add(root.querySelector('[data-testid="button-next-video"], button.next_button'), 'dailymotion', 'next');
   add(root.querySelector('.bpx-player-ctrl-prev'), 'bilibili', 'previous');
   add(root.querySelector('.bpx-player-ctrl-next'), 'bilibili', 'next');
+  add(root.querySelector('.player-mobile-control-btn-next-episode .ip-next-episode'), 'bilibiliIntl', 'next');
   add(root.querySelector('.txp_btn_next_u:not(.txp_none), .txp_btn_next:not(.txp_none), [data-role="wetv-player-ctrl-next"]'), 'tencent', 'next');
 
   root.querySelectorAll('button[data-href]').forEach((element) => {

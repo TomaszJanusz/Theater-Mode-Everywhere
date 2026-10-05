@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
 import { readDisneySnapshot } from './disney/main';
 import { readNetflixSnapshot } from './netflix/main';
 import { DisneyAdapter } from './disney/adapter';
@@ -59,6 +59,15 @@ describe('provider registry', () => {
     assert.equal(shouldPatchMainWorld('v.qq.com'), true);
     assert.deepEqual(matchingProviders('wetv.vip'), ['native', 'tencent']);
     assert.equal(shouldAttachProvider('bilibili', { ...defaultMediaProviderFlags(), bilibili: false }, 'www.bilibili.com'), false);
+    assert.equal(isBilibiliHost('www.bilibili.tv'), false);
+    assert.equal(isBilibiliIntlHost('www.bilibili.tv.'), true);
+    assert.equal(isBilibiliIntlHost('www.bilibili.com'), false);
+    assert.equal(isBilibiliIntlHost('bilibili.tv.evil.test'), false);
+    assert.equal(isBilibiliIntlHost('notbilibili.tv'), false);
+    assert.deepEqual(matchingProviders('www.bilibili.tv'), ['native', 'bilibiliIntl']);
+    assert.equal(shouldPatchMainWorld('www.bilibili.tv'), false);
+    assert.equal(shouldAttachProvider('bilibili', defaultMediaProviderFlags(), 'www.bilibili.tv'), false);
+    assert.equal(shouldAttachProvider('bilibiliIntl', { ...defaultMediaProviderFlags(), bilibiliIntl: false }, 'www.bilibili.tv'), false);
     assert.equal(shouldAttachProvider('tencent', defaultMediaProviderFlags(), 'v.qq.com'), true);
   });
 

@@ -38,6 +38,12 @@ describe('playlist navigation availability', () => {
       control({ provider: 'bilibili', directionHint: 'previous' }),
       control({ provider: 'bilibili', directionHint: 'next', ariaDisabled: 'true' })
     ], 1280), [{ index: 0, direction: 'previous' }]);
+    assert.deepEqual(usableControlIndexes([
+      control({ provider: 'bilibiliIntl', directionHint: 'next', className: 'ip-next-episode disabled' })
+    ], 1280), []);
+    assert.deepEqual(usableControlIndexes([
+      control({ provider: 'bilibiliIntl', directionHint: 'next', className: 'ip-next-episode' })
+    ], 1280).map((entry) => entry.direction), ['next']);
   });
   it('shows YouTube previous and next only when the player is offering them', () => {
     const playlist = [

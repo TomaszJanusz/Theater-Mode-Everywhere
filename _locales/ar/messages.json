@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (تجريبية)"
   },
   "richTheaterExperienceDescription": {
-    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وNetflix وBilibili, Tencent Video / WeTV وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
+    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وNetflix وBilibili وBilibili.tv وTencent Video / WeTV وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
   },
   "richTheaterExperienceReadMore": {
     "message": "هنا"
@@ -196,10 +196,10 @@
     "message": "يعرض عنوان المادة الحالية ويبدّل لغات ترجمة المشغّل في وضع المسرح عندما يكون لدى المشغّل عارض ترجمات نشط. الفصول وصور الخط الزمني غير مدعومة."
   },
   "bilibiliIntegrationTitle": {
-    "message": "تكامل Bilibili"
+    "message": "تكامل Bilibili ‏(bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "يستورد عنوان الفيديو والترجمات والفصول وخريطة الشعبية والصور المصغرة عند توفرها. تتطلب بعض الترجمات تسجيل الدخول إلى Bilibili."
+    "message": "يستورد عنوان الفيديو والترجمات والفصول وخريطة الشعبية وصور الخط الزمني المصغرة من bilibili.com عند توفرها. تتطلب بعض الترجمات تسجيل الدخول إلى Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "تكامل Tencent Video / WeTV"
@@ -367,7 +367,7 @@
     "message": "مزيد من السياق على الخط الزمني: انتقل بين الفصول وشاهد أكثر اللحظات إعادةً على YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ وBilibili وTencent Video / WeTV المدعومة."
+    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ وBilibili وBilibili.tv وTencent Video / WeTV المدعومة."
   },
   "whatsNewThanks": {
     "message": "فعّل Rich Theater Experience (Experimental) من نافذة الإضافة على المواقع المدعومة أو من صفحة الإعدادات. ما زالت الميزة تجريبية، لذا قد تختلف بعض الوظائف حسب الخدمة :)"
@@ -651,5 +651,11 @@
   },
   "cyclePictureLayout": {
     "message": "تغيير تخطيط الصورة"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "تكامل Bilibili.tv"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "يستورد عنوان الحلقة والترجمات وصور الخط الزمني المصغرة من صفحات حلقات bilibili.tv عند توفرها. تستخدم الحلقة التالية زر التالي في المشغّل. هذا التكامل لا يستورد الفصول ولا خريطة الشعبية. صفحات الفيديو التي يرفعها المستخدمون (/video) غير مدعومة."
   }
 }

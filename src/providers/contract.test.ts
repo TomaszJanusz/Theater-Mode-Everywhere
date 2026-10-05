@@ -15,6 +15,8 @@ import { readVimeoSnapshot } from './vimeo/main';
 import { readYoutubeSnapshot } from './youtube/main';
 import { BilibiliAdapter } from './bilibili/adapter';
 import { readBilibiliSnapshot } from './bilibili/main';
+import { BilibiliIntlAdapter } from './bilibili-intl/adapter';
+import { readBilibiliIntlSnapshot } from './bilibili-intl/main';
 import { TencentAdapter } from './tencent/adapter';
 import { readTencentSnapshot } from './tencent/main';
 
@@ -27,6 +29,7 @@ const adapters = [
   ['disney', DisneyAdapter],
   ['netflix', NetflixAdapter],
   ['bilibili', BilibiliAdapter],
+  ['bilibiliIntl', BilibiliIntlAdapter],
   ['tencent', TencentAdapter]
 ] as const;
 
@@ -38,6 +41,7 @@ const snapshots = [
   ['disney', readDisneySnapshot],
   ['netflix', readNetflixSnapshot],
   ['bilibili', readBilibiliSnapshot],
+  ['bilibiliIntl', readBilibiliIntlSnapshot],
   ['tencent', readTencentSnapshot]
 ] as const;
 

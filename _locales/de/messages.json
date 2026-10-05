@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimentell)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
   },
   "richTheaterExperienceReadMore": {
     "message": "hier"
@@ -196,10 +196,10 @@
     "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um, wenn der Player einen aktiven Untertitel-Renderer hat. Kapitel und Zeitachsen-Miniaturen werden nicht unterstützt."
   },
   "bilibiliIntegrationTitle": {
-    "message": "Bilibili-Integration"
+    "message": "Bilibili-Integration (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importiert Videotitel, Untertitel, Kapitel, die High-Energy-Fortschrittskarte und Vorschaubilder, sofern verfügbar. Einige Untertitel erfordern eine Anmeldung bei Bilibili."
+    "message": "Importiert Videotitel, Untertitel, Kapitel, die Beliebtheitskurve und Zeitachsen-Vorschaubilder von bilibili.com, sofern verfügbar. Für manche Untertitel ist eine Anmeldung bei Bilibili erforderlich."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV-Integration"
@@ -367,7 +367,7 @@
     "message": "Mehr Kontext auf der Zeitleiste: Springe zwischen Kapiteln und sieh dir die meistwiederholten Momente auf YouTube an."
   },
   "whatsNewItemPreviews": {
-    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten Playern von YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili und Tencent Video / WeTV zu sehen."
+    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten Playern von YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv und Tencent Video / WeTV zu sehen."
   },
   "whatsNewThanks": {
     "message": "Aktiviere Rich Theater Experience (Experimental) über das Erweiterungs-Popup auf unterstützten Websites oder auf der Einstellungsseite. Die Funktion ist noch experimentell, daher können einzelne Funktionen je nach Dienst variieren :)"
@@ -651,5 +651,11 @@
   },
   "cyclePictureLayout": {
     "message": "Bildlayout wechseln"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "Bilibili.tv-Integration"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "Importiert Folgentitel, Untertitel und Zeitachsen-Vorschaubilder von bilibili.tv-Folgenseiten, sofern verfügbar. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine Kapitel und keine Beliebtheitskurve. Hochgeladene /video-Seiten werden nicht unterstützt."
   }
 }
