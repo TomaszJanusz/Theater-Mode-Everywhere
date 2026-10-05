@@ -218,6 +218,7 @@ describe('tencent wasm bridge lifetime', () => {
     const transport: WasmTransport = {
       read: () => ({ ...emptyWasmSnapshot(), paused: true, pictureInPicture: true }),
       command: (_element, op) => { commands.push(op); },
+      play: () => Promise.resolve(),
       subscribe: () => () => {}
     };
     const surface = openTencentWasmSurface({ localName: 'fake-iframe-video' } as HTMLElement, transport);
@@ -225,5 +226,60 @@ describe('tencent wasm bridge lifetime', () => {
     await assert.rejects(() => surface.requestPictureInPicture(), /picture-in-picture-unavailable/);
     assert.deepEqual(commands, []);
     surface.dispose();
+  });
+
+  function pausedSnapshot(overrides: Partial<ReturnType<typeof emptyWasmSnapshot>> = {}) {
+    return { ...emptyWasmSnapshot(), paused: true, duration: 120, ...overrides };
+  }
+
+  function openSurface(play: WasmTransport['play'] = () => Promise.resolve()) {
+    let emit: (type: string, state: ReturnType<typeof emptyWasmSnapshot>) => void = () => {};
+    const transport: WasmTransport = {
+      read: () => pausedSnapshot(),
+      command: () => {},
+      play,
+      subscribe: (_element, onEvent) => {
+        emit = onEvent;
+        return () => {};
+      }
+    };
+    const surface = openTencentWasmSurface({ localName: 'fake-iframe-video' } as HTMLElement, transport);
+    return { surface, emit };
+  }
+
+  it('drops a pending seek once the player settles away from the request', () => {
+    const { surface, emit } = openSurface();
+    surface.currentTime = 80;
+    emit('timeupdate', pausedSnapshot({ currentTime: 10, seeking: true }));
+    assert.equal(surface.currentTime, 80);
+    emit('seeked', pausedSnapshot({ currentTime: 30, seeking: false }));
+    assert.equal(surface.currentTime, 30);
+    emit('timeupdate', pausedSnapshot({ currentTime: 31, seeking: false }));
+    assert.equal(surface.currentTime, 31);
+    surface.dispose();
+  });
+
+  it('stays paused when play() rejects and starts only after it resolves', async () => {
+    const rejected = openSurface(() => Promise.reject(new Error('blocked')));
+    await assert.rejects(() => rejected.surface.play(), /blocked/);
+    assert.equal(rejected.surface.paused, true);
+    rejected.surface.dispose();
+
+    const previous = globalThis.window;
+    globalThis.window = {
+      setTimeout: ((fn: () => void, ms?: number) => setTimeout(fn, ms)) as typeof setTimeout,
+      clearTimeout: ((id: ReturnType<typeof setTimeout>) => clearTimeout(id)) as typeof clearTimeout
+    } as Window & typeof globalThis;
+    try {
+      const started = openSurface(() => Promise.resolve());
+      const playing = started.surface.play();
+      assert.equal(started.surface.paused, true);
+      await playing;
+      assert.equal(started.surface.paused, false);
+      started.surface.dispose();
+    } finally {
+      if (previous === undefined) delete (globalThis as { window?: Window }).window;
+      else globalThis.window = previous;
+    }
   });
 });

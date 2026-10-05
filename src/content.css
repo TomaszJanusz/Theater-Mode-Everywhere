@@ -181,7 +181,8 @@ html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-tim
   bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
 }
 
-/* Tencent's WASM stage. Visibility keeps the next-episode button clickable. */
+/* Tencent's WASM stage. Hide chrome without display:none so the next-episode
+   control still passes isHostStepUsable and the TME bar can call click(). */
 html.theater-everywhere-tencent-stage .txp_player,
 html.theater-everywhere-tencent-stage .txp_videos_container {
   overflow: visible !important;

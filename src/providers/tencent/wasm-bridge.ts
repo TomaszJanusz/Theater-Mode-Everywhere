@@ -30,12 +30,14 @@ type WasmMessage = {
   requestId?: string;
   elementId?: string;
   type?: string;
+  failed?: boolean;
   state: TencentWasmSnapshot | null;
 };
 
 export type WasmTransport = {
   read(element: HTMLElement): TencentWasmSnapshot | null;
   command(element: HTMLElement, op: WasmOp, value?: number | boolean): void;
+  play(element: HTMLElement): Promise<void>;
   subscribe(element: HTMLElement, onEvent: (type: string, state: TencentWasmSnapshot) => void): () => void;
 };
 
@@ -121,12 +123,17 @@ function releaseWatch(element: WasmApi): void {
   mirrors.release(element);
 }
 
+function startPlayback(element: WasmApi): Promise<void> {
+  try {
+    return Promise.resolve(element.play?.()).then(() => undefined);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 function applyCommand(element: WasmApi, command: WasmCommand): void {
   try {
-    if (command.op === 'play') {
-      const result = element.play?.();
-      void Promise.resolve(result).catch(() => {});
-    } else if (command.op === 'pause') {
+    if (command.op === 'pause') {
       element.pause?.();
     } else if (command.op === 'seek' && typeof command.value === 'number') {
       element.currentTime = command.value;
@@ -161,12 +168,58 @@ export function installTencentWasmBridge(): void {
     }
     if (command.op === 'watch') watchElement(element);
     else if (command.op === 'unwatch') releaseWatch(element);
-    else if (command.op !== 'snapshot') applyCommand(element, command);
+    else if (command.op === 'play') {
+      startPlayback(element).then(
+        () => post(TENCENT_WASM_RESULT_EVENT, {
+          requestId: command.requestId,
+          elementId: command.elementId,
+          state: readTencentWasmSnapshot(element)
+        }),
+        () => post(TENCENT_WASM_RESULT_EVENT, {
+          requestId: command.requestId,
+          elementId: command.elementId,
+          state: null,
+          failed: true
+        })
+      );
+      return;
+    } else if (command.op !== 'snapshot') applyCommand(element, command);
     post(TENCENT_WASM_RESULT_EVENT, {
       requestId: command.requestId,
       elementId: command.elementId,
       state: readTencentWasmSnapshot(element)
     });
+  });
+}
+
+function requestPlayback(element: HTMLElement): Promise<void> {
+  const requestId = createSessionId();
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (failed: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener(TENCENT_WASM_RESULT_EVENT, onResult);
+      if (failed) reject(new Error('wasm-play-failed'));
+      else resolve();
+    };
+    const onResult = (event: Event) => {
+      const message = parseDetail((event as CustomEvent<string>).detail) as WasmMessage | null;
+      if (!message || message.requestId !== requestId) return;
+      finish(message.failed === true || message.state == null);
+    };
+    const timer = window.setTimeout(() => finish(true), 5000);
+    window.addEventListener(TENCENT_WASM_RESULT_EVENT, onResult);
+    try {
+      post(TENCENT_WASM_COMMAND_EVENT, {
+        requestId,
+        elementId: elementId(element),
+        op: 'play'
+      });
+    } catch {
+      finish(true);
+    }
   });
 }
 
@@ -199,11 +252,16 @@ export function pageWasmTransport(): WasmTransport {
       return callBridge(element, 'snapshot');
     },
     command(element, op, value) {
+      if (op === 'play') return;
       if (tencentWasmApiVisible(element)) {
         applyCommand(element, { requestId: '', elementId: elementId(element), op, value });
         return;
       }
       callBridge(element, op, value);
+    },
+    play(element) {
+      if (tencentWasmApiVisible(element)) return startPlayback(element);
+      return requestPlayback(element);
     },
     subscribe(element, onEvent) {
       if (tencentWasmApiVisible(element)) {
@@ -299,11 +357,12 @@ export class TencentWasmSurface implements PlaybackSurface {
 
   play(): Promise<void> {
     if (this.disposed) return Promise.resolve();
-    this.cache.paused = false;
-    this.clock.notePlaying();
-    this.transport.command(this.element, 'play');
-    this.dispatch('play');
-    return Promise.resolve();
+    return this.transport.play(this.element).then(() => {
+      if (this.disposed) return;
+      this.cache.paused = false;
+      this.clock.notePlaying();
+      this.dispatch('play');
+    });
   }
 
   pause(): void {
@@ -357,12 +416,12 @@ export class TencentWasmSurface implements PlaybackSurface {
   private apply(state: TencentWasmSnapshot): void {
     this.cache = { ...state };
     if (this.pendingSeek == null) return;
-    if (Math.abs(state.currentTime - this.pendingSeek) <= 1.25 || state.seeking) {
-      if (!state.seeking && Math.abs(state.currentTime - this.pendingSeek) <= 1.25) this.pendingSeek = null;
-      else this.cache.currentTime = this.pendingSeek;
+    const arrived = Math.abs(state.currentTime - this.pendingSeek) <= 1.25;
+    if (state.seeking && !arrived) {
+      this.cache.currentTime = this.pendingSeek;
       return;
     }
-    this.cache.currentTime = this.pendingSeek;
+    this.pendingSeek = null;
   }
 
   private dispatch(type: string): void {

@@ -1543,6 +1543,14 @@ function rebindTencentWasm(next: HTMLElement): void {
   attachWasmSession(next);
 }
 
+function fullscreenTheaterTarget(): HTMLElement | null {
+  if (!isTencentHost()) {
+    const active = refs.activeVideo;
+    if (active && isElementInDOMDeep(active)) return active;
+  }
+  return findTheaterTarget();
+}
+
 function claimFullscreenShortcut(): void {
   if (session.hasUi) {
     if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
@@ -1553,7 +1561,7 @@ function claimFullscreenShortcut(): void {
     document.exitFullscreen().catch(() => {});
     return;
   }
-  const target = findTheaterTarget();
+  const target = fullscreenTheaterTarget();
   if (target) {
     enterTheaterMode(target);
     if (refs.currentToggleFullscreen) refs.currentToggleFullscreen();
