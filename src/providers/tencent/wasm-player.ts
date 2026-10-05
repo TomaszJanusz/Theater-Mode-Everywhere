@@ -294,6 +294,41 @@ export function readBufferedRanges(value: unknown): Array<{ start: number; end: 
   return ranges;
 }
 
+function finiteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** Accepts a bridge snapshot. A non-array `buffered` is rejected so it cannot be cached. */
+export function coerceTencentWasmSnapshot(value: unknown): TencentWasmSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const state = value as Record<string, unknown>;
+  if (typeof state.paused !== 'boolean' || typeof state.ended !== 'boolean' || typeof state.seeking !== 'boolean'
+      || typeof state.muted !== 'boolean' || typeof state.pictureInPicture !== 'boolean') return null;
+  if (!finiteNumber(state.currentTime) || !finiteNumber(state.duration) || !finiteNumber(state.volume)
+      || !finiteNumber(state.playbackRate) || !finiteNumber(state.readyState)) return null;
+  if (!Array.isArray(state.buffered)) return null;
+  const buffered: Array<{ start: number; end: number }> = [];
+  for (const range of state.buffered) {
+    if (!range || typeof range !== 'object') return null;
+    const pair = range as { start?: unknown; end?: unknown };
+    if (!finiteNumber(pair.start) || !finiteNumber(pair.end)) return null;
+    buffered.push({ start: pair.start, end: pair.end });
+  }
+  return {
+    paused: state.paused,
+    ended: state.ended,
+    seeking: state.seeking,
+    currentTime: state.currentTime,
+    duration: state.duration,
+    volume: Math.min(1, Math.max(0, state.volume)),
+    muted: state.muted,
+    playbackRate: state.playbackRate > 0 ? state.playbackRate : 1,
+    readyState: state.readyState,
+    buffered,
+    pictureInPicture: state.pictureInPicture
+  };
+}
+
 export function emptyWasmSnapshot(): TencentWasmSnapshot {
   return {
     paused: true,

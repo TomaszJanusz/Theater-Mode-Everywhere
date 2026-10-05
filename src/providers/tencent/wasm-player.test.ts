@@ -5,6 +5,7 @@ import { isTrustedFrameEnvelope } from '../../protocol/frame-messages';
 import { createWasmEventWatch, createWasmIdWatch, openTencentWasmSurface, type WasmTransport } from './wasm-bridge';
 import {
   createWasmClock,
+  coerceTencentWasmSnapshot,
   emptyWasmSnapshot,
   isTencentWasmFrameDocument,
   isTencentWasmFrameUrl,
@@ -266,6 +267,16 @@ describe('tencent wasm bridge lifetime', () => {
     const surface = openTencentWasmSurface({ localName: 'fake-iframe-video' } as HTMLElement, transport);
     return { surface, emit };
   }
+
+  it('ignores a mirror state whose buffered value is not a list', () => {
+    assert.equal(coerceTencentWasmSnapshot({ buffered: {} }), null);
+    assert.equal(coerceTencentWasmSnapshot({ ...emptyWasmSnapshot(), buffered: {} }), null);
+    const { surface, emit } = openSurface();
+    emit('timeupdate', { buffered: {} } as ReturnType<typeof emptyWasmSnapshot>);
+    assert.equal(surface.buffered.length, 0);
+    assert.equal(surface.currentTime, 0);
+    surface.dispose();
+  });
 
   it('drops a pending seek once the player settles away from the request', () => {
     const { surface, emit } = openSurface();

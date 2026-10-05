@@ -56,8 +56,9 @@ export function volumeCeiling(surface: PlaybackSurface, boostEnabled: boolean): 
   return surface.capabilities.volumeBoost && boostEnabled ? 1.5 : 1;
 }
 
-export function rangesFromPairs(pairs: Array<{ start: number; end: number }>): PlaybackRangeList {
-  const ranges = pairs.filter((range) => Number.isFinite(range.start) && Number.isFinite(range.end));
+export function rangesFromPairs(pairs: Array<{ start: number; end: number }> | null | undefined): PlaybackRangeList {
+  const list = Array.isArray(pairs) ? pairs : [];
+  const ranges = list.filter((range) => range && Number.isFinite(range.start) && Number.isFinite(range.end));
   return {
     length: ranges.length,
     start(index: number) {

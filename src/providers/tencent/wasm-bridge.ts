@@ -3,6 +3,7 @@ import { createSessionId } from '../../protocol/frame-messages';
 import { isTencentHost } from '../hosts';
 import {
   TENCENT_WASM_MEDIA_EVENTS,
+  coerceTencentWasmSnapshot,
   createWasmClock,
   emptyWasmSnapshot,
   isTencentWasmPlayerElement,
@@ -238,7 +239,7 @@ function requestPlayback(element: HTMLElement): Promise<void> {
     const onResult = (event: Event) => {
       const message = parseDetail((event as CustomEvent<string>).detail) as WasmMessage | null;
       if (!message || message.requestId !== requestId) return;
-      finish(message.failed === true || message.state == null);
+      finish(message.failed === true || coerceTencentWasmSnapshot(message.state) == null);
     };
     const timer = window.setTimeout(() => finish(true), 5000);
     window.addEventListener(TENCENT_WASM_RESULT_EVENT, onResult);
@@ -259,8 +260,9 @@ function callBridge(element: HTMLElement, op: WasmOp, value?: number | boolean):
   let snapshot: TencentWasmSnapshot | null = null;
   const onResult = (event: Event) => {
     const message = parseDetail((event as CustomEvent<string>).detail) as WasmMessage | null;
-    if (!message || message.requestId !== requestId) return;
-    snapshot = message.state;
+    const state = coerceTencentWasmSnapshot(message?.state);
+    if (!message || message.requestId !== requestId || !state) return;
+    snapshot = state;
   };
   window.addEventListener(TENCENT_WASM_RESULT_EVENT, onResult);
   try {
@@ -306,8 +308,9 @@ export function pageWasmTransport(): WasmTransport {
       const id = elementId(element);
       const onMirror = (event: Event) => {
         const message = parseDetail((event as CustomEvent<string>).detail) as WasmMessage | null;
-        if (!message || message.elementId !== id || !message.type || !message.state) return;
-        onEvent(message.type, message.state);
+        const state = coerceTencentWasmSnapshot(message?.state);
+        if (!message || message.elementId !== id || !message.type || !state) return;
+        onEvent(message.type, state);
       };
       window.addEventListener(TENCENT_WASM_MIRROR_EVENT, onMirror);
       callBridge(element, 'watch');
@@ -334,7 +337,7 @@ export class TencentWasmSurface implements PlaybackSurface {
   constructor(element: HTMLElement, private readonly transport: WasmTransport) {
     this.element = element;
     this.stopEvents = transport.subscribe(element, (type, state) => this.onMirror(type, state));
-    this.cache = transport.read(element) || emptyWasmSnapshot();
+    this.cache = coerceTencentWasmSnapshot(transport.read(element)) || emptyWasmSnapshot();
     this.clock = createWasmClock({
       schedule: (fn, ms) => window.setTimeout(fn, ms),
       cancel: (id) => window.clearTimeout(id),
@@ -425,7 +428,7 @@ export class TencentWasmSurface implements PlaybackSurface {
 
   private poll(): void {
     if (this.disposed) return;
-    const state = this.transport.read(this.element);
+    const state = coerceTencentWasmSnapshot(this.transport.read(this.element));
     if (!state) return;
     this.apply(state);
     this.dispatch('timeupdate');
@@ -434,7 +437,7 @@ export class TencentWasmSurface implements PlaybackSurface {
   }
 
   private onMirror(type: string, state: TencentWasmSnapshot): void {
-    if (this.disposed) return;
+    if (this.disposed || !coerceTencentWasmSnapshot(state)) return;
     this.clock.noteEvent();
     this.apply(state);
     if (type === 'pause' || type === 'ended') this.clock.notePause();
@@ -445,7 +448,9 @@ export class TencentWasmSurface implements PlaybackSurface {
   }
 
   private apply(state: TencentWasmSnapshot): void {
-    this.cache = { ...state };
+    const snapshot = coerceTencentWasmSnapshot(state);
+    if (!snapshot) return;
+    this.cache = { ...snapshot };
     if (this.pendingSeek == null) return;
     const arrived = Math.abs(state.currentTime - this.pendingSeek) <= 1.25;
     if (state.seeking && !arrived) {
