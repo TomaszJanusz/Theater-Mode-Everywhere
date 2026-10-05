@@ -435,9 +435,11 @@ Etykiety Tencent Video / WeTV uwzględniają teraz import napisów i miniaturek.
   `crossOriginIsolated` fałszywe), więc płótna WASM nie sprawdzono na
   odtwarzaczu produkcyjnym. `T` na tej stronie włączyło tryb kinowy na zwykłym
   `<video>` i nie dodało klasy sceny WASM.
-- Bilibili.tv: `pnpm typecheck`, 344 testów, `pnpm build` i
-  `pnpm verify:bundles`. Próba API na żywej stronie jest opisana w sekcji
-  Bilibili.tv i nie obejmuje pełnego trybu kinowego.
+- Bilibili.tv: `pnpm typecheck` i 346 testów. Próby na fiksturze rozszerzenia
+  i na żywej stronie są opisane wyżej w tej sekcji. E1 obejmuje metadane,
+  ścieżki, cue i miniaturę. Na E2 ściana Premium odcina wideo i warstwy
+  napisów; metadane, ścieżki i cue przy odłączonym playheadzie są sprawdzone,
+  dalsze odtwarzanie nie.
 
 Źródła techniczne odczytane z aktualnych odtwarzaczy:
 [Bilibili core](https://s1.hdslb.com/bfs/static/player/main/core.ba67b466.js),

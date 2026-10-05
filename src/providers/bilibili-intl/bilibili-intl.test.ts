@@ -81,6 +81,10 @@ describe('Bilibili.tv RTE', () => {
       { start: 33.64, end: 36.33, text: 'لكل شيء روحه الخاصة.' },
       { start: 36.83, end: 40.37, text: 'line one\nline two' }
     ]);
+    // A cue may contain the ASS marker. That must stay JSON, while [Script Info] stays ASS.
+    assert.deepEqual(parseBilibiliIntlCaptions(JSON.stringify({
+      body: [{ from: 1.25, to: 2.5, content: 'He said Dialogue: hello' }]
+    })), [{ start: 1.25, end: 2.5, text: 'He said Dialogue: hello' }]);
     assert.deepEqual(parseBilibiliIntlCaptions('<html>login</html>'), []);
   });
 
@@ -798,6 +802,114 @@ describe('Bilibili.tv RTE', () => {
       adapter.dispose();
       duringDispose.dispose();
       afterFailure.dispose();
+      globalThis.window = oldWindow;
+      globalThis.document = oldDocument;
+    }
+  });
+
+  it('lets only the latest caption selection change host fallback when requests overlap', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const attrs = new Map<string, string>();
+    const hidden = 'data-te-bilibili-intl-captions-hidden';
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.tv', origin: 'https://www.bilibili.tv', pathname: '/en/play/1053337' },
+      setTimeout, clearTimeout
+    });
+    globalThis.window = win as any;
+    globalThis.document = {
+      documentElement: {
+        hasAttribute: (name: string) => attrs.has(name),
+        getAttribute: (name: string) => attrs.get(name) ?? null,
+        setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+        removeAttribute: (name: string) => { attrs.delete(name); },
+        toggleAttribute: (name: string, on?: boolean) => {
+          const next = on ?? !attrs.has(name);
+          if (next) attrs.set(name, '');
+          else attrs.delete(name);
+          return next;
+        }
+      }
+    } as any;
+    attrs.set('data-te-bilibili-intl-episode', '11371243');
+    const arabic = JSON.stringify({ body: [{ from: 1, to: 2, content: 'سطر جديد' }] });
+    win.addEventListener('theater-everywhere-media-probe', (event) => {
+      const requestId = (event as CustomEvent).detail.requestId;
+      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
+        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          subtitles: [
+            { url: SUBTITLE_URL, lang: 'English', lang_key: 'en' },
+            { url: JSON_URL, lang: 'العربية', lang_key: 'ar' }
+          ]
+        }, null) }
+      }));
+    });
+    const deliveries: Array<{ url: string; send: (body: string) => void }> = [];
+    (win as any).postMessage = (request: WorldEnvelope) => {
+      deliveries.push({
+        url: String(request.payload.url),
+        send: (body: string) => {
+          win.dispatchEvent(Object.assign(new Event('message'), {
+            source: win,
+            data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin)
+          }));
+        }
+      });
+    };
+    const take = (url: string) => {
+      const index = deliveries.findIndex((item) => item.url === url);
+      assert.notEqual(index, -1, url);
+      return deliveries.splice(index, 1)[0];
+    };
+    const adapter = new BilibiliIntlAdapter();
+    try {
+      const tracks = await adapter.listCaptionTracks();
+      const english = tracks.find((track) => track.language === 'en');
+      const arabicTrack = tracks.find((track) => track.language === 'ar');
+      assert.ok(english && arabicTrack);
+
+      const cancelledSuccess = adapter.activateCaptionTrack(english.id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 1);
+      const latestFailure = adapter.activateCaptionTrack(arabicTrack.id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 2);
+      take(SUBTITLE_URL).send(ASS);
+      const staleSuccess = await cancelledSuccess;
+      assert.equal(staleSuccess.status, 'failed');
+      assert.deepEqual(staleSuccess.cues, []);
+      assert.equal(attrs.has(hidden), false);
+      take(JSON_URL).send('<html>login</html>');
+      const failedLatest = await latestFailure;
+      assert.equal(failedLatest.status, 'failed');
+      assert.deepEqual(failedLatest.cues, []);
+      assert.equal(attrs.has(hidden), false);
+      // Controller cleanup after the failed latest selection keeps the host layer up.
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(attrs.has(hidden), false);
+
+      const older = adapter.activateCaptionTrack(english.id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 1);
+      const newer = adapter.activateCaptionTrack(arabicTrack.id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 2);
+      take(JSON_URL).send(arabic);
+      const newerResult = await newer;
+      assert.equal(newerResult.status, 'active');
+      assert.deepEqual(newerResult.cues, [{ start: 1, end: 2, text: 'سطر جديد' }]);
+      assert.equal(attrs.has(hidden), true);
+      take(SUBTITLE_URL).send('<html>login</html>');
+      const olderResult = await older;
+      assert.equal(olderResult.status, 'failed');
+      assert.deepEqual(olderResult.cues, []);
+      assert.equal(attrs.has(hidden), true);
+      // A stale failure must not arm host fallback, or this cleanup would uncover it.
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(attrs.has(hidden), true);
+    } finally {
+      for (const delivery of deliveries) delivery.send('');
+      adapter.dispose();
       globalThis.window = oldWindow;
       globalThis.document = oldDocument;
     }

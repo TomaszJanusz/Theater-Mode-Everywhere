@@ -99,6 +99,9 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
       this.hideHostCaptions(this.usableTracksOnPage());
       return { status: 'off', delivery: 'none', cues: [] };
     }
+    // A newer selection must cancel an in-flight one before the first await.
+    // Otherwise a late failure still matches the sampled generation and unhides host captions.
+    this.cueGeneration++;
     const generation = this.cueGeneration;
     this.preserveHostFallback = false;
     await this.load();
@@ -141,7 +144,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     return Boolean(bilibiliIntlIntegrationEnabled() && this.matchingSnapshot()?.captionTracks.length);
   }
 
-  /** Generation is sampled before the first await. After the body fetch, the episode and track must still match. */
+  /** Generation is incremented before the first await. After the body fetch, the episode and track must still match. */
   private operationCurrent(generation: number, videoId?: string, id?: string): boolean {
     if (generation !== this.cueGeneration || !bilibiliIntlIntegrationEnabled()) return false;
     if (!videoId) return true;

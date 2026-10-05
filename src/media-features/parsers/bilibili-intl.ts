@@ -252,9 +252,10 @@ function parseJsonCues(body: string): CaptionCue[] {
 export function parseBilibiliIntlCaptions(body: string): CaptionCue[] {
   if (body.length > MAX_CAPTION_BYTES) return [];
   const trimmed = body.trim();
-  // Live ASS files open with [Script Info]. JSON cues are an object with body[].
+  // JSON cues are one object with body[]. A leading "[" is an ASS section
+  // such as [Script Info], so only "{" selects JSON. Cue text may contain "Dialogue:".
+  if (trimmed.startsWith('{')) return parseJsonCues(trimmed);
   if (trimmed.includes('Dialogue:')) return parseAss(trimmed);
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return parseJsonCues(trimmed);
   return [];
 }
 
