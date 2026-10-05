@@ -1,6 +1,7 @@
 import { isBilibiliHost } from '../hosts';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { normalizeBilibiliSnapshot, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
+import { signBilibiliWbi } from './wbi';
 
 export function bilibiliIntegrationEnabled(): boolean {
   return isBilibiliHost() && mediaProviderIntegrationEnabled('bilibili');
@@ -41,9 +42,10 @@ async function readPbp(aid: number, cid: number): Promise<unknown> {
 
 async function readSubtitleView(aid: number, cid: number): Promise<Uint8Array | null> {
   try {
+    const query = signBilibiliWbi({ oid: cid, pid: aid, type: 1 });
     const response = await fetch(
-      `https://api.bilibili.com/x/v2/subtitle/web/view?oid=${cid}&pid=${aid}&type=1`,
-      { credentials: 'include', signal: AbortSignal.timeout(2500) }
+      `https://api.bilibili.com/x/v2/subtitle/web/view?${query}`,
+      { credentials: 'include', signal: AbortSignal.timeout(5000) }
     );
     if (!response.ok || (response.url && new URL(response.url).origin !== 'https://api.bilibili.com')) return null;
     const buffer = await response.arrayBuffer();
@@ -72,8 +74,17 @@ export async function readBilibiliSnapshot(): Promise<BilibiliSnapshot | null> {
   ]).then(([info, shot, pbp, subtitles]) => {
     // Ignore a late response after a SPA episode change or RTE has been disabled.
     const current = win.__INITIAL_STATE__ || {};
-    if (!bilibiliIntegrationEnabled() || Number(current.cid || current.videoData?.cid || current.epInfo?.cid) !== cid) return null;
-    return normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles);
+    if (!bilibiliIntegrationEnabled() || Number(current.cid || current.videoData?.cid || current.epInfo?.cid) !== cid) {
+      if (cached?.pending === pending) cached = null;
+      return null;
+    }
+    const snapshot = normalizeBilibiliSnapshot(key, title, duration, info, shot, pbp, subtitles);
+    // An empty subtitle list is often a timed-out view, not proof the film has none.
+    // Keep it briefly so the next probe can retry without hammering every duration event.
+    if (cached?.pending === pending && snapshot.captionTracks.length === 0) {
+      cached = { key, expires: Date.now() + 2000, pending };
+    }
+    return snapshot;
   });
   cached = { key, expires: Date.now() + 15000, pending };
   return pending;

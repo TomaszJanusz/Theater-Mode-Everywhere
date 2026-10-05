@@ -1015,6 +1015,27 @@ describe('caption track merge', () => {
     assert.equal(tracks.length, 1);
     assert.equal(tracks[0].source, 'twitch');
   });
+
+  it('hides native HTML5 tracks when Bilibili already has a subtitle list', () => {
+    const tracks = preferProviderCaptionTracks([
+      {
+        id: 'native:0',
+        language: 'ai-zh',
+        label: '中文',
+        kind: 'subtitles',
+        source: 'native-text-track'
+      },
+      {
+        id: 'bilibili:1:2:ai-zh:abc',
+        language: 'ai-zh',
+        label: '中文',
+        kind: 'subtitles',
+        source: 'bilibili'
+      }
+    ]);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].source, 'bilibili');
+  });
 });
 
 describe('F-05 composite adapter isolation', () => {

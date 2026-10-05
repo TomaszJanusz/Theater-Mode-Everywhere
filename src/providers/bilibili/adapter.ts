@@ -1,19 +1,21 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, parseBilibiliCaptions, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
+import { bilibiliPreviewFrame, bilibiliTimelineHeatmap, mergeBilibiliSnapshot, parseBilibiliCaptions, type BilibiliSnapshot } from '../../media-features/parsers/bilibili';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource, TimelineHeatmap } from '../../media-features/types';
 
 export class BilibiliAdapter implements MediaFeaturesAdapter {
   private snapshot: BilibiliSnapshot | null = null;
   private pending: Promise<void> | null = null;
-  private generation = 0;
+  private loadGeneration = 0;
+  private cueGeneration = 0;
 
-  private load(): Promise<void> {
+  private load(previous: BilibiliSnapshot | null = null): Promise<void> {
     if (this.snapshot) return Promise.resolve();
     if (this.pending) return this.pending;
-    const generation = this.generation;
-    const pending = requestMediaProbe(3500, 'bilibili').then((snapshot) => {
-      if (generation === this.generation) this.snapshot = snapshot.bilibili || null;
+    const generation = this.loadGeneration;
+    const pending = requestMediaProbe(6000, 'bilibili').then((snapshot) => {
+      if (generation !== this.loadGeneration) return;
+      this.snapshot = mergeBilibiliSnapshot(previous, snapshot.bilibili || null);
     }).finally(() => { if (this.pending === pending) this.pending = null; });
     this.pending = pending;
     return pending;
@@ -35,9 +37,11 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
     if (id === null) return { status: 'off', delivery: 'none', cues: [] };
     await this.load();
     const track = this.snapshot?.captionTracks.find((t) => t.id === id);
-    const generation = this.generation;
+    const generation = this.cueGeneration;
+    const videoId = this.snapshot?.videoId || null;
     const body = track ? await requestPageFetch(track.url) : null;
-    const cues = body && generation === this.generation ? parseBilibiliCaptions(body) : [];
+    const samePart = Boolean(videoId && this.snapshot?.videoId === videoId && this.snapshot.captionTracks.some((item) => item.id === id));
+    const cues = body && (generation === this.cueGeneration || samePart) ? parseBilibiliCaptions(body) : [];
     return cues.length ? { status: 'active', delivery: 'overlay', cues } : { status: 'failed', delivery: 'none', cues: [] };
   }
 
@@ -50,7 +54,13 @@ export class BilibiliAdapter implements MediaFeaturesAdapter {
   getPreviewFrame(time: number) { return this.snapshot?.storyboard ? bilibiliPreviewFrame(this.snapshot.storyboard, time) : null; }
   mediaId() { return this.snapshot?.videoId || null; }
   getTitle() { return sanitizeContentTitle(this.snapshot?.title); }
-  invalidate(): void { this.generation++; this.snapshot = null; this.pending = null; }
-  async reload(): Promise<void> { this.invalidate(); await this.load(); }
+  invalidate(): void { this.loadGeneration++; this.cueGeneration++; this.snapshot = null; this.pending = null; }
+  async reload(): Promise<void> {
+    const previous = this.snapshot;
+    this.loadGeneration++;
+    this.snapshot = null;
+    this.pending = null;
+    await this.load(previous);
+  }
   dispose(): void { this.invalidate(); }
 }
