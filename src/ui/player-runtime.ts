@@ -39,20 +39,24 @@ import {
   seekToMediaTime
 } from '../playback-window';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
-import { isTwitchHost } from '../providers/hosts';
+import { isNetflixHost, isTwitchHost } from '../providers/hosts';
 import {
   applyTheaterViewportPin,
   markTheaterVideo,
   mountDisneyTheaterStage,
+  mountNetflixTheaterStage,
   mountTheaterStage,
   mountTwitchTheaterStage,
   observeTwitchTheaterStage,
   theaterVideoNeedsRestyle,
   unmarkTheaterVideo,
   unmountDisneyTheaterStage,
+  unmountNetflixTheaterStage,
   unmountTheaterStage,
   unmountTwitchTheaterStage
 } from './theater-layout';
+import { holdNetflixViewport, releaseNetflixViewport } from './netflix-stage';
+import { createNetflixVideoBinding, readNetflixVideoFacts, shouldFollowNetflixVideo } from './netflix-playback';
 import {
   queryPlayerUi,
   queryPlayerUiAll
@@ -482,6 +486,10 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
     element.style.setProperty('top', '0px', 'important');
     element.style.setProperty('left', '0px', 'important');
   }
+  if (isNetflixHost() && element.tagName === 'VIDEO') {
+    holdNetflixViewport(element);
+    applyTheaterViewportPin(element);
+  }
   applyTheaterPictureLayout();
 }
 
@@ -495,6 +503,7 @@ function applyTheaterPictureLayout(): void {
   );
   document.documentElement.style.setProperty('--theater-object-fit', fit);
   document.documentElement.style.setProperty('--theater-object-position', position);
+  document.documentElement.style.setProperty('--theater-letterbox', `${Math.round(horizontalLetterboxPx(frame))}px`);
   if (session.element) {
     session.element.style.setProperty('object-fit', fit, 'important');
     session.element.style.setProperty('--theater-object-fit', fit);
@@ -1463,7 +1472,9 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     stabilizeScheduled = true;
     bindingScope.raf(() => {
       stabilizeScheduled = false;
-      stabilizeLayout(video, false);
+      const target = session.element;
+      if (!(target instanceof HTMLVideoElement)) return;
+      stabilizeLayout(target, false);
     });
   };
 
@@ -1501,13 +1512,21 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     rebindIfReplaced(candidate);
   }, true);
 
+  let structuralPending = false;
   let rebindScheduled = false;
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((records) => {
+    if (records.some((record) => record.type === 'childList')) structuralPending = true;
     if (rebindScheduled) return;
     rebindScheduled = true;
     bindingScope.raf(() => {
       rebindScheduled = false;
+      const structural = structuralPending;
+      structuralPending = false;
       rebindIfReplaced();
+      if (!structural || !isNetflixHost()) return;
+      if (!(session.element instanceof HTMLVideoElement) || !isElementInDOMDeep(session.element)) return;
+      refreshTheaterAncestors(session.element);
+      holdNetflixViewport(session.element);
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -1522,6 +1541,34 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   });
   styleObserver.observe(video, { attributes: true, attributeFilter: ['style', THEATER_VIDEO_ATTR] });
   bindingScope.add(() => styleObserver.disconnect());
+
+  if (isNetflixHost()) {
+    const binding = createNetflixVideoBinding({
+      root: document.documentElement,
+      current: () => (
+        session.element instanceof HTMLVideoElement && isElementInDOMDeep(session.element)
+          ? session.element
+          : null
+      ),
+      pick: () => findBestVideo(),
+      shouldSwitch: (current, next) => shouldFollowNetflixVideo(
+        readNetflixVideoFacts(current),
+        readNetflixVideoFacts(next)
+      ),
+      onSwitch: (next) => {
+        switchTheaterVideo(next);
+        if (session.element !== next) return;
+        bindingScope.dispose();
+        keepTheaterVideoBound(next);
+      },
+      onStabilize: (target) => {
+        if (session.element !== target || !theaterVideoNeedsRestyle(target)) return;
+        scheduleStabilize(false);
+      }
+    });
+    binding.bind(video);
+    bindingScope.add(() => binding.dispose());
+  }
 }
 
 function refreshTheaterAncestors(element: HTMLElement): void {
@@ -1564,6 +1611,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   mountTheaterStage();
   mountDisneyTheaterStage(window.location.hostname);
   mountTwitchTheaterStage(window.location.hostname);
+  mountNetflixTheaterStage(window.location.hostname);
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = observeTwitchTheaterStage(window.location.hostname);
   applyTheaterElementInlineStyles(element);
@@ -1706,6 +1754,9 @@ function exitTheaterMode(
   stopObservingTwitchTheaterStage?.();
   stopObservingTwitchTheaterStage = null;
   unmountTwitchTheaterStage();
+  releaseNetflixViewport();
+  unmountNetflixTheaterStage();
+  document.documentElement.style.removeProperty('--theater-letterbox');
 
   refreshHostPlayerLayout();
 
@@ -1808,7 +1859,9 @@ export function bootstrapPlayerRuntime(): void {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
       }
       if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
-        const merged: Record<string, unknown> = mediaProviderFlagStorageUpdate(refs.providerFlags);
+        const merged: Record<string, unknown> = {
+          ...mediaProviderFlagStorageUpdate(refs.providerFlags)
+        };
         for (const key of mediaProviderFlagStorageKeys()) {
           if (Object.prototype.hasOwnProperty.call(changes, key)) {
             merged[key] = changes[key].newValue;

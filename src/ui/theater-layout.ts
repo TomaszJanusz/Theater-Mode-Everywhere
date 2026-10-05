@@ -1,10 +1,11 @@
-import { isDisneyHost, isTwitchHost } from '../providers/hosts';
+import { isDisneyHost, isNetflixHost, isTwitchHost } from '../providers/hosts';
 import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
 export const THEATER_STAGE_ID = 'theater-everywhere-stage';
 export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
 export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
 export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
+export const NETFLIX_THEATER_STAGE_CLASS = 'theater-everywhere-netflix-stage';
 
 const VIEWPORT_PIN_EPSILON_PX = 1;
 
@@ -133,4 +134,13 @@ export function unmountDisneyTheaterStage(): void {
 
 export function unmountTwitchTheaterStage(): void {
   document.documentElement.classList.remove(TWITCH_THEATER_STAGE_CLASS);
+}
+
+export function mountNetflixTheaterStage(hostname: string): void {
+  if (!isNetflixHost(hostname)) return;
+  document.documentElement.classList.add(NETFLIX_THEATER_STAGE_CLASS);
+}
+
+export function unmountNetflixTheaterStage(): void {
+  document.documentElement.classList.remove(NETFLIX_THEATER_STAGE_CLASS);
 }

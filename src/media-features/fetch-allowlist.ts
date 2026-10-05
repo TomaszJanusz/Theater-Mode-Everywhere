@@ -107,6 +107,8 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
 }
 
 const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'tencent'];
+// Netflix stays off this list. Public playback renders subtitles in the host
+// player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json'];
 
 export function classifyMediaFetchUrl(url: string, base?: string): MediaFetchRequest | null {

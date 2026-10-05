@@ -138,6 +138,49 @@ html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
   pointer-events: none !important;
 }
 
+/* Netflix's modal dialog keeps an identity transform (scale(1)). That is a
+ * containing block for position:fixed, so the inline containment reset in
+ * netflix-stage.ts is what actually pins the video. These rules cover the
+ * stable player chrome and host subtitles once that pin is in place. */
+html.theater-everywhere-netflix-stage .nf-player-container,
+html.theater-everywhere-netflix-stage .sizing-wrapper,
+html.theater-everywhere-netflix-stage .VideoContainer,
+html.theater-everywhere-netflix-stage [role="dialog"] {
+  overflow: visible !important;
+  transform: none !important;
+  scale: none !important;
+  transition: none !important;
+  animation: none !important;
+  filter: none !important;
+  mask-image: none !important;
+}
+
+html.theater-everywhere-netflix-stage .PlayerControls--control-element,
+html.theater-everywhere-netflix-stage .PlayerControlsNeo__bottom-controls,
+html.theater-everywhere-netflix-stage .nfp-button-control {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.theater-everywhere-netflix-stage .player-timedtext {
+  position: fixed !important;
+  left: 10vw !important;
+  width: 80vw !important;
+  right: auto !important;
+  top: auto !important;
+  height: auto !important;
+  bottom: 96px !important;
+  z-index: 2147483647 !important;
+  transform: none !important;
+  pointer-events: none !important;
+  text-align: center !important;
+}
+
+html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
+  bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
+}
+
 /* Sits directly behind the video. object-fit does not paint the raised
  * letterbox, and a playlist handoff can leave the page showing through
  * while the video has no frame or loses its viewport pin. */

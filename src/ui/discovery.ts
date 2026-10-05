@@ -1,4 +1,6 @@
 import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isNetflixHost } from '../providers/hosts';
+import { netflixPlaybackRank, readNetflixVideoFacts } from './netflix-playback';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 import { markTheaterVideo, unmarkTheaterVideo } from './theater-layout';
@@ -181,6 +183,11 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     const pool = selectSwitchableVideos(videos);
     const ranked = pool.length > 0 ? pool : videos;
     if (ranked.length === 1) return ranked[0];
+
+    if (isNetflixHost()) {
+      ranked.sort((a, b) => netflixPlaybackRank(readNetflixVideoFacts(b)) - netflixPlaybackRank(readNetflixVideoFacts(a)));
+      return ranked[0];
+    }
 
     ranked.sort(compareVideos);
     return ranked[0];

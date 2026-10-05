@@ -1,4 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'bilibili', 'tencent'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'tencent'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -8,6 +8,7 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   patreon: 'patreonIntegrationEnabled',
   twitch: 'twitchIntegrationEnabled',
   disney: 'disneyIntegrationEnabled',
+  netflix: 'netflixIntegrationEnabled',
   bilibili: 'bilibiliIntegrationEnabled',
   tencent: 'tencentIntegrationEnabled'
 };
@@ -19,6 +20,7 @@ const VIMEO_ATTR = 'data-te-vimeo-integration-off';
 const PATREON_ATTR = 'data-te-patreon-integration-off';
 const TWITCH_ATTR = 'data-te-twitch-integration-off';
 const DISNEY_ATTR = 'data-te-disney-integration-off';
+const NETFLIX_ATTR = 'data-te-netflix-integration-off';
 
 const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   youtube: YOUTUBE_ATTR,
@@ -26,6 +28,7 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   patreon: PATREON_ATTR,
   twitch: TWITCH_ATTR,
   disney: DISNEY_ATTR,
+  netflix: NETFLIX_ATTR,
   bilibili: 'data-te-bilibili-integration-off',
   tencent: 'data-te-tencent-integration-off'
 };

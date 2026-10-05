@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimentell)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
   },
   "richTheaterExperienceReadMore": {
     "message": "hier"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix-Integration"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um, wenn der Player einen aktiven Untertitel-Renderer hat. Kapitel und Zeitachsen-Miniaturen werden nicht unterstützt."
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili-Integration"

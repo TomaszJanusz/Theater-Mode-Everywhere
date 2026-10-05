@@ -25,6 +25,7 @@ export type CaptionTrackSource =
   | 'patreon'
   | 'twitch'
   | 'disney'
+  | 'netflix'
   | 'bilibili'
   | 'tencent';
 

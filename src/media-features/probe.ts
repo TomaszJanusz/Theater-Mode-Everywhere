@@ -116,12 +116,27 @@ export type DisneyPlayerSnapshot = {
   captionTracks?: DisneyCaptionMeta[];
 };
 
+export type NetflixProbeSnapshot = {
+  videoId?: string;
+  title?: string;
+  tracks?: Array<{
+    id: string;
+    language: string;
+    label: string;
+    kind?: string;
+    forced?: boolean;
+    none?: boolean;
+  }>;
+  selectedTrackId?: string;
+};
+
 export type MediaProbeSnapshot = {
   youtube?: YoutubePlayerSnapshot | null;
   vimeo?: VimeoPlayerSnapshot | null;
   patreon?: PatreonPlayerSnapshot | null;
   twitch?: TwitchPlayerSnapshot | null;
   disney?: DisneyPlayerSnapshot | null;
+  netflix?: NetflixProbeSnapshot | null;
   bilibili?: BilibiliSnapshot | null;
   tencent?: TencentSnapshot | null;
 };
@@ -157,6 +172,7 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili'): Promi
         patreon: snapshot.patreon ?? null,
         twitch: snapshot.twitch ?? null,
         disney: snapshot.disney ?? null,
+        netflix: snapshot.netflix ?? null,
         bilibili: snapshot.bilibili ?? null,
         tencent: snapshot.tencent ?? null
       });

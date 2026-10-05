@@ -8,9 +8,11 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isTencentHost, isDisneyHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
 import { readDisneySnapshot } from './disney/main';
+import { readNetflixSnapshot } from './netflix/main';
 import { DisneyAdapter } from './disney/adapter';
+import { NetflixAdapter } from './netflix/adapter';
 import { NativeTextTrackAdapter } from './native/adapter';
 import { readPatreonSnapshot } from './patreon/main';
 import { PatreonAdapter } from './patreon/adapter';
@@ -26,12 +28,15 @@ describe('provider registry', () => {
     assert.deepEqual(matchingProviders('www.youtube-nocookie.com').filter((id) => id !== 'native'), ['youtube']);
     assert.equal(shouldPatchMainWorld('www.youtube.com'), true);
     assert.equal(shouldPatchMainWorld('www.disneyplus.com'), true);
+    assert.equal(shouldPatchMainWorld('www.netflix.com'), true);
     assert.equal(shouldPatchMainWorld('example.com'), false);
     assert.equal(shouldPatchMainWorld('127.0.0.1'), false);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com'), true);
     assert.equal(isYouTubeHost('www.youtube-nocookie.com.'), true);
     assert.equal(isDisneyHost('www.disneyplus.com'), true);
     assert.equal(isDisneyHost('www.disneyplus.com.'), true);
+    assert.equal(isNetflixHost('www.netflix.com'), true);
+    assert.equal(isNetflixHost('www.netflix.com.'), true);
   });
 
   it('honors provider flags when attaching adapters', () => {
@@ -71,11 +76,13 @@ describe('provider registry', () => {
     assert.equal(typeof readPatreonSnapshot, 'function');
     assert.equal(typeof readTwitchSnapshot, 'function');
     assert.equal(typeof readDisneySnapshot, 'function');
+    assert.equal(typeof readNetflixSnapshot, 'function');
     assert.equal(typeof YouTubeAdapter, 'function');
     assert.equal(typeof VimeoAdapter, 'function');
     assert.equal(typeof PatreonAdapter, 'function');
     assert.equal(typeof TwitchAdapter, 'function');
     assert.equal(typeof DisneyAdapter, 'function');
+    assert.equal(typeof NetflixAdapter, 'function');
     assert.equal(typeof NativeTextTrackAdapter, 'function');
   });
 });

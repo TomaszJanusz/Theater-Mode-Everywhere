@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience(실험적 기능)"
   },
   "richTheaterExperienceDescription": {
-    "message": "YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV 등 즐겨 사용하는 동영상 서비스와의 더욱 풍부한 연동을 활성화합니다. Theater Mode Everywhere는 추가 정보를 표시하고, 사용자 지정 자막 형식을 지원하며, 서비스별 기능을 사용할 수 있게 합니다. 사용 가능 여부는 서비스에 따라 다릅니다. 자세한 내용은 "
+    "message": "YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV 등 즐겨 사용하는 동영상 서비스와의 더욱 풍부한 연동을 활성화합니다. Theater Mode Everywhere는 추가 정보를 표시하고, 사용자 지정 자막 형식을 지원하며, 서비스별 기능을 사용할 수 있게 합니다. 사용 가능 여부는 서비스에 따라 다릅니다. 자세한 내용은 "
   },
   "richTheaterExperienceReadMore": {
     "message": "여기"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "플레이어가 제공하는 경우 극장 모드에서 자막과 타임라인 썸네일 지원을 켭니다."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix 연동"
+  },
+  "netflixIntegrationDescription": {
+    "message": "시어터 모드에서 현재 작품 제목을 표시하고, 플레이어에 자막 렌더러가 있을 때 자막 언어를 전환합니다. 챕터와 타임라인 썸네일은 지원하지 않습니다."
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili 연동"

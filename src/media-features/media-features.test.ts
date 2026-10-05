@@ -19,7 +19,7 @@ import {
   resolveMediaProviderFlags,
   richTheaterExperienceEnabled
 } from './provider-flags';
-import { shouldAttachDisneyAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
+import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { normalizeYoutubePlayerResponse } from './probe';
@@ -1458,6 +1458,7 @@ describe('provider integration flags', () => {
       patreon: true,
       twitch: true,
       disney: true,
+      netflix: true,
       bilibili: true,
       tencent: true
     });
@@ -1470,13 +1471,15 @@ describe('provider integration flags', () => {
       vimeoIntegrationEnabled: true,
       patreonIntegrationEnabled: false,
       twitchIntegrationEnabled: false,
-      disneyIntegrationEnabled: false
+      disneyIntegrationEnabled: false,
+      netflixIntegrationEnabled: false
     });
     assert.equal(flags.youtube, false);
     assert.equal(flags.vimeo, true);
     assert.equal(flags.patreon, false);
     assert.equal(flags.twitch, false);
     assert.equal(flags.disney, false);
+    assert.equal(flags.netflix, false);
     assert.equal(shouldAttachYouTubeAdapter({ ...allOn, youtube: false }, 'www.youtube.com'), false);
     assert.equal(shouldAttachYouTubeAdapter(allOn, 'www.youtube.com'), true);
     assert.equal(shouldAttachVimeoAdapter({ ...allOn, vimeo: false }, 'vimeo.com'), false);
@@ -1492,6 +1495,9 @@ describe('provider integration flags', () => {
     assert.equal(shouldAttachDisneyAdapter(allOn, 'www.disneyplus.com'), true);
     assert.equal(shouldAttachDisneyAdapter({ ...allOn, disney: false }, 'www.disneyplus.com'), false);
     assert.equal(shouldAttachDisneyAdapter(allOn, 'example.com'), false);
+    assert.equal(shouldAttachNetflixAdapter(allOn, 'www.netflix.com'), true);
+    assert.equal(shouldAttachNetflixAdapter({ ...allOn, netflix: false }, 'www.netflix.com'), false);
+    assert.equal(shouldAttachNetflixAdapter(allOn, 'example.com'), false);
   });
 
   it('maps the global Rich Theater Experience switch onto every provider flag', () => {
@@ -1503,6 +1509,7 @@ describe('provider integration flags', () => {
       patreon: false,
       twitch: false,
       disney: false,
+      netflix: false,
       bilibili: false,
       tencent: false
     });
@@ -1512,6 +1519,7 @@ describe('provider integration flags', () => {
       patreonIntegrationEnabled: true,
       twitchIntegrationEnabled: true,
       disneyIntegrationEnabled: true,
+      netflixIntegrationEnabled: true,
       bilibiliIntegrationEnabled: true,
       tencentIntegrationEnabled: true
     });
@@ -1521,7 +1529,9 @@ describe('provider integration flags', () => {
     const data = { youtubeIntegrationEnabled: false, vimeoIntegrationEnabled: false,
       patreonIntegrationEnabled: false, twitchIntegrationEnabled: false, disneyIntegrationEnabled: false };
     assert.deepEqual(resolveMediaProviderFlags(data), mediaProviderFlagsForRichTheaterExperience(false));
+    assert.equal(resolveMediaProviderFlags({ ...data, netflixIntegrationEnabled: true }).netflix, true);
     assert.equal(resolveMediaProviderFlags({ ...data, bilibiliIntegrationEnabled: true }).bilibili, true);
+    assert.equal(resolveMediaProviderFlags({ ...data, tencentIntegrationEnabled: true }).tencent, true);
   });
 });
 

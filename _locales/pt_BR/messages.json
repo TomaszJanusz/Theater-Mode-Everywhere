@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+, Bilibili, Tencent Video / WeTV e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço - saiba mais "
+    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço - saiba mais "
   },
   "richTheaterExperienceReadMore": {
     "message": "aqui"
@@ -188,6 +188,12 @@
   },
   "disneyIntegrationDescription": {
     "message": "Ativa o suporte a legendas e miniaturas na linha do tempo no modo teatro quando o player as oferece."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Integração com a Netflix"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Mostra o título do material atual e alterna os idiomas de legenda do player no modo teatro quando o player tem um renderizador de legendas ativo. Capítulos e miniaturas da linha do tempo não são suportados."
   },
   "bilibiliIntegrationTitle": {
     "message": "Integração com Bilibili"
