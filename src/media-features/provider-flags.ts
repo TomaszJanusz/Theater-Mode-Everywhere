@@ -1,6 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix'] as const;
-
-const LEGACY_MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'tencent'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -10,7 +8,9 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   patreon: 'patreonIntegrationEnabled',
   twitch: 'twitchIntegrationEnabled',
   disney: 'disneyIntegrationEnabled',
-  netflix: 'netflixIntegrationEnabled'
+  netflix: 'netflixIntegrationEnabled',
+  bilibili: 'bilibiliIntegrationEnabled',
+  tencent: 'tencentIntegrationEnabled'
 };
 
 export type MediaProviderFlags = Record<MediaProviderId, boolean>;
@@ -28,7 +28,9 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   patreon: PATREON_ATTR,
   twitch: TWITCH_ATTR,
   disney: DISNEY_ATTR,
-  netflix: NETFLIX_ATTR
+  netflix: NETFLIX_ATTR,
+  bilibili: 'data-te-bilibili-integration-off',
+  tencent: 'data-te-tencent-integration-off'
 };
 
 export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {
@@ -36,11 +38,7 @@ export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {
 }
 
 export function defaultMediaProviderFlags(): MediaProviderFlags {
-  return { youtube: true, vimeo: true, patreon: true, twitch: true, disney: true, netflix: true };
-}
-
-function legacyRichTheaterExperienceOff(data: Record<string, unknown>): boolean {
-  return LEGACY_MEDIA_PROVIDER_IDS.every((id) => data[MEDIA_PROVIDER_FLAG_KEYS[id]] === false);
+  return Object.fromEntries(MEDIA_PROVIDER_IDS.map((id) => [id, true])) as MediaProviderFlags;
 }
 
 export function richTheaterExperienceEnabled(flags: MediaProviderFlags): boolean {
@@ -57,15 +55,14 @@ export function mediaProviderFlagStorageUpdate(flags: MediaProviderFlags): Recor
 
 export function resolveMediaProviderFlags(data: Record<string, unknown> | null | undefined): MediaProviderFlags {
   const next = defaultMediaProviderFlags();
+  // An existing installation with RTE switched off must keep new providers off too.
+  const legacyOff = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney']
+    .every((id) => data?.[MEDIA_PROVIDER_FLAG_KEYS[id as MediaProviderId]] === false);
   for (const id of MEDIA_PROVIDER_IDS) {
     const value = data?.[MEDIA_PROVIDER_FLAG_KEYS[id]];
     if (value === false) next[id] = false;
     else if (value === true) next[id] = true;
-  }
-  // Stored settings from before Netflix existed have no Netflix key. When that
-  // older Rich Theater Experience switch was off, keep Netflix off with it.
-  if (data && data[MEDIA_PROVIDER_FLAG_KEYS.netflix] == null && legacyRichTheaterExperienceOff(data)) {
-    next.netflix = false;
+    else if (legacyOff) next[id] = false;
   }
   return next;
 }
@@ -79,10 +76,5 @@ export function mediaProviderFlagsEqual(left: MediaProviderFlags, right: MediaPr
 }
 
 export function applyMediaProviderFlagAttrs(root: HTMLElement, flags: MediaProviderFlags): void {
-  root.toggleAttribute(YOUTUBE_ATTR, !flags.youtube);
-  root.toggleAttribute(VIMEO_ATTR, !flags.vimeo);
-  root.toggleAttribute(PATREON_ATTR, !flags.patreon);
-  root.toggleAttribute(TWITCH_ATTR, !flags.twitch);
-  root.toggleAttribute(DISNEY_ATTR, !flags.disney);
-  root.toggleAttribute(NETFLIX_ATTR, !flags.netflix);
+  for (const id of MEDIA_PROVIDER_IDS) root.toggleAttribute(MEDIA_PROVIDER_OFF_ATTRS[id], !flags[id]);
 }

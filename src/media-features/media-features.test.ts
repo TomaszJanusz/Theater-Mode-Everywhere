@@ -1451,14 +1451,16 @@ describe('caption language preference', () => {
 describe('provider integration flags', () => {
   const allOn = defaultMediaProviderFlags();
 
-  it('defaults YouTube, Vimeo, Patreon, Twitch, and Disney+ extras on', () => {
+  it('defaults every provider integration on', () => {
     assert.deepEqual(resolveMediaProviderFlags(undefined), {
       youtube: true,
       vimeo: true,
       patreon: true,
       twitch: true,
       disney: true,
-      netflix: true
+      netflix: true,
+      bilibili: true,
+      tencent: true
     });
     assert.deepEqual(resolveMediaProviderFlags({}), allOn);
   });
@@ -1507,7 +1509,9 @@ describe('provider integration flags', () => {
       patreon: false,
       twitch: false,
       disney: false,
-      netflix: false
+      netflix: false,
+      bilibili: false,
+      tencent: false
     });
     assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
       youtubeIntegrationEnabled: true,
@@ -1515,29 +1519,19 @@ describe('provider integration flags', () => {
       patreonIntegrationEnabled: true,
       twitchIntegrationEnabled: true,
       disneyIntegrationEnabled: true,
-      netflixIntegrationEnabled: true
+      netflixIntegrationEnabled: true,
+      bilibiliIntegrationEnabled: true,
+      tencentIntegrationEnabled: true
     });
   });
 
-  it('keeps Netflix off when an older Rich Theater Experience switch was off', () => {
-    const flags = resolveMediaProviderFlags({
-      youtubeIntegrationEnabled: false,
-      vimeoIntegrationEnabled: false,
-      patreonIntegrationEnabled: false,
-      twitchIntegrationEnabled: false,
-      disneyIntegrationEnabled: false
-    });
-    assert.equal(flags.netflix, false);
-    assert.equal(richTheaterExperienceEnabled(flags), false);
-    const explicit = resolveMediaProviderFlags({
-      youtubeIntegrationEnabled: false,
-      vimeoIntegrationEnabled: false,
-      patreonIntegrationEnabled: false,
-      twitchIntegrationEnabled: false,
-      disneyIntegrationEnabled: false,
-      netflixIntegrationEnabled: true
-    });
-    assert.equal(explicit.netflix, true);
+  it('keeps newly added integrations off for an existing RTE-off installation', () => {
+    const data = { youtubeIntegrationEnabled: false, vimeoIntegrationEnabled: false,
+      patreonIntegrationEnabled: false, twitchIntegrationEnabled: false, disneyIntegrationEnabled: false };
+    assert.deepEqual(resolveMediaProviderFlags(data), mediaProviderFlagsForRichTheaterExperience(false));
+    assert.equal(resolveMediaProviderFlags({ ...data, netflixIntegrationEnabled: true }).netflix, true);
+    assert.equal(resolveMediaProviderFlags({ ...data, bilibiliIntegrationEnabled: true }).bilibili, true);
+    assert.equal(resolveMediaProviderFlags({ ...data, tencentIntegrationEnabled: true }).tencent, true);
   });
 });
 

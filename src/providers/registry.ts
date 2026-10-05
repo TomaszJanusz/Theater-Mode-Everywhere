@@ -1,4 +1,4 @@
-import { isDisneyHost, isNetflixHost, isPatreonHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
@@ -18,7 +18,9 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },
-  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname) }
+  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname) },
+  { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname) },
+  { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {
@@ -32,7 +34,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 }
 
 export function shouldPatchMainWorld(hostname: string): boolean {
-  return matchingProviders(hostname).some((id) => id !== 'native');
+  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili');
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

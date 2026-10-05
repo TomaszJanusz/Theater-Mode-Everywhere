@@ -37,3 +37,14 @@ export function isNetflixHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'netflix.com' || host.endsWith('.netflix.com');
 }
+
+export function isBilibiliHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'bilibili.com' || host.endsWith('.bilibili.com');
+}
+
+export function isTencentHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'v.qq.com' || host.endsWith('.v.qq.com')
+    || host === 'wetv.vip' || host.endsWith('.wetv.vip');
+}

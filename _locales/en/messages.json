@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
+    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
   },
   "richTheaterExperienceReadMore": {
     "message": "here"
@@ -194,6 +194,18 @@
   },
   "netflixIntegrationDescription": {
     "message": "Shows the current title and switches the player's subtitle languages in theater mode when the player has an active subtitle renderer. Chapters and timeline thumbnails are not supported."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Bilibili integration"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Imports the video title, subtitles, chapters, and timeline thumbnails when available. Some subtitles require signing in to Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Tencent Video / WeTV integration"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -355,7 +367,7 @@
     "message": "More context on the timeline: jump between chapters and see YouTube's Most Replayed moments."
   },
   "whatsNewItemPreviews": {
-    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players."
+    "message": "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, and Tencent Video / WeTV players."
   },
   "whatsNewThanks": {
     "message": "Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It's still experimental, so some features may vary by service :)"

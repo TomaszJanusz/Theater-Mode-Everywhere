@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isDisneyHost, isNetflixHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
 import { readDisneySnapshot } from './disney/main';
 import { readNetflixSnapshot } from './netflix/main';
 import { DisneyAdapter } from './disney/adapter';
@@ -43,6 +43,23 @@ describe('provider registry', () => {
     const flags = { ...defaultMediaProviderFlags(), youtube: false };
     assert.equal(shouldAttachProvider('youtube', flags, 'www.youtube.com'), false);
     assert.equal(shouldAttachProvider('vimeo', defaultMediaProviderFlags(), 'player.vimeo.com'), true);
+  });
+
+  it('limits Bilibili and Tencent adapters to their own domains', () => {
+    assert.equal(isBilibiliHost('player.bilibili.com.'), true);
+    assert.equal(isBilibiliHost('bilibili.com.evil.test'), false);
+    assert.equal(isTencentHost('v.qq.com'), true);
+    assert.equal(isTencentHost('wetv.vip'), true);
+    assert.equal(isTencentHost('wetv.vip.evil.test'), false);
+    assert.equal(isTencentHost('news.qq.com'), false);
+    assert.equal(isTencentHost('v.qq.com.evil.test'), false);
+    assert.deepEqual(matchingProviders('www.bilibili.com'), ['native', 'bilibili']);
+    assert.deepEqual(matchingProviders('v.qq.com'), ['native', 'tencent']);
+    assert.equal(shouldPatchMainWorld('www.bilibili.com'), false);
+    assert.equal(shouldPatchMainWorld('v.qq.com'), true);
+    assert.deepEqual(matchingProviders('wetv.vip'), ['native', 'tencent']);
+    assert.equal(shouldAttachProvider('bilibili', { ...defaultMediaProviderFlags(), bilibili: false }, 'www.bilibili.com'), false);
+    assert.equal(shouldAttachProvider('tencent', defaultMediaProviderFlags(), 'v.qq.com'), true);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

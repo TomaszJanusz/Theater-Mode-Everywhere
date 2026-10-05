@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Expérimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
+    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
   },
   "richTheaterExperienceReadMore": {
     "message": "ici"
@@ -194,6 +194,18 @@
   },
   "netflixIntegrationDescription": {
     "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma lorsque le lecteur a un rendu de sous-titres actif. Les chapitres et les miniatures de la timeline ne sont pas pris en charge."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Intégration Bilibili"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Importe le titre, les sous-titres, les chapitres et les miniatures disponibles. Certains sous-titres nécessitent une connexion à Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Intégration Tencent Video / WeTV"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Importe les titres des épisodes, les sous-titres SRT/WebVTT et les miniatures de la chronologie de Tencent Video / WeTV, si disponibles. La lecture et le passage à l’épisode suivant utilisent les commandes disponibles du lecteur."
   },
   "liveBadge": {
     "message": "DIRECT"
@@ -355,7 +367,7 @@
     "message": "Plus de contexte sur la chronologie : passez d'un chapitre à l'autre et découvrez les moments les plus rejoués de YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch et Disney+ pris en charge."
+    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili et Tencent Video / WeTV pris en charge."
   },
   "whatsNewThanks": {
     "message": "Activez Rich Theater Experience (Experimental) depuis la fenêtre de l'extension sur les sites pris en charge, ou depuis la page Paramètres. La fonctionnalité est encore expérimentale, certaines fonctions peuvent donc varier selon le service :)"

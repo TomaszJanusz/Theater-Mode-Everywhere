@@ -22,7 +22,7 @@ export type PlaylistAction = {
   restarts?: boolean;
 };
 
-export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase';
+export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'tencent';
 
 /**
  * Host-control snapshot. The fields are the signals observed on live players:
@@ -210,7 +210,7 @@ export function findPlaylistActions(root: ParentNode, video?: HTMLVideoElement |
 }
 
 function scopedRoot(root: ParentNode, video?: HTMLVideoElement | null): ParentNode {
-  const player = video?.closest('#movie_player, .video-js');
+  const player = video?.closest('#movie_player, .video-js, .bpx-player-container, .bilibili-player, .txp_player, #internal-player-wrapper');
   return player ?? root;
 }
 
@@ -241,6 +241,9 @@ function readControls(root: ParentNode): Array<{ element: HTMLElement; snapshot:
   add(root.querySelector('button.vjs-next-video'), 'videojs', 'next');
   add(root.querySelector('[data-testid="button-previous-video"], button.prev_button'), 'dailymotion', 'previous');
   add(root.querySelector('[data-testid="button-next-video"], button.next_button'), 'dailymotion', 'next');
+  add(root.querySelector('.bpx-player-ctrl-prev'), 'bilibili', 'previous');
+  add(root.querySelector('.bpx-player-ctrl-next'), 'bilibili', 'next');
+  add(root.querySelector('.txp_btn_next_u:not(.txp_none), .txp_btn_next:not(.txp_none), [data-role="wetv-player-ctrl-next"]'), 'tencent', 'next');
 
   root.querySelectorAll('button[data-href]').forEach((element) => {
     if (!(element instanceof HTMLElement)) return;
@@ -286,6 +289,7 @@ function isHostStepUsable(control: ObservedPlaylistControl): boolean {
   if (control.disabled || control.ariaDisabled === 'true') return false;
   const names = new Set(control.className.split(/\s+/).filter(Boolean));
   if (names.has('vjs-disabled') || names.has('vjs-hidden')) return false;
+  if (names.has('txp_disabled') || names.has('txp_none') || names.has('disabled') || names.has('bpx-state-disabled')) return false;
   if (control.inlineDisplay === 'none' || control.computedDisplay === 'none') return false;
   if (control.provider === 'vimeo-showcase' && control.width <= 0) return false;
   return true;

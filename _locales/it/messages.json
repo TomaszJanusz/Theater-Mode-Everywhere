@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Sperimentale)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+, Netflix e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
+    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
   },
   "richTheaterExperienceReadMore": {
     "message": "qui"
@@ -194,6 +194,18 @@
   },
   "netflixIntegrationDescription": {
     "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità teatro quando il lettore ha un renderer dei sottotitoli attivo. Capitoli e miniature della timeline non sono supportati."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Integrazione Bilibili"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Importa titolo, sottotitoli, capitoli e miniature quando disponibili. Alcuni sottotitoli richiedono l’accesso a Bilibili."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Integrazione Tencent Video / WeTV"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Importa titoli degli episodi, sottotitoli SRT/WebVTT e miniature della timeline da Tencent Video / WeTV quando disponibili. La riproduzione e il passaggio all’episodio successivo usano i controlli disponibili del lettore."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -355,7 +367,7 @@
     "message": "Più contesto sulla timeline: passa da un capitolo all'altro e scopri i momenti più riprodotti su YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Anteprima prima di cercare: passa il cursore sulla timeline per vedere le miniature nei player supportati di YouTube, Vimeo, Patreon, Twitch e Disney+."
+    "message": "Anteprima prima di cercare: passa il cursore sulla timeline per vedere le miniature nei player supportati di YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili e Tencent Video / WeTV."
   },
   "whatsNewThanks": {
     "message": "Attiva Rich Theater Experience (Experimental) dal popup dell'estensione sui siti supportati o dalla pagina Impostazioni. La funzione è ancora sperimentale, quindi alcune funzionalità possono variare in base al servizio :)"

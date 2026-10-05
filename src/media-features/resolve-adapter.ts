@@ -9,6 +9,8 @@ import { VimeoAdapter } from '../providers/vimeo/adapter';
 import { YouTubeAdapter } from '../providers/youtube/adapter';
 import { shouldAttachProvider } from '../providers/registry';
 import type { MediaFeaturesAdapter } from './types';
+import { BilibiliAdapter } from '../providers/bilibili/adapter';
+import { TencentAdapter } from '../providers/tencent/adapter';
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('youtube', flags, hostname);
@@ -45,5 +47,7 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
+  if (shouldAttachProvider('bilibili', flags)) adapters.push(new BilibiliAdapter());
+  if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   return new CompositeMediaAdapter(adapters);
 }

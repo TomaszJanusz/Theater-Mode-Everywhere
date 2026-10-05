@@ -1041,7 +1041,9 @@ html.theater-using-overlay-captions .vjs-text-track-display,
 html.theater-using-overlay-captions .plyr__captions,
 html.theater-using-overlay-captions .jw-captions,
 html.theater-using-overlay-captions .jw-text-track-container,
-html.theater-using-overlay-captions .mejs-captions-layer {
+html.theater-using-overlay-captions .mejs-captions-layer,
+html.theater-everywhere-html-active[data-te-tencent-captions-hidden] .thumbplayer-webvtt-overlay,
+html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-player-wrapper .text-track {
   display: none !important;
   visibility: hidden !important;
 }

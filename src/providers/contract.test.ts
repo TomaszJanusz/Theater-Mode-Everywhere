@@ -13,6 +13,10 @@ import { readPatreonSnapshot } from './patreon/main';
 import { readTwitchSnapshot } from './twitch/main';
 import { readVimeoSnapshot } from './vimeo/main';
 import { readYoutubeSnapshot } from './youtube/main';
+import { BilibiliAdapter } from './bilibili/adapter';
+import { readBilibiliSnapshot } from './bilibili/main';
+import { TencentAdapter } from './tencent/adapter';
+import { readTencentSnapshot } from './tencent/main';
 
 const adapters = [
   ['native', NativeTextTrackAdapter],
@@ -21,7 +25,9 @@ const adapters = [
   ['patreon', PatreonAdapter],
   ['twitch', TwitchAdapter],
   ['disney', DisneyAdapter],
-  ['netflix', NetflixAdapter]
+  ['netflix', NetflixAdapter],
+  ['bilibili', BilibiliAdapter],
+  ['tencent', TencentAdapter]
 ] as const;
 
 const snapshots = [
@@ -30,7 +36,9 @@ const snapshots = [
   ['patreon', readPatreonSnapshot],
   ['twitch', readTwitchSnapshot],
   ['disney', readDisneySnapshot],
-  ['netflix', readNetflixSnapshot]
+  ['netflix', readNetflixSnapshot],
+  ['bilibili', readBilibiliSnapshot],
+  ['tencent', readTencentSnapshot]
 ] as const;
 
 describe('provider contracts', () => {

@@ -31,8 +31,18 @@ export function isAuxiliaryTheaterVideo(video: HTMLVideoElement): boolean {
   return Boolean(video.closest(AUXILIARY_VIDEO_HOST_SELECTOR));
 }
 
+/** ThumbPlayer keeps a sourced standby video beside the visible playback video. */
+export function isInactiveThumbPlayerVideo(video: HTMLVideoElement): boolean {
+  if (!video.closest('.txp_videos_container')) return false;
+  const view = video.ownerDocument?.defaultView;
+  if (!view) return false;
+  const style = view.getComputedStyle(video);
+  return style.visibility === 'hidden' || style.display === 'none';
+}
+
 export function isSwitchableTheaterVideo(video: HTMLVideoElement): boolean {
   if (isAuxiliaryTheaterVideo(video)) return false;
+  if (isInactiveThumbPlayerVideo(video)) return false;
   if (video.closest('[hidden]')) return false;
   if (!mediaHasSource(video)) return false;
   if (!hasDecodedOrMetadata(video)) return false;
