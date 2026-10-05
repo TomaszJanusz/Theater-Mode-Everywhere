@@ -556,6 +556,78 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
+  it('drops a late subtitle body when a season-only path changes but the episode attribute does not', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const attrs = new Map<string, string>();
+    const hidden = 'data-te-bilibili-intl-captions-hidden';
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.tv', origin: 'https://www.bilibili.tv', pathname: '/en/play/1053337' },
+      setTimeout, clearTimeout
+    });
+    globalThis.window = win as any;
+    globalThis.document = {
+      documentElement: {
+        hasAttribute: (name: string) => attrs.has(name),
+        getAttribute: (name: string) => attrs.get(name) ?? null,
+        setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+        removeAttribute: (name: string) => { attrs.delete(name); },
+        toggleAttribute: (name: string, on?: boolean) => {
+          const next = on ?? !attrs.has(name);
+          if (next) attrs.set(name, '');
+          else attrs.delete(name);
+          return next;
+        }
+      }
+    } as any;
+    attrs.set('data-te-bilibili-intl-episode', '11371243');
+    win.addEventListener('theater-everywhere-media-probe', (event) => {
+      const requestId = (event as CustomEvent).detail.requestId;
+      win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
+        detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
+          subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+        }, null) }
+      }));
+    });
+    const deliveries: Array<(body: string) => void> = [];
+    (win as any).postMessage = (request: WorldEnvelope) => {
+      deliveries.push((body: string) => {
+        win.dispatchEvent(Object.assign(new Event('message'), {
+          source: win,
+          data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin)
+        }));
+      });
+    };
+    const adapter = new BilibiliIntlAdapter();
+    try {
+      const tracks = await adapter.listCaptionTracks();
+      const movedSeason = adapter.activateCaptionTrack(tracks[0].id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 1);
+      win.location.pathname = '/en/play/2000002';
+      assert.equal(bilibiliIntlPageId(), '11371243');
+      deliveries[0](ASS);
+      const stale = await movedSeason;
+      assert.equal(stale.status, 'failed');
+      assert.deepEqual(stale.cues, []);
+      assert.equal(attrs.has(hidden), false);
+
+      win.location.pathname = '/en/play/1053337';
+      const samePage = adapter.activateCaptionTrack(tracks[0].id);
+      await Promise.resolve();
+      assert.equal(deliveries.length, 2);
+      deliveries[1](ASS);
+      const active = await samePage;
+      assert.equal(active.status, 'active');
+      assert.equal(active.cues[0].text, 'Shown');
+      assert.equal(attrs.has(hidden), true);
+    } finally {
+      adapter.dispose();
+      globalThis.window = oldWindow;
+      globalThis.document = oldDocument;
+    }
+  });
+
   it('clears the previous episode when the next id, route, or probe does not match', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;

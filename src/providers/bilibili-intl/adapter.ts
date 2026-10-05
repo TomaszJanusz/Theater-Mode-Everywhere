@@ -144,13 +144,13 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     return Boolean(bilibiliIntlIntegrationEnabled() && this.matchingSnapshot()?.captionTracks.length);
   }
 
-  /** Generation is incremented before the first await. After the body fetch, the episode and track must still match. */
+  /** Generation is incremented before the first await. After the body fetch, the page scope and track must still match. */
   private operationCurrent(generation: number, videoId?: string, id?: string): boolean {
     if (generation !== this.cueGeneration || !bilibiliIntlIntegrationEnabled()) return false;
     if (!videoId) return true;
-    return bilibiliIntlPageId() === videoId
-      && this.snapshot?.videoId === videoId
-      && Boolean(this.snapshot.captionTracks.some((item) => item.id === id));
+    const snapshot = this.matchingSnapshot();
+    return snapshot?.videoId === videoId
+      && Boolean(snapshot.captionTracks.some((item) => item.id === id));
   }
 
   private keepHostFallback(): void {
