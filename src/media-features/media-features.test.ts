@@ -1036,6 +1036,27 @@ describe('caption track merge', () => {
     assert.equal(tracks.length, 1);
     assert.equal(tracks[0].source, 'bilibili');
   });
+
+  it('hides native HTML5 tracks when Bilibili.tv already has a subtitle list', () => {
+    const tracks = preferProviderCaptionTracks([
+      {
+        id: 'native:0',
+        language: 'en',
+        label: 'English',
+        kind: 'subtitles',
+        source: 'native-text-track'
+      },
+      {
+        id: 'bilibiliIntl:11371243:en:track.ass',
+        language: 'en',
+        label: 'English',
+        kind: 'subtitles',
+        source: 'bilibiliIntl'
+      }
+    ]);
+    assert.equal(tracks.length, 1);
+    assert.equal(tracks[0].source, 'bilibiliIntl');
+  });
 });
 
 describe('F-05 composite adapter isolation', () => {
@@ -1481,6 +1502,7 @@ describe('provider integration flags', () => {
       disney: true,
       netflix: true,
       bilibili: true,
+      bilibiliIntl: true,
       tencent: true
     });
     assert.deepEqual(resolveMediaProviderFlags({}), allOn);
@@ -1532,6 +1554,7 @@ describe('provider integration flags', () => {
       disney: false,
       netflix: false,
       bilibili: false,
+      bilibiliIntl: false,
       tencent: false
     });
     assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
@@ -1542,6 +1565,7 @@ describe('provider integration flags', () => {
       disneyIntegrationEnabled: true,
       netflixIntegrationEnabled: true,
       bilibiliIntegrationEnabled: true,
+      bilibiliIntlIntegrationEnabled: true,
       tencentIntegrationEnabled: true
     });
   });
@@ -1552,6 +1576,8 @@ describe('provider integration flags', () => {
     assert.deepEqual(resolveMediaProviderFlags(data), mediaProviderFlagsForRichTheaterExperience(false));
     assert.equal(resolveMediaProviderFlags({ ...data, netflixIntegrationEnabled: true }).netflix, true);
     assert.equal(resolveMediaProviderFlags({ ...data, bilibiliIntegrationEnabled: true }).bilibili, true);
+    assert.equal(resolveMediaProviderFlags(data).bilibiliIntl, false);
+    assert.equal(resolveMediaProviderFlags({ ...data, bilibiliIntlIntegrationEnabled: true }).bilibiliIntl, true);
     assert.equal(resolveMediaProviderFlags({ ...data, tencentIntegrationEnabled: true }).tencent, true);
   });
 });

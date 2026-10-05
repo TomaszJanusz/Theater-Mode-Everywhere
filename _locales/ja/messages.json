@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience（試験運用）"
   },
   "richTheaterExperienceDescription": {
-    "message": "YouTube、Twitch、Disney+、Netflix、Bilibili, Tencent Video / WeTV など、お気に入りの動画サービスとのより高度な連携を有効にします。Theater Mode Everywhere は、追加情報の表示、カスタム字幕形式への対応、サービス固有機能の利用を可能にします。利用できる機能はサービスによって異なります。詳しくは"
+    "message": "YouTube、Twitch、Disney+、Netflix、Bilibili, Bilibili.tv, Tencent Video / WeTV など、お気に入りの動画サービスとのより高度な連携を有効にします。Theater Mode Everywhere は、追加情報の表示、カスタム字幕形式への対応、サービス固有機能の利用を可能にします。利用できる機能はサービスによって異なります。詳しくは"
   },
   "richTheaterExperienceReadMore": {
     "message": "こちら"
@@ -196,10 +196,10 @@
     "message": "シアターモードで再生中のタイトルを表示し、プレーヤーに字幕レンダラーがある場合に字幕言語を切り替えます。チャプターとタイムラインのサムネイルには対応していません。"
   },
   "bilibiliIntegrationTitle": {
-    "message": "Bilibili 連携"
+    "message": "Bilibili（bilibili.com）連携"
   },
   "bilibiliIntegrationDescription": {
-    "message": "利用可能な動画タイトル、字幕、チャプター、高能プログレスバー、タイムラインのサムネイルを取り込みます。一部の字幕には Bilibili へのログインが必要です。"
+    "message": "利用できる場合、bilibili.com から動画タイトル、字幕、チャプター、高エネルギー進捗ヒートマップ、タイムラインのサムネイルを取り込みます。一部の字幕は Bilibili へのログインが必要です。"
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 連携"
@@ -367,7 +367,7 @@
     "message": "タイムラインの情報を充実: チャプター間を移動し、YouTube の最も繰り返し再生された場面を確認できます。"
   },
   "whatsNewItemPreviews": {
-    "message": "シーク前にプレビュー: タイムラインにカーソルを合わせると、対応する YouTube、Vimeo、Patreon、Twitch、Disney+、Bilibili、Tencent Video / WeTV プレーヤーでサムネイルを表示します。"
+    "message": "シーク前にプレビュー: タイムラインにカーソルを合わせると、対応する YouTube、Vimeo、Patreon、Twitch、Disney+、Bilibili、Bilibili.tv、Tencent Video / WeTV プレーヤーでサムネイルを表示します。"
   },
   "whatsNewThanks": {
     "message": "対応サイトでは拡張機能のポップアップから、または設定ページから Rich Theater Experience (Experimental) を有効にできます。まだ実験的な機能のため、サービスによって利用できる機能が異なる場合があります :)"
@@ -651,5 +651,11 @@
   },
   "cyclePictureLayout": {
     "message": "映像レイアウトを切り替え"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "Bilibili.tv 連携"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "利用できる場合、bilibili.tv のエピソードページからタイトル、字幕、タイムラインのサムネイルを取り込みます。次のエピソードはプレーヤーの次へ操作を使います。この統合はチャプターと高エネルギー進捗ヒートマップを取り込みません。ユーザー投稿の /video ページには対応していません。"
   }
 }

@@ -22,6 +22,7 @@ import {
 } from '../providers/youtube/main';
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
+import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
@@ -468,6 +469,13 @@ export function installMainWorldRuntime(): void {
         }));
       }).catch(() => {});
     }
+    if (bilibiliIntlIntegrationEnabled()) {
+      void readBilibiliIntlSnapshot().then((bilibiliIntl) => {
+        window.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
+          detail: { requestId, bilibiliIntl }
+        }));
+      }).catch(() => {});
+    }
   });
 
   function pageFetchAllowed(url: string): boolean {
@@ -479,6 +487,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
     if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();
+    if (classified.provider === 'bilibiliIntl') return bilibiliIntlIntegrationEnabled();
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     return false;
   }
@@ -510,6 +519,7 @@ export function installMainWorldRuntime(): void {
             const request = classifyMediaFetchUrl(url, window.location.href);
             if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
             if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) return null;
+            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) return null;
             const buffer = await response.arrayBuffer();
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;

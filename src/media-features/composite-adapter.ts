@@ -19,7 +19,7 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
     seen.add(key);
     merged.push(track);
   }
-  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili')) {
+  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili' || track.source === 'bilibiliIntl')) {
     return merged.filter((track) => track.source !== 'native-text-track');
   }
   return merged;

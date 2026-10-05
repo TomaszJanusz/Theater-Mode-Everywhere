@@ -1074,7 +1074,9 @@ html.theater-using-overlay-captions .jw-captions,
 html.theater-using-overlay-captions .jw-text-track-container,
 html.theater-using-overlay-captions .mejs-captions-layer,
 html.theater-everywhere-html-active[data-te-tencent-captions-hidden] .thumbplayer-webvtt-overlay,
-html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-player-wrapper .text-track {
+html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-player-wrapper .text-track,
+html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-ass-subtitle,
+html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-subtitle {
   display: none !important;
   visibility: hidden !important;
 }

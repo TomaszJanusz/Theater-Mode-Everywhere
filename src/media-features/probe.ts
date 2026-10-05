@@ -2,6 +2,7 @@ import { youtubePlayerTitle } from './content-title';
 import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { BilibiliSnapshot } from './parsers/bilibili';
+import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
@@ -138,6 +139,7 @@ export type MediaProbeSnapshot = {
   disney?: DisneyPlayerSnapshot | null;
   netflix?: NetflixProbeSnapshot | null;
   bilibili?: BilibiliSnapshot | null;
+  bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
 };
 
@@ -149,7 +151,7 @@ type ProbeResponse = ProbeRequest & MediaProbeSnapshot;
 
 let requestId = 0;
 
-export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili'): Promise<MediaProbeSnapshot> {
+export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bilibiliIntl'): Promise<MediaProbeSnapshot> {
   return new Promise((resolve) => {
     const id = ++requestId;
     let settled = false;
@@ -174,11 +176,16 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili'): Promi
         disney: snapshot.disney ?? null,
         netflix: snapshot.netflix ?? null,
         bilibili: snapshot.bilibili ?? null,
+        bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null
       });
     };
 
-    const resultEvent = provider === 'bilibili' ? 'theater-everywhere-bilibili-probe-result' : MEDIA_PROBE_RESULT_EVENT;
+    const resultEvent = provider === 'bilibili'
+      ? 'theater-everywhere-bilibili-probe-result'
+      : provider === 'bilibiliIntl'
+        ? 'theater-everywhere-bilibili-intl-probe-result'
+        : MEDIA_PROBE_RESULT_EVENT;
     window.addEventListener(resultEvent, onResult as EventListener);
     window.dispatchEvent(new CustomEvent<ProbeRequest>(MEDIA_PROBE_EVENT, { detail: { requestId: id } }));
   });

@@ -142,7 +142,7 @@
     "message": "Rich Theater Experience (Expérimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix, Bilibili, Tencent Video / WeTV et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
+    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
   },
   "richTheaterExperienceReadMore": {
     "message": "ici"
@@ -196,10 +196,10 @@
     "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma lorsque le lecteur a un rendu de sous-titres actif. Les chapitres et les miniatures de la timeline ne sont pas pris en charge."
   },
   "bilibiliIntegrationTitle": {
-    "message": "Intégration Bilibili"
+    "message": "Intégration Bilibili (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importe le titre, les sous-titres, les chapitres, la barre de popularité et les miniatures disponibles. Certains sous-titres nécessitent une connexion à Bilibili."
+    "message": "Importe le titre de la vidéo, les sous-titres, les chapitres, la courbe de popularité et les miniatures de la chronologie depuis bilibili.com lorsqu’ils sont disponibles. Certains sous-titres exigent une connexion à Bilibili."
   },
   "tencentIntegrationTitle": {
     "message": "Intégration Tencent Video / WeTV"
@@ -367,7 +367,7 @@
     "message": "Plus de contexte sur la chronologie : passez d'un chapitre à l'autre et découvrez les moments les plus rejoués de YouTube."
   },
   "whatsNewItemPreviews": {
-    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili et Tencent Video / WeTV pris en charge."
+    "message": "Prévisualisez avant de rechercher : survolez la chronologie pour voir des miniatures sur les lecteurs YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv et Tencent Video / WeTV pris en charge."
   },
   "whatsNewThanks": {
     "message": "Activez Rich Theater Experience (Experimental) depuis la fenêtre de l'extension sur les sites pris en charge, ou depuis la page Paramètres. La fonctionnalité est encore expérimentale, certaines fonctions peuvent donc varier selon le service :)"
@@ -651,5 +651,11 @@
   },
   "cyclePictureLayout": {
     "message": "Changer la disposition de l’image"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "Intégration Bilibili.tv"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "Importe le titre de l’épisode, les sous-titres et les miniatures de la chronologie depuis les pages d’épisodes bilibili.tv lorsqu’ils sont disponibles. L’épisode suivant utilise le bouton suivant du lecteur. Cette intégration n’importe pas les chapitres ni la courbe de popularité. Les pages de vidéos envoyées par les utilisateurs (/video) ne sont pas prises en charge."
   }
 }

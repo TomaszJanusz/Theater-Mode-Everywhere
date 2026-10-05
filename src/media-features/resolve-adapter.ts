@@ -10,6 +10,7 @@ import { YouTubeAdapter } from '../providers/youtube/adapter';
 import { shouldAttachProvider } from '../providers/registry';
 import type { MediaFeaturesAdapter } from './types';
 import { BilibiliAdapter } from '../providers/bilibili/adapter';
+import { BilibiliIntlAdapter } from '../providers/bilibili-intl/adapter';
 import { TencentAdapter } from '../providers/tencent/adapter';
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 
@@ -53,6 +54,7 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachDisneyAdapter(flags)) adapters.push(new DisneyAdapter());
   if (shouldAttachNetflixAdapter(flags)) adapters.push(new NetflixAdapter());
   if (shouldAttachProvider('bilibili', flags)) adapters.push(new BilibiliAdapter());
+  if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   return new CompositeMediaAdapter(adapters);
 }

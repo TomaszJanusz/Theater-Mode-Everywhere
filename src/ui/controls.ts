@@ -1,6 +1,8 @@
 import { DISNEY_CLOCK_EVENT, writeDisneyContentTime } from '../media-features/parsers/disney-page';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
+import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
+import { isBilibiliIntlHost } from '../providers/hosts';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
@@ -1377,6 +1379,12 @@ export function createControls(ctx: PlayerChromeContext) {
       clearPendingMediaSeek(video);
       if (!mediaFeatures.retainCaptionsOnElementReset()) {
         mediaFeatures.invalidate();
+        // bilibili.tv detaches the playing element on the next episode, then
+        // fires emptied. The probe already in flight is dropped, and no new
+        // element emits durationchange. Load the episode now in the route.
+        if (isBilibiliIntlHost() && mediaProviderIntegrationEnabled('bilibiliIntl')) {
+          void mediaFeatures.refresh();
+        }
       }
       tooltip.classList.remove('visible');
       tooltip.replaceChildren();

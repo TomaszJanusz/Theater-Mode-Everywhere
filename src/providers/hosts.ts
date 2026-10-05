@@ -43,6 +43,12 @@ export function isBilibiliHost(hostname = currentHost()): boolean {
   return host === 'bilibili.com' || host.endsWith('.bilibili.com');
 }
 
+/** International Bilibili.tv. This is not bilibili.com and must not share that adapter. */
+export function isBilibiliIntlHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'bilibili.tv' || host.endsWith('.bilibili.tv');
+}
+
 export function isTencentHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'v.qq.com' || host.endsWith('.v.qq.com')

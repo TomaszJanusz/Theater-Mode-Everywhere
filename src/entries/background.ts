@@ -90,7 +90,7 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
     }
     const contentType = response.headers.get('content-type') || '';
     const body = new TextDecoder('utf-8').decode(buffer);
-    const looksLikeCaptions = /WEBVTT|#EXTM3U|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:|"images"\s*:/i.test(body.slice(0, 400));
+    const looksLikeCaptions = /WEBVTT|#EXTM3U|<transcript|<timedtext|<text |<p\b|"events"\s*:|"tiles"\s*:|"images"\s*:|\[Script Info\]|Dialogue:|"body"\s*:/i.test(body.slice(0, 400));
     if (contentType && !/text|xml|json|vtt|srt|ttml|octet-stream|mpegurl|m3u8/i.test(contentType) && !looksLikeCaptions) {
       return { ok: false, error: 'content-type' };
     }

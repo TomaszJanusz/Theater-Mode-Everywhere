@@ -1,7 +1,7 @@
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'tencent';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json';
   url: string;
 };
@@ -48,6 +48,16 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
     return !parsed.username && !parsed.password && !parsed.port
       && ['cffaws.wetvinfo.com', 'subtitle.wetvinfo.com', 'subtitle.tc.qq.com', 'subtitlebk.apdcdn.tc.qq.com'].includes(parsed.hostname)
       && /\.(vtt|srt)$/i.test(parsed.pathname);
+  }
+
+  if (request.provider === 'bilibiliIntl' && request.kind === 'caption-track') {
+    const rawPath = rawHttpsPath(request.url);
+    return !parsed.username && !parsed.password && !parsed.port
+      && parsed.hostname === 's.bstarstatic.com'
+      && (!parsed.search || /^\?auth_key=[\w.~-]{1,200}$/.test(parsed.search))
+      && rawPath !== null
+      && rawPath === parsed.pathname
+      && /^\/ogv\/subtitle\/[a-f0-9]{16,80}\.(?:ass|json)$/i.test(rawPath);
   }
 
   if (request.provider === 'bilibili' && request.kind === 'caption-track') {
@@ -122,7 +132,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'tencent'];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent'];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json'];
