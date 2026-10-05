@@ -43,8 +43,11 @@ Napisy z `/x/player/v2` często wracają puste, także gdy film ma ścieżki.
 Odtwarzacz bierze listę z protobufa `SubtitleViewReply` pod
 `/x/v2/subtitle/web/view?oid={cid}&pid={aid}&type=1`. RTE czyta tylko
 `SubtitleItem`: identyfikator, język, nazwę, adres i znacznik AI. Pola autora
-są pomijane. Gdy ta lista jest pusta, zostaje zapasowa lista JSON z
-`subtitle.subtitles`.
+są pomijane. Żądanie jest podpisywane tak jak w odtwarzaczu. Gdy ta lista
+jest pusta, zostaje zapasowa lista JSON z `subtitle.subtitles`. Późniejszy
+odczyt bez ścieżek nie usuwa listy już pokazanej dla tego samego `aid:cid`.
+Chwilowe ścieżki HTML5 odtwarzacza nie wchodzą do menu, gdy lista Bilibili
+już jest.
 
 Adresy `subtitle.bilibili.com` odtwarzacz odkodowuje na
 `aisubtitle.hdslb.com` tym samym przekształceniem XOR, którego używa jego

@@ -19,7 +19,7 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
     seen.add(key);
     merged.push(track);
   }
-  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix')) {
+  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili')) {
     return merged.filter((track) => track.source !== 'native-text-track');
   }
   return merged;
@@ -43,8 +43,8 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   }
 
   /**
-   * Merges tracks from successful adapters and drops native tracks when Patreon, Twitch, or Disney
-   * tracks are present.
+   * Merges tracks from successful adapters and drops native tracks when a host
+   * subtitle list is already present.
    */
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     const lists = fulfilledValues(await allSettledResults(this.adapters.map((adapter) => adapter.listCaptionTracks())));
