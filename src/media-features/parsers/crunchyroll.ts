@@ -79,6 +79,7 @@ export type CrunchyrollHostTrack = {
   language: string;
   label: string;
   kind: 'captions' | 'subtitles';
+  enabled: boolean;
 };
 
 export type CrunchyrollSnapshot = {
@@ -110,6 +111,8 @@ export type CrunchyrollCaptionRequest = {
   mediaId: string;
   route: string;
   trackId: string | null;
+  /** Automatic Off. Disable this track only when it is still the sole live selection. */
+  ownedTrackId?: string;
 };
 
 export type CrunchyrollCaptionAck = {
@@ -118,6 +121,8 @@ export type CrunchyrollCaptionAck = {
   mediaId: string;
   route: string;
   trackId: string | null;
+  /** Automatic Off left a different host track enabled. */
+  kept?: boolean;
 };
 
 export function crunchyrollMediaId(value: unknown): string | null {
@@ -420,7 +425,8 @@ export function parseCrunchyrollHostList(value: unknown, playingAsset: string | 
       id,
       language,
       label: crunchyrollContentTitle(row.label) || language,
-      kind: kindText === 'caption' || kindText === 'captions' ? 'captions' : 'subtitles'
+      kind: kindText === 'caption' || kindText === 'captions' ? 'captions' : 'subtitles',
+      enabled: row.enabled === true
     });
   }
   const renderer: CrunchyrollHostRenderer = sawEnabled ? 'active' : sawUnknown ? 'unknown' : 'suppressed';
@@ -467,7 +473,11 @@ export function parseCrunchyrollCaptionRequest(detail: unknown): CrunchyrollCapt
   if (typeof record.requestId !== 'string' || !CAPTION_REQUEST_ID.test(record.requestId)) return null;
   const mediaId = crunchyrollMediaId(record.mediaId);
   if (!mediaId || typeof record.route !== 'string' || record.route.length > 400) return null;
-  if (record.trackId === null) return { requestId: record.requestId, mediaId, route: record.route, trackId: null };
+  if (record.trackId === null) {
+    if (record.ownedTrackId == null) return { requestId: record.requestId, mediaId, route: record.route, trackId: null };
+    if (typeof record.ownedTrackId !== 'string' || !HOST_TRACK_ID.test(record.ownedTrackId)) return null;
+    return { requestId: record.requestId, mediaId, route: record.route, trackId: null, ownedTrackId: record.ownedTrackId };
+  }
   if (typeof record.trackId !== 'string' || !HOST_TRACK_ID.test(record.trackId)) return null;
   return { requestId: record.requestId, mediaId, route: record.route, trackId: record.trackId };
 }
@@ -493,7 +503,8 @@ export function parseCrunchyrollCaptionAck(detail: unknown): CrunchyrollCaptionA
     trackId: record.trackId ?? null
   }));
   if (!request || typeof record.ok !== 'boolean') return null;
-  return { ...request, ok: record.ok };
+  if ('kept' in record && typeof record.kept !== 'boolean') return null;
+  return { ...request, ok: record.ok, ...(record.kept === true ? { kept: true } : {}) };
 }
 
 export function parseCrunchyrollCaptionBody(body: string, format: string): CaptionCue[] {

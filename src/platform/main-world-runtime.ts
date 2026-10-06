@@ -23,8 +23,8 @@ import {
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
 import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
-import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
-import { captureCrunchyrollNetworkResponse, crunchyrollAllowsCaptionFetch, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, isCrunchyrollBifUrl, noteCrunchyrollManifest, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
+import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, isTencentMetadataUrl, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
+import { captureCrunchyrollNetworkResponse, consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, isCrunchyrollBifUrl, noteCrunchyrollManifest, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
   captureTwitchNetworkResponse,
@@ -32,6 +32,7 @@ import {
   harvestTwitchResponseText,
   harvestTwitchXhr,
   installTwitchMain,
+  isAllowedTwitchStoryboardUrl,
   readTwitchSnapshot,
   twitchIntegrationEnabled
 } from '../providers/twitch/main';
@@ -63,6 +64,22 @@ export function installMainWorldRuntime(): void {
     return '';
   }
 
+  function foreignProviderHarvestUrl(url: string): boolean {
+    if (!url) return false;
+    if (/timedtext/i.test(url)) return true;
+    if (/gql\.twitch\.tv/i.test(url)) return true;
+    try {
+      if (isAllowedTwitchStoryboardUrl(url) || isAllowedDisneyBifUrl(url)) return true;
+    } catch {
+      // URL checks must not break fetch.
+    }
+    if (isTencentMetadataUrl(url)) return true;
+    if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|gif|vtt|bif|js|css|woff2?)(\?|$)/i.test(url)) return false;
+    if (/bamgrid\.com|disney-plus\.net/i.test(url)) return true;
+    if (/dssott\.com/i.test(url) && /\.json(\?|$)/i.test(url)) return true;
+    return /disneyplus\.com/i.test(url) && /\/(playback|session|explore|api)\//i.test(url);
+  }
+
   function wrapFetch(fn: typeof fetch): typeof fetch {
     const tagged = fn as typeof fetch & { [FETCH_WRAPPED]?: boolean };
     if (tagged[FETCH_WRAPPED]) return fn;
@@ -70,12 +87,14 @@ export function installMainWorldRuntime(): void {
       const url = requestUrl(input);
       return Promise.resolve(fn.apply(this, arguments as unknown as [RequestInfo | URL, RequestInit?])).then((response) => {
         try {
-          const clone = response.clone();
-          captureTimedtextResponse(url, clone);
-          captureTwitchNetworkResponse(url, clone);
-          captureDisneyNetworkResponse(url, clone);
-          captureTencentNetworkResponse(url, clone);
-          captureCrunchyrollNetworkResponse(url, clone);
+          if (consumeCrunchyrollWrappedFetch(url, response, foreignProviderHarvestUrl) === 'foreign') {
+            const clone = response.clone();
+            captureTimedtextResponse(url, clone);
+            captureTwitchNetworkResponse(url, clone);
+            captureDisneyNetworkResponse(url, clone);
+            captureTencentNetworkResponse(url, clone);
+            captureCrunchyrollNetworkResponse(url, clone);
+          }
         } catch {
           // Harvest must not break the page's fetch.
         }

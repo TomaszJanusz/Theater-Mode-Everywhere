@@ -67,8 +67,7 @@ type CheckedResponse = {
   ok: boolean;
   url?: string;
   headers?: CheckedGet;
-  text?: () => Promise<string>;
-  arrayBuffer?: () => Promise<ArrayBuffer>;
+  body?: ReadableStream<Uint8Array> | null;
 };
 
 let state: Harvest | null = null;
@@ -316,6 +315,116 @@ function titleFor(mediaId: string, cmsTitle?: string): string | undefined {
   return undefined;
 }
 
+function advertisedBytes(headers: CheckedGet | undefined): number | null {
+  const length = Number(headers?.get('content-length'));
+  return Number.isFinite(length) && length >= 0 ? length : null;
+}
+
+function advertisedOverCap(headers: CheckedGet | undefined, maxBytes: number): boolean {
+  const length = advertisedBytes(headers);
+  return length != null && length > maxBytes;
+}
+
+function abandonBody(body: ReadableStream<Uint8Array> | null | undefined): void {
+  if (!body || typeof body.cancel !== 'function') return;
+  try {
+    void Promise.resolve(body.cancel()).catch(() => {});
+  } catch {
+    // Cancel can wait on another reader. Harvest must not.
+  }
+}
+
+type StreamRead = { done: boolean; value?: Uint8Array; aborted: boolean };
+
+function readStreamChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  signal?: AbortSignal
+): Promise<StreamRead> {
+  if (signal?.aborted) return Promise.resolve({ done: true, aborted: true });
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: StreamRead) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      resolve(result);
+    };
+    const onAbort = () => finish({ done: true, aborted: true });
+    signal?.addEventListener('abort', onAbort);
+    reader.read().then(
+      (result) => finish({ done: Boolean(result.done), value: result.value, aborted: false }),
+      () => finish({ done: true, aborted: true })
+    );
+  });
+}
+
+/**
+ * Reads at most maxBytes. A missing or low content-length is not a reason to
+ * buffer the whole payload. Crossing the cap drops every chunk, including the
+ * one that overflowed, and cancels the reader without waiting on that promise.
+ * A real body without a stream is rejected; arrayBuffer() is not a fallback.
+ */
+async function readBoundedBytes(
+  response: CheckedResponse,
+  maxBytes: number,
+  signal?: AbortSignal,
+  timeoutMs?: number
+): Promise<ArrayBuffer | null> {
+  if (advertisedOverCap(response.headers, maxBytes)) {
+    abandonBody(response.body);
+    return null;
+  }
+  const body = response.body;
+  if (!body || typeof body.getReader !== 'function') return null;
+  const own = !signal && timeoutMs && timeoutMs > 0 ? new AbortController() : null;
+  const timer = own ? setTimeout(() => own.abort(), timeoutMs) : null;
+  const used = signal ?? own?.signal;
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  let early = false;
+  try {
+    while (!used?.aborted) {
+      const next = await readStreamChunk(reader, used);
+      if (next.aborted || used?.aborted) {
+        early = true;
+        break;
+      }
+      if (next.done) break;
+      const value = next.value;
+      if (!value?.byteLength) continue;
+      if (received >= maxBytes || received + value.byteLength > maxBytes) {
+        early = true;
+        break;
+      }
+      chunks.push(value.slice());
+      received += value.byteLength;
+    }
+  } catch {
+    early = true;
+  } finally {
+    if (timer) clearTimeout(timer);
+    try {
+      if (early || used?.aborted) void Promise.resolve(reader.cancel()).catch(() => {});
+      else reader.releaseLock();
+    } catch {
+      // Stopping this reader must not surface on the page's original response.
+    }
+  }
+  if (early || used?.aborted || received === 0 || received > maxBytes) {
+    chunks.length = 0;
+    return null;
+  }
+  const out = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  chunks.length = 0;
+  return out.buffer;
+}
+
 export async function loadCrunchyrollUrl(
   url: string,
   timeoutMs: number,
@@ -330,22 +439,26 @@ export async function loadCrunchyrollUrl(
   ownedUrls.add(url);
   try {
     const response = await fetch(url, { credentials: 'omit', signal: controller?.signal }) as CheckedResponse;
-    if (!response?.ok) return null;
+    if (!response?.ok) {
+      abandonBody(response?.body);
+      return null;
+    }
     const finalUrl = typeof response.url === 'string' && response.url ? response.url : url;
     if (!ownedUrls.has(finalUrl)) {
       ownedUrls.add(finalUrl);
       marked.push(finalUrl);
     }
-    if (!validate(finalUrl)) return null;
-    const advertised = Number(response.headers?.get('content-length'));
-    if (Number.isFinite(advertised) && advertised > maxBytes) return null;
+    if (!validate(finalUrl)) {
+      abandonBody(response.body);
+      return null;
+    }
+    const buffer = await readBoundedBytes(response, maxBytes, controller?.signal);
+    if (!buffer || buffer.byteLength > maxBytes) return null;
     if (mode === 'text') {
-      const text = await response.text?.();
-      if (typeof text !== 'string' || text.length > maxBytes) return null;
+      const text = new TextDecoder().decode(buffer);
+      if (text.length > maxBytes) return null;
       return { finalUrl, text };
     }
-    const buffer = await response.arrayBuffer?.();
-    if (!buffer || buffer.byteLength === 0 || buffer.byteLength > maxBytes) return null;
     return { finalUrl, buffer };
   } catch {
     return null;
@@ -554,26 +667,68 @@ export function isCrunchyrollBifUrl(value: string): boolean {
   return isCrunchyrollBifFileUrl(value);
 }
 
+/** True only when this response's body is the one Crunchyroll harvest should read. */
+export function crunchyrollCapturesResponseBody(
+  url: string,
+  response?: { ok?: boolean; headers?: CheckedGet }
+): boolean {
+  if (!isCrunchyrollHost() || !response?.ok || isCrunchyrollOwnedRequest(url) || !crunchyrollIntegrationEnabled()) return false;
+  const file = crunchyrollCdnFile(url);
+  if (file?.kind === 'bif' && file.query === 't') return !advertisedOverCap(response.headers, MAX_CRUNCHYROLL_BIF_BYTES);
+  if (file) return false;
+  if (!crunchyrollMetadataRef(url)) return false;
+  return !advertisedOverCap(response.headers, MAX_CAPTION_BYTES);
+}
+
 export function captureCrunchyrollNetworkResponse(url: string, response: Response): void {
-  if (!isCrunchyrollHost() || !response.ok || isCrunchyrollOwnedRequest(url)) return;
+  if (!isCrunchyrollHost() || !response?.ok || isCrunchyrollOwnedRequest(url)) return;
   if (noteCrunchyrollManifest(url)) return;
   if (!crunchyrollIntegrationEnabled()) return;
   const file = crunchyrollCdnFile(url);
-  if (file?.kind === 'bif' && file.query === 't') {
-    const length = Number(response.headers.get('content-length'));
-    if (length > MAX_CRUNCHYROLL_BIF_BYTES) return;
-    void response.clone().arrayBuffer().then((buffer) => rememberCrunchyrollBif(buffer, response.url || url)).catch(() => {});
-    return;
-  }
   if (file?.kind === 'ass') {
     const mediaId = crunchyrollPageMediaId();
     if (mediaId) rememberCaptionUrl(response.url || url, mediaId);
     return;
   }
-  if (!crunchyrollMetadataRef(url)) return;
-  const length = Number(response.headers.get('content-length'));
-  if (length > MAX_CAPTION_BYTES) return;
-  void response.clone().text().then((body) => harvestCrunchyrollBody(response.url || url, body)).catch(() => {});
+  if (!crunchyrollCapturesResponseBody(url, response)) return;
+  const finalUrl = response.url || url;
+  const maxBytes = file?.kind === 'bif' ? MAX_CRUNCHYROLL_BIF_BYTES : MAX_CAPTION_BYTES;
+  const timeoutMs = file?.kind === 'bif' ? CRUNCHYROLL_BIF_TIMEOUT_MS : CRUNCHYROLL_SKIP_TIMEOUT_MS;
+  void readBoundedBytes(response, maxBytes, undefined, timeoutMs).then((buffer) => {
+    if (!buffer) return;
+    if (file?.kind === 'bif') {
+      rememberCrunchyrollBif(buffer, finalUrl);
+      return;
+    }
+    harvestCrunchyrollBody(finalUrl, new TextDecoder().decode(buffer));
+  }).catch(() => {});
+}
+
+/**
+ * Crunchyroll's portion of the shared fetch wrapper.
+ * Owned requests and URLs this provider does not read are not cloned.
+ * An accepted body is cloned once and consumed here, with no second clone.
+ * 'foreign' means the caller should keep the other providers' existing clone path.
+ */
+export function consumeCrunchyrollWrappedFetch(
+  url: string,
+  response: Response,
+  foreignUrl: (url: string) => boolean
+): 'handled' | 'foreign' {
+  if (isCrunchyrollOwnedRequest(url)) return 'handled';
+  if (crunchyrollCapturesResponseBody(url, response)) {
+    try {
+      captureCrunchyrollNetworkResponse(url, response.clone());
+    } catch {
+      // A failed clone must not fall through into a second one.
+    }
+    return 'handled';
+  }
+  if (isCrunchyrollHost() && !foreignUrl(url)) {
+    captureCrunchyrollNetworkResponse(url, response);
+    return 'handled';
+  }
+  return 'foreign';
 }
 
 export function crunchyrollAllowsCaptionFetch(url?: string): boolean {
@@ -592,11 +747,12 @@ function liveSnapshot(mediaId: string, current: Harvest | null): CrunchyrollSnap
   const rendition = current ? effectiveRendition(current, mediaId) : (readPlayerSession(mediaId)?.rendition || 'unknown');
   const playing = readPlayerSession(mediaId);
   const host = hostView(mediaId, playing?.assetId || null);
-  const hostTracks = crunchyrollHostDeliveryTracks(rendition, host.tracks).map(({ id, language, label, kind }) => ({
+  const hostTracks = crunchyrollHostDeliveryTracks(rendition, host.tracks).map(({ id, language, label, kind, enabled }) => ({
     id,
     language,
     label,
-    kind
+    kind,
+    enabled: enabled === true
   }));
   const captionTracks = crunchyrollOverlayTracks(rendition, host.renderer, hostTracks, current?.softTracks || [])
     .filter((track) => crunchyrollCdnFile(track.url)?.query === 'none');
@@ -687,12 +843,60 @@ async function settlePlayerCall(result: unknown, deadline: number): Promise<void
   await Promise.race([pending, delay(remaining)]);
 }
 
+type HostCaptionApplyResult = { ok: boolean; kept: boolean };
+
+function ownedSelection(session: PlayerSession, ownedTrackId: string): 'owned' | 'other' | 'off' {
+  const enabled = listedHostTracks(session).filter((track) => track.enabled);
+  if (enabled.length === 0) return 'off';
+  if (enabled.length !== 1 || enabled[0].id !== ownedTrackId) return 'other';
+  const file = crunchyrollCdnFile(enabled[0].url);
+  if (file?.kind !== 'vtt' || file.assetId !== session.assetId) return 'other';
+  return 'owned';
+}
+
+/**
+ * Automatic Off names the track RTE enabled. Disable that track only while it
+ * is still the sole live selection. A track chosen in the player is left on.
+ */
+async function applyOwnedCaptionOff(
+  request: CrunchyrollCaptionRequest,
+  ownedTrackId: string,
+  generation: number
+): Promise<HostCaptionApplyResult> {
+  const deadline = Date.now() + CRUNCHYROLL_HOST_CAPTION_SETTLE_MS;
+  const settled = (kept: boolean): HostCaptionApplyResult => (
+    hostCaptionCurrent(request, generation) ? { ok: true, kept } : { ok: false, kept: false }
+  );
+  if (!hostCaptionCurrent(request, generation)) return { ok: false, kept: false };
+  const session = readPlayerSession(request.mediaId);
+  if (!session || session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+  const initial = ownedSelection(session, ownedTrackId);
+  if (initial === 'off') return settled(false);
+  if (initial !== 'owned') return settled(true);
+  try {
+    await settlePlayerCall(session.disable(ownedTrackId), deadline);
+  } catch {
+    return { ok: false, kept: false };
+  }
+  for (;;) {
+    if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return { ok: false, kept: false };
+    const live = readPlayerSession(request.mediaId);
+    if (!live || live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+    const now = ownedSelection(live, ownedTrackId);
+    if (now === 'off') return settled(false);
+    if (now !== 'owned') return settled(true);
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return { ok: false, kept: false };
+    await delay(Math.min(HOST_CAPTION_POLL_MS, remaining));
+  }
+}
+
 /**
  * Bitmovin enable/disable can resolve before list() reports the new state.
  * Poll list() inside the settle budget. A newer caption request, route, or
  * integration change makes this attempt fail instead of acknowledging success.
  */
-export async function applyCrunchyrollHostCaption(
+async function applyUnscopedHostCaption(
   request: CrunchyrollCaptionRequest,
   generation = hostCaptionGeneration
 ): Promise<boolean> {
@@ -747,16 +951,28 @@ export async function applyCrunchyrollHostCaption(
   }
 }
 
-function acknowledgeHostCaption(request: CrunchyrollCaptionRequest, ok: boolean): void {
+export async function applyCrunchyrollHostCaption(
+  request: CrunchyrollCaptionRequest,
+  generation = hostCaptionGeneration
+): Promise<HostCaptionApplyResult> {
+  if (request.trackId === null && request.ownedTrackId) {
+    return applyOwnedCaptionOff(request, request.ownedTrackId, generation);
+  }
+  return { ok: await applyUnscopedHostCaption(request, generation), kept: false };
+}
+
+function acknowledgeHostCaption(request: CrunchyrollCaptionRequest, result: HostCaptionApplyResult): void {
   const mediaId = crunchyrollPageMediaId() || request.mediaId;
   const route = crunchyrollPageRoute();
+  const ok = result.ok && mediaId === request.mediaId && route === request.route;
   window.dispatchEvent(new CustomEvent(CRUNCHYROLL_CAPTION_ACK_EVENT, {
     detail: crunchyrollCaptionAckDetail({
       requestId: request.requestId,
-      ok: ok && mediaId === request.mediaId && route === request.route,
+      ok,
       mediaId,
       route,
-      trackId: request.trackId
+      trackId: request.trackId,
+      ...(ok && result.kept ? { kept: true } : {})
     })
   }));
 }
@@ -769,16 +985,17 @@ export function handleCrunchyrollCaptionEvent(event: Event): void {
     // A request that was only waiting in line is already stale. Reject it before list()/enable/disable
     // so it cannot spend another settle budget or change the player after a newer request.
     if (generation !== hostCaptionGeneration) {
-      acknowledgeHostCaption(request, false);
+      acknowledgeHostCaption(request, { ok: false, kept: false });
       return;
     }
-    let ok = false;
+    let result: HostCaptionApplyResult = { ok: false, kept: false };
     try {
-      ok = await applyCrunchyrollHostCaption(request, generation);
+      result = await applyCrunchyrollHostCaption(request, generation);
     } catch {
-      ok = false;
+      result = { ok: false, kept: false };
     }
-    acknowledgeHostCaption(request, generation === hostCaptionGeneration && ok);
+    if (generation !== hostCaptionGeneration) result = { ok: false, kept: false };
+    acknowledgeHostCaption(request, result);
   });
   hostCaptionQueue = queued.then(() => undefined, () => undefined);
 }
