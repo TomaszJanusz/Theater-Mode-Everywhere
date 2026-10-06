@@ -66,7 +66,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   volumeBoostTitle: 'Volume Boost',
   volumeBoostDescription: 'Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.',
   richTheaterExperienceTitle: 'Rich Theater Experience (Experimental)',
-  richTheaterExperienceDescription: 'Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more ',
+  richTheaterExperienceDescription: 'Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more ',
   richTheaterExperienceReadMore: 'here',
   richTheaterExperienceDescriptionEnd: '.',
   richTheaterExperiencePopupDescription: 'Enable richer integrations with your favorite video services. Availability varies by service.',
