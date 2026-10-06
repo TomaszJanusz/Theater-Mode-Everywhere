@@ -292,6 +292,13 @@ html.theater-everywhere-html-active .ytp-player-content {
 
 /* Custom player controls container card */
 .theater-controls-wrapper {
+  --theater-menu-notch: 48px;
+  --theater-menu-notch-depth: 64px;
+  --theater-menu-notch-overlap: calc(var(--theater-menu-notch-depth) - 32px);
+  /* Close button plus the row gap, minus the square's overhang past its slot.
+     Overhang follows the notch width, not the vertical depth. */
+  --theater-notch-inline-end: calc(44px - (var(--theater-menu-notch) - 32px) / 2);
+  --theater-notch-inline-start: calc(var(--theater-notch-inline-end) + var(--theater-menu-notch));
   position: fixed !important;
   bottom: 24px !important;
   left: 24px !important;
@@ -565,6 +572,16 @@ html.theater-everywhere-html-active .ytp-player-content {
   display: none !important;
 }
 
+.theater-controls-left > .theater-control-btn > svg,
+.theater-controls-right > .theater-control-btn > svg,
+.theater-volume-container > .theater-control-btn > svg,
+.theater-cc-menu-host > .theater-control-btn > svg,
+.theater-settings-container > .theater-control-btn > svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
+}
+
 .theater-control-btn {
   background: none !important;
   border: 1px solid transparent !important;
@@ -595,6 +612,82 @@ html.theater-everywhere-html-active .ytp-player-content {
   background-color: color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent) !important;
 }
 
+/* Keep menu triggers still before opening and snap back when closing. */
+.theater-menu > .theater-control-btn,
+.theater-popover > .theater-control-btn,
+.theater-menu > .theater-control-btn:active,
+.theater-popover > .theater-control-btn:active {
+  transition: none !important;
+  transform: none !important;
+}
+
+/* The open trigger is as wide as a volume or speed panel and taller than the
+   bar, so the menu can cut a deeper notch. The 32px slot stays put, and the
+   icon stays centered in that slot instead of riding up with the notch. */
+.theater-volume-container,
+.theater-speed-container,
+.theater-settings-container,
+.theater-cc-menu-host {
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-height: 32px !important;
+  justify-content: center !important;
+  align-items: flex-end !important;
+  overflow: visible !important;
+}
+
+.theater-menu.is-open > .theater-control-btn,
+.theater-popover:is(:hover, :focus-within) > .theater-control-btn {
+  transition: none !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  flex: 0 0 var(--theater-menu-notch) !important;
+  width: var(--theater-menu-notch) !important;
+  min-width: var(--theater-menu-notch) !important;
+  max-width: var(--theater-menu-notch) !important;
+  height: var(--theater-menu-notch-depth) !important;
+  min-height: var(--theater-menu-notch-depth) !important;
+  align-self: flex-end !important;
+  align-items: center !important;
+  /* Removing the top stroke adds 1px to the content box. Compensate so the
+     icon keeps the same center as a closed 32px button. */
+  padding-top: calc(var(--theater-menu-notch-overlap) + 1px) !important;
+  background: rgb(20, 20, 20) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  border-top-width: 0 !important;
+  border-radius: 0 0 8px 8px !important;
+  color: var(--accent-color, #ffffff) !important;
+  position: relative !important;
+  z-index: 2000000002 !important;
+  box-shadow: none !important;
+}
+
+/* A wide menu shares only part of the notch edge. Cover the square's side
+   stroke where it would cross the menu fill. Captions stay flush at the
+   inline end, so that outer stroke remains and continues the menu outline. */
+.theater-menu.is-open > .theater-control-btn::before,
+.theater-settings-container.is-open > .theater-control-btn::after {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  top: 0 !important;
+  width: 2px !important;
+  height: calc(var(--theater-menu-notch-overlap) - 1px) !important;
+  background: rgba(20, 20, 20, 0.96) !important;
+  pointer-events: none !important;
+}
+
+.theater-menu.is-open > .theater-control-btn::before { inset-inline-start: -1px !important; }
+.theater-settings-container.is-open > .theater-control-btn::after { inset-inline-end: -1px !important; }
+
+.theater-menu.is-open > .theater-control-btn:active,
+.theater-popover:is(:hover, :focus-within) > .theater-control-btn:active {
+  transform: none !important;
+  background: rgb(20, 20, 20) !important;
+}
+
 .speed-btn {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 11px !important;
@@ -605,7 +698,6 @@ html.theater-everywhere-html-active .ytp-player-content {
 .theater-volume-container,
 .theater-speed-container {
   display: flex !important;
-  align-items: center !important;
   position: relative !important;
 }
 
@@ -618,35 +710,23 @@ html.theater-everywhere-html-active .ytp-player-content {
   position: absolute !important;
   bottom: 100% !important;
   left: 50% !important;
-  transform: translateX(-50%) translateY(0px) scale(0.95) !important;
-  background: rgba(15, 15, 15, 0.92) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box !important;
+  width: var(--theater-menu-notch) !important;
+  background: rgb(20, 20, 20) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 8px !important;
-  padding: 8px 6px 12px 6px !important;
+  border-radius: 8px 8px 0 0 !important;
+  border-bottom-width: 0 !important;
+  padding: 8px 6px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   gap: 8px !important;
   opacity: 0 !important;
   pointer-events: none !important;
-  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
   z-index: 1000 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Gap-only hover bridge; keep pointer-events off while the panel is hidden. */
-.theater-volume-panel::after,
-.theater-speed-panel::after {
-  content: '' !important;
-  position: absolute !important;
-  top: 100% !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: 8px !important;
-  background: transparent !important;
-  pointer-events: none !important;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.45) !important;
 }
 
 .theater-volume-container:hover .theater-volume-panel,
@@ -655,14 +735,8 @@ html.theater-everywhere-html-active .ytp-player-content {
 .theater-speed-container:focus-within .theater-speed-panel {
   opacity: 1 !important;
   pointer-events: auto !important;
-  transform: translateX(-50%) translateY(-8px) scale(1) !important;
-}
-
-.theater-volume-container:hover .theater-volume-panel::after,
-.theater-speed-container:hover .theater-speed-panel::after,
-.theater-volume-container:focus-within .theater-volume-panel::after,
-.theater-speed-container:focus-within .theater-speed-panel::after {
-  pointer-events: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 2000000003 !important;
 }
 
 .theater-vertical-slider-wrapper {
@@ -1174,45 +1248,86 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
 /* Labeled secondary actions; primary playback controls stay on the bar. */
 .theater-settings-container {
   display: flex !important;
-  align-items: center !important;
-  position: relative !important;
 }
 
-/* Gap above the gear. The menu itself clips overflow, so the bridge lives here. */
-.theater-settings-container::before {
-  content: '' !important;
-  position: absolute !important;
-  z-index: 2000000000 !important;
-  inset-inline-end: 0 !important;
-  bottom: 100% !important;
-  width: 340px !important;
-  max-width: calc(100vw - 48px) !important;
-  height: 12px !important;
-}
-
+/* The menu stays positioned against the controls row, so the panel keeps the
+   gear's previous inline-end alignment. A relative container would shift it left. */
 .theater-settings-menu {
   position: absolute !important;
   inset-inline-end: 0 !important;
-  bottom: calc(100% + 10px) !important;
+  bottom: 100% !important;
   display: none !important;
   flex-direction: column !important;
   width: 340px !important;
   max-width: calc(100vw - 48px) !important;
   max-height: calc(100vh - 110px) !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain !important;
+  overflow: hidden !important;
   box-sizing: border-box !important;
   background: rgba(20, 20, 20, 0.96) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 10px !important;
-  padding: 6px !important;
+  padding: 0 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
   z-index: 2000000000 !important;
   pointer-events: auto !important;
 }
 
-.theater-settings-container:hover:not(.is-suppressed) > .theater-settings-menu,
+.theater-menu.is-open > .theater-settings-menu,
 .theater-settings-menu.visible { display: flex !important; }
+
+/* Rows scroll. The shell stays on the menu, so the notch does not travel with them. */
+.theater-settings-body {
+  position: relative !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-height: calc(100vh - 110px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 6px !important;
+}
+
+/* Same 6px inset as the top. The shell is masked so the last row can use that
+   inset without the notch stroke or fill covering it. */
+.theater-menu.is-open > .theater-settings-menu {
+  z-index: 2000000003 !important;
+  background: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.theater-menu.is-open > .theater-settings-menu::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  border-radius: 10px !important;
+  background: rgb(20, 20, 20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  pointer-events: none !important;
+  -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size:
+    100% calc(100% - var(--theater-menu-notch-overlap)),
+    calc(100% - var(--theater-notch-inline-start)) var(--theater-menu-notch-overlap),
+    var(--theater-notch-inline-end) var(--theater-menu-notch-overlap);
+  -webkit-mask-position: top left, bottom left, bottom right;
+  -webkit-mask-composite: source-over, source-over;
+  mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-repeat: no-repeat;
+  mask-size:
+    100% calc(100% - var(--theater-menu-notch-overlap)),
+    calc(100% - var(--theater-notch-inline-start)) var(--theater-menu-notch-overlap),
+    var(--theater-notch-inline-end) var(--theater-menu-notch-overlap);
+  mask-position: top left, bottom left, bottom right;
+  mask-composite: add, add;
+}
+
+.theater-controls-wrapper[dir="rtl"] .theater-menu.is-open > .theater-settings-menu::before {
+  -webkit-mask-position: top left, bottom right, bottom left;
+  mask-position: top left, bottom right, bottom left;
+}
 
 .theater-settings-row {
   width: 100% !important;
@@ -1273,8 +1388,20 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   white-space: nowrap !important;
 }
 .theater-settings-row.extension-settings-btn {
-  margin-top: 4px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  position: relative !important;
+  margin-top: 8px !important;
+  border-top-color: transparent !important;
+  box-shadow: none !important;
+}
+.theater-settings-row.extension-settings-btn::before {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  inset-inline: -6px !important;
+  top: -5px !important;
+  height: 1px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  pointer-events: none !important;
 }
 .theater-settings-row:focus-visible,
 .player-settings-btn:focus-visible {
@@ -1283,12 +1410,16 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
 }
 
 /* Subtitles CC popover menu */
+.theater-menu-anchored {
+  position: relative !important;
+  display: flex !important;
+}
+
 .theater-cc-menu {
   position: absolute !important;
-  bottom: 56px !important;
-  background: rgba(20, 20, 20, 0.92) !important;
-  backdrop-filter: blur(12px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+  inset-inline-end: 0 !important;
+  bottom: 100% !important;
+  background: rgba(20, 20, 20, 0.96) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 8px !important;
   padding: 0 !important;
@@ -1317,23 +1448,41 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   max-height: min(42vh, 280px) !important;
-  padding: 0 0 4px !important;
+  /* Stay inside the shell stroke. A full-bleed header was painting over it. */
+  padding: 1px 1px 4px !important;
   scrollbar-width: thin !important;
   scrollbar-color: rgba(255, 255, 255, 0.28) transparent !important;
 }
 
+.theater-cc-menu-header + .theater-cc-menu-item {
+  margin-top: 4px !important;
+}
+
 .theater-cc-menu-header {
   position: sticky !important;
-  top: 0 !important;
+  top: 1px !important;
   z-index: 1 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 8px !important;
   padding: 6px 8px 6px 12px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 0 !important;
+  border-radius: 7px 7px 0 0 !important;
   margin: 0 !important;
-  background: rgba(20, 20, 20, 0.96) !important;
+  background: rgb(20, 20, 20) !important;
+}
+
+.theater-cc-menu-header::after {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: -1px !important;
+  right: -1px !important;
+  bottom: 0 !important;
+  height: 1px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  pointer-events: none !important;
 }
 
 .theater-cc-menu-title {
@@ -1360,8 +1509,50 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
+.theater-menu.is-open > .theater-cc-menu,
 .theater-cc-menu.visible {
   display: flex !important;
+}
+
+.theater-menu-anchored.is-open > .theater-cc-menu {
+  inset-inline-end: calc((32px - var(--theater-menu-notch)) / 2) !important;
+  border-end-end-radius: 0 !important;
+  z-index: 2000000003 !important;
+  background: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.theater-menu-anchored.is-open > .theater-cc-menu::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: -1 !important;
+  border-radius: 8px !important;
+  border-end-end-radius: 0 !important;
+  background: rgb(20, 20, 20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  pointer-events: none !important;
+  -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size:
+    100% calc(100% - var(--theater-menu-notch-overlap)),
+    calc(100% - var(--theater-menu-notch)) var(--theater-menu-notch-overlap);
+  -webkit-mask-position: top left, bottom left;
+  -webkit-mask-composite: source-over;
+  mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
+  mask-repeat: no-repeat;
+  mask-size:
+    100% calc(100% - var(--theater-menu-notch-overlap)),
+    calc(100% - var(--theater-menu-notch)) var(--theater-menu-notch-overlap);
+  mask-position: top left, bottom left;
+  mask-composite: add;
+}
+
+.theater-controls-wrapper[dir="rtl"] .theater-menu-anchored.is-open > .theater-cc-menu::before {
+  -webkit-mask-position: top left, bottom right;
+  mask-position: top left, bottom right;
 }
 
 .theater-cc-menu-item {

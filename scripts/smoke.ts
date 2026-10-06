@@ -325,9 +325,14 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (placement.length) fail(`Toolbar actions were lost, duplicated or misplaced: ${JSON.stringify(placement)}`);
   const gear = page.locator('.player-settings-btn');
   const menu = page.locator('.theater-settings-menu');
+  const closedGearIcon = await gear.locator('svg').boundingBox();
   await gear.focus();
   await gear.press('Enter');
   await menu.waitFor({ state: 'visible' });
+  const openGearIcon = await gear.locator('svg').boundingBox();
+  if (JSON.stringify(openGearIcon) !== JSON.stringify(closedGearIcon)) {
+    fail(`Opening settings moved its icon: ${JSON.stringify({ closedGearIcon, openGearIcon })}`);
+  }
   await page.mouse.move(640, 300);
   await waitForChrome(true, true, false);
   if (!await menu.isVisible()) fail('Idle header dismissed player settings on a pinned bar.');
@@ -393,6 +398,37 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (process.env.THEATER_SMOKE_SCREENSHOT) {
     await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-settings.png') });
   }
+
+  // A constrained viewport must scroll rows without moving the menu shell or
+  // hiding its last action. Exercise both inline directions with the real UI.
+  await page.setViewportSize({ width: 800, height: 280 });
+  const scrollChecks = await page.evaluate(() => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    const bar = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
+    const menu = root.querySelector<HTMLElement>('.theater-settings-menu')!;
+    const body = root.querySelector<HTMLElement>('.theater-settings-body')!;
+    const originalDir = bar.getAttribute('dir');
+    const results = ['ltr', 'rtl'].map(dir => {
+      bar.setAttribute('dir', dir);
+      body.scrollTop = 0;
+      const before = menu.getBoundingClientRect();
+      const firstBefore = body.firstElementChild!.getBoundingClientRect().top;
+      body.scrollTop = body.scrollHeight;
+      const after = menu.getBoundingClientRect();
+      const last = body.lastElementChild!.getBoundingClientRect();
+      return { dir, passed: body.scrollTop > 0
+        && body.firstElementChild!.getBoundingClientRect().top < firstBefore
+        && before.top === after.top && before.bottom === after.bottom
+        && after.top >= 0 && after.bottom <= window.innerHeight
+        && last.top >= after.top && last.bottom <= after.bottom };
+    });
+    if (originalDir === null) bar.removeAttribute('dir');
+    else bar.setAttribute('dir', originalDir);
+    body.scrollTop = 0;
+    return results;
+  });
+  if (scrollChecks.some(result => !result.passed)) fail(`Settings scroll clipped actions or moved its shell: ${JSON.stringify(scrollChecks)}`);
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   // Moved controls still execute commands, and keyboard activation never toggles video playback.
   const fitBefore = await page.locator('video#player').evaluate(video => getComputedStyle(video).objectFit);
@@ -526,6 +562,25 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await helpClose.waitFor();
   await page.keyboard.press('Escape');
   if (!await page.locator('.cc-btn').evaluate(button => button.matches(':focus'))) fail('Help did not return a hidden caption menu item to its trigger.');
+  const cc = page.locator('.cc-btn');
+  const captionsMenu = page.locator('.theater-cc-menu');
+  const pausedBeforeCaptionMenu = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
+  await cc.press('Enter');
+  await page.locator('.theater-cc-menu-options').press('Space');
+  const captionOptions = page.locator('.theater-caption-options-dialog');
+  await captionOptions.waitFor();
+  if (await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeCaptionMenu) {
+    fail('Space on caption Options toggled playback.');
+  }
+  await page.keyboard.press('Escape');
+  await captionOptions.waitFor({ state: 'detached' });
+  await cc.press('Enter');
+  await captionsMenu.waitFor();
+  await page.keyboard.press('Escape');
+  if (await captionsMenu.isVisible() || !await theaterEntered(page)
+      || !await cc.evaluate(button => button.matches(':focus'))) {
+    fail('Escape did not dismiss captions and return focus without leaving theater mode.');
+  }
   await gear.press('Enter');
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
@@ -537,6 +592,8 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await gear.click();
   if (!await menu.isVisible()) fail('Clicking the settings gear toggled its menu closed.');
   await page.mouse.move(640, 300);
+  if (!await menu.isVisible()) fail('Click did not keep the settings menu open.');
+  await gear.click();
   await menu.waitFor({ state: 'hidden' });
   await gear.click();
   await page.locator('.cc-btn').click();

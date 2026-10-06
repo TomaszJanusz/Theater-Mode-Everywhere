@@ -1,6 +1,7 @@
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
 import { sanitizeContentTitle } from './content-title';
 import { CaptionRenderer } from './caption-renderer';
+import { closeMenuPopover } from '../ui/menu-popover';
 import { openCaptionOptionsDialog } from './caption-options-dialog';
 import { chapterAtTime } from './cue-index';
 import type { CaptionStyle } from './caption-style';
@@ -594,9 +595,13 @@ export class MediaFeaturesController {
     });
   }
 
-  private async openCaptionOptions(): Promise<void> {
-    this.ccMenu.classList.remove('visible');
+  private dismissCcMenu(): void {
+    if (!closeMenuPopover(this.ccMenu.parentElement)) this.ccMenu.classList.remove('visible');
     this.onCaptionChange?.();
+  }
+
+  private async openCaptionOptions(): Promise<void> {
+    this.dismissCcMenu();
     await openCaptionOptionsDialog({
       t: this.t,
       style: this.captionStyle,
@@ -623,7 +628,7 @@ export class MediaFeaturesController {
     }
     item.addEventListener('click', () => {
       onClick();
-      this.ccMenu.classList.remove('visible');
+      this.dismissCcMenu();
     });
     return item;
   }

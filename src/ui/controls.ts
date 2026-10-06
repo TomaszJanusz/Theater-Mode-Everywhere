@@ -22,6 +22,7 @@ import {
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
+import { bindMenuPopover } from './menu-popover';
 import { createPlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
@@ -79,6 +80,7 @@ export function createControls(ctx: PlayerChromeContext) {
     button.removeAttribute('title');
 
     const show = () => {
+      if (button.closest('.theater-menu')) return;
       if (!tooltipState.element) {
         tooltipState.element = document.createElement('div');
         tooltipState.element.className = 'theater-button-tooltip';
@@ -256,14 +258,14 @@ export function createControls(ctx: PlayerChromeContext) {
 
     const previousIcon = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <rect x="4" y="5" width="2.2" height="14" rx="0.4"></rect>
-        <path d="M19 5.5 8.5 12 19 18.5z"></path>
+        <rect x="4" y="3" width="2.2" height="18" rx="0.4"></rect>
+        <path d="M19 4 8.5 12 19 20z"></path>
       </svg>
     `;
     const nextIcon = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-        <path d="M5 5.5 15.5 12 5 18.5z"></path>
-        <rect x="17.8" y="5" width="2.2" height="14" rx="0.4"></rect>
+        <path d="M5 4 15.5 12 5 20z"></path>
+        <rect x="17.8" y="3" width="2.2" height="18" rx="0.4"></rect>
       </svg>
     `;
 
@@ -326,7 +328,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
     // Volume Container
     const volumeContainer = document.createElement('div');
-    volumeContainer.className = 'theater-volume-container';
+    volumeContainer.className = 'theater-volume-container theater-popover';
     volumeContainer.addEventListener('pointerenter', updateCaptionDock);
     volumeContainer.addEventListener('pointerleave', () => {
       window.requestAnimationFrame(updateCaptionDock);
@@ -555,12 +557,14 @@ export function createControls(ctx: PlayerChromeContext) {
     // Right Controls Section
     const rightSec = document.createElement('div');
     rightSec.className = 'theater-controls-right';
-    const settings = createPlayerSettings(ctx, controlsScope);
-    bindCustomTooltip(settings.button, () => t('playerSettingsLabel'));
+    const dismissOtherMenus = { run: () => {} };
+    const settings = createPlayerSettings(ctx, controlsScope, {
+      onBeforeOpen: () => dismissOtherMenus.run()
+    });
 
     // Playback Speed Controls
     const speedContainer = document.createElement('div');
-    speedContainer.className = 'theater-speed-container';
+    speedContainer.className = 'theater-speed-container theater-popover';
     speedContainer.addEventListener('pointerenter', updateCaptionDock);
     speedContainer.addEventListener('pointerleave', () => {
       window.requestAnimationFrame(updateCaptionDock);
@@ -666,7 +670,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
     bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', ui().shortcuts.togglePiP));
 
-    setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
+    setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
     const syncPipButton = () => {
       pipBtn.classList.toggle('active', native != null && document.pictureInPictureElement === native);
     };
@@ -695,12 +699,12 @@ export function createControls(ctx: PlayerChromeContext) {
     });
 
     const enterFullscreenIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
       </svg>
     `;
     const exitFullscreenIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"></path>
       </svg>
     `;
@@ -771,7 +775,7 @@ export function createControls(ctx: PlayerChromeContext) {
       return t('exitTheaterModeTooltip', [toggleKey, exitKey]);
     });
 
-    setIcon(closeBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`);
+    setIcon(closeBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="4" x2="4" y2="20"></line><line x1="4" y1="4" x2="20" y2="20"></line></svg>`);
     closeBtn.addEventListener('click', () => {
       exitTheaterMode();
     });
@@ -781,9 +785,15 @@ export function createControls(ctx: PlayerChromeContext) {
     ccBtn.className = 'theater-control-btn cc-btn';
 
     const ccMenu = document.createElement('div');
+    ccMenu.id = 'theater-cc-menu';
     ccMenu.className = 'theater-cc-menu';
+    ccBtn.setAttribute('aria-haspopup', 'menu');
+    ccBtn.setAttribute('aria-expanded', 'false');
+    ccBtn.setAttribute('aria-controls', 'theater-cc-menu');
     paintOverlay(ccMenu);
-    wrapper.appendChild(ccMenu);
+    const ccHost = document.createElement('div');
+    ccHost.className = 'theater-cc-menu-host theater-menu-anchored';
+    ccHost.append(ccBtn, ccMenu);
 
     const mediaFeatures = new MediaFeaturesController({
       video,
@@ -815,7 +825,7 @@ export function createControls(ctx: PlayerChromeContext) {
       return t('subtitlesTooltip', ui().shortcuts.toggleCaptions);
     });
 
-    setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0M14 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0"></path></svg>`);
+    setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0M14 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0"></path></svg>`);
 
     const handleTrackChange = () => {
       void mediaFeatures.refresh();
@@ -831,29 +841,39 @@ export function createControls(ctx: PlayerChromeContext) {
       trackEl.addEventListener('load', onTrackElementLoad);
     });
 
-    ccBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      settings.close();
-      if (!ccMenu.classList.contains('visible')) {
-        mediaFeatures.renderCcMenu();
-        ccMenu.classList.add('visible');
-        const rect = ccBtn.getBoundingClientRect();
-        const wrapperRect = wrapper.getBoundingClientRect();
-        ccMenu.style.right = `${wrapperRect.right - rect.right}px`;
-        ccMenu.style.bottom = `${rect.height + 10}px`;
-      } else {
-        ccMenu.classList.remove('visible');
-      }
-      updateCaptionDock();
+    const ccPopover = bindMenuPopover({
+      host: ccHost,
+      trigger: ccBtn,
+      panel: ccMenu,
+      scope: controlsScope,
+      onBeforeOpen: () => {
+        settings.close();
+        volumeBtn.blur();
+        volumeSlider.blur();
+        speedBtn.blur();
+        speedSlider.blur();
+      },
+      prepare: () => mediaFeatures.renderCcMenu(),
+      onChange: updateCaptionDock
     });
+    const blurSliders = () => {
+      volumeBtn.blur();
+      volumeSlider.blur();
+      speedBtn.blur();
+      speedSlider.blur();
+    };
+    dismissOtherMenus.run = () => {
+      ccPopover.close();
+      blurSliders();
+    };
 
     const dismissPopoversIfOutside = (e: Event) => {
-      const inCc = eventPathIncludes(e, ccMenu) || eventPathIncludes(e, ccBtn);
+      const inCc = eventPathIncludes(e, ccHost);
       const inVolume = eventPathMatches(e, '.theater-volume-container');
       const inSpeed = eventPathMatches(e, '.theater-speed-container');
-      const inSettings = eventPathIncludes(e, settings.panel) || eventPathIncludes(e, settings.button);
+      const inSettings = eventPathIncludes(e, settings.container);
       if (!inSettings) settings.close();
-      if (!inCc) ccMenu.classList.remove('visible');
+      if (!inCc) ccPopover.close();
       if (!inVolume) {
         volumeBtn.blur();
         volumeSlider.blur();
@@ -873,7 +893,7 @@ export function createControls(ctx: PlayerChromeContext) {
     };
     window.addEventListener('blur', onWindowBlur);
 
-    rightSec.appendChild(ccBtn);
+    rightSec.appendChild(ccHost);
     rightSec.appendChild(speedContainer);
     updateTimeDisplay();
 

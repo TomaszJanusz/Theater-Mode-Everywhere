@@ -393,9 +393,9 @@ export function installMainWorldRuntime(): void {
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     // The content world owns help focus and native activation of its close button.
     if (queryPlayerUi('.theater-help-overlay')) return;
-    // Settings buttons own native Space activation, including through the UI's shadow root.
+    // Menu buttons own native Space activation, including through the UI's shadow root.
     if (event.composedPath().some(node => node instanceof Element
-        && node.matches('.theater-settings-menu, .player-settings-btn'))) return;
+        && node.matches('.theater-menu'))) return;
 
     if (isTencentWasmPlayerElement(marked)) {
       if (!mainWorldOwnsWasmPlayPause(event, publishedShortcut('playPause'))) return;
