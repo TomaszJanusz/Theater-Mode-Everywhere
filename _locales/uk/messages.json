@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "Зображення піднімається вгору, а чорна смуга під ним лишається для субтитрів. Найкраще для екранів 16:10 і 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Зверху лише з субтитрами"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Із субтитрами зображення зверху, без субтитрів — по центру."
+  },
   "accentColorLabel": {
     "message": "Акцентний колір"
   },

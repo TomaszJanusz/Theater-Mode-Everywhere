@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "映像は上に寄り、下の黒い帯は字幕のための場所です。16:10と4:3の画面向きです。"
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "字幕があるときだけ上寄せ"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "字幕がオンのときは上寄せ、オフのときは中央にします。"
+  },
   "accentColorLabel": {
     "message": "アクセントカラー"
   },

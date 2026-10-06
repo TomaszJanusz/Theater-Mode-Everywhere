@@ -35,6 +35,7 @@ export type MediaFeaturesBindings = {
   scrubberTrack: HTMLElement;
   t: (key: string, substitutions?: string | string[]) => string;
   onCaptionChange?: () => void;
+  onSubtitleLayoutChange?: (on: boolean) => void;
   onCaptionHud?: (payload: CaptionHudPayload) => void;
   onCaptionStyleChange?: (style: CaptionStyle) => void;
   captionPreference?: CaptionLanguagePreference | null;
@@ -81,6 +82,8 @@ export class MediaFeaturesController {
   private lastLanguagePref: CaptionLanguageChoice | null = null;
   private captionStyle: CaptionStyle = { ...DEFAULT_CAPTION_STYLE };
   private onCaptionChange?: () => void;
+  private onSubtitleLayoutChange?: (on: boolean) => void;
+  private subtitleLayoutOn = false;
   private onCaptionHud?: (payload: CaptionHudPayload) => void;
   private onCaptionStyleChange?: (style: CaptionStyle) => void;
   private onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
@@ -108,6 +111,7 @@ export class MediaFeaturesController {
     this.ccMenu = bindings.ccMenu;
     this.t = bindings.t;
     this.onCaptionChange = bindings.onCaptionChange;
+    this.onSubtitleLayoutChange = bindings.onSubtitleLayoutChange;
     this.onCaptionHud = bindings.onCaptionHud;
     this.onCaptionStyleChange = bindings.onCaptionStyleChange;
     this.onCaptionPreferenceChange = bindings.onCaptionPreferenceChange;
@@ -204,6 +208,7 @@ export class MediaFeaturesController {
     this.renderHeatmap();
     this.updateCcState();
     this.renderCcMenu();
+    this.publishSubtitleLayout();
     this.onCaptionChange?.();
     this.publishedTitle = null;
     this.onTitle?.(null);
@@ -310,6 +315,7 @@ export class MediaFeaturesController {
         this.renderer.setCues([]);
         setOverlayCaptionsClass(false);
         this.recordCaptionTransition(mediaChanged ? 'media-changed' : 'track-missing', { previousId });
+        this.publishSubtitleLayout();
       }
       this.renderChapterMarks();
       this.renderHeatmap();
@@ -489,6 +495,18 @@ export class MediaFeaturesController {
 
   private captionsAreOn(): boolean {
     return this.captionState === 'active' && this.activeTrackId !== null;
+  }
+
+  /**
+   * Picture layout follows captions that are actually on. Loading keeps the
+   * previous choice, so a track switch does not drop a raised picture.
+   */
+  private publishSubtitleLayout(): void {
+    const on = this.captionState === 'active'
+      || (this.captionState === 'loading' && this.subtitleLayoutOn);
+    if (on === this.subtitleLayoutOn) return;
+    this.subtitleLayoutOn = on;
+    this.onSubtitleLayoutChange?.(on);
   }
 
   private updateCcState(): void {
@@ -685,6 +703,7 @@ export class MediaFeaturesController {
       }
       this.activeTrackId = on ? id : null;
       this.captionState = on ? 'active' : 'off';
+      if (on) this.publishSubtitleLayout();
       this.usingOverlayCaptions = on && activation.delivery === 'overlay';
       this.renderer.setCues(this.usingOverlayCaptions ? activation.cues : []);
       setOverlayCaptionsClass(this.usingOverlayCaptions);
@@ -699,6 +718,7 @@ export class MediaFeaturesController {
       this.persistAfterActivate(id, on, persist);
       this.updateCcState();
       this.renderCcMenu();
+      if (!on) this.publishSubtitleLayout();
       this.onCaptionChange?.();
       if (!id) return 'off';
       return on ? 'on' : 'failed';
@@ -766,6 +786,7 @@ export class MediaFeaturesController {
       this.renderCcMenu();
       this.recordCaptionTransition('cue-refresh-failed', { time });
       this.emitCaptionHud('failed', true);
+      this.publishSubtitleLayout();
       this.onCaptionChange?.();
     }).catch((error) => {
       console.error('[Theater Everywhere] Caption cue refresh failed:', error);
@@ -797,7 +818,12 @@ export class MediaFeaturesController {
     this.disposed = true;
     this.bumpEpoch();
     this.refreshQueued = false;
+    this.activeTrackId = null;
+    this.captionState = 'off';
+    this.usingOverlayCaptions = false;
     setOverlayCaptionsClass(false);
+    this.renderer.setCues([]);
+    this.publishSubtitleLayout();
     this.heatmapHasData = false;
     this.syncHeatmapPresence();
     this.renderer.dispose();

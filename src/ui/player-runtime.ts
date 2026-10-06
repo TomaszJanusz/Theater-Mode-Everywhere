@@ -86,8 +86,10 @@ import {
   horizontalLetterboxPx,
   objectPositionForPicture,
   PICTURE_ALIGN_STORAGE_KEY,
+  RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
   raisedCaptionsUseBand,
   resolvePictureAlign,
+  resolveRaiseOnlyWithSubtitles,
   resolveVideoFitMode,
   VIDEO_FIT_MODES,
   VIDEO_FIT_STORAGE_KEY,
@@ -393,6 +395,7 @@ function bindChromeActions(): void {
     persistCaptionStyle,
     persistVideoFitMode,
     applyTheaterVideoFit,
+    applySubtitleLayout,
     showCaptionHud,
     createPlayerHeader: hud.createPlayerHeader,
     syncContentTitle,
@@ -437,7 +440,6 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   rotate: 'none',
   scale: 'none',
   'transform-style': 'flat',
-  transition: 'none',
   background: '#000000',
   'background-color': '#000000',
 };
@@ -467,13 +469,56 @@ function currentPictureFrame() {
   };
 }
 
+const PICTURE_MOVE_MS = 320;
+let pictureMoveTimer: number | undefined;
+
+function picturePositionOptions() {
+  return {
+    raiseOnlyWithSubtitles: ui().raiseOnlyWithSubtitles,
+    subtitlesOn: refs.subtitlesOn
+  };
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function pictureMoveTransition(): string {
+  return prefersReducedMotion()
+    ? 'none'
+    : `object-position ${PICTURE_MOVE_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`;
+}
+
 function currentObjectPosition(): string {
-  return objectPositionForPicture(ui().videoFit, ui().pictureAlign, currentPictureFrame());
+  return objectPositionForPicture(ui().videoFit, ui().pictureAlign, currentPictureFrame(), picturePositionOptions());
+}
+
+function beginPictureMove(): void {
+  const root = document.documentElement;
+  root.classList.add('theater-everywhere-picture-moving');
+  void root.offsetWidth;
+  const overlay = queryPlayerUi('.theater-caption-overlay') as HTMLElement | null;
+  if (overlay) {
+    overlay.style.setProperty(
+      'transition',
+      `bottom ${PICTURE_MOVE_MS}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease`,
+      'important'
+    );
+    void overlay.offsetWidth;
+  }
+  if (pictureMoveTimer !== undefined) window.clearTimeout(pictureMoveTimer);
+  pictureMoveTimer = window.setTimeout(() => {
+    pictureMoveTimer = undefined;
+    root.classList.remove('theater-everywhere-picture-moving');
+    updateCaptionDock();
+  }, PICTURE_MOVE_MS);
 }
 
 function getTheaterElementInlineStyles(): Record<string, string> {
   return {
     ...THEATER_ELEMENT_INLINE_STYLES,
+    transition: pictureMoveTransition(),
     'object-fit': ui().videoFit,
     'object-position': currentObjectPosition(),
   };
@@ -526,8 +571,11 @@ function applyTheaterElementInlineStyles(element: HTMLElement): void {
 function applyTheaterPictureLayout(): void {
   const fit = ui().videoFit;
   const frame = currentPictureFrame();
-  const position = objectPositionForPicture(fit, ui().pictureAlign, frame);
-  document.documentElement.classList.toggle(
+  const position = objectPositionForPicture(fit, ui().pictureAlign, frame, picturePositionOptions());
+  const root = document.documentElement;
+  const previous = root.style.getPropertyValue('--theater-object-position');
+  if (previous !== '' && previous !== position && !prefersReducedMotion()) beginPictureMove();
+  root.classList.toggle(
     'theater-everywhere-picture-top',
     raisedCaptionsUseBand(position, horizontalLetterboxPx(frame))
   );
@@ -551,6 +599,19 @@ function applyTheaterVideoFit(mode: VideoFitMode = ui().videoFit): void {
 function applyPictureAlign(align: PictureAlign = ui().pictureAlign): void {
   uiStore.dispatch({ type: 'SET_PICTURE_ALIGN', value: align });
   applyTheaterPictureLayout();
+}
+
+function applyRaiseOnlyWithSubtitles(value: unknown): void {
+  const next = resolveRaiseOnlyWithSubtitles(value);
+  if (next === ui().raiseOnlyWithSubtitles) return;
+  uiStore.dispatch({ type: 'SET_RAISE_ONLY_WITH_SUBTITLES', value: next });
+  applyTheaterPictureLayout();
+}
+
+function applySubtitleLayout(on: boolean): void {
+  if (refs.subtitlesOn === on) return;
+  refs.subtitlesOn = on;
+  if (ui().theaterActive) applyTheaterPictureLayout();
 }
 
 function applyProviderFlags(next: MediaProviderFlags): void {
@@ -780,6 +841,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
       PICTURE_ALIGN_STORAGE_KEY,
+      RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
     ]);
@@ -793,6 +855,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
+        raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
       }
@@ -1924,6 +1987,12 @@ function exitTheaterMode(
   // Restore scrollbars
   document.body.classList.remove('theater-everywhere-body-active');
   document.documentElement.classList.remove('theater-everywhere-html-active');
+  if (pictureMoveTimer !== undefined) {
+    window.clearTimeout(pictureMoveTimer);
+    pictureMoveTimer = undefined;
+  }
+  refs.subtitlesOn = false;
+  document.documentElement.classList.remove('theater-everywhere-picture-moving');
   document.documentElement.classList.remove('theater-everywhere-picture-top');
   unmountTheaterStage();
   unmountDisneyTheaterStage();
@@ -2028,6 +2097,9 @@ export function bootstrapPlayerRuntime(): void {
       }
       if (changes[PICTURE_ALIGN_STORAGE_KEY]) {
         applyPictureAlign(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
+      }
+      if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
+        applyRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);
       }
       if (changes[CAPTION_STYLE_STORAGE_KEY]) {
         applyCaptionStyleToTheater(resolveCaptionStyle(changes[CAPTION_STYLE_STORAGE_KEY].newValue));

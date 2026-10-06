@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "La imagen sube y la banda negra de abajo queda para los subtítulos. Mejor para pantallas 16:10 y 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Arriba solo con subtítulos"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Con subtítulos la imagen queda arriba, y sin ellos queda centrada."
+  },
   "accentColorLabel": {
     "message": "Color de acento"
   },

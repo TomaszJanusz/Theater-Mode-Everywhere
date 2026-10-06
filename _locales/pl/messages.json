@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów 16:10 i 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "U góry tylko z napisami"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Z włączonymi napisami obraz jest u góry, a z wyłączonymi na środku."
+  },
   "accentColorLabel": {
     "message": "Kolor akcentu"
   },

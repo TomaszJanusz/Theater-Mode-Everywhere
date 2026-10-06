@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "A imagem sobe, e a faixa preta abaixo fica para as legendas. Melhor para telas 16:10 e 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "No topo só com legendas"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Com legendas a imagem fica no topo, e sem legendas fica centralizada."
+  },
   "accentColorLabel": {
     "message": "Cor de destaque"
   },

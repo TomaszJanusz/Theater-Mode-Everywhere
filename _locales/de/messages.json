@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "Das Bild rückt nach oben. Das schwarze Band darunter ist für Untertitel. Am besten für 16:10- und 4:3-Bildschirme."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Oben nur mit Untertiteln"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Mit Untertiteln liegt das Bild oben, ohne Untertitel bleibt es zentriert."
+  },
   "accentColorLabel": {
     "message": "Akzentfarbe"
   },

@@ -792,6 +792,7 @@ export function createControls(ctx: PlayerChromeContext) {
       scrubberTrack,
       t,
       onCaptionChange: updateCaptionDock,
+      onSubtitleLayoutChange: (on) => ctx.actions.applySubtitleLayout(on),
       onCaptionHud: showCaptionHud,
       onCaptionStyleChange: persistCaptionStyle,
       captionPreference: refs.captionPreferenceMap[captionPreferenceHost(window.location.hostname)] || null,
@@ -939,7 +940,7 @@ export function createControls(ctx: PlayerChromeContext) {
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
 
-    rightSec.append(settings.button, settings.panel);
+    rightSec.append(settings.container);
 
     const pinBtn = document.createElement('button');
     pinBtn.type = 'button';

@@ -56,6 +56,19 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   transition: none !important;
 }
 
+/* Only the picture anchor eases. Width, pin, and fit stay instant. */
+html.theater-everywhere-html-active .theater-everywhere-video-active,
+html.theater-everywhere-html-active [data-theater-everywhere] {
+  transition: object-position 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theater-everywhere-html-active .theater-everywhere-video-active,
+  html.theater-everywhere-html-active [data-theater-everywhere] {
+    transition: none !important;
+  }
+}
+
 /* Ancestor override to ensure overflow is visible and no new stacking contexts are created */
 .theater-everywhere-parent-active {
   position: relative !important;
@@ -179,6 +192,10 @@ html.theater-everywhere-netflix-stage .player-timedtext {
 
 html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
   bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
+}
+
+html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
+  transition: bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 /* Tencent's WASM stage. Hide chrome without display:none so the next-episode
@@ -1076,6 +1093,10 @@ html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions
   transition: bottom 0.18s ease !important;
 }
 
+html.theater-everywhere-picture-moving .ytp-caption-window-container {
+  transition: inset 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
 html.theater-everywhere-html-active .ytp-caption-window-container .caption-window,
 html.theater-everywhere-html-active .ytp-caption-window-bottom,
 html.theater-everywhere-html-active .ytp-caption-window-top {
@@ -1151,6 +1172,24 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
 }
 
 /* Labeled secondary actions; primary playback controls stay on the bar. */
+.theater-settings-container {
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+/* Gap above the gear. The menu itself clips overflow, so the bridge lives here. */
+.theater-settings-container::before {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 2000000000 !important;
+  inset-inline-end: 0 !important;
+  bottom: 100% !important;
+  width: 340px !important;
+  max-width: calc(100vw - 48px) !important;
+  height: 12px !important;
+}
+
 .theater-settings-menu {
   position: absolute !important;
   inset-inline-end: 0 !important;
@@ -1172,6 +1211,7 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   pointer-events: auto !important;
 }
 
+.theater-settings-container:hover:not(.is-suppressed) > .theater-settings-menu,
 .theater-settings-menu.visible { display: flex !important; }
 
 .theater-settings-row {
@@ -1820,6 +1860,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   display: block !important;
   width: 24px !important;
   height: 24px !important;
+  /* Strokes ignore text-shadow; match the title glyph shadow. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)) !important;
 }
 
 .theater-everywhere-title-hud {

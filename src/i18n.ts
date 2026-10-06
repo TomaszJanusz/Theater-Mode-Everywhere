@@ -49,6 +49,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   pictureAlignCenterDescription: 'Picture stays in the middle of the screen. Best\u00a0for\u00a016:9\u00a0screens.',
   pictureAlignTop: 'Raised',
   pictureAlignTopDescription: 'Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3\u00a0screens.',
+  pictureAlignSubtitlesOnlyTitle: 'Raised only with subtitles',
+  pictureAlignSubtitlesOnlyDescription: 'Use Raised when subtitles are on and Centered when they are off.',
   accentColorLabel: 'Accent color',
   accentColorSystem: 'System',
   accentColorTeal: 'Teal',

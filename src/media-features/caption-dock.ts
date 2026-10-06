@@ -143,3 +143,12 @@ export function computeCaptionDockBottom(input: {
   }
   return bottom;
 }
+
+export type CaptionDockMotion = 'moving' | 'lifted' | 'rest';
+
+/** Picture moves, control-bar lifts, and resting row changes each need their own ease. */
+export function captionDockMotion(lifted: boolean, pictureMoving: boolean): CaptionDockMotion {
+  if (pictureMoving) return 'moving';
+  if (lifted) return 'lifted';
+  return 'rest';
+}

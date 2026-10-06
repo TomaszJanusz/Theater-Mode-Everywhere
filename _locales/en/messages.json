@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3 screens."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Raised only with subtitles"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Use Raised when subtitles are on and Centered when they are off."
+  },
   "accentColorLabel": {
     "message": "Accent color"
   },

@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "Изображение поднимается вверх, а чёрная полоса под ним остаётся для субтитров. Лучше всего для экранов 16:10 и 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Сверху только с субтитрами"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "С субтитрами изображение сверху, без субтитров — по центру."
+  },
   "accentColorLabel": {
     "message": "Цвет акцента"
   },
