@@ -325,7 +325,8 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (placement.length) fail(`Toolbar actions were lost, duplicated or misplaced: ${JSON.stringify(placement)}`);
   const gear = page.locator('.player-settings-btn');
   const menu = page.locator('.theater-settings-menu');
-  await gear.click();
+  await gear.focus();
+  await gear.press('Enter');
   await menu.waitFor({ state: 'visible' });
   await page.mouse.move(640, 300);
   await waitForChrome(true, true, false);
@@ -531,6 +532,12 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (await menu.isVisible() || !await page.locator('.fullscreen-btn').evaluate(button => button.matches(':focus'))) {
     fail('Leaving the open gear toward fullscreen did not dismiss settings.');
   }
+  await gear.hover();
+  await menu.waitFor({ state: 'visible' });
+  await gear.click();
+  if (!await menu.isVisible()) fail('Clicking the settings gear toggled its menu closed.');
+  await page.mouse.move(640, 300);
+  await menu.waitFor({ state: 'hidden' });
   await gear.click();
   await page.locator('.cc-btn').click();
   if (await menu.isVisible()) fail('Captions did not dismiss player settings.');

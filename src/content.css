@@ -1126,6 +1126,24 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
 }
 
 /* Labeled secondary actions; primary playback controls stay on the bar. */
+.theater-settings-container {
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+/* Gap above the gear. The menu itself clips overflow, so the bridge lives here. */
+.theater-settings-container::before {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 2000000000 !important;
+  inset-inline-end: 0 !important;
+  bottom: 100% !important;
+  width: 340px !important;
+  max-width: calc(100vw - 48px) !important;
+  height: 12px !important;
+}
+
 .theater-settings-menu {
   position: absolute !important;
   inset-inline-end: 0 !important;
@@ -1147,6 +1165,7 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   pointer-events: auto !important;
 }
 
+.theater-settings-container:hover:not(.is-suppressed) > .theater-settings-menu,
 .theater-settings-menu.visible { display: flex !important; }
 
 .theater-settings-row {
