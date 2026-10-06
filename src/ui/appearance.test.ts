@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { raisedCaptionRestBottom } from '../media-features/caption-dock';
-import { horizontalLetterboxPx, objectPositionForPicture, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, type PictureFrame } from './appearance';
+import { effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
 
 const widescreen: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1200 };
 const matched: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1080 };
@@ -59,6 +59,28 @@ describe('picture align', () => {
     assert.equal(Math.round(besideTabs), 134);
     assert.equal(raisedCaptionRestBottom(besideTabs, 88, content.viewportHeight), 23);
     assert.equal(raisedCaptionRestBottom(horizontalLetterboxPx(widescreen), 88, widescreen.viewportHeight), 16);
+  });
+
+  it('keeps a raised picture centered until subtitles are on', () => {
+    const held = { raiseOnlyWithSubtitles: true, subtitlesOn: false };
+    const shown = { raiseOnlyWithSubtitles: true, subtitlesOn: true };
+    assert.equal(effectivePictureAlign('top', true, false), 'center');
+    assert.equal(effectivePictureAlign('top', true, true), 'top');
+    assert.equal(effectivePictureAlign('top', false, false), 'top');
+    assert.equal(effectivePictureAlign('center', true, true), 'center');
+    assert.equal(objectPositionForPicture('contain', 'top', widescreen, held), 'center center');
+    assert.equal(objectPositionForPicture('contain', 'top', widescreen, shown), 'center top');
+    assert.equal(objectPositionForPicture('contain', 'top', widescreen, { raiseOnlyWithSubtitles: false, subtitlesOn: false }), 'center top');
+    assert.equal(objectPositionForPicture('contain', 'center', widescreen, shown), 'center center');
+    assert.equal(objectPositionForPicture('cover', 'top', widescreen, shown), 'center center');
+    assert.equal(objectPositionForPicture('contain', 'top', undefined, held), 'center center');
+    assert.equal(objectPositionForPicture('contain', 'top', undefined, shown), 'center top');
+    const sliver: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1082 };
+    assert.equal(objectPositionForPicture('contain', 'top', sliver, shown), 'center center');
+    assert.equal(resolveRaiseOnlyWithSubtitles(true), true);
+    assert.equal(resolveRaiseOnlyWithSubtitles(false), false);
+    assert.equal(resolveRaiseOnlyWithSubtitles(undefined), false);
+    assert.equal(resolveRaiseOnlyWithSubtitles('true'), false);
   });
 
   it('falls back to centered alignment', () => {

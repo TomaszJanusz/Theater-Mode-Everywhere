@@ -139,6 +139,49 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.deepEqual(hud, ['loading', 'failed']);
   });
 
+  it('moves the picture only when subtitles are actually on', async () => {
+    const layout: boolean[] = [];
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const second: CaptionTrack = { ...SAMPLE_TRACK, id: 'pl', language: 'pl', label: 'Polish' };
+    const { controller } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK, second],
+      activateCaptionTrack: async (id) => {
+        if (id === 'en') await gate;
+        return id ? SAMPLE_CUES : [];
+      }
+    }, {
+      onSubtitleLayoutChange: (on) => layout.push(on)
+    });
+    await controller.refresh();
+    const pending = controller.activate('en');
+    await delay(20);
+    assert.deepEqual(layout, []);
+    release();
+    assert.equal(await pending, 'on');
+    assert.deepEqual(layout, [true]);
+    await controller.activate('pl');
+    assert.deepEqual(layout, [true]);
+    assert.equal(await controller.activate(null), 'off');
+    assert.deepEqual(layout, [true, false]);
+  });
+
+  it('clears the subtitle layout when the controller is disposed', async () => {
+    const layout: boolean[] = [];
+    const { controller } = createController({
+      listCaptionTracks: async () => [SAMPLE_TRACK],
+      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : [])
+    }, {
+      onSubtitleLayoutChange: (on) => layout.push(on)
+    });
+    await controller.refresh();
+    assert.equal(await controller.activate('en'), 'on');
+    controller.dispose();
+    assert.deepEqual(layout, [true, false]);
+  });
+
   it('turns host-managed captions on without overlay cues', async () => {
     const hostTrack: CaptionTrack = {
       id: 'twitch:host-cc',

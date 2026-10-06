@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "ترتفع الصورة إلى الأعلى، ويبقى الشريط الأسود تحتها للترجمات. الأنسب للشاشات 16:10 و4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "للأعلى فقط مع الترجمة"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "مع الترجمة تكون الصورة للأعلى، وبدونها تبقى في الوسط."
+  },
   "accentColorLabel": {
     "message": "لون الإبراز"
   },

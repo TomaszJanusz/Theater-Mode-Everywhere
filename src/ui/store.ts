@@ -16,6 +16,7 @@ export type PlayerUiState = {
   keepControlsVisible: boolean;
   videoFit: VideoFitMode;
   pictureAlign: PictureAlign;
+  raiseOnlyWithSubtitles: boolean;
   accentColor: AccentColorPreset;
   captionStyle: CaptionStyle;
   shortcuts: Shortcuts;
@@ -29,6 +30,7 @@ export type PlayerUiAction =
   | { type: 'SET_KEEP_CONTROLS_VISIBLE'; value: boolean }
   | { type: 'SET_VIDEO_FIT'; value: VideoFitMode }
   | { type: 'SET_PICTURE_ALIGN'; value: PictureAlign }
+  | { type: 'SET_RAISE_ONLY_WITH_SUBTITLES'; value: boolean }
   | { type: 'SET_ACCENT'; value: AccentColorPreset }
   | { type: 'SET_CAPTION_STYLE'; value: CaptionStyle }
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
@@ -40,6 +42,7 @@ const defaultState = (): PlayerUiState => ({
   keepControlsVisible: false,
   videoFit: DEFAULT_VIDEO_FIT,
   pictureAlign: DEFAULT_PICTURE_ALIGN,
+  raiseOnlyWithSubtitles: false,
   accentColor: DEFAULT_ACCENT_COLOR,
   captionStyle: resolveCaptionStyle(null),
   shortcuts: { ...defaultShortcuts }
@@ -53,6 +56,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     && left.keepControlsVisible === right.keepControlsVisible
     && left.videoFit === right.videoFit
     && left.pictureAlign === right.pictureAlign
+    && left.raiseOnlyWithSubtitles === right.raiseOnlyWithSubtitles
     && left.accentColor === right.accentColor
     && left.captionStyle === right.captionStyle
     && left.shortcuts === right.shortcuts
@@ -82,6 +86,9 @@ function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
       break;
     case 'SET_PICTURE_ALIGN':
       next = { ...state, pictureAlign: action.value };
+      break;
+    case 'SET_RAISE_ONLY_WITH_SUBTITLES':
+      next = { ...state, raiseOnlyWithSubtitles: action.value };
       break;
     case 'SET_ACCENT':
       next = { ...state, accentColor: action.value };

@@ -3,6 +3,7 @@ import {
   CAPTION_DOCK_RAISED_EDGE,
   CAPTION_DOCK_REST_BOTTOM,
   CAPTION_LINE_LIMIT_MIN,
+  captionDockMotion,
   computeCaptionDockBottom,
   raisedCaptionLineLimit,
   raisedCaptionRestBottom,
@@ -86,7 +87,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   let captionDockLifted = false;
-  const captionDockMotion = new WeakMap<HTMLElement, boolean>();
+  const captionDockMotionMode = new WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>();
 
   function updateCaptionDock(): void {
     if (!ctx.session.element) {
@@ -147,14 +148,23 @@ export function createToolbar(ctx: PlayerChromeContext) {
       ...(restBottom !== undefined ? { restBottom } : {})
     });
     const lifted = restBottom !== undefined ? bottom > restBottom : bottom > CAPTION_DOCK_REST_BOTTOM;
+    const pictureMoving = document.documentElement.classList.contains('theater-everywhere-picture-moving');
     // The bottom ease exists to clear the control bar. A row change at rest must
     // land in the same frame as the new height, or the block slides up or down.
-    const animateBottom = lifted || captionDockLifted;
-    if (overlay && captionDockMotion.get(overlay) !== animateBottom) {
-      if (animateBottom) overlay.style.removeProperty('transition');
-      else overlay.style.setProperty('transition', 'opacity 0.15s ease', 'important');
-      void overlay.offsetWidth;
-      captionDockMotion.set(overlay, animateBottom);
+    // A picture move is the exception: captions travel with the video.
+    const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
+    const dockOverlay = (overlay ?? ctx.queryPlayerUi('.theater-caption-overlay')) as HTMLElement | null;
+    if (dockOverlay && captionDockMotionMode.get(dockOverlay) !== motion) {
+      if (motion === 'moving') {
+        dockOverlay.style.setProperty(
+          'transition',
+          'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
+          'important'
+        );
+      } else if (motion === 'lifted') dockOverlay.style.removeProperty('transition');
+      else dockOverlay.style.setProperty('transition', 'opacity 0.15s ease', 'important');
+      void dockOverlay.offsetWidth;
+      captionDockMotionMode.set(dockOverlay, motion);
     }
     captionDockLifted = lifted;
     const nextBottom = `${bottom}px`;

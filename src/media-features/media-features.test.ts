@@ -6,6 +6,7 @@ import {
   CAPTION_DOCK_RAISED_CENTER_GAP,
   CAPTION_DOCK_RAISED_EDGE,
   CAPTION_DOCK_REST_BOTTOM,
+  captionDockMotion,
   raisedCaptionLineLimit,
   raisedCaptionRestBottom,
   raisedCaptionRowCount
@@ -1359,6 +1360,13 @@ https://captions.twitch.tv/en/635475444.vtt`;
 });
 
 describe('caption dock', () => {
+  it('keeps picture movement distinct from a control-bar lift', () => {
+    assert.equal(captionDockMotion(true, true), 'moving');
+    assert.equal(captionDockMotion(false, true), 'moving');
+    assert.equal(captionDockMotion(true, false), 'lifted');
+    assert.equal(captionDockMotion(false, false), 'rest');
+  });
+
   const viewport = { viewportWidth: 1280, viewportHeight: 800 };
   const captionSize = { width: 240, height: 44 };
 
