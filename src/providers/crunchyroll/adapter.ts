@@ -2,9 +2,11 @@ import { MAX_CRUNCHYROLL_BIF_BYTES, MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS, parseC
 import {
   CRUNCHYROLL_CAPTION_ACK_EVENT,
   CRUNCHYROLL_CAPTION_EVENT,
+  CRUNCHYROLL_CAPTION_ISSUED_EVENT,
   crunchyrollCaptionRequestDetail,
   crunchyrollCaptionRequestId,
-  parseCrunchyrollCaptionAck
+  parseCrunchyrollCaptionAck,
+  parseCrunchyrollCaptionIssued
 } from '../../media-features/parsers/crunchyroll';
 import { parseRokuBif, type DisneyBifSet } from '../../media-features/parsers/disney-page';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
@@ -113,24 +115,41 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   private previewBlob: string | null = null;
   private hostLift: { mediaId: string; route: string; trackId: string } | null = null;
   /**
-   * Host enables already sent to MAIN and not yet settled. A newer cue does not
-   * drop an older one: that enable may still land. This is not ownership.
+   * Host tracks whose enable() MAIN has called and whose acknowledgement has not
+   * confirmed ownership yet. A newer cue does not drop an older one: that enable
+   * may still land. Asking for a track that is already on does not add an entry.
    */
-  private pendingHosts: PendingHostTarget[] = [];
+  private issuedHosts: PendingHostTarget[] = [];
   /** RTE tracks to turn off after invalidate cleared the snapshot. Live ownership is checked in MAIN. */
   private hostOffTarget: HostCleanupTarget | null = null;
+  private listeningForIssued = false;
+  private readonly onCaptionIssued = (event: Event) => {
+    const issued = parseCrunchyrollCaptionIssued((event as CustomEvent<unknown>).detail);
+    if (!issued || !this.route || this.snapshot?.mediaId !== issued.mediaId || this.route !== issued.route) return;
+    this.rememberIssuedHost({ mediaId: issued.mediaId, route: issued.route, trackId: issued.trackId });
+  };
 
-  private rememberPendingHost(target: PendingHostTarget): void {
-    this.pendingHosts = this.pendingHosts.filter((item) => !(
-      item.mediaId === target.mediaId && item.route === target.route && item.trackId === target.trackId
-    ));
-    this.pendingHosts.push(target);
-    const extra = this.pendingHosts.length - MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS;
-    if (extra > 0) this.pendingHosts.splice(0, extra);
+  constructor() {
+    this.listenForIssued();
   }
 
-  private forgetPendingHost(target: PendingHostTarget): void {
-    this.pendingHosts = this.pendingHosts.filter((item) => item !== target);
+  private listenForIssued(): void {
+    if (this.listeningForIssued) return;
+    this.listeningForIssued = true;
+    window.addEventListener(CRUNCHYROLL_CAPTION_ISSUED_EVENT, this.onCaptionIssued);
+  }
+
+  private rememberIssuedHost(target: PendingHostTarget): void {
+    this.issuedHosts = this.issuedHosts.filter((item) => !(
+      item.mediaId === target.mediaId && item.route === target.route && item.trackId === target.trackId
+    ));
+    this.issuedHosts.push(target);
+    const extra = this.issuedHosts.length - MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS;
+    if (extra > 0) this.issuedHosts.splice(0, extra);
+  }
+
+  private clearIssuedHosts(mediaId: string, route: string): void {
+    this.issuedHosts = this.issuedHosts.filter((item) => item.mediaId !== mediaId || item.route !== route);
   }
 
   private hostLiftListed(snapshot: CrunchyrollSnapshot | null): boolean {
@@ -404,6 +423,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   }
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    this.listenForIssued();
     this.cueGeneration += 1;
     const cue = this.cueGeneration;
     const loadGeneration = this.loadGeneration;
@@ -449,6 +469,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
           && crunchyrollPageMediaId() === target.mediaId
           && crunchyrollPageRoute() === target.route;
         this.hostLift = null;
+        this.clearIssuedHosts(target.mediaId, target.route);
         if (!still) {
           releaseCrunchyrollHostCaptionSurface();
           return { status: 'off', delivery: 'none', cues: [] };
@@ -473,6 +494,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
         return failed();
       }
       this.hostLift = null;
+      this.clearIssuedHosts(target.mediaId, target.route);
       releaseCrunchyrollHostCaptionSurface();
       return { status: 'off', delivery: 'none', cues: [] };
     }
@@ -483,23 +505,36 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     const host = snapshot.hostTracks.find((item) => `crunchyroll-host:${snapshot.mediaId}:${item.id}` === id);
     if (host) {
       const dispatched = { mediaId: snapshot.mediaId, route: this.route, trackId: host.id };
-      this.rememberPendingHost(dispatched);
-      let ok = false;
+      let outcome = { ok: false, kept: false };
       try {
-        ok = (await requestCrunchyrollHostCaption(dispatched.mediaId, dispatched.route, dispatched.trackId)).ok;
+        outcome = await requestCrunchyrollHostCaption(dispatched.mediaId, dispatched.route, dispatched.trackId);
       } catch {
-        ok = false;
+        outcome = { ok: false, kept: false };
       }
-      // A newer cue, or dispose, may already be compensating this enable. Do not drop it here.
+      // A newer cue, or dispose, may already be compensating an enable that landed. Do not drop it here.
       if (cue !== this.cueGeneration) return failed();
       const current = this.matching()?.mediaId === snapshot.mediaId && crunchyrollPageRoute() === dispatched.route;
-      if (!ok || !current) {
-        this.forgetPendingHost(dispatched);
+      if (!outcome.ok || !current) {
         await this.restoreHostSurface(cue);
         return failed();
       }
-      this.pendingHosts = this.pendingHosts.filter((item) => item.mediaId !== dispatched.mediaId || item.route !== dispatched.route);
-      this.hostLift = { mediaId: snapshot.mediaId, route: dispatched.route, trackId: host.id };
+      this.clearIssuedHosts(dispatched.mediaId, dispatched.route);
+      const alreadyOwned = Boolean(
+        this.hostLift
+        && this.hostLift.mediaId === snapshot.mediaId
+        && this.hostLift.route === dispatched.route
+        && this.hostLift.trackId === host.id
+      );
+      // A no-op On reports active and lifts, but does not adopt a track the player already had on.
+      // Repeating On for a track RTE enabled keeps that ownership.
+      if (outcome.kept && !alreadyOwned) {
+        this.hostLift = null;
+        if (this.snapshot?.mediaId === snapshot.mediaId) {
+          this.snapshot = { ...this.snapshot, hostRenderer: 'active' };
+        }
+      } else {
+        this.hostLift = { mediaId: snapshot.mediaId, route: dispatched.route, trackId: host.id };
+      }
       retainCrunchyrollHostCaptionSurface();
       return { status: 'active', delivery: 'host', cues: [] };
     }
@@ -614,16 +649,16 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   }
 
   /**
-   * Fold every unsettled host enable and a confirmed lift into one cleanup target.
-   * A newer armed target replaces this one. A same-page reload clears it.
-   * An invalidate that finds neither keeps a target armed earlier.
+   * Fold every enable() MAIN has called, plus a confirmed lift, into one cleanup target.
+   * A request that has not called enable is not ownership, even if it is already queued.
+   * A same-page reload clears this target. An invalidate that finds neither keeps one armed earlier.
    */
   private armHostCleanup(options?: { preserveHostLift?: boolean }): void {
-    const pending = this.pendingHosts.splice(0, this.pendingHosts.length);
     if (options?.preserveHostLift) {
       this.hostOffTarget = null;
       return;
     }
+    const issued = this.issuedHosts.splice(0, this.issuedHosts.length);
     const snapshot = this.snapshot;
     const route = this.route;
     if (!snapshot || snapshot.rendition === 'hardsub' || !route) return;
@@ -631,8 +666,8 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     const add = (id: string) => {
       if (!ids.includes(id) && ids.length < MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) ids.push(id);
     };
-    for (let index = pending.length - 1; index >= 0; index -= 1) {
-      const item = pending[index];
+    for (let index = issued.length - 1; index >= 0; index -= 1) {
+      const item = issued[index];
       if (item.mediaId === snapshot.mediaId && item.route === route) add(item.trackId);
     }
     if (this.hostLift && this.hostLiftListed(snapshot)) add(this.hostLift.trackId);
@@ -642,6 +677,10 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
 
   dispose(): void {
     this.invalidate();
+    if (this.listeningForIssued) {
+      window.removeEventListener(CRUNCHYROLL_CAPTION_ISSUED_EVENT, this.onCaptionIssued);
+      this.listeningForIssued = false;
+    }
     const target = this.hostOffTarget;
     this.hostOffTarget = null;
     if (!target) return;

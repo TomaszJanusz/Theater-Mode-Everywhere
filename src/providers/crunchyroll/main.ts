@@ -3,8 +3,10 @@ import { crunchyrollCdnFile, isCrunchyrollBifFileUrl } from '../../media-feature
 import {
   CRUNCHYROLL_CAPTION_ACK_EVENT,
   CRUNCHYROLL_CAPTION_EVENT,
+  CRUNCHYROLL_CAPTION_ISSUED_EVENT,
   classifyCrunchyrollManifest,
   crunchyrollCaptionAckDetail,
+  crunchyrollCaptionIssuedDetail,
   crunchyrollContentTitle,
   crunchyrollDashPath,
   crunchyrollHostDeliveryTracks,
@@ -172,6 +174,7 @@ function clearHarvest(dropTitles: boolean): void {
   // Retire in-flight tickets. The next URL gets a new id, so an older body cannot match it.
   bifIntent += 1;
   bifIntentKey = '';
+  clearIssuedHostEnables();
   revokeNow(state?.bifBlobUrl);
   state = null;
   if (dropTitles) {
@@ -882,6 +885,60 @@ function readSubtitleList(session: PlayerSession): SubtitleRead {
   return { status: 'ready', tracks, forcedEnabled };
 }
 
+type IssuedHostEnable = {
+  mediaId: string;
+  route: string;
+  trackId: string;
+  /** Disable was sent. Drop the entry only after a later read shows the track off. */
+  disarm: boolean;
+};
+
+/** Enables this MAIN session actually called. A requested On that never called enable is not here. */
+const issuedHostEnables: IssuedHostEnable[] = [];
+
+function clearIssuedHostEnables(): void {
+  issuedHostEnables.length = 0;
+}
+
+function hasIssuedHostEnable(mediaId: string, route: string, trackId: string): boolean {
+  return issuedHostEnables.some((item) => item.mediaId === mediaId && item.route === route && item.trackId === trackId);
+}
+
+function rememberIssuedHostEnable(mediaId: string, route: string, trackId: string): void {
+  const existing = issuedHostEnables.find((item) => item.mediaId === mediaId && item.route === route && item.trackId === trackId);
+  if (existing) {
+    existing.disarm = false;
+    return;
+  }
+  issuedHostEnables.push({ mediaId, route, trackId, disarm: false });
+  const extra = issuedHostEnables.length - MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS;
+  if (extra > 0) issuedHostEnables.splice(0, extra);
+}
+
+function forgetIssuedHostEnable(mediaId: string, route: string, trackId: string): void {
+  const index = issuedHostEnables.findIndex((item) => item.mediaId === mediaId && item.route === route && item.trackId === trackId);
+  if (index >= 0) issuedHostEnables.splice(index, 1);
+}
+
+function disarmIssuedHostEnable(mediaId: string, route: string, trackId: string): void {
+  const existing = issuedHostEnables.find((item) => item.mediaId === mediaId && item.route === route && item.trackId === trackId);
+  if (existing) existing.disarm = true;
+}
+
+function syncIssuedHostEnables(mediaId: string, route: string, tracks: ListedHostTrack[]): void {
+  for (let index = issuedHostEnables.length - 1; index >= 0; index -= 1) {
+    const item = issuedHostEnables[index];
+    if (item.mediaId !== mediaId || item.route !== route || !item.disarm) continue;
+    const track = tracks.find((row) => row.id === item.trackId);
+    // disable() can return before list() changes. An early enabled read must not
+    // clear disarm, or the later off read leaves this entry and a manual reselect is adopted.
+    // While the track stays on, the entry keeps ownership for a failed or timed-out disable.
+    // A later enable() clears disarm.
+    if (!track || track.enabled) continue;
+    issuedHostEnables.splice(index, 1);
+  }
+}
+
 function hostCaptionCurrent(request: CrunchyrollCaptionRequest, generation: number): boolean {
   return generation === hostCaptionGeneration
     && pageMatches(request.mediaId)
@@ -919,9 +976,10 @@ type HostCaptionApplyResult = { ok: boolean; kept: boolean };
 
 type OwnedLive = { status: 'unreadable' | 'off' | 'other' } | { status: 'owned'; id: string };
 
-function selectableOwnedId(session: PlayerSession, ids: readonly string[]): OwnedLive {
+function selectableOwnedId(session: PlayerSession, mediaId: string, route: string, ids: readonly string[]): OwnedLive {
   const read = readSubtitleList(session);
   if (read.status !== 'ready') return { status: 'unreadable' };
+  syncIssuedHostEnables(mediaId, route, read.tracks);
   const enabled = read.tracks.filter((track) => track.enabled);
   if (enabled.length === 0) return { status: 'off' };
   if (enabled.length !== 1 || !ids.includes(enabled[0].id)) return { status: 'other' };
@@ -964,7 +1022,7 @@ async function applyOwnedCaptionOff(
     if (!session) return { ok: hostCaptionCurrent(request, generation), kept: false };
     if (!session.controllable) return { ok: false, kept: false };
     if (session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
-    const selected = selectableOwnedId(session, ids);
+    const selected = selectableOwnedId(session, request.mediaId, request.route, ids);
     if (selected.status === 'unreadable') return { ok: false, kept: false };
     if (selected.status === 'off') return settled(false);
     if (selected.status === 'other') return settled(true);
@@ -972,6 +1030,7 @@ async function applyOwnedCaptionOff(
     if (attempted.has(selected.id)) return { ok: false, kept: false };
     attempted.add(selected.id);
     const disabling = selected.id;
+    disarmIssuedHostEnable(request.mediaId, request.route, disabling);
     try {
       await settlePlayerCall(session.disable(disabling), deadline);
     } catch {
@@ -983,7 +1042,7 @@ async function applyOwnedCaptionOff(
       if (!live) return { ok: hostCaptionCurrent(request, generation), kept: false };
       if (!live.controllable) return { ok: false, kept: false };
       if (live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
-      const now = selectableOwnedId(live, ids);
+      const now = selectableOwnedId(live, request.mediaId, request.route, ids);
       if (now.status === 'unreadable') return { ok: false, kept: false };
       if (now.status === 'off') return settled(false);
       if (now.status === 'other') return settled(true);
@@ -1022,6 +1081,7 @@ async function applyUnscopedHostCaption(
   }
   const initial = readSubtitleList(session);
   if (initial.status !== 'ready') return { ok: false };
+  syncIssuedHostEnables(request.mediaId, request.route, initial.tracks);
   if (request.trackId !== null) {
     const selected = initial.tracks.find((track) => track.id === request.trackId);
     const file = selected ? crunchyrollCdnFile(selected.url) : null;
@@ -1033,12 +1093,14 @@ async function applyUnscopedHostCaption(
       for (const track of initial.tracks) {
         if (!hostCaptionCurrent(request, generation)) return { ok: false };
         if (!track.enabled) continue;
+        disarmIssuedHostEnable(request.mediaId, request.route, track.id);
         await settlePlayerCall(session.disable(track.id), deadline);
       }
     } else {
       for (const track of initial.tracks) {
         if (!hostCaptionCurrent(request, generation)) return { ok: false };
         if (track.id === request.trackId || !track.enabled) continue;
+        disarmIssuedHostEnable(request.mediaId, request.route, track.id);
         await settlePlayerCall(session.disable(track.id), deadline);
       }
       if (!hostCaptionCurrent(request, generation)) return { ok: false };
@@ -1046,8 +1108,24 @@ async function applyUnscopedHostCaption(
       if (!live || !live.controllable || live.rendition === 'hardsub') return { ok: false };
       const beforeEnable = readSubtitleList(live);
       if (beforeEnable.status !== 'ready') return { ok: false };
+      syncIssuedHostEnables(request.mediaId, request.route, beforeEnable.tracks);
       if (!hostTrackAccepted(beforeEnable, live, request.trackId)) {
-        await settlePlayerCall(live.enable(request.trackId), deadline);
+        const alreadyIssued = hasIssuedHostEnable(request.mediaId, request.route, request.trackId);
+        rememberIssuedHostEnable(request.mediaId, request.route, request.trackId);
+        // Tell the adapter before enable() can suspend, so dispose can name this track and not a later queued id.
+        window.dispatchEvent(new CustomEvent(CRUNCHYROLL_CAPTION_ISSUED_EVENT, {
+          detail: crunchyrollCaptionIssuedDetail({
+            mediaId: request.mediaId,
+            route: request.route,
+            trackId: request.trackId
+          })
+        }));
+        try {
+          await settlePlayerCall(live.enable(request.trackId), deadline);
+        } catch (error) {
+          if (!alreadyIssued) forgetIssuedHostEnable(request.mediaId, request.route, request.trackId);
+          throw error;
+        }
       }
     }
   } catch {
@@ -1070,6 +1148,7 @@ async function applyUnscopedHostCaption(
     }
     const again = readSubtitleList(live);
     if (again.status !== 'ready') return { ok: false };
+    syncIssuedHostEnables(request.mediaId, request.route, again.tracks);
     if (hostTrackAccepted(again, live, request.trackId)) return settled(again);
     const remaining = deadline - Date.now();
     if (remaining <= 0) return { ok: false };
@@ -1085,7 +1164,12 @@ export async function applyCrunchyrollHostCaption(
     return applyOwnedCaptionOff(request, generation);
   }
   const result = await applyUnscopedHostCaption(request, generation);
-  if (!result.ok || request.trackId !== null || !hostCaptionCurrent(request, generation)) return { ok: result.ok, kept: false };
+  if (!result.ok || !hostCaptionCurrent(request, generation)) return { ok: false, kept: false };
+  if (request.trackId !== null) {
+    // kept means the player was already showing this track and RTE did not enable it.
+    // A track this session enabled stays owned when a later On finds it still on.
+    return { ok: true, kept: !hasIssuedHostEnable(request.mediaId, request.route, request.trackId) };
+  }
   const session = readPlayerSession(request.mediaId);
   // Selectable tracks are off. A forced row from that same read can still be showing.
   const kept = Boolean(session && session.controllable && session.rendition !== 'hardsub' && result.forcedEnabled);

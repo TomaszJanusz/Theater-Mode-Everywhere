@@ -62,6 +62,8 @@ const HOST_PATH = new RegExp(`^/playback/v2/manifest/${MEDIA}/static/majin/${ASS
 const WINDOW_LABELS: Record<string, string> = { intro: 'Intro', credits: 'Credits' };
 
 export const CRUNCHYROLL_CAPTION_EVENT = 'theater-everywhere-crunchyroll-caption';
+/** MAIN has called enable for this host track. This is not an acknowledgement that it finished. */
+export const CRUNCHYROLL_CAPTION_ISSUED_EVENT = 'theater-everywhere-crunchyroll-caption-issued';
 export const CRUNCHYROLL_CAPTION_ACK_EVENT = 'theater-everywhere-crunchyroll-caption-ack';
 
 export type CrunchyrollRendition = 'unknown' | 'hardsub' | 'clean' | 'host';
@@ -130,7 +132,11 @@ export type CrunchyrollCaptionAck = {
   mediaId: string;
   route: string;
   trackId: string | null;
-  /** Automatic Off left a different host track enabled. */
+  /**
+   * A host caption is showing that this request did not take over.
+   * Off left a forced row or a different track. On found the requested track
+   * already enabled without this session having turned it on.
+   */
   kept?: boolean;
 };
 
@@ -558,6 +564,26 @@ export function parseCrunchyrollCaptionAck(detail: unknown): CrunchyrollCaptionA
   if (!request || typeof record.ok !== 'boolean') return null;
   if ('kept' in record && typeof record.kept !== 'boolean') return null;
   return { ...request, ok: record.ok, ...(record.kept === true ? { kept: true } : {}) };
+}
+
+export function crunchyrollCaptionIssuedDetail(input: { mediaId: string; route: string; trackId: string }): string {
+  return JSON.stringify({ mediaId: input.mediaId, route: input.route, trackId: input.trackId });
+}
+
+export function parseCrunchyrollCaptionIssued(detail: unknown): { mediaId: string; route: string; trackId: string } | null {
+  if (typeof detail !== 'string' || detail.length > 500) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(detail);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  const mediaId = crunchyrollMediaId(record.mediaId);
+  if (!mediaId || typeof record.route !== 'string' || record.route.length < 1 || record.route.length > 400) return null;
+  if (typeof record.trackId !== 'string' || !HOST_TRACK_ID.test(record.trackId)) return null;
+  return { mediaId, route: record.route, trackId: record.trackId };
 }
 
 export function parseCrunchyrollCaptionBody(body: string, format: string): CaptionCue[] {
