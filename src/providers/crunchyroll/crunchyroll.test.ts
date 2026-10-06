@@ -1213,6 +1213,110 @@ describe('Crunchyroll RTE', () => {
     }
   });
 
+  it('accepts skip metadata after a same-media route change and rejects a stale session', async () => {
+    const page = installPage(`/watch/${MEDIA}`);
+    const realNow = Date.now;
+    let now = 1_700_000_000_000;
+    Date.now = () => now;
+    const calls: string[] = [];
+    const pending: Array<{ url: string; resolve: (response: Response) => void }> = [];
+    globalThis.fetch = ((input: unknown) => {
+      const url = String(input);
+      if (!url.includes('skip-events')) return Promise.resolve(new Response('', { status: 404 }));
+      calls.push(url);
+      return new Promise((resolve) => pending.push({ url, resolve }));
+    }) as typeof fetch;
+    const finish = (index: number, body: string) => {
+      pending[index].resolve(streamedResponse(new TextEncoder().encode(body), {
+        url: pending[index].url,
+        contentLength: null
+      }));
+    };
+    try {
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0], SKIP);
+      page.location.pathname = `/watch/${MEDIA}/nostalgic-memories-accompany-pain`;
+      page.location.search = '?from=series';
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 1);
+      finish(0, JSON.stringify(skipDocument()));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.chapters.length, 2);
+      assert.equal(calls.length, 1);
+
+      page.location.pathname = `/watch/${MEDIA}`;
+      page.location.search = '';
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 2);
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      finish(1, JSON.stringify(skipDocument()));
+      await flush();
+      await flush();
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 3);
+      assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
+      page.location.pathname = `/watch/${MEDIA}/07-ghost-episode-2`;
+      page.location.search = '?resume=1';
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 3);
+      finish(2, JSON.stringify({ mediaId: MEDIA }));
+      await flush();
+      await flush();
+      assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 3);
+
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      page.location.pathname = `/watch/${MEDIA}`;
+      page.location.search = '';
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 4);
+      assert.equal(calls[3], SKIP);
+      page.location.pathname = `/watch/${OTHER}/next`;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 5);
+      assert.equal(calls[4], SKIP_OTHER);
+      finish(3, JSON.stringify(skipDocument()));
+      await flush();
+      await flush();
+      const switched = readCrunchyrollSnapshot();
+      assert.equal(switched?.mediaId, OTHER);
+      assert.deepEqual(switched?.chapters, []);
+      finish(4, '{');
+      await flush();
+      await flush();
+      assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 5);
+      now += CRUNCHYROLL_SKIP_RETRY_MS;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 6);
+      assert.equal(calls[5], SKIP_OTHER);
+    } finally {
+      Date.now = realNow;
+      page.restore();
+    }
+  });
+
   it('uses the replacement BIF when the blob URL changes during an older read', async () => {
     const page = installPage();
     const assetB = 'ffffeeeeffffeeeeffffeeee';
@@ -3371,6 +3475,185 @@ describe('Crunchyroll RTE', () => {
       noteCrunchyrollManifest(CLEAN_URL);
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
       await publish(replacement, rokuBif([0, 6], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-4');
+    } finally {
+      urlApi.createObjectURL = oldCreate;
+      urlApi.revokeObjectURL = oldRevoke;
+      page.restore();
+    }
+  });
+
+  it('retires an in-flight caption request when the session is cleared and still accepts a new one', async () => {
+    const route = `/watch/${MODERN_MEDIA}/the-journeys-end`;
+    const page = installPage(route);
+    const tracks = [
+      { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: true, url: VTT_SIGNED },
+      { id: 'caption-ja-JP', lang: 'ja-JP', label: 'Japanese', kind: 'subtitle', enabled: false, url: VTT_JA },
+      { id: 'caption-de-DE', lang: 'de-DE', label: 'German', kind: 'subtitle', enabled: false, url: VTT_DE }
+    ];
+    const calls: string[] = [];
+    let release = () => {};
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_EVENT, handleCrunchyrollCaptionEvent as EventListener);
+    try {
+      usePlayer(page.doc, MODERN, {
+        list: () => tracks.map((track) => ({ ...track })),
+        enable(id: string) {
+          calls.push(`enable:${id}`);
+          tracks.find((track) => track.id === id)!.enabled = true;
+        },
+        disable(id: string) {
+          calls.push(`disable:${id}`);
+          return new Promise<void>((resolve) => {
+            release = () => {
+              tracks.find((track) => track.id === id)!.enabled = false;
+              resolve();
+            };
+          });
+        }
+      });
+      readCrunchyrollSnapshot();
+      const awaited = requestCrunchyrollHostCaption(MODERN_MEDIA, route, 'caption-ja-JP');
+      await flush();
+      assert.deepEqual(calls, ['disable:caption-en-US']);
+      const queued = requestCrunchyrollHostCaption(MODERN_MEDIA, route, 'caption-de-DE');
+      await flush();
+      assert.deepEqual(calls, ['disable:caption-en-US']);
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      release();
+      assert.equal((await awaited).ok, false);
+      assert.equal((await queued).ok, false);
+      assert.deepEqual(calls, ['disable:caption-en-US']);
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(tracks[1].enabled, false);
+      assert.equal(tracks[2].enabled, false);
+      const again = await requestCrunchyrollHostCaption(MODERN_MEDIA, route, 'caption-ja-JP');
+      assert.equal(again.ok, true);
+      assert.deepEqual(calls, ['disable:caption-en-US', 'enable:caption-ja-JP']);
+      assert.equal(tracks[1].enabled, true);
+    } finally { release(); page.restore(); }
+  });
+
+  it('keeps the latest BIF when playback reselects an in-flight or current URL', async () => {
+    const page = installPage();
+    const urlApi = URL as unknown as { createObjectURL?: (obj: Blob) => string; revokeObjectURL?: (url: string) => void };
+    const oldCreate = urlApi.createObjectURL;
+    const oldRevoke = urlApi.revokeObjectURL;
+    let blobCount = 0;
+    urlApi.createObjectURL = () => `blob:crunchyroll-bif-${++blobCount}`;
+    urlApi.revokeObjectURL = () => {};
+    const bifB = BIF_SIGNED.replace('1789659236', '1789659999');
+    const calls: string[] = [];
+    const pending = new Map<string, Array<(response: Response) => void>>();
+    globalThis.fetch = ((input: unknown) => {
+      const url = String(input);
+      calls.push(url);
+      return new Promise<Response>((resolve) => {
+        const queue = pending.get(url) || [];
+        queue.push(resolve);
+        pending.set(url, queue);
+      });
+    }) as typeof fetch;
+    const release = async (url: string, bytes: ArrayBuffer) => {
+      const resolve = pending.get(url)?.shift();
+      assert.ok(resolve);
+      resolve(streamedResponse(new Uint8Array(bytes), { url, contentLength: null }));
+      await flush();
+      await flush();
+    };
+    const hold = (url: string, bytes: ArrayBuffer) => {
+      let releaseBody = () => {};
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          releaseBody = () => {
+            controller.enqueue(new Uint8Array(bytes));
+            controller.close();
+          };
+        }
+      });
+      return {
+        response: { ok: true, url, headers: { get: () => null }, body: stream } as unknown as Response,
+        release: () => releaseBody()
+      };
+    };
+    try {
+      noteCrunchyrollManifest(CLEAN_URL);
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, 1);
+      const passiveB = hold(bifB, rokuBif([0, 50], 1000));
+      captureCrunchyrollNetworkResponse(bifB, passiveB.response);
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, 1);
+      passiveB.release();
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      await release(BIF_SIGNED, rokuBif([0, 1]));
+      const currentA = readCrunchyrollSnapshot()?.bifBlobUrl;
+      assert.equal(currentA, 'blob:crunchyroll-bif-1');
+
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifB }));
+      await flush();
+      assert.equal(calls.filter((url) => url === bifB).length, 1);
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, 1);
+      await release(bifB, rokuBif([0, 80], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, currentA);
+
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      noteCrunchyrollManifest(CLEAN_URL);
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifB }));
+      await flush();
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, 3);
+      await release(bifB, rokuBif([0, 3], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      await release(BIF_SIGNED, rokuBif([0, 4]));
+      const replaced = readCrunchyrollSnapshot()?.bifBlobUrl;
+      assert.equal(replaced, 'blob:crunchyroll-bif-2');
+      await release(BIF_SIGNED, rokuBif([0, 5]));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, replaced);
+
+      const staleSession = calls.filter((url) => url === BIF_SIGNED).length;
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifB }));
+      await flush();
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      noteCrunchyrollManifest(CLEAN_URL);
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifB }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, staleSession);
+      assert.equal(calls.filter((url) => url === bifB).length, 4);
+      await release(bifB, rokuBif([0, 6], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      await release(bifB, rokuBif([0, 7], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-3');
+
+      const keptRoute = readCrunchyrollSnapshot()?.bifBlobUrl;
+      const beforeRoute = blobCount;
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      page.location.search = '?other-route=1';
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      assert.equal(calls.filter((url) => url === BIF_SIGNED).length, staleSession + 1);
+      await release(BIF_SIGNED, rokuBif([0, 8]));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, keptRoute);
+      assert.equal(blobCount, beforeRoute);
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      await release(BIF_SIGNED, rokuBif([0, 9]));
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-4');
     } finally {
       urlApi.createObjectURL = oldCreate;

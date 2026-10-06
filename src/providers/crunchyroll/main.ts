@@ -165,6 +165,9 @@ function revokeNow(blobUrl?: string): void {
 function clearHarvest(dropTitles: boolean): void {
   const had = Boolean(state) || publishedKey !== '';
   sessionGeneration += 1;
+  // A queued or in-flight caption request captured the old generation. Retire it
+  // so Off/On cannot let that request enable a track or ACK the new session.
+  hostCaptionGeneration += 1;
   skipAttempt += 1;
   skipRequestedFor = null;
   skipRetryMedia = null;
@@ -514,14 +517,14 @@ function noteSkipFailure(mediaId: string, generation: number, attempt: number): 
  * A transport failure or a body that does not parse is not, but the next probe
  * waits out the retry interval instead of requesting on every snapshot read.
  * A completion from an older session does not clear the marker now in flight.
+ * Skip data is for the episode, so a same-media slug or query change still applies.
  */
 function acceptSkipDocument(
   finalUrl: string,
   text: string,
   mediaId: string,
   generation: number,
-  attempt: number,
-  route: string
+  attempt: number
 ): boolean {
   const ref = crunchyrollMetadataRef(finalUrl);
   if (!ref || ref.kind !== 'skip' || ref.mediaId !== mediaId) return false;
@@ -536,7 +539,7 @@ function acceptSkipDocument(
   }
   if (parseCrunchyrollSkipEvents(data, mediaId) === null) return false;
   if (generation !== sessionGeneration || attempt !== skipAttempt) return false;
-  if (!pageMatches(mediaId) || crunchyrollPageRoute() !== route) return false;
+  if (!pageMatches(mediaId)) return false;
   harvestCrunchyrollData(finalUrl, data);
   return true;
 }
@@ -546,7 +549,6 @@ function requestSkip(mediaId: string): void {
   if (skipRetryMedia === mediaId && Date.now() < skipRetryAt) return;
   const generation = sessionGeneration;
   const attempt = ++skipAttempt;
-  const route = crunchyrollPageRoute();
   skipRequestedFor = mediaId;
   const url = `https://static.crunchyroll.com/skip-events/production/${mediaId}.json`;
   void loadCrunchyrollUrl(url, CRUNCHYROLL_SKIP_TIMEOUT_MS, (finalUrl) => {
@@ -557,8 +559,7 @@ function requestSkip(mediaId: string): void {
     const applied = Boolean(
       loaded?.text
       && pageMatches(mediaId)
-      && crunchyrollPageRoute() === route
-      && acceptSkipDocument(loaded.finalUrl, loaded.text, mediaId, generation, attempt, route)
+      && acceptSkipDocument(loaded.finalUrl, loaded.text, mediaId, generation, attempt)
     );
     if (generation !== sessionGeneration || attempt !== skipAttempt) return;
     if (applied) {
@@ -626,18 +627,26 @@ function flushPendingBif(): void {
 
 function requestBif(mediaId: string, url: string): void {
   const file = crunchyrollCdnFile(url);
-  if (!file || !isCrunchyrollBifFileUrl(url, file.assetId) || bifInflight === url || state?.bifUrl === url) return;
+  if (!file || !isCrunchyrollBifFileUrl(url, file.assetId)) return;
   if (!pageMatches(mediaId)) return;
+  // Arm before dedup. Selecting this URL again while its read is running, or while
+  // it is already showing, must retire a different URL that became the intent later.
+  // The same media and URL keep one ticket, so this does not invalidate that read.
+  const intent = armBifIntent(mediaId, url);
+  if (bifInflight === url || state?.bifUrl === url) return;
   bifInflight = url;
   const generation = sessionGeneration;
   const route = crunchyrollPageRoute();
-  const intent = armBifIntent(mediaId, url);
   void loadCrunchyrollUrl(url, CRUNCHYROLL_BIF_TIMEOUT_MS, (finalUrl) => {
     return isCrunchyrollBifFileUrl(finalUrl, file.assetId);
   }, 'buffer', MAX_CRUNCHYROLL_BIF_BYTES).then((loaded) => {
     if (bifInflight === url) bifInflight = null;
     if (!loaded?.buffer) return;
-    tryCommitBif(loaded.buffer, loaded.finalUrl, generation, mediaId, route, intent);
+    // A later selection of this same URL does not start a second read. Commit the
+    // body already in flight when the URL is still latest. Its captured route and
+    // session still have to match, so another intent for this URL cannot publish it.
+    const ticket = bifIntentKey === `${mediaId}\0${url}` ? bifIntent : intent;
+    tryCommitBif(loaded.buffer, loaded.finalUrl, generation, mediaId, route, ticket);
   });
 }
 
@@ -692,7 +701,9 @@ export function harvestCrunchyrollData(url: string, data: unknown): void {
   current.softTracks = playback.softTracks;
   current.burnedHint = playback.burnedHint;
   for (const assetId of playback.assetIds) noteAsset(current, assetId);
-  if (playback.bifUrl && playback.bifUrl !== current.bifUrl) requestBif(ref.mediaId, playback.bifUrl);
+  // The current URL is included. requestBif skips a duplicate read, but a refresh
+  // still has to become the latest intent so an older in-flight URL cannot replace it.
+  if (playback.bifUrl) requestBif(ref.mediaId, playback.bifUrl);
   publish();
   flushPendingBif();
 }
