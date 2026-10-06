@@ -662,7 +662,7 @@
     "message": "Intégration Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importe le titre de l’épisode, les sous-titres et les miniatures de la chronologie depuis les pages d’épisodes bilibili.tv lorsqu’ils sont disponibles. L’épisode suivant utilise le bouton suivant du lecteur. Cette intégration n’importe pas les chapitres ni la courbe de popularité. Les pages de vidéos envoyées par les utilisateurs (/video) ne sont pas prises en charge."
+    "message": "Importe le titre, les sous-titres et les miniatures de la chronologie depuis les pages d’épisodes et de vidéos envoyées par les utilisateurs sur bilibili.tv lorsqu’ils sont disponibles. Les pages d’épisodes peuvent afficher des repères d’intro et d’outro. L’épisode suivant utilise le bouton suivant du lecteur. Cette intégration n’importe pas une liste de chapitres nommés ni la courbe de popularité."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Intégration Crunchyroll"

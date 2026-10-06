@@ -11,6 +11,7 @@ import {
   normalizeBilibiliIntlSnapshot,
   parseBilibiliIntlCaptions,
   parseBilibiliIntlShotIndex,
+  parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard
 } from '../../media-features/parsers/bilibili-intl';
 import { BilibiliIntlAdapter } from './adapter';
@@ -35,6 +36,7 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,{\\p1}m 0 0 l 10 0
 const SHOT_PREFIX = Uint8Array.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x1f, 0x00, 0x2e, 0x00, 0x34, 0x00, 0x39, 0x00, 0x3f]);
 const SUBTITLE_URL = 'https://s.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass?auth_key=fixture';
 const JSON_URL = 'https://s.bstarstatic.com/ogv/subtitle/b57587f25806de4e30ce9d86394f30bc02844aed.json?auth_key=fixture';
+const UGC_SUBTITLE_URL = 'https://p.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json';
 const IMAGE = 'https://pic.bstarstatic.com/videoshot/n240826er2gfbhsx7mrzqd1eeshl4f6l.jpg';
 const IMAGE_2 = 'https://pic.bstarstatic.com/videoshot/n240826er2gfbhsx7mrzqd1eeshl4f6l-1.jpg';
 const BIN = 'https://pic.bstarstatic.com/videoshot/n240826er2gfbhsx7mrzqd1eeshl4f6l.bin';
@@ -95,6 +97,11 @@ describe('Bilibili.tv RTE', () => {
     assert.equal(bilibiliIntlSubtitleUrl('https://s.bstarstatic.com/ogv/foo/../subtitle/c350955fde09ca9f62098c78ddf0add4.ass'), null);
     assert.equal(bilibiliIntlShotImageUrl('https://pic.bstarstatic.com/videoshot/foo/../n240826er2gfbhsx7mrzqd1eeshl4f6l.jpg'), null);
     assert.equal(bilibiliIntlSubtitleUrl('https://api.bilibili.tv/intl/gateway/web/playurl?episode_id=1'), null);
+    assert.equal(bilibiliIntlSubtitleUrl(UGC_SUBTITLE_URL), UGC_SUBTITLE_URL);
+    assert.equal(bilibiliIntlSubtitleUrl('https://p.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass'), null);
+    assert.equal(bilibiliIntlSubtitleUrl('https://s.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json'), null);
+    assert.equal(bilibiliIntlSubtitleUrl('https://p.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json?token=1'), null);
+    assert.equal(isAllowedMediaFetchUrl({ provider: 'bilibiliIntl', kind: 'caption-track', url: UGC_SUBTITLE_URL }), true);
     const tracks = bilibiliIntlCaptionTracks('11371243', {
       subtitles: [
         { url: SUBTITLE_URL, lang: 'English', lang_key: 'en', subtitle_id: 1617629757006 },
@@ -102,7 +109,7 @@ describe('Bilibili.tv RTE', () => {
       ]
     });
     assert.equal(tracks.length, 1);
-    assert.equal(tracks[0].id, 'bilibiliIntl:11371243:en:c350955fde09ca9f62098c78ddf0add4.ass');
+    assert.equal(tracks[0].id, 'bilibiliIntl:ogv:11371243:en:c350955fde09ca9f62098c78ddf0add4.ass');
     assert.equal(tracks[0].label, 'English');
     const legacy = bilibiliIntlCaptionTracks('11371243', {
       video_subtitle: [{ lang_key: 'en', lang: 'English', srt: { url: '' }, ass: { url: SUBTITLE_URL } }]
@@ -194,6 +201,7 @@ describe('Bilibili.tv RTE', () => {
     assert.equal(snapshot.captionTracks.length, 1);
     assert.equal(mergeBilibiliIntlSnapshot(snapshot, { ...snapshot, captionTracks: [] })?.captionTracks.length, 1);
     assert.equal(mergeBilibiliIntlSnapshot(snapshot, { ...snapshot, videoId: '9', captionTracks: [] })?.captionTracks.length, 0);
+    assert.equal(mergeBilibiliIntlSnapshot(snapshot, { ...snapshot, kind: 'ugc', captionTracks: [] })?.captionTracks.length, 0);
     assert.equal(mergeBilibiliIntlSnapshot(snapshot, null), null);
     const hydrated = {
       ogv: {
@@ -285,7 +293,21 @@ describe('Bilibili.tv RTE', () => {
         requested.find((url) => url.includes('/v2/video/shot?') && url.includes('episode_id=42')),
         'https://api.bilibili.tv/intl/gateway/web/v2/video/shot?s_locale=en_US&platform=web&episode_id=42'
       );
+      assert.equal(
+        requested.find((url) => url.includes('/ogv/play/episode') && url.includes('episode_id=42')),
+        'https://api.bilibili.tv/intl/gateway/web/v2/ogv/play/episode?s_locale=en_US&platform=web&episode_id=42'
+      );
       assert.equal(attrs.get('data-te-bilibili-intl-episode'), '42');
+      assert.equal(attrs.get('data-te-bilibili-intl-kind'), 'ogv');
+      const held: Array<(value: Response) => void> = [];
+      page.ogv.epId = '77';
+      globalThis.fetch = (async () => new Promise<Response>((resolve) => { held.push(resolve); })) as typeof fetch;
+      const sameIdNewPath = readBilibiliIntlSnapshot();
+      (globalThis.window as { location: { pathname: string } }).location.pathname = '/en/play/2000002';
+      for (const resolve of held) {
+        resolve(new Response(JSON.stringify({ code: 0, data: { skip: { opening_start_time: 0, opening_end_time: 5000 } } })));
+      }
+      assert.equal(await sameIdNewPath, null);
     } finally {
       off = true;
       await readBilibiliIntlSnapshot().catch(() => {});
@@ -295,7 +317,7 @@ describe('Bilibili.tv RTE', () => {
     }
   });
 
-  it('reads a hydrated Vue initial state on an episode page and ignores upload pages', async () => {
+  it('reads a hydrated Vue initial state on an episode page and does not reuse that episode on an upload path', async () => {
     const oldWindow = globalThis.window;
     const oldDocument = globalThis.document;
     const oldFetch = globalThis.fetch;
@@ -390,6 +412,10 @@ describe('Bilibili.tv RTE', () => {
       assert.equal(
         requested.find((url) => url.includes('/v2/video/shot?')),
         'https://api.bilibili.tv/intl/gateway/web/v2/video/shot?s_locale=th_TH&platform=web&episode_id=11371243'
+      );
+      assert.equal(
+        requested.find((url) => url.includes('/ogv/play/episode')),
+        'https://api.bilibili.tv/intl/gateway/web/v2/ogv/play/episode?s_locale=th_TH&platform=web&episode_id=11371243'
       );
       (globalThis.window as { location: { pathname: string; search: string } }).location.pathname = '/vi/play/1053337';
       (globalThis.window as { location: { search: string } }).location.search = '?bstar_from=https://evil.test/playurl';
@@ -703,9 +729,122 @@ describe('Bilibili.tv RTE', () => {
       assert.equal(adapter.getTitle(), null);
 
       win.location.pathname = '/en/video/8848';
-      await adapter.reload();
-      assert.equal(bilibiliIntlPageId(), null);
+      assert.equal(bilibiliIntlPageId(), '8848');
+      const uploaded = adapter.reload();
+      replies.at(-1)!(episode('11371243', 'Still the episode', true));
+      await uploaded;
       assert.equal(adapter.getTitle(), null);
+      assert.equal(adapter.mediaId(), null);
+      const accepted = adapter.reload();
+      replies.at(-1)!(normalizeBilibiliIntlSnapshot('8848', 'Uploaded title', 100, {
+        subtitles: [{ url: UGC_SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+      }, storyboard, [], 'ugc'));
+      await accepted;
+      assert.equal(adapter.getTitle(), 'Uploaded title');
+      assert.equal(adapter.mediaId(), 'ugc:8848');
+      assert.equal((await adapter.listCaptionTracks())[0]?.id.startsWith('bilibiliIntl:ugc:8848:'), true);
+      const bare = normalizeBilibiliIntlSnapshot('8848', 'Missing kind', 100, {
+        subtitles: [{ url: UGC_SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+      }, storyboard);
+      delete (bare as { kind?: string }).kind;
+      const missingKind = adapter.reload();
+      replies.at(-1)!(bare);
+      await missingKind;
+      assert.equal(adapter.getTitle(), null);
+      assert.equal(adapter.mediaId(), null);
+      const wrongKind = adapter.reload();
+      replies.at(-1)!(normalizeBilibiliIntlSnapshot('8848', 'Episode on an upload', 100, {
+        subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+      }, storyboard, [], 'ogv'));
+      await wrongKind;
+      assert.equal(adapter.getTitle(), null);
+      assert.equal(adapter.mediaId(), null);
+      win.location.pathname = '/en/play/1053337';
+      attrs.set('data-te-bilibili-intl-episode', '8848');
+      attrs.set('data-te-bilibili-intl-kind', 'ugc');
+      assert.equal(bilibiliIntlPageId(), null);
+      const back = adapter.reload();
+      replies.at(-1)!(episode('8848', 'Uploaded title', true));
+      await back;
+      assert.equal(adapter.getTitle(), null);
+    } finally {
+      adapter.dispose();
+      globalThis.window = oldWindow;
+      globalThis.document = oldDocument;
+    }
+  });
+
+  it('accepts a legacy OGV snapshot that omits kind and chapters', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const attrs = new Map<string, string>();
+    const win = Object.assign(new EventTarget(), {
+      location: { hostname: 'www.bilibili.tv', origin: 'https://www.bilibili.tv', pathname: '/en/play/1053337/11371243', search: '' },
+      setTimeout, clearTimeout
+    });
+    globalThis.window = win as any;
+    globalThis.document = {
+      documentElement: {
+        hasAttribute: (name: string) => attrs.has(name),
+        getAttribute: (name: string) => attrs.get(name) ?? null,
+        setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+        removeAttribute: (name: string) => { attrs.delete(name); },
+        toggleAttribute: () => false
+      }
+    } as any;
+    const storyboard = parseBilibiliIntlStoryboard({
+      x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE]
+    }, parseBilibiliIntlShotIndex(SHOT_PREFIX));
+    const published = normalizeBilibiliIntlSnapshot('11371243', 'Legacy episode', 1504, {
+      subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+    }, storyboard);
+    const legacy = { ...published } as Partial<typeof published>;
+    delete legacy.kind;
+    delete legacy.chapters;
+    const replies: Array<(payload: typeof published | null) => void> = [];
+    win.addEventListener('theater-everywhere-media-probe', (event) => {
+      const requestId = (event as CustomEvent).detail.requestId;
+      replies.push((payload) => {
+        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
+          detail: { requestId, bilibiliIntl: payload }
+        }));
+      });
+    });
+    const adapter = new BilibiliIntlAdapter();
+    try {
+      assert.equal('kind' in legacy, false);
+      assert.equal('chapters' in legacy, false);
+      const pending = adapter.probe();
+      replies[0](legacy as typeof published);
+      const capabilities = await pending;
+      assert.deepEqual(capabilities, { captions: true, chapters: false, previews: true });
+      assert.deepEqual(await adapter.getChapters(), []);
+      assert.equal(adapter.mediaId(), 'ogv:11371243');
+      assert.equal(adapter.getTitle(), 'Legacy episode');
+      const tracks = await adapter.listCaptionTracks();
+      assert.equal(tracks.length, 1);
+      assert.equal(tracks[0].id.startsWith('bilibiliIntl:ogv:11371243:'), true);
+      assert.equal((await adapter.getPreviewSource()).kind, 'sprite');
+      assert.equal(adapter.getPreviewFrame(24)?.image.x, 160);
+
+      const bare = normalizeBilibiliIntlSnapshot('8848', 'Missing kind', 100, {
+        subtitles: [{ url: UGC_SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+      }, storyboard);
+      delete (bare as { kind?: string }).kind;
+      delete (bare as { chapters?: unknown }).chapters;
+      win.location.pathname = '/en/video/8848';
+      const missingKind = adapter.reload();
+      replies.at(-1)!(bare);
+      await missingKind;
+      assert.equal(adapter.getTitle(), null);
+      assert.equal(adapter.mediaId(), null);
+      const wrongKind = adapter.reload();
+      replies.at(-1)!(normalizeBilibiliIntlSnapshot('8848', 'Episode on an upload', 100, {
+        subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+      }, storyboard, [], 'ogv'));
+      await wrongKind;
+      assert.equal(adapter.getTitle(), null);
+      assert.equal(adapter.mediaId(), null);
     } finally {
       adapter.dispose();
       globalThis.window = oldWindow;
@@ -776,7 +915,7 @@ describe('Bilibili.tv RTE', () => {
       replies.at(-1)!('11371243', episode('11371243', 'Current season'));
       await current;
       assert.equal(adapter.getTitle(), 'Current season');
-      assert.equal(adapter.mediaId(), '11371243');
+      assert.equal(adapter.mediaId(), 'ogv:11371243');
       assert.equal((await adapter.listCaptionTracks()).length, 1);
 
       const unpublished = adapter.reload();
@@ -984,6 +1123,249 @@ describe('Bilibili.tv RTE', () => {
       adapter.dispose();
       globalThis.window = oldWindow;
       globalThis.document = oldDocument;
+    }
+  });
+
+  it('maps live intro and outro windows and ignores empty or negative skip data', () => {
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: {
+        opening_start_time: 99000,
+        opening_end_time: 227000,
+        ending_start_time: 1424000,
+        ending_end_time: 1504000
+      }
+    }), [
+      { start: 99, end: 227, title: 'Intro' },
+      { start: 1424, end: 1504, title: 'Outro' }
+    ]);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({ skip: null }), []);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: { opening_start_time: -1, opening_end_time: -1, ending_start_time: 5, ending_end_time: 5 }
+    }), []);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: { opening_start_time: '99000', opening_end_time: 227000 }
+    }), []);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: {
+        opening_start_time: 99000,
+        opening_end_time: 227000,
+        ending_start_time: 1424000,
+        ending_end_time: 1504000
+      }
+    }, 1504), [
+      { start: 99, end: 227, title: 'Intro' },
+      { start: 1424, end: 1504, title: 'Outro' }
+    ]);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: {
+        opening_start_time: 10000,
+        opening_end_time: 20000,
+        ending_start_time: 15000,
+        ending_end_time: 30000
+      }
+    }, 100), [{ start: 10, end: 20, title: 'Intro' }]);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: {
+        opening_start_time: 5000,
+        opening_end_time: 8000,
+        ending_start_time: 1000,
+        ending_end_time: 2000
+      }
+    }), [{ start: 5, end: 8, title: 'Intro' }]);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: { opening_start_time: 99000, opening_end_time: 227000 }
+    }, 100), []);
+    assert.deepEqual(parseBilibiliIntlSkipChapters({
+      skip: { ending_start_time: 1000, ending_end_time: 2000 }
+    }, 10), [{ start: 1, end: 2, title: 'Outro' }]);
+    const cues = parseBilibiliIntlCaptions(JSON.stringify({
+      font_size: 0.4,
+      background_color: '#9C27B0',
+      body: [{ from: 0.967, to: 2.233, location: 2, content: 'line one\nline two' }]
+    }));
+    assert.deepEqual(cues, [{ start: 0.967, end: 2.233, text: 'line one\nline two' }]);
+    assert.equal(bilibiliIntlTitle({
+      ugc: { archive: vueRef({ aid: '4801170276752384', title: 'Khom Khlang | Episode 5 ~ Eng sub', uploader: { name: 'not the title' } }) }
+    }, 'Khom Khlang | Episode 5 ~ Eng sub - BiliBili', 'ugc'), 'Khom Khlang | Episode 5 ~ Eng sub');
+  });
+
+  it('loads a public upload by aid and drops a late episode response after the path changes', async () => {
+    const oldWindow = globalThis.window;
+    const oldDocument = globalThis.document;
+    const oldFetch = globalThis.fetch;
+    const attrs = new Map<string, string>();
+    const requested: string[] = [];
+    const shotGate: { resolve: (value: Response) => void } = {
+      resolve: () => { throw new Error('shot response was not armed'); }
+    };
+    const page = {
+      global: { sLocale: 'en' },
+      ogv: { epId: '', season: null, sectionsList: [] },
+      ugc: {
+        aid: vueRef('4801170276752384'),
+        archive: vueRef({
+          aid: '4801170276752384',
+          title: 'Khom Khlang | Episode 5 ~ Eng sub',
+          uploader: { name: 'uploader' }
+        })
+      }
+    };
+    try {
+      const location = { hostname: 'www.bilibili.tv', origin: 'https://www.bilibili.tv', pathname: '/en/video/4801170276752384', search: '' };
+      globalThis.window = Object.assign(new EventTarget(), {
+        location,
+        __initialState: page,
+        setTimeout,
+        clearTimeout
+      }) as any;
+      globalThis.document = {
+        title: 'Khom Khlang | Episode 5 ~ Eng sub - BiliBili',
+        querySelector: () => ({ duration: 3387 }),
+        documentElement: {
+          hasAttribute: (name: string) => attrs.has(name),
+          getAttribute: (name: string) => attrs.get(name) ?? null,
+          setAttribute: (name: string, value: string) => { attrs.set(name, value); },
+          removeAttribute: (name: string) => { attrs.delete(name); },
+          toggleAttribute: (name: string, on?: boolean) => {
+            const next = on ?? !attrs.has(name);
+            if (next) attrs.set(name, '');
+            else attrs.delete(name);
+            return next;
+          }
+        }
+      } as any;
+      globalThis.fetch = (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requested.push(url);
+        assert.equal(!url.includes('playurl'), true);
+        assert.equal(!url.includes('/ogv/play/episode'), true);
+        if (url.includes('/subtitle')) {
+          return new Response(JSON.stringify({ code: 0, data: {
+            subtitles: [{ url: UGC_SUBTITLE_URL, lang: 'English', lang_key: 'en', subtitle_id: 13335066 }],
+            video_subtitle: [{ lang: 'English', lang_key: 'en', srt: { url: UGC_SUBTITLE_URL }, ass: null }]
+          } }));
+        }
+        if (url.endsWith('.bin')) return new Response(SHOT_PREFIX);
+        return new Promise<Response>((resolve) => { shotGate.resolve = resolve; });
+      }) as typeof fetch;
+      const pending = readBilibiliIntlSnapshot();
+      assert.equal(attrs.get('data-te-bilibili-intl-episode'), '4801170276752384');
+      assert.equal(attrs.get('data-te-bilibili-intl-kind'), 'ugc');
+      (globalThis.window as { location: { pathname: string } }).location.pathname = '/en/play/1053337';
+      (page.ogv as { epId: string }).epId = '11371243';
+      shotGate.resolve(new Response(JSON.stringify({ code: 0, data: {
+        x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE], pv_data: BIN
+      } })));
+      assert.equal(await pending, null);
+      assert.equal(requested.some((url) => url.includes('episode_id=')), false);
+      assert.equal(
+        requested.find((url) => url.includes('/v2/subtitle?')),
+        'https://api.bilibili.tv/intl/gateway/web/v2/subtitle?s_locale=en_US&platform=web&aid=4801170276752384&spm_id=bstar-web.ugc-video-detail.0.0&from_spm_id='
+      );
+      assert.equal(
+        requested.find((url) => url.includes('/v2/video/shot?')),
+        'https://api.bilibili.tv/intl/gateway/web/v2/video/shot?s_locale=en_US&platform=web&aid=4801170276752384'
+      );
+
+      requested.length = 0;
+      (globalThis.window as { location: { pathname: string } }).location.pathname = '/en/video/4801170276752384';
+      (page.ogv as { epId: string }).epId = '';
+      globalThis.fetch = (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requested.push(url);
+        if (url.includes('/subtitle')) {
+          return new Response(JSON.stringify({ code: 0, data: {
+            subtitles: [{ url: UGC_SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
+          } }));
+        }
+        if (url.endsWith('.bin')) return new Response(SHOT_PREFIX);
+        return new Response(JSON.stringify({ code: 0, data: {
+          x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE], pv_data: BIN
+        } }));
+      }) as typeof fetch;
+      const fresh = await readBilibiliIntlSnapshot();
+      assert.equal(fresh?.kind, 'ugc');
+      assert.equal(fresh?.videoId, '4801170276752384');
+      assert.equal(fresh?.title, 'Khom Khlang | Episode 5 ~ Eng sub');
+      assert.equal(fresh?.chapters.length, 0);
+      assert.equal(fresh?.captionTracks[0]?.url, UGC_SUBTITLE_URL);
+      assert.equal(fresh?.captionTracks[0]?.id.startsWith('bilibiliIntl:ugc:4801170276752384:'), true);
+      assert.equal(fresh?.storyboard?.columns, 10);
+      assert.equal(requested.some((url) => url.includes('/ogv/play/episode') || url.includes('playurl')), false);
+
+      const adapter = new BilibiliIntlAdapter();
+      const win = globalThis.window as EventTarget & { location: { pathname: string }; postMessage?: (request: WorldEnvelope) => void };
+      const ugcCues = JSON.stringify({ body: [{ from: 1, to: 2, content: 'uploaded line' }] });
+      win.addEventListener('theater-everywhere-media-probe', (event) => {
+        const requestId = (event as CustomEvent).detail.requestId;
+        win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
+          detail: { requestId, bilibiliIntl: fresh }
+        }));
+      });
+      win.postMessage = (request: WorldEnvelope) => {
+        win.dispatchEvent(Object.assign(new Event('message'), {
+          source: win,
+          data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ugcCues }, request.requestId, request.nonce, request.origin)
+        }));
+      };
+      assert.equal((await adapter.getChapters()).length, 0);
+      assert.equal((await adapter.probe()).chapters, false);
+      assert.equal(adapter.mediaId(), 'ugc:4801170276752384');
+      assert.equal(adapter.getPreviewFrame(24)?.image.url, IMAGE);
+      const tracks = await adapter.listCaptionTracks();
+      const active = await adapter.activateCaptionTrack(tracks[0].id);
+      assert.equal(active.status, 'active');
+      assert.equal(active.cues[0]?.text, 'uploaded line');
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), true);
+      await adapter.activateCaptionTrack(null);
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), true);
+      adapter.dispose();
+      assert.equal(attrs.has('data-te-bilibili-intl-captions-hidden'), false);
+
+      (globalThis.window as { location: { pathname: string } }).location.pathname = '/en/play/1053337';
+      (page as { ogv: { epId: unknown; season: unknown; sectionsList: unknown } }).ogv = {
+        epId: vueRef('11371243'),
+        season: vueRef({ title: 'The Last Summoner' }),
+        sectionsList: vueRef([{ episodes: [{ episode_id: '11371243', title_display: 'E1' }] }])
+      };
+      requested.length = 0;
+      globalThis.fetch = (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requested.push(url);
+        if (url.includes('/ogv/play/episode')) {
+          return new Response(JSON.stringify({ code: 0, data: { skip: {
+            opening_start_time: 99000,
+            opening_end_time: 227000,
+            ending_start_time: 1424000,
+            ending_end_time: 1504000
+          } } }));
+        }
+        if (url.includes('/subtitle')) {
+          return new Response(JSON.stringify({ code: 0, data: { subtitles: [
+            { url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }
+          ] } }));
+        }
+        if (url.endsWith('.bin')) return new Response(SHOT_PREFIX);
+        return new Response(JSON.stringify({ code: 0, data: {
+          x_len: 10, y_len: 10, x_size: 160, y_size: 90, images: [IMAGE], pv_data: BIN
+        } }));
+      }) as typeof fetch;
+      const episode = await readBilibiliIntlSnapshot();
+      assert.equal(episode?.kind, 'ogv');
+      assert.deepEqual(episode?.chapters, [
+        { start: 99, end: 227, title: 'Intro' },
+        { start: 1424, end: 1504, title: 'Outro' }
+      ]);
+      assert.equal(attrs.get('data-te-bilibili-intl-kind'), 'ogv');
+      assert.equal(requested.some((url) => url.includes('aid=')), false);
+      assert.match(requested.find((url) => url.includes('/ogv/play/episode')) || '', /episode_id=11371243/);
+      assert.equal(requested.some((url) => url.includes('playurl')), false);
+    } finally {
+      attrs.set('data-te-bilibili-intl-integration-off', '');
+      await readBilibiliIntlSnapshot().catch(() => {});
+      globalThis.window = oldWindow;
+      globalThis.document = oldDocument;
+      globalThis.fetch = oldFetch;
     }
   });
 });

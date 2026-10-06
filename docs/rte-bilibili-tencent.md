@@ -91,16 +91,21 @@ nie zwraca — zapisane `_value` / `_rawValue`.
 (`bPlayer` / `dashPlayer`), więc sterowanie odtwarzaniem zostaje przy
 istniejącym torze HTML5.
 
-Zakres to strony odcinków OGV: `/{język}/play/{season_id}` oraz ten sam adres
-z dodatkowym segmentem numeru odcinka. Strony materiałów użytkowników
-(`/{język}/video/`) nie są zaimplementowane. Na takiej ścieżce adapter nie
-bierze identyfikatora odcinka, a MAIN usuwa opublikowany atrybut.
+Zakres to strony odcinków OGV (`/{język}/play/{season_id}`, także z segmentem
+numeru odcinka) oraz publiczne materiały użytkowników
+(`/{język}/video/{aid}`). Adresy `videosimple` i `video-rules` nie są filmami.
+Numer odcinka i `aid` są osobnymi tożsamościami: taki sam numer nie współdzieli
+stanu kontrolera. MAIN publikuje `data-te-bilibili-intl-episode` oraz
+`data-te-bilibili-intl-kind` (`ogv` albo `ugc`). Atrybut bez rodzaju oznacza
+starszą publikację OGV. Snapshot UGC bez `kind: "ugc"` jest odrzucany.
 
 Osobny provider `bilibiliIntl` korzysta z tego samego przełącznika Rich Theater
 Experience. Wyłączenie RTE w starszej instalacji zostawia też tę integrację
-wyłączoną. Wyłączenie w trakcie żądania, zmiana ścieżki albo zmiana `epId`
+wyłączoną. Wyłączenie w trakcie żądania, zmiana ścieżki albo zmiana identyfikatora
 odrzuca spóźnioną odpowiedź i nie przywraca poprzedniego tytułu, napisów ani
-miniaturek. Cache metadanych jest związany z parą odcinek i `s_locale`.
+miniaturek. Dotyczy to też sytuacji, w której numer w stanie strony jeszcze
+pasuje, a ścieżka już się zmieniła. Cache metadanych jest związany ze ścieżką,
+rodzajem (`ogv` albo `ugc`), identyfikatorem i `s_locale`.
 
 Świat content nie widzi `window.__initialState`. Na adresie samego sezonu,
 `/en/play/1053337`, nie ma też segmentu odcinka. Atrybut
@@ -130,10 +135,15 @@ klucz schodzi do `en`. Dla napisów dokładany jest też stały
 pusty. Miniatury używają wyłącznie `s_locale`, `platform` i `episode_id`,
 tak jak `video/shot` w odtwarzaczu.
 
-Dla strony angielskiej zapytanie napisów ma postać
+Dla strony angielskiej zapytanie napisów odcinka ma postać
 `/intl/gateway/web/v2/subtitle?s_locale=en_US&platform=web&episode_id={epId}&spm_id=bstar-web.pgc-video-detail.0.0&from_spm_id=`,
-a miniaturek
-`/intl/gateway/web/v2/video/shot?s_locale=en_US&platform=web&episode_id={epId}`.
+miniaturek
+`/intl/gateway/web/v2/video/shot?s_locale=en_US&platform=web&episode_id={epId}`,
+a okien czołówki i napisów końcowych
+`/intl/gateway/web/v2/ogv/play/episode?s_locale=en_US&platform=web&episode_id={epId}`.
+Materiał użytkownika używa `aid` zamiast `episode_id` i
+`spm_id=bstar-web.ugc-video-detail.0.0`. Dla uploadu nie ma żądania
+`ogv/play/episode`.
 
 Odpowiedź napisów ma `data.subtitles[]` z polami `url`, `lang`, `lang_key`
 i `subtitle_id`. Na E1 *The Last Summoner* jest siedem ścieżek. Sześć
@@ -142,7 +152,9 @@ pierwszych to ASS na `https://s.bstarstatic.com/ogv/subtitle/<skrót>.ass`
 Bahasa Melayu i 中文（繁体）. Ścieżka عربي jest JSON-em
 `body[].from/to/content`. Kod strony zna też starszy kształt
 `video_subtitle[].ass.url` / `srt.url`; parser przyjmuje oba, ale do snapshotu
-trafia tylko adres z allowlisty HTTPS `s.bstarstatic.com/ogv/subtitle/`.
+trafia tylko adres z allowlisty: HTTPS `s.bstarstatic.com/ogv/subtitle/`
+(podpis `auth_key`) albo HTTPS `p.bstarstatic.com/ugc/subtitle/`
+(obserwowany plik JSON bez `auth_key`; inny query jest odrzucany).
 Ścieżka jest sprawdzana w postaci surowej, zanim parser `URL` usunie `..` albo
 odkoduje `%2e%2e`. Adres, który dopiero po tej normalizacji wygląda jak plik
 napisów, jest odrzucany — tak samo jak allowlista pobrania w świecie content.
@@ -175,11 +187,27 @@ odcinka odświeża metadane. Gdy odtwarzacz odłączy element `video` i wyśle
 `emptied`, RTE powtarza wczytanie odcinka widocznego w adresie, także wtedy,
 gdy w dokumencie nie ma już filmu.
 
-Ta integracja nie importuje rozdziałów ani mapy popularności. To ograniczenie
-adaptera. Odpowiedź `/v2/ogv/play/episode` zawiera okna pominięcia czołówki
-i napisów końcowych, a nie listę rozdziałów, i nie jest pokazywana jako
-rozdziały. Czas trwania bierzemy z elementu `video`, gdy jest już znany
-(dla E1 HTML5 podał 1504 s).
+`/v2/ogv/play/episode` zwraca tylko `data.skip`, w milisekundach. Odtwarzacz
+szuka `floor(ms / 1000)` i nazywa okna intro oraz outro (`skipingOp` /
+`skipingEd` w bundlu i18n). To nie jest lista rozdziałów z nazwami. RTE
+pokazuje te okna jako znaczniki Intro i Outro, tym samym sposobem co
+Crunchyroll pokazuje Intro i Credits: stała etykieta, bo odpowiedź nie ma
+tytułu. Okno puste, ujemne, o końcu nie późniejszym niż początek, zachodzące
+na poprzednie albo wychodzące poza znany czas trwania jest pomijane. Czołówka
+jest sprawdzana przed napisami końcowymi, więc ending zaczynający się przed
+końcem openingu odpada. Sam ending zostaje, gdy openingu nie ma. Czas trwania
+bierzemy z elementu `video`, gdy jest już znany (dla E1 HTML5 podał 1504 s);
+dopuszczamy jedną sekundę różnicy między `floor` a długością elementu.
+Upload nie dostaje tych znaczników.
+
+Mapa popularności pozostaje niepotwierdzona i nie jest importowana. Publiczny
+player (`biliintl-player`, kopia w `/tmp/bstar/player.js`) woła z
+`/intl/gateway/web/v2/` tylko `video/shot` jako podgląd kafelków. Nie ma tam
+`pbp`, `heatmap` ani `view_point`. `ogv/play/episode` ma wyłącznie `skip`.
+`video/shot` ma `pv_data`, wymiary siatki i `images`. `ugc/play/info` ma
+`archive.stat` (`views`, `followers`, `arcs`, `fans`, `like_count`,
+`like_state`) — liczniki całego filmu, nie serię na osi czasu. Popularności
+nie składa się z miniaturek, komentarzy ani czasów pominięcia.
 
 Gdy RTE rysuje własne napisy, ukrywa warstwy `.player-mobile-ass-subtitle` i
 `.player-mobile-subtitle`. Opcja Off, gdy bieżący odcinek ma już zaimportowane
@@ -262,8 +290,29 @@ Warstwy hosta pozostają nieobecne, bo strona ich nie wstawia ponownie.
 [biliintl-player-dfb25af7.js](https://p.bstarstatic.com/fe-static/bstar-web-new/client/assets/biliintl-player-dfb25af7.js),
 [dash-player-69d7377c.js](https://p.bstarstatic.com/fe-static/bstar-web-new/client/assets/dash-player-69d7377c.js).
 Adresy tych plików mogą zmienić się wraz z aktualizacją serwisu. Strony
-`/video/` nie są zaimplementowane. Nie sprawdzono sesji zalogowanej. Napisy
-wypalone w obrazie nie są ścieżkami do przełączenia.
+`/video/{aid}` są obsługiwane: tytuł z `ugc.archive.title`, napisy i
+miniatury po `aid`, bez żądania `ogv/play/episode`. Nie sprawdzono sesji
+zalogowanej. Napisy wypalone w obrazie nie są ścieżkami do przełączenia.
+
+### Diagnostyka 6 października 2026
+
+Publiczne odpowiedzi bez konta, HTTP 200, `code` 0:
+
+- `ogv/play/episode?episode_id=11371243` — jedyny klucz `data` to `skip`:
+  opening 99000–227000 ms, ending 1424000–1504000 ms.
+- `video/shot?episode_id=11371243` — siatka 10×10, kafelek 160×90, dwa obrazy.
+- `subtitle?episode_id=11371243` — `subtitles` i `video_subtitle`, siedem ścieżek.
+- `video/shot?aid=4801170276752384` — ta sama siatka, pięć obrazów.
+- `subtitle?aid=4801170276752384` — `subtitles` i `video_subtitle`.
+- `ugc/play/info?aid=4801170276752384` — `archive` i
+  `hit_ad_desc_url_blacklist`. `archive.duration` to 3387. `stat` nie jest
+  serią popularności.
+
+To jest odczyt JSON, nie sesja trybu kinowego na żywej stronie. Fikstura
+Playwright w `runtime.browser.test.ts` podaje plik wideo o czasie 1504 s,
+więc znaczniki Intro i Outro oraz miniatura uploadu są sprawdzone na
+zainstalowanym rozszerzeniu. To nadal nie jest żywa strona bilibili.tv:
+podgląd T3 nie wystartował (limit czasu `preview_status` i `preview_open`).
 
 ## Tencent Video
 
@@ -435,11 +484,17 @@ Etykiety Tencent Video / WeTV uwzględniają teraz import napisów i miniaturek.
   `crossOriginIsolated` fałszywe), więc płótna WASM nie sprawdzono na
   odtwarzaczu produkcyjnym. `T` na tej stronie włączyło tryb kinowy na zwykłym
   `<video>` i nie dodało klasy sceny WASM.
-- Bilibili.tv: `pnpm typecheck` i 347 testów. Próby na fiksturze rozszerzenia
+- Bilibili.tv, 5 października 2026 r.: próby na fiksturze rozszerzenia
   i na żywej stronie są opisane wyżej w tej sekcji. E1 obejmuje metadane,
   ścieżki, cue i miniaturę. Na E2 ściana Premium odcina wideo i warstwy
   napisów; metadane, ścieżki i cue przy odłączonym playheadzie są sprawdzone,
   dalsze odtwarzanie nie.
+- Bilibili.tv, 6 października 2026 r.: `pnpm typecheck` bez błędów,
+  `pnpm test` — 394 testy, 0 błędów, w tym fikstura rozszerzenia dla odcinka,
+  uploadu `/video/{aid}`, znaczników Intro/Outro i przejścia SPA przy tym
+  samym numerze. `pnpm verify:bundles` przechodzi dla `dist/chrome-unpacked`
+  i `dist/firefox-unpacked`. Podgląd T3 przekroczył czas oczekiwania, więc
+  nie ma nowej sesji trybu kinowego na żywej stronie.
 
 Źródła techniczne odczytane z aktualnych odtwarzaczy:
 [Bilibili core](https://s1.hdslb.com/bfs/static/player/main/core.ba67b466.js),

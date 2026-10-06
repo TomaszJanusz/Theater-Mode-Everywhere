@@ -662,7 +662,7 @@
     "message": "Bilibili.tv-Integration"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importiert Folgentitel, Untertitel und Zeitachsen-Vorschaubilder von bilibili.tv-Folgenseiten, sofern verfügbar. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine Kapitel und keine Beliebtheitskurve. Hochgeladene /video-Seiten werden nicht unterstützt."
+    "message": "Importiert Titel, Untertitel und Zeitachsen-Vorschaubilder von Folgen- und Nutzer-Upload-Seiten auf bilibili.tv, sofern verfügbar. Folgenseiten können Intro- und Outro-Markierungen zeigen. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine benannte Kapitelliste und keine Beliebtheitskurve."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll-Integration"

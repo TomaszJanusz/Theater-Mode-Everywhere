@@ -16,11 +16,18 @@ const SPM = 'bstar-web.pgc-video-detail.0.0';
 const ASS_URL = 'https://s.bstarstatic.com/ogv/subtitle/c350955fde09ca9f62098c78ddf0add4.ass?auth_key=fixture';
 const JSON_URL = 'https://s.bstarstatic.com/ogv/subtitle/b57587f25806de4e30ce9d86394f30bc02844aed.json?auth_key=fixture';
 const E2_URL = 'https://s.bstarstatic.com/ogv/subtitle/aa11bb22cc33dd44ee55ff6677889900.ass?auth_key=fixture';
+const UGC_AID = E1;
+const UGC_PATH = `/en/video/${UGC_AID}`;
+const UGC_URL = 'https://p.bstarstatic.com/ugc/subtitle/1791206531_9b2afa9ce631f644_subtitle-1791206531413.json';
+const UGC_SHEET = 'https://pic.bstarstatic.com/videoshot/ugcsheet.jpg';
+const UGC_SPM = 'bstar-web.ugc-video-detail.0.0';
 const ASS_CUE = 'Every object has its spirit, here.';
 const JSON_CUE = 'لكل شيء روحه الخاصة.';
 const E2_CUE = 'The second gate opens.';
+const UGC_CUE = 'Uploaded line.';
 const E1_TITLE = 'The Last Summoner E1';
 const E2_TITLE = 'The Last Summoner E2';
+const UGC_TITLE = 'Uploaded special';
 
 const ASS_BODY = `[Script Info]
 ScriptType: v4.00+
@@ -35,7 +42,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:00.00,1:00:00.00,Default,,0,0,0,,${E2_CUE}
 `;
 const JSON_BODY = JSON.stringify({ body: [{ from: 0, to: 3600, content: JSON_CUE }] });
+const UGC_BODY = JSON.stringify({ body: [{ from: 0, to: 3600, content: UGC_CUE }] });
 const SHOT_BIN = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x00, 0x1e]);
+const E1_SKIP = {
+  opening_start_time: 99000,
+  opening_end_time: 227000,
+  ending_start_time: 1424000,
+  ending_end_time: 1504000
+};
 
 type Hit = { url: string; status: number };
 type FixtureWindow = Window & {
@@ -54,13 +68,139 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const FIXTURE_MEDIA_URL = 'https://www.bilibili.tv/fixture-media.mp4';
+let fixtureMediaPromise: Promise<Buffer> | null = null;
+
+function fixtureMediaBytes(): Promise<Buffer> {
+  fixtureMediaPromise ??= buildFixtureMedia().catch((error: unknown) => {
+    fixtureMediaPromise = null;
+    throw error;
+  });
+  return fixtureMediaPromise;
+}
+
+/** One decodable frame stretched to 1504s. MediaSource duration does not survive theater entry. */
+async function buildFixtureMedia(): Promise<Buffer> {
+  const browser = await chromium.launch({ headless: true, args: ['--headless=new', '--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.route('https://fixture.local/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><title>fixture</title>'
+    }));
+    await page.goto('https://fixture.local/');
+    const encoded = await page.evaluate(`(async () => {
+      const concat = (...parts) => {
+        const out = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+        let offset = 0;
+        for (const part of parts) {
+          out.set(part, offset);
+          offset += part.length;
+        }
+        return out;
+      };
+      const u16 = (value) => {
+        const out = new Uint8Array(2);
+        new DataView(out.buffer).setUint16(0, value);
+        return out;
+      };
+      const u32 = (value) => {
+        const out = new Uint8Array(4);
+        new DataView(out.buffer).setUint32(0, value);
+        return out;
+      };
+      const text = (value) => new TextEncoder().encode(value);
+      const box = (type, payload) => concat(u32(8 + payload.length), text(type), payload);
+      const full = (type, version, flags, payload) => {
+        const head = new Uint8Array(4);
+        new DataView(head.buffer).setUint32(0, (version << 24) | flags);
+        return box(type, concat(head, payload));
+      };
+      const zeros = (length) => new Uint8Array(length);
+      const matrix = concat(
+        u32(0x00010000), u32(0), u32(0),
+        u32(0), u32(0x00010000), u32(0),
+        u32(0), u32(0), u32(0x40000000)
+      );
+      const canvas = new OffscreenCanvas(16, 16);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('fixture canvas missing');
+      context.fillStyle = '#111';
+      context.fillRect(0, 0, 16, 16);
+      const frame = new VideoFrame(canvas, { timestamp: 0, duration: 1000000 });
+      const chunks = [];
+      const encoder = new VideoEncoder({
+        output: (chunk, meta) => chunks.push({ chunk, meta }),
+        error: (error) => { throw error; }
+      });
+      encoder.configure({
+        codec: 'avc1.42001f',
+        width: 16,
+        height: 16,
+        bitrate: 50000,
+        avc: { format: 'avc' },
+        latencyMode: 'quality'
+      });
+      encoder.encode(frame, { keyFrame: true });
+      await encoder.flush();
+      frame.close();
+      encoder.close();
+      const encodedChunk = chunks[0];
+      const descriptionSource = encodedChunk && encodedChunk.meta.decoderConfig && encodedChunk.meta.decoderConfig.description;
+      if (!encodedChunk || descriptionSource == null) throw new Error('fixture frame missing');
+      const sample = new Uint8Array(encodedChunk.chunk.byteLength);
+      encodedChunk.chunk.copyTo(sample);
+      const description = new Uint8Array(descriptionSource);
+      const timescale = 1000;
+      const duration = 1504 * timescale;
+      const ftyp = box('ftyp', concat(text('isom'), u32(0), text('isom'), text('avc1'), text('mp41')));
+      const mvhd = full('mvhd', 0, 0, concat(
+        u32(0), u32(0), u32(timescale), u32(duration),
+        u32(0x00010000), u16(0x0100), u16(0), zeros(8), matrix, zeros(24), u32(2)
+      ));
+      const tkhd = full('tkhd', 0, 3, concat(
+        u32(0), u32(0), u32(1), u32(0), u32(duration),
+        zeros(8), u16(0), u16(0), u16(0), u16(0), matrix, u32(16 << 16), u32(16 << 16)
+      ));
+      const mdhd = full('mdhd', 0, 0, concat(u32(0), u32(0), u32(timescale), u32(duration), u16(0x55c4), u16(0)));
+      const hdlr = full('hdlr', 0, 0, concat(u32(0), text('vide'), zeros(12), text('VideoHandler\\0')));
+      const vmhd = full('vmhd', 0, 1, concat(u16(0), u16(0), u16(0), u16(0)));
+      const dinf = box('dinf', full('dref', 0, 0, concat(u32(1), full('url ', 0, 1, new Uint8Array()))));
+      const avc1 = box('avc1', concat(
+        zeros(6), u16(1), u16(0), u16(0), zeros(12),
+        u16(16), u16(16), u32(0x00480000), u32(0x00480000),
+        u32(0), u16(1), zeros(32), u16(0x0018), u16(0xffff), box('avcC', description)
+      ));
+      const stsd = full('stsd', 0, 0, concat(u32(1), avc1));
+      const stts = full('stts', 0, 0, concat(u32(1), u32(1), u32(duration)));
+      const stsc = full('stsc', 0, 0, concat(u32(1), u32(1), u32(1), u32(1)));
+      const stsz = full('stsz', 0, 0, concat(u32(0), u32(1), u32(sample.length)));
+      const stco = full('stco', 0, 0, concat(u32(1), u32(0)));
+      const stbl = box('stbl', concat(stsd, stts, stsc, stsz, stco));
+      const minf = box('minf', concat(vmhd, dinf, stbl));
+      const moov = box('moov', concat(mvhd, box('trak', concat(tkhd, box('mdia', concat(mdhd, hdlr, minf))))));
+      const file = concat(ftyp, moov, box('mdat', sample));
+      new DataView(file.buffer).setUint32(ftyp.length + moov.length - 4, ftyp.length + moov.length + 8);
+      let binary = '';
+      for (let index = 0; index < file.length; index += 0x8000) {
+        binary += String.fromCharCode(...file.subarray(index, index + 0x8000));
+      }
+      return btoa(binary);
+    })()`) as string;
+    return Buffer.from(encoded, 'base64');
+  } finally {
+    await browser.close();
+  }
+}
+
 function pageHtml(): string {
   return `<!doctype html>
 <html>
 <head><title>Unrelated page - BiliBili</title></head>
 <body>
   <div class="bstar-player">
-    <video id="player" style="display:block;width:960px;height:540px;background:#111"></video>
+    <video id="player" src="${FIXTURE_MEDIA_URL}" style="display:block;width:960px;height:540px;background:#111"></video>
     <div class="player-mobile-ass-subtitle">host ass</div>
     <div class="player-mobile-subtitle">host json</div>
     <div class="player-mobile-control-btn-next-episode">
@@ -108,16 +248,60 @@ function pageHtml(): string {
 </html>`;
 }
 
-function officialQuery(url: string, episode: string, kind: 'subtitle' | 'shot'): boolean {
+function ugcPageHtml(): string {
+  return `<!doctype html>
+<html>
+<head><title>${UGC_TITLE} - BiliBili</title></head>
+<body>
+  <div class="bstar-player">
+    <video id="player" src="${FIXTURE_MEDIA_URL}" style="display:block;width:960px;height:540px;background:#111"></video>
+    <div class="player-mobile-ass-subtitle">host ass</div>
+    <div class="player-mobile-subtitle">host json</div>
+  </div>
+  <script>
+    window.__fixtureSentinel = 'page-main-only';
+    window.__probeCount = 0;
+    window.addEventListener('theater-everywhere-media-probe', () => { window.__probeCount += 1; });
+    function pageRef(value) {
+      const box = { __v_isRef: true, _value: value, _rawValue: value };
+      Object.defineProperty(box, 'value', { get() { return box._value; }, enumerable: true });
+      return box;
+    }
+    window.__initialState = {
+      global: pageRef({ sLocale: pageRef('en') }),
+      ogv: pageRef({ epId: pageRef(''), season: null, sectionsList: pageRef([]) }),
+      ugc: pageRef({
+        aid: pageRef('${UGC_AID}'),
+        archive: pageRef({ aid: '${UGC_AID}', title: '${UGC_TITLE}' })
+      })
+    };
+  </script>
+</body>
+</html>`;
+}
+
+function officialQuery(url: string, episode: string, kind: 'subtitle' | 'shot' | 'episode'): boolean {
   const parsed = new URL(url);
   if (parsed.searchParams.get('s_locale') !== 'en_US') return false;
   if (parsed.searchParams.get('platform') !== 'web') return false;
-  if (parsed.searchParams.get('episode_id') !== episode) return false;
+  if (parsed.searchParams.get('episode_id') !== episode || parsed.searchParams.has('aid')) return false;
   const keys = [...parsed.searchParams.keys()].sort().join(',');
-  if (kind === 'shot') return keys === 'episode_id,platform,s_locale';
+  if (kind === 'episode' || kind === 'shot') return keys === 'episode_id,platform,s_locale';
   return keys === 'episode_id,from_spm_id,platform,s_locale,spm_id'
     && parsed.searchParams.get('spm_id') === SPM
     && parsed.searchParams.get('from_spm_id') === (episode === E2 ? FROM : '');
+}
+
+function ugcQuery(url: string, aid: string, kind: 'subtitle' | 'shot'): boolean {
+  const parsed = new URL(url);
+  if (parsed.searchParams.get('s_locale') !== 'en_US') return false;
+  if (parsed.searchParams.get('platform') !== 'web') return false;
+  if (parsed.searchParams.get('aid') !== aid || parsed.searchParams.has('episode_id')) return false;
+  const keys = [...parsed.searchParams.keys()].sort().join(',');
+  if (kind === 'shot') return keys === 'aid,platform,s_locale';
+  return keys === 'aid,from_spm_id,platform,s_locale,spm_id'
+    && parsed.searchParams.get('spm_id') === UGC_SPM
+    && parsed.searchParams.get('from_spm_id') === '';
 }
 
 function subtitlePayload(episode: string): string {
@@ -128,6 +312,30 @@ function subtitlePayload(episode: string): string {
     ]
     : [{ url: E2_URL, lang: 'Tiếng Việt', lang_key: 'vi', subtitle_id: 9 }];
   return JSON.stringify({ code: 0, data: { subtitles } });
+}
+
+function ugcSubtitlePayload(): string {
+  return JSON.stringify({ code: 0, data: { subtitles: [
+    { url: UGC_URL, lang: 'Upload track', lang_key: 'en', subtitle_id: 1 }
+  ] } });
+}
+
+function ugcShotPayload(): string {
+  return JSON.stringify({
+    code: 0,
+    data: {
+      x_len: 2,
+      y_len: 2,
+      x_size: 160,
+      y_size: 90,
+      images: [UGC_SHEET],
+      pv_data: 'https://pic.bstarstatic.com/videoshot/ugcsheet.bin'
+    }
+  });
+}
+
+function episodePayload(episode: string): string {
+  return JSON.stringify({ code: 0, data: { skip: episode === E1 ? E1_SKIP : null } });
 }
 
 function shotPayload(episode: string): string {
@@ -155,17 +363,40 @@ async function installFixtures(context: BrowserContext, hits: Hit[]): Promise<vo
     hits.push({ url: route.request().url(), status });
     await route.fulfill({ status, contentType, body });
   };
-  await context.route('https://www.bilibili.tv/**', (route) => fulfill(route, 200, 'text/html; charset=utf-8', pageHtml()));
+  await context.route('https://www.bilibili.tv/**', async (route) => {
+    if (route.request().url().split('?')[0] === FIXTURE_MEDIA_URL) {
+      return fulfill(route, 200, 'video/mp4', await fixtureMediaBytes());
+    }
+    const html = route.request().url().includes('/video/') ? ugcPageHtml() : pageHtml();
+    return fulfill(route, 200, 'text/html; charset=utf-8', html);
+  });
   await context.route('https://api.bilibili.tv/**', (route) => {
     const url = route.request().url();
     if (url.includes('/playurl')) return fulfill(route, 200, 'application/json', '{"code":0,"data":{}}');
-    const episode = new URL(url).searchParams.get('episode_id') || '';
-    const kind = url.includes('/video/shot') ? 'shot' : url.includes('/subtitle') ? 'subtitle' : null;
-    if (!kind || (episode !== E1 && episode !== E2) || !officialQuery(url, episode, kind)) {
-      return fulfill(route, 412, 'text/html', '<html>blocked</html>');
+    const parsed = new URL(url);
+    if (url.includes('/ogv/play/episode')) {
+      const episode = parsed.searchParams.get('episode_id') || '';
+      if ((episode !== E1 && episode !== E2) || !officialQuery(url, episode, 'episode')) {
+        return fulfill(route, 412, 'text/html', '<html>blocked</html>');
+      }
+      return fulfill(route, 200, 'application/json', episodePayload(episode));
     }
-    const body = kind === 'subtitle' ? subtitlePayload(episode) : shotPayload(episode);
-    return fulfill(route, 200, 'application/json', body);
+    const kind = url.includes('/video/shot') ? 'shot' : url.includes('/subtitle') ? 'subtitle' : null;
+    const episode = parsed.searchParams.get('episode_id') || '';
+    const aid = parsed.searchParams.get('aid') || '';
+    if (kind && (episode === E1 || episode === E2) && officialQuery(url, episode, kind)) {
+      const body = kind === 'subtitle' ? subtitlePayload(episode) : shotPayload(episode);
+      return fulfill(route, 200, 'application/json', body);
+    }
+    if (kind && aid === UGC_AID && ugcQuery(url, aid, kind)) {
+      const body = kind === 'subtitle' ? ugcSubtitlePayload() : ugcShotPayload();
+      return fulfill(route, 200, 'application/json', body);
+    }
+    return fulfill(route, 412, 'text/html', '<html>blocked</html>');
+  });
+  await context.route('https://p.bstarstatic.com/**', (route) => {
+    const url = route.request().url();
+    return fulfill(route, url === UGC_URL ? 200 : 404, 'application/json; charset=utf-8', url === UGC_URL ? UGC_BODY : 'missing');
   });
   await context.route('https://s.bstarstatic.com/**', (route) => {
     const url = route.request().url();
@@ -272,6 +503,13 @@ async function readUi(page: Page): Promise<PlayerUi> {
   })()`) as Promise<PlayerUi>;
 }
 
+async function waitForMediaDuration(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const video = document.querySelector('video');
+    return Boolean(video && video.readyState >= 1 && video.duration === 1504);
+  });
+}
+
 async function waitFor(label: string, ready: () => Promise<boolean> | boolean, timeoutMs = 15000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -303,7 +541,9 @@ async function chooseCaption(page: Page, label: string | 'off'): Promise<void> {
   await item.click();
 }
 
-type HostLayers = { hiddenAttr: boolean; theater: boolean; ass: string; json: string; episode: string | null };
+type HostLayers = { hiddenAttr: boolean; theater: boolean; ass: string; json: string; episode: string | null; kind: string | null };
+
+type Timeline = { marks: number; heatmap: boolean; preview: string; chapter: string };
 
 async function hostLayers(page: Page): Promise<HostLayers> {
   return page.evaluate(`(() => {
@@ -315,9 +555,33 @@ async function hostLayers(page: Page): Promise<HostLayers> {
       theater: root.classList.contains('theater-everywhere-html-active'),
       ass: ass ? getComputedStyle(ass).display : '',
       json: json ? getComputedStyle(json).display : '',
-      episode: root.getAttribute('data-te-bilibili-intl-episode')
+      episode: root.getAttribute('data-te-bilibili-intl-episode'),
+      kind: root.getAttribute('data-te-bilibili-intl-kind')
     };
   })()`) as Promise<HostLayers>;
+}
+
+async function readTimeline(page: Page): Promise<Timeline> {
+  return page.evaluate(`(() => {
+    const host = document.getElementById('theater-everywhere-ui');
+    const root = host && host.shadowRoot;
+    const preview = root && root.querySelector('.theater-scrubber-preview');
+    const chapter = root && root.querySelector('.theater-scrubber-chapter-title');
+    return {
+      marks: root ? root.querySelectorAll('.theater-scrubber-chapter-mark').length : 0,
+      heatmap: !!(root && root.querySelector('.theater-scrubber-heatmap-ready')),
+      preview: preview ? String(preview.style.backgroundImage || '') : '',
+      chapter: chapter && chapter.textContent ? chapter.textContent.trim() : ''
+    };
+  })()`) as Promise<Timeline>;
+}
+
+async function hoverScrubber(page: Page, ratio: number): Promise<void> {
+  await revealControls(page);
+  const box = await page.locator('.theater-scrubber-container').boundingBox();
+  if (!box) throw new Error('scrubber missing');
+  await page.mouse.move(box.x + Math.max(12, box.width * ratio), box.y + box.height / 2);
+  await delay(250);
 }
 
 describe('bilibili.tv extension runtime', () => {
@@ -373,6 +637,7 @@ describe('bilibili.tv extension runtime', () => {
         JSON.stringify(contentWorlds)
       );
 
+      await waitForMediaDuration(page);
       await page.keyboard.press('t');
       await page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
       await waitFor(`title after T; hits ${JSON.stringify(hits)}; notes ${notes.join(' | ')}`, async () => (
@@ -386,7 +651,14 @@ describe('bilibili.tv extension runtime', () => {
       await waitFor(`E1 metadata; hits ${JSON.stringify(hits)}`, () => (
         hits.some((hit) => hit.status === 200 && hit.url.includes('/subtitle') && officialQuery(hit.url, E1, 'subtitle'))
         && hits.some((hit) => hit.status === 200 && hit.url.includes('/video/shot') && officialQuery(hit.url, E1, 'shot'))
+        && hits.some((hit) => hit.status === 200 && hit.url.includes('/ogv/play/episode') && officialQuery(hit.url, E1, 'episode'))
       ));
+      await waitForMediaDuration(page);
+      await waitFor('E1 intro and outro marks', async () => {
+        const timeline = await readTimeline(page);
+        return timeline.marks === 2 && timeline.heatmap === false;
+      });
+      assert.equal((await hostLayers(page)).kind, 'ogv');
       await openCaptions(page);
       await waitFor('E1 tracks', async () => {
         const items = (await readUi(page)).items;
@@ -445,7 +717,9 @@ describe('bilibili.tv extension runtime', () => {
       await waitFor(`E2 metadata; hits ${JSON.stringify(hits)}`, () => (
         hits.some((hit) => hit.status === 200 && officialQuery(hit.url, E2, 'subtitle'))
         && hits.some((hit) => hit.status === 200 && officialQuery(hit.url, E2, 'shot'))
+        && hits.some((hit) => hit.status === 200 && officialQuery(hit.url, E2, 'episode'))
       ));
+      await waitFor('E2 drops the previous intro marks', async () => (await readTimeline(page)).marks === 0);
       await openCaptions(page);
       await waitFor('E2 tracks', async () => {
         const items = (await readUi(page)).items;
@@ -474,6 +748,108 @@ describe('bilibili.tv extension runtime', () => {
       assert.equal(exited.hiddenAttr, false);
       assert.notEqual(exited.ass, 'none');
       assert.notEqual(exited.json, 'none');
+    } finally {
+      await context.close();
+      rmSync(userData, { recursive: true, force: true });
+    }
+  });
+
+  it('reads an upload, then an episode with the same numeric id', async (t) => {
+    if (!extensionReady()) {
+      t.skip('dist/chrome-unpacked is missing; run pnpm build');
+      return;
+    }
+    const hits: Hit[] = [];
+    const notes: string[] = [];
+    const { context, userData } = await launchExtension();
+    try {
+      await installFixtures(context, hits);
+      const page = context.pages()[0] || await context.newPage();
+      page.setDefaultTimeout(15000);
+      page.on('pageerror', (error) => notes.push(error.message));
+      await page.goto(`https://www.bilibili.tv${UGC_PATH}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+      await dismissDialog(page);
+      await waitForMediaDuration(page);
+      await page.keyboard.press('t');
+      await page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
+      await waitFor(`upload title; hits ${JSON.stringify(hits)}; notes ${notes.join(' | ')}`, async () => (
+        (await readUi(page)).title === UGC_TITLE
+      ));
+      const uploaded = await hostLayers(page);
+      assert.equal(uploaded.episode, UGC_AID);
+      assert.equal(uploaded.kind, 'ugc');
+      await waitFor('upload metadata', () => (
+        hits.some((hit) => hit.status === 200 && ugcQuery(hit.url, UGC_AID, 'subtitle'))
+        && hits.some((hit) => hit.status === 200 && ugcQuery(hit.url, UGC_AID, 'shot'))
+        && hits.every((hit) => !hit.url.includes('/ogv/play/episode'))
+      ));
+      await openCaptions(page);
+      await waitFor('upload track', async () => (await readUi(page)).items.some((item) => item.includes('Upload track')));
+      await chooseCaption(page, 'Upload track');
+      await waitFor(`upload cue; hits ${JSON.stringify(hits)}`, async () => (await readUi(page)).cue === UGC_CUE);
+      assert.ok(hits.some((hit) => hit.url === UGC_URL && hit.status === 200));
+      await hoverScrubber(page, 0.02);
+      await waitFor('upload thumbnail', async () => (await readTimeline(page)).preview.includes('ugcsheet.jpg'));
+      const uploadTimeline = await readTimeline(page);
+      assert.equal(uploadTimeline.marks, 0);
+      assert.equal(uploadTimeline.heatmap, false);
+      assert.equal(uploadTimeline.chapter, '');
+
+      await page.evaluate((episode) => {
+        const video = document.querySelector('video');
+        const view = window as FixtureWindow;
+        history.pushState({}, '', '/en/play/1053337');
+        view.__initialState = {
+          global: { sLocale: 'en' },
+          ogv: {
+            epId: episode,
+            season: { title: 'The Last Summoner' },
+            sectionsList: [{ episodes: [{ episode_id: episode, title_display: 'E1' }] }]
+          }
+        };
+        video?.dispatchEvent(new Event('timeupdate'));
+      }, E1);
+      await waitFor(`episode title after upload; hits ${JSON.stringify(hits)}; notes ${notes.join(' | ')}`, async () => (
+        (await readUi(page)).title === E1_TITLE
+      ));
+      await waitFor('upload cue leaves the episode', async () => (await readUi(page)).cue !== UGC_CUE);
+      const episode = await hostLayers(page);
+      assert.equal(episode.kind, 'ogv');
+      assert.equal(episode.episode, E1);
+      await waitFor('episode skip request', () => (
+        hits.some((hit) => hit.status === 200 && officialQuery(hit.url, E1, 'episode'))
+      ));
+      await waitFor('intro and outro marks', async () => (await readTimeline(page)).marks === 2);
+      await openCaptions(page);
+      await waitFor('episode tracks replace the upload', async () => {
+        const items = (await readUi(page)).items;
+        return items.some((item) => item.includes('عربي')) && items.every((item) => !item.includes('Upload track'));
+      });
+      await hoverScrubber(page, 0.12);
+      await waitFor('intro label', async () => (await readTimeline(page)).chapter === 'Intro');
+      assert.equal((await readTimeline(page)).heatmap, false);
+      assert.equal(hits.some((hit) => hit.url.includes('/playurl')), false);
+
+      await page.evaluate((path) => {
+        const video = document.querySelector('video');
+        const view = window as FixtureWindow;
+        const aid = path.split('/').pop();
+        history.pushState({}, '', path);
+        view.__initialState = {
+          global: { sLocale: 'en' },
+          ogv: { epId: '', season: null, sectionsList: [] },
+          ugc: { aid, archive: { aid, title: 'Uploaded special' } }
+        };
+        video?.dispatchEvent(new Event('timeupdate'));
+      }, UGC_PATH);
+      await waitFor('upload title returns', async () => (await readUi(page)).title === UGC_TITLE);
+      await waitFor('intro marks leave the upload', async () => (await readTimeline(page)).marks === 0);
+      const back = await hostLayers(page);
+      assert.equal(back.kind, 'ugc');
+      assert.equal(back.episode, UGC_AID);
+      await hoverScrubber(page, 0.12);
+      await waitFor('no intro label on the upload', async () => (await readTimeline(page)).chapter === '');
     } finally {
       await context.close();
       rmSync(userData, { recursive: true, force: true });

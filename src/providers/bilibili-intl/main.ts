@@ -6,8 +6,10 @@ import {
   bilibiliIntlTitle,
   normalizeBilibiliIntlSnapshot,
   parseBilibiliIntlShotIndex,
+  parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard,
   unwrapBilibiliIntlValue,
+  type BilibiliIntlKind,
   type BilibiliIntlSnapshot,
   type BilibiliIntlStoryboard
 } from '../../media-features/parsers/bilibili-intl';
@@ -15,6 +17,7 @@ import {
 export type { BilibiliIntlSnapshot } from '../../media-features/parsers/bilibili-intl';
 
 const EPISODE_ATTR = 'data-te-bilibili-intl-episode';
+const KIND_ATTR = 'data-te-bilibili-intl-kind';
 
 export function bilibiliIntlIntegrationEnabled(): boolean {
   return isBilibiliIntlHost() && mediaProviderIntegrationEnabled('bilibiliIntl');
@@ -34,10 +37,21 @@ function locationPath(): string {
   }
 }
 
-/** OGV episode pages (`/{locale}/play/{season}`). User uploads live under `/video/` and are not implemented. */
+/** OGV episode pages (`/{locale}/play/{season}`). `/video/` is a different identity and is not an episode id. */
 export function bilibiliIntlOgvEpisodePath(pathname = locationPath()): boolean {
   if (!pathname || /\/video(?:\/|$)/i.test(pathname)) return false;
   return /^\/(?:[a-z]{2}(?:-[A-Za-z0-9]{2,8})?\/)?play\/\d{1,20}(?:\/|$)/.test(pathname);
+}
+
+/** Public user uploads (`/{locale}/video/{aid}`). `videosimple` and `video-rules` do not match. */
+export function bilibiliIntlUgcPath(pathname = locationPath()): boolean {
+  return /^\/(?:[a-z]{2}(?:-[A-Za-z0-9]{2,8})?\/)?video\/\d{1,20}(?:\/|$)/.test(pathname || '');
+}
+
+export function bilibiliIntlPathKind(pathname = locationPath()): BilibiliIntlKind | null {
+  if (bilibiliIntlUgcPath(pathname)) return 'ugc';
+  if (bilibiliIntlOgvEpisodePath(pathname)) return 'ogv';
+  return null;
 }
 
 export function bilibiliIntlRouteEpisodeId(pathname = locationPath()): string | null {
@@ -45,19 +59,28 @@ export function bilibiliIntlRouteEpisodeId(pathname = locationPath()): string | 
   return match ? bilibiliIntlEpisodeId(match[1]) : null;
 }
 
+export function bilibiliIntlRouteAid(pathname = locationPath()): string | null {
+  const match = /^\/(?:[a-z]{2}(?:-[A-Za-z0-9]{2,8})?\/)?video\/(\d{1,20})(?:\/|$)/.exec(pathname);
+  return match ? bilibiliIntlEpisodeId(match[1]) : null;
+}
+
 export type BilibiliIntlLoadScope = {
   supported: boolean;
   path: string;
+  kind: BilibiliIntlKind | null;
+  /** Episode segment on `/play/`, or the upload id on `/video/`. */
   routeEpisodeId: string | null;
 };
 
-/** Identity the content script can see before MAIN publishes an episode id. */
+/** Identity the content script can see before MAIN publishes an id. */
 export function bilibiliIntlLoadScope(): BilibiliIntlLoadScope {
   const path = locationPath();
+  const kind = bilibiliIntlPathKind(path);
   return {
-    supported: bilibiliIntlOgvEpisodePath(path) && bilibiliIntlIntegrationEnabled(),
+    supported: kind !== null && bilibiliIntlIntegrationEnabled(),
     path,
-    routeEpisodeId: bilibiliIntlRouteEpisodeId(path)
+    kind,
+    routeEpisodeId: kind === 'ugc' ? bilibiliIntlRouteAid(path) : bilibiliIntlRouteEpisodeId(path)
   };
 }
 
@@ -68,23 +91,82 @@ function stateEpisodeId(): string | null {
   return bilibiliIntlEpisodeId(unwrapBilibiliIntlValue(epId));
 }
 
+function stateAid(): string | null {
+  const root = unwrapBilibiliIntlValue(pageState());
+  const ugc = unwrapBilibiliIntlValue(root && typeof root === 'object' ? (root as { ugc?: unknown }).ugc : undefined);
+  const direct = ugc && typeof ugc === 'object' ? (ugc as { aid?: unknown }).aid : undefined;
+  const fromStore = bilibiliIntlEpisodeId(unwrapBilibiliIntlValue(direct));
+  if (fromStore) return fromStore;
+  const archive = unwrapBilibiliIntlValue(ugc && typeof ugc === 'object' ? (ugc as { archive?: unknown }).archive : undefined);
+  const archived = archive && typeof archive === 'object' ? (archive as { aid?: unknown }).aid : undefined;
+  return bilibiliIntlEpisodeId(unwrapBilibiliIntlValue(archived));
+}
+
+/** An attribute without a kind is an older OGV publication. A ugc id must not satisfy an episode page, or the reverse. */
+function publishedId(kind: BilibiliIntlKind): string | null {
+  const id = bilibiliIntlEpisodeId(document.documentElement?.getAttribute(EPISODE_ATTR));
+  if (!id) return null;
+  const published = document.documentElement?.getAttribute(KIND_ATTR);
+  if (published === 'ogv' || published === 'ugc') return published === kind ? id : null;
+  return kind === 'ogv' ? id : null;
+}
+
 export function bilibiliIntlPageId(): string | null {
-  if (!bilibiliIntlOgvEpisodePath()) return null;
+  const kind = bilibiliIntlPathKind();
+  if (kind === 'ogv') return ogvPageId();
+  if (kind === 'ugc') return ugcPageId();
+  return null;
+}
+
+function ogvPageId(): string | null {
   // Page state wins in MAIN. The content script only sees the route and the attribute published below.
   const fromState = stateEpisodeId();
   if (fromState) return fromState;
   const fromRoute = bilibiliIntlRouteEpisodeId();
-  const fromAttr = bilibiliIntlEpisodeId(document.documentElement?.getAttribute(EPISODE_ATTR));
+  const fromAttr = publishedId('ogv');
   // A season URL has no episode segment. When the path names an episode, a different attribute is stale.
   if (fromRoute && fromAttr && fromRoute !== fromAttr) return fromRoute;
   return fromAttr || fromRoute;
 }
 
-function publishEpisode(id: string | null): void {
+function ugcPageId(): string | null {
+  const fromRoute = bilibiliIntlRouteAid();
+  const fromState = stateAid();
+  if (fromState && (!fromRoute || fromState === fromRoute)) return fromState;
+  const fromAttr = publishedId('ugc');
+  if (fromRoute && fromAttr && fromRoute !== fromAttr) return fromRoute;
+  return fromAttr || fromRoute;
+}
+
+type MediaRef = { kind: BilibiliIntlKind; id: string };
+
+function currentMedia(): MediaRef | null {
+  const kind = bilibiliIntlPathKind();
+  if (!kind) return null;
+  if (kind === 'ogv') {
+    const id = stateEpisodeId();
+    if (!id) return null;
+    const route = bilibiliIntlRouteEpisodeId();
+    if (route && route !== id) return null;
+    return { kind, id };
+  }
+  const id = stateAid();
+  if (!id) return null;
+  const route = bilibiliIntlRouteAid();
+  if (route && route !== id) return null;
+  return { kind, id };
+}
+
+function publishMedia(media: MediaRef | null): void {
   const root = document.documentElement;
   if (!root) return;
-  if (id) root.setAttribute(EPISODE_ATTR, id);
-  else root.removeAttribute(EPISODE_ATTR);
+  if (!media) {
+    root.removeAttribute(EPISODE_ATTR);
+    root.removeAttribute(KIND_ATTR);
+    return;
+  }
+  root.setAttribute(EPISODE_ATTR, media.id);
+  root.setAttribute(KIND_ATTR, media.kind);
 }
 
 function pageDuration(): number | undefined {
@@ -111,6 +193,7 @@ const S_LOCALE_BY_PAGE: Record<string, string> = {
 };
 
 const OGV_SPM_ID = 'bstar-web.pgc-video-detail.0.0';
+const UGC_SPM_ID = 'bstar-web.ugc-video-detail.0.0';
 
 function knownPageLocale(value: unknown): string | null {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(S_LOCALE_BY_PAGE, value) ? value : null;
@@ -146,25 +229,30 @@ function fromSpmId(): string {
 }
 
 /**
- * Official metadata query. Subtitle matches the OGV player request
- * (`s_locale`, `platform`, `episode_id`, `spm_id`, `from_spm_id`).
- * Shot matches `ts().get("video/shot")` in `biliintl-player-dfb25af7.js`.
+ * Official metadata query. Subtitles use `episode_id` on OGV and `aid` on uploads,
+ * plus the page's `spm_id`. Shots use the same id field as `video/shot` in the player.
+ * Intro/outro is `ogv/play/episode` and is not requested for an upload.
  */
-function metadataUrl(path: 'subtitle' | 'video/shot', episodeId: string): string {
+function metadataUrl(media: MediaRef, resource: 'subtitle' | 'shot' | 'episode'): string {
   const params = new URLSearchParams();
   params.set('s_locale', apiSLocale());
   params.set('platform', 'web');
-  params.set('episode_id', episodeId);
-  if (path === 'subtitle') {
-    params.set('spm_id', OGV_SPM_ID);
+  if (resource === 'episode') {
+    params.set('episode_id', media.id);
+    return `https://api.bilibili.tv/intl/gateway/web/v2/ogv/play/episode?${params.toString()}`;
+  }
+  params.set(media.kind === 'ugc' ? 'aid' : 'episode_id', media.id);
+  if (resource === 'subtitle') {
+    params.set('spm_id', media.kind === 'ugc' ? UGC_SPM_ID : OGV_SPM_ID);
     params.set('from_spm_id', fromSpmId());
   }
+  const path = resource === 'subtitle' ? 'subtitle' : 'video/shot';
   return `https://api.bilibili.tv/intl/gateway/web/v2/${path}?${params.toString()}`;
 }
 
-async function apiData(path: 'subtitle' | 'video/shot', episodeId: string): Promise<unknown> {
+async function apiData(url: string): Promise<unknown> {
   try {
-    const response = await fetch(metadataUrl(path, episodeId), { credentials: 'omit', signal: AbortSignal.timeout(2500) });
+    const response = await fetch(url, { credentials: 'omit', signal: AbortSignal.timeout(2500) });
     if (!response.ok || (response.url && new URL(response.url).origin !== 'https://api.bilibili.tv')) return null;
     const body = await response.text();
     if (body.length > 512 * 1024) return null;
@@ -189,36 +277,47 @@ async function readShot(payload: unknown): Promise<BilibiliIntlStoryboard | null
   }
 }
 
+function mediaStill(media: MediaRef, locale: string, path: string): boolean {
+  if (!bilibiliIntlIntegrationEnabled() || apiSLocale() !== locale || locationPath() !== path) return false;
+  const now = currentMedia();
+  return now?.kind === media.kind && now.id === media.id;
+}
+
 export async function readBilibiliIntlSnapshot(): Promise<BilibiliIntlSnapshot | null> {
-  if (!bilibiliIntlIntegrationEnabled() || !bilibiliIntlOgvEpisodePath()) {
+  if (!bilibiliIntlIntegrationEnabled() || !bilibiliIntlPathKind()) {
     cached = null;
-    publishEpisode(null);
+    publishMedia(null);
     return null;
   }
-  const episodeId = stateEpisodeId();
-  if (!episodeId) {
-    publishEpisode(null);
+  const media = currentMedia();
+  if (!media) {
+    publishMedia(null);
     return null;
   }
-  publishEpisode(episodeId);
+  publishMedia(media);
   const locale = apiSLocale();
-  const cacheKey = `${episodeId}:${locale}`;
+  const path = locationPath();
+  const cacheKey = `${path}|${media.kind}:${media.id}:${locale}`;
   if (cached?.key === cacheKey && cached.expires > Date.now()) return cached.pending;
-  const title = bilibiliIntlTitle(pageState(), document.title);
+  const title = bilibiliIntlTitle(pageState(), document.title, media.kind);
   const duration = pageDuration();
-  const pending = Promise.all([apiData('subtitle', episodeId), apiData('video/shot', episodeId)])
-    .then(async ([subtitles, shot]) => {
-      const storyboard = await readShot(shot);
-      if (!bilibiliIntlIntegrationEnabled() || stateEpisodeId() !== episodeId || apiSLocale() !== locale) {
-        if (cached?.pending === pending) cached = null;
-        return null;
-      }
-      const snapshot = normalizeBilibiliIntlSnapshot(episodeId, title, duration, subtitles, storyboard);
-      if (cached?.pending === pending && snapshot.captionTracks.length === 0) {
-        cached = { key: cacheKey, expires: Date.now() + 2000, pending };
-      }
-      return snapshot;
-    });
+  const pending = Promise.all([
+    apiData(metadataUrl(media, 'subtitle')),
+    apiData(metadataUrl(media, 'shot')),
+    media.kind === 'ogv' ? apiData(metadataUrl(media, 'episode')) : Promise.resolve(null)
+  ]).then(async ([subtitles, shot, episode]) => {
+    const storyboard = await readShot(shot);
+    if (!mediaStill(media, locale, path)) {
+      if (cached?.pending === pending) cached = null;
+      return null;
+    }
+    const chapters = media.kind === 'ogv' ? parseBilibiliIntlSkipChapters(episode, duration) : [];
+    const snapshot = normalizeBilibiliIntlSnapshot(media.id, title, duration, subtitles, storyboard, chapters, media.kind);
+    if (cached?.pending === pending && snapshot.captionTracks.length === 0) {
+      cached = { key: cacheKey, expires: Date.now() + 2000, pending };
+    }
+    return snapshot;
+  });
   cached = { key: cacheKey, expires: Date.now() + 15000, pending };
   return pending;
 }

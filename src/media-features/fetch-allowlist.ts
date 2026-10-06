@@ -1,3 +1,4 @@
+import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
@@ -57,13 +58,7 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
   }
 
   if (request.provider === 'bilibiliIntl' && request.kind === 'caption-track') {
-    const rawPath = rawHttpsPath(request.url);
-    return !parsed.username && !parsed.password && !parsed.port
-      && parsed.hostname === 's.bstarstatic.com'
-      && (!parsed.search || /^\?auth_key=[\w.~-]{1,200}$/.test(parsed.search))
-      && rawPath !== null
-      && rawPath === parsed.pathname
-      && /^\/ogv\/subtitle\/[a-f0-9]{16,80}\.(?:ass|json)$/i.test(rawPath);
+    return bilibiliIntlSubtitleUrl(request.url) !== null;
   }
 
   if (request.provider === 'bilibili' && request.kind === 'caption-track') {

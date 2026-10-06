@@ -662,7 +662,7 @@
     "message": "Integrazione Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importa il titolo dell’episodio, i sottotitoli e le miniature della sequenza temporale dalle pagine degli episodi di bilibili.tv quando disponibili. L’episodio successivo usa il controllo successivo del player. Questa integrazione non importa capitoli né la mappa di popolarità. Le pagine dei video caricati dagli utenti (/video) non sono supportate."
+    "message": "Importa il titolo, i sottotitoli e le miniature della sequenza temporale dalle pagine degli episodi e dei video caricati dagli utenti di bilibili.tv quando disponibili. Le pagine degli episodi possono mostrare i marcatori di intro e outro. L’episodio successivo usa il controllo successivo del player. Questa integrazione non importa un elenco di capitoli con nome né la mappa di popolarità."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Integrazione Crunchyroll"

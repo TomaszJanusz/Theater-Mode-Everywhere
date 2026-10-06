@@ -662,7 +662,7 @@
     "message": "Bilibili.tv integration"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Imports the episode title, subtitles, and timeline thumbnails from bilibili.tv episode pages when available. Next episode uses the player’s next control. This integration does not import chapters or the high-energy heatmap. User-uploaded /video pages are not supported."
+    "message": "Imports the title, subtitles, and timeline thumbnails from bilibili.tv episode and user-upload pages when available. Episode pages can show intro and outro markers. Next episode uses the player’s next control. This integration does not import a named chapter list or the high-energy heatmap."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll integration"
