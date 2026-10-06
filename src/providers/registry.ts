@@ -1,4 +1,4 @@
-import { isBilibiliHost, isBilibiliIntlHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
@@ -21,7 +21,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname) },
   { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname) },
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname) },
-  { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) }
+  { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
+  { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {

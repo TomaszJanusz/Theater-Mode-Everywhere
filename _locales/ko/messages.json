@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "사용 가능할 때 bilibili.tv 에피소드 페이지에서 제목, 자막, 타임라인 썸네일을 가져옵니다. 다음 에피소드는 플레이어의 다음 컨트롤을 사용합니다. 이 통합은 챕터와 인기 히트맵을 가져오지 않습니다. 사용자 업로드 /video 페이지는 지원하지 않습니다."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll 연동"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "에피소드 제목, 인트로와 엔딩, 사용 가능한 자막 제어, 타임라인 미리보기를 표시합니다. 영상에 구워진 자막은 끌 수 없습니다."
   }
 }

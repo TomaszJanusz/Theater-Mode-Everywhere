@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importiert Folgentitel, Untertitel und Zeitachsen-Vorschaubilder von bilibili.tv-Folgenseiten, sofern verfügbar. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine Kapitel und keine Beliebtheitskurve. Hochgeladene /video-Seiten werden nicht unterstützt."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll-Integration"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Zeigt den Folgentitel, Vorspann und Abspann, verfügbare Untertitel und Zeitachsen-Vorschauen. Eingebrannte Untertitel bleiben im Bild und lassen sich nicht ausschalten."
   }
 }

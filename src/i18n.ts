@@ -88,6 +88,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   bilibiliIntlIntegrationDescription: 'Imports the episode title, subtitles, and timeline thumbnails from bilibili.tv episode pages when available. Next episode uses the player’s next control. This integration does not import chapters or the high-energy heatmap. User-uploaded /video pages are not supported.',
   tencentIntegrationTitle: 'Tencent Video / WeTV integration',
   tencentIntegrationDescription: "Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls.",
+  crunchyrollIntegrationTitle: 'Crunchyroll integration',
+  crunchyrollIntegrationDescription: 'Shows the episode title, intro and credits, available subtitle controls, and timeline previews. Burned-in captions stay on the video and cannot be turned off.',
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',

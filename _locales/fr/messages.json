@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importe le titre de l’épisode, les sous-titres et les miniatures de la chronologie depuis les pages d’épisodes bilibili.tv lorsqu’ils sont disponibles. L’épisode suivant utilise le bouton suivant du lecteur. Cette intégration n’importe pas les chapitres ni la courbe de popularité. Les pages de vidéos envoyées par les utilisateurs (/video) ne sont pas prises en charge."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Intégration Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Affiche le titre de l’épisode, le générique de début et de fin, les commandes de sous-titres disponibles et les aperçus de la chronologie. Les sous-titres incrustés restent à l’image et ne peuvent pas être désactivés."
   }
 }

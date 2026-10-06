@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importuje tytuł odcinka, napisy i miniatury osi czasu ze stron odcinków bilibili.tv, jeśli są dostępne. Następny odcinek korzysta z przycisku odtwarzacza. Ta integracja nie importuje rozdziałów ani mapy popularności. Strony wideo użytkowników (/video) nie są obsługiwane."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Integracja z Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Pokazuje tytuł odcinka, czołówkę i napisy końcowe, dostępne sterowanie napisami oraz podgląd na osi czasu. Napisy wtopione w obraz zostają i nie da się ich wyłączyć."
   }
 }

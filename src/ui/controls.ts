@@ -2,6 +2,7 @@ import { DISNEY_CLOCK_EVENT, writeDisneyContentTime } from '../media-features/pa
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
+import { CRUNCHYROLL_HARVEST_EVENT } from '../providers/crunchyroll/main';
 import { isBilibiliIntlHost } from '../providers/hosts';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
@@ -1464,6 +1465,7 @@ export function createControls(ctx: PlayerChromeContext) {
     window.addEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
     window.addEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
+    window.addEventListener(CRUNCHYROLL_HARVEST_EVENT, onPageMediaChange);
     window.addEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
     video.addEventListener('volumechange', onVolumeChange);
     video.addEventListener('ratechange', onRateChange);
@@ -1491,6 +1493,7 @@ export function createControls(ctx: PlayerChromeContext) {
       window.removeEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
       window.removeEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
+      window.removeEventListener(CRUNCHYROLL_HARVEST_EVENT, onPageMediaChange);
       window.removeEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
       video.removeEventListener('volumechange', onVolumeChange);
       video.removeEventListener('ratechange', onRateChange);

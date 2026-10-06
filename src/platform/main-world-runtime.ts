@@ -24,6 +24,7 @@ import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/m
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
 import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
+import { captureCrunchyrollNetworkResponse, crunchyrollAllowsCaptionFetch, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, isCrunchyrollBifUrl, noteCrunchyrollManifest, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
   captureTwitchNetworkResponse,
@@ -74,6 +75,7 @@ export function installMainWorldRuntime(): void {
           captureTwitchNetworkResponse(url, clone);
           captureDisneyNetworkResponse(url, clone);
           captureTencentNetworkResponse(url, clone);
+          captureCrunchyrollNetworkResponse(url, clone);
         } catch {
           // Harvest must not break the page's fetch.
         }
@@ -96,6 +98,7 @@ export function installMainWorldRuntime(): void {
             harvestTwitchResponseJson(url, data);
             harvestDisneyData(url, data);
             harvestTencentData(url, data);
+            harvestCrunchyrollData(url, data);
             harvestYoutubeHeatmapJson(url, data);
           } catch {
             // Ignore harvest failures from host JSON parsing.
@@ -116,6 +119,7 @@ export function installMainWorldRuntime(): void {
             harvestTwitchResponseText(url, text);
             harvestDisneyBody(url, text);
             harvestTencentBody(url, text);
+            harvestCrunchyrollBody(url, text);
             harvestYoutubeHeatmapText(url, text);
           } catch {
             // Ignore harvest failures from host text parsing.
@@ -156,8 +160,12 @@ export function installMainWorldRuntime(): void {
         if (body) cacheTimedtextBody(url, body);
         harvestTwitchXhr(url, body, this);
         if (body) harvestDisneyBody(url, body);
+        noteCrunchyrollManifest(url);
         if (body) harvestTencentBody(url, body);
+        if (body) harvestCrunchyrollBody(url, body);
         if (this.responseType === 'json') harvestTencentData(url, this.response);
+        if (this.responseType === 'json') harvestCrunchyrollData(url, this.response);
+        if (this.response instanceof ArrayBuffer && isCrunchyrollBifUrl(url)) rememberCrunchyrollBif(this.response, url);
         if (body) harvestYoutubeHeatmapText(url, body);
       });
       return originalXhrSend.apply(this, arguments as unknown as Parameters<XMLHttpRequest['send']>);
@@ -188,6 +196,7 @@ export function installMainWorldRuntime(): void {
     installDisneyMain();
     installNetflixMain();
     installTencentMain();
+    installCrunchyrollMain();
   }
 
   let pendingVideo: HTMLVideoElement | null = null;
@@ -458,7 +467,7 @@ export function installMainWorldRuntime(): void {
     }
     publishYoutubeProbeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot() }
+      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.
@@ -489,6 +498,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'bilibili') return bilibiliIntegrationEnabled();
     if (classified.provider === 'bilibiliIntl') return bilibiliIntlIntegrationEnabled();
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
+    if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     return false;
   }
 
@@ -520,6 +530,7 @@ export function installMainWorldRuntime(): void {
             if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
             if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) return null;
             if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) return null;
+            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) return null;
             const buffer = await response.arrayBuffer();
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;

@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "利用できる場合、bilibili.tv のエピソードページからタイトル、字幕、タイムラインのサムネイルを取り込みます。次のエピソードはプレーヤーの次へ操作を使います。この統合はチャプターと高エネルギー進捗ヒートマップを取り込みません。ユーザー投稿の /video ページには対応していません。"
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll 連携"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "エピソードのタイトル、オープニングとエンディング、利用できる字幕の操作、タイムラインのプレビューを表示します。映像に焼き込まれた字幕はオフにできません。"
   }
 }

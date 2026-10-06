@@ -1,4 +1,4 @@
-import { isDisneyHost, isPatreonHost, isTwitchHost, isVimeoHost, isYouTubeHost } from '../providers/hosts';
+import { isCrunchyrollHost, isDisneyHost, isPatreonHost, isTwitchHost, isVimeoHost, isYouTubeHost } from '../providers/hosts';
 
 /** Resolve the service homepage, including hosts used only for embedded players. */
 export function serviceHomeUrl(pageUrl: string): string | null {
@@ -10,6 +10,7 @@ export function serviceHomeUrl(pageUrl: string): string | null {
     if (isTwitchHost(url.hostname)) return 'https://www.twitch.tv/';
     if (isPatreonHost(url.hostname)) return 'https://www.patreon.com/';
     if (isDisneyHost(url.hostname)) return 'https://www.disneyplus.com/';
+    if (isCrunchyrollHost(url.hostname)) return 'https://www.crunchyroll.com/';
     return `${url.origin}/`;
   } catch {
     return null;

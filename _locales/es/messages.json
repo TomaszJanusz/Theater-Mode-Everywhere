@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importa el título del episodio, los subtítulos y las miniaturas de la línea de tiempo desde las páginas de episodios de bilibili.tv cuando están disponibles. El episodio siguiente usa el control siguiente del reproductor. Esta integración no importa capítulos ni el mapa de popularidad. Las páginas de vídeos subidos por usuarios (/video) no están disponibles."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Integración con Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Muestra el título del episodio, la intro y los créditos, los controles de subtítulos disponibles y las vistas previas de la línea de tiempo. Los subtítulos incrustados permanecen en el vídeo y no se pueden desactivar."
   }
 }

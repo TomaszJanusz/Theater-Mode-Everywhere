@@ -657,5 +657,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "在可用时从 bilibili.tv 的分集页面导入标题、字幕和时间轴缩略图。下一集使用播放器的下一集控件。此集成不导入章节和高能进度条。用户上传的 /video 页面不受支持。"
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll 集成"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "显示单集标题、片头和片尾、可用的字幕控制以及时间轴预览。烧录在画面里的字幕会保留，无法关闭。"
   }
 }

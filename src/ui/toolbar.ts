@@ -9,6 +9,7 @@ import {
   raisedCaptionRowCount,
   type DockRect
 } from '../media-features/caption-dock';
+import { CRUNCHYROLL_HOST_CAPTION_CLASS, CRUNCHYROLL_HOST_CAPTION_SELECTOR } from '../providers/crunchyroll/host-surface';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
@@ -104,9 +105,16 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
     features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
 
+    const hostList = document.documentElement.classList.contains('theater-everywhere-html-active')
+      && document.documentElement.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)
+      ? document.querySelector(CRUNCHYROLL_HOST_CAPTION_SELECTOR)
+      : null;
+    const hostCaptionSize = hostList instanceof HTMLElement && hostList.offsetWidth > 1 && hostList.offsetHeight > 1
+      ? { width: hostList.offsetWidth, height: hostList.offsetHeight }
+      : null;
     const captionSize = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
-      : null;
+      : hostCaptionSize;
 
     const obstacles: DockRect[] = [];
     const controls = ctx.queryPlayerUi('.theater-controls-wrapper.visible') as HTMLElement | null;
