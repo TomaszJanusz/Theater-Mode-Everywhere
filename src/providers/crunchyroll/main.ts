@@ -61,7 +61,14 @@ type Harvest = {
 };
 
 type DomTitle = { text: string; route: string; mediaId: string };
-type PendingBif = { url: string; buffer: ArrayBuffer; generation: number; mediaId: string; route: string };
+type PendingBif = {
+  url: string;
+  buffer: ArrayBuffer;
+  generation: number;
+  mediaId: string;
+  route: string;
+  intent: number;
+};
 type CheckedGet = { get(name: string): string | null };
 type CheckedResponse = {
   ok: boolean;
@@ -80,6 +87,9 @@ let hostCaptionGeneration = 0;
 let hostCaptionQueue: Promise<void> = Promise.resolve();
 let bifInflight: string | null = null;
 let pendingBif: PendingBif | null = null;
+/** Latest BIF URL this page asked to show. An older in-flight body must not commit over it. */
+let bifIntent = 0;
+let bifIntentKey = '';
 let publishedKey = '';
 let installed = false;
 let domTitle: DomTitle | null = null;
@@ -158,6 +168,9 @@ function clearHarvest(dropTitles: boolean): void {
   skipRetryAt = 0;
   bifInflight = null;
   pendingBif = null;
+  // Retire in-flight tickets. The next URL gets a new id, so an older body cannot match it.
+  bifIntent += 1;
+  bifIntentKey = '';
   revokeNow(state?.bifBlobUrl);
   state = null;
   if (dropTitles) {
@@ -193,6 +206,8 @@ function pageMatches(mediaId: string): boolean {
 type PlayerSession = {
   rendition: Exclude<CrunchyrollRendition, 'unknown'>;
   assetId: string;
+  /** False when a recognized player is missing list, enable, or disable. An empty list stays controllable. */
+  controllable: boolean;
   list: () => unknown;
   enable: (id: string) => unknown;
   disable: (id: string) => unknown;
@@ -222,9 +237,23 @@ function readPlayerSession(mediaId: string): PlayerSession | null {
         const enable = subtitles && typeof subtitles.enable === 'function' ? subtitles.enable.bind(subtitles) : null;
         const disable = subtitles && typeof subtitles.disable === 'function' ? subtitles.disable.bind(subtitles) : null;
         if (!list || !enable || !disable) {
-          return { rendition: identity.rendition, assetId: identity.assetId, list: () => [], enable: () => {}, disable: () => {} };
+          // Keep the rendition, but do not pretend the subtitle API returned an empty list.
+          return {
+            rendition: identity.rendition,
+            assetId: identity.assetId,
+            controllable: false,
+            list: () => {
+              throw new Error('crunchyroll-subtitles-unavailable');
+            },
+            enable: () => {
+              throw new Error('crunchyroll-subtitles-unavailable');
+            },
+            disable: () => {
+              throw new Error('crunchyroll-subtitles-unavailable');
+            }
+          };
         }
-        return { rendition: identity.rendition, assetId: identity.assetId, list, enable, disable };
+        return { rendition: identity.rendition, assetId: identity.assetId, controllable: true, list, enable, disable };
       }
       node = record.parentElement;
     }
@@ -235,6 +264,7 @@ function readPlayerSession(mediaId: string): PlayerSession | null {
 function hostView(mediaId: string, playingAsset: string | null): { tracks: CrunchyrollHostTrack[]; renderer: CrunchyrollHostRenderer } {
   const session = readPlayerSession(mediaId);
   if (!session) return { tracks: [], renderer: 'absent' };
+  if (!session.controllable) return { tracks: [], renderer: 'unknown' };
   let listed: unknown = [];
   try {
     listed = session.list();
@@ -551,14 +581,31 @@ function commitBif(buffer: ArrayBuffer, url: string, assetId: string, mediaId: s
   publish();
 }
 
-function tryCommitBif(buffer: ArrayBuffer, url: string, generation: number, mediaId: string, route: string): void {
+function armBifIntent(mediaId: string, url: string): number {
+  const key = `${mediaId}\0${url}`;
+  if (bifIntentKey === key) return bifIntent;
+  bifIntentKey = key;
+  bifIntent += 1;
+  return bifIntent;
+}
+
+function tryCommitBif(
+  buffer: ArrayBuffer,
+  url: string,
+  generation: number,
+  mediaId: string,
+  route: string,
+  intent: number
+): void {
+  // A newer URL may replace the blob. A body that started earlier must not.
+  if (intent !== bifIntent) return;
   if (generation !== sessionGeneration || !pageMatches(mediaId) || crunchyrollPageRoute() !== route) return;
   const file = crunchyrollCdnFile(url);
   if (file?.kind !== 'bif' || !isCrunchyrollBifFileUrl(url, file.assetId)) return;
   const current = state?.mediaId === mediaId ? state : null;
   const assets = current ? boundAssets(current, mediaId) : new Set<string>();
   if (!assets.size) {
-    pendingBif = { url, buffer, generation, mediaId, route };
+    pendingBif = { url, buffer, generation, mediaId, route, intent };
     return;
   }
   if (!assets.has(file.assetId)) return;
@@ -570,7 +617,7 @@ function flushPendingBif(): void {
   if (!pendingBif) return;
   const pending = pendingBif;
   pendingBif = null;
-  tryCommitBif(pending.buffer, pending.url, pending.generation, pending.mediaId, pending.route);
+  tryCommitBif(pending.buffer, pending.url, pending.generation, pending.mediaId, pending.route, pending.intent);
 }
 
 function requestBif(mediaId: string, url: string): void {
@@ -580,19 +627,21 @@ function requestBif(mediaId: string, url: string): void {
   bifInflight = url;
   const generation = sessionGeneration;
   const route = crunchyrollPageRoute();
+  const intent = armBifIntent(mediaId, url);
   void loadCrunchyrollUrl(url, CRUNCHYROLL_BIF_TIMEOUT_MS, (finalUrl) => {
     return isCrunchyrollBifFileUrl(finalUrl, file.assetId);
   }, 'buffer', MAX_CRUNCHYROLL_BIF_BYTES).then((loaded) => {
     if (bifInflight === url) bifInflight = null;
     if (!loaded?.buffer) return;
-    tryCommitBif(loaded.buffer, loaded.finalUrl, generation, mediaId, route);
+    tryCommitBif(loaded.buffer, loaded.finalUrl, generation, mediaId, route, intent);
   });
 }
 
-export function rememberCrunchyrollBif(buffer: ArrayBuffer, url: string): void {
+export function rememberCrunchyrollBif(buffer: ArrayBuffer, url: string, intent?: number): void {
   const mediaId = crunchyrollPageMediaId();
   if (!mediaId || isCrunchyrollOwnedRequest(url)) return;
-  tryCommitBif(buffer, url, sessionGeneration, mediaId, crunchyrollPageRoute());
+  const ticket = intent ?? armBifIntent(mediaId, url);
+  tryCommitBif(buffer, url, sessionGeneration, mediaId, crunchyrollPageRoute(), ticket);
 }
 
 function rememberCaptionUrl(url: string, mediaId: string): void {
@@ -694,12 +743,21 @@ export function captureCrunchyrollNetworkResponse(url: string, response: Respons
   const finalUrl = response.url || url;
   const maxBytes = file?.kind === 'bif' ? MAX_CRUNCHYROLL_BIF_BYTES : MAX_CAPTION_BYTES;
   const timeoutMs = file?.kind === 'bif' ? CRUNCHYROLL_BIF_TIMEOUT_MS : CRUNCHYROLL_SKIP_TIMEOUT_MS;
+  if (file?.kind === 'bif') {
+    // The body can arrive after a route change. Commit only for the media, route,
+    // and session that accepted this response, and only when that page is in scope now.
+    const mediaId = crunchyrollPageMediaId();
+    const route = crunchyrollPageRoute();
+    const generation = sessionGeneration;
+    const intent = mediaId && pageMatches(mediaId) ? armBifIntent(mediaId, finalUrl) : 0;
+    void readBoundedBytes(response, maxBytes, undefined, timeoutMs).then((buffer) => {
+      if (!buffer || !mediaId || intent === 0) return;
+      tryCommitBif(buffer, finalUrl, generation, mediaId, route, intent);
+    }).catch(() => {});
+    return;
+  }
   void readBoundedBytes(response, maxBytes, undefined, timeoutMs).then((buffer) => {
     if (!buffer) return;
-    if (file?.kind === 'bif') {
-      rememberCrunchyrollBif(buffer, finalUrl);
-      return;
-    }
     harvestCrunchyrollBody(finalUrl, new TextDecoder().decode(buffer));
   }).catch(() => {});
 }
@@ -785,46 +843,43 @@ export function readCrunchyrollSnapshot(): CrunchyrollSnapshot | null {
   return liveSnapshot(mediaId, current);
 }
 
-function listedHostTracks(session: PlayerSession): Array<{ id: string; enabled: boolean; url: string }> {
-  let value: unknown = [];
+type ListedHostTrack = { id: string; enabled: boolean; url: string };
+
+type SubtitleRead = {
+  status: 'ready';
+  tracks: ListedHostTrack[];
+  forcedEnabled: boolean;
+} | { status: 'unreadable' };
+
+/** A thrown or non-array list is unreadable. A real empty array is ready and has no tracks. */
+function readSubtitleList(session: PlayerSession): SubtitleRead {
+  if (!session.controllable) return { status: 'unreadable' };
+  let value: unknown;
   try {
     value = session.list();
   } catch {
-    return [];
+    return { status: 'unreadable' };
   }
-  if (!Array.isArray(value)) return [];
-  const tracks: Array<{ id: string; enabled: boolean; url: string }> = [];
+  if (!Array.isArray(value)) return { status: 'unreadable' };
+  const tracks: ListedHostTrack[] = [];
+  let forcedEnabled = false;
   for (const item of value.slice(0, 40)) {
     if (!item || typeof item !== 'object') continue;
     const row = item as { id?: unknown; enabled?: unknown; url?: unknown; forced?: unknown };
     // Same strict flag as parseCrunchyrollHostList. Forced narrative stays on and is not a host control target.
-    if (typeof row.id !== 'string' || row.forced === true) continue;
+    if (row.forced === true) {
+      if (row.enabled === true) forcedEnabled = true;
+      continue;
+    }
+    if (typeof row.id !== 'string') continue;
     tracks.push({
       id: row.id,
       enabled: row.enabled === true,
       url: typeof row.url === 'string' ? row.url : ''
     });
   }
-  return tracks;
+  return { status: 'ready', tracks, forcedEnabled };
 }
-
-function forcedNarrativeEnabled(session: PlayerSession): boolean {
-  let value: unknown = [];
-  try {
-    value = session.list();
-  } catch {
-    return false;
-  }
-  if (!Array.isArray(value)) return false;
-  for (const item of value.slice(0, 40)) {
-    if (!item || typeof item !== 'object') continue;
-    const row = item as { enabled?: unknown; forced?: unknown };
-    if (row.forced === true && row.enabled === true) return true;
-  }
-  return false;
-}
-
-type ListedHostTrack = { id: string; enabled: boolean; url: string };
 
 function hostCaptionCurrent(request: CrunchyrollCaptionRequest, generation: number): boolean {
   return generation === hostCaptionGeneration
@@ -838,11 +893,10 @@ function hostTracksSettled(tracks: ListedHostTrack[], trackId: string | null): b
     && tracks.every((track) => track.id === trackId || !track.enabled);
 }
 
-function hostTrackAccepted(session: PlayerSession, trackId: string | null): boolean {
-  const tracks = listedHostTracks(session);
-  if (!hostTracksSettled(tracks, trackId)) return false;
+function hostTrackAccepted(read: Extract<SubtitleRead, { status: 'ready' }>, session: PlayerSession, trackId: string | null): boolean {
+  if (!hostTracksSettled(read.tracks, trackId)) return false;
   if (trackId === null) return true;
-  const selected = tracks.find((track) => track.id === trackId);
+  const selected = read.tracks.find((track) => track.id === trackId);
   const file = selected ? crunchyrollCdnFile(selected.url) : null;
   // The query is not an identity check. Enabling uses the player track id only.
   return Boolean(selected && file?.kind === 'vtt' && file.assetId === session.assetId);
@@ -862,8 +916,10 @@ async function settlePlayerCall(result: unknown, deadline: number): Promise<void
 
 type HostCaptionApplyResult = { ok: boolean; kept: boolean };
 
-function ownedSelection(session: PlayerSession, ownedTrackId: string): 'owned' | 'other' | 'off' {
-  const enabled = listedHostTracks(session).filter((track) => track.enabled);
+function ownedSelection(session: PlayerSession, ownedTrackId: string): 'owned' | 'other' | 'off' | 'unreadable' {
+  const read = readSubtitleList(session);
+  if (read.status !== 'ready') return 'unreadable';
+  const enabled = read.tracks.filter((track) => track.enabled);
   if (enabled.length === 0) return 'off';
   if (enabled.length !== 1 || enabled[0].id !== ownedTrackId) return 'other';
   const file = crunchyrollCdnFile(enabled[0].url);
@@ -886,8 +942,11 @@ async function applyOwnedCaptionOff(
   );
   if (!hostCaptionCurrent(request, generation)) return { ok: false, kept: false };
   const session = readPlayerSession(request.mediaId);
-  if (!session || session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+  if (!session) return { ok: hostCaptionCurrent(request, generation), kept: false };
+  if (!session.controllable) return { ok: false, kept: false };
+  if (session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
   const initial = ownedSelection(session, ownedTrackId);
+  if (initial === 'unreadable') return { ok: false, kept: false };
   if (initial === 'off') return settled(false);
   if (initial !== 'owned') return settled(true);
   try {
@@ -898,8 +957,11 @@ async function applyOwnedCaptionOff(
   for (;;) {
     if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return { ok: false, kept: false };
     const live = readPlayerSession(request.mediaId);
-    if (!live || live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+    if (!live) return { ok: hostCaptionCurrent(request, generation), kept: false };
+    if (!live.controllable) return { ok: false, kept: false };
+    if (live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
     const now = ownedSelection(live, ownedTrackId);
+    if (now === 'unreadable') return { ok: false, kept: false };
     if (now === 'off') return settled(false);
     if (now !== 'owned') return settled(true);
     const remaining = deadline - Date.now();
@@ -908,62 +970,82 @@ async function applyOwnedCaptionOff(
   }
 }
 
+type UnscopedCaptionResult = { ok: true; forcedEnabled: boolean } | { ok: false };
+
 /**
  * Bitmovin enable/disable can resolve before list() reports the new state.
  * Poll list() inside the settle budget. A newer caption request, route, or
  * integration change makes this attempt fail instead of acknowledging success.
+ * An unreadable list is not an empty list and is not success.
  */
 async function applyUnscopedHostCaption(
   request: CrunchyrollCaptionRequest,
   generation = hostCaptionGeneration
-): Promise<boolean> {
+): Promise<UnscopedCaptionResult> {
   const deadline = Date.now() + CRUNCHYROLL_HOST_CAPTION_SETTLE_MS;
-  if (!hostCaptionCurrent(request, generation)) return false;
+  const settled = (read: Extract<SubtitleRead, { status: 'ready' }>): UnscopedCaptionResult => (
+    hostCaptionCurrent(request, generation) ? { ok: true, forcedEnabled: read.forcedEnabled } : { ok: false }
+  );
+  if (!hostCaptionCurrent(request, generation)) return { ok: false };
   const session = readPlayerSession(request.mediaId);
-  if (!session || session.rendition === 'hardsub') return request.trackId === null && hostCaptionCurrent(request, generation);
-  if (request.trackId !== null) {
-    const selected = listedHostTracks(session).find((track) => track.id === request.trackId);
-    const file = selected ? crunchyrollCdnFile(selected.url) : null;
-    if (!selected || file?.kind !== 'vtt' || file.assetId !== session.assetId) return false;
+  if (!session) return request.trackId === null && hostCaptionCurrent(request, generation) ? { ok: true, forcedEnabled: false } : { ok: false };
+  if (!session.controllable) return { ok: false };
+  if (session.rendition === 'hardsub') {
+    return request.trackId === null && hostCaptionCurrent(request, generation) ? { ok: true, forcedEnabled: false } : { ok: false };
   }
-  if (hostTrackAccepted(session, request.trackId)) return hostCaptionCurrent(request, generation);
+  const initial = readSubtitleList(session);
+  if (initial.status !== 'ready') return { ok: false };
+  if (request.trackId !== null) {
+    const selected = initial.tracks.find((track) => track.id === request.trackId);
+    const file = selected ? crunchyrollCdnFile(selected.url) : null;
+    if (!selected || file?.kind !== 'vtt' || file.assetId !== session.assetId) return { ok: false };
+  }
+  if (hostTrackAccepted(initial, session, request.trackId)) return settled(initial);
   try {
-    const initial = listedHostTracks(session);
     if (request.trackId === null) {
-      for (const track of initial) {
-        if (!hostCaptionCurrent(request, generation)) return false;
+      for (const track of initial.tracks) {
+        if (!hostCaptionCurrent(request, generation)) return { ok: false };
         if (!track.enabled) continue;
         await settlePlayerCall(session.disable(track.id), deadline);
       }
     } else {
-      for (const track of initial) {
-        if (!hostCaptionCurrent(request, generation)) return false;
+      for (const track of initial.tracks) {
+        if (!hostCaptionCurrent(request, generation)) return { ok: false };
         if (track.id === request.trackId || !track.enabled) continue;
         await settlePlayerCall(session.disable(track.id), deadline);
       }
-      if (!hostCaptionCurrent(request, generation)) return false;
+      if (!hostCaptionCurrent(request, generation)) return { ok: false };
       const live = readPlayerSession(request.mediaId);
-      if (!live || live.rendition === 'hardsub') return false;
-      if (!hostTrackAccepted(live, request.trackId)) {
+      if (!live || !live.controllable || live.rendition === 'hardsub') return { ok: false };
+      const beforeEnable = readSubtitleList(live);
+      if (beforeEnable.status !== 'ready') return { ok: false };
+      if (!hostTrackAccepted(beforeEnable, live, request.trackId)) {
         await settlePlayerCall(live.enable(request.trackId), deadline);
       }
     }
   } catch {
-    return false;
+    return { ok: false };
   }
   // After a player call is issued, wait until list() shows that state even if a
   // newer request has started. Returning early would let the older enable land
   // after the newer off/on. The queued request then corrects the player.
   // A route or integration change does not wait out the budget.
+  // A list() that throws or is not an array during this poll is not success.
   for (;;) {
-    if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return false;
+    if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return { ok: false };
     const live = readPlayerSession(request.mediaId);
-    if (!live || live.rendition === 'hardsub') {
-      return request.trackId === null && hostCaptionCurrent(request, generation);
+    if (!live) {
+      return request.trackId === null && hostCaptionCurrent(request, generation) ? { ok: true, forcedEnabled: false } : { ok: false };
     }
-    if (hostTrackAccepted(live, request.trackId)) return hostCaptionCurrent(request, generation);
+    if (!live.controllable) return { ok: false };
+    if (live.rendition === 'hardsub') {
+      return request.trackId === null && hostCaptionCurrent(request, generation) ? { ok: true, forcedEnabled: false } : { ok: false };
+    }
+    const again = readSubtitleList(live);
+    if (again.status !== 'ready') return { ok: false };
+    if (hostTrackAccepted(again, live, request.trackId)) return settled(again);
     const remaining = deadline - Date.now();
-    if (remaining <= 0) return false;
+    if (remaining <= 0) return { ok: false };
     await delay(Math.min(HOST_CAPTION_POLL_MS, remaining));
   }
 }
@@ -975,11 +1057,11 @@ export async function applyCrunchyrollHostCaption(
   if (request.trackId === null && request.ownedTrackId) {
     return applyOwnedCaptionOff(request, request.ownedTrackId, generation);
   }
-  const ok = await applyUnscopedHostCaption(request, generation);
-  if (!ok || request.trackId !== null || !hostCaptionCurrent(request, generation)) return { ok, kept: false };
+  const result = await applyUnscopedHostCaption(request, generation);
+  if (!result.ok || request.trackId !== null || !hostCaptionCurrent(request, generation)) return { ok: result.ok, kept: false };
   const session = readPlayerSession(request.mediaId);
-  // Selectable tracks are off. A forced row can still be showing in the same renderer.
-  const kept = Boolean(session && session.rendition !== 'hardsub' && forcedNarrativeEnabled(session));
+  // Selectable tracks are off. A forced row from that same read can still be showing.
+  const kept = Boolean(session && session.controllable && session.rendition !== 'hardsub' && result.forcedEnabled);
   return { ok: true, kept };
 }
 

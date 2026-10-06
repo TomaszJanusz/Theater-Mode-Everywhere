@@ -21,7 +21,7 @@ import {
 import { serviceHomeUrl } from '../../platform/service-home';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
 import { isCrunchyrollHost } from '../hosts';
-import { CrunchyrollAdapter } from './adapter';
+import { CrunchyrollAdapter, requestCrunchyrollHostCaption } from './adapter';
 import { CRUNCHYROLL_HOST_CAPTION_CLASS, CRUNCHYROLL_HOST_CAPTION_SELECTOR } from './host-surface';
 import {
   applyCrunchyrollHostCaption,
@@ -359,7 +359,7 @@ describe('Crunchyroll RTE', () => {
       assert.equal(JSON.stringify(readCrunchyrollSnapshot()).includes(SIGNATURE), false);
       harvestCrunchyrollData('https://beta-api.crunchyroll.com/cms/v2/GR7592K3Y', { id: MEDIA, title: 'Ignored' });
       assert.equal(readCrunchyrollSnapshot()?.title, '07 Ghost Episode 2');
-      usePlayer(page.doc, CLEAN);
+      usePlayer(page.doc, CLEAN, { list: () => [], enable: () => {}, disable: () => {} });
       harvestCrunchyrollData(PLAY, playback({ subtitles: { 'en-US': { url: ASS, format: 'ass' } } }));
       const clean = readCrunchyrollSnapshot();
       assert.equal(clean?.rendition, 'clean');
@@ -571,7 +571,7 @@ describe('Crunchyroll RTE', () => {
       else send();
     };
     try {
-      usePlayer(page.doc, CLEAN);
+      usePlayer(page.doc, CLEAN, { list: () => [], enable: () => {}, disable: () => {} });
       harvestCrunchyrollData(PLAY, playback({ subtitles: { 'en-US': { url: ASS, format: 'ass' } } }));
       const adapter = new CrunchyrollAdapter();
       const tracks = await adapter.listCaptionTracks();
@@ -597,7 +597,7 @@ describe('Crunchyroll RTE', () => {
       assert.deepEqual(await adapter.listCaptionTracks(), []);
 
       delay = true;
-      usePlayer(page.doc, CLEAN);
+      usePlayer(page.doc, CLEAN, { list: () => [], enable: () => {}, disable: () => {} });
       await adapter.reload();
       const again = await adapter.listCaptionTracks();
       const stale = adapter.activateCaptionTrack(again[0].id);
@@ -2118,6 +2118,520 @@ describe('Crunchyroll RTE', () => {
       await flush();
       page.attrs.delete('data-te-crunchyroll-integration-off');
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+    } finally {
+      urlApi.createObjectURL = oldCreate;
+      urlApi.revokeObjectURL = oldRevoke;
+      page.restore();
+    }
+  });
+
+  it('keeps a missing subtitle API unknown and does not ack an unreadable list as off', async () => {
+    const page = installPage();
+    const calls: string[] = [];
+    const acks: string[] = [];
+    let handlerThrew = false;
+    const mount = (subtitles: object | null) => {
+      page.doc.querySelectorAll = () => [{
+        parentElement: {
+          player: {
+            getSource: () => ({ dash: CLEAN }),
+            ...(subtitles ? { subtitles } : {})
+          },
+          parentElement: null
+        }
+      }];
+    };
+    const off = (requestId: string) => ({
+      requestId,
+      mediaId: MEDIA,
+      route: page.location.pathname,
+      trackId: null as null
+    });
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_ACK_EVENT, ((event: Event) => {
+      const ack = parseCrunchyrollCaptionAck((event as CustomEvent<unknown>).detail);
+      if (ack) acks.push(`${ack.ok}:${ack.trackId ?? 'off'}`);
+    }) as EventListener);
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_EVENT, ((event: Event) => {
+      try {
+        handleCrunchyrollCaptionEvent(event);
+      } catch {
+        handlerThrew = true;
+      }
+    }) as EventListener);
+    try {
+      harvestCrunchyrollData(PLAY, playback({ subtitles: { 'en-US': { url: ASS, format: 'ass' } } }));
+      const missing: Array<object | null> = [
+        null,
+        { enable: () => { calls.push('enable'); }, disable: () => { calls.push('disable'); } },
+        { list: () => { calls.push('list'); return []; }, disable: () => { calls.push('disable'); } },
+        { list: () => { calls.push('list'); return []; }, enable: () => { calls.push('enable'); } }
+      ];
+      for (const subtitles of missing) {
+        mount(subtitles);
+        const snapshot = readCrunchyrollSnapshot();
+        assert.equal(snapshot?.rendition, 'clean');
+        assert.equal(snapshot?.hostRenderer, 'unknown');
+        assert.deepEqual(snapshot?.captionTracks, []);
+        assert.equal(crunchyrollAllowsCaptionFetch(ASS), false);
+        const adapter = new CrunchyrollAdapter();
+        assert.deepEqual(await adapter.listCaptionTracks(), []);
+        assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+        assert.equal((await applyCrunchyrollHostCaption(off('te-cr-missing01'))).ok, false);
+      }
+      assert.equal(calls.length, 0);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      mount({ list: () => [], enable: () => {}, disable: () => {} });
+      const empty = readCrunchyrollSnapshot();
+      assert.equal(empty?.hostRenderer, 'absent');
+      assert.equal(empty?.captionTracks[0]?.url, ASS);
+      assert.equal(crunchyrollAllowsCaptionFetch(ASS), true);
+      assert.equal((await requestCrunchyrollHostCaption(MEDIA, page.location.pathname, null)).ok, true);
+      assert.equal(acks.at(-1), 'true:off');
+
+      const enabled = [{ id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: true, url: VTT }];
+      let mode = 'throw';
+      mount({
+        list: () => {
+          if (mode === 'throw') throw new Error('list failed');
+          if (mode === 'object') return { length: 1 };
+          if (mode === 'text') return 'nope';
+          if (mode === 'null') return null;
+          return enabled.map((track) => ({ ...track }));
+        },
+        enable: (id: string) => { calls.push(`enable:${id}`); },
+        disable: (id: string) => { calls.push(`disable:${id}`); }
+      });
+      for (const next of ['throw', 'object', 'text', 'null'] as const) {
+        mode = next;
+        assert.equal((await applyCrunchyrollHostCaption(off(`te-cr-${next}list`))).ok, false);
+        assert.equal((await applyCrunchyrollHostCaption({
+          requestId: 'te-cr-switchfail',
+          mediaId: MEDIA,
+          route: page.location.pathname,
+          trackId: 'caption-en-US'
+        })).ok, false);
+        assert.equal((await applyCrunchyrollHostCaption({
+          requestId: 'te-cr-ownedfail',
+          mediaId: MEDIA,
+          route: page.location.pathname,
+          trackId: null,
+          ownedTrackId: 'caption-en-US'
+        })).ok, false);
+      }
+      assert.equal(calls.length, 0);
+      mode = 'throw';
+      assert.equal((await requestCrunchyrollHostCaption(MEDIA, page.location.pathname, null)).ok, false);
+      assert.equal(handlerThrew, false);
+      assert.equal(acks.at(-1), 'false:off');
+
+      let reads = 0;
+      mount({
+        list: () => {
+          reads += 1;
+          if (reads === 1) return enabled.map((track) => ({ ...track }));
+          if (reads === 2) throw new Error('poll failed');
+          return enabled.map((track) => ({ ...track }));
+        },
+        enable: (id: string) => { calls.push(`enable:${id}`); },
+        disable: (id: string) => {
+          calls.push(`disable:${id}`);
+          enabled[0].enabled = false;
+        }
+      });
+      assert.equal((await requestCrunchyrollHostCaption(MEDIA, page.location.pathname, null)).ok, false);
+      assert.deepEqual(calls, ['disable:caption-en-US']);
+      assert.equal(acks.at(-1), 'false:off');
+      assert.equal(handlerThrew, false);
+
+      calls.length = 0;
+      page.location.pathname = `/watch/${MODERN_MEDIA}/the-journeys-end`;
+      const hostTrack = {
+        id: 'caption-en-US',
+        lang: 'en-US',
+        label: 'English',
+        kind: 'subtitle',
+        enabled: true,
+        url: VTT_SIGNED
+      };
+      let phase: 'ready' | 'throw-once' | 'throw' = 'ready';
+      page.doc.querySelectorAll = () => [{
+        parentElement: {
+          player: {
+            getSource: () => ({ dash: MODERN }),
+            subtitles: {
+              list: () => {
+                if (phase === 'throw-once') {
+                  phase = 'ready';
+                  throw new Error('off unread');
+                }
+                if (phase === 'throw') throw new Error('still unread');
+                return [{ ...hostTrack }];
+              },
+              enable: () => { calls.push('enable'); },
+              disable: (id: string) => { calls.push(`disable:${id}`); }
+            }
+          },
+          parentElement: null
+        }
+      }];
+      const adapter = new CrunchyrollAdapter();
+      assert.equal((await adapter.listCaptionTracks()).length, 1);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      phase = 'throw-once';
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'failed');
+      assert.equal(calls.some((call) => call.startsWith('disable:')), false);
+      assert.equal(hostTrack.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      phase = 'throw';
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'failed');
+      assert.equal(calls.some((call) => call.startsWith('disable:')), false);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+    } finally { page.restore(); }
+  });
+
+  it('turns off only the owned track when the adapter is disposed', async () => {
+    const route = `/watch/${MODERN_MEDIA}/the-journeys-end`;
+    const page = installPage(route);
+    const forced = {
+      id: 'caption-forced-en-US',
+      lang: 'en-US',
+      label: 'English (Forced)',
+      kind: 'subtitle',
+      enabled: true,
+      forced: true,
+      url: VTT_FORCED
+    };
+    const tracks = [
+      { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, forced: false, url: VTT_SIGNED },
+      { id: 'caption-ja-JP', lang: 'ja-JP', label: 'Japanese', kind: 'subtitle', enabled: false, forced: false, url: VTT_JA },
+      forced
+    ];
+    let mode = 'work';
+    const calls: string[] = [];
+    const subtitles = {
+      list: () => tracks.map((track) => ({ ...track })),
+      enable(id: string) {
+        calls.push(`enable:${id}`);
+        if (mode === 'throw-enable') throw new Error('enable failed');
+        for (const item of tracks) {
+          if (item.forced) continue;
+          item.enabled = item.id === id;
+        }
+      },
+      disable(id: string) {
+        calls.push(`disable:${id}`);
+        if (mode === 'throw-disable') throw new Error('disable failed');
+        if (mode === 'noop-disable') return undefined;
+        const track = tracks.find((item) => item.id === id);
+        if (track) track.enabled = false;
+      }
+    };
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_EVENT, handleCrunchyrollCaptionEvent as EventListener);
+    try {
+      usePlayer(page.doc, MODERN, subtitles);
+      const adapter = new CrunchyrollAdapter();
+      const english = (await adapter.listCaptionTracks()).find((track) => track.id.endsWith(':caption-en-US'))!;
+      const activateEnglish = async () => {
+        mode = 'work';
+        tracks[0].enabled = false;
+        tracks[1].enabled = false;
+        assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+        assert.equal(tracks[0].enabled, true);
+      };
+
+      await activateEnglish();
+      let armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.length, armed);
+
+      await activateEnglish();
+      tracks[0].enabled = false;
+      tracks[1].enabled = true;
+      armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.length, armed);
+      assert.equal(tracks[1].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      await flush();
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      forced.enabled = true;
+      await activateEnglish();
+      armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      await activateEnglish();
+      adapter.invalidate();
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      await activateEnglish();
+      mode = 'throw-disable';
+      adapter.dispose();
+      await flush();
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      await flush();
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      mode = 'work';
+      tracks[0].enabled = false;
+      await activateEnglish();
+      mode = 'noop-disable';
+      const started = Date.now();
+      adapter.dispose();
+      await wait(CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 80);
+      assert.ok(Date.now() - started >= CRUNCHYROLL_HOST_CAPTION_SETTLE_MS);
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      mode = 'work';
+      tracks[0].enabled = false;
+      await activateEnglish();
+      armed = calls.length;
+      page.location.pathname = `/watch/${OTHER}/next`;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.length, armed);
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      page.location.pathname = route;
+      tracks[0].enabled = false;
+      await activateEnglish();
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      armed = calls.length;
+      adapter.dispose();
+      await flush();
+      assert.equal(calls.length, armed);
+      assert.equal(tracks[0].enabled, true);
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+
+      tracks[0].enabled = false;
+      await activateEnglish();
+      armed = calls.length;
+      adapter.dispose();
+      const kept = await requestCrunchyrollHostCaption(MODERN_MEDIA, route, 'caption-en-US');
+      assert.equal(kept.ok, true);
+      assert.equal(calls.length, armed);
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+    } finally { page.restore(); }
+  });
+
+  it('lets the latest BIF win when an older body finishes last', async () => {
+    const page = installPage();
+    const urlApi = URL as unknown as { createObjectURL?: (obj: Blob) => string; revokeObjectURL?: (url: string) => void };
+    const oldCreate = urlApi.createObjectURL;
+    const oldRevoke = urlApi.revokeObjectURL;
+    let blobCount = 0;
+    urlApi.createObjectURL = () => `blob:crunchyroll-bif-${++blobCount}`;
+    urlApi.revokeObjectURL = () => {};
+    const bifB = BIF_SIGNED.replace('1789659236', '1789659999');
+    const bifC = BIF_SIGNED.replace('1789659236', '1789660000');
+    const bifD = BIF_SIGNED.replace('1789659236', '1789660001');
+    const early = rokuBif([0, 1]);
+    const replacement = rokuBif([0, 50], 1000);
+    const later = rokuBif([0, 80], 1000);
+    const blocked = rokuBif([0, 3], 1000);
+    const gates = new Map<string, (response: Response) => void>();
+    globalThis.fetch = ((input: unknown) => {
+      const url = String(input);
+      if (url === BIF_SIGNED || url === bifB || url === bifC || url === bifD) {
+        return new Promise<Response>((resolve) => gates.set(url, resolve));
+      }
+      return Promise.resolve(new Response('', { status: 404 }));
+    }) as typeof fetch;
+    const hold = (url: string, bytes: ArrayBuffer) => {
+      let release = () => {};
+      let opened = false;
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          release = () => {
+            if (opened) return;
+            opened = true;
+            controller.enqueue(new Uint8Array(bytes));
+            controller.close();
+          };
+        }
+      });
+      const response = {
+        ok: true,
+        url,
+        headers: { get: () => null },
+        body: stream
+      } as unknown as Response;
+      return { response, release: () => release() };
+    };
+    try {
+      harvestCrunchyrollData(PLAY, playback({ bifs: BIF_SIGNED }));
+      await flush();
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifB }));
+      await flush();
+      assert.equal(gates.has(BIF_SIGNED), true);
+      assert.equal(gates.has(bifB), true);
+      gates.get(bifB)?.(streamedResponse(new Uint8Array(replacement), { url: bifB, contentLength: null }));
+      await flush();
+      await flush();
+      const newest = readCrunchyrollSnapshot()?.bifBlobUrl;
+      assert.equal(newest, 'blob:crunchyroll-bif-1');
+      gates.get(BIF_SIGNED)?.(streamedResponse(new Uint8Array(early), { url: BIF_SIGNED, contentLength: null }));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, newest);
+
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifC }));
+      await flush();
+      gates.get(bifC)?.(streamedResponse(new Uint8Array(later), { url: bifC, contentLength: null }));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-2');
+
+      harvestCrunchyrollData(PLAY, playback({ bifs: bifD }));
+      await flush();
+      page.location.search = '?late=1';
+      gates.get(bifD)?.(streamedResponse(new Uint8Array(blocked), { url: bifD, contentLength: null }));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-2');
+
+      page.location.search = '';
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      const beforePassive = blobCount;
+      const older = hold(BIF_SIGNED, early);
+      const newer = hold(bifB, replacement);
+      captureCrunchyrollNetworkResponse(BIF_SIGNED, older.response);
+      captureCrunchyrollNetworkResponse(bifB, newer.response);
+      older.release();
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      noteCrunchyrollManifest(CLEAN_URL);
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      assert.equal(blobCount, beforePassive);
+      newer.release();
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, `blob:crunchyroll-bif-${beforePassive + 1}`);
+      older.release();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, `blob:crunchyroll-bif-${beforePassive + 1}`);
+      assert.equal(blobCount, beforePassive + 1);
+    } finally {
+      urlApi.createObjectURL = oldCreate;
+      urlApi.revokeObjectURL = oldRevoke;
+      page.restore();
+    }
+  });
+
+  it('keeps a passive BIF body on the route and session that captured it', async () => {
+    const page = installPage();
+    const urlApi = URL as unknown as { createObjectURL?: (obj: Blob) => string; revokeObjectURL?: (url: string) => void };
+    const oldCreate = urlApi.createObjectURL;
+    const oldRevoke = urlApi.revokeObjectURL;
+    let blobCount = 0;
+    urlApi.createObjectURL = () => `blob:crunchyroll-bif-${++blobCount}`;
+    urlApi.revokeObjectURL = () => {};
+    const otherClean = `https://www.crunchyroll.com/playback/v2/manifest/${OTHER}/static/${ASSET}/1/clean/dash/manifest.mpd`;
+    const replacement = BIF_SIGNED.replace('1789659236', '1789659999');
+    const hold = (url: string, bytes: ArrayBuffer) => {
+      let release = () => {};
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          release = () => {
+            controller.enqueue(new Uint8Array(bytes));
+            controller.close();
+          };
+        }
+      });
+      return {
+        response: { ok: true, url, headers: { get: () => null }, body: stream } as unknown as Response,
+        release: () => release()
+      };
+    };
+    const publish = async (url: string, bytes: ArrayBuffer) => {
+      captureCrunchyrollNetworkResponse(url, streamedResponse(new Uint8Array(bytes), { url, contentLength: null }));
+      await flush();
+      await flush();
+    };
+    try {
+      noteCrunchyrollManifest(CLEAN_URL);
+      const staleRoute = hold(BIF_SIGNED, rokuBif([0, 1]));
+      captureCrunchyrollNetworkResponse(BIF_SIGNED, staleRoute.response);
+      page.location.search = '?new-route=1';
+      staleRoute.release();
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+
+      await publish(BIF_SIGNED, rokuBif([0, 2]));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-1');
+
+      const acrossReset = hold(replacement, rokuBif([0, 50], 1000));
+      captureCrunchyrollNetworkResponse(replacement, acrossReset.response);
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      assert.equal(readCrunchyrollSnapshot(), null);
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      noteCrunchyrollManifest(CLEAN_URL);
+      acrossReset.release();
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      await publish(replacement, rokuBif([0, 80], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-2');
+
+      page.location.pathname = `/watch/${MEDIA}/07-ghost-episode-2`;
+      page.location.search = '';
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      const crossedEpisode = hold(BIF_SIGNED, rokuBif([0, 1]));
+      captureCrunchyrollNetworkResponse(BIF_SIGNED, crossedEpisode.response);
+      page.location.pathname = `/watch/${OTHER}/next`;
+      noteCrunchyrollManifest(otherClean);
+      crossedEpisode.release();
+      await flush();
+      await flush();
+      const switched = readCrunchyrollSnapshot();
+      assert.equal(switched?.mediaId, OTHER);
+      assert.equal(switched?.bifBlobUrl, undefined);
+      await publish(BIF_SIGNED, rokuBif([0, 4]));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-3');
+
+      page.location.pathname = `/watch/${MEDIA}/07-ghost-episode-2`;
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      readCrunchyrollSnapshot();
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      await publish(BIF_SIGNED, rokuBif([0, 5]));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      page.location.search = '?pending=1';
+      noteCrunchyrollManifest(CLEAN_URL);
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
+      await publish(replacement, rokuBif([0, 6], 1000));
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-4');
     } finally {
       urlApi.createObjectURL = oldCreate;
       urlApi.revokeObjectURL = oldRevoke;

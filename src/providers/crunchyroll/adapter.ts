@@ -523,7 +523,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   invalidate(options?: { preserveHostLift?: boolean }): void {
     const owned = this.hostLift;
     const armOff = Boolean(!options?.preserveHostLift && owned && this.hostLiftListed(this.snapshot));
-    const hostOffTarget = armOff && owned && this.snapshot
+    const armed = armOff && owned && this.snapshot
       ? { mediaId: this.snapshot.mediaId, route: this.route, ownedTrackId: owned.trackId }
       : null;
     this.loadGeneration += 1;
@@ -536,7 +536,9 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     this.bifLoad = null;
     this.bifLoadUrl = '';
     this.bifSource = '';
-    this.hostOffTarget = hostOffTarget;
+    // Same-page reload keeps the lift and is not waiting to turn a track off.
+    // Another invalidate, while a cleanup is already armed, keeps that target.
+    this.hostOffTarget = options?.preserveHostLift ? null : (armed ?? this.hostOffTarget);
     if (!options?.preserveHostLift) {
       this.hostLift = null;
       releaseCrunchyrollHostCaptionSurface();
@@ -569,5 +571,18 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
 
   dispose(): void {
     this.invalidate();
+    const target = this.hostOffTarget;
+    this.hostOffTarget = null;
+    if (!target) return;
+    // Best-effort only. A late failure or a track the player still shows must not
+    // restore the class, snapshot, or ownership after the controller is gone.
+    void requestCrunchyrollHostCaption(
+      target.mediaId,
+      target.route,
+      null,
+      window,
+      CAPTION_ACK_TIMEOUT_MS,
+      target.ownedTrackId
+    ).then(() => undefined, () => undefined);
   }
 }
