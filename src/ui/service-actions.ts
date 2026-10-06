@@ -1,20 +1,6 @@
 import type { DisposableScope } from '../core/disposable-scope';
 
-/**
- * Time-sensitive host actions, identified so a later poll or click can
- * refuse a replaced control. Providers own discovery; this module only
- * shows the label and asks the provider to activate that id.
- */
-export type ServiceAction = {
-  id: string;
-  label: string;
-  progress?: number;
-};
-
-export type ServiceActionSource = {
-  read(): ServiceAction[];
-  activate(id: string): boolean;
-};
+import type { ServiceAction, ServiceActionSource } from '../core/service-actions';
 
 export type ServiceActionCtaOptions = {
   source: ServiceActionSource;

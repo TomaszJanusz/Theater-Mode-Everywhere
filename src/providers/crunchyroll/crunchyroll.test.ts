@@ -1,3 +1,4 @@
+import { readStylesheet } from '../../test-utils/styles';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
@@ -611,7 +612,7 @@ describe('Crunchyroll RTE', () => {
   });
 
   it('enables and disables host subtitles for the modern manifest and lifts only that renderer', async () => {
-    const css = readFileSync(new URL('../../content.css', import.meta.url), 'utf8');
+    const css = readStylesheet(new URL('../../content.css', import.meta.url));
     assert.match(css, /theater-everywhere-crunchyroll-host-captions/);
     assert.match(css, /\.bitmovinplayer-container > div:last-child:has\(> div > ul\)/);
     assert.match(css, /theater-everywhere-crunchyroll-host-captions[\s\S]* > div > ul \{[^}]*bottom:\s*var\(--theater-caption-bottom,\s*48px\)/);

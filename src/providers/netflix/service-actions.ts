@@ -1,3 +1,4 @@
+import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isNetflixHost } from '../hosts';
@@ -25,17 +26,8 @@ const NETFLIX_ACTIONS = [
 const tokens = new WeakMap<HTMLElement, string>();
 let tokenSerial = 0;
 
-export type NetflixServiceAction = {
-  id: string;
-  label: string;
-  /** Progress sampled from the host animation; RTE never starts autoplay. */
-  progress?: number;
-};
-
-export type NetflixServiceActionSource = {
-  read(): NetflixServiceAction[];
-  activate(id: string): boolean;
-};
+export type NetflixServiceAction = ServiceAction;
+export type NetflixServiceActionSource = ServiceActionSource;
 
 export type NetflixServiceActionHooks = {
   enabled?: () => boolean;

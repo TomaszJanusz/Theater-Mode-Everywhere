@@ -1,7 +1,5 @@
 import { matchesShortcut } from './ui/shortcuts';
-
-const PLAY_CONTROL_SELECTOR =
-  'button, [role="button"], .ytp-large-play-button, .vjs-big-play-button, .plyr__control--overlaid';
+import { HOST_PLAY_CONTROL_SELECTOR, isProviderPlayControl } from './providers/play-controls';
 
 function isTheaterUiNode(node: Element): boolean {
   if (node.id === 'theater-everywhere-ui') return true;
@@ -14,7 +12,7 @@ export function mediaHasSource(video: HTMLVideoElement): boolean {
 }
 
 export function isHostPlayControlLabel(aria: string, text: string, className = ''): boolean {
-  if (/\b(?:ytp-large-play-button|vjs-big-play-button|plyr__control--overlaid)\b/.test(className)) {
+  if (isProviderPlayControl(className)) {
     return true;
   }
   const playWord = /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i;
@@ -32,7 +30,7 @@ export function looksLikeHostPlayButton(el: HTMLElement): boolean {
 
 export function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null {
   const scan = (root: ParentNode): HTMLElement | null => {
-    const candidates = root.querySelectorAll(PLAY_CONTROL_SELECTOR);
+    const candidates = root.querySelectorAll(HOST_PLAY_CONTROL_SELECTOR);
     for (const node of candidates) {
       if (node instanceof HTMLElement && looksLikeHostPlayButton(node)) return node;
     }

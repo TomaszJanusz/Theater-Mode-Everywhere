@@ -1,3 +1,5 @@
+import { isNetflixHost } from '../hosts';
+
 /**
  * Netflix's title dialog computes `transform: matrix(1, 0, 0, 1, 0, 0)` from
  * `transform: scale(1)`. That identity matrix is a containing block for
@@ -140,4 +142,38 @@ export function holdNetflixViewport(video: HTMLElement): void {
 
 export function releaseNetflixViewport(): void {
   for (const element of [...savedContainment.keys()]) restoreElement(element);
+}
+
+export const NETFLIX_THEATER_STAGE_CLASS = 'theater-everywhere-netflix-stage';
+
+export function mountNetflixTheaterStage(hostname: string): void {
+  if (!isNetflixHost(hostname)) return;
+  document.documentElement.classList.add(NETFLIX_THEATER_STAGE_CLASS);
+}
+
+export function unmountNetflixTheaterStage(): void {
+  releaseNetflixViewport();
+  document.documentElement.classList.remove(NETFLIX_THEATER_STAGE_CLASS);
+}
+
+export function pinNetflixTheaterViewport(
+  element: HTMLElement,
+  pinGeneric: (element: HTMLElement) => void
+): void {
+  if (!isNetflixHost() || element.tagName !== 'VIDEO') return;
+  holdNetflixViewport(element);
+  pinGeneric(element);
+}
+
+export function onNetflixStructuralMutation(
+  element: HTMLElement,
+  helpers: {
+    connected(element: HTMLElement): boolean;
+    refreshAncestors(element: HTMLElement): void;
+  }
+): void {
+  if (!isNetflixHost()) return;
+  if (!(element instanceof HTMLVideoElement) || !helpers.connected(element)) return;
+  helpers.refreshAncestors(element);
+  holdNetflixViewport(element);
 }

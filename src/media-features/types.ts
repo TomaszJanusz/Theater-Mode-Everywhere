@@ -76,6 +76,22 @@ export type MediaCapabilities = {
   previews: boolean;
 };
 
+/** Geometry supplied by a provider that paints its own captions. */
+export type HostCaptionLayout = {
+  width: number;
+  height: number;
+  lineHeight?: number;
+  rows?: number;
+  /** Optional element whose dock motion follows the shared caption policy. */
+  motionTarget?: HTMLElement;
+};
+
+export interface HostCaptionLayoutSource {
+  read(): HostCaptionLayout | null;
+  observe?(onChange: () => void): () => void;
+  reset?(): void;
+}
+
 export type TimelineHeatmap = {
   source: string;
   segments?: Array<{ startMs: number; durationMs: number; intensity: number }>;
@@ -83,6 +99,8 @@ export type TimelineHeatmap = {
 };
 
 export interface MediaFeaturesAdapter {
+  readHostCaptionLayout?(): HostCaptionLayout | null;
+  observeHostCaptionLayout?(onChange: () => void): () => void;
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;

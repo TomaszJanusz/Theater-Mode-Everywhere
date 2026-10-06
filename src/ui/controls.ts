@@ -1,10 +1,8 @@
-import { DISNEY_CLOCK_EVENT, writeDisneyContentTime } from '../media-features/parsers/disney-page';
+import { observeProviderClock, readProviderClock } from '../providers/timeline';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
-import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
-import { CRUNCHYROLL_HARVEST_EVENT } from '../providers/crunchyroll/main';
-import { isBilibiliIntlHost, isNetflixHost } from '../providers/hosts';
-import { createNetflixServiceActions } from '../providers/netflix/service-actions';
+import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
+import { createServiceActions } from '../providers/service-actions';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
@@ -21,7 +19,7 @@ import {
   clearPendingMediaSeek
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
-import { CURSOR_HIDDEN_CLASS, observeNetflixCaptionDock } from './toolbar';
+import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
@@ -1354,19 +1352,17 @@ export function createControls(ctx: PlayerChromeContext) {
       }
     };
 
-    let lastDisneyPlayhead = Number.NaN;
-    const onDisneyClock = (event: Event) => {
-      const eventTime = (event as CustomEvent<{ time?: unknown }>).detail?.time;
-      const published = native ? writeDisneyContentTime(native, eventTime) : null;
-      const playhead = published ?? Number(native?.dataset.teDisneyPlayhead);
+    let lastProviderPlayhead = Number.NaN;
+    const onProviderClock = (published: number | null) => {
+      const playhead = published ?? readProviderClock(native) ?? Number.NaN;
       updateScrubber();
       updateTimeDisplay();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
       updateCaptionDock();
-      if (Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
+      if (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
         setBuffering(false);
       }
-      if (Number.isFinite(playhead)) lastDisneyPlayhead = playhead;
+      if (Number.isFinite(playhead)) lastProviderPlayhead = playhead;
     };
 
     // Event hookups
@@ -1384,8 +1380,8 @@ export function createControls(ctx: PlayerChromeContext) {
       if (!video.paused && !video.seeking && video.readyState >= 3) {
         setBuffering(false);
       }
-      const playhead = Number(native?.dataset.teDisneyPlayhead);
-      if (!video.paused && Number.isFinite(playhead) && Number.isFinite(lastDisneyPlayhead) && Math.abs(playhead - lastDisneyPlayhead) > 0.04) {
+      const playhead = readProviderClock(native) ?? Number.NaN;
+      if (!video.paused && Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
         setBuffering(false);
       }
       if (window.location.href !== lastMediaHref) {
@@ -1403,10 +1399,7 @@ export function createControls(ctx: PlayerChromeContext) {
       clearPendingMediaSeek(video);
       if (!mediaFeatures.retainCaptionsOnElementReset()) {
         mediaFeatures.invalidate();
-        // bilibili.tv detaches the playing element on the next episode, then
-        // fires emptied. The probe already in flight is dropped, and no new
-        // element emits durationchange. Load the episode now in the route.
-        if (isBilibiliIntlHost() && mediaProviderIntegrationEnabled('bilibiliIntl')) {
+        if (refreshProviderAfterElementReset()) {
           void mediaFeatures.refresh();
         }
       }
@@ -1451,7 +1444,7 @@ export function createControls(ctx: PlayerChromeContext) {
       if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
       bufferingFailsafe = window.setTimeout(() => {
         bufferingFailsafe = null;
-        if (!video.paused || Number.isFinite(Number(native?.dataset.teDisneyPlayhead))) {
+        if (!video.paused || readProviderClock(native) !== null) {
           setBuffering(false);
         }
       }, 4000);
@@ -1483,13 +1476,8 @@ export function createControls(ctx: PlayerChromeContext) {
     video.addEventListener('durationchange', onDurationChange);
     video.addEventListener('loadedmetadata', onDurationChange);
     video.addEventListener('emptied', onMediaReset);
-    document.addEventListener('yt-navigate-finish', onPageMediaChange);
-    window.addEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
-    window.addEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
-    window.addEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
-    window.addEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
-    window.addEventListener(CRUNCHYROLL_HARVEST_EVENT, onPageMediaChange);
-    window.addEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
+    const stopObservingProviderMedia = observeProviderMediaChanges(onPageMediaChange);
+    const stopObservingProviderClock = observeProviderClock(native, onProviderClock);
     video.addEventListener('volumechange', onVolumeChange);
     video.addEventListener('ratechange', onRateChange);
     video.addEventListener('waiting', onWaiting);
@@ -1511,13 +1499,8 @@ export function createControls(ctx: PlayerChromeContext) {
       video.removeEventListener('durationchange', onDurationChange);
       video.removeEventListener('loadedmetadata', onDurationChange);
       video.removeEventListener('emptied', onMediaReset);
-      document.removeEventListener('yt-navigate-finish', onPageMediaChange);
-      window.removeEventListener('theater-everywhere-youtube-harvest', onPageMediaChange);
-      window.removeEventListener('theater-everywhere-twitch-harvest', onPageMediaChange);
-      window.removeEventListener('theater-everywhere-disney-harvest', onPageMediaChange);
-      window.removeEventListener('theater-everywhere-netflix-harvest', onPageMediaChange);
-      window.removeEventListener(CRUNCHYROLL_HARVEST_EVENT, onPageMediaChange);
-      window.removeEventListener(DISNEY_CLOCK_EVENT, onDisneyClock);
+      stopObservingProviderMedia();
+      stopObservingProviderClock();
       video.removeEventListener('volumechange', onVolumeChange);
       video.removeEventListener('ratechange', onRateChange);
       video.removeEventListener('waiting', onWaiting);
@@ -1558,12 +1541,10 @@ export function createControls(ctx: PlayerChromeContext) {
     document.addEventListener('pointerdown', showToolbar, { passive: true });
     // All player chrome, including the home pill, uses the same focus handler.
     controlsScope.listen(wrapper.getRootNode(), 'focusin', showToolbar);
-    // The source follows live provider flags, including enablement during a session.
-    if (isNetflixHost()) {
-      const player = document.querySelector<HTMLElement>('.watch-video [data-uia="player"]');
-      if (player) observeNetflixCaptionDock(controlsScope, player, updateCaptionDock);
+    const serviceActions = createServiceActions();
+    if (serviceActions) {
       mountServiceActionCta(controlsScope, {
-        source: createNetflixServiceActions(),
+        source: serviceActions,
         mount: mountPlayerUi,
         paint: paintOverlay,
         toolbarVisible: () => {

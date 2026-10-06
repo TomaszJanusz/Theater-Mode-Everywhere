@@ -1,13 +1,14 @@
+import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 const require = createRequire(import.meta.url);
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readFileSync(path.join(SRC, 'content.css'), 'utf8');
+const CSS = readStylesheet(path.join(SRC, 'content.css'));
 
 type Esbuild = {
   buildSync: (options: {
@@ -46,7 +47,8 @@ const uiBundle = bundle({
   stdin: {
     contents: [
       "export { DisposableScope } from './core/disposable-scope.ts';",
-      "export { createToolbar, observeNetflixCaptionDock } from './ui/toolbar.ts';",
+      "export { createToolbar } from './ui/toolbar.ts';",
+      "export { createNetflixHostCaptions } from './providers/netflix/host-captions.ts';",
       "export { mountServiceActionCta } from './ui/service-actions.ts';"
     ].join('\n'),
     resolveDir: SRC,
@@ -101,6 +103,35 @@ type NetflixReport = {
 };
 
 describe('service action CTA', () => {
+  it('renders and activates an arbitrary provider through the shared action contract', async () => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) return;
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage();
+      await page.setContent('<div id="player"></div>');
+      await page.addScriptTag({ content: uiBundle });
+      await page.evaluate(`(() => {
+        const scope = new TeServiceActions.DisposableScope();
+        window.__actions = [{id:'extras:42', label:'Zobacz dodatki', progress:0.4}, {id:'dismiss:42', label:'Zamknij'}];
+        window.__activated = [];
+        TeServiceActions.mountServiceActionCta(scope, {
+          source:{read:()=>window.__actions, activate:id=>{window.__activated.push(id);window.__actions=window.__actions.filter(a=>a.id!==id);return true;}},
+          mount:el=>document.getElementById('player').append(el), toolbarVisible:()=>false,
+          subscribeToolbar:()=>()=>{}, controlsLift:()=>0, pollMs:20
+        });
+        window.__genericActionScope = scope;
+      })()`);
+      assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Zobacz dodatki', 'Zamknij']);
+      await page.getByRole('button', {name:'Zobacz dodatki'}).focus();
+      await page.keyboard.press('Enter');
+      assert.deepEqual(await page.evaluate('window.__activated'), ['extras:42']);
+      assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Zamknij']);
+      await page.evaluate('window.__genericActionScope.dispose()');
+      assert.equal(await page.locator('.theater-service-action-host').count(), 0);
+    } finally { await browser.close(); }
+  });
+
   it('redocks native cue replacements before paint, restores overwritten motion and disconnects on exit', async () => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) return;
@@ -116,10 +147,12 @@ describe('service action CTA', () => {
         Object.defineProperties(video, { videoWidth: {value:1920}, videoHeight: {value:1080} });
         video.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh';
         const scope = new TeServiceActions.DisposableScope();
-        const toolbar = TeServiceActions.createToolbar({ session:{element:video}, queryPlayerUi:()=>null, queryPlayerUiAll:()=>[] });
+        const captions = TeServiceActions.createNetflixHostCaptions(document);
+        const features = { readHostCaptionLayout:()=>captions.read(), setCaptionLineLimit:()=>{} };
+        const toolbar = TeServiceActions.createToolbar({ session:{element:video}, queryPlayerUi:selector=>selector === '.theater-controls-wrapper' ? {_mediaFeatures:features} : null, queryPlayerUiAll:()=>[] });
         const host = document.querySelector('.player-timedtext');
         let calls=0;
-        TeServiceActions.observeNetflixCaptionDock(scope, document.querySelector('[data-uia=player]'), ()=>{ calls++; toolbar.updateCaptionDock(); });
+        scope.add(captions.observe(()=>{ calls++; toolbar.updateCaptionDock(); }));
         const replace = async text => {
           host.style.cssText = 'display:block';
           host.innerHTML = '<div class="player-timedtext-text-container"><span>' + text + '</span></div>';
@@ -129,10 +162,21 @@ describe('service action CTA', () => {
         const one = await replace('One line');
         const two = await replace('Two lines<br>Second line');
         const next = await replace('Next line');
+        document.documentElement.setAttribute('data-te-netflix-integration-off', '');
+        const flagOff = captions.read() !== null;
+        const replacement = host.cloneNode(false);
+        host.replaceWith(replacement);
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const emptyReplacement = captions.read();
+        replacement.innerHTML = '<div class="player-timedtext-text-container"><span>New renderer</span></div>';
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const newRenderer = captions.read();
+        const observesReplacement = calls === 5;
         scope.dispose(); const before=calls;
-        await replace('After exit<br>Second line');
-        return {one,two,next, before,after:calls};
-      })()`) as { one:{bottom:string;transition:string;height:number}; two:{bottom:string;transition:string;height:number}; next:{bottom:string;transition:string;height:number}; before:number;after:number };
+        replacement.innerHTML = '<div class="player-timedtext-text-container"><span>After exit</span></div>';
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        return {one,two,next, flagOff, emptyReplacement, newRenderer:!!newRenderer, observesReplacement, before,after:calls};
+      })()`) as { one:{bottom:string;transition:string;height:number}; two:{bottom:string;transition:string;height:number}; next:{bottom:string;transition:string;height:number}; flagOff:boolean; emptyReplacement:unknown; newRenderer:boolean; observesReplacement:boolean; before:number;after:number };
       assert.equal(report.one.bottom, '13px', JSON.stringify(report));
       assert.equal(report.two.bottom, '8px');
       assert.equal(report.next.bottom, report.one.bottom);
@@ -140,7 +184,11 @@ describe('service action CTA', () => {
       assert.equal(report.two.transition, report.one.transition);
       assert.equal(report.next.transition, report.one.transition);
       assert.ok(report.two.height > report.one.height);
-      assert.equal(report.before, 3);
+      assert.equal(report.flagOff, true, 'native presentation remains available with the data integration off');
+      assert.equal(report.emptyReplacement, null, 'a replacement renderer cannot reuse the previous host geometry');
+      assert.equal(report.newRenderer, true);
+      assert.equal(report.observesReplacement, true, 'observation survives replacement of the host caption renderer');
+      assert.equal(report.before, 5);
       assert.equal(report.after, report.before);
     } finally { await browser.close(); }
   });

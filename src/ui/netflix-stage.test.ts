@@ -1,5 +1,5 @@
+import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import {
   CAPTION_DOCK_GAP,
@@ -10,16 +10,16 @@ import {
   raisedCaptionRestBottom,
   raisedCaptionRowCount
 } from '../media-features/caption-dock';
-import { netflixPlaybackRank, shouldFollowNetflixVideo, type NetflixVideoFacts } from './netflix-playback';
+import { netflixPlaybackRank, shouldFollowNetflixVideo, type NetflixVideoFacts } from '../providers/netflix/playback';
 import {
   NETFLIX_CONTAINMENT_VALUES,
   computedStyleCreatesFixedContainingBlock
-} from './netflix-stage';
+} from '../providers/netflix/stage';
 import {
   netflixPaintedCaptionBox,
   nextNetflixCaptionBox,
   type NetflixSpanBox
-} from './toolbar';
+} from '../providers/netflix/host-captions';
 
 const sharpHero: NetflixVideoFacts = {
   inPlayer: false,
@@ -120,7 +120,7 @@ function cueLine(top: number, width = 200, height = 36, lineHeight = 20): Netfli
 }
 
 describe('netflix caption dock', () => {
-  const css = readFileSync(new URL('../content.css', import.meta.url), 'utf8');
+  const css = readStylesheet(new URL('../content.css', import.meta.url));
   const early = css.slice(0, css.indexOf('.theater-wasm-catcher'));
   const viewport = { viewportWidth: 1280, viewportHeight: 800 };
   const toolbar = { left: 24, right: 1256, top: 724, bottom: 776 };

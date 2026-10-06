@@ -3,7 +3,8 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { queryPlayerUi } from '../ui/root';
-import { mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
@@ -339,21 +340,12 @@ export function installMainWorldRuntime(): void {
 
   function looksLikeHostPlayButton(el: HTMLElement): boolean {
     if (el.id === 'theater-everywhere-ui' || el.closest('#theater-everywhere-ui')) return false;
-    const className = el.className.toString();
-    if (/\b(?:ytp-large-play-button|vjs-big-play-button|plyr__control--overlaid)\b/.test(className)) {
-      return true;
-    }
-    const aria = (el.getAttribute('aria-label') || '').trim();
-    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-    return /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(aria)
-      || /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(text);
+    return isHostPlayControlLabel(el.getAttribute('aria-label') || '', el.textContent || '', el.className.toString());
   }
 
   function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null {
     const scan = (root: ParentNode): HTMLElement | null => {
-      const candidates = root.querySelectorAll(
-        'button, [role="button"], .ytp-large-play-button, .vjs-big-play-button, .plyr__control--overlaid'
-      );
+      const candidates = root.querySelectorAll(HOST_PLAY_CONTROL_SELECTOR);
       for (const node of candidates) {
         if (node instanceof HTMLElement && looksLikeHostPlayButton(node)) return node;
       }

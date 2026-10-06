@@ -10,8 +10,8 @@ import { defaultMediaProviderFlags, mediaProviderFlagsEqual, type MediaProviderF
 import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
-import { heatmapRidgePath } from './parsers/youtube-heatmap-path';
-import type { CaptionActivationResult, CaptionTrack, Chapter, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
+import { heatmapRidgePath } from './heatmap-path';
+import type { CaptionActivationResult, CaptionTrack, Chapter, HostCaptionLayout, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
@@ -102,6 +102,7 @@ export class MediaFeaturesController {
   private lastCaptionCueTime = Number.NaN;
   private captionDiagnostics: Array<Record<string, unknown>> = [];
   private dialogAbort = new AbortController();
+  private stopObservingHostCaptions = () => {};
 
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
@@ -160,6 +161,22 @@ export class MediaFeaturesController {
       const heatmapHost = bindings.scrubberTrack.parentElement || bindings.scrubberTrack;
       heatmapHost.insertBefore(this.heatmapLayer, heatmapHost.firstChild);
     }
+    this.observeHostCaptions();
+  }
+
+  readHostCaptionLayout(): HostCaptionLayout | null {
+    if (this.disposed) return null;
+    try { return this.adapter.readHostCaptionLayout?.() ?? null; }
+    catch { return null; }
+  }
+
+  private observeHostCaptions(): void {
+    const adapter = this.adapter;
+    try {
+      this.stopObservingHostCaptions = adapter.observeHostCaptionLayout?.(() => {
+        if (!this.disposed && this.adapter === adapter) this.onCaptionChange?.();
+      }) ?? (() => {});
+    } catch { this.stopObservingHostCaptions = () => {}; }
   }
 
   setHeatmapHover(ratio: number | null): void {
@@ -186,9 +203,11 @@ export class MediaFeaturesController {
 
   rebindAdapter(adapter: MediaFeaturesAdapter): void {
     if (this.disposed) return;
+    this.stopObservingHostCaptions();
     this.adapter.dispose();
     this.adapter = adapter;
     this.invalidate();
+    this.observeHostCaptions();
     void this.refresh();
   }
 
@@ -821,6 +840,7 @@ export class MediaFeaturesController {
 
   dispose(): void {
     this.disposed = true;
+    this.stopObservingHostCaptions();
     this.bumpEpoch();
     this.refreshQueued = false;
     this.activeTrackId = null;

@@ -3,6 +3,8 @@ import type {
   CaptionActivationResult,
   CaptionTrack,
   Chapter,
+  HostCaptionLayout,
+  HostCaptionLayoutSource,
   MediaCapabilities,
   MediaFeaturesAdapter,
   PreviewFrame,
@@ -28,8 +30,40 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
 export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   private adapters: MediaFeaturesAdapter[];
 
-  constructor(adapters: MediaFeaturesAdapter[]) {
+  constructor(adapters: MediaFeaturesAdapter[], private hostCaptions: HostCaptionLayoutSource | null = null) {
     this.adapters = adapters;
+  }
+
+  readHostCaptionLayout(): HostCaptionLayout | null {
+    if (this.hostCaptions) {
+      try { return this.hostCaptions.read(); } catch { return null; }
+    }
+    for (const adapter of this.adapters) {
+      try {
+        const layout = adapter.readHostCaptionLayout?.();
+        if (layout) return layout;
+      } catch { /* A missing host renderer must not prevent another source. */ }
+    }
+    return null;
+  }
+
+  observeHostCaptionLayout(onChange: () => void): () => void {
+    const cleanups: Array<() => void> = [];
+    try {
+      const hostCleanup = this.hostCaptions?.observe?.(onChange);
+      if (hostCleanup) cleanups.push(hostCleanup);
+    } catch { /* Caption observation is optional; keep other sources usable. */ }
+    for (const adapter of this.adapters) {
+      try {
+        const cleanup = adapter.observeHostCaptionLayout?.(onChange);
+        if (cleanup) cleanups.push(cleanup);
+      } catch { /* Isolate a provider that cannot subscribe to its renderer. */ }
+    }
+    return () => {
+      for (const cleanup of cleanups.splice(0)) {
+        try { cleanup(); } catch { /* Disconnect every provider. */ }
+      }
+    };
   }
 
   /** Combines capabilities from adapters that respond successfully, ignoring rejected probes. */
@@ -170,10 +204,12 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   }
 
   invalidate(): void {
+    this.hostCaptions?.reset?.();
     this.adapters.forEach((adapter) => adapter.invalidate?.());
   }
 
   dispose(): void {
+    this.hostCaptions?.reset?.();
     this.adapters.forEach((adapter) => adapter.dispose());
   }
 }

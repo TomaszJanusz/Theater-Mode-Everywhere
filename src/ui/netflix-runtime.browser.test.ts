@@ -1,16 +1,17 @@
+import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
 
-function compile(relativePath: string): string {
-  const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-  return ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 }
-  }).outputText;
+function compile(relativePath: string, globalName: string): string {
+  const esbuild = require('esbuild') as { buildSync(options: object): {outputFiles: Array<{text: string}>} };
+  return esbuild.buildSync({
+    entryPoints: [new URL(relativePath, import.meta.url).pathname], bundle: true,
+    write: false, format: 'iife', globalName, platform: 'browser', target: 'es2022', logLevel: 'silent'
+  }).outputFiles[0].text;
 }
 
 function esbuildBundle(): string {
@@ -48,9 +49,9 @@ describe('netflix runtime browser regressions', () => {
     }
     if (!existsSync(executable)) return;
 
-    const playback = compile('./netflix-playback.ts');
-    const stage = compile('./netflix-stage.ts');
-    const shadowClick = compile('../providers/netflix/shadow-click.ts');
+    const playback = compile('../providers/netflix/playback.ts', 'NetflixPlayback');
+    const stage = compile('../providers/netflix/stage.ts', 'NetflixStage');
+    const shadowClick = compile('../providers/netflix/shadow-click.ts', 'NetflixShadowClick');
     const bundle = esbuildBundle();
     const browser = await chromium.launch({ headless: true });
     try {
@@ -68,7 +69,7 @@ describe('netflix runtime browser regressions', () => {
         <div id="shell" style="position:fixed; will-change: transform; mask-image: linear-gradient(#000, transparent); background-image: linear-gradient(#111, #222); background-color: rgb(1, 2, 3);"><video id="pinned"></video></div>
       </body>`, { waitUntil: 'domcontentloaded' });
       await page.addScriptTag({
-        content: `${playback}\n${stage}\nwindow.__nf = { readNetflixVideoFacts, netflixPlaybackRank, shouldFollowNetflixVideo, createNetflixVideoBinding, holdNetflixViewport, releaseNetflixViewport };`,
+        content: `${playback}\n${stage}\nwindow.__nf = { ...NetflixPlayback, ...NetflixStage };`,
         type: 'module'
       });
 
@@ -149,7 +150,7 @@ describe('netflix runtime browser regressions', () => {
       assert.match(restored.after.backgroundImage, /gradient/i);
 
       await page.addScriptTag({
-        content: `${shadowClick}\nwindow.relayNetflixShadowClick = relayNetflixShadowClick;`,
+        content: `${shadowClick}\nwindow.relayNetflixShadowClick = NetflixShadowClick.relayNetflixShadowClick;`,
         type: 'module'
       });
       const clicks = await page.evaluate(`(() => {
@@ -419,7 +420,7 @@ describe('netflix runtime browser regressions', () => {
       await page.addInitScript(bundle);
       await page.route('https://www.netflix.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>Netflix</title><body><div class="watch-video"><div data-uia="player" data-videoid="70248290"><div id="session-element"><video></video><div class="player-timedtext"></div></div></div></div></body>` }));
       await page.goto('https://www.netflix.com/watch/70248290');
-      await page.addStyleTag({ content: readFileSync(new URL('../content.css', import.meta.url), 'utf8') });
+      await page.addStyleTag({ content: readStylesheet(new URL('../content.css', import.meta.url)) });
       const canvas = await page.evaluate(() => {
         document.documentElement.classList.add('theater-everywhere-netflix-stage');
         const video = document.querySelector('video')!;

@@ -1,16 +1,65 @@
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import ts from 'typescript';
+import { HOST_PLAYER_SCOPE } from './providers/navigation/factory';
+import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
+import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
+import { youtubePreviousRestarts } from './providers/navigation/youtube';
 import {
-  isVimeoShowcaseStepHref,
   neighborPreviews,
   playlistNavStateFromActions,
-  sanitizePlaylistPreview,
-  usableControlIndexes,
-  youtubePreviousRestarts,
-  type ObservedPlaylistControl
+  sanitizePlaylistPreview
 } from './playlist-nav';
+
+const require = createRequire(import.meta.url);
+const SRC = path.dirname(fileURLToPath(import.meta.url));
+
+type Esbuild = {
+  buildSync: (options: {
+    stdin: { contents: string; resolveDir: string; sourcefile: string; loader: 'ts' };
+    bundle: true;
+    write: false;
+    format: 'iife';
+    globalName: string;
+    platform: 'browser';
+    target: string;
+    logLevel: 'silent';
+  }) => { outputFiles: Array<{ text: string }> };
+};
+
+let playlistBundle: string | null = null;
+
+function playlistBrowserBundle(): string {
+  if (playlistBundle) return playlistBundle;
+  const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as Esbuild;
+  playlistBundle = esbuild.buildSync({
+    stdin: {
+      contents: [
+        "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
+        "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
+        "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
+        'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
+        'export { findPlaylistActions };',
+        'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
+        'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
+      ].join('\n'),
+      resolveDir: SRC,
+      sourcefile: 'playlist-nav-browser-entry.ts',
+      loader: 'ts'
+    },
+    bundle: true,
+    write: false,
+    format: 'iife',
+    globalName: 'PlaylistNav',
+    platform: 'browser',
+    target: 'es2022',
+    logLevel: 'silent'
+  }).outputFiles[0].text;
+  return playlistBundle;
+}
 
 function control(overrides: Partial<ObservedPlaylistControl> & Pick<ObservedPlaylistControl, 'provider'>): ObservedPlaylistControl {
   return {
@@ -271,6 +320,21 @@ describe('playlist navigation availability', () => {
     assert.equal(isVimeoShowcaseStepHref('https://evil.example/showcase/1574596?video=1'), false);
     assert.equal(isVimeoShowcaseStepHref(null), false);
   });
+
+  it('keeps the public navigation contract free of site selectors', () => {
+    const source = readFileSync(new URL('./playlist-nav.ts', import.meta.url), 'utf8');
+    assert.match(source, /from '\.\/providers\/navigation\/factory'/);
+    assert.match(source, /export function findPlaylistActions\(root: ParentNode, video\?: HTMLVideoElement \| null\)/);
+    assert.doesNotMatch(source, /providers\/navigation\/(?!factory)/);
+    assert.doesNotMatch(source, /querySelector|closest\(|data-uia|ytp-|vjs-|bpx-|txp_|data-testid|data-href|getAttribute/);
+  });
+
+  it('preserves the host player scope used to find controls outside a passed video', () => {
+    assert.equal(
+      HOST_PLAYER_SCOPE,
+      '#movie_player, .video-js, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper'
+    );
+  });
 });
 
 describe('playlist navigation DOM', () => {
@@ -280,13 +344,11 @@ describe('playlist navigation DOM', () => {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
       if (!existsSync(executable)) return;
-      const source = readFileSync(new URL('./playlist-nav.ts', import.meta.url), 'utf8');
-      const compiled = ts.transpileModule(source, {
-        compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 }
-      }).outputText;
+      const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const install = () => page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
         await page.setContent(`<!doctype html><body>
           <div id="movie_player">
             <video id="player"></video>
@@ -295,7 +357,7 @@ describe('playlist navigation DOM', () => {
             <button class="ytp-button ytp-endscreen-next" aria-label="Next" style="display:none">End</button>
           </div>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        await install();
         const read = () => page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null; activate: () => void }> } }).__playlist;
           const video = document.querySelector('#player') as HTMLVideoElement;
@@ -334,7 +396,7 @@ describe('playlist navigation DOM', () => {
           </body>`
         }));
         await page.goto('https://playlist.example/w/p/list?playlistPosition=2', { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        await install();
         const fromDocument = await page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null }> } }).__playlist;
           const video = document.querySelector('#player') as HTMLVideoElement;
@@ -366,7 +428,7 @@ describe('playlist navigation DOM', () => {
             <button class="vjs-next-video" title="Next video"></button>
           </div>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        await install();
         assert.deepEqual(await read(), ['next']);
         await page.setContent(`<!doctype html><body>
           <div class="video">
@@ -382,7 +444,7 @@ describe('playlist navigation DOM', () => {
             <a class="video-info-name" title="Making a libre movie" href="/w/p/list?playlistPosition=3">Making a libre movie</a>
           </div>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        await install();
         const peerTube = await page.evaluate(() => {
           const api = (window as unknown as { __playlist: { peerTubeNeighborPreviews: (root: ParentNode, href: string) => { previous: { title: string } | null; next: { title: string } | null } } }).__playlist;
           return api.peerTubeNeighborPreviews(document, 'https://framatube.org/w/p/list?playlistPosition=2');
@@ -395,7 +457,7 @@ describe('playlist navigation DOM', () => {
           <button data-testid="button-previous-video" class="prev_button" disabled aria-label="Previous video"></button>
           <button data-testid="button-next-video" class="next_button" aria-label="Next video"></button>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions };', type: 'module' });
+        await install();
         assert.deepEqual(await read(), ['next']);
 
         await page.setContent(`<!doctype html><body>
@@ -409,7 +471,7 @@ describe('playlist navigation DOM', () => {
             <p>makoto yabuki</p>
           </a>
         </body>`, { waitUntil: 'domcontentloaded' });
-        await page.addScriptTag({ content: compiled + '\nwindow.__playlist = { findPlaylistActions, peerTubeNeighborPreviews, vimeoShowcasePreview };', type: 'module' });
+        await install();
         assert.deepEqual(await read(), ['next']);
         const vimeoTitle = await page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode) => Array<{ preview: { title: string } | null }> } }).__playlist;
@@ -426,6 +488,194 @@ describe('playlist navigation DOM', () => {
           return hits;
         });
         assert.equal(clicked, 1);
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      if (!executable) return;
+      throw error;
+    }
+  });
+
+  it('uses the native Netflix toolbar Next control and refuses a stale click', async () => {
+    let executable = '';
+    try {
+      const { chromium } = await import('playwright');
+      executable = chromium.executablePath();
+      if (!existsSync(executable)) return;
+      const compiled = playlistBrowserBundle();
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        await page.route('https://www.netflix.com/**', (route) => {
+          if (route.request().resourceType() !== 'document') return route.abort();
+          return route.fulfill({
+            status: 200,
+            contentType: 'text/html',
+            body: '<!doctype html><html><body></body></html>'
+          });
+        });
+        await page.goto('https://www.netflix.com/watch/70248290?trackId=13752289', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
+        const report = await page.evaluate(`(() => {
+          const api = window.__playlist;
+          const toolbar = '<button type="button" data-uia="control-next" id="ghost" style="display:none"></button>'
+            + '<div style="visibility:hidden;opacity:0;pointer-events:none">'
+            + '<button type="button" data-uia="control-back"></button>'
+            + '<button type="button" data-uia="control-prev"></button>'
+            + '<button type="button" data-uia="control-next" id="live"></button>'
+            + '</div>'
+            + '<button type="button" data-uia="next-episode-seamless-button" id="seamless">Next episode</button>'
+            + '<a data-uia="control-next" href="/watch/70248291">Next</a>';
+          const mount = (inner, videoId = '70248290') => {
+            document.documentElement.removeAttribute('data-te-netflix-integration-off');
+            document.body.innerHTML = '<video id="other"></video><div class="watch-video"><div data-uia="player" data-videoid="'
+              + videoId + '">' + inner + '<video id="player"></video></div></div>';
+          };
+          const read = (video) => api.findPlaylistActions(document, video || null);
+          const directions = (video) => read(video).map((action) => action.direction);
+          const playerVideo = () => document.querySelector('#player');
+          mount(toolbar);
+          const ready = read(playerVideo());
+          const ghost = document.querySelector('#ghost');
+          const live = document.querySelector('#live');
+          const seamless = document.querySelector('#seamless');
+          const counts = { ghost: 0, live: 0, seamless: 0, back: 0, prev: 0 };
+          ghost.addEventListener('click', () => { counts.ghost += 1; });
+          live.addEventListener('click', () => { counts.live += 1; });
+          seamless.addEventListener('click', () => { counts.seamless += 1; });
+          document.querySelector('[data-uia="control-back"]').addEventListener('click', () => { counts.back += 1; });
+          document.querySelector('[data-uia="control-prev"]').addEventListener('click', () => { counts.prev += 1; });
+          const nativeClick = live.click.bind(live);
+          let liveInvocations = 0;
+          live.click = () => {
+            liveInvocations += 1;
+            nativeClick();
+          };
+          ready.find((action) => action.direction === 'next').activate();
+          const single = {
+            directions: ready.map((action) => action.direction),
+            preview: ready[0] ? ready[0].preview : null,
+            path: location.pathname,
+            counts,
+            liveInvocations
+          };
+
+          mount('<div style="display:none"><button type="button" data-uia="control-next"></button></div>');
+          const ancestorDisplayNone = directions(playerVideo());
+          mount('<button type="button" data-uia="control-next" disabled></button>');
+          const disabled = directions(playerVideo());
+          mount('<button type="button" data-uia="control-next" aria-disabled="true"></button>');
+          const ariaDisabled = directions(playerVideo());
+          mount('<button type="button" data-uia="control-next" hidden></button>');
+          const hiddenAttr = directions(playerVideo());
+          mount(toolbar, '111');
+          const mismatched = directions(playerVideo());
+          document.body.innerHTML = '<button type="button" data-uia="control-next"></button>'
+            + '<div class="watch-video"><div data-uia="player" data-videoid="70248290"><video id="player"></video></div></div>';
+          const outside = directions(playerVideo());
+          mount(toolbar);
+          const otherVideo = directions(document.querySelector('#other'));
+          const documentLevel = directions(null);
+
+          mount(toolbar);
+          const staleAction = read(playerVideo()).find((action) => action.direction === 'next');
+          const original = document.querySelector('#live');
+          let originalClicks = 0;
+          let replacementClicks = 0;
+          original.addEventListener('click', () => { originalClicks += 1; });
+          const replacement = original.cloneNode(true);
+          replacement.addEventListener('click', () => { replacementClicks += 1; });
+          original.replaceWith(replacement);
+          staleAction.activate();
+          const replaced = { originalClicks, replacementClicks };
+          read(playerVideo()).find((action) => action.direction === 'next').activate();
+          const freshReplacementClicks = replacementClicks;
+
+          mount(toolbar);
+          const removedAction = read(playerVideo()).find((action) => action.direction === 'next');
+          const removed = document.querySelector('#live');
+          let removedClicks = 0;
+          removed.addEventListener('click', () => { removedClicks += 1; });
+          removed.remove();
+          removedAction.activate();
+
+          mount(toolbar);
+          const flagged = read(playerVideo()).find((action) => action.direction === 'next');
+          const flaggedButton = document.querySelector('#live');
+          let flagClicks = 0;
+          flaggedButton.addEventListener('click', () => { flagClicks += 1; });
+          document.documentElement.setAttribute('data-te-netflix-integration-off', '');
+          flagged.activate();
+          const flagOff = { clicks: flagClicks, directions: directions(playerVideo()) };
+
+          document.documentElement.removeAttribute('data-te-netflix-integration-off');
+          mount(toolbar);
+          const routed = read(playerVideo()).find((action) => action.direction === 'next');
+          const routedButton = document.querySelector('#live');
+          let routeClicks = 0;
+          routedButton.addEventListener('click', () => { routeClicks += 1; });
+          history.pushState(null, '', '/watch/80057281');
+          routed.activate();
+          const routeOnly = routeClicks;
+          document.querySelector('[data-uia="player"]').setAttribute('data-videoid', '80057281');
+          routed.activate();
+          const reusedTitle = routeClicks;
+
+          return {
+            single,
+            otherVideo,
+            documentLevel,
+            ancestorDisplayNone,
+            disabled,
+            ariaDisabled,
+            hiddenAttr,
+            mismatched,
+            outside,
+            replaced,
+            freshReplacementClicks,
+            removedClicks,
+            flagOff,
+            routeOnly,
+            reusedTitle
+          };
+        })()`) as {
+          single: { directions: string[]; preview: { title: string } | null; path: string; counts: { ghost: number; live: number; seamless: number; back: number; prev: number }; liveInvocations: number };
+          otherVideo: string[];
+          documentLevel: string[];
+          ancestorDisplayNone: string[];
+          disabled: string[];
+          ariaDisabled: string[];
+          hiddenAttr: string[];
+          mismatched: string[];
+          outside: string[];
+          replaced: { originalClicks: number; replacementClicks: number };
+          freshReplacementClicks: number;
+          removedClicks: number;
+          flagOff: { clicks: number; directions: string[] };
+          routeOnly: number;
+          reusedTitle: number;
+        };
+
+        assert.deepEqual(report.single.directions, ['next']);
+        assert.equal(report.single.preview, null);
+        assert.equal(report.single.path, '/watch/70248290');
+        assert.equal(report.single.liveInvocations, 1);
+        assert.deepEqual(report.single.counts, { ghost: 0, live: 1, seamless: 0, back: 0, prev: 0 });
+        assert.deepEqual(report.otherVideo, []);
+        assert.deepEqual(report.documentLevel, ['next']);
+        assert.deepEqual(report.ancestorDisplayNone, []);
+        assert.deepEqual(report.disabled, []);
+        assert.deepEqual(report.ariaDisabled, []);
+        assert.deepEqual(report.hiddenAttr, []);
+        assert.deepEqual(report.mismatched, []);
+        assert.deepEqual(report.outside, []);
+        assert.deepEqual(report.replaced, { originalClicks: 0, replacementClicks: 0 });
+        assert.equal(report.freshReplacementClicks, 1);
+        assert.equal(report.removedClicks, 0);
+        assert.deepEqual(report.flagOff, { clicks: 0, directions: [] });
+        assert.equal(report.routeOnly, 0);
+        assert.equal(report.reusedTitle, 0);
       } finally {
         await browser.close();
       }

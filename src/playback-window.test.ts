@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { DISNEY_CLOCK_EVENT } from './media-features/parsers/disney-page';
 import {
   clampToWindow,
   displayMediaTime,
@@ -14,6 +15,7 @@ import {
   seekToMediaTime,
   timeToRatio
 } from './playback-window';
+import { observeProviderClock, readProviderClock } from './providers/timeline';
 
 function fakeVideo(init: {
   duration: number;
@@ -441,4 +443,121 @@ describe('playback window', () => {
       }
     }
   });
+
+  it('seeks Disney+ through the host while the integration flag is off', () => {
+    const previous = installHost('www.disneyplus.com', ['data-te-disney-integration-off']);
+    try {
+      const video = fakeVideo({ duration: 7260, currentTime: 184 });
+      seekToMediaTime(video, 3600);
+      assert.equal(video.currentTime, 184);
+      assert.equal(previous.dispatched.length, 1);
+      assert.equal((previous.dispatched[0] as CustomEvent).detail.time, 3600);
+    } finally {
+      previous.restore();
+    }
+  });
+
+  it('dispatches Netflix seeks only while provider integration is on', () => {
+    const blocked = installHost('www.netflix.com', ['data-te-netflix-integration-off']);
+    try {
+      const video = fakeVideo({ duration: 3600, currentTime: 10 });
+      seekToMediaTime(video, 90);
+      assert.equal(video.currentTime, 90);
+      assert.equal(blocked.dispatched.length, 0);
+    } finally {
+      blocked.restore();
+    }
+
+    const enabled = installHost('www.netflix.com', []);
+    try {
+      const video = fakeVideo({ duration: 3600, currentTime: 10 });
+      seekToMediaTime(video, 90);
+      assert.equal(video.currentTime, 10);
+      assert.equal(enabled.dispatched.length, 1);
+      assert.equal((enabled.dispatched[0] as CustomEvent).detail.resumeAfterSeek, true);
+      assert.equal((enabled.dispatched[0] as CustomEvent).detail.time, 90);
+    } finally {
+      enabled.restore();
+    }
+  });
+
+  it('reads and observes the Disney clock only on Disney+', () => {
+    const other = installHost('www.netflix.com', []);
+    try {
+      const video = fakeVideo({ duration: 100, currentTime: 4 });
+      (video as HTMLVideoElement & { dataset: Record<string, string> }).dataset = { teDisneyPlayhead: '40' };
+      assert.equal(readProviderClock(video), null);
+      const seen: Array<number | null> = [];
+      const stop = observeProviderClock(video, (published) => { seen.push(published); });
+      other.win.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: 12 } }));
+      assert.deepEqual(seen, []);
+      stop();
+    } finally {
+      other.restore();
+    }
+
+    const disney = installHost('www.disneyplus.com', ['data-te-disney-integration-off']);
+    try {
+      const video = fakeVideo({ duration: 7260, currentTime: 184 });
+      const dataset: Record<string, string> = {};
+      (video as HTMLVideoElement & { dataset: Record<string, string> }).dataset = dataset;
+      assert.equal(readProviderClock(video), null);
+      const seen: Array<number | null> = [];
+      const stop = observeProviderClock(video, (published) => { seen.push(published); });
+      disney.win.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: 90 } }));
+      assert.equal(dataset.teDisneyPlayhead, '90');
+      assert.equal(readProviderClock(video), 90);
+      disney.win.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: Number.NaN } }));
+      assert.deepEqual(seen, [90, 90]);
+      stop();
+      disney.win.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, { detail: { time: 10 } }));
+      assert.deepEqual(seen, [90, 90]);
+      assert.equal(dataset.teDisneyPlayhead, '90');
+    } finally {
+      disney.restore();
+    }
+  });
 });
+
+function installHost(hostname: string, integrationOff: string[]) {
+  const previousWindow = (globalThis as { window?: unknown }).window;
+  const previousDocument = (globalThis as { document?: unknown }).document;
+  const listeners = new Map<string, Set<(event: Event) => void>>();
+  const dispatched: Event[] = [];
+  const off = new Set(integrationOff);
+  const win = {
+    location: { hostname },
+    addEventListener(type: string, listener: (event: Event) => void) {
+      const set = listeners.get(type) ?? new Set<(event: Event) => void>();
+      set.add(listener);
+      listeners.set(type, set);
+    },
+    removeEventListener(type: string, listener: (event: Event) => void) {
+      listeners.get(type)?.delete(listener);
+    },
+    dispatchEvent(event: Event) {
+      dispatched.push(event);
+      const handlers = listeners.get(event.type);
+      if (handlers) {
+        for (const listener of handlers) listener(event);
+      }
+      return true;
+    }
+  };
+  (globalThis as { window?: unknown }).window = win;
+  (globalThis as { document?: unknown }).document = {
+    documentElement: {
+      hasAttribute: (name: string) => off.has(name)
+    }
+  };
+  return {
+    win,
+    dispatched,
+    restore() {
+      if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window;
+      else (globalThis as { window?: unknown }).window = previousWindow;
+      if (previousDocument === undefined) delete (globalThis as { document?: unknown }).document;
+      else (globalThis as { document?: unknown }).document = previousDocument;
+    }
+  };
+}

@@ -1,0 +1,57 @@
+/* YouTube keeps the watch page and its own player chrome in the DOM. They show
+ * through for a moment whenever the video element is emptied between playlist items. */
+html.theater-everywhere-html-active #masthead-container,
+html.theater-everywhere-html-active ytd-masthead,
+html.theater-everywhere-html-active #guide,
+html.theater-everywhere-html-active ytd-mini-guide-renderer,
+html.theater-everywhere-html-active #secondary,
+html.theater-everywhere-html-active #below,
+html.theater-everywhere-html-active ytd-watch-metadata,
+html.theater-everywhere-html-active ytd-comments,
+html.theater-everywhere-html-active ytd-playlist-panel-renderer,
+html.theater-everywhere-html-active #chat,
+html.theater-everywhere-html-active .ytp-chrome-top,
+html.theater-everywhere-html-active .ytp-chrome-bottom,
+html.theater-everywhere-html-active .ytp-gradient-top,
+html.theater-everywhere-html-active .ytp-gradient-bottom,
+html.theater-everywhere-html-active .ytp-pause-overlay,
+html.theater-everywhere-html-active .ytp-cued-thumbnail-overlay,
+html.theater-everywhere-html-active .ytp-endscreen-content,
+html.theater-everywhere-html-active .ytp-ce-element,
+html.theater-everywhere-html-active .ytp-player-content {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.theater-everywhere-html-active .ytp-caption-window-container {
+  position: fixed !important;
+  inset: auto 0 var(--theater-caption-bottom, 48px) 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+html.theater-everywhere-picture-moving .ytp-caption-window-container {
+  transition: inset 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+html.theater-everywhere-html-active .ytp-caption-window-container .caption-window,
+html.theater-everywhere-html-active .ytp-caption-window-bottom,
+html.theater-everywhere-html-active .ytp-caption-window-top {
+  position: relative !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: translateX(-50%) !important;
+  margin: 0 auto !important;
+  max-width: min(80vw, 960px) !important;
+}
+
+html.theater-using-overlay-captions .ytp-caption-window-container {
+  display: none !important;
+  visibility: hidden !important;
+}

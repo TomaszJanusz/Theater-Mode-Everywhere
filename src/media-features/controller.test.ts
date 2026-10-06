@@ -42,6 +42,45 @@ const SAMPLE_TRACK: CaptionTrack = {
   source: 'native-text-track'
 };
 
+describe('provider caption layout lifecycle', () => {
+  it('uses the provider contract and disconnects/rejects old notifications on rebind and exit', async () => {
+    const calls: string[] = [];
+    const callbacks: Array<() => void> = [];
+    const makeAdapter = (name: string, height: number): MediaFeaturesAdapter => ({
+      probe: async () => ({ captions: false, chapters: false, previews: false }),
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => ({status:'off', delivery:'none', cues:[]}),
+      readHostCaptionLayout: () => ({ width: 200, height, rows: 2 }),
+      observeHostCaptionLayout: callback => {
+        callbacks.push(callback);
+        calls.push(`observe:${name}`);
+        return () => calls.push(`disconnect:${name}`);
+      },
+      dispose: () => { calls.push(`dispose:${name}`); }
+    });
+    let changes = 0;
+    const { controller } = createController(makeAdapter('first', 60), {onCaptionChange:()=>changes++});
+    assert.equal(controller.readHostCaptionLayout()?.height, 60);
+    callbacks[0]();
+    assert.equal(changes, 1);
+    controller.rebindAdapter(makeAdapter('second', 90));
+    const before = changes;
+    callbacks[0]();
+    assert.equal(changes, before, 'old provider notifications are ignored');
+    callbacks[1]();
+    assert.equal(changes, before + 1);
+    assert.equal(controller.readHostCaptionLayout()?.height, 90);
+    assert.deepEqual(calls.slice(0, 4), ['observe:first', 'disconnect:first', 'dispose:first', 'observe:second']);
+    controller.dispose();
+    const disposed = changes;
+    callbacks[1]();
+    assert.equal(changes, disposed);
+    assert.equal(controller.readHostCaptionLayout(), null);
+    assert.deepEqual(calls.slice(-2), ['disconnect:second', 'dispose:second']);
+    await delay(0);
+  });
+});
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

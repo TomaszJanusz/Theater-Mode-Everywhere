@@ -1,12 +1,26 @@
-import {
-  isDisneyHost,
-  readDisneyChromeDuration,
-  readDisneyContentTime,
-  readPublishedDisneySnapshot
-} from './media-features/parsers/disney-page';
-import { isNetflixHost } from './providers/hosts';
-import { mediaProviderIntegrationEnabled } from './media-features/provider-flags';
 import { isPlaybackSurface, nativeVideoOf, type PlaybackSurface } from './playback-surface';
+import {
+  hostIsAtLiveHead,
+  hostLiveHint,
+  hostLiveSeekAttempt,
+  hostMediaSeekAttempts,
+  LIVE_EDGE_SECONDS,
+  MAX_LIVE_DVR_SECONDS,
+  MIN_LIVE_DVR_SECONDS,
+  readHostLiveBounds,
+  readHostVodDuration,
+  readProviderClock,
+  type MediaSeekDetail
+} from './providers/timeline';
+
+export type { MediaSeekDetail } from './providers/timeline';
+export {
+  hostIsAtLiveHead,
+  hostLiveHint,
+  LIVE_EDGE_SECONDS,
+  MAX_LIVE_DVR_SECONDS,
+  MIN_LIVE_DVR_SECONDS
+};
 
 export type PlaybackWindow = {
   start: number;
@@ -21,148 +35,15 @@ export type PlaybackWindowOptions = {
   duration?: number;
 };
 
-export const LIVE_EDGE_SECONDS = 2;
-export const MIN_LIVE_DVR_SECONDS = 15;
-export const MAX_LIVE_DVR_SECONDS = 24 * 60 * 60;
 const SLIDING_DVR_START_SECONDS = 5;
 export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
-const YOUTUBE_WALL_OFFSET_RESYNC_SECONDS = 5;
 const PENDING_MEDIA_SEEK_MS = 10_000;
 const PENDING_MEDIA_SEEK_ARRIVED_SECONDS = 1.25;
 const HOST_SEEK_RESUME_GRACE_MS = 4_000;
 
-type YoutubePlayerHost = HTMLElement & {
-  getVideoData?: () => { isLive?: boolean } | null;
-};
-
-export type MediaSeekDetail = {
-  live?: boolean;
-  time?: number;
-  resumeAfterSeek?: boolean;
-  cancelPendingResume?: boolean;
-};
-
-function youtubePlayerHost(node: Element | null): YoutubePlayerHost | null {
-  if (!node || typeof (node as Element).querySelector !== 'function') return null;
-  return node as YoutubePlayerHost;
-}
-
-function youtubePlayerFor(video: HTMLVideoElement): YoutubePlayerHost | null {
-  if (typeof video.closest === 'function') {
-    const closest = youtubePlayerHost(video.closest('#movie_player, .html5-video-player'));
-    if (closest) return closest;
-  }
-  if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return null;
-  return youtubePlayerHost(document.querySelector('#movie_player, .html5-video-player'));
-}
-
-function youtubeProgressTimes(player: YoutubePlayerHost): { min: number; max: number; now: number } | null {
-  const bar = player.querySelector('.ytp-progress-bar');
-  if (!bar) return null;
-  const min = Number(bar.getAttribute('aria-valuemin'));
-  const max = Number(bar.getAttribute('aria-valuemax'));
-  const nowRaw = Number(bar.getAttribute('aria-valuenow'));
-  const now = Number.isFinite(nowRaw) ? nowRaw : max;
-  if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(now) || max <= min) return null;
-  return { min, max, now };
-}
-
-const youtubeWallOffsets = new WeakMap<HTMLVideoElement, number>();
 const pendingMediaSeeks = new WeakMap<HTMLVideoElement, { time: number; until: number }>();
 const pendingNativeSeekResumes = new WeakMap<HTMLVideoElement, () => void>();
 const pendingHostSeekResumes = new WeakMap<HTMLVideoElement, number>();
-
-function rememberYoutubeWallOffset(video: HTMLVideoElement, offset: number): void {
-  youtubeWallOffsets.set(video, offset);
-  try {
-    video.dataset.teYtWallOffset = String(offset);
-  } catch {
-    // Some test doubles are not real elements.
-  }
-}
-
-function rememberedYoutubeWallOffset(video: HTMLVideoElement): number | null {
-  const remembered = youtubeWallOffsets.get(video);
-  if (Number.isFinite(remembered)) return remembered as number;
-  try {
-    const stored = Number(video.dataset.teYtWallOffset);
-    if (Number.isFinite(stored)) return stored;
-  } catch {
-    // Ignore dataset on test doubles.
-  }
-  return null;
-}
-
-function youtubeWallOffset(video: HTMLVideoElement, times: { min: number; max: number; now: number }): number | null {
-  const html5Now = video.currentTime;
-  if (!Number.isFinite(html5Now)) return null;
-  const atLiveHead = hostIsAtLiveHead(video);
-  const ariaBehind = times.max - times.now;
-  const liveNow = atLiveHead ? times.max : times.now;
-  const measured = liveNow - html5Now;
-  const remembered = rememberedYoutubeWallOffset(video);
-  const ariaTrusted = atLiveHead || ariaBehind > LIVE_EDGE_SECONDS;
-  if (ariaTrusted) {
-    // During an in-flight DVR seek the native thumb can jump before HTML5
-    // currentTime does. That pair is not a new mapping — keep the last offset.
-    if (
-      remembered != null
-      && Number.isFinite(measured)
-      && Math.abs(measured - remembered) > YOUTUBE_WALL_OFFSET_RESYNC_SECONDS
-    ) {
-      return remembered;
-    }
-    rememberYoutubeWallOffset(video, measured);
-    return measured;
-  }
-  if (remembered != null) return remembered;
-  return measured;
-}
-
-function youtubeDvrBounds(video: HTMLVideoElement): { start: number; end: number } | null {
-  const player = youtubePlayerFor(video);
-  if (!player) return null;
-  const times = youtubeProgressTimes(player);
-  if (!times) return null;
-  const offset = youtubeWallOffset(video, times);
-  if (offset == null || !Number.isFinite(offset)) return null;
-  const start = times.min - offset;
-  const end = times.max - offset;
-  const span = end - start;
-  if (!Number.isFinite(start) || !Number.isFinite(end) || span < MIN_LIVE_DVR_SECONDS || span > MAX_LIVE_DVR_SECONDS) {
-    return null;
-  }
-  return { start, end };
-}
-
-function youtubeLiveHeadBounds(video: HTMLVideoElement): { start: number; end: number } | null {
-  if (!hostIsAtLiveHead(video)) return null;
-  const end = video.currentTime;
-  if (!Number.isFinite(end) || end <= 0) return null;
-  const start = 0;
-  const span = end - start;
-  if (span < MIN_LIVE_DVR_SECONDS || span > MAX_LIVE_DVR_SECONDS) return null;
-  return { start, end };
-}
-
-export function hostLiveHint(video: HTMLVideoElement): boolean {
-  const player = youtubePlayerFor(video);
-  if (!player) return false;
-  try {
-    if (player.getVideoData?.()?.isLive === true) return true;
-  } catch {
-    // Player API may throw before the embed is ready.
-  }
-  // Do not use ytp-livebadge-color: YouTube applies it to VOD chrome too.
-  const badge = player.querySelector('.ytp-live-badge') as HTMLElement | null;
-  return Boolean(badge && badge.offsetParent);
-}
-
-export function hostIsAtLiveHead(video: HTMLVideoElement): boolean {
-  const player = youtubePlayerFor(video);
-  const badge = player?.querySelector('.ytp-live-badge');
-  return Boolean(badge && badge.classList.contains('ytp-live-badge-is-livehead'));
-}
 
 function seekableBounds(video: HTMLVideoElement): { start: number; end: number } | null {
   try {
@@ -224,10 +105,7 @@ function usableHostDuration(video: HTMLVideoElement, duration: number | null | u
 }
 
 function hostKnownVodDuration(video: HTMLVideoElement): number | null {
-  if (typeof document === 'undefined' || !isDisneyHost()) return null;
-  const harvested = readPublishedDisneySnapshot(document)?.duration;
-  const chrome = readDisneyChromeDuration(document);
-  return usableHostDuration(video, harvested ?? chrome ?? null);
+  return usableHostDuration(video, readHostVodDuration(video));
 }
 
 function boundsWindow(bounds: { start: number; end: number }): PlaybackWindow {
@@ -241,10 +119,8 @@ function boundsWindow(bounds: { start: number; end: number }): PlaybackWindow {
 }
 
 function liveWindow(video: HTMLVideoElement): PlaybackWindow {
-  const youtubeDvr = youtubeDvrBounds(video);
-  if (youtubeDvr) return boundsWindow(youtubeDvr);
-  const youtubeHead = youtubeLiveHeadBounds(video);
-  if (youtubeHead) return boundsWindow(youtubeHead);
+  const hostBounds = readHostLiveBounds(video);
+  if (hostBounds) return boundsWindow(hostBounds);
   const bounds = seekableBounds(video);
   if (bounds) return boundsWindow(bounds);
   const duration = finiteDuration(video);
@@ -354,7 +230,7 @@ export function isVideoAtLiveEdge(media: HTMLVideoElement | PlaybackSurface, win
 export function displayMediaTime(media: HTMLVideoElement | PlaybackSurface): number {
   if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) return media.currentTime || 0;
   const video = nativeVideoOf(media) || media as HTMLVideoElement;
-  const now = readDisneyContentTime(video) ?? (video.currentTime || 0);
+  const now = readProviderClock(video) ?? (video.currentTime || 0);
   const pending = pendingMediaSeeks.get(video);
   if (!pending) return now;
   if (Math.abs(now - pending.time) <= PENDING_MEDIA_SEEK_ARRIVED_SECONDS || Date.now() >= pending.until) {
@@ -431,14 +307,6 @@ export function cancelPendingSeekResume(video: HTMLVideoElement): void {
   requestHostMediaSeek({ cancelPendingResume: true });
 }
 
-function canSeekYoutubeLive(video: HTMLVideoElement): boolean {
-  return hostLiveHint(video) && Boolean(youtubePlayerFor(video));
-}
-
-function canSeekDisneyHost(): boolean {
-  return isDisneyHost();
-}
-
 export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time: number): void {
   if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) {
     const surfaceWindow = playbackWindow(media);
@@ -454,18 +322,14 @@ export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time:
   // seek requested from the paused state.
   const resumeAfterSeek = shouldResumeAfterSeek(video);
   rememberPendingMediaSeek(video, target);
-  if (canSeekYoutubeLive(video)) {
-    if (window.live && isAtLiveEdge(target, window)) {
-      if (requestHostMediaSeek({ live: true })) return;
-    } else if (requestHostMediaSeek({ time: target, resumeAfterSeek })) {
-      rememberHostSeekResume(video, resumeAfterSeek);
-      return;
-    }
-  }
-  const netflixHost = typeof document !== 'undefined' && document.documentElement
-    && isNetflixHost() && mediaProviderIntegrationEnabled('netflix');
-  if ((canSeekDisneyHost() || netflixHost) && requestHostMediaSeek({ time: target, resumeAfterSeek })) {
-    rememberHostSeekResume(video, resumeAfterSeek);
+  for (const attempt of hostMediaSeekAttempts(video, {
+    target,
+    windowLive: window.live,
+    atLiveEdge: isAtLiveEdge(target, window),
+    resumeAfterSeek
+  })) {
+    if (!requestHostMediaSeek(attempt.detail)) continue;
+    if (attempt.rememberResume) rememberHostSeekResume(video, resumeAfterSeek);
     return;
   }
   preserveNativePlaybackThroughSeek(video, resumeAfterSeek);
@@ -476,7 +340,8 @@ export function seekToLive(video: HTMLVideoElement): boolean {
   const window = playbackWindow(video);
   if (!window.live) return false;
   rememberPendingMediaSeek(video, window.end);
-  if (canSeekYoutubeLive(video) && requestHostMediaSeek({ live: true })) return true;
+  const liveAttempt = hostLiveSeekAttempt(video);
+  if (liveAttempt && requestHostMediaSeek(liveAttempt.detail)) return true;
   if (!window.seekable) {
     clearPendingMediaSeek(video);
     return false;

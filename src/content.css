@@ -7,6 +7,9 @@
  * same layout inside the shadow sheet so the overlay does not need inline
  * !important on the host element.
  */
+
+@import "./providers/presentation.css";
+
 #theater-everywhere-ui,
 :host {
   all: initial !important;
@@ -90,192 +93,6 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   z-index: 2147483647 !important;
 }
 
-/* Disney+ overwrites video.className (dropping theater-everywhere-video-active),
- * so the CSS black background is lost and body rgb(23,23,27) shows through the
- * EME letterbox. Stage + body black survive that; DxcOverlay is the title/back chrome. */
-#theater-everywhere-disney-stage {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: #000000 !important;
-  z-index: 2147483645 !important;
-  pointer-events: none !important;
-}
-
-html.theater-everywhere-disney-stage,
-html.theater-everywhere-disney-stage body {
-  background: #000000 !important;
-}
-
-html.theater-everywhere-disney-stage .DxcOverlay {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Twitch `.persistent-player` uses an identity transform, which becomes the
- * containing block for position:fixed and keeps the theater video inside the
- * 16:9 player well instead of the viewport. */
-html.theater-everywhere-twitch-stage .persistent-player {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: none !important;
-  max-height: none !important;
-  transform: none !important;
-  translate: none !important;
-  overflow: visible !important;
-  z-index: 2147483646 !important;
-  background: #000000 !important;
-}
-
-html.theater-everywhere-twitch-stage .video-player,
-html.theater-everywhere-twitch-stage .video-player__container,
-html.theater-everywhere-twitch-stage .tw-aspect {
-  transform: none !important;
-  overflow: visible !important;
-  clip: auto !important;
-  clip-path: none !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-html.theater-everywhere-twitch-stage .side-nav,
-html.theater-everywhere-twitch-stage .top-nav,
-html.theater-everywhere-twitch-stage .right-column,
-html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Netflix's modal dialog keeps an identity transform (scale(1)). That is a
- * containing block for position:fixed, so the inline containment reset in
- * netflix-stage.ts is what actually pins the video. These rules cover the
- * stable player chrome and host subtitles once that pin is in place. */
-html.theater-everywhere-netflix-stage .nf-player-container,
-html.theater-everywhere-netflix-stage .sizing-wrapper,
-html.theater-everywhere-netflix-stage .VideoContainer,
-html.theater-everywhere-netflix-stage [role="dialog"] {
-  overflow: visible !important;
-  transform: none !important;
-  scale: none !important;
-  transition: none !important;
-  animation: none !important;
-  filter: none !important;
-  mask-image: none !important;
-}
-
-/* /watch keeps subtitles inside video-canvas and puts its chrome, pause
- * evidence and postplay layers in siblings. Preserve those live controls for
- * the CTA proxies while removing their painting and pointer interception. */
-html.theater-everywhere-netflix-stage .watch-video [data-uia="player"] {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-}
-
-/* Pinning only the video removes it from flow. Netflix's caption renderer
- * measures this canvas, so keep its percentage-height chain nonzero. */
-html.theater-everywhere-netflix-stage .watch-video [data-uia="video-canvas"] {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-html.theater-everywhere-netflix-stage .watch-video [data-uia="player"] > :not([data-uia="video-canvas"]),
-html.theater-everywhere-netflix-stage .PlayerControls--control-element,
-html.theater-everywhere-netflix-stage .PlayerControlsNeo__bottom-controls,
-html.theater-everywhere-netflix-stage .nfp-button-control {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-html.theater-everywhere-netflix-stage .player-timedtext {
-  position: fixed !important;
-  left: 10vw !important;
-  width: 80vw !important;
-  right: auto !important;
-  top: auto !important;
-  height: auto !important;
-  bottom: var(--theater-caption-bottom, 96px) !important;
-  z-index: 2147483647 !important;
-  transform: none !important;
-  pointer-events: none !important;
-  text-align: center !important;
-  transition: bottom 0.18s ease !important;
-}
-
-html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
-  bottom: var(--theater-caption-bottom, max(28px, calc(var(--theater-letterbox, 0px) * 0.35))) !important;
-}
-
-html.theater-everywhere-netflix-stage .player-timedtext-text-container {
-  position: static !important;
-  inset: auto !important;
-  width: 100% !important;
-  height: auto !important;
-  white-space: normal !important;
-  text-align: center !important;
-}
-
-html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span {
-  display: inline-block !important;
-  width: auto !important;
-  height: auto !important;
-  max-width: 100% !important;
-  padding: 8px 16px !important;
-  border-radius: 10px !important;
-  background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
-}
-
-/* Raised captions use the video black, with the user's background opacity. */
-html.theater-everywhere-netflix-stage.theater-everywhere-picture-top:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span {
-  background: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
-  background-color: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
-}
-
-html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container span {
-  color: var(--theater-caption-color, #fff) !important;
-  font-family: var(--theater-caption-font, sans-serif) !important;
-  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
-  line-height: 1.35 !important;
-  font-weight: 500 !important;
-  text-shadow: var(--theater-caption-shadow, none) !important;
-}
-
-html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
-  transition: bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-/* Tencent's WASM stage. Hide chrome without display:none so the next-episode
-   control still passes isHostStepUsable and the TME bar can call click(). */
-html.theater-everywhere-tencent-stage .txp_player,
-html.theater-everywhere-tencent-stage .txp_videos_container {
-  overflow: visible !important;
-  transform: none !important;
-  clip-path: none !important;
-  contain: none !important;
-}
-
-html.theater-everywhere-tencent-stage .txp-layer,
-html.theater-everywhere-tencent-stage .player-top-vip-slot,
-html.theater-everywhere-tencent-stage .player-top-vip,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_bottom,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_gradient_bottom,
-html.theater-everywhere-tencent-stage .txp_controls,
-html.theater-everywhere-tencent-stage .txp_top,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_top {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 .theater-wasm-catcher {
   position: fixed;
   inset: 0;
@@ -312,32 +129,6 @@ html.theater-everywhere-tencent-stage .plugin_ctrl_txp_top {
   filter: none !important;
   perspective: none !important;
   contain: none !important;
-}
-
-/* YouTube keeps the watch page and its own player chrome in the DOM. They show
- * through for a moment whenever the video element is emptied between playlist items. */
-html.theater-everywhere-html-active #masthead-container,
-html.theater-everywhere-html-active ytd-masthead,
-html.theater-everywhere-html-active #guide,
-html.theater-everywhere-html-active ytd-mini-guide-renderer,
-html.theater-everywhere-html-active #secondary,
-html.theater-everywhere-html-active #below,
-html.theater-everywhere-html-active ytd-watch-metadata,
-html.theater-everywhere-html-active ytd-comments,
-html.theater-everywhere-html-active ytd-playlist-panel-renderer,
-html.theater-everywhere-html-active #chat,
-html.theater-everywhere-html-active .ytp-chrome-top,
-html.theater-everywhere-html-active .ytp-chrome-bottom,
-html.theater-everywhere-html-active .ytp-gradient-top,
-html.theater-everywhere-html-active .ytp-gradient-bottom,
-html.theater-everywhere-html-active .ytp-pause-overlay,
-html.theater-everywhere-html-active .ytp-cued-thumbnail-overlay,
-html.theater-everywhere-html-active .ytp-endscreen-content,
-html.theater-everywhere-html-active .ytp-ce-element,
-html.theater-everywhere-html-active .ytp-player-content {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
 }
 
 .theater-everywhere-cursor-hidden,
@@ -1187,59 +978,6 @@ html.theater-everywhere-html-active .ytp-player-content {
   opacity: 1 !important;
 }
 
-html.theater-everywhere-html-active .ytp-caption-window-container {
-  position: fixed !important;
-  inset: auto 0 var(--theater-caption-bottom, 48px) 0 !important;
-  width: 100% !important;
-  height: auto !important;
-  z-index: 2147483647 !important;
-  pointer-events: none !important;
-  transform: none !important;
-}
-
-/* Same theater-only lift as YouTube's caption window. The measured Bitmovin
- * renderer is `.bitmovinplayer-container > div:last-child > div > ul`: the
- * wrapper is absolute and the list stays at z-index auto, under the fixed
- * video. :has keeps the rule on that overlay. The list uses the caption dock
- * offset already written by updateCaptionDock, so cues sit above the visible
- * bar. Dropping the host-caption class restores the player's own placement. */
-html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions .bitmovinplayer-container > div:last-child:has(> div > ul) {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  z-index: 2147483647 !important;
-  pointer-events: none !important;
-  transform: none !important;
-}
-
-html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions .bitmovinplayer-container > div:last-child:has(> div > ul) > div > ul {
-  position: absolute !important;
-  top: auto !important;
-  bottom: var(--theater-caption-bottom, 48px) !important;
-  transition: bottom 0.18s ease !important;
-}
-
-html.theater-everywhere-picture-moving .ytp-caption-window-container {
-  transition: inset 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-html.theater-everywhere-html-active .ytp-caption-window-container .caption-window,
-html.theater-everywhere-html-active .ytp-caption-window-bottom,
-html.theater-everywhere-html-active .ytp-caption-window-top {
-  position: relative !important;
-  left: 50% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: auto !important;
-  transform: translateX(-50%) !important;
-  margin: 0 auto !important;
-  max-width: min(80vw, 960px) !important;
-}
-
-html.theater-using-overlay-captions .ytp-caption-window-container,
 html.theater-using-overlay-captions .able-captions,
 html.theater-using-overlay-captions .able-captions-wrapper,
 html.theater-using-overlay-captions .able-captions-overlay,
@@ -1247,11 +985,7 @@ html.theater-using-overlay-captions .vjs-text-track-display,
 html.theater-using-overlay-captions .plyr__captions,
 html.theater-using-overlay-captions .jw-captions,
 html.theater-using-overlay-captions .jw-text-track-container,
-html.theater-using-overlay-captions .mejs-captions-layer,
-html.theater-everywhere-html-active[data-te-tencent-captions-hidden] .thumbplayer-webvtt-overlay,
-html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-player-wrapper .text-track,
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-ass-subtitle,
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-subtitle {
+html.theater-using-overlay-captions .mejs-captions-layer {
   display: none !important;
   visibility: hidden !important;
 }
