@@ -63,6 +63,7 @@ const ASS_SIGNED = `${ASS}?t=${SIGNATURE}`;
 const BIF_SIGNED = `${BIF}?t=${SIGNATURE}`;
 const VTT_SIGNED = `${VTT}?t=${SIGNATURE}`;
 const VTT_JA = `https://vod-fy-mod.crunchyrollcdn.com/static/majin/${MODERN_ASSET}/ja-JP/cenc/dash/captions/ja-JP/20260814_191622/caption.vtt?t=${SIGNATURE}`;
+const VTT_FORCED = `https://vod-fy-mod.crunchyrollcdn.com/static/majin/${MODERN_ASSET}/en-US/cenc/dash/captions/en-US/20260814_191700/caption.vtt?t=${SIGNATURE}`;
 const LANDING = 'Crunchyroll: Watch Popular Anime, Play Games & Shop Online';
 const ASS_BODY = [
   '[Events]',
@@ -1744,6 +1745,170 @@ describe('Crunchyroll RTE', () => {
       page.releaseProbes();
       page.restore();
     }
+  });
+
+  it('leaves forced narrative tracks out of host control and visible after explicit Off', async () => {
+    const route = `/watch/${MODERN_MEDIA}/the-journeys-end`;
+    const page = installPage(route);
+    const forced = {
+      id: 'caption-forced-en-US',
+      lang: 'en-US',
+      label: 'English (Forced)',
+      kind: 'subtitle',
+      enabled: true,
+      forced: true,
+      url: VTT_FORCED
+    };
+    const tracks = [
+      { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, forced: false, url: VTT_SIGNED },
+      { id: 'caption-ja-JP', lang: 'ja-JP', label: 'Japanese', kind: 'subtitle', enabled: false, forced: false, url: VTT_JA },
+      forced
+    ];
+    const calls: string[] = [];
+    const acks: string[] = [];
+    const subtitles = {
+      list: () => tracks.map((track) => ({ ...track })),
+      enable(id: string) {
+        calls.push(`enable:${id}`);
+        const track = tracks.find((item) => item.id === id);
+        if (track) track.enabled = true;
+      },
+      disable(id: string) {
+        calls.push(`disable:${id}`);
+        const track = tracks.find((item) => item.id === id);
+        if (track) track.enabled = false;
+      }
+    };
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_ACK_EVENT, ((event: Event) => {
+      const ack = parseCrunchyrollCaptionAck((event as CustomEvent<unknown>).detail);
+      if (ack) acks.push(`${ack.trackId ?? 'off'}:${ack.ok}:${ack.kept === true}`);
+    }) as EventListener);
+    page.win.addEventListener(CRUNCHYROLL_CAPTION_EVENT, handleCrunchyrollCaptionEvent as EventListener);
+    try {
+      usePlayer(page.doc, MODERN, subtitles);
+      const parsed = parseCrunchyrollHostList(subtitles.list(), MODERN_ASSET);
+      assert.equal(parsed.renderer, 'active');
+      assert.deepEqual(parsed.tracks.map((track) => track.id), ['caption-en-US', 'caption-ja-JP']);
+      const adapter = new CrunchyrollAdapter();
+      const menu = await adapter.listCaptionTracks();
+      assert.deepEqual(menu.map((track) => track.id), [
+        `crunchyroll-host:${MODERN_MEDIA}:caption-en-US`,
+        `crunchyroll-host:${MODERN_MEDIA}:caption-ja-JP`
+      ]);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      assert.equal((await adapter.activateCaptionTrack(`crunchyroll-host:${MODERN_MEDIA}:caption-forced-en-US`)).status, 'failed');
+      assert.equal(calls.length, 0);
+      let armed = calls.length;
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.length, armed);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      assert.equal(acks.at(-1), 'off:true:true');
+
+      const english = menu[0];
+      const japanese = menu[1];
+      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal(tracks[0].enabled, true);
+      assert.equal(forced.enabled, true);
+      adapter.invalidate();
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      armed = calls.length;
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      assert.equal(acks.at(-1), 'off:true:false');
+
+      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      armed = calls.length;
+      assert.equal((await adapter.activateCaptionTrack(japanese.id)).status, 'active');
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US,enable:caption-ja-JP');
+      assert.equal(tracks[0].enabled, false);
+      assert.equal(tracks[1].enabled, true);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      armed = calls.length;
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.slice(armed).join(','), 'disable:caption-ja-JP');
+      assert.equal(tracks[1].enabled, false);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      assert.equal(acks.at(-1), 'off:true:true');
+      armed = calls.length;
+      adapter.invalidate();
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.length, armed);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      tracks[0].enabled = false;
+      tracks[1].enabled = false;
+      forced.enabled = false;
+      await adapter.reload();
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      forced.enabled = true;
+      armed = calls.length;
+      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.length, armed);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+      assert.equal((await adapter.listCaptionTracks()).some((track) => track.id.endsWith('caption-forced-en-US')), false);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
+
+      tracks.splice(0, tracks.length, forced);
+      forced.enabled = true;
+      const only = new CrunchyrollAdapter();
+      assert.deepEqual(await only.listCaptionTracks(), []);
+      armed = calls.length;
+      assert.equal((await only.activateCaptionTrack(null)).status, 'off');
+      assert.equal(calls.length, armed);
+      assert.equal(forced.enabled, true);
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      only.dispose();
+
+      tracks.splice(0, tracks.length,
+        { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, forced: false, url: VTT_SIGNED },
+        { id: 'caption-ja-JP', lang: 'ja-JP', label: 'Japanese', kind: 'subtitle', enabled: false, forced: false, url: VTT_JA },
+        forced
+      );
+      forced.enabled = true;
+      await adapter.reload();
+      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal(tracks[0].enabled, true);
+      const exiting = adapter.activateCaptionTrack(null);
+      adapter.dispose();
+      assert.equal((await exiting).status, 'failed');
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      assert.equal(forced.enabled, true);
+      await flush();
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+
+      tracks[0].enabled = true;
+      forced.enabled = true;
+      tracks[1].enabled = false;
+      const movedAdapter = new CrunchyrollAdapter();
+      await movedAdapter.listCaptionTracks();
+      assert.equal((await movedAdapter.activateCaptionTrack(english.id)).status, 'active');
+      const moved = movedAdapter.activateCaptionTrack(null);
+      page.location.pathname = `/watch/${OTHER}/next`;
+      assert.equal((await moved).status, 'failed');
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      assert.equal(forced.enabled, true);
+      page.location.pathname = route;
+
+      tracks[0].enabled = false;
+      forced.enabled = true;
+      await movedAdapter.reload();
+      assert.equal((await movedAdapter.activateCaptionTrack(english.id)).status, 'active');
+      const integrationOff = movedAdapter.activateCaptionTrack(null);
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      assert.equal((await integrationOff).status, 'failed');
+      assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
+      assert.equal(forced.enabled, true);
+      page.attrs.delete('data-te-crunchyroll-integration-off');
+      assert.equal(calls.some((call) => call.includes('caption-forced-en-US')), false);
+    } finally { page.restore(); }
   });
 
   it('stops an oversized Crunchyroll body without a second clone or an arrayBuffer fallback', async () => {

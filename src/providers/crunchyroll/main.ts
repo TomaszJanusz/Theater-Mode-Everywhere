@@ -796,8 +796,9 @@ function listedHostTracks(session: PlayerSession): Array<{ id: string; enabled: 
   const tracks: Array<{ id: string; enabled: boolean; url: string }> = [];
   for (const item of value.slice(0, 40)) {
     if (!item || typeof item !== 'object') continue;
-    const row = item as { id?: unknown; enabled?: unknown; url?: unknown };
-    if (typeof row.id !== 'string') continue;
+    const row = item as { id?: unknown; enabled?: unknown; url?: unknown; forced?: unknown };
+    // Same strict flag as parseCrunchyrollHostList. Forced narrative stays on and is not a host control target.
+    if (typeof row.id !== 'string' || row.forced === true) continue;
     tracks.push({
       id: row.id,
       enabled: row.enabled === true,
@@ -805,6 +806,22 @@ function listedHostTracks(session: PlayerSession): Array<{ id: string; enabled: 
     });
   }
   return tracks;
+}
+
+function forcedNarrativeEnabled(session: PlayerSession): boolean {
+  let value: unknown = [];
+  try {
+    value = session.list();
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(value)) return false;
+  for (const item of value.slice(0, 40)) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as { enabled?: unknown; forced?: unknown };
+    if (row.forced === true && row.enabled === true) return true;
+  }
+  return false;
 }
 
 type ListedHostTrack = { id: string; enabled: boolean; url: string };
@@ -958,7 +975,12 @@ export async function applyCrunchyrollHostCaption(
   if (request.trackId === null && request.ownedTrackId) {
     return applyOwnedCaptionOff(request, request.ownedTrackId, generation);
   }
-  return { ok: await applyUnscopedHostCaption(request, generation), kept: false };
+  const ok = await applyUnscopedHostCaption(request, generation);
+  if (!ok || request.trackId !== null || !hostCaptionCurrent(request, generation)) return { ok, kept: false };
+  const session = readPlayerSession(request.mediaId);
+  // Selectable tracks are off. A forced row can still be showing in the same renderer.
+  const kept = Boolean(session && session.rendition !== 'hardsub' && forcedNarrativeEnabled(session));
+  return { ok: true, kept };
 }
 
 function acknowledgeHostCaption(request: CrunchyrollCaptionRequest, result: HostCaptionApplyResult): void {

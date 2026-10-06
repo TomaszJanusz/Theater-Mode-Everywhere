@@ -397,6 +397,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
         outcome = { ok: false, kept: false };
       }
       if (cue !== this.cueGeneration) return failed();
+      // A player-selected track or a forced narrative row is still showing. Do not record it as owned.
       if (outcome.kept) {
         const still = crunchyrollIntegrationEnabled()
           && crunchyrollPageMediaId() === target.mediaId
@@ -405,6 +406,9 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
         if (!still) {
           releaseCrunchyrollHostCaptionSurface();
           return { status: 'off', delivery: 'none', cues: [] };
+        }
+        if (this.snapshot?.mediaId === target.mediaId) {
+          this.snapshot = { ...this.snapshot, hostRenderer: 'active' };
         }
         retainCrunchyrollHostCaptionSurface();
         return { status: 'off', delivery: 'none', cues: [] };
