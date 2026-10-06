@@ -1,17 +1,18 @@
 import type { DisposableScope } from '../core/disposable-scope';
 
 /**
- * One time-sensitive host action, identified so a later poll or click can
+ * Time-sensitive host actions, identified so a later poll or click can
  * refuse a replaced control. Providers own discovery; this module only
  * shows the label and asks the provider to activate that id.
  */
 export type ServiceAction = {
   id: string;
   label: string;
+  progress?: number;
 };
 
 export type ServiceActionSource = {
-  read(): ServiceAction | null;
+  read(): ServiceAction[];
   activate(id: string): boolean;
 };
 
@@ -24,6 +25,7 @@ export type ServiceActionCtaOptions = {
   subscribeToolbar: (listener: () => void) => () => void;
   /** Pixels to clear above the 24px screen edge while the bar is visible. */
   controlsLift: () => number;
+  menuOpen?: () => boolean;
   pollMs?: number;
 };
 
@@ -33,7 +35,7 @@ const SERVICE_ACTION_HOST_CLASS = 'theater-service-action-host';
 const TOOLBAR_VISIBLE_CLASS = 'toolbar-visible';
 const LIFT_VAR = '--theater-service-action-lift';
 const LIFT_FALLBACK_PX = 96;
-const DEFAULT_POLL_MS = 400;
+const DEFAULT_POLL_MS = 200;
 
 /**
  * Bottom-right glass CTA. It stays up for as long as the provider reports a
@@ -48,23 +50,21 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   host.setAttribute('aria-live', 'polite');
   host.setAttribute('aria-atomic', 'true');
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = SERVICE_ACTION_CLASS;
-
   const stopPlaybackToggle = (event: Event) => {
     event.stopPropagation();
   };
-  scope.listen(button, 'pointerdown', stopPlaybackToggle);
-  scope.listen(button, 'mousedown', stopPlaybackToggle);
-  scope.listen(button, 'pointerup', stopPlaybackToggle);
-  scope.listen(button, 'mouseup', stopPlaybackToggle);
-  scope.listen(button, 'dblclick', (event: Event) => {
+  scope.listen(host, 'pointerdown', stopPlaybackToggle);
+  scope.listen(host, 'mousedown', stopPlaybackToggle);
+  scope.listen(host, 'pointerup', stopPlaybackToggle);
+  scope.listen(host, 'mouseup', stopPlaybackToggle);
+  scope.listen(host, 'dblclick', (event: Event) => {
     event.stopPropagation();
     event.stopImmediatePropagation();
   });
-  scope.listen(button, 'click', (event: Event) => {
+  scope.listen(host, 'click', (event: Event) => {
     event.stopPropagation();
+    const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>(`.${SERVICE_ACTION_CLASS}`) : null;
+    if (!button) return;
     const id = button.dataset.serviceActionId || '';
     if (!id) return;
     try {
@@ -76,6 +76,7 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   });
 
   const place = () => {
+    host.hidden = options.menuOpen?.() === true;
     const visible = toolbarOpen();
     host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
     if (!visible) return;
@@ -97,25 +98,49 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     }
   };
 
-  const render = (action: ServiceAction | null) => {
-    if (!action) {
-      button.remove();
-      button.textContent = '';
-      delete button.dataset.serviceActionId;
-      return;
+  const buttons = new Map<string, HTMLButtonElement>();
+  const render = (actions: ServiceAction[]) => {
+    const ids = new Set(actions.map(action => action.id));
+    for (const [id, button] of buttons) {
+      if (!ids.has(id)) { button.remove(); buttons.delete(id); }
     }
-    if (button.dataset.serviceActionId !== action.id) button.dataset.serviceActionId = action.id;
-    if (button.textContent !== action.label) button.textContent = action.label;
-    if (!button.isConnected) host.append(button);
+    actions.forEach((action, index) => {
+      let button = buttons.get(action.id);
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = SERVICE_ACTION_CLASS;
+        button.dataset.serviceActionId = action.id;
+        const label = document.createElement('span');
+        label.className = 'theater-service-action-label';
+        const progress = document.createElement('span');
+        progress.className = 'theater-service-action-progress';
+        progress.setAttribute('aria-hidden', 'true');
+        button.append(progress, label);
+        buttons.set(action.id, button);
+      }
+      const label = button.querySelector('.theater-service-action-label')!;
+      if (label.textContent !== action.label) label.textContent = action.label;
+      const progress = button.querySelector<HTMLElement>('.theater-service-action-progress')!;
+      progress.hidden = action.progress === undefined;
+      if (action.progress !== undefined) progress.style.transform = `scaleX(${action.progress})`;
+      // Reordering only when needed preserves focus and the host countdown.
+      if (host.children[index] !== button) host.insertBefore(button, host.children[index] || null);
+    });
   };
 
+  let animationFrame = 0;
   const sync = () => {
     if (scope.isDisposed) return;
     try {
       place();
-      render(readAction(options.source));
+      const actions = readActions(options.source);
+      render(actions);
+      if (actions.some(action => action.progress !== undefined && action.progress < 1) && !animationFrame) {
+        animationFrame = window.requestAnimationFrame(() => { animationFrame = 0; sync(); });
+      }
     } catch {
-      render(null);
+      render([]);
     }
   };
 
@@ -123,6 +148,7 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   let timer = 0;
   scope.add(() => {
     window.clearInterval(timer);
+    window.cancelAnimationFrame(animationFrame);
     unsubscribe();
     host.remove();
   });
@@ -136,15 +162,19 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   sync();
 }
 
-function readAction(source: ServiceActionSource): ServiceAction | null {
+function readActions(source: ServiceActionSource): ServiceAction[] {
   try {
-    const action = source.read();
-    if (!action || typeof action.id !== 'string' || action.id.length === 0) return null;
-    if (typeof action.label !== 'string') return null;
-    const label = action.label.replace(/\s+/g, ' ').trim();
-    if (!label) return null;
-    return { id: action.id, label: label.slice(0, 80) };
+    const seen = new Set<string>();
+    return source.read().slice(0, 4).flatMap(action => {
+      if (!action || typeof action.id !== 'string' || !action.id || seen.has(action.id) || typeof action.label !== 'string') return [];
+      const label = action.label.replace(/\s+/g, ' ').trim();
+      if (!label) return [];
+      seen.add(action.id);
+      const progress = typeof action.progress === 'number' && Number.isFinite(action.progress)
+        ? Math.max(0, Math.min(1, action.progress)) : undefined;
+      return [{ id: action.id, label: label.slice(0, 80), ...(progress === undefined ? {} : { progress }) }];
+    });
   } catch {
-    return null;
+    return [];
   }
 }

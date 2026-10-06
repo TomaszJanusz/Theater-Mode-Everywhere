@@ -21,7 +21,7 @@ import {
   clearPendingMediaSeek
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
-import { CURSOR_HIDDEN_CLASS } from './toolbar';
+import { CURSOR_HIDDEN_CLASS, observeNetflixCaptionDock } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
@@ -1558,7 +1558,10 @@ export function createControls(ctx: PlayerChromeContext) {
     document.addEventListener('pointerdown', showToolbar, { passive: true });
     // All player chrome, including the home pill, uses the same focus handler.
     controlsScope.listen(wrapper.getRootNode(), 'focusin', showToolbar);
-    if (isNetflixHost() && mediaProviderIntegrationEnabled('netflix')) {
+    // The source follows live provider flags, including enablement during a session.
+    if (isNetflixHost()) {
+      const player = document.querySelector<HTMLElement>('.watch-video [data-uia="player"]');
+      if (player) observeNetflixCaptionDock(controlsScope, player, updateCaptionDock);
       mountServiceActionCta(controlsScope, {
         source: createNetflixServiceActions(),
         mount: mountPlayerUi,
@@ -1570,6 +1573,9 @@ export function createControls(ctx: PlayerChromeContext) {
             || Number.parseFloat(getComputedStyle(bar).opacity) > 0.01));
         },
         subscribeToolbar: (listener) => ctx.uiStore.subscribe(listener),
+        menuOpen: () => queryPlayerUi(`.theater-menu.is-open, .theater-cc-menu.visible, .theater-settings-menu.visible,
+          .theater-volume-container:hover .theater-volume-panel, .theater-speed-container:hover .theater-speed-panel,
+          .theater-volume-container:focus-within .theater-volume-panel, .theater-speed-container:focus-within .theater-speed-panel`) !== null,
         controlsLift: () => {
           const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
           return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 12 : 96;

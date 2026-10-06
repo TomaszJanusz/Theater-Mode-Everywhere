@@ -46,6 +46,7 @@ const uiBundle = bundle({
   stdin: {
     contents: [
       "export { DisposableScope } from './core/disposable-scope.ts';",
+      "export { createToolbar, observeNetflixCaptionDock } from './ui/toolbar.ts';",
       "export { mountServiceActionCta } from './ui/service-actions.ts';"
     ].join('\n'),
     resolveDir: SRC,
@@ -100,6 +101,120 @@ type NetflixReport = {
 };
 
 describe('service action CTA', () => {
+  it('redocks native cue replacements before paint, restores overwritten motion and disconnects on exit', async () => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) return;
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      await page.setContent('<div class="watch-video"><div data-uia="player"><div data-uia="video-canvas"><video></video><div class="player-timedtext"></div></div></div></div>');
+      await page.addStyleTag({ content: CSS });
+      await page.addScriptTag({ content: uiBundle });
+      const report = await page.evaluate(`(async () => {
+        document.documentElement.className = 'theater-everywhere-netflix-stage theater-everywhere-picture-top';
+        const video = document.querySelector('video');
+        Object.defineProperties(video, { videoWidth: {value:1920}, videoHeight: {value:1080} });
+        video.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh';
+        const scope = new TeServiceActions.DisposableScope();
+        const toolbar = TeServiceActions.createToolbar({ session:{element:video}, queryPlayerUi:()=>null, queryPlayerUiAll:()=>[] });
+        const host = document.querySelector('.player-timedtext');
+        let calls=0;
+        TeServiceActions.observeNetflixCaptionDock(scope, document.querySelector('[data-uia=player]'), ()=>{ calls++; toolbar.updateCaptionDock(); });
+        const replace = async text => {
+          host.style.cssText = 'display:block';
+          host.innerHTML = '<div class="player-timedtext-text-container"><span>' + text + '</span></div>';
+          await new Promise(resolve=>requestAnimationFrame(resolve));
+          return {bottom:document.documentElement.style.getPropertyValue('--theater-caption-bottom'), transition:host.style.transition, height:host.offsetHeight};
+        };
+        const one = await replace('One line');
+        const two = await replace('Two lines<br>Second line');
+        const next = await replace('Next line');
+        scope.dispose(); const before=calls;
+        await replace('After exit<br>Second line');
+        return {one,two,next, before,after:calls};
+      })()`) as { one:{bottom:string;transition:string;height:number}; two:{bottom:string;transition:string;height:number}; next:{bottom:string;transition:string;height:number}; before:number;after:number };
+      assert.equal(report.one.bottom, '13px', JSON.stringify(report));
+      assert.equal(report.two.bottom, '8px');
+      assert.equal(report.next.bottom, report.one.bottom);
+      assert.equal(report.one.transition, 'opacity 0.15s');
+      assert.equal(report.two.transition, report.one.transition);
+      assert.equal(report.next.transition, report.one.transition);
+      assert.ok(report.two.height > report.one.height);
+      assert.equal(report.before, 3);
+      assert.equal(report.after, report.before);
+    } finally { await browser.close(); }
+  });
+
+  it('shows both postplay actions, mirrors the native countdown and clears open menus without restarting it', async () => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) return;
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      await page.setContent(`<div class="watch-video"><div data-uia="player" data-videoid="70248290">
+        <button data-uia="control-next" aria-label="Następny odcinek"></button>
+        <button data-uia="watch-credits-seamless-button">Wyświetl napisy końcowe</button>
+        <button data-uia="next-episode-seamless-button-draining"><div class="inner" style="width:200px;height:36px;transform:translateX(-100%);transition:transform 1s linear"></div><span>Następny odcinek</span></button>
+      </div></div>`);
+      await page.addScriptTag({ content: uiBundle });
+      await page.addScriptTag({ content: netflixBundle });
+      await page.evaluate(`(css => {
+        const native = document.querySelector('[data-uia="next-episode-seamless-button-draining"]');
+        window.__postplayClicks = [];
+        native.addEventListener('click', () => window.__postplayClicks.push('next'));
+        document.querySelector('[data-uia="watch-credits-seamless-button"]').addEventListener('click', () => window.__postplayClicks.push('credits'));
+        const uiHost = document.createElement('div');
+        uiHost.id = 'theater-everywhere-ui';
+        document.body.append(uiHost);
+        const shadow = uiHost.attachShadow({mode:'open'});
+        shadow.innerHTML = '<style>' + css + '</style>';
+        const scope = new window.TeServiceActions.DisposableScope();
+        window.__postplayScope = scope;
+        window.__menuOpen = false;
+        const source = window.TeNetflixServiceActions.createNetflixServiceActions({host:()=>true,href:()=> 'https://www.netflix.com/watch/70248290'});
+        window.TeServiceActions.mountServiceActionCta(scope, {
+          source, mount:node=>shadow.append(node), toolbarVisible:()=>true,
+          controlsLift:()=>80, subscribeToolbar:()=>()=>{}, menuOpen:()=>window.__menuOpen, pollMs:20
+        });
+        const fill = native.querySelector('.inner');
+        void fill.offsetWidth;
+        fill.style.transform = 'translateX(0)';
+      })(${JSON.stringify(CSS)})`);
+      assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Następny odcinek', 'Wyświetl napisy końcowe']);
+      await page.waitForTimeout(250);
+      const paused = await page.evaluate(`(() => {
+        const fill = document.querySelector('[data-uia="next-episode-seamless-button-draining"] .inner');
+        const animation = fill.getAnimations()[0];
+        animation.pause();
+        window.__nativeCountdown = animation;
+        const root = document.getElementById('theater-everywhere-ui').shadowRoot;
+        window.__originalPostplayButton = root.querySelector('.theater-service-action');
+        window.__menuOpen = true;
+        return animation.effect.getComputedTiming().progress;
+      })()`) as number;
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator('.theater-service-action').first().isVisible(), false);
+      await page.evaluate('window.__menuOpen = false');
+      await page.waitForTimeout(100);
+      const mirrored = await page.evaluate(`(() => {
+        const root = document.getElementById('theater-everywhere-ui').shadowRoot;
+        const button = root.querySelector('.theater-service-action');
+        const progress = new DOMMatrixReadOnly(getComputedStyle(button.querySelector('.theater-service-action-progress')).transform).m11;
+        return {progress, same:button===window.__originalPostplayButton, native:window.__nativeCountdown.effect.getComputedTiming().progress, clicks:window.__postplayClicks};
+      })()`) as { progress: number; same: boolean; native: number; clicks: string[] };
+      assert.ok(Math.abs(mirrored.progress - paused) < 0.03);
+      assert.ok(Math.abs(mirrored.progress - mirrored.native) < 0.01);
+      assert.equal(mirrored.same, true, 'polls/menu changes retain the same button');
+      assert.deepEqual(mirrored.clicks, [], 'RTE never advances the episode itself');
+      await page.evaluate('window.__nativeCountdown.play()');
+      await page.waitForTimeout(1000);
+      assert.deepEqual(await page.evaluate('window.__postplayClicks'), [], 'native countdown completion does not invoke a second RTE action');
+      await page.locator('.theater-service-action').filter({ hasText: 'Wyświetl napisy końcowe' }).click();
+      assert.deepEqual(await page.evaluate('window.__postplayClicks'), ['credits']);
+      await page.evaluate('window.__postplayScope.dispose()');
+      assert.equal(await page.locator('.theater-service-action').count(), 0);
+    } finally { await browser.close(); }
+  });
   it('reads live Netflix controls and keeps one CTA through stale clicks and disposal', async () => {
     let executable = '';
     const { chromium } = await import('playwright');
@@ -127,7 +242,7 @@ describe('service action CTA', () => {
           document.body.innerHTML = '<div class="watch-video"><div data-uia="player" data-videoid="' + videoId + '">' + inner + '</div></div>';
           return document.querySelector('[data-uia="player"]');
         };
-        const readLabel = () => source.read()?.label || null;
+        const readLabel = () => source.read()[0]?.label || null;
         const skip = '<button data-uia="player-skip-intro"><span>  Pomiń   czołówkę  </span></button>';
         const next = '<button data-uia="control-next" aria-label="Następny odcinek"></button>';
         player(
@@ -203,56 +318,56 @@ describe('service action CTA', () => {
         report.opacityHidden = readLabel();
 
         const root = player(skip);
-        const live = source.read();
+        const live = source.read()[0];
         document.documentElement.setAttribute('data-te-netflix-integration-off', '');
-        report.flagOff = source.read()?.label || null;
+        report.flagOff = source.read()[0]?.label || null;
         const flagClicks = arm(root.querySelector('button'));
         source.activate(live.id);
         report.flagOff = (report.flagOff || '') + ':' + flagClicks();
         document.documentElement.removeAttribute('data-te-netflix-integration-off');
         const otherHost = create({ host: () => false, href: () => href });
-        report.hostOff = otherHost.read()?.label || null;
+        report.hostOff = otherHost.read()[0]?.label || null;
 
         href = 'https://www.netflix.com/watch/70248290?trackId=13752289';
-        const queried = source.read();
+        const queried = source.read()[0];
         href = 'https://www.netflix.com/watch/70248290';
-        const stable = source.read();
+        const stable = source.read()[0];
         report.queryIgnored = Boolean(queried && stable && queried.id === stable.id);
 
         const videoButton = root.querySelector('button');
         const videoClicks = arm(videoButton);
-        const videoId = source.read().id;
+        const videoId = source.read()[0].id;
         root.setAttribute('data-videoid', '80000000');
-        report.videoStale = source.activate(videoId) === false && source.read() === null;
+        report.videoStale = source.activate(videoId) === false && source.read().length === 0;
         report.videoClicks = videoClicks();
         root.setAttribute('data-videoid', '70248290');
 
-        const urlId = source.read().id;
+        const urlId = source.read()[0].id;
         href = 'https://www.netflix.com/watch/80057281';
-        report.urlStale = source.activate(urlId) === false && source.read() === null;
+        report.urlStale = source.activate(urlId) === false && source.read().length === 0;
         report.urlClicks = videoClicks();
         href = 'https://www.netflix.com/watch/70248290';
 
         const current = root.querySelector('button');
-        const currentId = source.read().id;
+        const currentId = source.read()[0].id;
         const replacement = current.cloneNode(true);
         const replacedClicks = arm(replacement);
         current.replaceWith(replacement);
         report.replacedStale = source.activate(currentId) === false;
         report.replacedClicks = replacedClicks();
-        const fresh = source.read();
+        const fresh = source.read()[0];
         source.activate(fresh.id);
         report.singleClick = replacedClicks();
 
         const gone = root.querySelector('button');
-        const goneId = source.read().id;
+        const goneId = source.read()[0].id;
         const goneClicks = arm(gone);
         gone.remove();
         report.removedClicks = source.activate(goneId) === false ? goneClicks() : -1;
 
         const disabledRoot = player('<button data-uia="player-skip-intro">Pomiń czołówkę</button>');
         const disabledButton = disabledRoot.querySelector('button');
-        const disabledId = source.read().id;
+        const disabledId = source.read()[0].id;
         let disabledInvocations = 0;
         const nativeClick = disabledButton.click.bind(disabledButton);
         disabledButton.click = () => {
@@ -274,7 +389,7 @@ describe('service action CTA', () => {
       })()`) as NetflixReport;
 
       assert.equal(discovered.label, 'Pomiń czołówkę');
-      assert.equal(discovered.nextHidden, 'Następny odcinek');
+      assert.equal(discovered.nextHidden, null, 'navigation toolbar Next is not a contextual service action');
       assert.equal(discovered.recap, 'player-skip-recap');
       assert.equal(discovered.credits, 'player-skip-credits');
       assert.equal(discovered.seamless, 'next-episode-seamless-button');

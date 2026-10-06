@@ -16,10 +16,10 @@ const NETFLIX_ACTIONS = [
   { uia: 'player-skip-recap', kind: 'skip-recap' },
   { uia: 'player-skip-credits', kind: 'skip-credits' },
   { uia: 'next-episode-seamless-button', kind: 'next-episode' },
+  { uia: 'next-episode-seamless-button-draining', kind: 'next-episode' },
   { uia: 'next-episode-btn', kind: 'postplay-next' },
   { uia: 'postplay-preview-action', kind: 'postplay' },
-  { uia: 'watch-credits-seamless-button', kind: 'watch-credits' },
-  { uia: 'control-next', kind: 'control-next' }
+  { uia: 'watch-credits-seamless-button', kind: 'watch-credits' }
 ] as const;
 
 const tokens = new WeakMap<HTMLElement, string>();
@@ -28,10 +28,12 @@ let tokenSerial = 0;
 export type NetflixServiceAction = {
   id: string;
   label: string;
+  /** Progress sampled from the host animation; RTE never starts autoplay. */
+  progress?: number;
 };
 
 export type NetflixServiceActionSource = {
-  read(): NetflixServiceAction | null;
+  read(): NetflixServiceAction[];
   activate(id: string): boolean;
 };
 
@@ -48,44 +50,62 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
   const href = hooks.href ?? (() => window.location.href);
   const doc = hooks.document ?? document;
 
-  const live = (): { id: string; label: string; element?: HTMLElement } | null => {
-    if (!allowed(enabled, host)) return null;
+  const live = (): Array<NetflixServiceAction & { element?: HTMLElement }> => {
+    if (!allowed(enabled, host)) return [];
     const root = watchPlayer(doc);
-    if (!root) return null;
+    if (!root) return [];
     const path = watchPath(href());
     const videoId = netflixVideoId(root.getAttribute('data-videoid'));
-    if (!videoId || path !== `/watch/${videoId}`) return null;
+    if (!videoId || path !== `/watch/${videoId}`) return [];
     // Prefer the native-clock action so its identity survives chrome unmounts.
     const timed = readNetflixTimedAction(doc, videoId);
-    if (timed) return timed;
+    const found: Array<NetflixServiceAction & { element?: HTMLElement }> = timed ? [timed] : [];
     for (const action of NETFLIX_ACTIONS) {
+      if (timed && action.kind === 'skip-intro') continue;
       const element = findUsable(root, action.uia);
       if (!element) continue;
       const label = nativeLabel(element);
       if (!label) continue;
-      return {
+      found.push({
         id: actionId(action.kind, root, href(), element),
         label,
-        element
-      };
+        element,
+        ...(action.uia === 'next-episode-seamless-button-draining' ? { progress: nativeCountdownProgress(element) } : {})
+      });
     }
-    return null;
+    return found;
   };
 
   return {
     read() {
-      const action = live();
-      return action ? { id: action.id, label: action.label } : null;
+      return live().map(({ element: _element, ...action }) => action);
     },
     activate(id: string): boolean {
-      const action = live();
-      if (!action || action.id !== id) return false;
+      const action = live().find(action => action.id === id);
+      if (!action) return false;
       if (!action.element) return requestNetflixTimedAction(id);
       if (!usable(action.element)) return false;
       action.element.click();
       return true;
     }
   };
+}
+
+function nativeCountdownProgress(element: HTMLElement): number | undefined {
+  const fill = element.querySelector<HTMLElement>('.inner');
+  if (!fill) return undefined;
+  // The observed draining button uses a five-second native CSS transform
+  // transition. Read its actual timing, including pauses/seeks; no RTE clock.
+  const transition = fill.getAnimations().find(animation =>
+    animation instanceof CSSTransition && animation.transitionProperty === 'transform');
+  const progress = transition?.effect?.getComputedTiming().progress;
+  if (typeof progress === 'number') return Math.max(0, Math.min(1, progress));
+  const width = fill.getBoundingClientRect().width;
+  if (!(width > 0)) return undefined;
+  try {
+    const x = new DOMMatrixReadOnly(getComputedStyle(fill).transform).m41;
+    return Math.max(0, Math.min(1, 1 + x / width));
+  } catch { return undefined; }
 }
 
 function allowed(enabled: () => boolean, host: () => boolean): boolean {

@@ -17,9 +17,153 @@ import { resolveChromeVisibility } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
 import { closePlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
+import type { DisposableScope } from '../core/disposable-scope';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
 export const CURSOR_HIDDEN_CLASS = 'theater-everywhere-cursor-hidden';
+
+/** Native cue replacement must redock before the browser paints its new rows. */
+export function observeNetflixCaptionDock(scope: DisposableScope, root: HTMLElement, update: () => void): void {
+  const isCaption = (node: Node): boolean => {
+    const element = node instanceof Element ? node : node.parentElement;
+    return Boolean(element?.closest('.player-timedtext') || element?.querySelector('.player-timedtext'));
+  };
+  const observer = new MutationObserver(records => {
+    if (records.some(record => isCaption(record.target)
+      || [...record.addedNodes, ...record.removedNodes].some(isCaption))) update();
+  });
+  observer.observe(root, { childList: true, subtree: true, characterData: true });
+  scope.add(() => observer.disconnect());
+}
+
+/** Vertical padding of a Netflix cue span (`padding: 8px 16px`). */
+const NETFLIX_CUE_PADDING_Y = 16;
+
+export type NetflixSpanBox = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  lineHeight: number;
+};
+
+export type NetflixCaptionBox = {
+  width: number;
+  height: number;
+  lineHeight: number;
+  rows: number;
+};
+
+/**
+ * One painted Netflix line, from the cue spans inside a single text container.
+ * Span positions are only used to union words on that line. The container's
+ * absolute top is not part of the box, so a dock move cannot change the height.
+ */
+function netflixCueLine(spans: readonly NetflixSpanBox[]): { width: number; height: number; lineHeight: number; rows: number } | null {
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let lineHeight = 0;
+  for (const span of spans) {
+    if (!(span.width > 1) || !(span.height > 1)) continue;
+    left = Math.min(left, span.left);
+    right = Math.max(right, span.left + span.width);
+    top = Math.min(top, span.top);
+    bottom = Math.max(bottom, span.top + span.height);
+    if (span.lineHeight > lineHeight) lineHeight = span.lineHeight;
+  }
+  const width = Math.round(right - left);
+  const height = Math.round(bottom - top);
+  if (!(width > 1) || !(height > 1)) return null;
+  const contentHeight = Math.max(0, height - NETFLIX_CUE_PADDING_Y);
+  const rows = lineHeight > 0 ? Math.max(1, Math.round(contentHeight / lineHeight)) : 1;
+  return { width, height, lineHeight, rows };
+}
+
+/** Painted cue text. Line boxes stack; the gap between native cue positions does not. */
+export function netflixPaintedCaptionBox(containers: readonly (readonly NetflixSpanBox[])[]): NetflixCaptionBox | null {
+  let width = 0;
+  let height = 0;
+  let lineHeight = 0;
+  let rows = 0;
+  let painted = false;
+  for (const spans of containers) {
+    const line = netflixCueLine(spans);
+    if (!line) continue;
+    painted = true;
+    width = Math.max(width, line.width);
+    height += line.height;
+    if (line.lineHeight > lineHeight) lineHeight = line.lineHeight;
+    rows += line.rows;
+  }
+  if (!painted || width <= 1 || height <= 1) return null;
+  return { width, height, lineHeight, rows: Math.max(1, rows) };
+}
+
+/** Keep the last painted cue while Netflix clears the renderer between lines. */
+export function nextNetflixCaptionBox(
+  previous: NetflixCaptionBox | null,
+  painted: NetflixCaptionBox | null,
+  hostPresent: boolean
+): NetflixCaptionBox | null {
+  if (!hostPresent) return null;
+  return painted ?? previous;
+}
+
+function readNetflixPaintedCaption(host: HTMLElement): NetflixCaptionBox | null {
+  const groups: NetflixSpanBox[][] = [];
+  host.querySelectorAll('.player-timedtext-text-container').forEach((container) => {
+    const boxes: NetflixSpanBox[] = [];
+    container.querySelectorAll('span').forEach((node) => {
+      if (!(node instanceof HTMLElement) || node.parentElement !== container) return;
+      const box = netflixSpanBox(node);
+      if (box) boxes.push(box);
+    });
+    if (boxes.length) groups.push(boxes);
+  });
+  return netflixPaintedCaptionBox(groups);
+}
+
+function netflixSpanBox(span: HTMLElement): NetflixSpanBox | null {
+  if (!span.textContent?.trim()) return null;
+  const style = window.getComputedStyle(span);
+  if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) <= 0.05) return null;
+  const rect = span.getBoundingClientRect();
+  if (rect.width <= 1 || rect.height <= 1) return null;
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    lineHeight: lineHeight > 0 ? lineHeight : 0
+  };
+}
+
+function applyCaptionDockMotion(
+  el: HTMLElement | null,
+  motion: ReturnType<typeof captionDockMotion>,
+  modes: WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>
+): void {
+  if (!el) return;
+  // Netflix rewrites the host's inline styles with each cue replacement.
+  const transition = motion === 'moving'
+    ? 'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s'
+    : motion === 'rest' ? 'opacity 0.15s' : '';
+  if (modes.get(el) === motion && el.style.getPropertyValue('transition') === transition
+    && (!transition || el.style.getPropertyPriority('transition') === 'important')) return;
+  if (motion === 'moving') {
+    el.style.setProperty(
+      'transition',
+      'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
+      'important'
+    );
+  } else if (motion === 'lifted') el.style.removeProperty('transition');
+  else el.style.setProperty('transition', 'opacity 0.15s ease', 'important');
+  void el.offsetWidth;
+  modes.set(el, motion);
+}
 
 export function createToolbar(ctx: PlayerChromeContext) {
   function scheduleToolbarHide(): void {
@@ -90,10 +234,12 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   let captionDockLifted = false;
+  let netflixCaptionBox: NetflixCaptionBox | null = null;
   const captionDockMotionMode = new WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>();
 
   function updateCaptionDock(): void {
     if (!ctx.session.element) {
+      netflixCaptionBox = null;
       document.documentElement.style.removeProperty('--theater-caption-bottom');
       return;
     }
@@ -103,23 +249,39 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const placeInBand = raised && band > 0;
     const overlay = ctx.queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
     const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
-    const lineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const netflixHost = document.documentElement.classList.contains('theater-everywhere-netflix-stage')
+      ? document.querySelector('.watch-video .player-timedtext')
+      : null;
+    const netflixHostEl = netflixHost instanceof HTMLElement && netflixHost.isConnected ? netflixHost : null;
+    netflixCaptionBox = nextNetflixCaptionBox(
+      netflixCaptionBox,
+      netflixHostEl ? readNetflixPaintedCaption(netflixHostEl) : null,
+      netflixHostEl !== null
+    );
+    const overlayLineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const lineHeight = overlayLineHeight > 0 ? overlayLineHeight : (netflixCaptionBox?.lineHeight ?? 0);
     const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;
     const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
     features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
 
-    const netflixCaptions = document.documentElement.classList.contains('theater-everywhere-netflix-stage')
-      ? document.querySelector('.watch-video .player-timedtext') : null;
-    const hostList = netflixCaptions || (document.documentElement.classList.contains('theater-everywhere-html-active')
+    const crunchyHost = document.documentElement.classList.contains('theater-everywhere-html-active')
       && document.documentElement.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)
       ? document.querySelector(CRUNCHYROLL_HOST_CAPTION_SELECTOR)
-      : null);
-    const hostCaptionSize = hostList instanceof HTMLElement && hostList.offsetWidth > 1 && hostList.offsetHeight > 1
-      ? { width: hostList.offsetWidth, height: hostList.offsetHeight }
       : null;
-    const captionSize = overlay && overlayText && overlayText.textContent
+    const overlayCaption = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
-      : hostCaptionSize;
+      : null;
+    const hostCaptionSize = !overlayCaption && !netflixHostEl && crunchyHost instanceof HTMLElement
+      && crunchyHost.offsetWidth > 1 && crunchyHost.offsetHeight > 1
+      ? { width: crunchyHost.offsetWidth, height: crunchyHost.offsetHeight }
+      : null;
+    // The Netflix host is an 80vw box. Dock the painted cue, or the last cue
+    // while the renderer clears between lines. A gap must not fall back to the
+    // host, or the dock chases an empty 80vw rect.
+    const captionSize = overlayCaption
+      ?? (netflixHostEl && netflixCaptionBox
+        ? { width: netflixCaptionBox.width, height: netflixCaptionBox.height }
+        : hostCaptionSize);
 
     const obstacles: DockRect[] = [];
     const controls = ctx.queryPlayerUi('.theater-controls-wrapper.visible') as HTMLElement | null;
@@ -144,7 +306,11 @@ export function createToolbar(ctx: PlayerChromeContext) {
       });
     }
 
-    const rows = captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2;
+    const rows = overlayCaption
+      ? raisedCaptionRowCount(overlayCaption.height, lineHeight)
+      : netflixHostEl && netflixCaptionBox
+        ? netflixCaptionBox.rows
+        : (captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2);
     const restBottom = placeInBand
       ? raisedCaptionRestBottom(
         band,
@@ -169,18 +335,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // A picture move is the exception: captions travel with the video.
     const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
     const dockOverlay = (overlay ?? ctx.queryPlayerUi('.theater-caption-overlay')) as HTMLElement | null;
-    if (dockOverlay && captionDockMotionMode.get(dockOverlay) !== motion) {
-      if (motion === 'moving') {
-        dockOverlay.style.setProperty(
-          'transition',
-          'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
-          'important'
-        );
-      } else if (motion === 'lifted') dockOverlay.style.removeProperty('transition');
-      else dockOverlay.style.setProperty('transition', 'opacity 0.15s ease', 'important');
-      void dockOverlay.offsetWidth;
-      captionDockMotionMode.set(dockOverlay, motion);
-    }
+    applyCaptionDockMotion(dockOverlay, motion, captionDockMotionMode);
+    applyCaptionDockMotion(netflixHostEl, motion, captionDockMotionMode);
     captionDockLifted = lifted;
     const nextBottom = `${bottom}px`;
     if (document.documentElement.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {

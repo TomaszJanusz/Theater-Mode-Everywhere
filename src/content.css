@@ -208,6 +208,7 @@ html.theater-everywhere-netflix-stage .player-timedtext {
   transform: none !important;
   pointer-events: none !important;
   text-align: center !important;
+  transition: bottom 0.18s ease !important;
 }
 
 html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
@@ -218,16 +219,25 @@ html.theater-everywhere-netflix-stage .player-timedtext-text-container {
   position: static !important;
   inset: auto !important;
   width: 100% !important;
+  height: auto !important;
   white-space: normal !important;
   text-align: center !important;
 }
 
 html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span {
   display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
   max-width: 100% !important;
   padding: 8px 16px !important;
   border-radius: 10px !important;
   background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
+}
+
+/* Raised captions use the video black, with the user's background opacity. */
+html.theater-everywhere-netflix-stage.theater-everywhere-picture-top:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span {
+  background: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
+  background-color: rgba(0, 0, 0, var(--theater-caption-bg-alpha, 0.8)) !important;
 }
 
 html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container span {
@@ -2722,8 +2732,12 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
    It stays clickable after the playback bar hides, and clears the bar while
    the bar is on screen. */
 .theater-service-action-host {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
   position: fixed !important;
-  z-index: 2147483647 !important;
+  z-index: 2147483646 !important;
   inset-inline-end: 24px !important;
   bottom: 24px !important;
   max-width: min(280px, calc(100vw - 48px)) !important;
@@ -2731,11 +2745,30 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
+.theater-service-action-host[hidden],
+.theater-service-action-progress[hidden] {
+  display: none !important;
+}
+
+.theater-service-action-label {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.theater-service-action-progress {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform-origin: left center !important;
+  pointer-events: none !important;
+}
+
 .theater-service-action-host.toolbar-visible {
   bottom: calc(24px + var(--theater-service-action-lift, 96px)) !important;
 }
 
 .theater-service-action {
+  position: relative !important;
   appearance: none !important;
   -webkit-appearance: none !important;
   display: block !important;
