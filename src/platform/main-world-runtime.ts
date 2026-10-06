@@ -50,6 +50,7 @@ import {
 } from '../providers/disney/main';
 import {
   installNetflixMain,
+  handleNetflixMediaSeek,
   netflixIntegrationEnabled,
   readNetflixSnapshot
 } from '../providers/netflix/main';
@@ -393,6 +394,14 @@ export function installMainWorldRuntime(): void {
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     // The content world owns help focus and native activation of its close button.
     if (queryPlayerUi('.theater-help-overlay')) return;
+    // Netflix cancels Space at window capture, including its keyup default.
+    // Stop host listeners while retaining the focused button's native action.
+    if ((event.key === ' ' || event.key === 'Enter') && event.composedPath().some(node => node instanceof Element
+        && node.matches('.theater-service-action-host'))) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     // Menu buttons own native Space activation, including through the UI's shadow root.
     if (event.composedPath().some(node => node instanceof Element
         && node.matches('.theater-menu'))) return;
@@ -578,6 +587,7 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
     const detail = (event as CustomEvent<{ live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean }>).detail || {};
     const video = findActiveVideo(document) || document.querySelector('video');
+    if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;
     if (handleYoutubeMediaSeek(detail, video)) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {

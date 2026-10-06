@@ -3,7 +3,8 @@ import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 import { CRUNCHYROLL_HARVEST_EVENT } from '../providers/crunchyroll/main';
-import { isBilibiliIntlHost } from '../providers/hosts';
+import { isBilibiliIntlHost, isNetflixHost } from '../providers/hosts';
+import { createNetflixServiceActions } from '../providers/netflix/service-actions';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
@@ -23,6 +24,7 @@ import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { bindMenuPopover } from './menu-popover';
+import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
@@ -1556,6 +1558,24 @@ export function createControls(ctx: PlayerChromeContext) {
     document.addEventListener('pointerdown', showToolbar, { passive: true });
     // All player chrome, including the home pill, uses the same focus handler.
     controlsScope.listen(wrapper.getRootNode(), 'focusin', showToolbar);
+    if (isNetflixHost() && mediaProviderIntegrationEnabled('netflix')) {
+      mountServiceActionCta(controlsScope, {
+        source: createNetflixServiceActions(),
+        mount: mountPlayerUi,
+        paint: paintOverlay,
+        toolbarVisible: () => {
+          const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
+          // Keep clear of the bar until its fade has actually finished.
+          return ui().toolbarVisible || Boolean(bar && (bar.classList.contains('visible')
+            || Number.parseFloat(getComputedStyle(bar).opacity) > 0.01));
+        },
+        subscribeToolbar: (listener) => ctx.uiStore.subscribe(listener),
+        controlsLift: () => {
+          const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
+          return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 12 : 96;
+        }
+      });
+    }
     showToolbar();
   }
 

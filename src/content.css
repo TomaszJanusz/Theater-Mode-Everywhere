@@ -168,6 +168,26 @@ html.theater-everywhere-netflix-stage [role="dialog"] {
   mask-image: none !important;
 }
 
+/* /watch keeps subtitles inside video-canvas and puts its chrome, pause
+ * evidence and postplay layers in siblings. Preserve those live controls for
+ * the CTA proxies while removing their painting and pointer interception. */
+html.theater-everywhere-netflix-stage .watch-video [data-uia="player"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* Pinning only the video removes it from flow. Netflix's caption renderer
+ * measures this canvas, so keep its percentage-height chain nonzero. */
+html.theater-everywhere-netflix-stage .watch-video [data-uia="video-canvas"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.theater-everywhere-netflix-stage .watch-video [data-uia="player"] > :not([data-uia="video-canvas"]),
 html.theater-everywhere-netflix-stage .PlayerControls--control-element,
 html.theater-everywhere-netflix-stage .PlayerControlsNeo__bottom-controls,
 html.theater-everywhere-netflix-stage .nfp-button-control {
@@ -183,7 +203,7 @@ html.theater-everywhere-netflix-stage .player-timedtext {
   right: auto !important;
   top: auto !important;
   height: auto !important;
-  bottom: 96px !important;
+  bottom: var(--theater-caption-bottom, 96px) !important;
   z-index: 2147483647 !important;
   transform: none !important;
   pointer-events: none !important;
@@ -191,7 +211,32 @@ html.theater-everywhere-netflix-stage .player-timedtext {
 }
 
 html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
-  bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
+  bottom: var(--theater-caption-bottom, max(28px, calc(var(--theater-letterbox, 0px) * 0.35))) !important;
+}
+
+html.theater-everywhere-netflix-stage .player-timedtext-text-container {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  white-space: normal !important;
+  text-align: center !important;
+}
+
+html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span {
+  display: inline-block !important;
+  max-width: 100% !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
+}
+
+html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .player-timedtext-text-container span {
+  color: var(--theater-caption-color, #fff) !important;
+  font-family: var(--theater-caption-font, sans-serif) !important;
+  font-size: calc(28px * var(--theater-caption-scale, 1)) !important;
+  line-height: 1.35 !important;
+  font-weight: 500 !important;
+  text-shadow: var(--theater-caption-shadow, none) !important;
 }
 
 html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
@@ -2670,5 +2715,89 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 
   .theater-caption-palette-row-compact {
     grid-template-columns: auto minmax(130px, 1fr) !important;
+  }
+}
+
+/* Time-sensitive host action. Same glass as the home pill, with smaller type.
+   It stays clickable after the playback bar hides, and clears the bar while
+   the bar is on screen. */
+.theater-service-action-host {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  inset-inline-end: 24px !important;
+  bottom: 24px !important;
+  max-width: min(280px, calc(100vw - 48px)) !important;
+  pointer-events: none !important;
+  transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.theater-service-action-host.toolbar-visible {
+  bottom: calc(24px + var(--theater-service-action-lift, 96px)) !important;
+}
+
+.theater-service-action {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  padding: 8px 14px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(15, 15, 15, 0.5) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+  text-align: center !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  text-overflow: ellipsis !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+
+.theater-service-action:hover,
+.theater-service-action:focus-visible {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
+  ) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  color: var(--accent-color, #ffffff) !important;
+}
+
+.theater-service-action:active {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
+  ) !important;
+}
+
+.theater-service-action:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-service-action-host {
+    transition: none !important;
   }
 }

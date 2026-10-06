@@ -1100,7 +1100,7 @@ function initialize(): void {
     }
 
     // Let native menu buttons activate with Space/Enter instead of toggling playback.
-    if (!ui().helpOpen && activeEl?.closest('.theater-menu')
+    if (!ui().helpOpen && activeEl?.closest('.theater-menu, .theater-service-action-host')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();

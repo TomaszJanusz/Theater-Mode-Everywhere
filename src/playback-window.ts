@@ -4,6 +4,8 @@ import {
   readDisneyContentTime,
   readPublishedDisneySnapshot
 } from './media-features/parsers/disney-page';
+import { isNetflixHost } from './providers/hosts';
+import { mediaProviderIntegrationEnabled } from './media-features/provider-flags';
 import { isPlaybackSurface, nativeVideoOf, type PlaybackSurface } from './playback-surface';
 
 export type PlaybackWindow = {
@@ -460,7 +462,9 @@ export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time:
       return;
     }
   }
-  if (canSeekDisneyHost() && requestHostMediaSeek({ time: target, resumeAfterSeek })) {
+  const netflixHost = typeof document !== 'undefined' && document.documentElement
+    && isNetflixHost() && mediaProviderIntegrationEnabled('netflix');
+  if ((canSeekDisneyHost() || netflixHost) && requestHostMediaSeek({ time: target, resumeAfterSeek })) {
     rememberHostSeekResume(video, resumeAfterSeek);
     return;
   }

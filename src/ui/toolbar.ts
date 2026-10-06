@@ -108,10 +108,12 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
     features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
 
-    const hostList = document.documentElement.classList.contains('theater-everywhere-html-active')
+    const netflixCaptions = document.documentElement.classList.contains('theater-everywhere-netflix-stage')
+      ? document.querySelector('.watch-video .player-timedtext') : null;
+    const hostList = netflixCaptions || (document.documentElement.classList.contains('theater-everywhere-html-active')
       && document.documentElement.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)
       ? document.querySelector(CRUNCHYROLL_HOST_CAPTION_SELECTOR)
-      : null;
+      : null);
     const hostCaptionSize = hostList instanceof HTMLElement && hostList.offsetWidth > 1 && hostList.offsetHeight > 1
       ? { width: hostList.offsetWidth, height: hostList.offsetHeight }
       : null;
@@ -125,6 +127,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       obstacles.push(chromeLayoutRect(controls));
     }
     for (const selector of [
+      '.theater-service-action-host',
       '.theater-scrubber-tooltip.visible',
       '.theater-cc-menu.visible',
       '.theater-menu.is-open > .theater-cc-menu',
