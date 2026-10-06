@@ -12,6 +12,7 @@ import {
   crunchyrollMetadataRef,
   crunchyrollOverlayTracks,
   MAX_CRUNCHYROLL_BIF_BYTES,
+  MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS,
   parseCrunchyrollCaptionRequest,
   parseCrunchyrollCmsTitle,
   parseCrunchyrollHostList,
@@ -916,58 +917,84 @@ async function settlePlayerCall(result: unknown, deadline: number): Promise<void
 
 type HostCaptionApplyResult = { ok: boolean; kept: boolean };
 
-function ownedSelection(session: PlayerSession, ownedTrackId: string): 'owned' | 'other' | 'off' | 'unreadable' {
+type OwnedLive = { status: 'unreadable' | 'off' | 'other' } | { status: 'owned'; id: string };
+
+function selectableOwnedId(session: PlayerSession, ids: readonly string[]): OwnedLive {
   const read = readSubtitleList(session);
-  if (read.status !== 'ready') return 'unreadable';
+  if (read.status !== 'ready') return { status: 'unreadable' };
   const enabled = read.tracks.filter((track) => track.enabled);
-  if (enabled.length === 0) return 'off';
-  if (enabled.length !== 1 || enabled[0].id !== ownedTrackId) return 'other';
+  if (enabled.length === 0) return { status: 'off' };
+  if (enabled.length !== 1 || !ids.includes(enabled[0].id)) return { status: 'other' };
   const file = crunchyrollCdnFile(enabled[0].url);
-  if (file?.kind !== 'vtt' || file.assetId !== session.assetId) return 'other';
-  return 'owned';
+  if (file?.kind !== 'vtt' || file.assetId !== session.assetId) return { status: 'other' };
+  return { status: 'owned', id: enabled[0].id };
+}
+
+function ownedOffIds(request: CrunchyrollCaptionRequest): string[] {
+  const source = request.ownedTrackIds?.length
+    ? request.ownedTrackIds
+    : [request.ownedTrackId, request.priorOwnedTrackId].filter((id): id is string => Boolean(id));
+  const ids: string[] = [];
+  for (const id of source) {
+    if (!ids.includes(id) && ids.length < MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) ids.push(id);
+  }
+  return ids;
 }
 
 /**
- * Automatic Off names the track RTE enabled. Disable that track only while it
- * is still the sole live selection. A track chosen in the player is left on.
+ * Automatic Off names every unsettled RTE enable and a previously confirmed track.
+ * Disable one only while a fresh read still shows it as the sole live selection.
+ * The disable already in flight may finish after a newer request. This loop does
+ * not start another. A track chosen in the player, or a forced row, is left on.
  */
 async function applyOwnedCaptionOff(
   request: CrunchyrollCaptionRequest,
-  ownedTrackId: string,
   generation: number
 ): Promise<HostCaptionApplyResult> {
+  const ids = ownedOffIds(request);
+  if (!ids.length) return { ok: false, kept: false };
   const deadline = Date.now() + CRUNCHYROLL_HOST_CAPTION_SETTLE_MS;
   const settled = (kept: boolean): HostCaptionApplyResult => (
     hostCaptionCurrent(request, generation) ? { ok: true, kept } : { ok: false, kept: false }
   );
-  if (!hostCaptionCurrent(request, generation)) return { ok: false, kept: false };
-  const session = readPlayerSession(request.mediaId);
-  if (!session) return { ok: hostCaptionCurrent(request, generation), kept: false };
-  if (!session.controllable) return { ok: false, kept: false };
-  if (session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
-  const initial = ownedSelection(session, ownedTrackId);
-  if (initial === 'unreadable') return { ok: false, kept: false };
-  if (initial === 'off') return settled(false);
-  if (initial !== 'owned') return settled(true);
-  try {
-    await settlePlayerCall(session.disable(ownedTrackId), deadline);
-  } catch {
-    return { ok: false, kept: false };
+  const attempted = new Set<string>();
+  for (let steps = 0; steps < MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS; steps += 1) {
+    if (!hostCaptionCurrent(request, generation)) return { ok: false, kept: false };
+    const session = readPlayerSession(request.mediaId);
+    if (!session) return { ok: hostCaptionCurrent(request, generation), kept: false };
+    if (!session.controllable) return { ok: false, kept: false };
+    if (session.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+    const selected = selectableOwnedId(session, ids);
+    if (selected.status === 'unreadable') return { ok: false, kept: false };
+    if (selected.status === 'off') return settled(false);
+    if (selected.status === 'other') return settled(true);
+    if (selected.status !== 'owned') return { ok: false, kept: false };
+    if (attempted.has(selected.id)) return { ok: false, kept: false };
+    attempted.add(selected.id);
+    const disabling = selected.id;
+    try {
+      await settlePlayerCall(session.disable(disabling), deadline);
+    } catch {
+      return { ok: false, kept: false };
+    }
+    for (;;) {
+      if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return { ok: false, kept: false };
+      const live = readPlayerSession(request.mediaId);
+      if (!live) return { ok: hostCaptionCurrent(request, generation), kept: false };
+      if (!live.controllable) return { ok: false, kept: false };
+      if (live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
+      const now = selectableOwnedId(live, ids);
+      if (now.status === 'unreadable') return { ok: false, kept: false };
+      if (now.status === 'off') return settled(false);
+      if (now.status === 'other') return settled(true);
+      if (now.status !== 'owned') return { ok: false, kept: false };
+      if (now.id !== disabling) break;
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) return { ok: false, kept: false };
+      await delay(Math.min(HOST_CAPTION_POLL_MS, remaining));
+    }
   }
-  for (;;) {
-    if (!pageMatches(request.mediaId) || crunchyrollPageRoute() !== request.route) return { ok: false, kept: false };
-    const live = readPlayerSession(request.mediaId);
-    if (!live) return { ok: hostCaptionCurrent(request, generation), kept: false };
-    if (!live.controllable) return { ok: false, kept: false };
-    if (live.rendition === 'hardsub') return { ok: hostCaptionCurrent(request, generation), kept: false };
-    const now = ownedSelection(live, ownedTrackId);
-    if (now === 'unreadable') return { ok: false, kept: false };
-    if (now === 'off') return settled(false);
-    if (now !== 'owned') return settled(true);
-    const remaining = deadline - Date.now();
-    if (remaining <= 0) return { ok: false, kept: false };
-    await delay(Math.min(HOST_CAPTION_POLL_MS, remaining));
-  }
+  return { ok: false, kept: false };
 }
 
 type UnscopedCaptionResult = { ok: true; forcedEnabled: boolean } | { ok: false };
@@ -1055,7 +1082,7 @@ export async function applyCrunchyrollHostCaption(
   generation = hostCaptionGeneration
 ): Promise<HostCaptionApplyResult> {
   if (request.trackId === null && request.ownedTrackId) {
-    return applyOwnedCaptionOff(request, request.ownedTrackId, generation);
+    return applyOwnedCaptionOff(request, generation);
   }
   const result = await applyUnscopedHostCaption(request, generation);
   if (!result.ok || request.trackId !== null || !hostCaptionCurrent(request, generation)) return { ok: result.ok, kept: false };

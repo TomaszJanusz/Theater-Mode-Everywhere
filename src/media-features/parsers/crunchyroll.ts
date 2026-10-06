@@ -43,6 +43,8 @@ import type { CaptionCue, Chapter } from '../types';
  */
 
 export const MAX_CRUNCHYROLL_BIF_BYTES = 16 * 1024 * 1024;
+/** Selectable host rows already stop at 40. An owned Off may name each of them once. */
+export const MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS = 40;
 const MAX_CAPTION_CHARS = 2 * 1024 * 1024;
 const MAX_CHAPTER_SECONDS = 12 * 60 * 60;
 const MEDIA_ID = /^[A-Za-z0-9]{9}$/;
@@ -111,8 +113,15 @@ export type CrunchyrollCaptionRequest = {
   mediaId: string;
   route: string;
   trackId: string | null;
-  /** Automatic Off. Disable this track only when it is still the sole live selection. */
+  /** First id in ownedTrackIds. Disable it only when it is still the sole live selection. */
   ownedTrackId?: string;
+  /** Second id in ownedTrackIds, when a cleanup names more than one RTE track. */
+  priorOwnedTrackId?: string;
+  /**
+   * Every unsettled RTE enable and the previously confirmed track this Off may
+   * disable. At most one entry per selectable host row. Not ownership.
+   */
+  ownedTrackIds?: string[];
 };
 
 export type CrunchyrollCaptionAck = {
@@ -460,8 +469,52 @@ export function crunchyrollCaptionRequestDetail(request: CrunchyrollCaptionReque
   return JSON.stringify(request);
 }
 
+/** Long enough for the max route plus 40 host track ids, and no larger. */
+const MAX_CAPTION_REQUEST_CHARS = 8192;
+
+function parseOwnedCaptionIds(record: Record<string, unknown>): {
+  ownedTrackId: string;
+  priorOwnedTrackId?: string;
+  ownedTrackIds: string[];
+} | null | undefined {
+  const hasList = record.ownedTrackIds != null;
+  const hasOwned = record.ownedTrackId != null;
+  const hasPrior = record.priorOwnedTrackId != null;
+  if (!hasList && !hasOwned && !hasPrior) return undefined;
+  if (hasPrior && !hasOwned && !hasList) return null;
+  let ids: string[] | null = null;
+  if (hasList) {
+    if (!Array.isArray(record.ownedTrackIds)) return null;
+    if (record.ownedTrackIds.length < 1 || record.ownedTrackIds.length > MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) return null;
+    ids = [];
+    for (const id of record.ownedTrackIds) {
+      if (typeof id !== 'string' || !HOST_TRACK_ID.test(id) || ids.includes(id)) return null;
+      ids.push(id);
+    }
+  }
+  if (hasOwned) {
+    if (typeof record.ownedTrackId !== 'string' || !HOST_TRACK_ID.test(record.ownedTrackId)) return null;
+    if (ids && record.ownedTrackId !== ids[0]) return null;
+    if (!ids) ids = [record.ownedTrackId];
+  }
+  if (!ids) return null;
+  if (hasPrior) {
+    if (typeof record.priorOwnedTrackId !== 'string' || !HOST_TRACK_ID.test(record.priorOwnedTrackId)) return null;
+    if (record.priorOwnedTrackId === ids[0]) {
+      if (hasList) return null;
+    } else if (!hasList) {
+      ids.push(record.priorOwnedTrackId);
+    } else if (ids[1] !== record.priorOwnedTrackId) return null;
+  }
+  return {
+    ownedTrackId: ids[0],
+    ...(ids.length > 1 ? { priorOwnedTrackId: ids[1] } : {}),
+    ownedTrackIds: ids
+  };
+}
+
 export function parseCrunchyrollCaptionRequest(detail: unknown): CrunchyrollCaptionRequest | null {
-  if (typeof detail !== 'string' || detail.length > 800) return null;
+  if (typeof detail !== 'string' || detail.length > MAX_CAPTION_REQUEST_CHARS) return null;
   let data: unknown;
   try {
     data = JSON.parse(detail);
@@ -474,9 +527,9 @@ export function parseCrunchyrollCaptionRequest(detail: unknown): CrunchyrollCapt
   const mediaId = crunchyrollMediaId(record.mediaId);
   if (!mediaId || typeof record.route !== 'string' || record.route.length > 400) return null;
   if (record.trackId === null) {
-    if (record.ownedTrackId == null) return { requestId: record.requestId, mediaId, route: record.route, trackId: null };
-    if (typeof record.ownedTrackId !== 'string' || !HOST_TRACK_ID.test(record.ownedTrackId)) return null;
-    return { requestId: record.requestId, mediaId, route: record.route, trackId: null, ownedTrackId: record.ownedTrackId };
+    const owned = parseOwnedCaptionIds(record);
+    if (owned === null) return null;
+    return { requestId: record.requestId, mediaId, route: record.route, trackId: null, ...owned };
   }
   if (typeof record.trackId !== 'string' || !HOST_TRACK_ID.test(record.trackId)) return null;
   return { requestId: record.requestId, mediaId, route: record.route, trackId: record.trackId };

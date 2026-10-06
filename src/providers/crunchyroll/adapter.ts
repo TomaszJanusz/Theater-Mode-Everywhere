@@ -1,4 +1,4 @@
-import { MAX_CRUNCHYROLL_BIF_BYTES, parseCrunchyrollCaptionBody, type CrunchyrollSnapshot } from '../../media-features/parsers/crunchyroll';
+import { MAX_CRUNCHYROLL_BIF_BYTES, MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS, parseCrunchyrollCaptionBody, type CrunchyrollSnapshot } from '../../media-features/parsers/crunchyroll';
 import {
   CRUNCHYROLL_CAPTION_ACK_EVENT,
   CRUNCHYROLL_CAPTION_EVENT,
@@ -21,11 +21,19 @@ const CAPTION_ACK_TIMEOUT_MS = CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS;
 
 type CaptionTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
 
+type PendingHostTarget = { mediaId: string; route: string; trackId: string };
+
 type AutomaticHostScope = {
   mediaId: string;
   route: string;
-  ownedTrackId: string;
+  ownedTrackIds: readonly string[];
   loadGeneration: number;
+};
+
+type HostCleanupTarget = {
+  mediaId: string;
+  route: string;
+  ownedTrackIds: string[];
 };
 
 export function requestCrunchyrollHostCaption(
@@ -34,7 +42,8 @@ export function requestCrunchyrollHostCaption(
   trackId: string | null,
   target: CaptionTarget = window,
   timeoutMs = CAPTION_ACK_TIMEOUT_MS,
-  ownedTrackId?: string
+  ownedTrackId?: string | readonly string[],
+  priorOwnedTrackId?: string
 ): Promise<{ ok: boolean; kept: boolean }> {
   const requestId = crunchyrollCaptionRequestId();
   return new Promise((resolve) => {
@@ -58,6 +67,18 @@ export function requestCrunchyrollHostCaption(
         && ack.trackId === trackId;
       finish(current, current && ack.kept === true);
     };
+    const ownedTrackIds: string[] = [];
+    const addOwned = (id: string | undefined) => {
+      if (!id || ownedTrackIds.includes(id) || ownedTrackIds.length >= MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) return;
+      ownedTrackIds.push(id);
+    };
+    if (Array.isArray(ownedTrackId)) {
+      for (const id of ownedTrackId) addOwned(id);
+      addOwned(priorOwnedTrackId);
+    } else if (typeof ownedTrackId === 'string') {
+      addOwned(ownedTrackId);
+      addOwned(priorOwnedTrackId);
+    }
     const timer = target.setTimeout(() => finish(false), timeoutMs);
     target.addEventListener(CRUNCHYROLL_CAPTION_ACK_EVENT, onAck);
     target.dispatchEvent(new CustomEvent(CRUNCHYROLL_CAPTION_EVENT, {
@@ -66,7 +87,13 @@ export function requestCrunchyrollHostCaption(
         mediaId,
         route,
         trackId,
-        ...(trackId === null && ownedTrackId ? { ownedTrackId } : {})
+        ...(trackId === null && ownedTrackIds.length > 0
+          ? {
+            ownedTrackId: ownedTrackIds[0],
+            ownedTrackIds,
+            ...(ownedTrackIds.length > 1 ? { priorOwnedTrackId: ownedTrackIds[1] } : {})
+          }
+          : {})
       })
     }));
   });
@@ -85,8 +112,26 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   private bifSource = '';
   private previewBlob: string | null = null;
   private hostLift: { mediaId: string; route: string; trackId: string } | null = null;
-  /** RTE track to turn off after invalidate cleared the snapshot. Live ownership is checked in MAIN. */
-  private hostOffTarget: { mediaId: string; route: string; ownedTrackId: string } | null = null;
+  /**
+   * Host enables already sent to MAIN and not yet settled. A newer cue does not
+   * drop an older one: that enable may still land. This is not ownership.
+   */
+  private pendingHosts: PendingHostTarget[] = [];
+  /** RTE tracks to turn off after invalidate cleared the snapshot. Live ownership is checked in MAIN. */
+  private hostOffTarget: HostCleanupTarget | null = null;
+
+  private rememberPendingHost(target: PendingHostTarget): void {
+    this.pendingHosts = this.pendingHosts.filter((item) => !(
+      item.mediaId === target.mediaId && item.route === target.route && item.trackId === target.trackId
+    ));
+    this.pendingHosts.push(target);
+    const extra = this.pendingHosts.length - MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS;
+    if (extra > 0) this.pendingHosts.splice(0, extra);
+  }
+
+  private forgetPendingHost(target: PendingHostTarget): void {
+    this.pendingHosts = this.pendingHosts.filter((item) => item !== target);
+  }
 
   private hostLiftListed(snapshot: CrunchyrollSnapshot | null): boolean {
     return Boolean(
@@ -219,11 +264,12 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
       && next.hostRenderer === 'active'
       ? next.hostTracks.filter((track) => track.enabled === true)
       : [];
-    const ownedStill = enabled.length === 1 && enabled[0].id === scope.ownedTrackId;
-    if (ownedStill && next) {
+    const sole = enabled.length === 1 ? enabled[0].id : null;
+    const ownedStill = Boolean(sole && scope.ownedTrackIds.includes(sole));
+    if (ownedStill && next && sole) {
       this.snapshot = next;
       this.route = scope.route;
-      this.hostLift = { mediaId: scope.mediaId, route: scope.route, trackId: scope.ownedTrackId };
+      this.hostLift = { mediaId: scope.mediaId, route: scope.route, trackId: sole };
       retainCrunchyrollHostCaptionSurface();
       return;
     }
@@ -391,7 +437,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
           null,
           window,
           CAPTION_ACK_TIMEOUT_MS,
-          automatic && target === automatic ? automatic.ownedTrackId : undefined
+          automatic && target === automatic ? automatic.ownedTrackIds : undefined
         );
       } catch {
         outcome = { ok: false, kept: false };
@@ -418,7 +464,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
           await this.restoreAutomaticHostSurface(cue, {
             mediaId: automatic.mediaId,
             route: automatic.route,
-            ownedTrackId: automatic.ownedTrackId,
+            ownedTrackIds: automatic.ownedTrackIds,
             loadGeneration
           });
         } else {
@@ -436,19 +482,24 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     if (!snapshot || snapshot.rendition === 'hardsub') return failed();
     const host = snapshot.hostTracks.find((item) => `crunchyroll-host:${snapshot.mediaId}:${item.id}` === id);
     if (host) {
+      const dispatched = { mediaId: snapshot.mediaId, route: this.route, trackId: host.id };
+      this.rememberPendingHost(dispatched);
       let ok = false;
       try {
-        ok = (await requestCrunchyrollHostCaption(snapshot.mediaId, this.route, host.id)).ok;
+        ok = (await requestCrunchyrollHostCaption(dispatched.mediaId, dispatched.route, dispatched.trackId)).ok;
       } catch {
         ok = false;
       }
+      // A newer cue, or dispose, may already be compensating this enable. Do not drop it here.
       if (cue !== this.cueGeneration) return failed();
-      const current = this.matching()?.mediaId === snapshot.mediaId && crunchyrollPageRoute() === this.route;
+      const current = this.matching()?.mediaId === snapshot.mediaId && crunchyrollPageRoute() === dispatched.route;
       if (!ok || !current) {
+        this.forgetPendingHost(dispatched);
         await this.restoreHostSurface(cue);
         return failed();
       }
-      this.hostLift = { mediaId: snapshot.mediaId, route: this.route, trackId: host.id };
+      this.pendingHosts = this.pendingHosts.filter((item) => item.mediaId !== dispatched.mediaId || item.route !== dispatched.route);
+      this.hostLift = { mediaId: snapshot.mediaId, route: dispatched.route, trackId: host.id };
       retainCrunchyrollHostCaptionSurface();
       return { status: 'active', delivery: 'host', cues: [] };
     }
@@ -521,11 +572,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   }
 
   invalidate(options?: { preserveHostLift?: boolean }): void {
-    const owned = this.hostLift;
-    const armOff = Boolean(!options?.preserveHostLift && owned && this.hostLiftListed(this.snapshot));
-    const armed = armOff && owned && this.snapshot
-      ? { mediaId: this.snapshot.mediaId, route: this.route, ownedTrackId: owned.trackId }
-      : null;
+    this.armHostCleanup(options);
     this.loadGeneration += 1;
     this.cueGeneration += 1;
     this.snapshot = null;
@@ -536,9 +583,6 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     this.bifLoad = null;
     this.bifLoadUrl = '';
     this.bifSource = '';
-    // Same-page reload keeps the lift and is not waiting to turn a track off.
-    // Another invalidate, while a cleanup is already armed, keeps that target.
-    this.hostOffTarget = options?.preserveHostLift ? null : (armed ?? this.hostOffTarget);
     if (!options?.preserveHostLift) {
       this.hostLift = null;
       releaseCrunchyrollHostCaptionSurface();
@@ -569,12 +613,39 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     await this.load();
   }
 
+  /**
+   * Fold every unsettled host enable and a confirmed lift into one cleanup target.
+   * A newer armed target replaces this one. A same-page reload clears it.
+   * An invalidate that finds neither keeps a target armed earlier.
+   */
+  private armHostCleanup(options?: { preserveHostLift?: boolean }): void {
+    const pending = this.pendingHosts.splice(0, this.pendingHosts.length);
+    if (options?.preserveHostLift) {
+      this.hostOffTarget = null;
+      return;
+    }
+    const snapshot = this.snapshot;
+    const route = this.route;
+    if (!snapshot || snapshot.rendition === 'hardsub' || !route) return;
+    const ids: string[] = [];
+    const add = (id: string) => {
+      if (!ids.includes(id) && ids.length < MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) ids.push(id);
+    };
+    for (let index = pending.length - 1; index >= 0; index -= 1) {
+      const item = pending[index];
+      if (item.mediaId === snapshot.mediaId && item.route === route) add(item.trackId);
+    }
+    if (this.hostLift && this.hostLiftListed(snapshot)) add(this.hostLift.trackId);
+    if (!ids.length) return;
+    this.hostOffTarget = { mediaId: snapshot.mediaId, route, ownedTrackIds: ids };
+  }
+
   dispose(): void {
     this.invalidate();
     const target = this.hostOffTarget;
     this.hostOffTarget = null;
     if (!target) return;
-    // Best-effort only. A late failure or a track the player still shows must not
+    // Best-effort only. A late failure, a kept track, or a forced row must not
     // restore the class, snapshot, or ownership after the controller is gone.
     void requestCrunchyrollHostCaption(
       target.mediaId,
@@ -582,7 +653,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
       null,
       window,
       CAPTION_ACK_TIMEOUT_MS,
-      target.ownedTrackId
+      target.ownedTrackIds
     ).then(() => undefined, () => undefined);
   }
 }
