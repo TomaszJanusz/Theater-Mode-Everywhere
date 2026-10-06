@@ -70,6 +70,8 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   private bifSource = '';
   private previewBlob: string | null = null;
   private hostLift: { mediaId: string; route: string; trackId: string } | null = null;
+  /** Host media still on this page when invalidate cleared the snapshot before Off. */
+  private hostOffTarget: { mediaId: string; route: string } | null = null;
 
   private reconcileHostLift(snapshot: CrunchyrollSnapshot | null, live: boolean): void {
     const eligible = Boolean(
@@ -220,12 +222,23 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     const failed = (): CaptionActivationResult => ({ status: 'failed', delivery: 'none', cues: [] });
     if (id === null) {
       const snapshot = this.matching();
+      const live = snapshot && snapshot.hostTracks.length > 0 && snapshot.rendition !== 'hardsub'
+        ? { mediaId: snapshot.mediaId, route: this.route }
+        : null;
+      const target = live ?? this.hostOffTarget;
+      this.hostOffTarget = null;
       this.hostLift = null;
       releaseCrunchyrollHostCaptionSurface();
-      if (snapshot?.hostTracks.length && snapshot.rendition !== 'hardsub') {
+      const sameMedia = Boolean(
+        target
+        && crunchyrollIntegrationEnabled()
+        && crunchyrollPageMediaId() === target.mediaId
+        && crunchyrollPageRoute() === target.route
+      );
+      if (sameMedia && target) {
         let ok = false;
         try {
-          ok = await requestCrunchyrollHostCaption(snapshot.mediaId, this.route, null);
+          ok = await requestCrunchyrollHostCaption(target.mediaId, target.route, null);
         } catch {
           ok = false;
         }
@@ -324,6 +337,16 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   }
 
   invalidate(options?: { preserveHostLift?: boolean }): void {
+    const armOff = Boolean(
+      !options?.preserveHostLift
+      && this.route
+      && this.snapshot
+      && this.snapshot.rendition !== 'hardsub'
+      && this.snapshot.hostTracks.length > 0
+    );
+    const hostOffTarget = armOff && this.snapshot
+      ? { mediaId: this.snapshot.mediaId, route: this.route }
+      : null;
     this.loadGeneration += 1;
     this.cueGeneration += 1;
     this.snapshot = null;
@@ -333,6 +356,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     this.bifFailed = false;
     this.bifLoad = null;
     this.bifSource = '';
+    this.hostOffTarget = hostOffTarget;
     if (!options?.preserveHostLift) {
       this.hostLift = null;
       releaseCrunchyrollHostCaptionSurface();

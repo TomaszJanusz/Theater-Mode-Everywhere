@@ -34,9 +34,13 @@ export type { CrunchyrollSnapshot } from '../../media-features/parsers/crunchyro
 export const CRUNCHYROLL_HARVEST_EVENT = 'theater-everywhere-crunchyroll-harvest';
 export const CRUNCHYROLL_SKIP_TIMEOUT_MS = 8000;
 export const CRUNCHYROLL_BIF_TIMEOUT_MS = 15000;
-/** How long MAIN waits for list() to show the requested host track. The isolated ACK wait is longer so this settle can finish first. */
+/** How long MAIN waits for list() to show the requested host track. */
 export const CRUNCHYROLL_HOST_CAPTION_SETTLE_MS = 800;
-export const CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS = CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 200;
+/**
+ * Isolated ACK budget for one in-flight settle plus the request that is actually latest.
+ * Intermediates already queued behind that pair reject on generation and do not add another settle.
+ */
+export const CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS = 2 * CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 200;
 const HOST_CAPTION_POLL_MS = 40;
 
 type Harvest = {
@@ -286,12 +290,21 @@ function titleFor(mediaId: string, cmsTitle?: string): string | undefined {
   }
   const confirmed = confirmedTitles.get(mediaId);
   if (confirmed) return confirmed;
-  if (!text) return undefined;
+  if (!text) {
+    // A generic title means this route has left the previous document.title behind.
+    // The same episode string written after that is this media's title.
+    if (domTitle && (domTitle.mediaId !== mediaId || domTitle.route !== route)) {
+      domTitle = { text: '', route, mediaId };
+    }
+    return undefined;
+  }
   if (!domTitle || domTitle.text !== text) {
     domTitle = { text, route, mediaId };
     confirmedTitles.set(mediaId, text);
     return text;
   }
+  // The SPA still shows the previous episode's document.title. Copying it onto the new media id
+  // is the stale-title bug; wait for a real title write or CMS.
   return undefined;
 }
 
@@ -690,6 +703,12 @@ export function handleCrunchyrollCaptionEvent(event: Event): void {
   if (!request) return;
   const generation = ++hostCaptionGeneration;
   const queued = hostCaptionQueue.then(async () => {
+    // A request that was only waiting in line is already stale. Reject it before list()/enable/disable
+    // so it cannot spend another settle budget or change the player after a newer request.
+    if (generation !== hostCaptionGeneration) {
+      acknowledgeHostCaption(request, false);
+      return;
+    }
     let ok = false;
     try {
       ok = await applyCrunchyrollHostCaption(request, generation);

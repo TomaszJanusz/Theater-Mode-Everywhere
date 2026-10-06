@@ -113,7 +113,7 @@ async function init() {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
-      if (changes.shortcuts) void shortcutEditor.refresh();
+      if (changes.shortcuts) shortcutEditor.applyStored(changes.shortcuts.newValue);
       if (changes[PICTURE_ALIGN_STORAGE_KEY]) renderPictureAlignOptions(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
