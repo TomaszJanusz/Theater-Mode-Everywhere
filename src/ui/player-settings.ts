@@ -2,13 +2,18 @@ import type { DisposableScope } from '../core/disposable-scope';
 import type { PlayerChromeContext } from './runtime-context';
 import { shortcutDisplayParts } from './shortcuts';
 
-/** Close the nonmodal settings panel, optionally returning keyboard focus to its trigger. */
+/** Close the settings panel, optionally returning keyboard focus to its trigger. */
 export function closePlayerSettings(root: ParentNode, restoreFocus = false): boolean {
-  const panel = root.querySelector<HTMLElement>('.theater-settings-menu.visible');
+  const container = root.querySelector<HTMLElement>('.theater-settings-container');
+  const panel = root.querySelector<HTMLElement>('.theater-settings-menu');
   if (!panel) return false;
+  const hoverOpen = Boolean(container?.matches(':hover') && !container.classList.contains('is-suppressed'));
+  if (!panel.classList.contains('visible') && !hoverOpen) return false;
   const trigger = root.querySelector<HTMLButtonElement>('.player-settings-btn');
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
   panel.classList.remove('visible');
+  // Keep a hovered panel from popping straight back open after Escape, help, or an outside click.
+  container?.classList.add('is-suppressed');
   trigger?.setAttribute('aria-expanded', 'false');
   if (restoreFocus) trigger?.focus();
   else if (active instanceof HTMLElement && panel.contains(active)) active.blur();
@@ -32,18 +37,40 @@ export function createPlayerSettings(ctx: PlayerChromeContext, scope: Disposable
   panel.setAttribute('aria-label', ctx.t('playerSettingsLabel'));
   ctx.paintOverlay(panel);
 
+  const container = document.createElement('div');
+  container.className = 'theater-settings-container';
+  container.append(button, panel);
+
+  const syncExpanded = () => {
+    const hoverOpen = container.matches(':hover') && !container.classList.contains('is-suppressed');
+    button.setAttribute('aria-expanded', panel.classList.contains('visible') || hoverOpen ? 'true' : 'false');
+  };
   const close = (restoreFocus = false) => {
     const closed = closePlayerSettings(panel.getRootNode() as ParentNode, restoreFocus);
     if (closed) ctx.actions.updateCaptionDock();
     return closed;
   };
+  scope.listen(container, 'pointerenter', () => {
+    container.classList.remove('is-suppressed');
+    syncExpanded();
+    ctx.actions.updateCaptionDock();
+  });
+  scope.listen(container, 'pointerleave', () => {
+    window.requestAnimationFrame(() => {
+      syncExpanded();
+      ctx.actions.updateCaptionDock();
+    });
+  });
   button.addEventListener('click', (event) => {
-    if (close()) return;
+    // A pointer click only reveals the menu while the pointer stays, the way volume and speed do.
+    if (event.detail !== 0) {
+      button.blur();
+      return;
+    }
     ctx.actions.closeTheaterPopovers();
     panel.classList.add('visible');
     button.setAttribute('aria-expanded', 'true');
-    if (event.detail === 0) panel.querySelector<HTMLButtonElement>('button')?.focus();
-    else button.blur();
+    panel.querySelector<HTMLButtonElement>('button')?.focus();
     ctx.actions.showToolbar();
     ctx.actions.updateCaptionDock();
   });
@@ -86,5 +113,5 @@ export function createPlayerSettings(ctx: PlayerChromeContext, scope: Disposable
       }
     };
   }
-  return { button, panel, close, addRow };
+  return { button, panel, container, close, addRow };
 }

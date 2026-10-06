@@ -118,6 +118,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       '.theater-scrubber-tooltip.visible',
       '.theater-cc-menu.visible',
       '.theater-settings-menu.visible',
+      '.theater-settings-container:hover:not(.is-suppressed) .theater-settings-menu',
       '.theater-button-tooltip.visible',
       '.theater-volume-container:hover .theater-volume-panel',
       '.theater-speed-container:hover .theater-speed-panel',
