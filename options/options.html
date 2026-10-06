@@ -82,6 +82,35 @@
             <div class="appearance-block">
               <p id="picture-align-label" class="appearance-block-label" data-i18n="pictureAlignLabel">Layout</p>
               <div id="picture-align-grid" class="picture-align-grid" role="radiogroup" aria-labelledby="picture-align-label"></div>
+              <div
+                id="picture-align-subtitles-row"
+                class="feature-row picture-align-dependent is-disabled"
+              >
+                <div class="feature-info">
+                  <label
+                    id="picture-align-subtitles-label"
+                    for="picture-align-subtitles-toggle"
+                    class="feature-label"
+                    data-i18n="pictureAlignSubtitlesOnlyTitle"
+                  >Raised only with subtitles</label>
+                  <p
+                    id="picture-align-subtitles-description"
+                    class="feature-desc"
+                    data-i18n="pictureAlignSubtitlesOnlyDescription"
+                  >Use Raised when subtitles are on and Centered when they are off.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="picture-align-subtitles-toggle"
+                    role="switch"
+                    aria-labelledby="picture-align-subtitles-label"
+                    aria-describedby="picture-align-subtitles-description"
+                    disabled
+                  >
+                  <span class="toggle-slider" aria-hidden="true"></span>
+                </label>
+              </div>
             </div>
             <div class="appearance-block">
               <p id="accent-color-label" class="appearance-block-label" data-i18n="accentColorLabel">Accent color</p>

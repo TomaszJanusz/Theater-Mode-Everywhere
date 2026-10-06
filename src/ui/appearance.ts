@@ -32,10 +32,32 @@ export const PICTURE_ALIGNS = ['center', 'top'] as const;
 export type PictureAlign = (typeof PICTURE_ALIGNS)[number];
 export const DEFAULT_PICTURE_ALIGN: PictureAlign = 'center';
 
+export const RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY = 'raiseOnlyWithSubtitles';
+
 export function resolvePictureAlign(value: unknown): PictureAlign {
   return typeof value === 'string' && PICTURE_ALIGNS.includes(value as PictureAlign)
     ? value as PictureAlign
     : DEFAULT_PICTURE_ALIGN;
+}
+
+/** Missing and non-boolean values stay off, so existing Raised setups keep rising. */
+export function resolveRaiseOnlyWithSubtitles(value: unknown): boolean {
+  return value === true;
+}
+
+export type PicturePositionOptions = {
+  raiseOnlyWithSubtitles?: boolean;
+  subtitlesOn?: boolean;
+};
+
+/** Raised stays the saved choice. This only decides where the picture sits right now. */
+export function effectivePictureAlign(
+  align: PictureAlign,
+  raiseOnlyWithSubtitles: boolean,
+  subtitlesOn: boolean
+): PictureAlign {
+  if (align === 'top' && raiseOnlyWithSubtitles && !subtitlesOn) return 'center';
+  return align;
 }
 
 export type PictureFrame = {
@@ -73,8 +95,14 @@ export function raisedCaptionsUseBand(position: string, bandHeight: number): boo
 export function objectPositionForPicture(
   fit: VideoFitMode,
   align: PictureAlign,
-  frame?: PictureFrame
+  frame?: PictureFrame,
+  options?: PicturePositionOptions
 ): string {
-  if (fit === 'contain' && align === 'top' && (!frame || pictureHasLetterbox(frame))) return 'center top';
+  const effective = effectivePictureAlign(
+    align,
+    options?.raiseOnlyWithSubtitles === true,
+    options?.subtitlesOn === true
+  );
+  if (fit === 'contain' && effective === 'top' && (!frame || pictureHasLetterbox(frame))) return 'center top';
   return 'center center';
 }

@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "L'image monte, et la bande noire en dessous reste pour les sous-titres. Idéal pour les écrans 16:10 et 4:3."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "En haut seulement avec les sous-titres"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Avec les sous-titres, l'image est en haut. Sans sous-titres, elle reste centrée."
+  },
   "accentColorLabel": {
     "message": "Couleur d'accentuation"
   },

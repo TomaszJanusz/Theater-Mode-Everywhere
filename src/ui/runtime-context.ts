@@ -40,6 +40,7 @@ export type ChromeRefs = {
   currentToggleFullscreen: (() => void) | null;
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
+  subtitlesOn: boolean;
   volumeBoostEnabled: boolean;
   providerFlags: MediaProviderFlags;
   helpOverlay: HTMLElement | null;
@@ -72,6 +73,7 @@ export type PlayerChromeActions = {
   persistCaptionStyle(style: CaptionStyle): void;
   persistVideoFitMode(mode: VideoFitMode): void;
   applyTheaterVideoFit(mode?: VideoFitMode): void;
+  applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
   syncContentTitle(title: string | null): void;
   createPlayerHeader(): HTMLElement;
@@ -131,6 +133,7 @@ export function createChromeRefs(): ChromeRefs {
     currentToggleFullscreen: null,
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},
+    subtitlesOn: false,
     volumeBoostEnabled: false,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,

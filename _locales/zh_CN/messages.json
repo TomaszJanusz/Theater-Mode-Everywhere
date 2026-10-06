@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "画面靠上，下方的黑边留给字幕。适合 16:10 和 4:3 屏幕。"
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "仅在有字幕时靠上"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "字幕打开时画面靠上，关闭时画面居中。"
+  },
   "accentColorLabel": {
     "message": "强调色"
   },

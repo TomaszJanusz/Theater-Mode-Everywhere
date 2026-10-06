@@ -14,7 +14,9 @@ import {
   DEFAULT_PICTURE_ALIGN,
   PICTURE_ALIGN_STORAGE_KEY,
   PICTURE_ALIGNS,
+  RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
   resolvePictureAlign,
+  resolveRaiseOnlyWithSubtitles,
   type PictureAlign
 } from '../src/ui/appearance';
 import {
@@ -93,6 +95,7 @@ const FEATURE_TOGGLES = [
 async function init() {
   localizeDocument();
   configurePrivacyThingLogo();
+  let raiseOnlyWithSubtitles = false;
 
   const form = document.getElementById('add-domain-form') as HTMLFormElement;
   const input = document.getElementById('domain-input') as HTMLInputElement;
@@ -114,7 +117,15 @@ async function init() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
       if (changes.shortcuts) void shortcutEditor.refresh();
-      if (changes[PICTURE_ALIGN_STORAGE_KEY]) renderPictureAlignOptions(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
+      if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
+        raiseOnlyWithSubtitles = resolveRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);
+      }
+      if (changes[PICTURE_ALIGN_STORAGE_KEY] || changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
+        const align = changes[PICTURE_ALIGN_STORAGE_KEY]
+          ? resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue)
+          : selectedPictureAlign();
+        renderPictureAlignOptions(align);
+      }
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
         if (toggle) toggle.checked = resolveKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
@@ -351,10 +362,15 @@ async function init() {
 
   async function loadAndRenderAppearance() {
     try {
-      const data = await safeGetStorage([ACCENT_COLOR_STORAGE_KEY, PICTURE_ALIGN_STORAGE_KEY]);
+      const data = await safeGetStorage([
+        ACCENT_COLOR_STORAGE_KEY,
+        PICTURE_ALIGN_STORAGE_KEY,
+        RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY
+      ]);
       const selectedPreset = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
       applyAccentColorPreset(document.documentElement, selectedPreset);
       renderAccentColorOptions(selectedPreset);
+      raiseOnlyWithSubtitles = resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]);
       renderPictureAlignOptions(resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]));
     } catch (err) {
       console.error('Error loading appearance settings:', err);
@@ -461,10 +477,40 @@ async function init() {
     });
   }
 
+  function selectedPictureAlign(): PictureAlign {
+    const selected = document.querySelector<HTMLButtonElement>('[data-picture-align][aria-checked="true"]');
+    return selected?.dataset.pictureAlign === 'top' ? 'top' : 'center';
+  }
+
+  function syncRaisedSubtitlesControl(align: PictureAlign): void {
+    const row = document.getElementById('picture-align-subtitles-row');
+    const toggle = document.getElementById('picture-align-subtitles-toggle') as HTMLInputElement | null;
+    if (!row || !toggle) return;
+    const enabled = align === 'top';
+    toggle.checked = raiseOnlyWithSubtitles;
+    if (!enabled && document.activeElement === toggle) {
+      document.querySelector<HTMLButtonElement>('[data-picture-align="center"]')?.focus();
+    }
+    toggle.disabled = !enabled;
+    row.classList.toggle('is-disabled', !enabled);
+  }
+
+  function bindRaiseOnlyWithSubtitles(): void {
+    const toggle = document.getElementById('picture-align-subtitles-toggle') as HTMLInputElement | null;
+    if (!toggle || toggle.dataset.bound === 'true') return;
+    toggle.dataset.bound = 'true';
+    toggle.addEventListener('change', () => {
+      if (toggle.disabled) return;
+      void saveRaiseOnlyWithSubtitles(toggle.checked);
+    });
+  }
+
   function renderPictureAlignOptions(selected: PictureAlign) {
     const grid = document.getElementById('picture-align-grid') as HTMLElement | null;
     if (!grid) return;
     bindPictureAlignKeys(grid);
+    bindRaiseOnlyWithSubtitles();
+    syncRaisedSubtitlesControl(selected);
     if (syncPictureAlignButtons(grid, selected)) return;
 
     grid.textContent = '';
@@ -506,6 +552,20 @@ async function init() {
       await chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: align });
     } catch (err) {
       console.error('Error saving picture alignment:', err);
+    }
+  }
+
+  async function saveRaiseOnlyWithSubtitles(enabled: boolean) {
+    raiseOnlyWithSubtitles = enabled;
+    syncRaisedSubtitlesControl(selectedPictureAlign());
+    try {
+      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+        return;
+      }
+
+      await chrome.storage.sync.set({ [RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]: enabled });
+    } catch (err) {
+      console.error('Error saving raised subtitles setting:', err);
     }
   }
 

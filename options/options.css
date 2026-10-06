@@ -994,6 +994,37 @@ section h2 {
   color: #d4d4d8;
 }
 
+.picture-align-dependent {
+  /* The parent already supplies an 8px gap: total gap is 12px. */
+  margin-block-start: 4px;
+  margin-inline-start: 16px;
+  padding: 10px 12px;
+  border-inline-start: 2px solid
+    color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+}
+
+.picture-align-dependent .feature-label {
+  /* Match the layout-card title size. */
+  font-size: 13px;
+}
+
+.picture-align-dependent.is-disabled {
+  border-inline-start-color: var(--border-color);
+}
+
+.picture-align-dependent.is-disabled .feature-label {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.picture-align-dependent.is-disabled .toggle-switch {
+  cursor: default;
+}
+
+.picture-align-dependent input:disabled + .toggle-slider {
+  opacity: 0.45;
+}
+
 .feature-row {
   display: flex;
   align-items: center;

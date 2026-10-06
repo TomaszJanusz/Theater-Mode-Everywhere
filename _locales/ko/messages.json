@@ -91,6 +91,12 @@
   "pictureAlignTopDescription": {
     "message": "영상이 위로 올라가고, 아래 검은 띠는 자막을 위한 자리입니다. 16:10과 4:3 화면에 잘 맞습니다."
   },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "자막이 켜져 있을 때만 위로"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "자막이 켜지면 위로, 꺼지면 가운데로 둡니다."
+  },
   "accentColorLabel": {
     "message": "강조 색상"
   },

@@ -56,6 +56,19 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   transition: none !important;
 }
 
+/* Only the picture anchor eases. Width, pin, and fit stay instant. */
+html.theater-everywhere-html-active .theater-everywhere-video-active,
+html.theater-everywhere-html-active [data-theater-everywhere] {
+  transition: object-position 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theater-everywhere-html-active .theater-everywhere-video-active,
+  html.theater-everywhere-html-active [data-theater-everywhere] {
+    transition: none !important;
+  }
+}
+
 /* Ancestor override to ensure overflow is visible and no new stacking contexts are created */
 .theater-everywhere-parent-active {
   position: relative !important;
@@ -179,6 +192,10 @@ html.theater-everywhere-netflix-stage .player-timedtext {
 
 html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
   bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
+}
+
+html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
+  transition: bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 /* Tencent's WASM stage. Hide chrome without display:none so the next-episode
@@ -1049,6 +1066,10 @@ html.theater-everywhere-html-active .ytp-caption-window-container {
   z-index: 2147483647 !important;
   pointer-events: none !important;
   transform: none !important;
+}
+
+html.theater-everywhere-picture-moving .ytp-caption-window-container {
+  transition: inset 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 html.theater-everywhere-html-active .ytp-caption-window-container .caption-window,

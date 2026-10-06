@@ -791,6 +791,7 @@ export function createControls(ctx: PlayerChromeContext) {
       scrubberTrack,
       t,
       onCaptionChange: updateCaptionDock,
+      onSubtitleLayoutChange: (on) => ctx.actions.applySubtitleLayout(on),
       onCaptionHud: showCaptionHud,
       onCaptionStyleChange: persistCaptionStyle,
       captionPreference: refs.captionPreferenceMap[captionPreferenceHost(window.location.hostname)] || null,
