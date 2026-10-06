@@ -581,7 +581,14 @@ html.theater-everywhere-html-active .ytp-player-content {
   padding: 0 !important;
 }
 
-.theater-control-btn:hover {
+.theater-control-btn:hover,
+.theater-volume-container:hover > .volume-btn,
+.theater-volume-container:focus-within > .volume-btn,
+.theater-speed-container:hover > .speed-btn,
+.theater-speed-container:focus-within > .speed-btn,
+.theater-settings-container:hover:not(.is-suppressed) > .player-settings-btn,
+.theater-settings-container:has(> .theater-settings-menu.visible) > .player-settings-btn,
+.theater-controls-wrapper:has(.theater-cc-menu.visible) .cc-btn {
   background-color: rgba(99, 102, 241, 0.15) !important;
   background-color: color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent) !important;
   border-color: rgba(99, 102, 241, 0.3) !important;
@@ -1175,10 +1182,10 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
 .theater-settings-container {
   display: flex !important;
   align-items: center !important;
-  position: relative !important;
 }
 
-/* Gap above the gear. The menu itself clips overflow, so the bridge lives here. */
+/* The menu and this bridge stay positioned against the controls row, so the panel
+   keeps the gear's previous inline-end alignment. A relative container would shift it left. */
 .theater-settings-container::before {
   content: '' !important;
   position: absolute !important;

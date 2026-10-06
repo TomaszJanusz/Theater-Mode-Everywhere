@@ -556,7 +556,6 @@ export function createControls(ctx: PlayerChromeContext) {
     const rightSec = document.createElement('div');
     rightSec.className = 'theater-controls-right';
     const settings = createPlayerSettings(ctx, controlsScope);
-    bindCustomTooltip(settings.button, () => t('playerSettingsLabel'));
 
     // Playback Speed Controls
     const speedContainer = document.createElement('div');
