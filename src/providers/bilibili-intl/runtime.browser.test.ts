@@ -417,6 +417,9 @@ describe('bilibili.tv extension runtime', () => {
       assert.match(offMenu.items[0] || '', /✓/);
 
       await page.keyboard.press('Escape');
+      await page.locator('.theater-cc-menu').waitFor({ state: 'hidden' });
+      assert.equal((await hostLayers(page)).theater, true);
+      await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
       const restored = await hostLayers(page);
       assert.equal(restored.theater, false);

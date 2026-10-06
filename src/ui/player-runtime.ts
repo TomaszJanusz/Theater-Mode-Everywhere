@@ -117,7 +117,7 @@ import {
 } from './runtime-context';
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
-import { closePlayerSettings } from './player-settings';
+import { closeMenuPopover } from './menu-popover';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -1087,7 +1087,7 @@ function initialize(): void {
         return true;
       }
       if ((event.key === ' ' || event.key === 'Enter')
-          && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+          && activeEl?.closest('.theater-help-overlay, .theater-menu')) {
         if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1095,8 +1095,8 @@ function initialize(): void {
       }
     }
 
-    // Let native settings buttons activate with Space/Enter instead of toggling playback.
-    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+    // Let native menu buttons activate with Space/Enter instead of toggling playback.
+    if (!ui().helpOpen && activeEl?.closest('.theater-menu')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1104,8 +1104,8 @@ function initialize(): void {
     }
 
     if (event.key === 'Escape' || event.key === 'Esc') {
-      const controls = queryPlayerUi('.theater-controls-wrapper');
-      if (controls && closePlayerSettings(controls, true)) {
+      const openMenu = queryPlayerUi<HTMLElement>('.theater-menu.is-open');
+      if (closeMenuPopover(openMenu, true)) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1303,13 +1303,13 @@ function initialize(): void {
     }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
-        && activeEl?.closest('.theater-help-overlay, .theater-settings-menu, .player-settings-btn')) {
+        && activeEl?.closest('.theater-help-overlay, .theater-menu')) {
       if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       return;
     }
-    if (!ui().helpOpen && activeEl?.closest('.theater-settings-menu, .player-settings-btn')
+    if (!ui().helpOpen && activeEl?.closest('.theater-menu')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
