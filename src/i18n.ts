@@ -87,7 +87,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   bilibiliIntegrationTitle: 'Bilibili (bilibili.com) integration',
   bilibiliIntegrationDescription: 'Imports the video title, subtitles, chapters, the high-energy progress heatmap, and timeline thumbnails from bilibili.com when available. Some subtitles require signing in to Bilibili.',
   bilibiliIntlIntegrationTitle: 'Bilibili.tv integration',
-  bilibiliIntlIntegrationDescription: 'Imports the episode title, subtitles, and timeline thumbnails from bilibili.tv episode pages when available. Next episode uses the player’s next control. This integration does not import chapters or the high-energy heatmap. User-uploaded /video pages are not supported.',
+  bilibiliIntlIntegrationDescription: 'Imports the title, subtitles, and timeline thumbnails from bilibili.tv episode and user-upload pages when available. Episode pages can show intro and outro markers. Next episode uses the player’s next control. This integration does not import a named chapter list or the high-energy heatmap.',
   tencentIntegrationTitle: 'Tencent Video / WeTV integration',
   tencentIntegrationDescription: "Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls.",
   crunchyrollIntegrationTitle: 'Crunchyroll integration',

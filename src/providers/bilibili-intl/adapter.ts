@@ -3,13 +3,30 @@ import {
   bilibiliIntlPreviewFrame,
   mergeBilibiliIntlSnapshot,
   parseBilibiliIntlCaptions,
+  type BilibiliIntlKind,
   type BilibiliIntlSnapshot
 } from '../../media-features/parsers/bilibili-intl';
 import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
-import type { CaptionActivationResult, CaptionTrack, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
-import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId } from './main';
+import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewSource } from '../../media-features/types';
+import { bilibiliIntlIntegrationEnabled, bilibiliIntlLoadScope, bilibiliIntlPageId, type BilibiliIntlLoadScope } from './main';
 
 const HOST_CAPTIONS_ATTR = 'data-te-bilibili-intl-captions-hidden';
+
+/** Uploads must name `ugc`. An omitted kind is an older episode publication. */
+function publishedKindAccepted(scopeKind: BilibiliIntlKind | null, snapshotKind: unknown): boolean {
+  if (scopeKind === 'ugc') return snapshotKind === 'ugc';
+  if (scopeKind === 'ogv') return snapshotKind === 'ogv' || snapshotKind == null;
+  return false;
+}
+
+function storedSnapshot(scope: BilibiliIntlLoadScope, next: BilibiliIntlSnapshot): BilibiliIntlSnapshot | null {
+  if (!publishedKindAccepted(scope.kind, next.kind)) return null;
+  // Older episode publications omit kind and the later chapters field.
+  const kind = next.kind === 'ugc' ? 'ugc' : 'ogv';
+  const chapters = next.chapters ?? [];
+  if (next.kind === kind && next.chapters === chapters) return next;
+  return { ...next, kind, chapters };
+}
 
 export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   private snapshot: BilibiliIntlSnapshot | null = null;
@@ -24,14 +41,18 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   private matchingSnapshot(): BilibiliIntlSnapshot | null {
     const scope = bilibiliIntlLoadScope();
     const pageId = scope.supported ? bilibiliIntlPageId() : null;
-    if (!pageId || this.snapshot?.videoId !== pageId || this.snapshotPath !== scope.path) return null;
-    return this.snapshot;
+    const snapshot = this.snapshot;
+    if (!pageId || !snapshot || snapshot.videoId !== pageId || this.snapshotPath !== scope.path) return null;
+    if (!publishedKindAccepted(scope.kind, snapshot.kind)) return null;
+    return snapshot;
   }
 
   private load(previous: BilibiliIntlSnapshot | null = null): Promise<void> {
     const scope = bilibiliIntlLoadScope();
     const pageId = scope.supported ? bilibiliIntlPageId() : null;
-    if (pageId && this.snapshot?.videoId === pageId && this.snapshotPath === scope.path) return Promise.resolve();
+    if (pageId && this.snapshot?.videoId === pageId && this.snapshotPath === scope.path && publishedKindAccepted(scope.kind, this.snapshot.kind)) {
+      return Promise.resolve();
+    }
     if (!scope.supported) {
       this.loadGeneration++;
       this.snapshot = null;
@@ -42,7 +63,7 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     }
     // A season URL has no episode segment, and the content world cannot see __initialState.
     // Probe anyway. Accept the id MAIN publishes, including when an older attribute was left behind.
-    const scopeKey = `${scope.path}|${scope.routeEpisodeId ?? ''}`;
+    const scopeKey = `${scope.kind ?? ''}|${scope.path}|${scope.routeEpisodeId ?? ''}`;
     if (this.pending && this.pendingFor === scopeKey) return this.pending;
     this.snapshot = null;
     this.snapshotPath = null;
@@ -56,13 +77,14 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
       const samePage = now.supported && now.path === scope.path && now.routeEpisodeId === scope.routeEpisodeId;
       const identityMatches = Boolean(currentId && next && next.videoId === currentId);
       const routeMatches = !scope.routeEpisodeId || next?.videoId === scope.routeEpisodeId;
-      if (!samePage || !identityMatches || !routeMatches) {
+      const accepted = next && identityMatches ? storedSnapshot(now, next) : null;
+      if (!samePage || !accepted || !routeMatches) {
         this.snapshot = null;
         this.snapshotPath = null;
         return;
       }
-      const retained = previous?.videoId === currentId ? previous : null;
-      this.snapshot = mergeBilibiliIntlSnapshot(retained, next);
+      const retained = previous?.videoId === currentId && publishedKindAccepted(now.kind, previous.kind) ? previous : null;
+      this.snapshot = mergeBilibiliIntlSnapshot(retained, accepted);
       this.snapshotPath = scope.path;
     }).finally(() => {
       if (this.pending === pending) {
@@ -78,7 +100,11 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
   async probe(): Promise<MediaCapabilities> {
     await this.load();
     const snapshot = this.matchingSnapshot();
-    return { captions: Boolean(snapshot?.captionTracks.length), chapters: false, previews: Boolean(snapshot?.storyboard) };
+    return {
+      captions: Boolean(snapshot?.captionTracks.length),
+      chapters: Boolean(snapshot?.chapters?.length),
+      previews: Boolean(snapshot?.storyboard)
+    };
   }
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
@@ -136,9 +162,23 @@ export class BilibiliIntlAdapter implements MediaFeaturesAdapter {
     return storyboard ? bilibiliIntlPreviewFrame(storyboard, time) : null;
   }
 
-  mediaId() { return this.matchingSnapshot()?.videoId || null; }
+  mediaId() {
+    const snapshot = this.matchingSnapshot();
+    if (!snapshot) return null;
+    return `${snapshot.kind === 'ugc' ? 'ugc' : 'ogv'}:${snapshot.videoId}`;
+  }
   getTitle() { return sanitizeContentTitle(this.matchingSnapshot()?.title); }
-  getChapters() { return Promise.resolve([]); }
+
+  async getChapters(): Promise<Chapter[]> {
+    await this.load();
+    return (this.matchingSnapshot()?.chapters || []).map((chapter) => ({
+      start: chapter.start,
+      end: chapter.end,
+      title: chapter.title,
+      source: 'bilibiliIntl',
+      confidence: 'high'
+    }));
+  }
 
   private usableTracksOnPage(): boolean {
     return Boolean(bilibiliIntlIntegrationEnabled() && this.matchingSnapshot()?.captionTracks.length);

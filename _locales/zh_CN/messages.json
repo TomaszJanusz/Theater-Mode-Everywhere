@@ -662,7 +662,7 @@
     "message": "Bilibili.tv 集成"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "在可用时从 bilibili.tv 的分集页面导入标题、字幕和时间轴缩略图。下一集使用播放器的下一集控件。此集成不导入章节和高能进度条。用户上传的 /video 页面不受支持。"
+    "message": "在可用时从 bilibili.tv 的分集页面和用户上传页面导入标题、字幕和时间轴缩略图。分集页面可以显示片头和片尾标记。下一集使用播放器的下一集控件。此集成不导入带名称的章节列表，也不导入高能进度条。"
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 集成"

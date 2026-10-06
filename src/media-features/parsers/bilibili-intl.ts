@@ -2,6 +2,15 @@ import { sanitizeContentTitle } from '../content-title';
 import { sanitizeCaptionCueText } from '../sanitize';
 import type { CaptionCue, PreviewFrame } from '../types';
 
+export type BilibiliIntlKind = 'ogv' | 'ugc';
+
+/** Player skip windows, in seconds. These are intro/outro ranges, not named chapter titles. */
+export type BilibiliIntlChapter = {
+  start: number;
+  end: number;
+  title: 'Intro' | 'Outro';
+};
+
 export type BilibiliIntlCaption = {
   id: string;
   language: string;
@@ -21,13 +30,17 @@ export type BilibiliIntlStoryboard = {
 
 export type BilibiliIntlSnapshot = {
   videoId: string;
+  kind: BilibiliIntlKind;
   title?: string;
   duration?: number;
   captionTracks: BilibiliIntlCaption[];
   storyboard: BilibiliIntlStoryboard | null;
+  chapters: BilibiliIntlChapter[];
 };
 
-const SUBTITLE_PATH = /^\/ogv\/subtitle\/[a-f0-9]{16,80}\.(?:ass|json)$/i;
+const OGV_SUBTITLE_PATH = /^\/ogv\/subtitle\/[a-f0-9]{16,80}\.(?:ass|json)$/i;
+/** Public upload captions, observed on `p.bstarstatic.com` without `auth_key`. */
+const UGC_SUBTITLE_PATH = /^\/ugc\/subtitle\/\d{10,13}_[a-f0-9]{16,32}_subtitle-\d{10,16}\.(?:json|ass)$/i;
 const SHOT_IMAGE_PATH = /^\/videoshot\/[a-z0-9]+(?:-\d+)?\.(?:jpe?g|png|webp)$/i;
 const SHOT_BIN_PATH = /^\/videoshot\/[a-z0-9]+\.bin$/i;
 const MAX_CUES = 20000;
@@ -70,9 +83,14 @@ function allowedStaticUrl(value: unknown, hostname: string, pathPattern: RegExp,
   return url.href;
 }
 
-/** Signed subtitle files observed on s.bstarstatic.com. Query is limited to auth_key. */
+/**
+ * Episode files are signed objects on `s.bstarstatic.com/ogv/subtitle/`.
+ * Upload files are on `p.bstarstatic.com/ugc/subtitle/` and may omit `auth_key`.
+ * Any other query is rejected. The raw path must already match, before `URL` resolves `..`.
+ */
 export function bilibiliIntlSubtitleUrl(value: unknown): string | null {
-  return allowedStaticUrl(value, 's.bstarstatic.com', SUBTITLE_PATH, 'auth');
+  return allowedStaticUrl(value, 's.bstarstatic.com', OGV_SUBTITLE_PATH, 'auth')
+    || allowedStaticUrl(value, 'p.bstarstatic.com', UGC_SUBTITLE_PATH, 'auth');
 }
 
 export function bilibiliIntlShotImageUrl(value: unknown): string | null {
@@ -290,8 +308,61 @@ export function unwrapBilibiliIntlValue(value: unknown): unknown {
   return current;
 }
 
-export function bilibiliIntlTitle(state: unknown, documentTitle?: unknown): string | null {
-  const root = record(unwrapBilibiliIntlValue(state));
+const MAX_SKIP_MS = 24 * 60 * 60 * 1000;
+const MAX_SKIP_SECONDS = 24 * 60 * 60;
+/**
+ * HTML duration can sit a fraction under `floor(ms / 1000)`. One second covers that
+ * without keeping a window that runs well past the known video.
+ */
+const SKIP_DURATION_SLACK_SECONDS = 1;
+
+function skipSeconds(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_SKIP_MS) return null;
+  const seconds = Math.floor(value / 1000);
+  return seconds <= MAX_SKIP_SECONDS ? seconds : null;
+}
+
+function knownDuration(duration: number | undefined): number | null {
+  if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0 || duration > MAX_SKIP_SECONDS) return null;
+  return duration;
+}
+
+/**
+ * `/v2/ogv/play/episode` returns `data.skip` in milliseconds and no titles.
+ * The player seeks with `floor(ms / 1000)`. Labels are the fixed words Intro and
+ * Outro, the same kind of window names as Crunchyroll's Intro and Credits.
+ * They are navigation markers, not a named chapter list from the host.
+ * A missing, negative, empty, overlapping, misordered, or out-of-duration window is dropped.
+ * Opening is considered before ending, so an ending that starts before the opening
+ * finishes is not kept. An ending alone is kept when the opening is absent.
+ */
+export function parseBilibiliIntlSkipChapters(payload: unknown, duration?: number): BilibiliIntlChapter[] {
+  const limit = knownDuration(duration);
+  const skip = record(record(payload).skip);
+  const windows: Array<[string, string, BilibiliIntlChapter['title']]> = [
+    ['opening_start_time', 'opening_end_time', 'Intro'],
+    ['ending_start_time', 'ending_end_time', 'Outro']
+  ];
+  const chapters: BilibiliIntlChapter[] = [];
+  for (const [startKey, endKey, title] of windows) {
+    const start = skipSeconds(skip[startKey]);
+    const end = skipSeconds(skip[endKey]);
+    if (start === null || end === null || end <= start) continue;
+    if (limit !== null && (start >= limit || end > limit + SKIP_DURATION_SLACK_SECONDS)) continue;
+    const previous = chapters[chapters.length - 1];
+    if (previous && start < previous.end) continue;
+    chapters.push({ start, end, title });
+  }
+  return chapters;
+}
+
+function documentTitleFallback(documentTitle: unknown): string | null {
+  if (typeof documentTitle !== 'string') return null;
+  const page = sanitizeContentTitle(documentTitle.replace(/\s*[|\-–—]\s*bilibili$/i, ''));
+  return page && page.toLowerCase() !== 'bilibili' ? page : null;
+}
+
+function ogvTitle(root: Record<string, unknown>): string | null {
   const ogv = record(unwrapBilibiliIntlValue(root.ogv));
   const season = sanitizeContentTitle(record(unwrapBilibiliIntlValue(ogv.season)).title);
   const episodeId = bilibiliIntlEpisodeId(unwrapBilibiliIntlValue(ogv.epId));
@@ -309,10 +380,23 @@ export function bilibiliIntlTitle(state: unknown, documentTitle?: unknown): stri
     }
   }
   const combined = sanitizeContentTitle([season, episodeTitle].filter(Boolean).join(' '));
-  if (combined && combined.toLowerCase() !== 'bilibili') return combined;
-  if (typeof documentTitle !== 'string') return null;
-  const page = sanitizeContentTitle(documentTitle.replace(/\s*[|\-–—]\s*bilibili$/i, ''));
-  return page && page.toLowerCase() !== 'bilibili' ? page : null;
+  return combined && combined.toLowerCase() !== 'bilibili' ? combined : null;
+}
+
+function ugcTitle(root: Record<string, unknown>): string | null {
+  const ugc = record(unwrapBilibiliIntlValue(root.ugc));
+  const archive = record(unwrapBilibiliIntlValue(ugc.archive));
+  const title = sanitizeContentTitle(unwrapBilibiliIntlValue(archive.title));
+  return title && title.toLowerCase() !== 'bilibili' ? title : null;
+}
+
+export function bilibiliIntlTitle(state: unknown, documentTitle?: unknown, kind?: BilibiliIntlKind): string | null {
+  const root = record(unwrapBilibiliIntlValue(state));
+  if (kind === 'ugc') return ugcTitle(root) || documentTitleFallback(documentTitle);
+  const episode = ogvTitle(root);
+  if (episode) return episode;
+  if (kind === 'ogv') return documentTitleFallback(documentTitle);
+  return ugcTitle(root) || documentTitleFallback(documentTitle);
 }
 
 function captionFileName(url: string): string {
@@ -323,11 +407,11 @@ function captionFileName(url: string): string {
   }
 }
 
-function pushTrack(videoId: string, language: string, label: string, url: string, seen: Map<string, number>, tracks: BilibiliIntlCaption[]): void {
+function pushTrack(kind: BilibiliIntlKind, videoId: string, language: string, label: string, url: string, seen: Map<string, number>, tracks: BilibiliIntlCaption[]): void {
   const accepted = bilibiliIntlSubtitleUrl(url);
   if (!accepted || tracks.length >= 80) return;
   const lang = language.slice(0, 40);
-  const base = `bilibiliIntl:${videoId}:${lang || 'und'}:${captionFileName(accepted)}`;
+  const base = `bilibiliIntl:${kind}:${videoId}:${lang || 'und'}:${captionFileName(accepted)}`;
   const count = seen.get(base) || 0;
   seen.set(base, count + 1);
   tracks.push({
@@ -339,7 +423,7 @@ function pushTrack(videoId: string, language: string, label: string, url: string
 }
 
 /** Live `/v2/subtitle` uses data.subtitles[].url. The page bundle also maps video_subtitle[].ass/srt. */
-export function bilibiliIntlCaptionTracks(videoId: string, payload: unknown): BilibiliIntlCaption[] {
+export function bilibiliIntlCaptionTracks(videoId: string, payload: unknown, kind: BilibiliIntlKind = 'ogv'): BilibiliIntlCaption[] {
   const data = record(payload);
   const live = Array.isArray(data.subtitles) ? data.subtitles : [];
   const legacy = Array.isArray(data.video_subtitle) ? data.video_subtitle : [];
@@ -353,15 +437,16 @@ export function bilibiliIntlCaptionTracks(videoId: string, payload: unknown): Bi
     const direct = typeof row.url === 'string' ? row.url : '';
     const ass = typeof record(row.ass).url === 'string' ? record(row.ass).url as string : '';
     const srt = typeof record(row.srt).url === 'string' ? record(row.srt).url as string : '';
-    pushTrack(videoId, language, label, direct || ass || srt, seen, tracks);
+    pushTrack(kind, videoId, language, label, direct || ass || srt, seen, tracks);
   }
   return tracks;
 }
 
 export function mergeBilibiliIntlSnapshot(previous: BilibiliIntlSnapshot | null, next: BilibiliIntlSnapshot | null): BilibiliIntlSnapshot | null {
   if (!next?.videoId) return null;
-  // Keep a subtitle list only when this response is positively the same episode and omits tracks.
-  if (previous?.videoId === next.videoId && previous.captionTracks.length > 0 && next.captionTracks.length === 0) {
+  // Keep a subtitle list only when this response is positively the same media and omits tracks.
+  const sameMedia = previous?.videoId === next.videoId && (previous.kind || 'ogv') === (next.kind || 'ogv');
+  if (sameMedia && previous && previous.captionTracks.length > 0 && next.captionTracks.length === 0) {
     return { ...next, captionTracks: previous.captionTracks };
   }
   return next;
@@ -372,13 +457,17 @@ export function normalizeBilibiliIntlSnapshot(
   title: string | null,
   duration: number | undefined,
   subtitles: unknown,
-  storyboard: BilibiliIntlStoryboard | null
+  storyboard: BilibiliIntlStoryboard | null,
+  chapters: BilibiliIntlChapter[] = [],
+  kind: BilibiliIntlKind = 'ogv'
 ): BilibiliIntlSnapshot {
   return {
     videoId,
+    kind,
     title: title || undefined,
     duration: duration && Number.isFinite(duration) && duration > 0 ? duration : undefined,
-    captionTracks: bilibiliIntlCaptionTracks(videoId, subtitles),
-    storyboard
+    captionTracks: bilibiliIntlCaptionTracks(videoId, subtitles, kind),
+    storyboard,
+    chapters
   };
 }
