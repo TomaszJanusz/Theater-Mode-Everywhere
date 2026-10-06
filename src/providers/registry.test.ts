@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isBilibiliIntlHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
 import { readDisneySnapshot } from './disney/main';
 import { readNetflixSnapshot } from './netflix/main';
 import { DisneyAdapter } from './disney/adapter';
@@ -69,6 +69,16 @@ describe('provider registry', () => {
     assert.equal(shouldAttachProvider('bilibili', defaultMediaProviderFlags(), 'www.bilibili.tv'), false);
     assert.equal(shouldAttachProvider('bilibiliIntl', { ...defaultMediaProviderFlags(), bilibiliIntl: false }, 'www.bilibili.tv'), false);
     assert.equal(shouldAttachProvider('tencent', defaultMediaProviderFlags(), 'v.qq.com'), true);
+    assert.equal(isCrunchyrollHost('www.crunchyroll.com.'), true);
+    assert.equal(isCrunchyrollHost('static.crunchyroll.com'), true);
+    assert.equal(isCrunchyrollHost('crunchyroll.com.evil.test'), false);
+    assert.equal(isCrunchyrollHost('notcrunchyroll.com'), false);
+    assert.deepEqual(matchingProviders('www.crunchyroll.com'), ['native', 'crunchyroll']);
+    assert.equal(shouldPatchMainWorld('www.crunchyroll.com'), true);
+    assert.equal(shouldPatchMainWorld('static.crunchyroll.com'), true);
+    assert.equal(shouldPatchMainWorld('crunchyroll.com.evil.test'), false);
+    assert.equal(shouldAttachProvider('crunchyroll', { ...defaultMediaProviderFlags(), crunchyroll: false }, 'www.crunchyroll.com'), false);
+    assert.equal(shouldAttachProvider('crunchyroll', defaultMediaProviderFlags(), 'static.crunchyroll.com'), true);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Experimentell)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
+    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
   },
   "richTheaterExperienceReadMore": {
     "message": "hier"
@@ -663,5 +663,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importiert Folgentitel, Untertitel und Zeitachsen-Vorschaubilder von bilibili.tv-Folgenseiten, sofern verfügbar. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine Kapitel und keine Beliebtheitskurve. Hochgeladene /video-Seiten werden nicht unterstützt."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll-Integration"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Zeigt den Folgentitel, Vorspann und Abspann, verfügbare Untertitel und Zeitachsen-Vorschauen. Eingebrannte Untertitel bleiben im Bild und lassen sich nicht ausschalten."
   }
 }

@@ -1,6 +1,6 @@
 import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
-import { defaultShortcuts, isReservedShortcut, shortcutConflicts, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { assignShortcut, defaultShortcuts, isReservedShortcut, shortcutConflicts, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
 
 export function createShortcutEditor(onSaved: () => Promise<void>) {
@@ -20,6 +20,20 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   grid?.setAttribute('aria-busy', 'true');
   let busy = false;
   let current = { ...defaultShortcuts };
+  let epoch = 0;
+  const writes: Array<{ epoch: number; action: keyof Shortcuts; shortcut: string }> = [];
+
+  function sameShortcuts(left: Shortcuts, right: Shortcuts): boolean {
+    return (Object.keys(defaultShortcuts) as Array<keyof Shortcuts>).every((key) => left[key] === right[key]);
+  }
+
+  function noteCommitted(next: Shortcuts): void {
+    epoch += 1;
+    (Object.keys(next) as Array<keyof Shortcuts>).forEach((action) => {
+      if (next[action] !== current[action]) writes.push({ epoch, action, shortcut: next[action] });
+    });
+    current = next;
+  }
 
   async function read(): Promise<Shortcuts> {
     const saved = await chrome.storage.sync.get('shortcuts');
@@ -48,10 +62,34 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     notice.hidden = !conflictsFound;
   }
 
-  async function refresh() {
+  function applyStored(value: unknown): void {
+    epoch += 1;
+    writes.length = 0;
+    const record = value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : undefined;
+    const shortcuts = withShortcutDefaults(record);
+    if (busy) {
+      current = shortcuts;
+      return;
+    }
+    render(shortcuts);
+  }
+
+  async function refresh(): Promise<void> {
     if (busy) return;
-    try { render(typeof chrome === 'undefined' ? defaultShortcuts : await read()); }
-    catch (error) { console.error('Unable to read shortcuts:', error); }
+    const seen = epoch;
+    const painted = current;
+    const pending = writes.slice();
+    try {
+      const shortcuts = typeof chrome === 'undefined' ? defaultShortcuts : await read();
+      if (seen !== epoch || busy) return;
+      if (pending.some((write) => shortcuts[write.action] !== write.shortcut)) return;
+      // A get() that started after a local or storage paint can still resolve with an older map.
+      if (seen > 0 && pending.length === 0 && !sameShortcuts(shortcuts, painted)) return;
+      writes.length = 0;
+      render(shortcuts);
+    } catch (error) { console.error('Unable to read shortcuts:', error); }
   }
 
   async function save(action: keyof Shortcuts, shortcut: string) {
@@ -76,6 +114,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
         confirmedOwners = conflicts;
         continue; // The single background writer revalidates after a user's choice.
       }
+      noteCommitted(assignShortcut(current, action, shortcut));
       await onSaved();
       return;
     }
@@ -90,10 +129,12 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
       console.error('Unable to save shortcuts:', error);
       await openDialog({ title: t('shortcutSaveError'), content: t('shortcutSaveErrorDescription'), actions: { type: 'acknowledge' } });
     } finally {
+      render(current);
       busy = false;
       await refresh();
       grid?.setAttribute('aria-busy', 'false');
-      if (origin.isConnected) origin.focus();
+      const active = document.activeElement;
+      if (origin.isConnected && (active == null || active === document.body || active === origin)) origin.focus();
     }
   }
 
@@ -117,10 +158,11 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     document.getElementById('reset-shortcuts-btn')?.addEventListener('click', event => {
       void edit(event.currentTarget as HTMLElement, async () => {
         await update({ type: 'resetAll' });
+        noteCommitted({ ...defaultShortcuts });
         await onSaved();
       });
     });
     grid?.setAttribute('aria-busy', 'false');
   }
-  return { initialize, refresh };
+  return { initialize, refresh, applyStored };
 }

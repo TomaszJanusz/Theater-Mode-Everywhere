@@ -4,6 +4,7 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import type { BilibiliSnapshot } from './parsers/bilibili';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
+import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
 export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
@@ -141,6 +142,7 @@ export type MediaProbeSnapshot = {
   bilibili?: BilibiliSnapshot | null;
   bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
+  crunchyroll?: CrunchyrollSnapshot | null;
 };
 
 type ProbeRequest = {
@@ -177,7 +179,8 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         netflix: snapshot.netflix ?? null,
         bilibili: snapshot.bilibili ?? null,
         bilibiliIntl: snapshot.bilibiliIntl ?? null,
-        tencent: snapshot.tencent ?? null
+        tencent: snapshot.tencent ?? null,
+        crunchyroll: snapshot.crunchyroll ?? null
       });
     };
 

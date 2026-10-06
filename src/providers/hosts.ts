@@ -54,3 +54,9 @@ export function isTencentHost(hostname = currentHost()): boolean {
   return host === 'v.qq.com' || host.endsWith('.v.qq.com')
     || host === 'wetv.vip' || host.endsWith('.wetv.vip');
 }
+
+/** crunchyroll.com and its real subdomains, including the static player host. */
+export function isCrunchyrollHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'crunchyroll.com' || host.endsWith('.crunchyroll.com');
+}

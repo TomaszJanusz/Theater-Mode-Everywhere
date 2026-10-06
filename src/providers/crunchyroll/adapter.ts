@@ -1,0 +1,698 @@
+import { MAX_CRUNCHYROLL_BIF_BYTES, MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS, parseCrunchyrollCaptionBody, type CrunchyrollSnapshot } from '../../media-features/parsers/crunchyroll';
+import {
+  CRUNCHYROLL_CAPTION_ACK_EVENT,
+  CRUNCHYROLL_CAPTION_EVENT,
+  CRUNCHYROLL_CAPTION_ISSUED_EVENT,
+  crunchyrollCaptionRequestDetail,
+  crunchyrollCaptionRequestId,
+  parseCrunchyrollCaptionAck,
+  parseCrunchyrollCaptionIssued
+} from '../../media-features/parsers/crunchyroll';
+import { parseRokuBif, type DisneyBifSet } from '../../media-features/parsers/disney-page';
+import { requestMediaProbe, requestPageFetch } from '../../media-features/probe';
+import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter, PreviewFrame, PreviewSource } from '../../media-features/types';
+import { CRUNCHYROLL_HOST_CAPTION_CLASS, releaseCrunchyrollHostCaptionSurface, retainCrunchyrollHostCaptionSurface } from './host-surface';
+import {
+  CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS,
+  crunchyrollIntegrationEnabled,
+  crunchyrollPageMediaId,
+  crunchyrollPageRoute
+} from './main';
+
+const CAPTION_ACK_TIMEOUT_MS = CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS;
+
+type CaptionTarget = Pick<Window, 'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'>;
+
+type PendingHostTarget = { mediaId: string; route: string; trackId: string };
+
+type AutomaticHostScope = {
+  mediaId: string;
+  route: string;
+  ownedTrackIds: readonly string[];
+  loadGeneration: number;
+};
+
+type HostCleanupTarget = {
+  mediaId: string;
+  route: string;
+  ownedTrackIds: string[];
+};
+
+export function requestCrunchyrollHostCaption(
+  mediaId: string,
+  route: string,
+  trackId: string | null,
+  target: CaptionTarget = window,
+  timeoutMs = CAPTION_ACK_TIMEOUT_MS,
+  ownedTrackId?: string | readonly string[],
+  priorOwnedTrackId?: string
+): Promise<{ ok: boolean; kept: boolean }> {
+  const requestId = crunchyrollCaptionRequestId();
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean, kept = false) => {
+      if (settled) return;
+      settled = true;
+      target.removeEventListener(CRUNCHYROLL_CAPTION_ACK_EVENT, onAck);
+      target.clearTimeout(timer);
+      resolve({ ok, kept: ok && kept });
+    };
+    const onAck = (event: Event) => {
+      const ack = parseCrunchyrollCaptionAck((event as CustomEvent<unknown>).detail);
+      if (!ack || ack.requestId !== requestId) return;
+      const current = crunchyrollIntegrationEnabled()
+        && crunchyrollPageMediaId() === mediaId
+        && crunchyrollPageRoute() === route
+        && ack.ok
+        && ack.mediaId === mediaId
+        && ack.route === route
+        && ack.trackId === trackId;
+      finish(current, current && ack.kept === true);
+    };
+    const ownedTrackIds: string[] = [];
+    const addOwned = (id: string | undefined) => {
+      if (!id || ownedTrackIds.includes(id) || ownedTrackIds.length >= MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) return;
+      ownedTrackIds.push(id);
+    };
+    if (Array.isArray(ownedTrackId)) {
+      for (const id of ownedTrackId) addOwned(id);
+      addOwned(priorOwnedTrackId);
+    } else if (typeof ownedTrackId === 'string') {
+      addOwned(ownedTrackId);
+      addOwned(priorOwnedTrackId);
+    }
+    const timer = target.setTimeout(() => finish(false), timeoutMs);
+    target.addEventListener(CRUNCHYROLL_CAPTION_ACK_EVENT, onAck);
+    target.dispatchEvent(new CustomEvent(CRUNCHYROLL_CAPTION_EVENT, {
+      detail: crunchyrollCaptionRequestDetail({
+        requestId,
+        mediaId,
+        route,
+        trackId,
+        ...(trackId === null && ownedTrackIds.length > 0
+          ? {
+            ownedTrackId: ownedTrackIds[0],
+            ownedTrackIds,
+            ...(ownedTrackIds.length > 1 ? { priorOwnedTrackId: ownedTrackIds[1] } : {})
+          }
+          : {})
+      })
+    }));
+  });
+}
+
+export class CrunchyrollAdapter implements MediaFeaturesAdapter {
+  private snapshot: CrunchyrollSnapshot | null = null;
+  private route = '';
+  private pending: Promise<void> | null = null;
+  private loadGeneration = 0;
+  private cueGeneration = 0;
+  private bif: DisneyBifSet | null = null;
+  private bifFailed = false;
+  private bifLoad: Promise<void> | null = null;
+  private bifLoadUrl = '';
+  private bifSource = '';
+  private previewBlob: string | null = null;
+  private hostLift: { mediaId: string; route: string; trackId: string } | null = null;
+  /**
+   * Host tracks whose enable() MAIN has called and whose acknowledgement has not
+   * confirmed ownership yet. A newer cue does not drop an older one: that enable
+   * may still land. Asking for a track that is already on does not add an entry.
+   */
+  private issuedHosts: PendingHostTarget[] = [];
+  /** RTE tracks to turn off after invalidate cleared the snapshot. Live ownership is checked in MAIN. */
+  private hostOffTarget: HostCleanupTarget | null = null;
+  private listeningForIssued = false;
+  private readonly onCaptionIssued = (event: Event) => {
+    const issued = parseCrunchyrollCaptionIssued((event as CustomEvent<unknown>).detail);
+    if (!issued || !this.route || this.snapshot?.mediaId !== issued.mediaId || this.route !== issued.route) return;
+    this.rememberIssuedHost({ mediaId: issued.mediaId, route: issued.route, trackId: issued.trackId });
+  };
+
+  constructor() {
+    this.listenForIssued();
+  }
+
+  private listenForIssued(): void {
+    if (this.listeningForIssued) return;
+    this.listeningForIssued = true;
+    window.addEventListener(CRUNCHYROLL_CAPTION_ISSUED_EVENT, this.onCaptionIssued);
+  }
+
+  private rememberIssuedHost(target: PendingHostTarget): void {
+    this.issuedHosts = this.issuedHosts.filter((item) => !(
+      item.mediaId === target.mediaId && item.route === target.route && item.trackId === target.trackId
+    ));
+    this.issuedHosts.push(target);
+    const extra = this.issuedHosts.length - MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS;
+    if (extra > 0) this.issuedHosts.splice(0, extra);
+  }
+
+  private clearIssuedHosts(mediaId: string, route: string): void {
+    this.issuedHosts = this.issuedHosts.filter((item) => item.mediaId !== mediaId || item.route !== route);
+  }
+
+  private hostLiftListed(snapshot: CrunchyrollSnapshot | null): boolean {
+    return Boolean(
+      this.hostLift
+      && snapshot
+      && this.route
+      && snapshot.rendition !== 'hardsub'
+      && this.hostLift.mediaId === snapshot.mediaId
+      && this.hostLift.route === this.route
+      && snapshot.hostTracks.some((track) => track.id === this.hostLift?.trackId)
+    );
+  }
+
+  private reconcileHostLift(snapshot: CrunchyrollSnapshot | null, live: boolean): void {
+    const eligible = Boolean(
+      snapshot
+      && (snapshot.rendition === 'host' || snapshot.rendition === 'clean')
+      && snapshot.hostTracks.length > 0
+    );
+    const playerOn = eligible && snapshot?.hostRenderer === 'active';
+    const listed = eligible && this.hostLiftListed(snapshot);
+    const trackActive = Boolean(
+      listed
+      && snapshot?.hostTracks.some((track) => track.id === this.hostLift?.trackId && track.enabled === true)
+    );
+    // A cached snapshot can predate a successful enable. A live probe has to see that track on.
+    const owned = live ? trackActive : listed;
+    if (playerOn || (!live && owned)) {
+      if (live && this.hostLift && !owned) this.hostLift = null;
+      retainCrunchyrollHostCaptionSurface();
+      return;
+    }
+    this.hostLift = null;
+    releaseCrunchyrollHostCaptionSurface();
+  }
+
+  /**
+   * After a failed host Off or switch, keep the lift only when a fresh probe
+   * still shows that renderer on. A cached hostRenderer of "active" is not used.
+   * A newer cue, another route, or a cleared session does not get the class back.
+   */
+  private async restoreHostSurface(cue: number): Promise<void> {
+    if (cue !== this.cueGeneration) return;
+    const route = this.route;
+    const held = this.snapshot;
+    const mediaId = crunchyrollIntegrationEnabled() ? crunchyrollPageMediaId() : null;
+    if (!held || !mediaId || held.mediaId !== mediaId || route !== crunchyrollPageRoute()) {
+      if (cue !== this.cueGeneration) return;
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return;
+    }
+    let next: CrunchyrollSnapshot | null = null;
+    try {
+      next = (await requestMediaProbe()).crunchyroll ?? null;
+    } catch {
+      next = null;
+    }
+    if (cue !== this.cueGeneration) return;
+    const pageOk = crunchyrollIntegrationEnabled()
+      && crunchyrollPageMediaId() === mediaId
+      && crunchyrollPageRoute() === route
+      && this.snapshot?.mediaId === mediaId
+      && this.route === route;
+    if (!pageOk || !this.snapshot) {
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return;
+    }
+    if (!next || next.mediaId !== mediaId) {
+      this.snapshot = { ...this.snapshot, hostRenderer: 'unknown' };
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return;
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      rendition: next.rendition,
+      hostTracks: next.hostTracks,
+      hostRenderer: next.hostRenderer
+    };
+    const rendererActive = next.rendition !== 'hardsub' && next.hostRenderer === 'active';
+    const owned = Boolean(
+      rendererActive
+      && this.hostLift
+      && this.hostLift.mediaId === mediaId
+      && this.hostLift.route === route
+      && next.hostTracks.some((track) => track.id === this.hostLift?.trackId && track.enabled === true)
+    );
+    const visible = rendererActive && next.hostTracks.some((track) => track.enabled === true);
+    if (!owned) this.hostLift = null;
+    if (owned || visible) {
+      retainCrunchyrollHostCaptionSurface();
+      return;
+    }
+    releaseCrunchyrollHostCaptionSurface();
+  }
+
+  /**
+   * Failed automatic Off runs after invalidate cleared the snapshot. That empty
+   * snapshot is the cleanup that armed this Off, not proof the controller exited.
+   * A later invalidate, dispose, cue, route, or integration change is a new generation.
+   */
+  private async restoreAutomaticHostSurface(cue: number, scope: AutomaticHostScope): Promise<void> {
+    const superseded = () => cue !== this.cueGeneration || scope.loadGeneration !== this.loadGeneration;
+    const pageOk = () => crunchyrollIntegrationEnabled()
+      && crunchyrollPageMediaId() === scope.mediaId
+      && crunchyrollPageRoute() === scope.route;
+    if (superseded()) return;
+    if (!pageOk()) {
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return;
+    }
+    let next: CrunchyrollSnapshot | null = null;
+    try {
+      next = (await requestMediaProbe()).crunchyroll ?? null;
+    } catch {
+      next = null;
+    }
+    if (superseded()) return;
+    if (!pageOk()) {
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return;
+    }
+    const enabled = next
+      && next.mediaId === scope.mediaId
+      && (next.rendition === 'host' || next.rendition === 'clean')
+      && next.hostRenderer === 'active'
+      ? next.hostTracks.filter((track) => track.enabled === true)
+      : [];
+    const sole = enabled.length === 1 ? enabled[0].id : null;
+    const ownedStill = Boolean(sole && scope.ownedTrackIds.includes(sole));
+    if (ownedStill && next && sole) {
+      this.snapshot = next;
+      this.route = scope.route;
+      this.hostLift = { mediaId: scope.mediaId, route: scope.route, trackId: sole };
+      retainCrunchyrollHostCaptionSurface();
+      return;
+    }
+    this.hostLift = null;
+    if (enabled.length > 0) {
+      retainCrunchyrollHostCaptionSurface();
+      return;
+    }
+    releaseCrunchyrollHostCaptionSurface();
+  }
+
+  private load(): Promise<void> {
+    const generation = this.loadGeneration;
+    const route = crunchyrollPageRoute();
+    const mediaId = crunchyrollIntegrationEnabled() ? crunchyrollPageMediaId() : null;
+    if (!mediaId) {
+      this.snapshot = null;
+      this.route = route;
+      this.bif = null;
+      this.bifFailed = false;
+      this.bifSource = '';
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+      return Promise.resolve();
+    }
+    if (this.snapshot?.mediaId === mediaId && this.route === route && this.pending === null) {
+      this.reconcileHostLift(this.snapshot, false);
+      void this.ensureBif();
+      return Promise.resolve();
+    }
+    if (this.pending) return this.pending;
+    const pending = requestMediaProbe().then((result) => {
+      if (generation !== this.loadGeneration || !crunchyrollIntegrationEnabled()) return;
+      if (crunchyrollPageRoute() !== route || crunchyrollPageMediaId() !== mediaId) return;
+      const next = result.crunchyroll;
+      if (!next || next.mediaId !== mediaId) {
+        this.snapshot = null;
+        this.hostLift = null;
+        releaseCrunchyrollHostCaptionSurface();
+        return;
+      }
+      if (next.bifBlobUrl !== this.bifSource) {
+        this.bif = null;
+        this.bifFailed = false;
+        this.bifSource = '';
+      }
+      this.snapshot = next;
+      this.route = route;
+      this.reconcileHostLift(next, true);
+      void this.ensureBif();
+    }).finally(() => {
+      if (this.pending === pending) this.pending = null;
+    });
+    this.pending = pending;
+    return pending;
+  }
+
+  private matching(): CrunchyrollSnapshot | null {
+    const mediaId = crunchyrollIntegrationEnabled() ? crunchyrollPageMediaId() : null;
+    if (!mediaId || this.snapshot?.mediaId !== mediaId || this.route !== crunchyrollPageRoute()) return null;
+    return this.snapshot;
+  }
+
+  private async ensureBif(): Promise<void> {
+    const blobUrl = this.matching()?.bifBlobUrl;
+    if (!blobUrl?.startsWith('blob:')) return;
+    if (this.bifSource !== blobUrl) {
+      this.bif = null;
+      this.bifFailed = false;
+      this.bifSource = blobUrl;
+    }
+    if (this.bif || this.bifFailed) return;
+    if (this.bifLoad && this.bifLoadUrl === blobUrl) return this.bifLoad;
+    const generation = this.loadGeneration;
+    const mediaId = this.snapshot?.mediaId;
+    const route = this.route;
+    const load = (async () => {
+      let buffer: ArrayBuffer | null = null;
+      try {
+        const response = await fetch(blobUrl);
+        if (response.ok) buffer = await response.arrayBuffer();
+      } catch {
+        // A revoked blob from a route change is discarded below.
+        buffer = null;
+      }
+      if (generation !== this.loadGeneration || mediaId !== crunchyrollPageMediaId() || route !== crunchyrollPageRoute() || !crunchyrollIntegrationEnabled()) return;
+      if (this.matching()?.bifBlobUrl !== blobUrl) return;
+      const parsed = buffer && buffer.byteLength <= MAX_CRUNCHYROLL_BIF_BYTES ? parseRokuBif(buffer) : null;
+      this.bif = parsed && parsed.frames.length > 0 ? parsed : null;
+      this.bifFailed = !this.bif;
+      this.bifSource = blobUrl;
+    })();
+    this.bifLoad = load;
+    this.bifLoadUrl = blobUrl;
+    void load.finally(() => {
+      if (this.bifLoad !== load) return;
+      this.bifLoad = null;
+      this.bifLoadUrl = '';
+    });
+    return load;
+  }
+
+  async probe(): Promise<MediaCapabilities> {
+    await this.load();
+    await this.ensureBif();
+    const snapshot = this.matching();
+    return {
+      captions: Boolean(snapshot && (snapshot.hostTracks.length > 0 || snapshot.captionTracks.length > 0)),
+      chapters: Boolean(snapshot?.chapters.length),
+      previews: Boolean(this.bif && snapshot)
+    };
+  }
+
+  async listCaptionTracks(): Promise<CaptionTrack[]> {
+    await this.load();
+    void this.ensureBif();
+    const snapshot = this.matching();
+    if (!snapshot || snapshot.rendition === 'hardsub') return [];
+    if (snapshot.hostTracks.length) {
+      return snapshot.hostTracks.map(({ id, language, label, kind }) => ({
+        id: `crunchyroll-host:${snapshot.mediaId}:${id}`,
+        language,
+        label,
+        kind,
+        source: 'crunchyroll',
+        delivery: 'host'
+      }));
+    }
+    return snapshot.captionTracks.map(({ id, language, label, kind }) => ({
+      id, language, label, kind, source: 'crunchyroll', delivery: 'overlay'
+    }));
+  }
+
+  async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    this.listenForIssued();
+    this.cueGeneration += 1;
+    const cue = this.cueGeneration;
+    const loadGeneration = this.loadGeneration;
+    const failed = (): CaptionActivationResult => ({ status: 'failed', delivery: 'none', cues: [] });
+    if (id === null) {
+      const snapshot = this.matching();
+      const explicit = snapshot && snapshot.hostTracks.length > 0 && snapshot.rendition !== 'hardsub'
+        ? { mediaId: snapshot.mediaId, route: this.route }
+        : null;
+      const automatic = this.hostOffTarget;
+      const target = explicit ?? automatic;
+      this.hostOffTarget = null;
+      const sameMedia = Boolean(
+        target
+        && crunchyrollIntegrationEnabled()
+        && crunchyrollPageMediaId() === target.mediaId
+        && crunchyrollPageRoute() === target.route
+      );
+      if (!sameMedia || !target) {
+        if (cue === this.cueGeneration) {
+          this.hostLift = null;
+          releaseCrunchyrollHostCaptionSurface();
+        }
+        return { status: 'off', delivery: 'none', cues: [] };
+      }
+      let outcome = { ok: false, kept: false };
+      try {
+        outcome = await requestCrunchyrollHostCaption(
+          target.mediaId,
+          target.route,
+          null,
+          window,
+          CAPTION_ACK_TIMEOUT_MS,
+          automatic && target === automatic ? automatic.ownedTrackIds : undefined
+        );
+      } catch {
+        outcome = { ok: false, kept: false };
+      }
+      if (cue !== this.cueGeneration) return failed();
+      // A player-selected track or a forced narrative row is still showing. Do not record it as owned.
+      if (outcome.kept) {
+        const still = crunchyrollIntegrationEnabled()
+          && crunchyrollPageMediaId() === target.mediaId
+          && crunchyrollPageRoute() === target.route;
+        this.hostLift = null;
+        this.clearIssuedHosts(target.mediaId, target.route);
+        if (!still) {
+          releaseCrunchyrollHostCaptionSurface();
+          return { status: 'off', delivery: 'none', cues: [] };
+        }
+        if (this.snapshot?.mediaId === target.mediaId) {
+          this.snapshot = { ...this.snapshot, hostRenderer: 'active' };
+        }
+        retainCrunchyrollHostCaptionSurface();
+        return { status: 'off', delivery: 'none', cues: [] };
+      }
+      if (!outcome.ok) {
+        if (automatic && target === automatic) {
+          await this.restoreAutomaticHostSurface(cue, {
+            mediaId: automatic.mediaId,
+            route: automatic.route,
+            ownedTrackIds: automatic.ownedTrackIds,
+            loadGeneration
+          });
+        } else {
+          await this.restoreHostSurface(cue);
+        }
+        return failed();
+      }
+      this.hostLift = null;
+      this.clearIssuedHosts(target.mediaId, target.route);
+      releaseCrunchyrollHostCaptionSurface();
+      return { status: 'off', delivery: 'none', cues: [] };
+    }
+    await this.load();
+    if (cue !== this.cueGeneration) return failed();
+    const snapshot = this.matching();
+    if (!snapshot || snapshot.rendition === 'hardsub') return failed();
+    const host = snapshot.hostTracks.find((item) => `crunchyroll-host:${snapshot.mediaId}:${item.id}` === id);
+    if (host) {
+      const dispatched = { mediaId: snapshot.mediaId, route: this.route, trackId: host.id };
+      let outcome = { ok: false, kept: false };
+      try {
+        outcome = await requestCrunchyrollHostCaption(dispatched.mediaId, dispatched.route, dispatched.trackId);
+      } catch {
+        outcome = { ok: false, kept: false };
+      }
+      // A newer cue, or dispose, may already be compensating an enable that landed. Do not drop it here.
+      if (cue !== this.cueGeneration) return failed();
+      const current = this.matching()?.mediaId === snapshot.mediaId && crunchyrollPageRoute() === dispatched.route;
+      if (!outcome.ok || !current) {
+        await this.restoreHostSurface(cue);
+        return failed();
+      }
+      this.clearIssuedHosts(dispatched.mediaId, dispatched.route);
+      const alreadyOwned = Boolean(
+        this.hostLift
+        && this.hostLift.mediaId === snapshot.mediaId
+        && this.hostLift.route === dispatched.route
+        && this.hostLift.trackId === host.id
+      );
+      // A no-op On reports active and lifts, but does not adopt a track the player already had on.
+      // Repeating On for a track RTE enabled keeps that ownership.
+      if (outcome.kept && !alreadyOwned) {
+        this.hostLift = null;
+        if (this.snapshot?.mediaId === snapshot.mediaId) {
+          this.snapshot = { ...this.snapshot, hostRenderer: 'active' };
+        }
+      } else {
+        this.hostLift = { mediaId: snapshot.mediaId, route: dispatched.route, trackId: host.id };
+      }
+      retainCrunchyrollHostCaptionSurface();
+      return { status: 'active', delivery: 'host', cues: [] };
+    }
+    if (cue !== this.cueGeneration) return failed();
+    this.hostLift = null;
+    releaseCrunchyrollHostCaptionSurface();
+    const track = snapshot.captionTracks.find((item) => item.id === id);
+    if (!track) return failed();
+    const mediaId = snapshot.mediaId;
+    const route = this.route;
+    const body = await requestPageFetch(track.url);
+    const currentTrack = this.matching()?.captionTracks.find((item) => item.id === id);
+    const current = cue === this.cueGeneration
+      && crunchyrollIntegrationEnabled()
+      && crunchyrollPageMediaId() === mediaId
+      && crunchyrollPageRoute() === route
+      && currentTrack?.url === track.url;
+    const cues = body && current ? parseCrunchyrollCaptionBody(body, track.format) : [];
+    if (!cues.length) return failed();
+    return { status: 'active', delivery: 'overlay', cues };
+  }
+
+  async getChapters(): Promise<Chapter[]> {
+    await this.load();
+    return this.matching()?.chapters || [];
+  }
+
+  async getPreviewSource(): Promise<PreviewSource> {
+    await this.load();
+    await this.ensureBif();
+    return this.bif && this.matching()
+      ? { kind: 'sprite', provider: 'crunchyroll' }
+      : { kind: 'none', reason: 'no-crunchyroll-preview' };
+  }
+
+  getPreviewFrame(time: number): PreviewFrame | null {
+    if (!this.bif || !this.matching() || !Number.isFinite(time) || time < 0) return null;
+    let frame = this.bif.frames[0];
+    for (const candidate of this.bif.frames) {
+      if (time >= candidate.time) frame = candidate;
+      else break;
+    }
+    if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return null;
+    const bytes = new Uint8Array(this.bif.buffer.slice(frame.start, frame.end));
+    if (this.previewBlob) URL.revokeObjectURL(this.previewBlob);
+    this.previewBlob = URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' }));
+    return {
+      time: frame.time,
+      width: this.bif.width,
+      height: this.bif.height,
+      image: {
+        kind: 'sprite',
+        url: this.previewBlob,
+        x: 0,
+        y: 0,
+        tileWidth: this.bif.width,
+        tileHeight: this.bif.height,
+        sheetWidth: this.bif.width,
+        sheetHeight: this.bif.height
+      }
+    };
+  }
+
+  mediaId(): string | null {
+    return this.matching()?.mediaId || null;
+  }
+
+  getTitle(): string | null {
+    return this.matching()?.title || null;
+  }
+
+  invalidate(options?: { preserveHostLift?: boolean }): void {
+    this.armHostCleanup(options);
+    this.loadGeneration += 1;
+    this.cueGeneration += 1;
+    this.snapshot = null;
+    this.route = '';
+    this.pending = null;
+    this.bif = null;
+    this.bifFailed = false;
+    this.bifLoad = null;
+    this.bifLoadUrl = '';
+    this.bifSource = '';
+    if (!options?.preserveHostLift) {
+      this.hostLift = null;
+      releaseCrunchyrollHostCaptionSurface();
+    }
+    if (this.previewBlob && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(this.previewBlob);
+    }
+    this.previewBlob = null;
+  }
+
+  async reload(): Promise<void> {
+    const mediaId = crunchyrollIntegrationEnabled() ? crunchyrollPageMediaId() : null;
+    const route = crunchyrollPageRoute();
+    const sameMedia = Boolean(mediaId && this.snapshot?.mediaId === mediaId && this.route === route);
+    const preserveHostLift = Boolean(
+      sameMedia
+      && document.documentElement?.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)
+    );
+    const keptBif = sameMedia && this.bif && this.bifSource && this.bifSource === this.snapshot?.bifBlobUrl
+      ? { bif: this.bif, bifFailed: this.bifFailed, bifSource: this.bifSource }
+      : null;
+    this.invalidate({ preserveHostLift });
+    if (keptBif) {
+      this.bif = keptBif.bif;
+      this.bifFailed = keptBif.bifFailed;
+      this.bifSource = keptBif.bifSource;
+    }
+    await this.load();
+  }
+
+  /**
+   * Fold every enable() MAIN has called, plus a confirmed lift, into one cleanup target.
+   * A request that has not called enable is not ownership, even if it is already queued.
+   * A same-page reload clears this target. An invalidate that finds neither keeps one armed earlier.
+   */
+  private armHostCleanup(options?: { preserveHostLift?: boolean }): void {
+    if (options?.preserveHostLift) {
+      this.hostOffTarget = null;
+      return;
+    }
+    const issued = this.issuedHosts.splice(0, this.issuedHosts.length);
+    const snapshot = this.snapshot;
+    const route = this.route;
+    if (!snapshot || snapshot.rendition === 'hardsub' || !route) return;
+    const ids: string[] = [];
+    const add = (id: string) => {
+      if (!ids.includes(id) && ids.length < MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS) ids.push(id);
+    };
+    for (let index = issued.length - 1; index >= 0; index -= 1) {
+      const item = issued[index];
+      if (item.mediaId === snapshot.mediaId && item.route === route) add(item.trackId);
+    }
+    if (this.hostLift && this.hostLiftListed(snapshot)) add(this.hostLift.trackId);
+    if (!ids.length) return;
+    this.hostOffTarget = { mediaId: snapshot.mediaId, route, ownedTrackIds: ids };
+  }
+
+  dispose(): void {
+    this.invalidate();
+    if (this.listeningForIssued) {
+      window.removeEventListener(CRUNCHYROLL_CAPTION_ISSUED_EVENT, this.onCaptionIssued);
+      this.listeningForIssued = false;
+    }
+    const target = this.hostOffTarget;
+    this.hostOffTarget = null;
+    if (!target) return;
+    // Best-effort only. A late failure, a kept track, or a forced row must not
+    // restore the class, snapshot, or ownership after the controller is gone.
+    void requestCrunchyrollHostCaption(
+      target.mediaId,
+      target.route,
+      null,
+      window,
+      CAPTION_ACK_TIMEOUT_MS,
+      target.ownedTrackIds
+    ).then(() => undefined, () => undefined);
+  }
+}

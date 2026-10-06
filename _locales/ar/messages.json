@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (تجريبية)"
   },
   "richTheaterExperienceDescription": {
-    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وNetflix وBilibili وBilibili.tv وTencent Video / WeTV وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
+    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وNetflix وBilibili وBilibili.tv وTencent Video / WeTV وCrunchyroll وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
   },
   "richTheaterExperienceReadMore": {
     "message": "هنا"
@@ -663,5 +663,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "يستورد عنوان الحلقة والترجمات وصور الخط الزمني المصغرة من صفحات حلقات bilibili.tv عند توفرها. تستخدم الحلقة التالية زر التالي في المشغّل. هذا التكامل لا يستورد الفصول ولا خريطة الشعبية. صفحات الفيديو التي يرفعها المستخدمون (/video) غير مدعومة."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "تكامل Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "يعرض عنوان الحلقة والمقدمة والختام وعناصر التحكم المتاحة للترجمة ومعاينات الخط الزمني. الترجمات المدمجة في الصورة تبقى ولا يمكن إيقافها."
   }
 }

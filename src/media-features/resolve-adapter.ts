@@ -12,6 +12,7 @@ import type { MediaFeaturesAdapter } from './types';
 import { BilibiliAdapter } from '../providers/bilibili/adapter';
 import { BilibiliIntlAdapter } from '../providers/bilibili-intl/adapter';
 import { TencentAdapter } from '../providers/tencent/adapter';
+import { CrunchyrollAdapter } from '../providers/crunchyroll/adapter';
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
@@ -56,5 +57,6 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachProvider('bilibili', flags)) adapters.push(new BilibiliAdapter());
   if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
+  if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
   return new CompositeMediaAdapter(adapters);
 }

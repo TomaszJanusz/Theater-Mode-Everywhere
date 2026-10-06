@@ -148,7 +148,7 @@
     "message": "Rich Theater Experience (Sperimentale)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
+    "message": "Attiva integrazioni più avanzate con i tuoi servizi video preferiti, tra cui YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e altri. Theater Mode Everywhere può mostrare informazioni aggiuntive, supportare formati di sottotitoli personalizzati e sbloccare funzionalità specifiche per ogni servizio. La disponibilità varia in base al servizio - scopri di più "
   },
   "richTheaterExperienceReadMore": {
     "message": "qui"
@@ -663,5 +663,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importa il titolo dell’episodio, i sottotitoli e le miniature della sequenza temporale dalle pagine degli episodi di bilibili.tv quando disponibili. L’episodio successivo usa il controllo successivo del player. Questa integrazione non importa capitoli né la mappa di popolarità. Le pagine dei video caricati dagli utenti (/video) non sono supportate."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Integrazione Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Mostra il titolo dell’episodio, l’intro e i titoli di coda, i controlli dei sottotitoli disponibili e le anteprime sulla timeline. I sottotitoli impressi restano nel video e non si possono disattivare."
   }
 }

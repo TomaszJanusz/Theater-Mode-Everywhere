@@ -19,6 +19,8 @@ import { BilibiliIntlAdapter } from './bilibili-intl/adapter';
 import { readBilibiliIntlSnapshot } from './bilibili-intl/main';
 import { TencentAdapter } from './tencent/adapter';
 import { readTencentSnapshot } from './tencent/main';
+import { CrunchyrollAdapter } from './crunchyroll/adapter';
+import { readCrunchyrollSnapshot } from './crunchyroll/main';
 
 const adapters = [
   ['native', NativeTextTrackAdapter],
@@ -30,7 +32,8 @@ const adapters = [
   ['netflix', NetflixAdapter],
   ['bilibili', BilibiliAdapter],
   ['bilibiliIntl', BilibiliIntlAdapter],
-  ['tencent', TencentAdapter]
+  ['tencent', TencentAdapter],
+  ['crunchyroll', CrunchyrollAdapter]
 ] as const;
 
 const snapshots = [
@@ -42,7 +45,8 @@ const snapshots = [
   ['netflix', readNetflixSnapshot],
   ['bilibili', readBilibiliSnapshot],
   ['bilibiliIntl', readBilibiliIntlSnapshot],
-  ['tencent', readTencentSnapshot]
+  ['tencent', readTencentSnapshot],
+  ['crunchyroll', readCrunchyrollSnapshot]
 ] as const;
 
 describe('provider contracts', () => {

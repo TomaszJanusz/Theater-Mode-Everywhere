@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { createShortcutEditor } from '../../options/shortcut-editor';
 import { createShortcutUpdateQueue, readShortcutUpdate } from './shortcut-updates';
 import { assignShortcut, defaultShortcuts, isReservedShortcut, matchesShortcut, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayParts, withShortcutDefaults } from './shortcuts';
 
@@ -179,5 +180,118 @@ describe('serialized shortcut updates', () => {
     assert.equal(readShortcutUpdate({ type: 'assign', action: 'toggle', shortcut: 'F', confirmedOwners: ['bogus'] }), null);
     const request = { type: 'assign', action: 'toggle', shortcut: '', confirmedOwners: [] };
     assert.deepEqual(readShortcutUpdate(request), request);
+  });
+});
+
+describe('shortcut editor paint', () => {
+  it('keeps a committed shortcut when blur and a stale storage read follow the save', async () => {
+    const oldDocument = globalThis.document;
+    const oldChrome = (globalThis as { chrome?: unknown }).chrome;
+    let active: { id?: string } | null = null;
+    const body = { id: 'body' };
+    const grid = { setAttribute() {}, before() {} };
+    const storage = { shortcuts: { ...defaultShortcuts } as Record<string, string> };
+    let reads = 0;
+    const held: { release: ((value: { shortcuts: Record<string, string> }) => void) | null } = { release: null };
+    function field(id: string, action: string) {
+      const inputListeners = new Map<string, Array<(event: Event) => void>>();
+      const input = {
+        id,
+        value: '',
+        placeholder: '',
+        isConnected: true,
+        listeners: inputListeners,
+        setAttribute() {},
+        removeAttribute() {},
+        addEventListener(type: string, fn: (event: Event) => void) {
+          const list = inputListeners.get(type) || [];
+          list.push(fn);
+          inputListeners.set(type, list);
+        },
+        dispatch(type: string, event: object) {
+          for (const fn of inputListeners.get(type) || []) fn(event as Event);
+        },
+        focus() { active = input; },
+        parentElement: {
+          querySelector: () => ({
+            dataset: { shortcut: action },
+            setAttribute() {},
+            addEventListener() {}
+          })
+        },
+        closest: (selector: string) => (selector === '.shortcuts-grid' ? grid : null)
+      };
+      return input;
+    }
+    const pin = field('shortcut-controls-pin', 'toggleControlsPin');
+    const mute = field('shortcut-toggle-mute', 'toggleMute');
+    const documentMock = {
+      body,
+      get activeElement() { return active; },
+      querySelectorAll: () => [pin, mute],
+      querySelector: (selector: string) => {
+        const id = /for="([^"]+)"/.exec(selector)?.[1];
+        return id ? { textContent: id } : null;
+      },
+      getElementById: () => null,
+      createElement: () => ({
+        id: '',
+        className: '',
+        hidden: false,
+        textContent: '',
+        setAttribute() {}
+      })
+    };
+    globalThis.document = documentMock as unknown as Document;
+    (globalThis as { chrome?: unknown }).chrome = {
+      storage: {
+        sync: {
+          get: () => {
+            reads += 1;
+            if (reads === 1) return Promise.resolve({ shortcuts: { ...storage.shortcuts } });
+            return new Promise<{ shortcuts: Record<string, string> }>((resolve) => { held.release = resolve; });
+          }
+        }
+      },
+      runtime: {
+        sendMessage: async (message: { request: { action: keyof typeof defaultShortcuts; shortcut: string } }) => {
+          storage.shortcuts = { ...storage.shortcuts, [message.request.action]: message.request.shortcut };
+          return { status: 'saved' };
+        }
+      }
+    };
+    try {
+      const editor = createShortcutEditor(async () => {});
+      await editor.initialize();
+      assert.equal(pin.value, 'Shift+H');
+      pin.dispatch('keydown', {
+        key: 'U',
+        code: 'KeyU',
+        shiftKey: true,
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+        repeat: false,
+        isComposing: false,
+        preventDefault() {},
+        stopPropagation() {}
+      });
+      for (let i = 0; i < 10; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+      assert.equal(pin.value, 'Shift+U');
+      pin.dispatch('blur', {});
+      assert.equal(pin.value, 'Shift+U');
+      if (!held.release) throw new Error('storage read did not start');
+      active = mute;
+      held.release({ shortcuts: { ...defaultShortcuts } });
+      for (let i = 0; i < 10; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+      assert.equal(pin.value, 'Shift+U');
+      assert.equal(active, mute);
+      editor.applyStored({ ...storage.shortcuts, toggleMute: 'Ctrl+M' });
+      assert.equal(pin.value, 'Shift+U');
+      assert.equal(mute.value, 'Ctrl+M');
+    } finally {
+      globalThis.document = oldDocument;
+      (globalThis as { chrome?: unknown }).chrome = oldChrome;
+    }
   });
 });

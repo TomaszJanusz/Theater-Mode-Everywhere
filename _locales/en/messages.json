@@ -154,7 +154,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
+    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
   },
   "richTheaterExperienceReadMore": {
     "message": "here"
@@ -663,5 +663,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Imports the episode title, subtitles, and timeline thumbnails from bilibili.tv episode pages when available. Next episode uses the player’s next control. This integration does not import chapters or the high-energy heatmap. User-uploaded /video pages are not supported."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll integration"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Shows the episode title, intro and credits, available subtitle controls, and timeline previews. Burned-in captions stay on the video and cannot be turned off."
   }
 }

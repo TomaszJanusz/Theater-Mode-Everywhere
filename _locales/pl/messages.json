@@ -154,7 +154,7 @@
     "message": "Rich Theater Experience (Eksperymentalne)"
   },
   "richTheaterExperienceDescription": {
-    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
+    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
   },
   "richTheaterExperienceReadMore": {
     "message": "tutaj"
@@ -663,5 +663,11 @@
   },
   "bilibiliIntlIntegrationDescription": {
     "message": "Importuje tytuł odcinka, napisy i miniatury osi czasu ze stron odcinków bilibili.tv, jeśli są dostępne. Następny odcinek korzysta z przycisku odtwarzacza. Ta integracja nie importuje rozdziałów ani mapy popularności. Strony wideo użytkowników (/video) nie są obsługiwane."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Integracja z Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Pokazuje tytuł odcinka, czołówkę i napisy końcowe, dostępne sterowanie napisami oraz podgląd na osi czasu. Napisy wtopione w obraz zostają i nie da się ich wyłączyć."
   }
 }

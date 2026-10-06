@@ -116,7 +116,7 @@ async function init() {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
-      if (changes.shortcuts) void shortcutEditor.refresh();
+      if (changes.shortcuts) shortcutEditor.applyStored(changes.shortcuts.newValue);
       if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
         raiseOnlyWithSubtitles = resolveRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);
       }
