@@ -994,34 +994,95 @@ section h2 {
   color: #d4d4d8;
 }
 
-.picture-align-dependent {
-  /* The parent already supplies an 8px gap: total gap is 12px. */
-  margin-block-start: 4px;
-  margin-inline-start: 16px;
-  padding: 10px 12px;
-  border-inline-start: 2px solid
-    color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+.picture-align-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background-color: #09090b;
+  color: #a1a1aa;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.picture-align-dependent .feature-label {
-  /* Match the layout-card title size. */
+.picture-align-card:has(.picture-align-btn:hover) {
+  border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+  background-color: color-mix(in srgb, var(--accent-color) 8%, #09090b);
+  color: var(--text-primary);
+}
+
+.picture-align-card:has(.picture-align-btn:focus-visible) {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 24%, transparent);
+}
+
+.picture-align-card:has(.picture-align-btn.selected) {
+  border-color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 14%, #09090b);
+  color: #ffffff;
+}
+
+.picture-align-card > .picture-align-btn {
+  flex: 1;
+  padding-bottom: 12px;
+  border: 0;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.picture-align-card > .picture-align-btn:hover,
+.picture-align-card > .picture-align-btn.selected,
+.picture-align-card > .picture-align-btn:focus-visible {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.picture-align-subtitles {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--border-color);
+  background: transparent;
+}
+
+.picture-align-card > .picture-align-subtitles {
+  display: flex;
+}
+
+.picture-align-card:has(.picture-align-btn.selected) > .picture-align-subtitles {
+  border-top-color: color-mix(in srgb, var(--accent-color) 35%, var(--border-color));
+}
+
+.picture-align-subtitles .feature-label {
   font-size: 13px;
+  font-weight: 600;
 }
 
-.picture-align-dependent.is-disabled {
-  border-inline-start-color: var(--border-color);
+.picture-align-card:has(.picture-align-btn.selected) .picture-align-subtitles .feature-label {
+  color: #ffffff;
 }
 
-.picture-align-dependent.is-disabled .feature-label {
+.picture-align-card:has(.picture-align-btn.selected) .picture-align-subtitles .feature-desc {
+  color: #d4d4d8;
+}
+
+.picture-align-subtitles.is-disabled .feature-label {
   color: var(--text-secondary);
   cursor: default;
 }
 
-.picture-align-dependent.is-disabled .toggle-switch {
+.picture-align-subtitles.is-disabled .toggle-switch {
   cursor: default;
 }
 
-.picture-align-dependent input:disabled + .toggle-slider {
+.picture-align-subtitles input:disabled + .toggle-slider {
   opacity: 0.45;
 }
 

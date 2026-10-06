@@ -513,6 +513,8 @@ async function init() {
     syncRaisedSubtitlesControl(selected);
     if (syncPictureAlignButtons(grid, selected)) return;
 
+    const subtitlesRow = document.getElementById('picture-align-subtitles-row');
+    subtitlesRow?.remove();
     grid.textContent = '';
 
     PICTURE_ALIGNS.forEach(align => {
@@ -537,8 +539,20 @@ async function init() {
       button.addEventListener('click', () => {
         void savePictureAlign(align);
       });
-      grid.appendChild(button);
+      if (align === 'top') mountRaisedCard(grid, button, subtitlesRow);
+      else grid.appendChild(button);
     });
+  }
+
+  function mountRaisedCard(grid: HTMLElement, button: HTMLButtonElement, row: HTMLElement | null): void {
+    if (!row) {
+      grid.appendChild(button);
+      return;
+    }
+    const card = document.createElement('div');
+    card.className = 'picture-align-card';
+    card.append(button, row);
+    grid.appendChild(card);
   }
 
   async function savePictureAlign(align: PictureAlign) {
