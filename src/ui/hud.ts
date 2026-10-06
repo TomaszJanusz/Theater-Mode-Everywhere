@@ -296,7 +296,6 @@ export function createHud(ctx: PlayerChromeContext) {
     if (!header) {
       header = document.createElement('div');
       header.className = HEADER_HUD_CLASS;
-      ctx.paintOverlay(header);
       // The containing page is the active service when the video is embedded.
       const homeUrl = serviceHomeUrl(discoverParentOrigin() || window.location.href);
       if (homeUrl) {
@@ -315,6 +314,8 @@ export function createHud(ctx: PlayerChromeContext) {
       header.inert = !ctx.ui().toolbarVisible;
       ctx.mountPlayerUi(header);
     }
+    // Inline accent is captured at creation, so reapply it for a later theme change.
+    ctx.paintOverlay(header);
     return header;
   }
 

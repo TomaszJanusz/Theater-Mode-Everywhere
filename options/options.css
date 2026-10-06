@@ -106,11 +106,17 @@ body {
   box-shadow: 0 0 0 2px var(--bg-color);
 }
 
-.icon-btn:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-color) 40%, var(--border-color));
   transform: translateY(-1px);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
 }
 
 .icon-btn:active {
