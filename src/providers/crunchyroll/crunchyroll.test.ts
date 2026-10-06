@@ -28,6 +28,7 @@ import {
   CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS,
   CRUNCHYROLL_HARVEST_EVENT,
   CRUNCHYROLL_HOST_CAPTION_SETTLE_MS,
+  CRUNCHYROLL_SKIP_RETRY_MS,
   crunchyrollAllowsCaptionFetch,
   handleCrunchyrollCaptionEvent,
   harvestCrunchyrollData,
@@ -1094,6 +1095,202 @@ describe('Crunchyroll RTE', () => {
       const result = await loadCrunchyrollUrl(SKIP, 20, () => true, 'text', 1000);
       assert.equal(result, null);
     } finally { page.restore(); }
+  });
+
+  it('retries a failed skip document without pinning the episode or clearing a newer session', async () => {
+    const page = installPage();
+    const realNow = Date.now;
+    let now = 1_700_000_000_000;
+    Date.now = () => now;
+    const calls: string[] = [];
+    const pending: Array<{ url: string; resolve: (response: Response) => void }> = [];
+    globalThis.fetch = ((input: unknown) => {
+      const url = String(input);
+      if (!url.includes('skip-events')) return Promise.resolve(new Response('', { status: 404 }));
+      calls.push(url);
+      return new Promise((resolve) => pending.push({ url, resolve }));
+    }) as typeof fetch;
+    const finish = (index: number, body: string | null, status = 200) => {
+      const item = pending[index];
+      item.resolve({
+        ok: status >= 200 && status < 300,
+        url: item.url,
+        headers: { get: () => null },
+        text: async () => body || ''
+      } as unknown as Response);
+    };
+    try {
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0], SKIP);
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 1);
+
+      finish(0, null, 503);
+      await flush();
+      await flush();
+      readCrunchyrollSnapshot();
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 1);
+
+      now += CRUNCHYROLL_SKIP_RETRY_MS;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 2);
+      finish(1, '{');
+      await flush();
+      await flush();
+      readCrunchyrollSnapshot();
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 2);
+      assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
+
+      now += CRUNCHYROLL_SKIP_RETRY_MS;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 3);
+      finish(2, JSON.stringify({ mediaId: MEDIA }));
+      await flush();
+      await flush();
+      assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
+      now += CRUNCHYROLL_SKIP_RETRY_MS * 5;
+      readCrunchyrollSnapshot();
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, 3);
+
+      page.location.pathname = `/watch/${OTHER}/next`;
+      readCrunchyrollSnapshot();
+      await flush();
+      const staleOther = calls.length - 1;
+      assert.equal(calls[staleOther], SKIP_OTHER);
+      page.location.pathname = `/watch/${MEDIA}/07-ghost-episode-2`;
+      readCrunchyrollSnapshot();
+      await flush();
+      const activeMedia = calls.length - 1;
+      assert.equal(calls[activeMedia], SKIP);
+      finish(staleOther, null, 503);
+      await flush();
+      await flush();
+      now += CRUNCHYROLL_SKIP_RETRY_MS;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, activeMedia + 1);
+      finish(activeMedia, JSON.stringify(skipDocument()));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.chapters.length, 2);
+      now += CRUNCHYROLL_SKIP_RETRY_MS;
+      readCrunchyrollSnapshot();
+      await flush();
+      assert.equal(calls.length, activeMedia + 1);
+    } finally {
+      Date.now = realNow;
+      page.restore();
+    }
+  });
+
+  it('uses the replacement BIF when the blob URL changes during an older read', async () => {
+    const page = installPage();
+    const assetB = 'ffffeeeeffffeeeeffffeeee';
+    const bifB = `https://vod-fy-mod.crunchyrollcdn.com/static/${assetB}/1/clean/bif-1789659999.bif?t=${SIGNATURE}`;
+    const playB = `https://www.crunchyroll.com/playback/v3/${OTHER}/web/chrome/play`;
+    const lateMedia = 'G9ABCDEFG';
+    const assetC = 'abcdeabcdeabcdeabcdeabcd';
+    const bifC = `https://vod-fy-mod.crunchyrollcdn.com/static/${assetC}/1/clean/bif-1789659998.bif?t=${SIGNATURE}`;
+    const playC = `https://www.crunchyroll.com/playback/v3/${lateMedia}/web/chrome/play`;
+    const manifestFor = (mediaId: string, assetId: string) => (
+      `https://www.crunchyroll.com/playback/v2/manifest/${mediaId}/static/${assetId}/1/clean/dash/manifest.mpd`
+    );
+    const described = (mediaId: string, assetId: string, bifUrl: string) => playback({
+      assetId,
+      url: manifestFor(mediaId, assetId),
+      hardSubs: undefined,
+      burnedInLocale: '',
+      subtitles: {},
+      bifs: bifUrl
+    });
+    const urlApi = URL as unknown as { createObjectURL?: (obj: Blob) => string; revokeObjectURL?: (url: string) => void };
+    const oldCreate = urlApi.createObjectURL;
+    const oldRevoke = urlApi.revokeObjectURL;
+    let blobCount = 0;
+    urlApi.createObjectURL = () => `blob:crunchyroll-bif-${++blobCount}`;
+    urlApi.revokeObjectURL = () => {};
+    const early = rokuBif([0, 1]);
+    const replacement = rokuBif([0, 50], 1000);
+    const blocked = rokuBif([0, 2], 1000);
+    const blobs: Array<(response: Response) => void> = [];
+    globalThis.fetch = ((input: unknown, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith('blob:')) return new Promise<Response>((resolve) => blobs.push(resolve));
+      if (url === BIF_SIGNED || url === bifB || url === bifC) {
+        assert.equal(init?.credentials, 'omit');
+        const buffer = url === bifB ? replacement : url === bifC ? blocked : early;
+        return Promise.resolve({
+          ok: true,
+          url,
+          headers: { get: () => null },
+          arrayBuffer: async () => buffer,
+          text: async () => ''
+        } as unknown as Response);
+      }
+      return Promise.resolve(new Response('', { status: 404 }));
+    }) as typeof fetch;
+    try {
+      harvestCrunchyrollData(PLAY, playback());
+      await flush();
+      await flush();
+      const adapter = new CrunchyrollAdapter();
+      const first = adapter.probe();
+      await flush();
+      assert.equal(blobs.length, 1);
+      void adapter.getPreviewSource();
+      await flush();
+      assert.equal(blobs.length, 1);
+
+      page.location.pathname = `/watch/${OTHER}/next`;
+      harvestCrunchyrollData(playB, described(OTHER, assetB, bifB));
+      await flush();
+      await flush();
+      assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-2');
+      const current = adapter.probe();
+      await flush();
+      assert.equal(blobs.length, 2);
+      blobs[1](new Response(replacement));
+      await flush();
+      assert.equal((await current).previews, true);
+      assert.equal(adapter.getPreviewFrame(40)?.time, 0);
+      blobs[0](new Response(early));
+      await flush();
+      assert.equal(blobs.length, 2);
+      assert.equal((await first).previews, true);
+      assert.equal(adapter.getPreviewFrame(40)?.time, 0);
+
+      page.location.pathname = `/watch/${lateMedia}/later`;
+      harvestCrunchyrollData(playC, described(lateMedia, assetC, bifC));
+      await flush();
+      await flush();
+      const unpublished = adapter.probe();
+      await flush();
+      assert.equal(blobs.length, 3);
+      page.attrs.add('data-te-crunchyroll-integration-off');
+      blobs[2](new Response(blocked));
+      await flush();
+      assert.equal((await unpublished).previews, false);
+      assert.equal(adapter.getPreviewFrame(0), null);
+      page.location.pathname = `/watch/${lateMedia}/elsewhere`;
+      assert.equal((await adapter.probe()).previews, false);
+      assert.equal(adapter.getPreviewFrame(0), null);
+      assert.equal(blobs.length, 3);
+    } finally {
+      urlApi.createObjectURL = oldCreate;
+      urlApi.revokeObjectURL = oldRevoke;
+      page.restore();
+    }
   });
 
   it('parses the flattened ASS cue without positioning', () => {

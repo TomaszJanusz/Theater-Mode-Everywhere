@@ -33,6 +33,8 @@ export type { CrunchyrollSnapshot } from '../../media-features/parsers/crunchyro
 
 export const CRUNCHYROLL_HARVEST_EVENT = 'theater-everywhere-crunchyroll-harvest';
 export const CRUNCHYROLL_SKIP_TIMEOUT_MS = 8000;
+/** Pause after a failed or unusable skip document before the next probe may try again. */
+export const CRUNCHYROLL_SKIP_RETRY_MS = 15000;
 export const CRUNCHYROLL_BIF_TIMEOUT_MS = 15000;
 /** How long MAIN waits for list() to show the requested host track. */
 export const CRUNCHYROLL_HOST_CAPTION_SETTLE_MS = 800;
@@ -71,6 +73,9 @@ type CheckedResponse = {
 
 let state: Harvest | null = null;
 let skipRequestedFor: string | null = null;
+let skipAttempt = 0;
+let skipRetryMedia: string | null = null;
+let skipRetryAt = 0;
 let sessionGeneration = 0;
 let hostCaptionGeneration = 0;
 let hostCaptionQueue: Promise<void> = Promise.resolve();
@@ -148,7 +153,10 @@ function revokeNow(blobUrl?: string): void {
 function clearHarvest(dropTitles: boolean): void {
   const had = Boolean(state) || publishedKey !== '';
   sessionGeneration += 1;
+  skipAttempt += 1;
   skipRequestedFor = null;
+  skipRetryMedia = null;
+  skipRetryAt = 0;
   bifInflight = null;
   pendingBif = null;
   revokeNow(state?.bifBlobUrl);
@@ -347,18 +355,73 @@ export async function loadCrunchyrollUrl(
   }
 }
 
+function noteSkipFailure(mediaId: string, generation: number, attempt: number): void {
+  if (generation !== sessionGeneration || attempt !== skipAttempt) return;
+  if (skipRequestedFor === mediaId) skipRequestedFor = null;
+  skipRetryMedia = mediaId;
+  skipRetryAt = Date.now() + CRUNCHYROLL_SKIP_RETRY_MS;
+}
+
+/**
+ * A matching document with no usable windows is complete: chapters may be empty.
+ * A transport failure or a body that does not parse is not, but the next probe
+ * waits out the retry interval instead of requesting on every snapshot read.
+ * A completion from an older session does not clear the marker now in flight.
+ */
+function acceptSkipDocument(
+  finalUrl: string,
+  text: string,
+  mediaId: string,
+  generation: number,
+  attempt: number,
+  route: string
+): boolean {
+  const ref = crunchyrollMetadataRef(finalUrl);
+  if (!ref || ref.kind !== 'skip' || ref.mediaId !== mediaId) return false;
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > MAX_CAPTION_BYTES) return false;
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return false;
+  let data: unknown;
+  try {
+    data = JSON.parse(trimmed);
+  } catch {
+    return false;
+  }
+  if (parseCrunchyrollSkipEvents(data, mediaId) === null) return false;
+  if (generation !== sessionGeneration || attempt !== skipAttempt) return false;
+  if (!pageMatches(mediaId) || crunchyrollPageRoute() !== route) return false;
+  harvestCrunchyrollData(finalUrl, data);
+  return true;
+}
+
 function requestSkip(mediaId: string): void {
-  if (skipRequestedFor === mediaId || !pageMatches(mediaId)) return;
-  skipRequestedFor = mediaId;
+  if (!pageMatches(mediaId) || skipRequestedFor === mediaId) return;
+  if (skipRetryMedia === mediaId && Date.now() < skipRetryAt) return;
   const generation = sessionGeneration;
+  const attempt = ++skipAttempt;
   const route = crunchyrollPageRoute();
+  skipRequestedFor = mediaId;
   const url = `https://static.crunchyroll.com/skip-events/production/${mediaId}.json`;
   void loadCrunchyrollUrl(url, CRUNCHYROLL_SKIP_TIMEOUT_MS, (finalUrl) => {
     const ref = crunchyrollMetadataRef(finalUrl);
     return ref?.kind === 'skip' && ref.mediaId === mediaId;
   }, 'text', MAX_CAPTION_BYTES).then((loaded) => {
-    if (!loaded?.text || generation !== sessionGeneration || !pageMatches(mediaId) || crunchyrollPageRoute() !== route) return;
-    harvestCrunchyrollBody(loaded.finalUrl, loaded.text);
+    if (generation !== sessionGeneration || attempt !== skipAttempt) return;
+    const applied = Boolean(
+      loaded?.text
+      && pageMatches(mediaId)
+      && crunchyrollPageRoute() === route
+      && acceptSkipDocument(loaded.finalUrl, loaded.text, mediaId, generation, attempt, route)
+    );
+    if (generation !== sessionGeneration || attempt !== skipAttempt) return;
+    if (applied) {
+      if (skipRetryMedia === mediaId) {
+        skipRetryMedia = null;
+        skipRetryAt = 0;
+      }
+      return;
+    }
+    noteSkipFailure(mediaId, generation, attempt);
   });
 }
 

@@ -67,6 +67,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
   private bif: DisneyBifSet | null = null;
   private bifFailed = false;
   private bifLoad: Promise<void> | null = null;
+  private bifLoadUrl = '';
   private bifSource = '';
   private previewBlob: string | null = null;
   private hostLift: { mediaId: string; route: string; trackId: string } | null = null;
@@ -158,7 +159,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
       this.bifSource = blobUrl;
     }
     if (this.bif || this.bifFailed) return;
-    if (this.bifLoad) return this.bifLoad;
+    if (this.bifLoad && this.bifLoadUrl === blobUrl) return this.bifLoad;
     const generation = this.loadGeneration;
     const mediaId = this.snapshot?.mediaId;
     const route = this.route;
@@ -179,8 +180,11 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
       this.bifSource = blobUrl;
     })();
     this.bifLoad = load;
+    this.bifLoadUrl = blobUrl;
     void load.finally(() => {
-      if (this.bifLoad === load) this.bifLoad = null;
+      if (this.bifLoad !== load) return;
+      this.bifLoad = null;
+      this.bifLoadUrl = '';
     });
     return load;
   }
@@ -355,6 +359,7 @@ export class CrunchyrollAdapter implements MediaFeaturesAdapter {
     this.bif = null;
     this.bifFailed = false;
     this.bifLoad = null;
+    this.bifLoadUrl = '';
     this.bifSource = '';
     this.hostOffTarget = hostOffTarget;
     if (!options?.preserveHostLift) {
