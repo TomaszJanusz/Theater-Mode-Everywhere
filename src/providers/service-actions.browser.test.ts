@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { chromium, type Browser, type Page } from 'playwright';
@@ -125,6 +125,39 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
         return {labels:first.map(a=>a.label),success,clicks,relabelStale,partStale,closing,closingStale,off};
       })()`);
       assert.deepEqual(result, { labels:['不跳过'],success:true,clicks:1,relabelStale:false,partStale:false,closing:[],closingStale:false,off:[] });
+    } finally { await page.close(); }
+  });
+
+  it('keeps Bilibili confirmations actionable inside the real toast wrapper hidden by theater layout', async () => {
+    const page = await fixture('https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
+      <div class="bpx-player-toast-wrap" style="display:none"><div class="bpx-player-toast-auto">
+        <div class="bpx-player-toast-row bpx-player-toast-unfold"><div class="bpx-player-toast-item">
+          <span class="bpx-player-toast-confirm">不跳过</span></div></div></div></div></div>`);
+    try {
+      await page.addStyleTag({ content: readFileSync('src/providers/bilibili/presentation.css', 'utf8') });
+      const result = await page.evaluate(`(() => {
+        const source=TeActions.createServiceActions();
+        const button=document.querySelector('.bpx-player-toast-confirm');
+        const row=button.closest('.bpx-player-toast-row');
+        const wrap=button.closest('.bpx-player-toast-wrap');
+        let clicks=0; button.addEventListener('click',()=>clicks++);
+        const nativeHidden=source.read();
+        document.documentElement.classList.add('theater-everywhere-html-active');
+        const first=source.read()[0]; const activated=source.activate(first.id);
+        const style=getComputedStyle(wrap); const presentation={display:style.display,visibility:style.visibility,opacity:style.opacity};
+        const rejected=[];
+        const check=(mutate,restore)=>{mutate();rejected.push(source.read().length===0 && !source.activate(first.id));restore();};
+        check(()=>button.style.display='none',()=>button.style.display='');
+        check(()=>row.style.display='none',()=>row.style.display='');
+        check(()=>row.hidden=true,()=>row.hidden=false);
+        check(()=>wrap.setAttribute('aria-hidden','true'),()=>wrap.removeAttribute('aria-hidden'));
+        check(()=>row.classList.remove('bpx-player-toast-unfold'),()=>row.classList.add('bpx-player-toast-unfold'));
+        check(()=>document.documentElement.setAttribute('data-te-bilibili-integration-off',''),()=>document.documentElement.removeAttribute('data-te-bilibili-integration-off'));
+        document.documentElement.classList.remove('theater-everywhere-html-active');
+        return {nativeHidden,label:first.label,activated,clicks,presentation,rejected,exited:source.read()};
+      })()`);
+      assert.deepEqual(result, { nativeHidden: [], label: '不跳过', activated: true, clicks: 1,
+        presentation: { display: 'block', visibility: 'hidden', opacity: '0' }, rejected: [true,true,true,true,true,true], exited: [] });
     } finally { await page.close(); }
   });
 

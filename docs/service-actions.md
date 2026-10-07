@@ -35,6 +35,12 @@ close icons, closing rows and persistent toolbar navigation are excluded.
 Changing the native label invalidates an old action. The route includes `p`
 so switching video parts also invalidates it.
 
+On the live player, theater entry makes Bilibili set `display:none` on
+`.bpx-player-toast-wrap` even while its unfolded confirmations remain active.
+Provider presentation keeps that wrapper `display:block` with visibility,
+opacity and pointer events suppressed. Rows and buttons still undergo their
+normal hidden/disabled/lifecycle checks, and the override ends on theater exit.
+
 The toast markup and click handlers were checked against the official
 [player widget](https://s1.hdslb.com/bfs/static/player/main/widgets/npd.911.a6141530.js)
 and [bangumi helper](https://s1.hdslb.com/bfs/static/player/main/widgets/npd.bangumi-helper.0a32a4c2.js).
@@ -78,9 +84,15 @@ source replacement, toast lifecycle, skip-window boundaries, episode mismatch,
 provider flags and CTA disposal. The installed Chromium extension fixture in
 `src/providers/bilibili-intl/runtime.browser.test.ts` exercises the imported
 intro window through the actual content-world CTA and checks pause preservation.
-These fixtures do not establish behavior in a live logged-in ad session.
+Live page checks and before/after captures are recorded in
+[service-actions-live.md](service-actions-live.md). The live Bilibili.com check
+uses its native “do not skip” confirmation; a logged-in first-watch “still skip”
+confirmation remains covered by the fixture rather than a live session.
 
 ## Screenshots
+
+Live screenshots are linked from [the live verification report](service-actions-live.md).
+The captures below are the original deterministic fixtures.
 
 Captured from the installed Chromium extension with deterministic page/player
 fixtures and a synthetic video. These show the actual extension UI, not live

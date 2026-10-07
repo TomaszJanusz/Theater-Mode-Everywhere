@@ -1,0 +1,9 @@
+/* Bilibili hides this wrapper after theater's viewport layout change, while
+ * unfolded toast rows and their confirmation handlers remain live. Keep the
+ * wrapper measurable for CTA discovery and suppress its native rendering. */
+html.theater-everywhere-html-active :is(.bpx-player-container, .bilibili-player, #bilibiliPlayer) .bpx-player-toast-wrap {
+  display: block !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
