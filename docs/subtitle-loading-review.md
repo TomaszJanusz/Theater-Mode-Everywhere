@@ -21,9 +21,13 @@ Controller regressions cover manual activation, toggling, saved-language restora
 
 The screenshots show the production player on a deterministic local canvas video fixture, with mocked extension settings and controlled network responses. They are not captures from a signed-in streaming service.
 
-Local validation: `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles` and all 50 controller/caption browser regressions passed. Chromium smoke with `THEATER_SMOKE_SHORTCUTS_ONLY=1` passed, including installed-extension startup, video switching, shortcut management, fullscreen/help, blacklist and iframe behavior.
+Local validation: `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles` and all 50 controller/caption browser regressions passed. Full `xvfb-run --auto-servernum pnpm smoke:chromium` passed, including installed-extension startup, video switching, pinned controls, caption menus, shortcut management, fullscreen/help, blacklist and iframe behavior.
 
-Two full-suite checks timed out locally: Netflix document-start session discovery in `src/ui/netflix-runtime.browser.test.ts:476`, and full Chromium smoke waiting for controls to detach after Escape in `scripts/smoke.ts:717`. Both failures were reproduced on the unchanged `main` at `3eb6747`; the full suite and unrestricted smoke are not reported as passing.
+The full test run timed out in Netflix document-start session discovery in `src/ui/netflix-runtime.browser.test.ts:476`. That failure was reproduced on unchanged `main` at `3eb6747`; the full local test suite is not reported as passing.
+
+The optional local Firefox smoke did not pass its caption-menu Escape/focus assertion. CI treats Firefox smoke as diagnostic-only because unsigned MV3 sideload is blocked in Playwright.
+
+The full Chromium smoke also exposed a fixture problem reproduced on that same `main`: its cursor stayed over Speed while switching from VOD to live. Hiding Speed moved CC under the cursor and opened captions on hover, so Escape correctly closed that menu instead of leaving theater mode. The smoke now moves the cursor onto the picture before restoring live playback and checks that no menu is open before testing Escape. The settings-icon geometry check also tolerates differences below half a CSS pixel instead of failing on browser subpixel rounding. Shortcut appearance checks bring the options tab to the foreground so its CSS transitions can finish.
 
 Reproduce them with:
 

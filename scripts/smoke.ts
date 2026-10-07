@@ -330,7 +330,9 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await gear.press('Enter');
   await menu.waitFor({ state: 'visible' });
   const openGearIcon = await gear.locator('svg').boundingBox();
-  if (JSON.stringify(openGearIcon) !== JSON.stringify(closedGearIcon)) {
+  // Layout animations can leave subpixel rounding differences in the bounds.
+  if (!closedGearIcon || !openGearIcon
+      || (['x', 'y', 'width', 'height'] as const).some(key => Math.abs(openGearIcon[key] - closedGearIcon[key]) >= 0.5)) {
     fail(`Opening settings moved its icon: ${JSON.stringify({ closedGearIcon, openGearIcon })}`);
   }
   await page.mouse.move(640, 300);
@@ -691,6 +693,9 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   const rateAfter = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.playbackRate);
   if (rateBefore === rateAfter) fail('Primary speed control stopped working for VOD.');
   await page.locator('.speed-btn').click();
+  // Returning to live hides Speed and moves CC into its place. Keep the cursor
+  // over the picture so that relayout cannot open captions and consume Escape.
+  await page.mouse.move(640, 300);
   await page.locator('video#player').evaluate(async (video: HTMLVideoElement & { _smokeStream?: MediaProvider | null }) => {
     video.removeAttribute('src');
     video.srcObject = video._smokeStream ?? null;
@@ -713,6 +718,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     await other.play();
   });
   await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('#other-player')!.readyState >= 2);
+  await page.locator('.theater-menu.is-open').waitFor({ state: 'hidden' });
   await page.keyboard.press('Escape');
   await controls.waitFor({ state: 'detached' });
   await page.locator('video#player').click();
@@ -870,6 +876,8 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
   };
   try {
     await options.goto(new URL('options/options.html', worker.url()).href);
+    // The second tab starts in front; visual transitions need an active page.
+    await options.bringToFront();
     await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
     // Legacy/synced duplicates must be visibly marked, including while focused.
     const previousShortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
