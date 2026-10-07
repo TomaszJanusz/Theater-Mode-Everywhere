@@ -130,10 +130,10 @@ function playNextHosts(doc: Document): PlayNextHost[] {
     }
   };
   for (const selector of CONTROL_ROOTS) {
-    const root = doc.querySelector(selector);
-    if (!root) continue;
-    visit(root, 0);
-    if (root instanceof HTMLElement && root.shadowRoot) visit(root.shadowRoot, 1);
+    for (const root of doc.querySelectorAll(selector)) {
+      visit(root, 0);
+      if (root instanceof HTMLElement && root.shadowRoot) visit(root.shadowRoot, 1);
+    }
   }
   return found;
 }

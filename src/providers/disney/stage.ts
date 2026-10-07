@@ -80,6 +80,10 @@ export const disneyTheaterStage = {
     if (!isDisneyHost(hostname)) return;
     ensureDisneyCaptions();
   },
+  onStructuralMutation() {
+    if (!document.documentElement.classList.contains(DISNEY_THEATER_STAGE_CLASS)) return;
+    ensureDisneyCaptions();
+  },
   unmount() {
     unmountDisneyTheaterStage();
   }

@@ -827,6 +827,21 @@ describe('playlist navigation DOM', () => {
           const ready = directions();
           api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
           const clicked = window.__playNextClicks;
+          const emptyOverlay = document.createElement('main-app-controls-overlay');
+          emptyOverlay.attachShadow({ mode: 'open' });
+          const laterOverlayHost = document.createElement('main-app-controls-overlay');
+          const laterPlayNext = document.createElement('play-next');
+          const laterButton = document.createElement('button');
+          laterButton.className = 'play-next control';
+          laterButton.addEventListener('click', () => { window.__laterClicks = (window.__laterClicks || 0) + 1; });
+          laterPlayNext.attachShadow({ mode: 'open' }).append(laterButton);
+          laterOverlayHost.attachShadow({ mode: 'open' }).append(laterPlayNext);
+          document.body.replaceChildren(emptyOverlay, laterOverlayHost);
+          window.__laterClicks = 0;
+          const laterOverlay = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const laterClicks = window.__laterClicks;
+          const fromElement = api.findPlaylistActions(laterOverlayHost).map((action) => action.direction);
           const upNextClicks = window.__upNextClicks;
           mount({ frameDisplay: 'none' });
           const faded = directions();
@@ -888,10 +903,13 @@ describe('playlist navigation DOM', () => {
           history.pushState({}, '', '/pl-pl/play/11111111-1111-4111-8111-111111111111');
           const before = window.__playNextClicks;
           stale.activate();
-          return { ready, clicked, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, flagged, browse, paired, narrowClicks, wideClicks, held, heldActivated, staleClicks: window.__playNextClicks - before };
+          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, flagged, browse, paired, narrowClicks, wideClicks, held, heldActivated, staleClicks: window.__playNextClicks - before };
         })()`) as {
           ready: string[];
           clicked: number;
+          laterOverlay: string[];
+          laterClicks: number;
+          fromElement: string[];
           upNextClicks: number;
           faded: string[];
           fadedClicks: number;
@@ -909,6 +927,9 @@ describe('playlist navigation DOM', () => {
         };
         assert.deepEqual(report.ready, ['next']);
         assert.equal(report.clicked, 1);
+        assert.deepEqual(report.laterOverlay, ['next']);
+        assert.equal(report.laterClicks, 1);
+        assert.deepEqual(report.fromElement, ['next']);
         assert.equal(report.upNextClicks, 0);
         assert.deepEqual(report.faded, ['next']);
         assert.equal(report.fadedClicks, 2);

@@ -91,7 +91,7 @@ function pageHref(root: ParentNode): string {
 }
 
 function viewOf(root: ParentNode): Window | null {
-  if (root instanceof Document) return root.defaultView;
-  if (root instanceof ShadowRoot) return root.host.ownerDocument.defaultView;
-  return null;
+  const node = root as Node;
+  const doc = node.nodeType === Node.DOCUMENT_NODE ? node as Document : node.ownerDocument;
+  return doc?.defaultView ?? null;
 }
