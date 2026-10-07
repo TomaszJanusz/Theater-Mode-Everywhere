@@ -161,6 +161,36 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
+  it('excludes Bilibili login, purchases and unknown confirmations alongside a live skip action', async () => {
+    const page = await fixture('https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
+      <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-confirm">立即登录</span></div>
+      <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-confirm">成为大会员</span></div>
+      <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-text">跳过片头</span><span class="bpx-player-toast-confirm">立即开启</span></div>
+      <div class="bpx-player-toast-row bpx-player-toast-unfold"><span id="skip" class="bpx-player-toast-confirm">不跳过</span></div></div>`);
+    try {
+      const result = await page.evaluate(`(() => {
+        const source=TeActions.createServiceActions();
+        const button=document.querySelector('#skip');
+        let clicks=0;
+        document.querySelectorAll('.bpx-player-toast-confirm').forEach(b=>b.addEventListener('click',()=>clicks++));
+        const labels=[];
+        for(const label of ['不跳过','仍然跳过','不跳過','仍然跳過']) {
+          button.textContent=label;
+          const actions=source.read();
+          if(actions.length!==1 || !source.activate(actions[0].id)) throw Error('skip action unavailable');
+          labels.push(actions[0].label);
+        }
+        const old=source.read()[0].id;
+        button.textContent='立即登录';
+        const reusedAsLogin={actions:source.read(),activated:source.activate(old)};
+        button.textContent='尚未支持的操作';
+        return {labels,clicks,reusedAsLogin,unknown:source.read()};
+      })()`);
+      assert.deepEqual(result, { labels:['不跳过','仍然跳过','不跳過','仍然跳過'], clicks:4,
+        reusedAsLogin:{actions:[],activated:false}, unknown:[] });
+    } finally { await page.close(); }
+  });
+
   it('shows Bilibili.tv intro/outro only within current episode windows and next only near the end', async () => {
     const page = await fixture('https://www.bilibili.tv/en/play/1053337/11371243', '<div class="bstar-player"><video src="episode1.mp4"></video><div class="player-mobile-control-btn-next-episode"><div class="ip-next-episode"></div><div class="ip-tooltip">Next episode</div></div></div>');
     try {

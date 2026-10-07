@@ -34,6 +34,23 @@ layout box while suppressing its rendering. The regression test uses the real
 wrapper/row/item structure and the provider stylesheet, checks activation,
 and still rejects hidden controls, closed rows and a disabled integration.
 
+## Bilibili.com login prompt exclusion
+
+The first capture also exposed a native login confirmation as a CTA. The
+provider now accepts only the known skip/cancel-skip labels; login, membership
+and unknown confirmations remain outside the extension's action surface.
+The native site continues to own these flows.
+
+Rechecked on the same real episode with a fresh signed-out profile and the
+updated installed extension: at paused time 0 s, Bilibili had two unfolded
+native rows, “登录免费享高清画质 / 立即登录” and “即将跳过片头 / 不跳过”.
+The extension exposed only “不跳过”. Clicking it removed the skip CTA; playback
+resumed briefly inside the opening at 2.100092 s and was paused again. No
+extension CTA remained. Login was not clicked or tested.
+The browser regression also checks membership and unknown labels, both Chinese
+script variants of skip confirmations, and an old skip action whose native
+control has been repurposed for login.
+
 ## Before and after screenshots
 
 These captures show real service pages with the installed extension.
@@ -42,6 +59,7 @@ These captures show real service pages with the installed extension.
 | --- | --- | --- |
 | YouTube ad skip | [Ad and Skip CTA](screenshots/service-actions/live/youtube-skip-before.png) | [Content resumed](screenshots/service-actions/live/youtube-skip-after.png) |
 | Bilibili.com native confirmation | [不跳过 CTA](screenshots/service-actions/live/bilibili-native-confirm-before.png) | [Native toast dismissed](screenshots/service-actions/live/bilibili-native-confirm-after.png) |
+| Bilibili.com with login excluded | [Only 不跳过](screenshots/service-actions/live/bilibili-login-filter-before.png) | [No remaining CTA](screenshots/service-actions/live/bilibili-login-filter-after.png) |
 | Bilibili.tv intro | [100 s and Skip intro](screenshots/service-actions/live/bilibili-tv-intro-before.png) | [227 s, still paused](screenshots/service-actions/live/bilibili-tv-intro-after.png) |
 | Bilibili.tv outro | [1450 s and Skip outro](screenshots/service-actions/live/bilibili-tv-outro-before.png) | [1504 s, still paused](screenshots/service-actions/live/bilibili-tv-outro-after.png) |
 

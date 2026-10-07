@@ -26,11 +26,13 @@ on 7 October 2026. Asset hashes can change.
 
 ## Bilibili.com
 
-The source forwards confirmations inside live native toast rows:
+The source forwards known skip confirmations inside live native toast rows:
 `.bpx-player-toast-row.bpx-player-toast-unfold .bpx-player-toast-confirm`.
-These include the host's skip, cancel-skip and resume actions. The action uses
-exactly the native label and click handler, so native confirmation toasts for
-other player features can appear too. Notifications without confirmations,
+Only “不跳过” / “不跳過” (do not skip) and “仍然跳过” / “仍然跳過”
+(still skip) are accepted. The action uses exactly the native label and click
+handler. Login, membership purchases and all unrecognized confirmations are
+excluded, including when an existing skip control is reused for such a prompt.
+Notifications without confirmations,
 close icons, closing rows and persistent toolbar navigation are excluded.
 Changing the native label invalidates an old action. The route includes `p`
 so switching video parts also invalidates it.

@@ -6,8 +6,9 @@ import {
   usableServiceControl, type NativeServiceActionHooks
 } from '../native-service-actions';
 
-/** Native toast confirmations include skip/cancel-skip and resume actions. */
+/** Toast confirmations also serve login and purchases; expose only known skip actions. */
 const CONFIRM = '.bpx-player-toast-row.bpx-player-toast-unfold .bpx-player-toast-confirm';
+const SKIP_CONFIRMATIONS = new Set(['不跳过', '仍然跳过', '不跳過', '仍然跳過']);
 
 export function createBilibiliServiceActions(hooks: NativeServiceActionHooks = {}) {
   const doc = hooks.document ?? document;
@@ -22,7 +23,7 @@ export function createBilibiliServiceActions(hooks: NativeServiceActionHooks = {
     return Array.from(root.querySelectorAll<HTMLElement>(CONFIRM)).flatMap(element => {
       if (!usableServiceControl(element)) return [];
       const label = serviceControlLabel(element);
-      return label ? [{ id: nativeServiceActionId('bilibili:confirm', route, root, element, hooks.element), label, element }] : [];
+      return SKIP_CONFIRMATIONS.has(label) ? [{ id: nativeServiceActionId('bilibili:confirm', route, root, element, hooks.element), label, element }] : [];
     });
   });
 }
