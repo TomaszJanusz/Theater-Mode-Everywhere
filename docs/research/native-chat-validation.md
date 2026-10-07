@@ -12,7 +12,7 @@ Panel zajmuje prawą część okna od 900 px szerokości; poniżej jest pod wide
 
 ## Sposób weryfikacji rzeczywistych serwisów
 
-Zrzuty w tym katalogu wykonano 8 października 2026 w współdzielonej przeglądarce T3, na prawdziwych stronach, bez zalogowanego konta. Do strony wstrzyknięto zbudowane `content.js`, `mainWorld.js` i `content.css`, aby zweryfikować kod TME w aktualnym DOM serwisów. To diagnostyka runtime na stronie; nie zastępuje testu zainstalowanego rozszerzenia, jego uprawnień i izolowanego świata.
+Zrzuty w tym katalogu wykonano 8 października 2026 w współdzielonej przeglądarce T3, na prawdziwej stronie Twitch, bez zalogowanego konta. Do strony wstrzyknięto zbudowane `content.js`, `mainWorld.js` i `content.css`, aby zweryfikować kod TME w aktualnym DOM serwisów. To diagnostyka runtime na stronie; nie zastępuje testu zainstalowanego rozszerzenia, jego uprawnień i izolowanego świata.
 
 ### Twitch
 
@@ -31,16 +31,6 @@ Materiał: [ohnePixel live](https://www.twitch.tv/ohnepixel). Natywny czat zawie
 ![Twitch: natywne ustawienia czatu](screenshots/twitch-native-settings.png)
 
 ![Twitch: czat pod wideo w wąskim oknie](screenshots/twitch-chat-bottom.png)
-
-### YouTube
-
-Materiał: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQekNa9g). **Już przed uruchomieniem TME** YouTube zwracał błąd playera i komunikat w ramce czatu „Wygląda na to, że używasz nieaktualnej wersji przeglądarki”. Przeglądarka przedstawiała się jako HeadlessChrome 154. Ten zrzut dokumentuje ograniczenie środowiska; nie potwierdza działania wiadomości ani logowania.
-
-Aktualny DOM zawierał `ytd-live-chat-frame#chat` i `iframe#chatframe` bez atrybutu `src`; dokument ramki miał adres `live_chat` z continuation. Ten wariant wymaga detekcji komponentu powiązanego z bieżącym `video-id`, zamiast polegania wyłącznie na `iframe.src`.
-
-Po wstrzyknięciu kodu potwierdzono geometrię istniejącego panelu oraz zachowanie tożsamości kontenera, rodzica, ramki i jej dokumentu, bez dodatkowego `load` i bez dodania `src`. Diagnostyka nie doprowadziła do pełnego działającego UI TME na tej stronie; pojawiła się też reklama przed materiałem. Przycisk czatu i funkcje wiadomości na prawdziwym YouTube nie są zatem oznaczone jako zweryfikowane. Testy przycisku, zachowania draftu i skrótów przeprowadzono na fixtures.
-
-![YouTube: błąd serwisu przed uruchomieniem TME](screenshots/youtube-native-browser-error.png)
 
 ## Co pozostaje do kwalifikacji przed wydaniem
 
