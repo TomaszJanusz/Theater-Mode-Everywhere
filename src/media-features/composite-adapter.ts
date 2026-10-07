@@ -1,6 +1,7 @@
 import { allSettledResults, fulfilledValues } from '../core/result';
 import type {
   CaptionActivationResult,
+  CaptionCueRefresh,
   CaptionTrack,
   Chapter,
   HostCaptionLayout,
@@ -29,6 +30,8 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
 
 export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   private adapters: MediaFeaturesAdapter[];
+  private captionAdapter: MediaFeaturesAdapter | null = null;
+  private captionTrackId: string | null = null;
 
   constructor(adapters: MediaFeaturesAdapter[], private hostCaptions: HostCaptionLayoutSource | null = null) {
     this.adapters = adapters;
@@ -90,6 +93,8 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
    * Passing `null` deactivates every adapter; failures are isolated so another adapter can respond.
    */
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    this.captionAdapter = null;
+    this.captionTrackId = null;
     if (id === null) {
       await allSettledResults(this.adapters.map((adapter) => adapter.activateCaptionTrack(null)));
       return { status: 'off', delivery: 'none', cues: [] };
@@ -105,6 +110,8 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
       try {
         if (tracks.some((track) => track.id === id)) {
           result = await adapter.activateCaptionTrack(id);
+          this.captionAdapter = result.status === 'active' ? adapter : null;
+          this.captionTrackId = result.status === 'active' ? id : null;
         } else {
           await adapter.activateCaptionTrack(null);
         }
@@ -115,17 +122,9 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return result;
   }
 
-  async refreshCaptionCues(id: string, time: number): Promise<CaptionActivationResult | null> {
-    for (const adapter of this.adapters) {
-      if (!adapter.refreshCaptionCues) continue;
-      try {
-        const tracks = await adapter.listCaptionTracks();
-        if (tracks.some((track) => track.id === id)) return adapter.refreshCaptionCues(id, time);
-      } catch {
-        // Keep looking; a provider refresh failure must not break the composite adapter.
-      }
-    }
-    return null;
+  prepareCaptionCueRefresh(id: string, time: number): CaptionCueRefresh | null {
+    if (id !== this.captionTrackId) return null;
+    return this.captionAdapter?.prepareCaptionCueRefresh?.(id, time) ?? null;
   }
 
   /** Returns the first nonempty chapter list, continuing past adapters that fail. */
@@ -213,11 +212,15 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   }
 
   invalidate(): void {
+    this.captionAdapter = null;
+    this.captionTrackId = null;
     this.hostCaptions?.reset?.();
     this.adapters.forEach((adapter) => adapter.invalidate?.());
   }
 
   dispose(): void {
+    this.captionAdapter = null;
+    this.captionTrackId = null;
     this.hostCaptions?.reset?.();
     this.adapters.forEach((adapter) => adapter.dispose());
   }

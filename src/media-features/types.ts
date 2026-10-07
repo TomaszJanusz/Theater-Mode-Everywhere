@@ -17,6 +17,9 @@ export type CaptionActivationResult =
   | { status: 'off'; delivery: 'none'; cues: [] }
   | { status: 'failed'; delivery: 'none'; cues: [] };
 
+/** A lazy request: the controller starts it only after publishing loading UI. */
+export type CaptionCueRefresh = () => Promise<CaptionActivationResult>;
+
 export type CaptionTrackSource =
   | 'native-text-track'
   | 'youtube'
@@ -104,7 +107,8 @@ export interface MediaFeaturesAdapter {
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
-  refreshCaptionCues?(id: string, time: number): Promise<CaptionActivationResult | null>;
+  /** Return null synchronously when the current cue window needs no work. */
+  prepareCaptionCueRefresh?(id: string, time: number): CaptionCueRefresh | null;
   getChapters?(): Promise<Chapter[]>;
   /** Select a provider's chapters independently of the preferred timeline list. */
   getChaptersForSource?(source: string): Promise<Chapter[]>;

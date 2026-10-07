@@ -14,6 +14,10 @@ Persistent previous/next controls belong to playlist navigation, not contextual 
 
 Shared caption rendering and dock calculations stay in `media-features/` and `ui/toolbar.ts`. Native caption providers expose `HostCaptionLayout` geometry and an optional motion target through the composite adapter. Their observers own host mutations, cached measurements, and cleanup. The controller connects and disconnects subscriptions when rebinding or disposing; callbacks from an old adapter cannot affect the current player.
 
+`MediaFeaturesController.runCaptionOperation` owns the complete caption request lifecycle. Menu selection, keyboard toggling, saved-language restoration, retries and cue-window downloads all pass through it. It publishes the loading HUD and CC busy state before calling the provider, applies the result once, and reports success or failure. Cue-window success dismisses the spinner without repeating the “Subtitles on” notification. Invalidation, media changes, adapter replacement and disposal dismiss pending loading UI and reject stale results and queued selections. Callers cannot opt out of loading feedback.
+
+Providers that load captions in windows implement `prepareCaptionCueRefresh(id, time)`. It must synchronously return `null` when no download is needed, or return a lazy request that does no work until the controller calls it. The composite delegates to the adapter that activated the current track, so polling never rediscovers tracks or initiates an invisible download. Providers keep their network fallback, parsing and cache policies inside that request. Track discovery and timeline metadata do not activate a caption track and do not show caption loading UI.
+
 Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, and Crunchyroll native caption measurement lives in `providers/crunchyroll/host-surface.ts`. Native presentation remains available when a provider's data integration is disabled; the integration flag still controls its data adapter and host interactions.
 
 ## Playback and presentation

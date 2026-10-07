@@ -1038,6 +1038,23 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   color: var(--accent-color, #6366f1) !important;
 }
 
+/* Animate the icon, whose currentColor stroke follows the shared load state. */
+.theater-control-btn.cc-btn.loading svg {
+  animation: theater-caption-loading-pulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes theater-caption-loading-pulse {
+  0%, 100% { color: #fff; }
+  50% { color: var(--accent-color, #6366f1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-control-btn.cc-btn.loading svg {
+    animation: none !important;
+    color: var(--accent-color, #6366f1) !important;
+  }
+}
+
 /* Labeled secondary actions; primary playback controls stay on the bar. */
 .theater-settings-container {
   display: flex !important;
