@@ -22,6 +22,7 @@ import { requestMediaProbe, requestPageFetch } from './probe';
 import type {
   CaptionActivationResult,
   CaptionCue,
+  CaptionCueRefresh,
   CaptionTrack,
   MediaCapabilities,
   MediaFeaturesAdapter,
@@ -390,8 +391,22 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
     return this.loadCaptionWindow(id, activeVideoTime(), true);
   }
 
-  refreshCaptionCues(id: string, time: number): Promise<CaptionActivationResult> {
-    return this.loadCaptionWindow(id, time);
+  /**
+   * Prepares a window download only when the active HLS caption track has
+   * uncached segments near the playhead. Preparation performs no network work.
+   * @param id Identifier of the active caption track.
+   * @param time Display media time in seconds; non-finite values require no request.
+   * @returns A lazy window loader, or null for inactive tracks and already loaded windows.
+   */
+  prepareCaptionCueRefresh(id: string, time: number): CaptionCueRefresh | null {
+    const active = this.activeCaption;
+    if (!active || active.trackId !== id || !Number.isFinite(time)) return null;
+    if (time >= active.loadedStart && time <= active.loadedEnd - CAPTION_RELOAD_AHEAD_SECONDS) return null;
+    // Near the end of a title, the last window may already contain every segment.
+    const missing = captionSegmentsForWindow(active.segments, time)
+      .some(segment => !active.cuesBySegment.has(segment.url));
+    if (!missing) return null;
+    return () => this.loadCaptionWindow(id, time);
   }
 
   async getPreviewSource(): Promise<PreviewSource> {

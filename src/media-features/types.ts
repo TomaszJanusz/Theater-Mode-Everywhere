@@ -17,6 +17,13 @@ export type CaptionActivationResult =
   | { status: 'off'; delivery: 'none'; cues: [] }
   | { status: 'failed'; delivery: 'none'; cues: [] };
 
+/**
+ * A deferred cue-window download invoked by the controller after it publishes
+ * loading feedback. Creating the callback must not start network work.
+ * @returns The provider's activation result for the requested caption window.
+ */
+export type CaptionCueRefresh = () => Promise<CaptionActivationResult>;
+
 export type CaptionTrackSource =
   | 'native-text-track'
   | 'youtube'
@@ -104,7 +111,13 @@ export interface MediaFeaturesAdapter {
   probe(): Promise<MediaCapabilities>;
   listCaptionTracks(): Promise<CaptionTrack[]>;
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
-  refreshCaptionCues?(id: string, time: number): Promise<CaptionActivationResult | null>;
+  /**
+   * Determines whether the active track needs another cue window, without fetching it.
+   * @param id Identifier of the active caption track.
+   * @param time Display media time in seconds.
+   * @returns A lazy download callback, or null synchronously when no work is needed.
+   */
+  prepareCaptionCueRefresh?(id: string, time: number): CaptionCueRefresh | null;
   getChapters?(): Promise<Chapter[]>;
   /** Select a provider's chapters independently of the preferred timeline list. */
   getChaptersForSource?(source: string): Promise<Chapter[]>;
