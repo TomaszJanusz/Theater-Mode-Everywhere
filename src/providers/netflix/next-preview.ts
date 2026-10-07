@@ -52,10 +52,16 @@ export function syncNetflixNextPreview(videoId: string | null, currentVideo: unk
   publishHiddenJson(NETFLIX_NEXT_PREVIEW_ID, payload);
 }
 
-/** True when this watch id still has a next episode, even if the still is missing. */
+/**
+ * True when this watch id still has a next episode, even if the still is missing.
+ * A hover-card snapshot from an older publisher has no `available` flag; the title
+ * for this watch id is the same fact.
+ */
 export function readNetflixNextAvailable(doc: Document, videoId: string): boolean {
   const data = readNextPreviewPayload(doc);
-  return data?.videoId === videoId && data.available === true;
+  if (!data || data.videoId !== videoId || data.available === false) return false;
+  if (data.available === true) return true;
+  return typeof data.title === 'string' && data.title.trim().length > 0;
 }
 
 /** Isolated-world read of the main-world snapshot. A mismatched watch id is ignored. */

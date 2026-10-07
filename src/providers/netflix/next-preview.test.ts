@@ -60,6 +60,17 @@ describe('Netflix next-episode availability', () => {
     assert.equal(readNetflixNextAvailable(bare, '70248290'), true);
     assert.equal(readNetflixNextPreview(bare, '70248290'), null);
     assert.equal(readNetflixNextAvailable(snapshot({ videoId: '80057281', available: true }), '70248290'), false);
+    const card = snapshot({
+      videoId: '70248290',
+      title: 'House of Cards · Rozdział 6',
+      imageUrl: 'https://occ.example/next.webp'
+    });
+    assert.equal(readNetflixNextAvailable(card, '70248290'), true);
+    assert.equal(readNetflixNextAvailable(snapshot({
+      videoId: '70248290',
+      available: false,
+      title: 'House of Cards · Rozdział 6'
+    }), '70248290'), false);
   });
 
   it('plays the next episode only for the bound session that still has one', () => {
