@@ -914,6 +914,15 @@ describe('playlist navigation DOM', () => {
           api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
           const narrowClicks = window.__narrowClicks;
           const wideClicks = window.__wideClicks;
+          wideHost.primaryAction = () => { window.__narrowRemainPrimary = (window.__narrowRemainPrimary || 0) + 1; };
+          api.installDisneyPlayNext();
+          wide.remove();
+          api.installDisneyPlayNext();
+          const narrowRemainsPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          const narrowRemains = directions();
+          window.__narrowRemainPrimary = 0;
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const narrowRemainsPrimary = window.__narrowRemainPrimary;
           document.body.replaceChildren();
           document.documentElement.setAttribute('data-te-disney-play-next', '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
           let heldClicks = 0;
@@ -931,7 +940,7 @@ describe('playlist navigation DOM', () => {
           history.pushState({}, '', '/pl-pl/play/11111111-1111-4111-8111-111111111111');
           const before = window.__playNextClicks;
           stale.activate();
-          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, disabledPublished, hiddenPublished, ariaPublished, livePublished, heldPublished, primaryAfterHide, blockedPublished, primaryWhileDisabled, flagged, browse, paired, narrowClicks, wideClicks, held, heldActivated, staleClicks: window.__playNextClicks - before };
+          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, disabledPublished, hiddenPublished, ariaPublished, livePublished, heldPublished, primaryAfterHide, blockedPublished, primaryWhileDisabled, flagged, browse, paired, narrowClicks, wideClicks, narrowRemainsPublished, narrowRemains, narrowRemainsPrimary, held, heldActivated, staleClicks: window.__playNextClicks - before };
         })()`) as {
           ready: string[];
           clicked: number;
@@ -957,6 +966,9 @@ describe('playlist navigation DOM', () => {
           paired: string[];
           narrowClicks: number;
           wideClicks: number;
+          narrowRemainsPublished: string | null;
+          narrowRemains: string[];
+          narrowRemainsPrimary: number;
           held: string[];
           heldActivated: number;
           staleClicks: number;
@@ -985,6 +997,9 @@ describe('playlist navigation DOM', () => {
         assert.deepEqual(report.paired, ['next']);
         assert.equal(report.narrowClicks, 0);
         assert.equal(report.wideClicks, 1);
+        assert.equal(report.narrowRemainsPublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.deepEqual(report.narrowRemains, ['next']);
+        assert.equal(report.narrowRemainsPrimary, 1);
         assert.deepEqual(report.held, ['next']);
         assert.equal(report.heldActivated, 1);
         assert.equal(report.staleClicks, 0);

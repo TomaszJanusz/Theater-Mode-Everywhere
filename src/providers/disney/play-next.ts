@@ -93,7 +93,8 @@ function syncDisneyPlayNext(): void {
     doc.documentElement.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
     return;
   }
-  if (hosts.length || remembered?.playId !== playId) {
+  // The narrow copy stays mounted with display:none after the wide bar leaves.
+  if (hosts.some((host) => !collapsedLayout(host)) || remembered?.playId !== playId) {
     remembered = null;
     doc.documentElement.removeAttribute(DISNEY_PLAY_NEXT_ATTR);
     return;
