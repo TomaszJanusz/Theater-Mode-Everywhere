@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "처음으로"
   },
+  "skipIntro": {
+    "message": "오프닝 건너뛰기"
+  },
+  "skipOutro": {
+    "message": "엔딩 건너뛰기"
+  },
   "nextVideo": {
     "message": "다음"
   },

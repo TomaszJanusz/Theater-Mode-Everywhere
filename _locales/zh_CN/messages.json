@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "回到开头"
   },
+  "skipIntro": {
+    "message": "跳过片头"
+  },
+  "skipOutro": {
+    "message": "跳过片尾"
+  },
   "nextVideo": {
     "message": "下一个"
   },

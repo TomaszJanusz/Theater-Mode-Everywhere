@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "العودة إلى البداية"
   },
+  "skipIntro": {
+    "message": "تخطي المقدمة"
+  },
+  "skipOutro": {
+    "message": "تخطي شارة النهاية"
+  },
   "nextVideo": {
     "message": "التالي"
   },

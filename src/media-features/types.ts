@@ -106,6 +106,8 @@ export interface MediaFeaturesAdapter {
   activateCaptionTrack(id: string | null): Promise<CaptionActivationResult>;
   refreshCaptionCues?(id: string, time: number): Promise<CaptionActivationResult | null>;
   getChapters?(): Promise<Chapter[]>;
+  /** Select a provider's chapters independently of the preferred timeline list. */
+  getChaptersForSource?(source: string): Promise<Chapter[]>;
   getHeatmap?(): TimelineHeatmap | null;
   getPreviewSource?(): Promise<PreviewSource>;
   getPreviewFrame?(time: number, duration: number): PreviewFrame | null;

@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "На початок"
   },
+  "skipIntro": {
+    "message": "Пропустити заставку"
+  },
+  "skipOutro": {
+    "message": "Пропустити титри"
+  },
   "nextVideo": {
     "message": "Наступне"
   },

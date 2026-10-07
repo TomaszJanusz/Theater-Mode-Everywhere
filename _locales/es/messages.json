@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "Volver al inicio"
   },
+  "skipIntro": {
+    "message": "Saltar introducción"
+  },
+  "skipOutro": {
+    "message": "Saltar créditos finales"
+  },
   "nextVideo": {
     "message": "Siguiente"
   },

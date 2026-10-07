@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "最初に戻る"
   },
+  "skipIntro": {
+    "message": "オープニングをスキップ"
+  },
+  "skipOutro": {
+    "message": "エンディングをスキップ"
+  },
   "nextVideo": {
     "message": "次へ"
   },

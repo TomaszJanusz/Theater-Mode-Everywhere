@@ -1541,7 +1541,13 @@ export function createControls(ctx: PlayerChromeContext) {
     document.addEventListener('pointerdown', showToolbar, { passive: true });
     // All player chrome, including the home pill, uses the same focus handler.
     controlsScope.listen(wrapper.getRootNode(), 'focusin', showToolbar);
-    const serviceActions = createServiceActions();
+    const serviceActions = createServiceActions({
+      element: video.element,
+      video,
+      chapters: () => mediaFeatures.chapterContext(),
+      label: t,
+      seek: time => seekHostTime(video, time)
+    });
     if (serviceActions) {
       mountServiceActionCta(controlsScope, {
         source: serviceActions,

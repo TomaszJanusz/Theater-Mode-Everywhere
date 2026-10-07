@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "Back to start"
   },
+  "skipIntro": {
+    "message": "Skip intro"
+  },
+  "skipOutro": {
+    "message": "Skip outro"
+  },
   "nextVideo": {
     "message": "Next"
   },
