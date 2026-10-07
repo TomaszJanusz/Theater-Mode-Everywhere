@@ -138,6 +138,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
 
 /* Custom player controls container card */
 .theater-controls-wrapper {
+  --theater-bar-pad: 10px;
   --theater-menu-notch: 48px;
   --theater-menu-notch-depth: 64px;
   --theater-menu-notch-overlap: calc(var(--theater-menu-notch-depth) - 32px);
@@ -156,7 +157,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   background: transparent !important;
   border: none !important;
   border-radius: 12px !important;
-  padding: 10px 16px !important;
+  padding: var(--theater-bar-pad) 16px !important;
   overflow: visible !important;
   contain: none !important;
   clip-path: none !important;
@@ -493,13 +494,16 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   width: var(--theater-menu-notch) !important;
   min-width: var(--theater-menu-notch) !important;
   max-width: var(--theater-menu-notch) !important;
-  height: var(--theater-menu-notch-depth) !important;
-  min-height: var(--theater-menu-notch-depth) !important;
+  height: calc(var(--theater-menu-notch-depth) + var(--theater-bar-pad)) !important;
+  min-height: calc(var(--theater-menu-notch-depth) + var(--theater-bar-pad)) !important;
   align-self: flex-end !important;
   align-items: center !important;
-  /* Removing the top stroke adds 1px to the content box. Compensate so the
-     icon keeps the same center as a closed 32px button. */
+  /* The extra pad hangs below the 32px slot, onto the bar's bottom border.
+     Padding keeps the icon centered in that slot. The top stroke is gone, so
+     the +1px restores the closed button's content box. */
+  margin-bottom: calc(-1 * var(--theater-bar-pad)) !important;
   padding-top: calc(var(--theater-menu-notch-overlap) + 1px) !important;
+  padding-bottom: var(--theater-bar-pad) !important;
   background: rgb(20, 20, 20) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   border-top-width: 0 !important;
