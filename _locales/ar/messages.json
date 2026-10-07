@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "إخفاء عناصر التحكم تلقائيًا"
   },
+  "showNativeChat": {
+    "message": "إظهار الدردشة"
+  },
+  "hideNativeChat": {
+    "message": "إخفاء الدردشة"
+  },
+  "nativeChatWidth": {
+    "message": "عرض الدردشة"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "ملء الشاشة مع الدردشة غير متاح. يظل وضع المسرح مفعّلاً."
+  },
   "playerSettingsLabel": {
     "message": "إعدادات المشغل"
   },

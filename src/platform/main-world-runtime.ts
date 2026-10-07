@@ -8,6 +8,7 @@ import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
+import { isChatDocument, isNativeChatEvent } from '../chat';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -57,6 +58,7 @@ import {
 } from '../providers/netflix/main';
 
 export function installMainWorldRuntime(): void {
+  if (isChatDocument(window.location.href)) return;
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
 
   function requestUrl(input: RequestInfo | URL): string {
@@ -310,6 +312,7 @@ export function installMainWorldRuntime(): void {
   // Installed at document_start, before page handlers. The content world remains the command owner.
   const claimedEntryKeys = new Set<string>();
   function captureEntryShortcut(event: KeyboardEvent): void {
+    if (isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     const identity = event.code || event.key;
     if (event.type !== 'keydown') {
       if (!claimedEntryKeys.has(identity)) return;
@@ -382,6 +385,7 @@ export function installMainWorldRuntime(): void {
   }
 
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
+    if (isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     const marked = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     // The content world owns help focus and native activation of its close button.

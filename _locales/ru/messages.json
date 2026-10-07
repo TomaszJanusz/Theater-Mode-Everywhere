@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "Элементы управления скрываются автоматически"
   },
+  "showNativeChat": {
+    "message": "Показать чат"
+  },
+  "hideNativeChat": {
+    "message": "Скрыть чат"
+  },
+  "nativeChatWidth": {
+    "message": "Ширина чата"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Полноэкранный режим с чатом недоступен. Режим кино остаётся активным."
+  },
   "playerSettingsLabel": {
     "message": "Настройки проигрывателя"
   },

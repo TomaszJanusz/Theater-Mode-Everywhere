@@ -1,0 +1,120 @@
+/* Native chat remains in its original light-DOM tree. Only its outer layout
+ * and the ancestors needed to escape site containment are changed. */
+html.theater-everywhere-html-active [data-theater-chat-ancestor] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: none !important;
+  filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+  container-type: normal !important;
+  backdrop-filter: none !important;
+  overflow: visible !important;
+  clip-path: none !important;
+  clip: auto !important;
+  mask: none !important;
+  will-change: auto !important;
+}
+
+html.theater-everywhere-html-active [data-theater-chat] {
+  display: block !important;
+  position: fixed !important;
+  inset: auto !important;
+  top: var(--theater-chat-top, 0px) !important;
+  left: var(--theater-chat-left, 100vw) !important;
+  width: var(--theater-chat-width, 360px) !important;
+  min-width: var(--theater-chat-width, 360px) !important;
+  max-width: var(--theater-chat-width, 360px) !important;
+  height: var(--theater-chat-height, 100vh) !important;
+  min-height: 0 !important;
+  max-height: var(--theater-chat-height, 100vh) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  translate: none !important;
+  opacity: 1 !important;
+  transition: none !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  cursor: auto;
+  z-index: 2147483647 !important;
+}
+
+html.theater-everywhere-html-active [data-theater-chat][data-theater-chat-hidden] {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Native children sometimes override inherited visibility. Inert alone
+ * prevents activation, but must also be accompanied by actual visual hiding. */
+html.theater-everywhere-html-active [data-theater-chat-hidden] * {
+  visibility: hidden !important;
+}
+
+html.theater-everywhere-html-active [data-theater-chat] iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+html.theater-everywhere-twitch-stage [data-theater-chat] .chat-shell {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+}
+
+/* Twitch keeps its expanded column in zero-width wrappers and translates it
+ * left by its native width. Normalize only the chain enclosing chat-shell;
+ * message, composer and menu layouts remain owned by Twitch. */
+html.theater-everywhere-twitch-stage [data-theater-chat] :has(.chat-shell) {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  transform: none !important;
+  translate: none !important;
+  transition: none !important;
+}
+
+html.theater-everywhere-twitch-stage [data-theater-chat] .stream-chat {
+  height: 100% !important;
+}
+
+/* Service-owned dialogs and popovers remain above the theater backdrop.
+ * Their native positions and event handlers are preserved. */
+html.theater-everywhere-twitch-stage .ReactModalPortal,
+html.theater-everywhere-twitch-stage .ReactModal__Overlay,
+html.theater-everywhere-twitch-stage .tw-dialog-layer,
+html.theater-everywhere-html-active[data-theater-chat-active] ytd-popup-container {
+  z-index: 2147483647 !important;
+  cursor: auto;
+}
+
+/* Width controls are TME chrome, rendered in its existing shadow root. */
+.theater-chat-width-row {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+  color: inherit !important;
+}
+
+.theater-chat-width-slider {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  accent-color: var(--accent-color, #6366f1) !important;
+}
+
+.theater-chat-width-row[hidden],
+.theater-chat-toggle[hidden] {
+  display: none !important;
+}

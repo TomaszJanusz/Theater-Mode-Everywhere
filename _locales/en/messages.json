@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "Controls auto-hide"
   },
+  "showNativeChat": {
+    "message": "Show chat"
+  },
+  "hideNativeChat": {
+    "message": "Hide chat"
+  },
+  "nativeChatWidth": {
+    "message": "Chat width"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Fullscreen with chat is unavailable. Theater mode remains active."
+  },
   "playerSettingsLabel": {
     "message": "Player settings"
   },

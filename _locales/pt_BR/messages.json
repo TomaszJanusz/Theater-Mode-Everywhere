@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "Os controles se ocultam automaticamente"
   },
+  "showNativeChat": {
+    "message": "Mostrar chat"
+  },
+  "hideNativeChat": {
+    "message": "Ocultar chat"
+  },
+  "nativeChatWidth": {
+    "message": "Largura do chat"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "A tela cheia com chat não está disponível. O modo cinema permanece ativo."
+  },
   "playerSettingsLabel": {
     "message": "Configurações do player"
   },

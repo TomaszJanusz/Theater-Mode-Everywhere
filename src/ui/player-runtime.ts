@@ -117,6 +117,8 @@ import {
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
+import { isChatDocument, isNativeChatEvent } from '../chat';
+import { CHAT_PREFERENCES_STORAGE_KEY, hydrateChatPreferences, startNativeChatSession, stopNativeChatSession } from './chat';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -422,12 +424,12 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   position: 'fixed',
   top: '0',
   left: '0',
-  width: '100vw',
-  height: '100vh',
-  'max-width': '100vw',
-  'max-height': '100vh',
-  'min-width': '100vw',
-  'min-height': '100vh',
+  width: 'var(--theater-video-width, 100vw)',
+  height: 'var(--theater-video-height, 100vh)',
+  'max-width': 'var(--theater-video-width, 100vw)',
+  'max-height': 'var(--theater-video-height, 100vh)',
+  'min-width': 'var(--theater-video-width, 100vw)',
+  'min-height': 'var(--theater-video-height, 100vh)',
   'z-index': '2147483647',
   opacity: '1',
   'pointer-events': 'auto',
@@ -830,6 +832,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'blacklist',
       'shortcuts',
       'volumeBoostEnabled',
+      CHAT_PREFERENCES_STORAGE_KEY,
       KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
       ...mediaProviderFlagStorageKeys(),
       ACCENT_COLOR_STORAGE_KEY,
@@ -840,6 +843,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       CAPTION_PREF_STORAGE_KEY
     ]);
     const blacklist = (data.blacklist || []) as string[];
+    hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
     refs.volumeBoostEnabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
     applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
@@ -1048,7 +1052,7 @@ function initialize(): void {
   // 1. Keyboard Listener (T and Escape)
   const claimedKeyReleases = new Set<string>();
   const handleKeydown = (event: KeyboardEvent): boolean => {
-    if (event.isComposing) return false;
+    if (event.isComposing || isChatDocument(window.location.href) || isNativeChatEvent(event)) return false;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
       hideHelpOverlay(false);
       if (event.key === ' ' || event.key === 'Enter') {
@@ -1258,6 +1262,7 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
   session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
   session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
+    if (isChatDocument(window.location.href)) return;
     if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
     try {
       const data = JSON.parse((event as CustomEvent<string>).detail);
@@ -1275,7 +1280,7 @@ function initialize(): void {
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
-    if (event.isComposing) return;
+    if (event.isComposing || isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     const key = event.code || event.key;
     if (claimedKeyReleases.has(key)) {
       if (event.type === 'keyup') claimedKeyReleases.delete(key);
@@ -1831,6 +1836,11 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   markTheaterVideo(element);
   mountTheaterStage();
   mountProviderStages(window.location.hostname, element);
+  startNativeChatSession(() => {
+    if (session.element) applyTheaterElementInlineStyles(session.element);
+    updateCaptionDock();
+    window.dispatchEvent(new CustomEvent('theater-everywhere-chat-layout'));
+  });
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
@@ -1925,6 +1935,7 @@ function exitTheaterMode(
   const closedSessionId = session.id;
   try {
   hideHelpOverlay();
+  stopNativeChatSession();
 
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(console.error);
@@ -2039,6 +2050,7 @@ function refreshHostPlayerLayout(): void {
 }
 
 export function bootstrapPlayerRuntime(): void {
+  if (isChatDocument(window.location.href)) return;
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.action === 'statusChanged') {

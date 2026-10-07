@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "컨트롤 자동 숨김"
   },
+  "showNativeChat": {
+    "message": "채팅 표시"
+  },
+  "hideNativeChat": {
+    "message": "채팅 숨기기"
+  },
+  "nativeChatWidth": {
+    "message": "채팅 너비"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "채팅이 포함된 전체 화면을 사용할 수 없습니다. 극장 모드는 계속 활성화됩니다."
+  },
   "playerSettingsLabel": {
     "message": "플레이어 설정"
   },

@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "Kontrolki chowają się automatycznie"
   },
+  "showNativeChat": {
+    "message": "Pokaż czat"
+  },
+  "hideNativeChat": {
+    "message": "Schowaj czat"
+  },
+  "nativeChatWidth": {
+    "message": "Szerokość czatu"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Pełny ekran z czatem jest niedostępny. Tryb kinowy pozostaje aktywny."
+  },
   "playerSettingsLabel": {
     "message": "Ustawienia odtwarzacza"
   },

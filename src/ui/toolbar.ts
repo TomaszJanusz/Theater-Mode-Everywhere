@@ -87,7 +87,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
   function chromeLayoutRect(el: HTMLElement): DockRect {
     const rect = el.getBoundingClientRect();
     const bottomOffset = Number.parseFloat(getComputedStyle(el).bottom) || 0;
-    const bottom = window.innerHeight - bottomOffset;
+    const bottom = (ctx.session.element?.getBoundingClientRect().bottom ?? window.innerHeight) - bottomOffset;
     return {
       left: rect.left,
       right: rect.right,
@@ -184,8 +184,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const bottom = computeCaptionDockBottom({
       captionSize,
       obstacles,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
+      viewportWidth: ctx.session.element.getBoundingClientRect().width || window.innerWidth,
+      viewportHeight: ctx.session.element.getBoundingClientRect().height || window.innerHeight,
       ...(restBottom !== undefined ? { restBottom } : {})
     });
     const lifted = restBottom !== undefined ? bottom > restBottom : bottom > CAPTION_DOCK_REST_BOTTOM;

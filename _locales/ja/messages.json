@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "操作バーを自動的に非表示にします"
   },
+  "showNativeChat": {
+    "message": "チャットを表示"
+  },
+  "hideNativeChat": {
+    "message": "チャットを非表示"
+  },
+  "nativeChatWidth": {
+    "message": "チャットの幅"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "チャット付きの全画面表示は利用できません。シアターモードは有効なままです。"
+  },
   "playerSettingsLabel": {
     "message": "プレーヤー設定"
   },

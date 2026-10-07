@@ -1,0 +1,19 @@
+export type {
+  ChatDock,
+  ChatKind,
+  ChatPreference,
+  ChatProvider,
+  ChatState,
+  ChatSurface
+} from './types';
+export type { ChatControllerOptions } from './controller';
+export { ChatController } from './controller';
+export { detectChatSurface } from './detect';
+export { isNativeChatEvent } from './events';
+export { isChatDocument } from './url';
+export {
+  CHAT_DOCK_BREAKPOINT_PX,
+  DEFAULT_CHAT_WIDTH_PX,
+  MAX_CHAT_WIDTH_PX,
+  MIN_CHAT_WIDTH_PX
+} from './geometry';

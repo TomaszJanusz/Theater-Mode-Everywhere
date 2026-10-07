@@ -10,6 +10,10 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   shortcutSaveErrorDescription: "Your shortcuts were not changed. Please try again.",
 
   playerSettingsLabel: "Player settings",
+  showNativeChat: "Show chat",
+  hideNativeChat: "Hide chat",
+  nativeChatWidth: "Chat width",
+  nativeChatFullscreenUnavailable: "Fullscreen with chat is unavailable. Theater mode remains active.",
   extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",
   pictureAlignLabel: 'Layout',

@@ -608,6 +608,18 @@
   "controlsUnpinnedHud": {
     "message": "Steuerelemente werden automatisch ausgeblendet"
   },
+  "showNativeChat": {
+    "message": "Chat anzeigen"
+  },
+  "hideNativeChat": {
+    "message": "Chat ausblenden"
+  },
+  "nativeChatWidth": {
+    "message": "Chatbreite"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Vollbild mit Chat ist nicht verfügbar. Der Kinomodus bleibt aktiv."
+  },
   "playerSettingsLabel": {
     "message": "Player-Einstellungen"
   },

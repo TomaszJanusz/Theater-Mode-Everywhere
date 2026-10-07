@@ -94,3 +94,7 @@ Każdy wynik porównywać z natywną stroną bez TME na tym samym koncie i mater
 2. Wspólny ChatSurface i kontroler sesji, jeden prostokąt wideo, toggle i preferencje; integracja w TME-7 oraz TME-8.
 3. Kwalifikacja live/Premiere i osobno VOD/replay, macierz regresji i fallback. Włączenie za flagami dopiero po spełnieniu kryteriów.
 4. Istniejące czaty na stronach zewnętrznych, następnie opcjonalne nowe oficjalne embedy live. Jeśli osadzanie ogranicza funkcje, dokumentować różnicę i oferować natywną stronę/pop-out.
+
+## Stan realizacji
+
+Pierwsza implementacja znajduje się na [draft PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25). [Dokument walidacji](native-chat-validation.md) rozdziela zrealizowany wspólny kontroler i adaptery, testy automatyczne, rzeczywiste zrzuty oraz pozostałą kwalifikację przed wydaniem. Proponowany wyżej docelowy zakres jest szerszy niż obecny draft.
