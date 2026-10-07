@@ -767,4 +767,119 @@ describe('playlist navigation DOM', () => {
       throw error;
     }
   });
+
+  it('uses the Disney control-bar next episode and leaves the end card alone', async () => {
+    let executable = '';
+    try {
+      const { chromium } = await import('playwright');
+      executable = chromium.executablePath();
+      if (!existsSync(executable)) return;
+      const compiled = playlistBrowserBundle();
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage();
+        await page.route('https://www.disneyplus.com/**', (route) => {
+          if (route.request().resourceType() !== 'document') return route.abort();
+          return route.fulfill({
+            status: 200,
+            contentType: 'text/html',
+            body: '<!doctype html><html><body></body></html>'
+          });
+        });
+        await page.goto('https://www.disneyplus.com/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
+        const report = await page.evaluate(`(() => {
+          const api = window.__playlist;
+          const play = '/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
+          const mount = (options) => {
+            document.documentElement.removeAttribute('data-te-disney-integration-off');
+            history.pushState({}, '', options.href || play);
+            document.body.replaceChildren();
+            const player = document.createElement('disney-web-player');
+            const controls = document.createElement('main-app-controls-overlay');
+            const host = document.createElement('play-next');
+            host.hidden = options.hidden === true;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'play-next control';
+            button.disabled = options.disabled === true;
+            if (options.ariaDisabled) button.setAttribute('aria-disabled', 'true');
+            button.addEventListener('click', () => { window.__playNextClicks = (window.__playNextClicks || 0) + 1; });
+            host.attachShadow({ mode: 'open' }).append(button);
+            const shadow = controls.attachShadow({ mode: 'open' });
+            const frame = document.createElement('div');
+            if (options.frameDisplay) frame.style.display = options.frameDisplay;
+            frame.append(host);
+            shadow.append(frame);
+            const upNext = document.createElement('up-next-lite-v1');
+            const upNextButton = document.createElement('button');
+            upNextButton.className = 'up-next-lite-v1-overlay__button';
+            upNextButton.textContent = 'Następny odcinek za 4';
+            upNextButton.addEventListener('click', () => { window.__upNextClicks = (window.__upNextClicks || 0) + 1; });
+            upNext.attachShadow({ mode: 'open' }).append(upNextButton);
+            document.body.append(player, controls, upNext);
+            return button;
+          };
+          const directions = () => api.findPlaylistActions(document).map((action) => action.direction);
+          window.__playNextClicks = 0;
+          window.__upNextClicks = 0;
+          mount({});
+          const ready = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const clicked = window.__playNextClicks;
+          const upNextClicks = window.__upNextClicks;
+          mount({ frameDisplay: 'none' });
+          const faded = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const fadedClicks = window.__playNextClicks;
+          mount({ hidden: true });
+          const hidden = directions();
+          mount({ disabled: true });
+          const disabled = directions();
+          mount({ ariaDisabled: true });
+          const ariaDisabled = directions();
+          mount({});
+          document.documentElement.setAttribute('data-te-disney-integration-off', '');
+          const flagged = directions();
+          document.documentElement.removeAttribute('data-te-disney-integration-off');
+          mount({ href: '/pl-pl/browse/home' });
+          const browse = directions();
+          mount({});
+          const stale = api.findPlaylistActions(document).find((action) => action.direction === 'next');
+          history.pushState({}, '', '/pl-pl/play/11111111-1111-4111-8111-111111111111');
+          const before = window.__playNextClicks;
+          stale.activate();
+          return { ready, clicked, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, flagged, browse, staleClicks: window.__playNextClicks - before };
+        })()`) as {
+          ready: string[];
+          clicked: number;
+          upNextClicks: number;
+          faded: string[];
+          fadedClicks: number;
+          hidden: string[];
+          disabled: string[];
+          ariaDisabled: string[];
+          flagged: string[];
+          browse: string[];
+          staleClicks: number;
+        };
+        assert.deepEqual(report.ready, ['next']);
+        assert.equal(report.clicked, 1);
+        assert.equal(report.upNextClicks, 0);
+        assert.deepEqual(report.faded, ['next']);
+        assert.equal(report.fadedClicks, 2);
+        assert.deepEqual(report.hidden, []);
+        assert.deepEqual(report.disabled, []);
+        assert.deepEqual(report.ariaDisabled, []);
+        assert.deepEqual(report.flagged, []);
+        assert.deepEqual(report.browse, []);
+        assert.equal(report.staleClicks, 0);
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      if (!executable) return;
+      throw error;
+    }
+  });
 });

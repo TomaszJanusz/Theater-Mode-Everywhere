@@ -22,9 +22,8 @@ type LiveAction = ServiceAction & { element: HTMLElement };
  * skip; display:none and the hidden attribute are the rejection signals.
  * Skip intro, recap, and credits share one button whose label is the kind.
  * The inner button dispatches a composed `activate` event, so a click is enough.
- * The transport control `play-next` sits with play and pause. Disney shows it
- * for a sequential episode and hides the host otherwise. Its label is the
- * button's accessible name.
+ * The control-bar next episode stays on the player bar. These actions are only
+ * the end-of-title surfaces Disney draws over the video.
  */
 export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {}): ServiceActionSource {
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('disney'));
@@ -42,15 +41,6 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
     const skipLabel = skip ? controlLabel(skip) : '';
     if (skip && skipLabel && usable(skip)) {
       found.push({ id: `disney:skip|${playId}|${skipLabel}|${elementToken(skip)}`, label: skipLabel, element: skip });
-    }
-    const transport = playNextButton(doc);
-    const transportLabel = transport ? controlLabel(transport) : '';
-    if (transport && transportLabel && usable(transport)) {
-      found.push({
-        id: `disney:play-next|${playId}|${elementToken(transport)}`,
-        label: transportLabel,
-        element: transport
-      });
     }
     const next = upNextButton(doc);
     const nextLabel = next ? controlLabel(next) : '';
@@ -109,43 +99,6 @@ function skipButton(doc: Document): HTMLElement | null {
   const host = overlay?.shadowRoot?.querySelector('skip-button');
   const button = host?.shadowRoot?.querySelector('button');
   return button instanceof HTMLElement ? button : null;
-}
-
-function playNextButton(doc: Document): HTMLElement | null {
-  for (const host of deepElements(doc, 'play-next')) {
-    if (host.hidden) continue;
-    const button = host.shadowRoot?.querySelector('button.play-next');
-    if (button instanceof HTMLElement) return button;
-  }
-  return null;
-}
-
-/** The transport button is inside the controls overlay's open shadow. */
-function deepElements(doc: Document, tag: string): HTMLElement[] {
-  const roots: ParentNode[] = [];
-  for (const selector of [
-    'main-app-controls-overlay',
-    'controls-overlay',
-    'vibe-full-bleed-controls-overlay',
-    'disney-web-player-ui',
-    'disney-web-player'
-  ]) {
-    const el = doc.querySelector(selector);
-    if (el) roots.push(el);
-  }
-  const found: HTMLElement[] = [];
-  const visit = (node: ParentNode, depth: number) => {
-    if (depth > 8) return;
-    for (const el of node.querySelectorAll('*')) {
-      if (el.tagName === tag.toUpperCase() && el instanceof HTMLElement) found.push(el);
-      if (el.shadowRoot) visit(el.shadowRoot, depth + 1);
-    }
-  };
-  for (const root of roots) {
-    visit(root, 0);
-    if (root instanceof HTMLElement && root.shadowRoot) visit(root.shadowRoot, 1);
-  }
-  return found;
 }
 
 function upNextButton(doc: Document): HTMLElement | null {

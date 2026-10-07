@@ -129,21 +129,6 @@ describe('disney and crunchyroll service actions', () => {
         fadedNext.attachShadow({ mode: 'open' }).append(fadedButton);
         document.body.append(fadedNext);
         const endDespiteFadedNext = create().read();
-        const controls = document.createElement('main-app-controls-overlay');
-        const playNext = document.createElement('play-next');
-        const playNextButton = document.createElement('button');
-        playNextButton.type = 'button';
-        playNextButton.className = 'play-next control';
-        playNextButton.setAttribute('aria-label', 'ODTWÓRZ NASTĘPNY');
-        playNextButton.addEventListener('click', () => { window.__playNextClicks = (window.__playNextClicks || 0) + 1; });
-        playNext.attachShadow({ mode: 'open' }).append(playNextButton);
-        controls.attachShadow({ mode: 'open' }).append(playNext);
-        document.body.append(controls);
-        const withTransport = create().read();
-        const transportId = withTransport.find(action => action.id.startsWith('disney:play-next')).id;
-        const transportActivated = create().activate(transportId);
-        playNext.hidden = true;
-        const transportHidden = create().read();
         document.documentElement.setAttribute('data-te-disney-integration-off', '');
         const flagged = create().read();
         document.documentElement.removeAttribute('data-te-disney-integration-off');
@@ -156,10 +141,8 @@ describe('disney and crunchyroll service actions', () => {
           href: () => play
         }).read();
         return {
-          absent, skip, activated, stale, hidden, next, nextHidden, endActions, endDespiteFadedNext,
-          withTransport, transportActivated, transportHidden, tileClicks, closeClicks, flagged, browse, foreign,
-          skipClicks: window.__skipClicks || 0,
-          playNextClicks: window.__playNextClicks || 0
+          absent, skip, activated, stale, hidden, next, nextHidden, endActions, endDespiteFadedNext, tileClicks, closeClicks, flagged, browse, foreign,
+          skipClicks: window.__skipClicks || 0
         };
       })()`) as {
         absent: Array<{ id: string; label: string }>;
@@ -171,16 +154,12 @@ describe('disney and crunchyroll service actions', () => {
         nextHidden: Array<{ label: string }>;
         endActions: Array<{ id: string; label: string; progress?: number }>;
         endDespiteFadedNext: Array<{ label: string }>;
-        withTransport: Array<{ id: string; label: string }>;
-        transportActivated: boolean;
-        transportHidden: Array<{ label: string }>;
         tileClicks: number;
         closeClicks: number;
         flagged: unknown[];
         browse: unknown[];
         foreign: unknown[];
         skipClicks: number;
-        playNextClicks: number;
       };
       assert.deepEqual(report.absent, []);
       assert.equal(report.skip.length, 1);
@@ -195,11 +174,6 @@ describe('disney and crunchyroll service actions', () => {
       assert.deepEqual(report.nextHidden, []);
       assert.deepEqual(report.endActions.map(action => action.label), ['Następny odcinek za 3', 'Zamknij']);
       assert.deepEqual(report.endDespiteFadedNext.map(action => action.label), ['Następny odcinek za 3', 'Zamknij']);
-      assert.deepEqual(report.withTransport.map(action => action.label), ['ODTWÓRZ NASTĘPNY', 'Następny odcinek za 3', 'Zamknij']);
-      assert.match(report.withTransport[0].id, /^disney:play-next\|0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8\|e\d+$/);
-      assert.equal(report.transportActivated, true);
-      assert.equal(report.playNextClicks, 1);
-      assert.deepEqual(report.transportHidden.map(action => action.label), ['Następny odcinek za 3', 'Zamknij']);
       assert.equal(report.tileClicks, 1);
       assert.equal(report.closeClicks, 1);
       assert.deepEqual(report.flagged, []);
