@@ -314,7 +314,7 @@ const MAX_SKIP_SECONDS = 24 * 60 * 60;
  * HTML duration can sit a fraction under `floor(ms / 1000)`. One second covers that
  * without keeping a window that runs well past the known video.
  */
-const SKIP_DURATION_SLACK_SECONDS = 1;
+export const BILIBILI_INTL_SKIP_DURATION_SLACK_SECONDS = 1;
 
 function skipSeconds(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_SKIP_MS) return null;
@@ -348,7 +348,7 @@ export function parseBilibiliIntlSkipChapters(payload: unknown, duration?: numbe
     const start = skipSeconds(skip[startKey]);
     const end = skipSeconds(skip[endKey]);
     if (start === null || end === null || end <= start) continue;
-    if (limit !== null && (start >= limit || end > limit + SKIP_DURATION_SLACK_SECONDS)) continue;
+    if (limit !== null && (start >= limit || end > limit + BILIBILI_INTL_SKIP_DURATION_SLACK_SECONDS)) continue;
     const previous = chapters[chapters.length - 1];
     if (previous && start < previous.end) continue;
     chapters.push({ start, end, title });

@@ -823,6 +823,12 @@ export class MediaFeaturesController {
     return Boolean(pageId && this.mediaId && pageId === this.mediaId);
   }
 
+  /** Only expose chapter windows belonging to the currently loaded media. */
+  chapterContext(): { mediaId: string; chapters: readonly Chapter[] } | null {
+    if (this.disposed || this.refreshInFlight || !this.mediaId || this.adapter.mediaId?.() !== this.mediaId) return null;
+    return { mediaId: this.mediaId, chapters: this.chapters };
+  }
+
   tooltipExtras(time: number): TooltipMediaExtras {
     const chapter = chapterAtTime(this.chapters, time);
     const preview = this.adapter.getPreviewFrame?.(time, this.video.duration || 0) || null;

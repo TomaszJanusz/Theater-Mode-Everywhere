@@ -137,6 +137,41 @@ function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBin
   return { controller, ccBtn };
 }
 
+describe('MediaFeaturesController chapter context', () => {
+  it('withholds previous episode windows during refresh, mismatch and disposal', async () => {
+    let mediaId = 'ogv:one';
+    let holdReload = false;
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const first = [{ start: 1, end: 5, title: 'Intro', source: 'bilibiliIntl', confidence: 'high' as const }];
+    const second = [{ ...first[0], start: 10, end: 20 }];
+    const { controller } = createController({
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => [],
+      mediaId: () => mediaId,
+      getChapters: async () => mediaId === 'ogv:one' ? first : second,
+      reload: async () => { if (holdReload) await gate; }
+    });
+    assert.equal(controller.chapterContext(), null);
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:one', chapters: first });
+    holdReload = true;
+    const pending = controller.refresh();
+    assert.equal(controller.chapterContext(), null, 'refresh must withhold even a matching old media id');
+    mediaId = 'ogv:two';
+    assert.equal(controller.chapterContext(), null);
+    release();
+    await pending;
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: second });
+    mediaId = 'ogv:three';
+    assert.equal(controller.chapterContext(), null, 'an adapter change must invalidate unrefreshed windows');
+    mediaId = 'ogv:two';
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: second });
+    controller.dispose();
+    assert.equal(controller.chapterContext(), null);
+  });
+});
+
 describe('MediaFeaturesController captions toggle', () => {
   it('waits for overlay cues before reporting on and lighting the CC icon', async () => {
     let activated = false;

@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "В начало"
   },
+  "skipIntro": {
+    "message": "Пропустить заставку"
+  },
+  "skipOutro": {
+    "message": "Пропустить титры"
+  },
   "nextVideo": {
     "message": "Следующее"
   },
