@@ -79,8 +79,8 @@ describe('native chat controller', () => {
     return page;
   }
 
-  it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async () => {
-    if (!browser) return;
+  it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`);
     try {
       const report = await page.evaluate(`(() => {
@@ -169,8 +169,8 @@ describe('native chat controller', () => {
     }
   });
 
-  it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', async () => {
-    if (!browser) return;
+  it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(TWITCH);
     try {
       const report = await page.evaluate(`(async () => {
@@ -361,8 +361,8 @@ describe('native chat controller', () => {
     }
   });
 
-  it('keeps a collapsed Twitch chat available, then honors a stored override across width clamps', async () => {
-    if (!browser) return;
+  it('keeps a collapsed Twitch chat available, then honors a stored override across width clamps', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`<div id="layout" style="width:800px"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__expanded"></div></section></div></div>`);
     try {
       const collapsed = await page.evaluate(`(() => {
@@ -394,8 +394,8 @@ describe('native chat controller', () => {
     }
   });
 
-  it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', async () => {
-    if (!browser) return;
+  it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(YOUTUBE);
     try {
       const report = await page.evaluate(`(async () => {
@@ -481,8 +481,8 @@ describe('native chat controller', () => {
     }
   });
 
-  it('docks to the bottom under 900px and finds a chat that mounts later', async () => {
-    if (!browser) return;
+  it('docks to the bottom under 900px and finds a chat that mounts later', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith('<div id="layout" style="width:800px"></div>', { width: 899, height: 700 });
     try {
       const report = await page.evaluate(`(async () => {
@@ -535,8 +535,8 @@ describe('native chat controller', () => {
     }
   });
 
-  it('adopts YouTube programmatic chat frames and rejects stale watch identities', async () => {
-    if (!browser) return;
+  it('adopts YouTube programmatic chat frames and rejects stale watch identities', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><div id="secondary">
       <ytd-live-chat-frame id="chat"><iframe id="chatframe"></iframe></ytd-live-chat-frame>
     </div></ytd-watch-flexy>`);
@@ -569,8 +569,8 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('keeps native inert state and rebinds a Twitch component inside the same column', async () => {
-    if (!browser) return;
+  it('keeps native inert state and rebinds a Twitch component inside the same column', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(TWITCH);
     try {
       const report = await page.evaluate(`(async () => {
@@ -596,8 +596,8 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('treats native chat, service portals, and chat documents as chat events and ignores the rest of the page', async () => {
-    if (!browser) return;
+  it('treats native chat, service portals, and chat documents as chat events and ignores the rest of the page', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
     const watch = await browser.newPage();
     const twitch = await browser.newPage();
     const popout = await browser.newPage();
