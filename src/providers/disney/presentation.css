@@ -22,3 +22,36 @@ html.theater-everywhere-disney-stage .DxcOverlay {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* The pinned video leaves the player at height 0, so Disney measures the cue
+ * at 0px and paints it under the picture. Keep the caption layer on top and
+ * inset it by the same dock the control bar already publishes. */
+html.theater-everywhere-disney-stage disney-web-player.theater-everywhere-parent-active {
+  z-index: 2147483646 !important;
+}
+
+html.theater-everywhere-disney-stage disney-web-player-ui {
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}
+
+html.theater-everywhere-disney-stage timed-text-override-region {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  --timed-text-override-region--inset-block-start: 0px;
+  --timed-text-override-region--inset-block-end: var(--theater-caption-bottom, 48px);
+  --timed-text-override-region--inset-block-start-controls-decayed: 0px;
+  --timed-text-override-region--inset-block-end-controls-decayed: var(--theater-caption-bottom, 48px);
+  --timed-text-override-region--inset-inline-start: 10%;
+  --timed-text-override-region--inset-inline-end: 10%;
+  --timed-text-override-region--inset-inline-start-controls-decayed: 10%;
+  --timed-text-override-region--inset-inline-end-controls-decayed: 10%;
+}
+
+html.theater-everywhere-disney-stage:has(video.controls-visible) timed-text-override-region {
+  --timed-text-override-region--inset-block-end: max(132px, var(--theater-caption-bottom, 48px));
+  --timed-text-override-region--inset-block-end-controls-decayed: max(132px, var(--theater-caption-bottom, 48px));
+}
