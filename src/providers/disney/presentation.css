@@ -35,6 +35,18 @@ html.theater-everywhere-disney-stage disney-web-player-ui {
   pointer-events: none !important;
 }
 
+/* The caption layer has to sit above the pinned video, which lifts the whole
+ * player UI with it. Disney's own title, transport, and overlays stay out of
+ * the picture. Skip and up-next remain clickable for the theater CTAs. */
+html.theater-everywhere-disney-stage disney-web-player-ui > :not(timed-text-override-region) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+html.theater-everywhere-disney-stage.theater-using-overlay-captions timed-text-override-region {
+  visibility: hidden !important;
+}
+
 html.theater-everywhere-disney-stage timed-text-override-region {
   position: fixed !important;
   inset: 0 !important;
