@@ -1,7 +1,7 @@
 import type { PlaylistAction } from '../../playlist-nav';
 import { BILIBILI_PLAYER_SELECTOR, readBilibiliControls } from './bilibili';
 import { BILIBILI_INTL_PLAYER_SELECTOR, readBilibiliIntlControls } from './bilibili-intl';
-import { readDailymotionControls } from './dailymotion';
+import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
 import { findNetflixPlaylistActions } from './netflix';
 import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
@@ -12,6 +12,7 @@ import { readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './youtube';
 export const HOST_PLAYER_SCOPE = [
   YOUTUBE_PLAYER_SELECTOR,
   VIDEOJS_PLAYER_SELECTOR,
+  DAILYMOTION_PLAYER_SELECTOR,
   BILIBILI_PLAYER_SELECTOR,
   BILIBILI_INTL_PLAYER_SELECTOR,
   TENCENT_PLAYER_SELECTOR

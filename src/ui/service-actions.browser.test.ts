@@ -115,20 +115,27 @@ describe('service action CTA', () => {
         const scope = new TeServiceActions.DisposableScope();
         window.__actions = [{id:'extras:42', label:'Zobacz dodatki', progress:0.4}, {id:'dismiss:42', label:'Zamknij'}];
         window.__activated = [];
+        window.__layout = 0;
         TeServiceActions.mountServiceActionCta(scope, {
           source:{read:()=>window.__actions, activate:id=>{window.__activated.push(id);window.__actions=window.__actions.filter(a=>a.id!==id);return true;}},
           mount:el=>document.getElementById('player').append(el), toolbarVisible:()=>false,
-          subscribeToolbar:()=>()=>{}, controlsLift:()=>0, pollMs:20
+          subscribeToolbar:()=>()=>{}, controlsLift:()=>0, pollMs:20,
+          onLayout:()=>{ window.__layout++; }
         });
         window.__genericActionScope = scope;
       })()`);
       assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Zobacz dodatki', 'Zamknij']);
+      const layoutBefore = await page.evaluate('window.__layout') as number;
       await page.getByRole('button', {name:'Zobacz dodatki'}).focus();
       await page.keyboard.press('Enter');
       assert.deepEqual(await page.evaluate('window.__activated'), ['extras:42']);
       assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Zamknij']);
+      const layoutAfterAction = await page.evaluate('window.__layout') as number;
+      assert.ok(layoutBefore >= 1 && layoutAfterAction > layoutBefore);
       await page.evaluate('window.__genericActionScope.dispose()');
       assert.equal(await page.locator('.theater-service-action-host').count(), 0);
+      const layoutAfterDispose = await page.evaluate('window.__layout') as number;
+      assert.ok(layoutAfterDispose > layoutAfterAction);
     } finally { await browser.close(); }
   });
 
@@ -162,6 +169,30 @@ describe('service action CTA', () => {
         const one = await replace('One line');
         const two = await replace('Two lines<br>Second line');
         const next = await replace('Next line');
+        const rule = document.createElement('style');
+        rule.textContent = '.player-timedtext { transition: bottom 0.18s ease !important; }';
+        document.head.append(rule);
+        const obstacle = document.createElement('div');
+        obstacle.className = 'theater-service-action-host';
+        obstacle.style.setProperty('left', '400px', 'important');
+        obstacle.style.setProperty('width', '480px', 'important');
+        obstacle.style.setProperty('max-width', 'none', 'important');
+        obstacle.style.setProperty('inset-inline-end', 'auto', 'important');
+        obstacle.style.setProperty('bottom', '0px', 'important');
+        obstacle.style.setProperty('height', '200px', 'important');
+        document.body.append(obstacle);
+        const liftedToolbar = TeServiceActions.createToolbar({
+          session:{element:video},
+          queryPlayerUi: selector => selector === '.theater-controls-wrapper' ? {_mediaFeatures:features} : null,
+          queryPlayerUiAll: selector => selector === '.theater-service-action-host' ? [obstacle] : []
+        });
+        liftedToolbar.updateCaptionDock();
+        const lifted = {
+          bottom: document.documentElement.style.getPropertyValue('--theater-caption-bottom'),
+          transition: host.style.getPropertyValue('transition'),
+          priority: host.style.getPropertyPriority('transition'),
+          computed: getComputedStyle(host).transition
+        };
         document.documentElement.setAttribute('data-te-netflix-integration-off', '');
         const flagOff = captions.read() !== null;
         const replacement = host.cloneNode(false);
@@ -175,14 +206,18 @@ describe('service action CTA', () => {
         scope.dispose(); const before=calls;
         replacement.innerHTML = '<div class="player-timedtext-text-container"><span>After exit</span></div>';
         await new Promise(resolve=>requestAnimationFrame(resolve));
-        return {one,two,next, flagOff, emptyReplacement, newRenderer:!!newRenderer, observesReplacement, before,after:calls};
-      })()`) as { one:{bottom:string;transition:string;height:number}; two:{bottom:string;transition:string;height:number}; next:{bottom:string;transition:string;height:number}; flagOff:boolean; emptyReplacement:unknown; newRenderer:boolean; observesReplacement:boolean; before:number;after:number };
+        return {one,two,next, lifted, flagOff, emptyReplacement, newRenderer:!!newRenderer, observesReplacement, before,after:calls};
+      })()`) as { one:{bottom:string;transition:string;height:number}; two:{bottom:string;transition:string;height:number}; next:{bottom:string;transition:string;height:number}; lifted:{bottom:string;transition:string;priority:string;computed:string}; flagOff:boolean; emptyReplacement:unknown; newRenderer:boolean; observesReplacement:boolean; before:number;after:number };
       assert.equal(report.one.bottom, '13px', JSON.stringify(report));
       assert.equal(report.two.bottom, '8px');
       assert.equal(report.next.bottom, report.one.bottom);
       assert.equal(report.one.transition, 'opacity 0.15s');
       assert.equal(report.two.transition, report.one.transition);
       assert.equal(report.next.transition, report.one.transition);
+      assert.ok(Number.parseFloat(report.lifted.bottom) > Number.parseFloat(report.next.bottom), JSON.stringify(report.lifted));
+      assert.equal(report.lifted.transition, 'none');
+      assert.equal(report.lifted.priority, 'important');
+      assert.equal(report.lifted.computed.includes('0.18s'), false);
       assert.ok(report.two.height > report.one.height);
       assert.equal(report.flagOff, true, 'native presentation remains available with the data integration off');
       assert.equal(report.emptyReplacement, null, 'a replacement renderer cannot reuse the previous host geometry');

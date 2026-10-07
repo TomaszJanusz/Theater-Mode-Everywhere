@@ -1560,7 +1560,8 @@ export function createControls(ctx: PlayerChromeContext) {
         controlsLift: () => {
           const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
           return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 12 : 96;
-        }
+        },
+        onLayout: updateCaptionDock
       });
     }
     showToolbar();

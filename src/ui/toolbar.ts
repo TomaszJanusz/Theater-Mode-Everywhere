@@ -30,16 +30,16 @@ function applyCaptionDockMotion(
   // A host renderer can rewrite its inline styles during cue replacement.
   const transition = motion === 'moving'
     ? 'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s'
-    : motion === 'rest' ? 'opacity 0.15s' : '';
+    : motion === 'lifted' ? 'none' : 'opacity 0.15s';
   if (modes.get(el) === motion && el.style.getPropertyValue('transition') === transition
-    && (!transition || el.style.getPropertyPriority('transition') === 'important')) return;
+    && el.style.getPropertyPriority('transition') === 'important') return;
   if (motion === 'moving') {
     el.style.setProperty(
       'transition',
       'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
       'important'
     );
-  } else if (motion === 'lifted') el.style.removeProperty('transition');
+  } else if (motion === 'lifted') el.style.setProperty('transition', 'none', 'important');
   else el.style.setProperty('transition', 'opacity 0.15s ease', 'important');
   void el.offsetWidth;
   modes.set(el, motion);

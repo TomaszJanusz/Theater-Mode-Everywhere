@@ -13,6 +13,8 @@ export type ServiceActionCtaOptions = {
   controlsLift: () => number;
   menuOpen?: () => boolean;
   pollMs?: number;
+  /** Caption dock. Called when the host appears, changes buttons, or goes away. */
+  onLayout?: () => void;
 };
 
 /** Main-world Space swallow must ignore this class or the button never activates. */
@@ -116,17 +118,30 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   };
 
   let animationFrame = 0;
+  let layoutKey = '';
+  const notifyLayout = (actions: ServiceAction[]) => {
+    const key = `${host.hidden ? 1 : 0}:${actions.map(action => action.id).join('\n')}`;
+    if (key === layoutKey) return;
+    layoutKey = key;
+    try {
+      options.onLayout?.();
+    } catch {
+      // Caption placement is independent of the action list.
+    }
+  };
   const sync = () => {
     if (scope.isDisposed) return;
     try {
       place();
       const actions = readActions(options.source);
       render(actions);
+      notifyLayout(actions);
       if (actions.some(action => action.progress !== undefined && action.progress < 1) && !animationFrame) {
         animationFrame = window.requestAnimationFrame(() => { animationFrame = 0; sync(); });
       }
     } catch {
       render([]);
+      notifyLayout([]);
     }
   };
 
@@ -136,7 +151,10 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     window.clearInterval(timer);
     window.cancelAnimationFrame(animationFrame);
     unsubscribe();
+    const occupied = buttons.size > 0;
     host.remove();
+    buttons.clear();
+    if (occupied) notifyLayout([]);
   });
   options.paint?.(host);
   options.mount(host);

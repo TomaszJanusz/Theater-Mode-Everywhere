@@ -332,7 +332,7 @@ describe('playlist navigation availability', () => {
   it('preserves the host player scope used to find controls outside a passed video', () => {
     assert.equal(
       HOST_PLAYER_SCOPE,
-      '#movie_player, .video-js, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper'
+      '#movie_player, .video-js, #player-wrapper, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper'
     );
   });
 });
@@ -453,12 +453,25 @@ describe('playlist navigation DOM', () => {
         assert.equal(peerTube.next?.title, 'Making a libre movie');
 
         await page.setContent(`<!doctype html><body>
-          <video id="player"></video>
-          <button data-testid="button-previous-video" class="prev_button" disabled aria-label="Previous video"></button>
-          <button data-testid="button-next-video" class="next_button" aria-label="Next video"></button>
+          <div id="player-wrapper">
+            <video id="player"></video>
+            <button data-testid="button-previous-video" class="prev_button" disabled aria-label="Previous video"></button>
+            <button data-testid="button-next-video" class="next_button" aria-label="Next video"></button>
+          </div>
+          <button id="stray-next" class="next_button" aria-label="Next page"></button>
         </body>`, { waitUntil: 'domcontentloaded' });
         await install();
         assert.deepEqual(await read(), ['next']);
+        const dailymotionClick = await page.evaluate(() => {
+          const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode) => Array<{ direction: string; activate: () => void }> } }).__playlist;
+          let stray = 0;
+          let real = 0;
+          document.getElementById('stray-next')?.addEventListener('click', () => { stray += 1; });
+          document.querySelector('#player-wrapper .next_button')?.addEventListener('click', () => { real += 1; });
+          api.findPlaylistActions(document).find((action) => action.direction === 'next')?.activate();
+          return { stray, real };
+        });
+        assert.deepEqual(dailymotionClick, { stray: 0, real: 1 });
 
         await page.setContent(`<!doctype html><body>
           <video id="player" width="304" height="143"></video>
