@@ -10,13 +10,14 @@ export type NetflixSessionPlayer = NetflixCaptionApi & {
   getTimeCodes?: () => Array<{ type?: string; startOffsetMs?: number; endOffsetMs?: number }>;
   play?: () => unknown;
   pause?: () => unknown;
+  playNextEpisode?: () => unknown;
   seek?: (milliseconds: number) => unknown;
   getTrickPlayFrame?: (milliseconds: number) => unknown;
 };
 
 type VideoMetadata = {
   getTitle?: () => unknown;
-  getCurrentVideo?: () => { getEpisodeTitle?: () => unknown };
+  getCurrentVideo?: () => { getEpisodeTitle?: () => unknown; getNextEpisode?: () => unknown };
 };
 
 export type NetflixPlayerAppApi = {
@@ -63,6 +64,24 @@ export function netflixSessionTitle(api: NetflixPlayerAppApi | null, videoId: st
     const episode = stripNetflixSiteTitle(metadata?.getCurrentVideo?.()?.getEpisodeTitle?.());
     return title && episode && title !== episode ? `${title} · ${episode}` : title || episode;
   } catch { return null; }
+}
+
+/** Advance only when this session is the watch id and metadata still has a next episode. */
+export function playNetflixNextEpisode(api: NetflixPlayerAppApi | null, player: NetflixSessionPlayer | null, videoId: string): boolean {
+  if (!player || netflixVideoId(player.getMovieId?.()) !== videoId || typeof player.playNextEpisode !== 'function') return false;
+  let next: unknown = null;
+  try {
+    next = api?.getVideoMetadataByVideoId?.(Number(videoId))?.getCurrentVideo?.()?.getNextEpisode?.();
+  } catch {
+    return false;
+  }
+  if (!next) return false;
+  try {
+    player.playNextEpisode();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function seekNetflixSession(player: NetflixSessionPlayer, time: number, resume: boolean): boolean {

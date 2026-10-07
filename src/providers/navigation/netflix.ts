@@ -2,7 +2,8 @@ import type { PlaylistAction } from '../../playlist-nav';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { isNetflixHost } from '../hosts';
-import { readNetflixNextPreview } from '../netflix/next-preview';
+import { requestNetflixNextEpisode } from '../netflix/next-episode';
+import { readNetflixNextAvailable, readNetflixNextPreview } from '../netflix/next-preview';
 import { netflixWatchId } from '../netflix/session';
 
 const NEXT_BUTTON = 'button[data-uia="control-next"]';
@@ -14,7 +15,9 @@ const NEXT_BUTTON = 'button[data-uia="control-next"]';
  * exposes control-next, not a previous-episode control. The click rechecks the
  * same button against the current /watch id so a replacement or a new title
  * cannot run a stale action. The hover card reads the main-world next-episode
- * snapshot for this watch id. The integration flag turns the step off.
+ * snapshot for this watch id. The toolbar button is unmounted whenever Netflix
+ * hides its own chrome, so a published next episode keeps the step up and the
+ * click falls through to the session API. The integration flag turns the step off.
  */
 export function findNetflixPlaylistActions(
   root: ParentNode,
@@ -27,8 +30,9 @@ export function findNetflixPlaylistActions(
   const videoId = boundVideoId(player, href());
   if (!videoId) return [];
   const button = findNextButton(player);
-  if (!button) return [];
   const doc = pageDocument(root);
+  const knownNext = doc ? readNetflixNextAvailable(doc, videoId) : false;
+  if (!button && !knownNext) return [];
   return [{
     direction: 'next',
     preview: doc ? readNetflixNextPreview(doc, videoId) : null,
@@ -38,8 +42,11 @@ export function findNetflixPlaylistActions(
       if (!within(root, player)) return;
       if (video && video.closest('.watch-video [data-uia="player"]') !== player) return;
       if (boundVideoId(player, href()) !== videoId) return;
-      if (!player.contains(button) || !usable(button)) return;
-      button.click();
+      if (button && player.contains(button) && usable(button)) {
+        button.click();
+        return;
+      }
+      if (doc && readNetflixNextAvailable(doc, videoId)) requestNetflixNextEpisode(videoId);
     }
   }];
 }

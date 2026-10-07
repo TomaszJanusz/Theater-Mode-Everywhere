@@ -41,8 +41,10 @@ export function netflixNextEpisodePreview(currentVideo: unknown): NetflixNextPre
 }
 
 export function syncNetflixNextPreview(videoId: string | null, currentVideo: unknown): void {
-  const preview = videoId ? netflixNextEpisodePreview(currentVideo) : null;
-  const payload = preview ? { videoId, title: preview.title, imageUrl: preview.imageUrl } : null;
+  if (videoId && !asVideo(currentVideo)) return;
+  const available = videoId ? netflixHasNextEpisode(currentVideo) : false;
+  const preview = available ? netflixNextEpisodePreview(currentVideo) : null;
+  const payload = available ? { videoId, available: true, ...(preview ?? {}) } : null;
   const next = payload ? JSON.stringify(payload) : null;
   const existing = document.getElementById(NETFLIX_NEXT_PREVIEW_ID);
   if ((existing?.textContent ?? null) === next) return;
@@ -50,16 +52,35 @@ export function syncNetflixNextPreview(videoId: string | null, currentVideo: unk
   publishHiddenJson(NETFLIX_NEXT_PREVIEW_ID, payload);
 }
 
+/** True when this watch id still has a next episode, even if the still is missing. */
+export function readNetflixNextAvailable(doc: Document, videoId: string): boolean {
+  const data = readNextPreviewPayload(doc);
+  return data?.videoId === videoId && data.available === true;
+}
+
 /** Isolated-world read of the main-world snapshot. A mismatched watch id is ignored. */
 export function readNetflixNextPreview(doc: Document, videoId: string): NetflixNextPreview | null {
+  const data = readNextPreviewPayload(doc);
+  if (!data || data.videoId !== videoId) return null;
+  return acceptPreview(data.title, data.imageUrl);
+}
+
+function readNextPreviewPayload(doc: Document): { videoId?: unknown; available?: unknown; title?: unknown; imageUrl?: unknown } | null {
   const text = doc.getElementById(NETFLIX_NEXT_PREVIEW_ID)?.textContent;
   if (!text || text.length > 2400) return null;
   try {
-    const data = JSON.parse(text) as { videoId?: unknown; title?: unknown; imageUrl?: unknown };
-    if (data.videoId !== videoId) return null;
-    return acceptPreview(data.title, data.imageUrl);
+    const data = JSON.parse(text) as { videoId?: unknown; available?: unknown; title?: unknown; imageUrl?: unknown };
+    return data && typeof data === 'object' ? data : null;
   } catch {
     return null;
+  }
+}
+
+function netflixHasNextEpisode(currentVideo: unknown): boolean {
+  try {
+    return asVideo(asVideo(currentVideo)?.getNextEpisode?.()) != null;
+  } catch {
+    return false;
   }
 }
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { netflixNextEpisodePreview } from './next-preview';
+import { netflixNextEpisodePreview, readNetflixNextAvailable, readNetflixNextPreview } from './next-preview';
+import { playNetflixNextEpisode, type NetflixPlayerAppApi, type NetflixSessionPlayer } from './session';
 
 function video(fields: {
   title?: string;
@@ -46,5 +47,38 @@ describe('Netflix next-episode preview', () => {
 
   it('ignores a next-episode lookup that throws', () => {
     assert.equal(netflixNextEpisodePreview({ getNextEpisode: () => { throw new Error('closed'); } }), null);
+  });
+});
+
+describe('Netflix next-episode availability', () => {
+  const snapshot = (payload: unknown) => ({
+    getElementById: () => ({ textContent: JSON.stringify(payload) })
+  }) as unknown as Document;
+
+  it('keeps the step when the still is missing and ignores another watch id', () => {
+    const bare = snapshot({ videoId: '70248290', available: true });
+    assert.equal(readNetflixNextAvailable(bare, '70248290'), true);
+    assert.equal(readNetflixNextPreview(bare, '70248290'), null);
+    assert.equal(readNetflixNextAvailable(snapshot({ videoId: '80057281', available: true }), '70248290'), false);
+  });
+
+  it('plays the next episode only for the bound session that still has one', () => {
+    let calls = 0;
+    const player = {
+      getMovieId: () => 70248290,
+      playNextEpisode: () => { calls += 1; }
+    } as NetflixSessionPlayer;
+    const api = {
+      getVideoMetadataByVideoId: () => ({ getCurrentVideo: () => ({ getNextEpisode: () => ({ id: 70248291 }) }) })
+    } as NetflixPlayerAppApi;
+    assert.equal(playNetflixNextEpisode(api, player, '70248290'), true);
+    assert.equal(calls, 1);
+    assert.equal(playNetflixNextEpisode(api, player, '80057281'), false);
+    assert.equal(calls, 1);
+    const last = {
+      getVideoMetadataByVideoId: () => ({ getCurrentVideo: () => ({ getNextEpisode: () => null }) })
+    } as NetflixPlayerAppApi;
+    assert.equal(playNetflixNextEpisode(last, player, '70248290'), false);
+    assert.equal(calls, 1);
   });
 });

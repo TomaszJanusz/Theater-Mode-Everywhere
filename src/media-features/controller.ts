@@ -568,7 +568,6 @@ export class MediaFeaturesController {
 
     const list = document.createElement('div');
     list.className = 'theater-cc-menu-list';
-    list.appendChild(header);
 
     if (this.tracks.length === 0) {
       const item = document.createElement('div');
@@ -577,7 +576,7 @@ export class MediaFeaturesController {
       item.style.opacity = '0.5';
       item.style.cursor = 'default';
       list.appendChild(item);
-      this.ccMenu.appendChild(list);
+      this.ccMenu.append(header, list);
       return;
     }
 
@@ -591,7 +590,7 @@ export class MediaFeaturesController {
         void this.activate(track.id, { hud: true });
       }));
     }
-    this.ccMenu.appendChild(list);
+    this.ccMenu.append(header, list);
   }
 
   private captionTrackDisplayLabel(track: CaptionTrack): string {

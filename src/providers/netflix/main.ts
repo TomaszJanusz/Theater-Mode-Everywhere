@@ -24,8 +24,9 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isNetflixHost } from '../hosts';
 import { relayNetflixShadowClick } from './shadow-click';
-import { netflixSessionTitle, netflixWatchId, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
+import { netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
 import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
+import { NETFLIX_NEXT_ACK_EVENT, NETFLIX_NEXT_EVENT } from './next-episode';
 import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
 import { activateNetflixTimedAction, syncNetflixTimedAction } from './timed-action';
 
@@ -353,6 +354,15 @@ export function readNetflixSnapshot(): Record<string, unknown> | null {
 export function installNetflixMain(): void {
   if (!isNetflixHost()) return;
   window.addEventListener('click', relayNetflixShadowClick, true);
+  window.addEventListener(NETFLIX_NEXT_EVENT, (event: Event) => {
+    const videoId = (event as CustomEvent<unknown>).detail;
+    const id = typeof videoId === 'string' ? videoId : '';
+    const api = readNetflixPlayerAppApi();
+    const ok = netflixIntegrationEnabled()
+      && netflixVideoId(id) === id
+      && playNetflixNextEpisode(api, selectNetflixSession(api, playerRoot(), id), id);
+    window.dispatchEvent(new CustomEvent(NETFLIX_NEXT_ACK_EVENT, { detail: `${ok ? 'ok' : 'no'}:${id}` }));
+  });
   window.addEventListener(NETFLIX_ACTION_EVENT, (event: Event) => {
     const id = (event as CustomEvent<unknown>).detail;
     if (!netflixIntegrationEnabled() || !validNetflixTimedActionId(id)) return;
