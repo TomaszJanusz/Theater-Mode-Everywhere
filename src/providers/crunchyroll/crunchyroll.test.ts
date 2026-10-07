@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 import { preferProviderCaptionTracks } from '../../media-features/composite-adapter';
 import { crunchyrollCdnFile } from '../../media-features/crunchyroll-cdn';
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
+import { readCrunchyrollSkipWindows } from './skip-windows';
 import {
   classifyCrunchyrollManifest,
   CRUNCHYROLL_CAPTION_ACK_EVENT,
@@ -18,6 +19,7 @@ import {
   MAX_CRUNCHYROLL_BIF_BYTES,
   MAX_CRUNCHYROLL_OWNED_CAPTION_TRACKS,
   parseCrunchyrollSkipEvents,
+  parseCrunchyrollSkipWindows,
   summarizeCrunchyrollBif
 } from '../../media-features/parsers/crunchyroll';
 import { serviceHomeUrl } from '../../platform/service-home';
@@ -397,6 +399,21 @@ describe('Crunchyroll RTE', () => {
       });
       assert.deepEqual(readCrunchyrollSnapshot()?.chapters, []);
       assert.equal(parseCrunchyrollSkipEvents(skipDocument(MEDIA), OTHER), null);
+      assert.deepEqual(parseCrunchyrollSkipWindows(skipDocument(MEDIA), MEDIA), [
+        { type: 'intro', start: 0, end: 5 },
+        { type: 'recap', start: 5, end: 20 },
+        { type: 'credits', start: 1310, end: 1400 }
+      ]);
+      assert.deepEqual(parseCrunchyrollSkipWindows({
+        mediaId: MEDIA,
+        preview: { type: 'preview', start: 1400, end: 1415 },
+        recap: { type: 'intro', start: 1, end: 2 }
+      }, MEDIA), [{ type: 'preview', start: 1400, end: 1415 }]);
+      assert.equal(parseCrunchyrollSkipWindows(skipDocument(MEDIA), OTHER), null);
+      const node = { textContent: JSON.stringify({ mediaId: MEDIA, windows: [{ type: 'intro', start: 0, end: 5 }, { type: 'nope', start: 1, end: 2 }, { type: 'preview', start: 1, end: 0 }] }) };
+      const reader = { getElementById: () => node } as unknown as Document;
+      assert.deepEqual(readCrunchyrollSkipWindows(reader, MEDIA), [{ type: 'intro', start: 0, end: 5 }]);
+      assert.deepEqual(readCrunchyrollSkipWindows(reader, OTHER), []);
     } finally { page.restore(); }
   });
 

@@ -268,6 +268,38 @@ export function parseCrunchyrollSkipEvents(data: unknown, mediaId: string): Chap
   return chapters;
 }
 
+export const CRUNCHYROLL_SKIP_TYPES = ['intro', 'recap', 'credits', 'preview'] as const;
+export type CrunchyrollSkipType = (typeof CRUNCHYROLL_SKIP_TYPES)[number];
+export type CrunchyrollSkipWindow = { type: CrunchyrollSkipType; start: number; end: number };
+
+function skipWindow(value: unknown, type: CrunchyrollSkipType): CrunchyrollSkipWindow | null {
+  if (!value || typeof value !== 'object') return null;
+  const row = value as Record<string, unknown>;
+  if (row.type != null && row.type !== type) return null;
+  if (typeof row.start !== 'number' || typeof row.end !== 'number') return null;
+  if (!Number.isFinite(row.start) || !Number.isFinite(row.end)) return null;
+  if (row.start < 0 || row.end <= row.start || row.end > MAX_CHAPTER_SECONDS) return null;
+  return { type, start: row.start, end: row.end };
+}
+
+/**
+ * Player skip targets, including recap and preview. Chapter marks stay limited
+ * to intro and credits; these windows only drive the player CTA.
+ * Returns null when mediaId does not match.
+ */
+export function parseCrunchyrollSkipWindows(data: unknown, mediaId: string): CrunchyrollSkipWindow[] | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  if (crunchyrollMediaId(record.mediaId) !== mediaId) return null;
+  const windows: CrunchyrollSkipWindow[] = [];
+  for (const type of CRUNCHYROLL_SKIP_TYPES) {
+    const window = skipWindow(record[type], type);
+    if (window) windows.push(window);
+  }
+  windows.sort((left, right) => left.start - right.start || left.end - right.end);
+  return windows;
+}
+
 export function parseCrunchyrollCmsTitle(data: unknown, mediaId: string): string | null {
   const found: string[] = [];
   const visit = (node: unknown, depth: number) => {

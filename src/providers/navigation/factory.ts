@@ -2,6 +2,7 @@ import type { PlaylistAction } from '../../playlist-nav';
 import { BILIBILI_PLAYER_SELECTOR, readBilibiliControls } from './bilibili';
 import { BILIBILI_INTL_PLAYER_SELECTOR, readBilibiliIntlControls } from './bilibili-intl';
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
+import { findDisneyPlaylistActions } from './disney';
 import { findNetflixPlaylistActions } from './netflix';
 import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
@@ -24,9 +25,13 @@ export function findProviderPlaylistActions(
   helpers: PlaylistNavigationHelpers
 ): PlaylistAction[] {
   const host = hostActions(root, video, helpers);
-  const netflix = findNetflixPlaylistActions(root, video, () => pageHref(root));
+  const href = () => pageHref(root);
+  const dedicated = [
+    ...findNetflixPlaylistActions(root, video, href),
+    ...findDisneyPlaylistActions(root, href)
+  ];
   const claimed = new Set(host.map((action) => action.direction));
-  return host.concat(netflix.filter((action) => !claimed.has(action.direction)));
+  return host.concat(dedicated.filter((action) => !claimed.has(action.direction)));
 }
 
 function hostActions(
@@ -86,7 +91,7 @@ function pageHref(root: ParentNode): string {
 }
 
 function viewOf(root: ParentNode): Window | null {
-  if (root instanceof Document) return root.defaultView;
-  if (root instanceof ShadowRoot) return root.host.ownerDocument.defaultView;
-  return null;
+  const node = root as Node;
+  const doc = node.nodeType === Node.DOCUMENT_NODE ? node as Document : node.ownerDocument;
+  return doc?.defaultView ?? null;
 }

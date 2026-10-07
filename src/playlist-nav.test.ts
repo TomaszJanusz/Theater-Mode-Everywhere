@@ -41,8 +41,9 @@ function playlistBrowserBundle(): string {
         "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
         "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
         "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
+        "import { installDisneyPlayNext } from './providers/disney/play-next';",
         'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
-        'export { findPlaylistActions };',
+        'export { findPlaylistActions, installDisneyPlayNext };',
         'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
         'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
       ].join('\n'),
@@ -759,6 +760,249 @@ describe('playlist navigation DOM', () => {
         assert.equal(report.held.preview?.title, 'House of Cards · Rozdział 2');
         assert.equal(report.held.requests, 1);
         assert.deepEqual(report.held.other, []);
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      if (!executable) return;
+      throw error;
+    }
+  });
+
+  it('uses the Disney control-bar next episode and leaves the end card alone', async () => {
+    let executable = '';
+    try {
+      const { chromium } = await import('playwright');
+      executable = chromium.executablePath();
+      if (!existsSync(executable)) return;
+      const compiled = playlistBrowserBundle();
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage();
+        await page.route('https://www.disneyplus.com/**', (route) => {
+          if (route.request().resourceType() !== 'document') return route.abort();
+          return route.fulfill({
+            status: 200,
+            contentType: 'text/html',
+            body: '<!doctype html><html><body></body></html>'
+          });
+        });
+        await page.goto('https://www.disneyplus.com/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8', { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
+        const report = await page.evaluate(`(() => {
+          const api = window.__playlist;
+          const play = '/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
+          const mount = (options) => {
+            document.documentElement.removeAttribute('data-te-disney-integration-off');
+            history.pushState({}, '', options.href || play);
+            document.body.replaceChildren();
+            const player = document.createElement('disney-web-player');
+            const controls = document.createElement('main-app-controls-overlay');
+            const host = document.createElement('play-next');
+            host.hidden = options.hidden === true;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'play-next control';
+            button.disabled = options.disabled === true;
+            if (options.ariaDisabled) button.setAttribute('aria-disabled', 'true');
+            button.addEventListener('click', () => { window.__playNextClicks = (window.__playNextClicks || 0) + 1; });
+            host.attachShadow({ mode: 'open' }).append(button);
+            const shadow = controls.attachShadow({ mode: 'open' });
+            const frame = document.createElement('div');
+            if (options.frameDisplay) frame.style.display = options.frameDisplay;
+            frame.append(host);
+            shadow.append(frame);
+            const upNext = document.createElement('up-next-lite-v1');
+            const upNextButton = document.createElement('button');
+            upNextButton.className = 'up-next-lite-v1-overlay__button';
+            upNextButton.textContent = 'Następny odcinek za 4';
+            upNextButton.addEventListener('click', () => { window.__upNextClicks = (window.__upNextClicks || 0) + 1; });
+            upNext.attachShadow({ mode: 'open' }).append(upNextButton);
+            document.body.append(player, controls, upNext);
+            return button;
+          };
+          const directions = () => api.findPlaylistActions(document).map((action) => action.direction);
+          window.__playNextClicks = 0;
+          window.__upNextClicks = 0;
+          mount({});
+          const ready = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const clicked = window.__playNextClicks;
+          const emptyOverlay = document.createElement('main-app-controls-overlay');
+          emptyOverlay.attachShadow({ mode: 'open' });
+          const laterOverlayHost = document.createElement('main-app-controls-overlay');
+          const laterPlayNext = document.createElement('play-next');
+          const laterButton = document.createElement('button');
+          laterButton.className = 'play-next control';
+          laterButton.addEventListener('click', () => { window.__laterClicks = (window.__laterClicks || 0) + 1; });
+          laterPlayNext.attachShadow({ mode: 'open' }).append(laterButton);
+          laterOverlayHost.attachShadow({ mode: 'open' }).append(laterPlayNext);
+          document.body.replaceChildren(emptyOverlay, laterOverlayHost);
+          window.__laterClicks = 0;
+          const laterOverlay = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const laterClicks = window.__laterClicks;
+          const fromElement = api.findPlaylistActions(laterOverlayHost).map((action) => action.direction);
+          const upNextClicks = window.__upNextClicks;
+          mount({ frameDisplay: 'none' });
+          const faded = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const fadedClicks = window.__playNextClicks;
+          mount({ hidden: true });
+          const hidden = directions();
+          mount({ disabled: true });
+          const disabled = directions();
+          mount({ ariaDisabled: true });
+          const ariaDisabled = directions();
+          const playId = '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
+          const published = (options) => {
+            mount(options);
+            api.installDisneyPlayNext();
+            return document.documentElement.getAttribute('data-te-disney-play-next');
+          };
+          const disabledPublished = published({ disabled: true });
+          const hiddenPublished = published({ hidden: true });
+          const ariaPublished = published({ ariaDisabled: true });
+          const mountedPlayNext = () => document.querySelector('main-app-controls-overlay').shadowRoot.querySelector('play-next');
+          mount({});
+          const liveHost = mountedPlayNext();
+          liveHost.primaryAction = () => { window.__primaryCalls = (window.__primaryCalls || 0) + 1; };
+          api.installDisneyPlayNext();
+          const livePublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          document.body.replaceChildren();
+          api.installDisneyPlayNext();
+          const heldPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          window.__primaryCalls = 0;
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const primaryAfterHide = window.__primaryCalls;
+          mount({ disabled: true });
+          mountedPlayNext().primaryAction = () => { window.__primaryCalls++; };
+          api.installDisneyPlayNext();
+          const blockedPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const primaryWhileDisabled = window.__primaryCalls;
+          mount({});
+          document.documentElement.setAttribute('data-te-disney-integration-off', '');
+          const flagged = directions();
+          document.documentElement.removeAttribute('data-te-disney-integration-off');
+          mount({ href: '/pl-pl/browse/home' });
+          const browse = directions();
+          history.pushState({}, '', play);
+          const narrow = document.createElement('div');
+          narrow.className = 'experience-controls-narrow';
+          narrow.style.display = 'none';
+          const narrowHost = document.createElement('play-next');
+          const narrowButton = document.createElement('button');
+          narrowButton.className = 'play-next control';
+          narrowButton.addEventListener('click', () => { window.__narrowClicks = (window.__narrowClicks || 0) + 1; });
+          narrowHost.attachShadow({ mode: 'open' }).append(narrowButton);
+          narrow.append(narrowHost);
+          const wide = document.createElement('div');
+          wide.className = 'experience-controls';
+          const wideHost = document.createElement('play-next');
+          const wideButton = document.createElement('button');
+          wideButton.className = 'play-next control';
+          wideButton.addEventListener('click', () => { window.__wideClicks = (window.__wideClicks || 0) + 1; });
+          wideHost.attachShadow({ mode: 'open' }).append(wideButton);
+          wide.append(wideHost);
+          const pairedControls = document.createElement('main-app-controls-overlay');
+          pairedControls.attachShadow({ mode: 'open' }).append(narrow, wide);
+          document.body.replaceChildren(pairedControls);
+          window.__narrowClicks = 0;
+          window.__wideClicks = 0;
+          const paired = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const narrowClicks = window.__narrowClicks;
+          const wideClicks = window.__wideClicks;
+          wideHost.primaryAction = () => { window.__narrowRemainPrimary = (window.__narrowRemainPrimary || 0) + 1; };
+          api.installDisneyPlayNext();
+          wide.remove();
+          api.installDisneyPlayNext();
+          const narrowRemainsPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          const narrowRemains = directions();
+          window.__narrowRemainPrimary = 0;
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const narrowRemainsPrimary = window.__narrowRemainPrimary;
+          document.body.replaceChildren();
+          document.documentElement.setAttribute('data-te-disney-play-next', '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+          let heldClicks = 0;
+          window.addEventListener('theater-everywhere-disney-play-next', (event) => {
+            if (event.detail !== '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8') return;
+            heldClicks += 1;
+            window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next-ack', { detail: 'ok:' + event.detail }));
+          });
+          const held = directions();
+          api.findPlaylistActions(document).find((action) => action.direction === 'next').activate();
+          const heldActivated = heldClicks;
+          document.documentElement.removeAttribute('data-te-disney-play-next');
+          mount({});
+          const stale = api.findPlaylistActions(document).find((action) => action.direction === 'next');
+          history.pushState({}, '', '/pl-pl/play/11111111-1111-4111-8111-111111111111');
+          const before = window.__playNextClicks;
+          stale.activate();
+          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, disabledPublished, hiddenPublished, ariaPublished, livePublished, heldPublished, primaryAfterHide, blockedPublished, primaryWhileDisabled, flagged, browse, paired, narrowClicks, wideClicks, narrowRemainsPublished, narrowRemains, narrowRemainsPrimary, held, heldActivated, staleClicks: window.__playNextClicks - before };
+        })()`) as {
+          ready: string[];
+          clicked: number;
+          laterOverlay: string[];
+          laterClicks: number;
+          fromElement: string[];
+          upNextClicks: number;
+          faded: string[];
+          fadedClicks: number;
+          hidden: string[];
+          disabled: string[];
+          ariaDisabled: string[];
+          disabledPublished: string | null;
+          hiddenPublished: string | null;
+          ariaPublished: string | null;
+          livePublished: string | null;
+          heldPublished: string | null;
+          primaryAfterHide: number;
+          blockedPublished: string | null;
+          primaryWhileDisabled: number;
+          flagged: string[];
+          browse: string[];
+          paired: string[];
+          narrowClicks: number;
+          wideClicks: number;
+          narrowRemainsPublished: string | null;
+          narrowRemains: string[];
+          narrowRemainsPrimary: number;
+          held: string[];
+          heldActivated: number;
+          staleClicks: number;
+        };
+        assert.deepEqual(report.ready, ['next']);
+        assert.equal(report.clicked, 1);
+        assert.deepEqual(report.laterOverlay, ['next']);
+        assert.equal(report.laterClicks, 1);
+        assert.deepEqual(report.fromElement, ['next']);
+        assert.equal(report.upNextClicks, 0);
+        assert.deepEqual(report.faded, ['next']);
+        assert.equal(report.fadedClicks, 2);
+        assert.deepEqual(report.hidden, []);
+        assert.deepEqual(report.disabled, []);
+        assert.deepEqual(report.ariaDisabled, []);
+        assert.equal(report.disabledPublished, null);
+        assert.equal(report.hiddenPublished, null);
+        assert.equal(report.ariaPublished, null);
+        assert.equal(report.livePublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.equal(report.heldPublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.equal(report.primaryAfterHide, 1);
+        assert.equal(report.blockedPublished, null);
+        assert.equal(report.primaryWhileDisabled, 1);
+        assert.deepEqual(report.flagged, []);
+        assert.deepEqual(report.browse, []);
+        assert.deepEqual(report.paired, ['next']);
+        assert.equal(report.narrowClicks, 0);
+        assert.equal(report.wideClicks, 1);
+        assert.equal(report.narrowRemainsPublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.deepEqual(report.narrowRemains, ['next']);
+        assert.equal(report.narrowRemainsPrimary, 1);
+        assert.deepEqual(report.held, ['next']);
+        assert.equal(report.heldActivated, 1);
+        assert.equal(report.staleClicks, 0);
       } finally {
         await browser.close();
       }

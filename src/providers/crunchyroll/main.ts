@@ -20,6 +20,7 @@ import {
   parseCrunchyrollHostList,
   parseCrunchyrollPlayback,
   parseCrunchyrollSkipEvents,
+  parseCrunchyrollSkipWindows,
   summarizeCrunchyrollBif,
   type CrunchyrollCaption,
   type CrunchyrollCaptionRequest,
@@ -31,6 +32,7 @@ import {
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import type { Chapter } from '../../media-features/types';
 import { isCrunchyrollHost } from '../hosts';
+import { clearCrunchyrollSkipWindows, publishCrunchyrollSkipWindows } from './skip-windows';
 
 export type { CrunchyrollSnapshot } from '../../media-features/parsers/crunchyroll';
 
@@ -184,6 +186,7 @@ function clearHarvest(dropTitles: boolean): void {
     domTitle = null;
     confirmedTitles.clear();
   }
+  if (had) clearCrunchyrollSkipWindows();
   if (!had) return;
   publishedKey = '';
   notify();
@@ -685,6 +688,8 @@ export function harvestCrunchyrollData(url: string, data: unknown): void {
     const chapters = parseCrunchyrollSkipEvents(data, ref.mediaId);
     if (!chapters) return;
     current.chapters = chapters;
+    const windows = parseCrunchyrollSkipWindows(data, ref.mediaId);
+    if (windows) publishCrunchyrollSkipWindows(ref.mediaId, windows);
     publish();
     return;
   }
