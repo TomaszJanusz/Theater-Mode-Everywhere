@@ -459,6 +459,12 @@
   "backToStart": {
     "message": "Revenir au début"
   },
+  "skipIntro": {
+    "message": "Passer le générique de début"
+  },
+  "skipOutro": {
+    "message": "Passer le générique de fin"
+  },
   "nextVideo": {
     "message": "Suivant"
   },

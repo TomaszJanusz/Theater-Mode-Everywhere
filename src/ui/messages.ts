@@ -54,6 +54,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   previousVideo: 'Previous',
   backToStart: 'Back to start',
   nextVideo: 'Next',
+  skipIntro: 'Skip intro',
+  skipOutro: 'Skip outro',
   homepage: 'Homepage',
   muteHud: 'Mute',
   unmuteHud: 'Unmute',

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { MediaFeaturesController, type MediaFeaturesBindings } from './controller';
-import type { CaptionActivationResult, CaptionCue, CaptionTrack, MediaFeaturesAdapter } from './types';
+import { CompositeMediaAdapter } from './composite-adapter';
+import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaFeaturesAdapter } from './types';
 import type { CaptionLanguagePreference } from './caption-preference';
 
 class TokenList {
@@ -136,6 +137,83 @@ function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBin
   });
   return { controller, ccBtn };
 }
+
+describe('MediaFeaturesController chapter context', () => {
+  it('keeps Bilibili episode actions when native chapters take timeline precedence', async () => {
+    let mediaId = 'ogv:one';
+    const native: Chapter[] = [{ start: 0, end: 100, title: 'Native chapter', source: 'native-text-track', confidence: 'high' }];
+    let windows: Chapter[] = [
+      { start: 1, end: 5, title: 'Intro', source: 'bilibiliIntl', confidence: 'high' },
+      { start: 90, end: 100, title: 'Outro', source: 'bilibiliIntl', confidence: 'high' }
+    ];
+    const stub = (overrides: Partial<MediaFeaturesAdapter>): MediaFeaturesAdapter => ({
+      probe: async () => ({ captions: false, chapters: true, previews: false }),
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => ({ status: 'off', delivery: 'none', cues: [] }),
+      dispose() {},
+      ...overrides
+    });
+    const composite = new CompositeMediaAdapter([
+      stub({ getChapters: async () => native }),
+      stub({ getChapters: async () => { throw new Error('unavailable chapter source'); } }),
+      stub({ getChapters: async () => windows, mediaId: () => mediaId })
+    ]);
+    let timeline: readonly Chapter[] = [];
+    const { controller } = createController(composite, {
+      adapter: composite,
+      onSnapshot: snapshot => { timeline = snapshot.chapters; }
+    });
+    await controller.refresh();
+    assert.deepEqual(timeline, native, 'native timeline preference is preserved');
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:one', chapters: windows });
+    assert.equal(controller.tooltipExtras(2).chapterTitle, 'Native chapter');
+
+    mediaId = 'ogv:two';
+    assert.equal(controller.chapterContext(), null, 'old episode windows cannot escape the id gate');
+    windows = [{ ...windows[0], start: 10, end: 20 }];
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: windows });
+    assert.deepEqual(timeline, native);
+    windows = [];
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: [] }, 'missing provider windows must not fall back to native chapters');
+    controller.dispose();
+    assert.equal(controller.chapterContext(), null);
+  });
+
+  it('withholds previous episode windows during refresh, mismatch and disposal', async () => {
+    let mediaId = 'ogv:one';
+    let holdReload = false;
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const first = [{ start: 1, end: 5, title: 'Intro', source: 'bilibiliIntl', confidence: 'high' as const }];
+    const second = [{ ...first[0], start: 10, end: 20 }];
+    const { controller } = createController({
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => [],
+      mediaId: () => mediaId,
+      getChapters: async () => mediaId === 'ogv:one' ? first : second,
+      reload: async () => { if (holdReload) await gate; }
+    });
+    assert.equal(controller.chapterContext(), null);
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:one', chapters: first });
+    holdReload = true;
+    const pending = controller.refresh();
+    assert.equal(controller.chapterContext(), null, 'refresh must withhold even a matching old media id');
+    mediaId = 'ogv:two';
+    assert.equal(controller.chapterContext(), null);
+    release();
+    await pending;
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: second });
+    mediaId = 'ogv:three';
+    assert.equal(controller.chapterContext(), null, 'an adapter change must invalidate unrefreshed windows');
+    mediaId = 'ogv:two';
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: second });
+    controller.dispose();
+    assert.equal(controller.chapterContext(), null);
+  });
+});
 
 describe('MediaFeaturesController captions toggle', () => {
   it('waits for overlay cues before reporting on and lighting the CC icon', async () => {

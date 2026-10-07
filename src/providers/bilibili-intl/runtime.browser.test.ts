@@ -79,7 +79,7 @@ function fixtureMediaBytes(): Promise<Buffer> {
   return fixtureMediaPromise;
 }
 
-/** One decodable frame stretched to 1504s. MediaSource duration does not survive theater entry. */
+/** Repeat one keyframe each second so the 1504s fixture can actually seek into skip windows. */
 async function buildFixtureMedia(): Promise<Buffer> {
   const browser = await chromium.launch({ headless: true, args: ['--headless=new', '--no-sandbox'] });
   try {
@@ -173,14 +173,15 @@ async function buildFixtureMedia(): Promise<Buffer> {
         u32(0), u16(1), zeros(32), u16(0x0018), u16(0xffff), box('avcC', description)
       ));
       const stsd = full('stsd', 0, 0, concat(u32(1), avc1));
-      const stts = full('stts', 0, 0, concat(u32(1), u32(1), u32(duration)));
-      const stsc = full('stsc', 0, 0, concat(u32(1), u32(1), u32(1), u32(1)));
-      const stsz = full('stsz', 0, 0, concat(u32(0), u32(1), u32(sample.length)));
+      const sampleCount = 1504;
+      const stts = full('stts', 0, 0, concat(u32(1), u32(sampleCount), u32(timescale)));
+      const stsc = full('stsc', 0, 0, concat(u32(1), u32(1), u32(sampleCount), u32(1)));
+      const stsz = full('stsz', 0, 0, concat(u32(sample.length), u32(sampleCount)));
       const stco = full('stco', 0, 0, concat(u32(1), u32(0)));
       const stbl = box('stbl', concat(stsd, stts, stsc, stsz, stco));
       const minf = box('minf', concat(vmhd, dinf, stbl));
       const moov = box('moov', concat(mvhd, box('trak', concat(tkhd, box('mdia', concat(mdhd, hdlr, minf))))));
-      const file = concat(ftyp, moov, box('mdat', sample));
+      const file = concat(ftyp, moov, box('mdat', concat(...Array(sampleCount).fill(sample))));
       new DataView(file.buffer).setUint32(ftyp.length + moov.length - 4, ftyp.length + moov.length + 8);
       let binary = '';
       for (let index = 0; index < file.length; index += 0x8000) {
@@ -365,7 +366,20 @@ async function installFixtures(context: BrowserContext, hits: Hit[]): Promise<vo
   };
   await context.route('https://www.bilibili.tv/**', async (route) => {
     if (route.request().url().split('?')[0] === FIXTURE_MEDIA_URL) {
-      return fulfill(route, 200, 'video/mp4', await fixtureMediaBytes());
+      const media = await fixtureMediaBytes();
+      const range = /^bytes=(\d+)-(\d*)$/.exec(route.request().headers().range || '');
+      const start = range ? Number(range[1]) : 0;
+      const end = range?.[2] ? Math.min(Number(range[2]), media.length - 1) : media.length - 1;
+      const status = range ? 206 : 200;
+      hits.push({ url: route.request().url(), status });
+      // Without byte-range responses Chromium reports seekable=[0,0], even
+      // after buffering the whole file, and clamps every seek back to zero.
+      return route.fulfill({
+        status,
+        contentType: 'video/mp4',
+        headers: { 'Accept-Ranges': 'bytes', ...(range ? { 'Content-Range': `bytes ${start}-${end}/${media.length}` } : {}) },
+        body: media.subarray(start, end + 1)
+      });
     }
     const html = route.request().url().includes('/video/') ? ugcPageHtml() : pageHtml();
     return fulfill(route, 200, 'text/html; charset=utf-8', html);
@@ -659,6 +673,25 @@ describe('bilibili.tv extension runtime', () => {
         return timeline.marks === 2 && timeline.heatmap === false;
       });
       assert.equal((await hostLayers(page)).kind, 'ogv');
+      // Exercise the production content-world CTA using the imported skip window.
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.pause();
+        video.currentTime = 100;
+        video.dispatchEvent(new Event('timeupdate'));
+      });
+      const introCta = page.locator('.theater-service-action').filter({ hasText: 'Skip intro' });
+      await introCta.waitFor();
+      assert.equal(await introCta.innerText(), 'Skip intro');
+      await introCta.click();
+      await page.waitForFunction(() => document.querySelector('video')?.currentTime === 227);
+      assert.equal(await page.evaluate(() => document.querySelector('video')?.paused), true);
+      await introCta.waitFor({ state: 'detached' });
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.currentTime = 0;
+        video.dispatchEvent(new Event('timeupdate'));
+      });
       await openCaptions(page);
       await waitFor('E1 tracks', async () => {
         const items = (await readUi(page)).items;
