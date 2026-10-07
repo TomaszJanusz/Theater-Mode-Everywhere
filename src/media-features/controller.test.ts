@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { MediaFeaturesController, type MediaFeaturesBindings } from './controller';
-import type { CaptionActivationResult, CaptionCue, CaptionTrack, MediaFeaturesAdapter } from './types';
+import { CompositeMediaAdapter } from './composite-adapter';
+import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaFeaturesAdapter } from './types';
 import type { CaptionLanguagePreference } from './caption-preference';
 
 class TokenList {
@@ -138,6 +139,48 @@ function createController(adapter: TestAdapter, extras: Partial<MediaFeaturesBin
 }
 
 describe('MediaFeaturesController chapter context', () => {
+  it('keeps Bilibili episode actions when native chapters take timeline precedence', async () => {
+    let mediaId = 'ogv:one';
+    const native: Chapter[] = [{ start: 0, end: 100, title: 'Native chapter', source: 'native-text-track', confidence: 'high' }];
+    let windows: Chapter[] = [
+      { start: 1, end: 5, title: 'Intro', source: 'bilibiliIntl', confidence: 'high' },
+      { start: 90, end: 100, title: 'Outro', source: 'bilibiliIntl', confidence: 'high' }
+    ];
+    const stub = (overrides: Partial<MediaFeaturesAdapter>): MediaFeaturesAdapter => ({
+      probe: async () => ({ captions: false, chapters: true, previews: false }),
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => ({ status: 'off', delivery: 'none', cues: [] }),
+      dispose() {},
+      ...overrides
+    });
+    const composite = new CompositeMediaAdapter([
+      stub({ getChapters: async () => native }),
+      stub({ getChapters: async () => { throw new Error('unavailable chapter source'); } }),
+      stub({ getChapters: async () => windows, mediaId: () => mediaId })
+    ]);
+    let timeline: readonly Chapter[] = [];
+    const { controller } = createController(composite, {
+      adapter: composite,
+      onSnapshot: snapshot => { timeline = snapshot.chapters; }
+    });
+    await controller.refresh();
+    assert.deepEqual(timeline, native, 'native timeline preference is preserved');
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:one', chapters: windows });
+    assert.equal(controller.tooltipExtras(2).chapterTitle, 'Native chapter');
+
+    mediaId = 'ogv:two';
+    assert.equal(controller.chapterContext(), null, 'old episode windows cannot escape the id gate');
+    windows = [{ ...windows[0], start: 10, end: 20 }];
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: windows });
+    assert.deepEqual(timeline, native);
+    windows = [];
+    await controller.refresh();
+    assert.deepEqual(controller.chapterContext(), { mediaId: 'ogv:two', chapters: [] }, 'missing provider windows must not fall back to native chapters');
+    controller.dispose();
+    assert.equal(controller.chapterContext(), null);
+  });
+
   it('withholds previous episode windows during refresh, mismatch and disposal', async () => {
     let mediaId = 'ogv:one';
     let holdReload = false;

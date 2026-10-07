@@ -130,10 +130,19 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
 
   /** Returns the first nonempty chapter list, continuing past adapters that fail. */
   async getChapters(): Promise<Chapter[]> {
+    return this.selectChapters();
+  }
+
+  async getChaptersForSource(source: string): Promise<Chapter[]> {
+    return this.selectChapters(source);
+  }
+
+  private async selectChapters(source?: string): Promise<Chapter[]> {
     for (const adapter of this.adapters) {
       if (!adapter.getChapters) continue;
       try {
-        const chapters = await adapter.getChapters();
+        const list = await adapter.getChapters();
+        const chapters = source === undefined ? list : list.filter(chapter => chapter.source === source);
         if (chapters.length > 0) return chapters;
       } catch {
         // Keep looking; one provider's chapter failure is not fatal.
