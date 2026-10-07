@@ -290,7 +290,12 @@ function syncHarvest(): void {
   syncNetflixTimedAction(root);
   const watchId = netflixWatchId(window.location.pathname);
   const appApi = readNetflixPlayerAppApi();
-  const currentVideo = watchId ? appApi?.getVideoMetadataByVideoId?.(Number(watchId))?.getCurrentVideo?.() : null;
+  let currentVideo: unknown = null;
+  try {
+    if (watchId) currentVideo = appApi?.getVideoMetadataByVideoId?.(Number(watchId))?.getCurrentVideo?.();
+  } catch {
+    // A closed player throws here. Captions still come from the session below.
+  }
   syncNetflixNextPreview(watchId, currentVideo);
   const session = selectNetflixSession(appApi, root, watchId);
   // A /watch route with no matching session is loading, not a public trailer.
