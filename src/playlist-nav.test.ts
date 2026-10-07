@@ -560,6 +560,29 @@ describe('playlist navigation DOM', () => {
             counts,
             liveInvocations
           };
+          const previewNode = document.createElement('div');
+          previewNode.id = 'theater-everywhere-netflix-next-preview';
+          document.documentElement.appendChild(previewNode);
+          const readPreview = (payload) => {
+            previewNode.textContent = JSON.stringify(payload);
+            return read(playerVideo())[0] ? read(playerVideo())[0].preview : null;
+          };
+          const matchedPreview = readPreview({
+            videoId: '70248290',
+            title: 'House of Cards · Rozdział 2',
+            imageUrl: 'https://occ.example/thumb.webp'
+          });
+          const otherTitle = readPreview({
+            videoId: '80057281',
+            title: 'Inny odcinek',
+            imageUrl: 'https://occ.example/other.webp'
+          });
+          const insecurePreview = readPreview({
+            videoId: '70248290',
+            title: 'House of Cards · Rozdział 2',
+            imageUrl: 'http://occ.example/thumb.webp'
+          });
+          previewNode.remove();
 
           mount('<div style="display:none"><button type="button" data-uia="control-next"></button></div>');
           const ancestorDisplayNone = directions(playerVideo());
@@ -637,7 +660,10 @@ describe('playlist navigation DOM', () => {
             removedClicks,
             flagOff,
             routeOnly,
-            reusedTitle
+            reusedTitle,
+            matchedPreview,
+            otherTitle,
+            insecurePreview
           };
         })()`) as {
           single: { directions: string[]; preview: { title: string } | null; path: string; counts: { ghost: number; live: number; seamless: number; back: number; prev: number }; liveInvocations: number };
@@ -655,6 +681,9 @@ describe('playlist navigation DOM', () => {
           flagOff: { clicks: number; directions: string[] };
           routeOnly: number;
           reusedTitle: number;
+          matchedPreview: { title: string; imageUrl: string } | null;
+          otherTitle: { title: string } | null;
+          insecurePreview: { title: string } | null;
         };
 
         assert.deepEqual(report.single.directions, ['next']);
@@ -676,6 +705,12 @@ describe('playlist navigation DOM', () => {
         assert.deepEqual(report.flagOff, { clicks: 0, directions: [] });
         assert.equal(report.routeOnly, 0);
         assert.equal(report.reusedTitle, 0);
+        assert.deepEqual(report.matchedPreview, {
+          title: 'House of Cards · Rozdział 2',
+          imageUrl: 'https://occ.example/thumb.webp'
+        });
+        assert.equal(report.otherTitle, null);
+        assert.equal(report.insecurePreview, null);
       } finally {
         await browser.close();
       }

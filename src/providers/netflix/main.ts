@@ -26,6 +26,7 @@ import { isNetflixHost } from '../hosts';
 import { relayNetflixShadowClick } from './shadow-click';
 import { netflixSessionTitle, netflixWatchId, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
 import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
+import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
 import { activateNetflixTimedAction, syncNetflixTimedAction } from './timed-action';
 
 export function netflixIntegrationEnabled(): boolean {
@@ -257,7 +258,7 @@ export function netflixMutationIsOwnSnapshot(records: Array<{
 
 function nodeInsideSnapshot(node: Node): boolean {
   const preview = node instanceof Element ? node : node.parentElement;
-  if (preview && [NETFLIX_PREVIEW_ID, NETFLIX_ACTION_SNAPSHOT_ID].some(id => preview.id === id || preview.closest(`#${id}`))) return true;
+  if (preview && [NETFLIX_PREVIEW_ID, NETFLIX_ACTION_SNAPSHOT_ID, NETFLIX_NEXT_PREVIEW_ID].some(id => preview.id === id || preview.closest(`#${id}`))) return true;
   if (node instanceof Element && node.id === NETFLIX_SNAPSHOT_ID) return true;
   const element = node instanceof Element ? node : node.parentElement;
   return Boolean(element && (element.id === NETFLIX_SNAPSHOT_ID || element.closest(`#${NETFLIX_SNAPSHOT_ID}`)));
@@ -275,6 +276,7 @@ function syncHarvest(): void {
   if (!document.documentElement) return;
   if (!netflixIntegrationEnabled() || !isNetflixHost()) {
     publishHiddenJson(NETFLIX_ACTION_SNAPSHOT_ID, null);
+    syncNetflixNextPreview(null, null);
     if (harvest.tracks.length || harvest.title || harvest.videoId) {
       harvest = { tracks: [] };
       previousVideoId = null;
@@ -287,6 +289,8 @@ function syncHarvest(): void {
   syncNetflixTimedAction(root);
   const watchId = netflixWatchId(window.location.pathname);
   const appApi = readNetflixPlayerAppApi();
+  const currentVideo = watchId ? appApi?.getVideoMetadataByVideoId?.(Number(watchId))?.getCurrentVideo?.() : null;
+  syncNetflixNextPreview(watchId, currentVideo);
   const session = selectNetflixSession(appApi, root, watchId);
   // A /watch route with no matching session is loading, not a public trailer.
   const props = !watchId && root ? findPlayerProps(root) : null;

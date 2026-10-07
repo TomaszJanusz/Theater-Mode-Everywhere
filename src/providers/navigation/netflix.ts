@@ -2,6 +2,7 @@ import type { PlaylistAction } from '../../playlist-nav';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { isNetflixHost } from '../hosts';
+import { readNetflixNextPreview } from '../netflix/next-preview';
 import { netflixWatchId } from '../netflix/session';
 
 const NEXT_BUTTON = 'button[data-uia="control-next"]';
@@ -12,7 +13,8 @@ const NEXT_BUTTON = 'button[data-uia="control-next"]';
  * control, and a disconnected node do not. Previous stays absent: the toolbar
  * exposes control-next, not a previous-episode control. The click rechecks the
  * same button against the current /watch id so a replacement or a new title
- * cannot run a stale action. The integration flag turns the step off.
+ * cannot run a stale action. The hover card reads the main-world next-episode
+ * snapshot for this watch id. The integration flag turns the step off.
  */
 export function findNetflixPlaylistActions(
   root: ParentNode,
@@ -26,9 +28,10 @@ export function findNetflixPlaylistActions(
   if (!videoId) return [];
   const button = findNextButton(player);
   if (!button) return [];
+  const doc = pageDocument(root);
   return [{
     direction: 'next',
-    preview: null,
+    preview: doc ? readNetflixNextPreview(doc, videoId) : null,
     restarts: false,
     activate() {
       if (!netflixNavEnabled()) return;
@@ -123,4 +126,9 @@ function displayed(element: HTMLElement): boolean {
 function within(root: ParentNode, node: Node): boolean {
   if (root === node) return true;
   return root instanceof Node && root.contains(node);
+}
+
+function pageDocument(root: ParentNode): Document | null {
+  if ((root as Node).nodeType === 9) return root as Document;
+  return (root as Node).ownerDocument || null;
 }
