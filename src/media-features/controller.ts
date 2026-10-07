@@ -22,6 +22,7 @@ export type CaptionHudPayload = {
   label?: string;
 };
 
+/** Controls preference storage; loading feedback is always enabled. */
 export type CaptionActivateOptions = {
   persist?: boolean;
 };
@@ -105,6 +106,11 @@ export class MediaFeaturesController {
   private dialogAbort = new AbortController();
   private stopObservingHostCaptions = () => {};
 
+  /**
+   * Binds the provider, renderer and caption UI, retaining the saved language
+   * as a pending restoration intent until tracks become available.
+   * @param bindings Player elements, provider overrides and state callbacks.
+   */
   constructor(bindings: MediaFeaturesBindings) {
     this.providerFlags = bindings.providerFlags || defaultMediaProviderFlags();
     this.video = coercePlaybackSurface(bindings.video);
@@ -215,6 +221,10 @@ export class MediaFeaturesController {
     void this.refresh();
   }
 
+  /**
+   * Clears media-derived state and dismisses loading while retaining the
+   * language preference for restoration during the next metadata refresh.
+   */
   invalidate(): void {
     if (this.disposed) return;
     this.bumpEpoch();
@@ -240,6 +250,10 @@ export class MediaFeaturesController {
     this.onTitle?.(null);
   }
 
+  /**
+   * Retires the current adapter epoch and caption generation, dismissing
+   * loading feedback and aborting dialogs tied to the previous lifecycle.
+   */
   private bumpEpoch(): void {
     this.cancelCaptionLoad();
     this.sessionEpoch += 1;
@@ -293,6 +307,8 @@ export class MediaFeaturesController {
   /**
    * Reloads media metadata and publishes a snapshot for the current adapter epoch.
    * Concurrent requests queue one follow-up refresh, and stale adapter results are ignored.
+   * A pending saved-language restoration uses the shared caption operation,
+   * with one delayed retry unless a newer selection supersedes it.
    */
   async refresh(): Promise<void> {
     if (this.disposed) return;
@@ -549,6 +565,10 @@ export class MediaFeaturesController {
     this.onSubtitleLayoutChange?.(on);
   }
 
+  /**
+   * Derives CC availability, selection, pulse and aria-busy from the track
+   * catalog and the shared caption state.
+   */
   private updateCcState(): void {
     const hasTracks = this.tracks.length > 0;
     this.ccBtn.classList.toggle('disabled', !hasTracks);
@@ -570,6 +590,10 @@ export class MediaFeaturesController {
     if (this.usingOverlayCaptions) this.renderer.update(displayMediaTime(this.video));
   }
 
+  /**
+   * Rebuilds caption choices, routing language and Off selections through
+   * the same serialized operation used by shortcuts and restoration.
+   */
   renderCcMenu(): void {
     if (typeof document === 'undefined') return;
     this.ccMenu.replaceChildren();
@@ -623,6 +647,10 @@ export class MediaFeaturesController {
       : baseLabel;
   }
 
+  /**
+   * Publishes a terminal caption status, naming the active track on success.
+   * @param result Verified outcome of a caption operation or availability check.
+   */
   private emitCaptionHud(result: CaptionToggleResult): void {
     if (!this.onCaptionHud) return;
     const track = result === 'on' && this.activeTrackId
@@ -634,6 +662,10 @@ export class MediaFeaturesController {
     });
   }
 
+  /**
+   * Clears the current loading state and HUD during lifecycle retirement.
+   * The caller also advances the generation to reject late provider results.
+   */
   private cancelCaptionLoad(): void {
     if (this.captionState !== 'loading') return;
     this.captionState = 'off';
@@ -679,6 +711,12 @@ export class MediaFeaturesController {
     return item;
   }
 
+  /**
+   * Serializes caption work and skips operations whose adapter epoch or media
+   * identity changed while they were queued, without publishing stale feedback.
+   * @param fn Caption operation to execute when its captured lifecycle is current.
+   * @returns The operation result, or the current on/off state if it was skipped.
+   */
   private enqueue(fn: () => Promise<CaptionToggleResult>): Promise<CaptionToggleResult> {
     const epoch = this.sessionEpoch;
     const adapter = this.adapter;
@@ -724,7 +762,15 @@ export class MediaFeaturesController {
     }
   }
 
-  /** All caption requests share loading UI, result application and stale-result rejection. */
+  /**
+   * Owns loading feedback, provider execution and result application for both
+   * activation and cue-window downloads. Failed requests deactivate captions;
+   * successful window refreshes dismiss loading without repeating the On HUD.
+   * @param id Track to activate or refresh, or null to turn captions off.
+   * @param options Controls whether the resulting preference is written to storage.
+   * @param refresh Optional lazy window request, invoked after loading UI is published.
+   * @returns The verified result, or the current on/off state for a stale completion.
+   */
   private async runCaptionOperation(
     id: string | null,
     options?: CaptionActivateOptions,
@@ -800,10 +846,21 @@ export class MediaFeaturesController {
     }
   }
 
+  /**
+   * Queues a track selection with mandatory loading and result feedback.
+   * @param id Track identifier, or null to disable captions.
+   * @param options Preference persistence policy for this selection.
+   * @returns The shared caption operation's outcome.
+   */
   async activate(id: string | null, options?: CaptionActivateOptions): Promise<CaptionToggleResult> {
     return this.enqueue(() => this.runCaptionOperation(id, options));
   }
 
+  /**
+   * Queues a toggle using the last preferred language, reporting unavailable
+   * tracks or executing the shared activation/deactivation lifecycle.
+   * @returns The toggle outcome after previously queued caption work finishes.
+   */
   async toggleCaptions(): Promise<CaptionToggleResult> {
     return this.enqueue(async () => {
       if (this.disposed || this.tracks.length === 0) {
@@ -822,6 +879,11 @@ export class MediaFeaturesController {
     });
   }
 
+  /**
+   * Renders captions at the current playhead and queues a needed window download
+   * through the shared lifecycle. Cached windows leave loading feedback untouched.
+   * @param time Display media time in seconds; large jumps bypass the polling interval.
+   */
   updateTime(time: number): void {
     if (!this.usingOverlayCaptions) return;
     this.renderer.update(time);
@@ -874,6 +936,10 @@ export class MediaFeaturesController {
     return this.captionsAreOn() ? this.t('disableSubtitles') : this.t('enableSubtitles');
   }
 
+  /**
+   * Retires pending caption work and releases observers, provider resources,
+   * renderer output and timeline layers when the player UI is removed.
+   */
   dispose(): void {
     this.disposed = true;
     this.stopObservingHostCaptions();

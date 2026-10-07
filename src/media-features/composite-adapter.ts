@@ -91,6 +91,8 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
   /**
    * Activates adapters that report the requested track and deactivates the others.
    * Passing `null` deactivates every adapter; failures are isolated so another adapter can respond.
+   * @param id Requested track identifier, or null to disable all caption sources.
+   * @returns The activation result, retaining its successful adapter for lazy cue refreshes.
    */
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     this.captionAdapter = null;
@@ -122,6 +124,13 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     return result;
   }
 
+  /**
+   * Delegates window preparation to the adapter owning the active selection,
+   * without rediscovering tracks or starting a download.
+   * @param id Identifier of the active caption track.
+   * @param time Display media time in seconds.
+   * @returns A lazy provider request, or null for a mismatched track or a cached window.
+   */
   prepareCaptionCueRefresh(id: string, time: number): CaptionCueRefresh | null {
     if (id !== this.captionTrackId) return null;
     return this.captionAdapter?.prepareCaptionCueRefresh?.(id, time) ?? null;
@@ -211,6 +220,10 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     await allSettledResults(this.adapters.map((adapter) => adapter.reload?.() ?? Promise.resolve()));
   }
 
+  /**
+   * Forgets caption ownership and resets host layout and adapter caches so
+   * cue refreshes cannot target a selection from the previous lifecycle.
+   */
   invalidate(): void {
     this.captionAdapter = null;
     this.captionTrackId = null;
@@ -218,6 +231,9 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
     this.adapters.forEach((adapter) => adapter.invalidate?.());
   }
 
+  /**
+   * Releases caption ownership, host layout state and every child adapter's resources.
+   */
   dispose(): void {
     this.captionAdapter = null;
     this.captionTrackId = null;

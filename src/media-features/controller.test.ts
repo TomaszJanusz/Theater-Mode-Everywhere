@@ -86,12 +86,20 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Holds a provider result until a test has inspected loading or cancellation state.
+ * @returns A pending promise and the resolver that releases its supplied result.
+ */
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });
   return { promise, resolve };
 }
 
+/**
+ * Provides in-memory CC classes and attributes for controller tests without a DOM.
+ * @returns A button stub whose aria-busy and selection state can be inspected.
+ */
 function fakeButton(): HTMLButtonElement {
   const attributes = new Map<string, string>();
   return {

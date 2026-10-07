@@ -24,6 +24,10 @@ const BUNDLE = esbuild.buildSync({
   platform: 'browser', target: 'es2022', logLevel: 'silent'
 }).outputFiles[0].text;
 
+/**
+ * Holds a routed VTT response until the loading HUD and icon have been inspected.
+ * @returns A pending promise and a callback that releases the response handler.
+ */
 function gate() {
   let release!: () => void;
   const promise = new Promise<void>(resolve => { release = resolve; });
@@ -51,6 +55,14 @@ const FIXTURE = `<!doctype html><html><head><title>Caption loading fixture</titl
     video.play();
   </script></body></html>`;
 
+/**
+ * Starts the production player runtime with controlled extension settings and
+ * enters theater mode on the fixture's playing video.
+ * @param page Browser page containing the local video fixture.
+ * @param host Host key used for the saved English caption preference.
+ * @param saved Whether automatic caption restoration is enabled.
+ * @returns When the theater controls have mounted.
+ */
 async function boot(page: Page, host: string, saved = true): Promise<void> {
   await page.evaluate(`window.chrome = { storage: {
     sync: {
@@ -69,6 +81,12 @@ async function boot(page: Page, host: string, saved = true): Promise<void> {
   await page.locator('.theater-controls-wrapper').waitFor();
 }
 
+/**
+ * Saves a regression screenshot when CAPTION_SCREENSHOT_DIR is configured.
+ * @param page Production player page in the state being documented.
+ * @param filename PNG filename relative to the configured output directory.
+ * @returns When capture finishes, or immediately if screenshot output is disabled.
+ */
 async function screenshot(page: Page, filename: string): Promise<void> {
   const directory = process.env.CAPTION_SCREENSHOT_DIR;
   if (!directory) return;
