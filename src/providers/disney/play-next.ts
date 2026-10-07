@@ -25,10 +25,12 @@ let remembered: { playId: string; host: PlayNextHost } | null = null;
  * Remember the wide control and invoke its action after the bar unmounts.
  */
 export function installDisneyPlayNext(): void {
-  if (installed || typeof window === 'undefined') return;
-  installed = true;
-  window.addEventListener(DISNEY_PLAY_NEXT_EVENT, onDisneyPlayNextRequest);
-  window.setInterval(syncDisneyPlayNext, 500);
+  if (typeof window === 'undefined') return;
+  if (!installed) {
+    installed = true;
+    window.addEventListener(DISNEY_PLAY_NEXT_EVENT, onDisneyPlayNextRequest);
+    window.setInterval(syncDisneyPlayNext, 500);
+  }
   syncDisneyPlayNext();
 }
 
@@ -53,10 +55,7 @@ export function disneyPlayNextPublished(doc: Document, playId: string): boolean 
 
 export function findDisneyPlayNextButton(doc: Document): HTMLButtonElement | null {
   const host = findDisneyPlayNextHost(doc);
-  const button = host?.shadowRoot?.querySelector('button.play-next');
-  if (!(button instanceof HTMLButtonElement)) return null;
-  if (!button.isConnected || button.hidden || button.disabled || button.getAttribute('aria-disabled') === 'true') return null;
-  return button;
+  return host ? livePlayNextButton(host) : null;
 }
 
 function onDisneyPlayNextRequest(event: Event): void {
@@ -66,8 +65,9 @@ function onDisneyPlayNextRequest(event: Event): void {
   const host = remembered?.playId === playId ? remembered.host : null;
   let ok = false;
   if (host && playId && playId === currentPlayId() && disneyPlayNextEnabled()) {
+    const usable = !host.isConnected || livePlayNextButton(host) !== null;
     try {
-      if (typeof host.primaryAction === 'function') {
+      if (usable && typeof host.primaryAction === 'function') {
         host.primaryAction();
         ok = true;
       }
@@ -87,7 +87,7 @@ function syncDisneyPlayNext(): void {
     return;
   }
   const hosts = playNextHosts(doc);
-  const available = hosts.filter((host) => host.isConnected && !host.hidden);
+  const available = offeredPlayNextHosts(hosts);
   if (available.length) {
     remembered = { playId, host: preferLaidOut(available) };
     doc.documentElement.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
@@ -102,8 +102,19 @@ function syncDisneyPlayNext(): void {
 }
 
 function findDisneyPlayNextHost(doc: Document): PlayNextHost | null {
-  const available = playNextHosts(doc).filter((host) => host.isConnected && !host.hidden);
+  const available = offeredPlayNextHosts(playNextHosts(doc));
   return available.length ? preferLaidOut(available) : null;
+}
+
+function offeredPlayNextHosts(hosts: PlayNextHost[]): PlayNextHost[] {
+  return hosts.filter((host) => host.isConnected && !host.hidden && !collapsedLayout(host) && livePlayNextButton(host));
+}
+
+function livePlayNextButton(host: PlayNextHost): HTMLButtonElement | null {
+  const button = host.shadowRoot?.querySelector('button.play-next');
+  if (!(button instanceof HTMLButtonElement)) return null;
+  if (!button.isConnected || button.hidden || button.disabled || button.getAttribute('aria-disabled') === 'true') return null;
+  return button;
 }
 
 function preferLaidOut(hosts: PlayNextHost[]): PlayNextHost {

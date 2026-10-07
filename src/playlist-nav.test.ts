@@ -41,8 +41,9 @@ function playlistBrowserBundle(): string {
         "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
         "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
         "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
+        "import { installDisneyPlayNext } from './providers/disney/play-next';",
         'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
-        'export { findPlaylistActions };',
+        'export { findPlaylistActions, installDisneyPlayNext };',
         'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
         'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
       ].join('\n'),
@@ -853,6 +854,33 @@ describe('playlist navigation DOM', () => {
           const disabled = directions();
           mount({ ariaDisabled: true });
           const ariaDisabled = directions();
+          const playId = '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
+          const published = (options) => {
+            mount(options);
+            api.installDisneyPlayNext();
+            return document.documentElement.getAttribute('data-te-disney-play-next');
+          };
+          const disabledPublished = published({ disabled: true });
+          const hiddenPublished = published({ hidden: true });
+          const ariaPublished = published({ ariaDisabled: true });
+          const mountedPlayNext = () => document.querySelector('main-app-controls-overlay').shadowRoot.querySelector('play-next');
+          mount({});
+          const liveHost = mountedPlayNext();
+          liveHost.primaryAction = () => { window.__primaryCalls = (window.__primaryCalls || 0) + 1; };
+          api.installDisneyPlayNext();
+          const livePublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          document.body.replaceChildren();
+          api.installDisneyPlayNext();
+          const heldPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          window.__primaryCalls = 0;
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const primaryAfterHide = window.__primaryCalls;
+          mount({ disabled: true });
+          mountedPlayNext().primaryAction = () => { window.__primaryCalls++; };
+          api.installDisneyPlayNext();
+          const blockedPublished = document.documentElement.getAttribute('data-te-disney-play-next');
+          window.dispatchEvent(new CustomEvent('theater-everywhere-disney-play-next', { detail: playId }));
+          const primaryWhileDisabled = window.__primaryCalls;
           mount({});
           document.documentElement.setAttribute('data-te-disney-integration-off', '');
           const flagged = directions();
@@ -903,7 +931,7 @@ describe('playlist navigation DOM', () => {
           history.pushState({}, '', '/pl-pl/play/11111111-1111-4111-8111-111111111111');
           const before = window.__playNextClicks;
           stale.activate();
-          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, flagged, browse, paired, narrowClicks, wideClicks, held, heldActivated, staleClicks: window.__playNextClicks - before };
+          return { ready, clicked, laterOverlay, laterClicks, fromElement, upNextClicks, faded, fadedClicks, hidden, disabled, ariaDisabled, disabledPublished, hiddenPublished, ariaPublished, livePublished, heldPublished, primaryAfterHide, blockedPublished, primaryWhileDisabled, flagged, browse, paired, narrowClicks, wideClicks, held, heldActivated, staleClicks: window.__playNextClicks - before };
         })()`) as {
           ready: string[];
           clicked: number;
@@ -916,6 +944,14 @@ describe('playlist navigation DOM', () => {
           hidden: string[];
           disabled: string[];
           ariaDisabled: string[];
+          disabledPublished: string | null;
+          hiddenPublished: string | null;
+          ariaPublished: string | null;
+          livePublished: string | null;
+          heldPublished: string | null;
+          primaryAfterHide: number;
+          blockedPublished: string | null;
+          primaryWhileDisabled: number;
           flagged: string[];
           browse: string[];
           paired: string[];
@@ -936,6 +972,14 @@ describe('playlist navigation DOM', () => {
         assert.deepEqual(report.hidden, []);
         assert.deepEqual(report.disabled, []);
         assert.deepEqual(report.ariaDisabled, []);
+        assert.equal(report.disabledPublished, null);
+        assert.equal(report.hiddenPublished, null);
+        assert.equal(report.ariaPublished, null);
+        assert.equal(report.livePublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.equal(report.heldPublished, '0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8');
+        assert.equal(report.primaryAfterHide, 1);
+        assert.equal(report.blockedPublished, null);
+        assert.equal(report.primaryWhileDisabled, 1);
         assert.deepEqual(report.flagged, []);
         assert.deepEqual(report.browse, []);
         assert.deepEqual(report.paired, ['next']);
