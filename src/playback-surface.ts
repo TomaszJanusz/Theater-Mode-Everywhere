@@ -70,6 +70,15 @@ export function rangesFromPairs(pairs: Array<{ start: number; end: number }> | n
   };
 }
 
+function allowPictureInPicture(video: HTMLVideoElement): void {
+  try {
+    video.disablePictureInPicture = false;
+  } catch { /* A locked property still leaves the attribute to remove. */ }
+  try {
+    video.removeAttribute('disablepictureinpicture');
+  } catch { /* Ignore a node that rejects attribute changes. */ }
+}
+
 function pictureInPictureEnabled(): boolean {
   try {
     return typeof document !== 'undefined' && document.pictureInPictureEnabled === true;
@@ -164,6 +173,9 @@ export function nativePlaybackSurface(video: HTMLVideoElement): PlaybackSurface 
       if (typeof video.requestPictureInPicture !== 'function') {
         return Promise.reject(new Error('picture-in-picture-unavailable'));
       }
+      // Sites such as Netflix set this to hide their own PiP control. Our
+      // button and shortcut are an explicit request, so clear it in this turn.
+      allowPictureInPicture(video);
       try {
         return video.requestPictureInPicture();
       } catch (error) {
