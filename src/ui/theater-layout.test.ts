@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { resolveTwitchPinToOrigin } from '../providers/twitch/stage';
 import {
-  resolveTheaterViewportPin,
   theaterVideoNeedsRestyle,
   theaterViewportPinOffset
 } from './theater-layout';
@@ -29,36 +29,11 @@ describe('theater viewport pin', () => {
   });
 
   it('clears a leftover sidenav pin once the Twitch stage owns the viewport', () => {
-    assert.deepEqual(
-      resolveTheaterViewportPin({
-        twitchStage: true,
-        rect: { top: -50, left: -240 },
-        current: { top: -50, left: -240 }
-      }),
-      { top: 0, left: 0 }
-    );
+    assert.deepEqual(resolveTwitchPinToOrigin({ top: -50, left: -240 }), { top: 0, left: 0 });
   });
 
   it('does not compensate a well offset on Twitch once the host pin is zero', () => {
-    assert.equal(
-      resolveTheaterViewportPin({
-        twitchStage: true,
-        rect: { top: 50, left: 240 },
-        current: { top: 0, left: 0 }
-      }),
-      null
-    );
-  });
-
-  it('leaves a zeroed Twitch stage pin alone', () => {
-    assert.equal(
-      resolveTheaterViewportPin({
-        twitchStage: true,
-        rect: { top: 0, left: 0 },
-        current: { top: 0, left: 0 }
-      }),
-      null
-    );
+    assert.equal(resolveTwitchPinToOrigin({ top: 0, left: 0 }), null);
   });
 });
 

@@ -7,6 +7,9 @@
  * same layout inside the shadow sheet so the overlay does not need inline
  * !important on the host element.
  */
+
+@import "./providers/presentation.css";
+
 #theater-everywhere-ui,
 :host {
   all: initial !important;
@@ -90,137 +93,6 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   z-index: 2147483647 !important;
 }
 
-/* Disney+ overwrites video.className (dropping theater-everywhere-video-active),
- * so the CSS black background is lost and body rgb(23,23,27) shows through the
- * EME letterbox. Stage + body black survive that; DxcOverlay is the title/back chrome. */
-#theater-everywhere-disney-stage {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: #000000 !important;
-  z-index: 2147483645 !important;
-  pointer-events: none !important;
-}
-
-html.theater-everywhere-disney-stage,
-html.theater-everywhere-disney-stage body {
-  background: #000000 !important;
-}
-
-html.theater-everywhere-disney-stage .DxcOverlay {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Twitch `.persistent-player` uses an identity transform, which becomes the
- * containing block for position:fixed and keeps the theater video inside the
- * 16:9 player well instead of the viewport. */
-html.theater-everywhere-twitch-stage .persistent-player {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: none !important;
-  max-height: none !important;
-  transform: none !important;
-  translate: none !important;
-  overflow: visible !important;
-  z-index: 2147483646 !important;
-  background: #000000 !important;
-}
-
-html.theater-everywhere-twitch-stage .video-player,
-html.theater-everywhere-twitch-stage .video-player__container,
-html.theater-everywhere-twitch-stage .tw-aspect {
-  transform: none !important;
-  overflow: visible !important;
-  clip: auto !important;
-  clip-path: none !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-html.theater-everywhere-twitch-stage .side-nav,
-html.theater-everywhere-twitch-stage .top-nav,
-html.theater-everywhere-twitch-stage .right-column,
-html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-/* Netflix's modal dialog keeps an identity transform (scale(1)). That is a
- * containing block for position:fixed, so the inline containment reset in
- * netflix-stage.ts is what actually pins the video. These rules cover the
- * stable player chrome and host subtitles once that pin is in place. */
-html.theater-everywhere-netflix-stage .nf-player-container,
-html.theater-everywhere-netflix-stage .sizing-wrapper,
-html.theater-everywhere-netflix-stage .VideoContainer,
-html.theater-everywhere-netflix-stage [role="dialog"] {
-  overflow: visible !important;
-  transform: none !important;
-  scale: none !important;
-  transition: none !important;
-  animation: none !important;
-  filter: none !important;
-  mask-image: none !important;
-}
-
-html.theater-everywhere-netflix-stage .PlayerControls--control-element,
-html.theater-everywhere-netflix-stage .PlayerControlsNeo__bottom-controls,
-html.theater-everywhere-netflix-stage .nfp-button-control {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-html.theater-everywhere-netflix-stage .player-timedtext {
-  position: fixed !important;
-  left: 10vw !important;
-  width: 80vw !important;
-  right: auto !important;
-  top: auto !important;
-  height: auto !important;
-  bottom: 96px !important;
-  z-index: 2147483647 !important;
-  transform: none !important;
-  pointer-events: none !important;
-  text-align: center !important;
-}
-
-html.theater-everywhere-netflix-stage.theater-everywhere-picture-top .player-timedtext {
-  bottom: max(28px, calc(var(--theater-letterbox, 0px) * 0.35)) !important;
-}
-
-html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
-  transition: bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-/* Tencent's WASM stage. Hide chrome without display:none so the next-episode
-   control still passes isHostStepUsable and the TME bar can call click(). */
-html.theater-everywhere-tencent-stage .txp_player,
-html.theater-everywhere-tencent-stage .txp_videos_container {
-  overflow: visible !important;
-  transform: none !important;
-  clip-path: none !important;
-  contain: none !important;
-}
-
-html.theater-everywhere-tencent-stage .txp-layer,
-html.theater-everywhere-tencent-stage .player-top-vip-slot,
-html.theater-everywhere-tencent-stage .player-top-vip,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_bottom,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_gradient_bottom,
-html.theater-everywhere-tencent-stage .txp_controls,
-html.theater-everywhere-tencent-stage .txp_top,
-html.theater-everywhere-tencent-stage .plugin_ctrl_txp_top {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 .theater-wasm-catcher {
   position: fixed;
   inset: 0;
@@ -259,32 +131,6 @@ html.theater-everywhere-tencent-stage .plugin_ctrl_txp_top {
   contain: none !important;
 }
 
-/* YouTube keeps the watch page and its own player chrome in the DOM. They show
- * through for a moment whenever the video element is emptied between playlist items. */
-html.theater-everywhere-html-active #masthead-container,
-html.theater-everywhere-html-active ytd-masthead,
-html.theater-everywhere-html-active #guide,
-html.theater-everywhere-html-active ytd-mini-guide-renderer,
-html.theater-everywhere-html-active #secondary,
-html.theater-everywhere-html-active #below,
-html.theater-everywhere-html-active ytd-watch-metadata,
-html.theater-everywhere-html-active ytd-comments,
-html.theater-everywhere-html-active ytd-playlist-panel-renderer,
-html.theater-everywhere-html-active #chat,
-html.theater-everywhere-html-active .ytp-chrome-top,
-html.theater-everywhere-html-active .ytp-chrome-bottom,
-html.theater-everywhere-html-active .ytp-gradient-top,
-html.theater-everywhere-html-active .ytp-gradient-bottom,
-html.theater-everywhere-html-active .ytp-pause-overlay,
-html.theater-everywhere-html-active .ytp-cued-thumbnail-overlay,
-html.theater-everywhere-html-active .ytp-endscreen-content,
-html.theater-everywhere-html-active .ytp-ce-element,
-html.theater-everywhere-html-active .ytp-player-content {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 .theater-everywhere-cursor-hidden,
 .theater-everywhere-cursor-hidden * {
   cursor: none !important;
@@ -292,6 +138,7 @@ html.theater-everywhere-html-active .ytp-player-content {
 
 /* Custom player controls container card */
 .theater-controls-wrapper {
+  --theater-bar-pad: 10px;
   --theater-menu-notch: 48px;
   --theater-menu-notch-depth: 64px;
   --theater-menu-notch-overlap: calc(var(--theater-menu-notch-depth) - 32px);
@@ -310,7 +157,7 @@ html.theater-everywhere-html-active .ytp-player-content {
   background: transparent !important;
   border: none !important;
   border-radius: 12px !important;
-  padding: 10px 16px !important;
+  padding: var(--theater-bar-pad) 16px !important;
   overflow: visible !important;
   contain: none !important;
   clip-path: none !important;
@@ -647,13 +494,16 @@ html.theater-everywhere-html-active .ytp-player-content {
   width: var(--theater-menu-notch) !important;
   min-width: var(--theater-menu-notch) !important;
   max-width: var(--theater-menu-notch) !important;
-  height: var(--theater-menu-notch-depth) !important;
-  min-height: var(--theater-menu-notch-depth) !important;
+  height: calc(var(--theater-menu-notch-depth) + var(--theater-bar-pad)) !important;
+  min-height: calc(var(--theater-menu-notch-depth) + var(--theater-bar-pad)) !important;
   align-self: flex-end !important;
   align-items: center !important;
-  /* Removing the top stroke adds 1px to the content box. Compensate so the
-     icon keeps the same center as a closed 32px button. */
+  /* The extra pad hangs below the 32px slot, onto the bar's bottom border.
+     Padding keeps the icon centered in that slot. The top stroke is gone, so
+     the +1px restores the closed button's content box. */
+  margin-bottom: calc(-1 * var(--theater-bar-pad)) !important;
   padding-top: calc(var(--theater-menu-notch-overlap) + 1px) !important;
+  padding-bottom: var(--theater-bar-pad) !important;
   background: rgb(20, 20, 20) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   border-top-width: 0 !important;
@@ -1132,59 +982,6 @@ html.theater-everywhere-html-active .ytp-player-content {
   opacity: 1 !important;
 }
 
-html.theater-everywhere-html-active .ytp-caption-window-container {
-  position: fixed !important;
-  inset: auto 0 var(--theater-caption-bottom, 48px) 0 !important;
-  width: 100% !important;
-  height: auto !important;
-  z-index: 2147483647 !important;
-  pointer-events: none !important;
-  transform: none !important;
-}
-
-/* Same theater-only lift as YouTube's caption window. The measured Bitmovin
- * renderer is `.bitmovinplayer-container > div:last-child > div > ul`: the
- * wrapper is absolute and the list stays at z-index auto, under the fixed
- * video. :has keeps the rule on that overlay. The list uses the caption dock
- * offset already written by updateCaptionDock, so cues sit above the visible
- * bar. Dropping the host-caption class restores the player's own placement. */
-html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions .bitmovinplayer-container > div:last-child:has(> div > ul) {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  z-index: 2147483647 !important;
-  pointer-events: none !important;
-  transform: none !important;
-}
-
-html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions .bitmovinplayer-container > div:last-child:has(> div > ul) > div > ul {
-  position: absolute !important;
-  top: auto !important;
-  bottom: var(--theater-caption-bottom, 48px) !important;
-  transition: bottom 0.18s ease !important;
-}
-
-html.theater-everywhere-picture-moving .ytp-caption-window-container {
-  transition: inset 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-html.theater-everywhere-html-active .ytp-caption-window-container .caption-window,
-html.theater-everywhere-html-active .ytp-caption-window-bottom,
-html.theater-everywhere-html-active .ytp-caption-window-top {
-  position: relative !important;
-  left: 50% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: auto !important;
-  transform: translateX(-50%) !important;
-  margin: 0 auto !important;
-  max-width: min(80vw, 960px) !important;
-}
-
-html.theater-using-overlay-captions .ytp-caption-window-container,
 html.theater-using-overlay-captions .able-captions,
 html.theater-using-overlay-captions .able-captions-wrapper,
 html.theater-using-overlay-captions .able-captions-overlay,
@@ -1192,11 +989,7 @@ html.theater-using-overlay-captions .vjs-text-track-display,
 html.theater-using-overlay-captions .plyr__captions,
 html.theater-using-overlay-captions .jw-captions,
 html.theater-using-overlay-captions .jw-text-track-container,
-html.theater-using-overlay-captions .mejs-captions-layer,
-html.theater-everywhere-html-active[data-te-tencent-captions-hidden] .thumbplayer-webvtt-overlay,
-html.theater-everywhere-html-active[data-te-tencent-captions-hidden] #internal-player-wrapper .text-track,
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-ass-subtitle,
-html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .player-mobile-subtitle {
+html.theater-using-overlay-captions .mejs-captions-layer {
   display: none !important;
   visibility: hidden !important;
 }
@@ -1444,24 +1237,25 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   align-items: stretch !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  max-height: min(42vh, 280px) !important;
-  /* Stay inside the shell stroke. A full-bleed header was painting over it. */
-  padding: 1px 1px 4px !important;
+  /* Stay inside the shell stroke. The header is a sibling, so rows cannot scroll above it. */
+  padding: 0 1px 4px !important;
   scrollbar-width: thin !important;
   scrollbar-color: rgba(255, 255, 255, 0.28) transparent !important;
 }
 
-.theater-cc-menu-header + .theater-cc-menu-item {
+.theater-cc-menu-list > .theater-cc-menu-item:first-child {
   margin-top: 4px !important;
 }
 
 .theater-cc-menu-header {
-  position: sticky !important;
-  top: 1px !important;
+  position: relative !important;
   z-index: 1 !important;
+  flex: 0 0 auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -1469,7 +1263,7 @@ html.theater-everywhere-html-active[data-te-bilibili-intl-captions-hidden] .play
   padding: 6px 8px 6px 12px !important;
   border-bottom: 0 !important;
   border-radius: 7px 7px 0 0 !important;
-  margin: 0 !important;
+  margin: 1px 1px 0 !important;
   background: rgb(20, 20, 20) !important;
 }
 
@@ -2670,5 +2464,112 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 
   .theater-caption-palette-row-compact {
     grid-template-columns: auto minmax(130px, 1fr) !important;
+  }
+}
+
+/* Time-sensitive host action. Same glass as the home pill, with smaller type.
+   It stays clickable after the playback bar hides, and clears the bar while
+   the bar is on screen. */
+.theater-service-action-host {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  inset-inline-end: 24px !important;
+  bottom: 24px !important;
+  max-width: min(280px, calc(100vw - 48px)) !important;
+  pointer-events: none !important;
+  transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.theater-service-action-host[hidden],
+.theater-service-action-progress[hidden] {
+  display: none !important;
+}
+
+.theater-service-action-label {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.theater-service-action-progress {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform-origin: left center !important;
+  pointer-events: none !important;
+}
+
+.theater-service-action-host.toolbar-visible {
+  bottom: calc(24px + var(--theater-service-action-lift, 96px)) !important;
+}
+
+.theater-service-action {
+  position: relative !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  padding: 8px 14px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(15, 15, 15, 0.5) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+  text-align: center !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  text-overflow: ellipsis !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+
+.theater-service-action:hover,
+.theater-service-action:focus-visible {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
+  ) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  color: var(--accent-color, #ffffff) !important;
+}
+
+.theater-service-action:active {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
+    color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
+  ) !important;
+}
+
+.theater-service-action:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-service-action-host {
+    transition: none !important;
   }
 }

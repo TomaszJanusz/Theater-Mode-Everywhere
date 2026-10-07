@@ -10,16 +10,40 @@ import {
   raisedCaptionRowCount,
   type DockRect
 } from '../media-features/caption-dock';
-import { CRUNCHYROLL_HOST_CAPTION_CLASS, CRUNCHYROLL_HOST_CAPTION_SELECTOR } from '../providers/crunchyroll/host-surface';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
 import { closePlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
+import type { HostCaptionLayout } from '../media-features/types';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
 export const CURSOR_HIDDEN_CLASS = 'theater-everywhere-cursor-hidden';
+
+function applyCaptionDockMotion(
+  el: HTMLElement | null,
+  motion: ReturnType<typeof captionDockMotion>,
+  modes: WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>
+): void {
+  if (!el) return;
+  // A host renderer can rewrite its inline styles during cue replacement.
+  const transition = motion === 'moving'
+    ? 'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s'
+    : motion === 'lifted' ? 'none' : 'opacity 0.15s';
+  if (modes.get(el) === motion && el.style.getPropertyValue('transition') === transition
+    && el.style.getPropertyPriority('transition') === 'important') return;
+  if (motion === 'moving') {
+    el.style.setProperty(
+      'transition',
+      'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
+      'important'
+    );
+  } else if (motion === 'lifted') el.style.setProperty('transition', 'none', 'important');
+  else el.style.setProperty('transition', 'opacity 0.15s ease', 'important');
+  void el.offsetWidth;
+  modes.set(el, motion);
+}
 
 export function createToolbar(ctx: PlayerChromeContext) {
   function scheduleToolbarHide(): void {
@@ -103,21 +127,21 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const placeInBand = raised && band > 0;
     const overlay = ctx.queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
     const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
-    const lineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const features = ctx.queryPlayerUi('.theater-controls-wrapper') as {
+      _mediaFeatures?: {
+        setCaptionLineLimit(maxLines: number): void;
+        readHostCaptionLayout(): HostCaptionLayout | null;
+      }
+    } | null;
+    const hostCaption = features?._mediaFeatures?.readHostCaptionLayout() ?? null;
+    const overlayLineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
+    const lineHeight = overlayLineHeight > 0 ? overlayLineHeight : (hostCaption?.lineHeight ?? 0);
     const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;
-    const features = ctx.queryPlayerUi('.theater-controls-wrapper') as { _mediaFeatures?: { setCaptionLineLimit(maxLines: number): void } } | null;
     features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
-
-    const hostList = document.documentElement.classList.contains('theater-everywhere-html-active')
-      && document.documentElement.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)
-      ? document.querySelector(CRUNCHYROLL_HOST_CAPTION_SELECTOR)
-      : null;
-    const hostCaptionSize = hostList instanceof HTMLElement && hostList.offsetWidth > 1 && hostList.offsetHeight > 1
-      ? { width: hostList.offsetWidth, height: hostList.offsetHeight }
-      : null;
-    const captionSize = overlay && overlayText && overlayText.textContent
+    const overlayCaption = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
-      : hostCaptionSize;
+      : null;
+    const captionSize = overlayCaption ?? hostCaption;
 
     const obstacles: DockRect[] = [];
     const controls = ctx.queryPlayerUi('.theater-controls-wrapper.visible') as HTMLElement | null;
@@ -125,6 +149,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       obstacles.push(chromeLayoutRect(controls));
     }
     for (const selector of [
+      '.theater-service-action-host',
       '.theater-scrubber-tooltip.visible',
       '.theater-cc-menu.visible',
       '.theater-menu.is-open > .theater-cc-menu',
@@ -141,7 +166,11 @@ export function createToolbar(ctx: PlayerChromeContext) {
       });
     }
 
-    const rows = captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2;
+    const rows = overlayCaption
+      ? raisedCaptionRowCount(overlayCaption.height, lineHeight)
+      : hostCaption?.rows !== undefined
+        ? hostCaption.rows
+        : (captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2);
     const restBottom = placeInBand
       ? raisedCaptionRestBottom(
         band,
@@ -166,18 +195,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // A picture move is the exception: captions travel with the video.
     const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
     const dockOverlay = (overlay ?? ctx.queryPlayerUi('.theater-caption-overlay')) as HTMLElement | null;
-    if (dockOverlay && captionDockMotionMode.get(dockOverlay) !== motion) {
-      if (motion === 'moving') {
-        dockOverlay.style.setProperty(
-          'transition',
-          'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
-          'important'
-        );
-      } else if (motion === 'lifted') dockOverlay.style.removeProperty('transition');
-      else dockOverlay.style.setProperty('transition', 'opacity 0.15s ease', 'important');
-      void dockOverlay.offsetWidth;
-      captionDockMotionMode.set(dockOverlay, motion);
-    }
+    applyCaptionDockMotion(dockOverlay, motion, captionDockMotionMode);
+    applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
     captionDockLifted = lifted;
     const nextBottom = `${bottom}px`;
     if (document.documentElement.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {

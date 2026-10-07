@@ -1,3 +1,6 @@
+import { isNetflixHost } from '../hosts';
+import type { ProviderPlaybackBindOptions } from '../../core/provider-presentation';
+
 export type NetflixVideoFacts = {
   inPlayer: boolean;
   playing: boolean;
@@ -61,6 +64,31 @@ export type NetflixVideoBinding = {
   listeningTo(): HTMLVideoElement | null;
   dispose(): void;
 };
+
+export function rankNetflixTheaterVideos(videos: HTMLVideoElement[]): HTMLVideoElement | null {
+  if (!isNetflixHost() || videos.length === 0) return null;
+  const ranked = videos.slice().sort((a, b) => (
+    netflixPlaybackRank(readNetflixVideoFacts(b)) - netflixPlaybackRank(readNetflixVideoFacts(a))
+  ));
+  return ranked[0] ?? null;
+}
+
+export function bindNetflixTheaterPlayback(options: ProviderPlaybackBindOptions): (() => void) | null {
+  if (!isNetflixHost()) return null;
+  const binding = createNetflixVideoBinding({
+    root: options.root,
+    current: options.current,
+    pick: options.pick,
+    shouldSwitch: (current, next) => shouldFollowNetflixVideo(
+      readNetflixVideoFacts(current),
+      readNetflixVideoFacts(next)
+    ),
+    onSwitch: options.onSwitch,
+    onStabilize: options.onStabilize
+  });
+  binding.bind(options.video);
+  return () => binding.dispose();
+}
 
 /**
  * Follows the visible Netflix video. Style and class changes hide a modal

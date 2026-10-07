@@ -1,5 +1,7 @@
 # Netflix public player
 
+For signed-in episode playback and current runtime evidence, see [Netflix watch player](netflix-watch-player.md). The measurements below concern the public trailer only.
+
 Measured on the public title page `https://www.netflix.com/pl/title/80057281` (Stranger Things), without an account. The page plays a hero preview and, after opening a trailer, a modal player. This pass does not cover a signed-in `/watch` playback session. The T3 preview and an installed Chromium build of the same public page are different players. Neither measurement confirmed a painted subtitle cue.
 
 ## What the page actually exposes

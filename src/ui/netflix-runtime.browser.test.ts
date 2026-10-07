@@ -1,16 +1,17 @@
+import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
 
-function compile(relativePath: string): string {
-  const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8');
-  return ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 }
-  }).outputText;
+function compile(relativePath: string, globalName: string): string {
+  const esbuild = require('esbuild') as { buildSync(options: object): {outputFiles: Array<{text: string}>} };
+  return esbuild.buildSync({
+    entryPoints: [new URL(relativePath, import.meta.url).pathname], bundle: true,
+    write: false, format: 'iife', globalName, platform: 'browser', target: 'es2022', logLevel: 'silent'
+  }).outputFiles[0].text;
 }
 
 function esbuildBundle(): string {
@@ -48,9 +49,9 @@ describe('netflix runtime browser regressions', () => {
     }
     if (!existsSync(executable)) return;
 
-    const playback = compile('./netflix-playback.ts');
-    const stage = compile('./netflix-stage.ts');
-    const shadowClick = compile('../providers/netflix/shadow-click.ts');
+    const playback = compile('../providers/netflix/playback.ts', 'NetflixPlayback');
+    const stage = compile('../providers/netflix/stage.ts', 'NetflixStage');
+    const shadowClick = compile('../providers/netflix/shadow-click.ts', 'NetflixShadowClick');
     const bundle = esbuildBundle();
     const browser = await chromium.launch({ headless: true });
     try {
@@ -68,7 +69,7 @@ describe('netflix runtime browser regressions', () => {
         <div id="shell" style="position:fixed; will-change: transform; mask-image: linear-gradient(#000, transparent); background-image: linear-gradient(#111, #222); background-color: rgb(1, 2, 3);"><video id="pinned"></video></div>
       </body>`, { waitUntil: 'domcontentloaded' });
       await page.addScriptTag({
-        content: `${playback}\n${stage}\nwindow.__nf = { readNetflixVideoFacts, netflixPlaybackRank, shouldFollowNetflixVideo, createNetflixVideoBinding, holdNetflixViewport, releaseNetflixViewport };`,
+        content: `${playback}\n${stage}\nwindow.__nf = { ...NetflixPlayback, ...NetflixStage };`,
         type: 'module'
       });
 
@@ -149,7 +150,7 @@ describe('netflix runtime browser regressions', () => {
       assert.match(restored.after.backgroundImage, /gradient/i);
 
       await page.addScriptTag({
-        content: `${shadowClick}\nwindow.relayNetflixShadowClick = relayNetflixShadowClick;`,
+        content: `${shadowClick}\nwindow.relayNetflixShadowClick = NetflixShadowClick.relayNetflixShadowClick;`,
         type: 'module'
       });
       const clicks = await page.evaluate(`(() => {
@@ -407,4 +408,144 @@ describe('netflix runtime browser regressions', () => {
       await browser.close();
     }
   });
+  it('boots at document_start and uses the attached signed-in session across captions, seeks, previews and episode changes', async () => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) return;
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage();
+      const bundle = esbuildBundle();
+      // An extension MAIN script really runs before <html> exists.
+      await page.addInitScript('window.__name = (target) => target;');
+      await page.addInitScript(bundle);
+      await page.route('https://www.netflix.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>Netflix</title><body><div class="watch-video"><div data-uia="player" data-videoid="70248290"><div id="session-element"><video></video><div class="player-timedtext"></div></div></div></div></body>` }));
+      await page.goto('https://www.netflix.com/watch/70248290');
+      await page.addStyleTag({ content: readStylesheet(new URL('../content.css', import.meta.url)) });
+      const canvas = await page.evaluate(() => {
+        document.documentElement.classList.add('theater-everywhere-netflix-stage');
+        const video = document.querySelector('video')!;
+        video.style.position = 'fixed';
+        let parent = video.parentElement;
+        while (parent && parent !== document.documentElement) {
+          parent.classList.add('theater-everywhere-parent-active');
+          parent = parent.parentElement;
+        }
+        const inner = video.parentElement!;
+        inner.style.height = '100%';
+        inner.style.width = '100%';
+        return { height: inner.getBoundingClientRect().height, viewport: window.innerHeight };
+      });
+      assert.equal(canvas.height, canvas.viewport, 'Netflix must retain a measurable canvas after the video leaves flow');
+      await page.evaluate(() => {
+        const off = { trackId: 'T:NONE;', displayName: 'wył.', isNoneTrack: true };
+        const polish = { trackId: 'T:pl;', displayName: 'polski', bcp47: 'pl' };
+        let selected = off;
+        const calls: unknown[] = [];
+        let ready = true;
+        let currentTime = 90000;
+        const player = {
+          getMovieId: () => 70248290,
+          getElement: () => document.getElementById('session-element'),
+          isReady: () => ready,
+          getTimedTextTrackList: () => [off, polish],
+          getTimedTextTrack: () => selected,
+          setTimedTextTrack: (track: typeof off) => { selected = track; calls.push(['caption', track.trackId]); },
+          getDuration: () => 2973845,
+          getCurrentTime: () => currentTime,
+          getTimeCodes: () => [{ type: 'skip_credits', startOffsetMs: 60853, endOffsetMs: 151402 }],
+          isPaused: () => true,
+          seek: (ms: number) => { currentTime = ms; calls.push(['seek', ms]); },
+          play: () => calls.push(['play']),
+          pause: () => calls.push(['pause']),
+          getTrickPlayFrame: (ms: number) => ({ time: ms, width: 240, height: 108, image: new Uint8Array([255, 216, 255, 217]) })
+        };
+        const background = { ...player, getMovieId: () => 70248291, getElement: () => document.body };
+        Object.assign(window, {
+          netflix: { appContext: { state: { playerApp: { getAPI: () => ({
+            videoPlayer: { getAllPlayerSessionIds: () => ['background', 'active'], getVideoPlayerBySessionId: (id: string) => id === 'active' ? player : background },
+            getVideoMetadataByVideoId: () => ({ getTitle: () => 'House of Cards', getCurrentVideo: () => ({ getEpisodeTitle: () => 'Rozdział 2' }) })
+          }) } } } },
+          __nfCalls: calls,
+          __nfReady: (value: boolean) => { ready = value; }
+        });
+        const intro = document.createElement('button');
+        intro.dataset.uia = 'player-skip-intro';
+        intro.textContent = 'Pomiń czołówkę';
+        document.querySelector('[data-uia="player"]')!.append(intro);
+      });
+      await page.waitForFunction(() => document.getElementById('theater-everywhere-netflix-snapshot')?.textContent?.includes('polski'));
+      // The native button is removed on idle; the clock-bound action remains.
+      await page.evaluate(() => document.querySelector('[data-uia="player-skip-intro"]')!.remove());
+      const intro = await page.evaluate(() => JSON.parse(document.getElementById('theater-everywhere-netflix-timed-action')!.textContent!));
+      assert.equal(intro.label, 'Pomiń czołówkę');
+      assert.equal(intro.id, 'intro:70248290:60853:151402');
+      const result = await page.evaluate(() => {
+        const snapshot = () => JSON.parse(document.getElementById('theater-everywhere-netflix-snapshot')!.textContent!);
+        const request = (trackId: string | null, videoId = '70248290') => {
+          let ack: { ok: boolean } | null = null;
+          const listener = (event: Event) => { ack = JSON.parse((event as CustomEvent).detail); };
+          window.addEventListener('theater-everywhere-netflix-caption-ack', listener);
+          window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-caption', { detail: JSON.stringify({ requestId: 'te-nf-watchtest01', trackId, videoId }) }));
+          window.removeEventListener('theater-everywhere-netflix-caption-ack', listener);
+          return ack as { ok: boolean } | null;
+        };
+        const before = snapshot();
+        const stale = request('T:pl;', '70248291');
+        const language = request('T:pl;');
+        const selected = snapshot().selectedTrackId;
+        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: { time: 152.25, resumeAfterSeek: false } }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-preview', { detail: JSON.stringify({ videoId: '70248290', time: 120 }) }));
+        const preview = JSON.parse(document.getElementById('theater-everywhere-netflix-preview-frame')!.textContent!);
+        const off = request(null);
+        return { before, stale, language, selected, preview, off, calls: (window as any).__nfCalls };
+      });
+      assert.equal(result.before.videoId, '70248290');
+      assert.equal(result.before.title, 'House of Cards · Rozdział 2');
+      assert.equal(result.before.captions, true);
+      assert.equal(result.before.previews, true);
+      assert.equal(result.stale?.ok, false);
+      assert.equal(result.language?.ok, true);
+      assert.equal(result.selected, 'T:pl;');
+      assert.equal(result.off?.ok, true);
+      assert.equal(result.preview.url, 'data:image/jpeg;base64,/9j/2Q==');
+      assert.deepEqual(result.calls, [['caption', 'T:pl;'], ['seek', 152250], ['pause'], ['caption', 'T:NONE;']]);
+      const timedAction = await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: { time: 90, resumeAfterSeek: false } }));
+        const id = 'intro:70248290:60853:151402';
+        const acks: string[] = [];
+        window.addEventListener('theater-everywhere-netflix-action-ack', event => acks.push((event as CustomEvent).detail));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-action', { detail: 'intro:70248291:60853:151402' }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-action', { detail: id }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-action', { detail: id }));
+        return { acks, calls: (window as any).__nfCalls.slice(-4) };
+      });
+      assert.deepEqual(timedAction.acks, ['no:intro:70248291:60853:151402', 'ok:intro:70248290:60853:151402', 'no:intro:70248290:60853:151402']);
+      assert.deepEqual(timedAction.calls, [['seek', 90000], ['pause'], ['seek', 151402], ['pause']]);
+      await page.evaluate(() => {
+        const host = document.createElement('div');
+        host.id = 'theater-everywhere-ui';
+        document.body.append(host);
+        const shadow = host.attachShadow({ mode: 'open' });
+        shadow.innerHTML = '<div class="theater-service-action-host"><button>Action</button></div>';
+        (window as any).__actionKeys = 0;
+        shadow.querySelector('button')!.addEventListener('click', () => { (window as any).__actionKeys++; });
+        // Netflix's host listener would cancel native activation at window capture.
+        const cancelSpace = (event: KeyboardEvent) => { if (event.key === ' ') event.preventDefault(); };
+        window.addEventListener('keydown', cancelSpace, true);
+        window.addEventListener('keyup', cancelSpace, true);
+      });
+      await page.locator('.theater-service-action-host button').focus();
+      await page.keyboard.press('Space');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => (window as any).__actionKeys), 2);
+      await page.evaluate(() => { history.pushState({}, '', '/watch/70248291'); });
+      await page.waitForFunction(() => JSON.parse(document.getElementById('theater-everywhere-netflix-snapshot')!.textContent!).videoId === '70248291');
+      const changed = await page.evaluate(() => JSON.parse(document.getElementById('theater-everywhere-netflix-snapshot')!.textContent!));
+      // The background session deliberately does not belong to the player root.
+      assert.equal(changed.captions, false);
+      assert.deepEqual(changed.tracks, []);
+      assert.equal(changed.title, undefined);
+    } finally { await browser.close(); }
+  });
+
 });

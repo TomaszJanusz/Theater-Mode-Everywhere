@@ -1,7 +1,10 @@
 import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
 import { isTencentWasmFrameDocument } from '../providers/tencent/wasm-player';
-import { isNetflixHost } from '../providers/hosts';
-import { netflixPlaybackRank, readNetflixVideoFacts } from './netflix-playback';
+import {
+  prepareProviderShadowRoot,
+  providerRankedVideo,
+  providerShadowCss
+} from '../providers/discovery';
 import { STATUS_HUD_SWITCH_ICON } from './hud';
 import type { PlayerChromeContext } from './runtime-context';
 import { markTheaterVideo, unmarkTheaterVideo } from './theater-layout';
@@ -39,17 +42,8 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     return videos;
   }
 
-  function injectTencentWasmFrameStyles(shadowRoot: ShadowRoot): void {
-    if (shadowRoot.host?.localName !== 'fake-iframe-video') return;
-    if (shadowRoot.getElementById('theater-everywhere-tencent-wasm-styles')) return;
-    const styleEl = document.createElement('style');
-    styleEl.id = 'theater-everywhere-tencent-wasm-styles';
-    styleEl.textContent = 'iframe, canvas { width: 100% !important; height: 100% !important; }';
-    shadowRoot.appendChild(styleEl);
-  }
-
   function injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void {
-    injectTencentWasmFrameStyles(shadowRoot);
+    prepareProviderShadowRoot(shadowRoot);
     if (shadowRoot.getElementById('theater-everywhere-shadow-styles')) return;
 
     const styleEl = document.createElement('style');
@@ -107,15 +101,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       mask: none !important;
       will-change: auto !important;
       z-index: 2147483647 !important;
-    }
-    :host-context(html.theater-everywhere-disney-stage) .theater-everywhere-parent-active {
-      width: 100% !important;
-      height: 100% !important;
-      min-width: 100% !important;
-      min-height: 100% !important;
-      overflow: visible !important;
-      background: #000000 !important;
-    }
+    }${providerShadowCss()}
   `;
     shadowRoot.appendChild(styleEl);
   }
@@ -202,10 +188,8 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     const ranked = pool.length > 0 ? pool : videos;
     if (ranked.length === 1) return ranked[0];
 
-    if (isNetflixHost()) {
-      ranked.sort((a, b) => netflixPlaybackRank(readNetflixVideoFacts(b)) - netflixPlaybackRank(readNetflixVideoFacts(a)));
-      return ranked[0];
-    }
+    const providerPick = providerRankedVideo(ranked);
+    if (providerPick) return providerPick;
 
     ranked.sort(compareVideos);
     return ranked[0];

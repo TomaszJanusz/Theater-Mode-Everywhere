@@ -3,7 +3,8 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { queryPlayerUi } from '../ui/root';
-import { mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
@@ -50,6 +51,7 @@ import {
 } from '../providers/disney/main';
 import {
   installNetflixMain,
+  handleNetflixMediaSeek,
   netflixIntegrationEnabled,
   readNetflixSnapshot
 } from '../providers/netflix/main';
@@ -338,21 +340,12 @@ export function installMainWorldRuntime(): void {
 
   function looksLikeHostPlayButton(el: HTMLElement): boolean {
     if (el.id === 'theater-everywhere-ui' || el.closest('#theater-everywhere-ui')) return false;
-    const className = el.className.toString();
-    if (/\b(?:ytp-large-play-button|vjs-big-play-button|plyr__control--overlaid)\b/.test(className)) {
-      return true;
-    }
-    const aria = (el.getAttribute('aria-label') || '').trim();
-    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-    return /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(aria)
-      || /^(play|odtwórz|odtworz)(\s*\([^)]*\))?$/i.test(text);
+    return isHostPlayControlLabel(el.getAttribute('aria-label') || '', el.textContent || '', el.className.toString());
   }
 
   function findHostPlayButton(video: HTMLVideoElement): HTMLElement | null {
     const scan = (root: ParentNode): HTMLElement | null => {
-      const candidates = root.querySelectorAll(
-        'button, [role="button"], .ytp-large-play-button, .vjs-big-play-button, .plyr__control--overlaid'
-      );
+      const candidates = root.querySelectorAll(HOST_PLAY_CONTROL_SELECTOR);
       for (const node of candidates) {
         if (node instanceof HTMLElement && looksLikeHostPlayButton(node)) return node;
       }
@@ -393,6 +386,14 @@ export function installMainWorldRuntime(): void {
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
     // The content world owns help focus and native activation of its close button.
     if (queryPlayerUi('.theater-help-overlay')) return;
+    // Netflix cancels Space at window capture, including its keyup default.
+    // Stop host listeners while retaining the focused button's native action.
+    if ((event.key === ' ' || event.key === 'Enter') && event.composedPath().some(node => node instanceof Element
+        && node.matches('.theater-service-action-host'))) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     // Menu buttons own native Space activation, including through the UI's shadow root.
     if (event.composedPath().some(node => node instanceof Element
         && node.matches('.theater-menu'))) return;
@@ -578,6 +579,7 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
     const detail = (event as CustomEvent<{ live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean }>).detail || {};
     const video = findActiveVideo(document) || document.querySelector('video');
+    if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;
     if (handleYoutubeMediaSeek(detail, video)) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {

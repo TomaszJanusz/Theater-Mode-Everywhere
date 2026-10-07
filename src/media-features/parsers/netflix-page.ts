@@ -25,6 +25,7 @@ export type NetflixSnapshot = {
   videoId?: string;
   title?: string;
   captions?: boolean;
+  previews?: boolean;
   tracks: NetflixTextTrack[];
   selectedTrackId?: string;
 };
@@ -32,6 +33,7 @@ export type NetflixSnapshot = {
 export type NetflixCaptionRequest = {
   requestId: string;
   trackId: string | null;
+  videoId?: string;
 };
 
 export type NetflixCaptionAck = {
@@ -213,11 +215,11 @@ export function applyNetflixPlayerCaption(
 }
 
 export function netflixCaptionRequestDetail(request: NetflixCaptionRequest): string {
-  return JSON.stringify({ requestId: request.requestId, trackId: request.trackId });
+  return JSON.stringify({ requestId: request.requestId, trackId: request.trackId, ...(request.videoId ? { videoId: request.videoId } : {}) });
 }
 
 export function parseNetflixCaptionRequest(detail: unknown): NetflixCaptionRequest | null {
-  if (typeof detail !== 'string' || detail.length > 180) return null;
+  if (typeof detail !== 'string' || detail.length > 220) return null;
   let data: unknown;
   try {
     data = JSON.parse(detail);
@@ -227,10 +229,12 @@ export function parseNetflixCaptionRequest(detail: unknown): NetflixCaptionReque
   if (!data || typeof data !== 'object') return null;
   const record = data as Record<string, unknown>;
   if (typeof record.requestId !== 'string' || !CAPTION_REQUEST_ID_RE.test(record.requestId)) return null;
-  if (record.trackId === null) return { requestId: record.requestId, trackId: null };
+  const videoId = record.videoId === undefined ? undefined : netflixVideoId(record.videoId);
+  if (record.videoId !== undefined && !videoId) return null;
+  if (record.trackId === null) return { requestId: record.requestId, trackId: null, ...(videoId ? { videoId } : {}) };
   const trackId = netflixTrackId(record.trackId);
   if (!trackId) return null;
-  return { requestId: record.requestId, trackId };
+  return { requestId: record.requestId, trackId, ...(videoId ? { videoId } : {}) };
 }
 
 export function netflixCaptionAckDetail(ack: NetflixCaptionAck): string {
@@ -256,6 +260,7 @@ export function netflixHarvestKey(state: {
   videoId?: string | null;
   title?: string | null;
   captions?: boolean | null;
+  previews?: boolean;
   selectedTrackId?: string | null;
   tracks: Array<Pick<NetflixTextTrack, 'id' | 'kind' | 'forced' | 'none'>>;
 }): string {
@@ -263,6 +268,7 @@ export function netflixHarvestKey(state: {
     videoId: state.videoId ?? null,
     title: state.title ?? null,
     captions: state.captions === true,
+    previews: state.previews === true,
     selectedTrackId: state.selectedTrackId ?? null,
     tracks: state.tracks.map((track) => [track.id, track.kind, track.forced === true, track.none === true])
   });
@@ -335,6 +341,7 @@ export function readPublishedNetflixSnapshot(
       ...(title ? { title } : {}),
       ...(captions === undefined ? {} : { captions }),
       tracks,
+      ...(data.previews === true ? { previews: true } : {}),
       ...(selectedTrackId ? { selectedTrackId } : {})
     };
   } catch {

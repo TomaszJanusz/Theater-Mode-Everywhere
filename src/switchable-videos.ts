@@ -1,16 +1,7 @@
 import { mediaHasSource } from './host-play';
+import { isInactiveThumbPlayerVideo, isProviderAuxiliaryVideo } from './providers/video-candidates';
 
-/** Hosts that inject extra <video> elements that are not real page players. */
-export const AUXILIARY_VIDEO_HOST_SELECTOR = [
-  'ytd-video-preview',
-  'ytd-moving-thumbnail-renderer',
-  'ytd-miniplayer',
-  'ytd-inline-playback-player',
-  'ytd-shorts',
-  '#inline-player',
-  '#inline-preview-player',
-  '#shorts-player'
-].join(',');
+export { AUXILIARY_VIDEO_HOST_SELECTOR, isInactiveThumbPlayerVideo } from './providers/video-candidates';
 
 const MIN_SWITCHABLE_EDGE = 80;
 
@@ -28,16 +19,7 @@ function hasUsableVideoBox(video: HTMLVideoElement): boolean {
 }
 
 export function isAuxiliaryTheaterVideo(video: HTMLVideoElement): boolean {
-  return Boolean(video.closest(AUXILIARY_VIDEO_HOST_SELECTOR));
-}
-
-/** ThumbPlayer keeps a sourced standby video beside the visible playback video. */
-export function isInactiveThumbPlayerVideo(video: HTMLVideoElement): boolean {
-  if (!video.closest('.txp_videos_container')) return false;
-  const view = video.ownerDocument?.defaultView;
-  if (!view) return false;
-  const style = view.getComputedStyle(video);
-  return style.visibility === 'hidden' || style.display === 'none';
+  return isProviderAuxiliaryVideo(video);
 }
 
 export function isSwitchableTheaterVideo(video: HTMLVideoElement): boolean {

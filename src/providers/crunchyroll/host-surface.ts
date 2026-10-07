@@ -8,6 +8,15 @@
 export const CRUNCHYROLL_HOST_CAPTION_CLASS = 'theater-everywhere-crunchyroll-host-captions';
 export const CRUNCHYROLL_HOST_CAPTION_SELECTOR = '.bitmovinplayer-container > div:last-child > div > ul';
 
+export function readCrunchyrollHostCaptionLayout(): HostCaptionLayout | null {
+  const html = document.documentElement;
+  if (!html.classList.contains('theater-everywhere-html-active')
+    || !html.classList.contains(CRUNCHYROLL_HOST_CAPTION_CLASS)) return null;
+  const host = document.querySelector(CRUNCHYROLL_HOST_CAPTION_SELECTOR);
+  return host instanceof HTMLElement && host.offsetWidth > 1 && host.offsetHeight > 1
+    ? { width: host.offsetWidth, height: host.offsetHeight } : null;
+}
+
 export function retainCrunchyrollHostCaptionSurface(): void {
   document.documentElement?.classList?.add(CRUNCHYROLL_HOST_CAPTION_CLASS);
 }
@@ -15,3 +24,4 @@ export function retainCrunchyrollHostCaptionSurface(): void {
 export function releaseCrunchyrollHostCaptionSurface(): void {
   document.documentElement?.classList?.remove(CRUNCHYROLL_HOST_CAPTION_CLASS);
 }
+import type { HostCaptionLayout } from '../../media-features/types';

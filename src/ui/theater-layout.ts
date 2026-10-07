@@ -1,12 +1,6 @@
-import { isDisneyHost, isNetflixHost, isTencentHost, isTwitchHost } from '../providers/hosts';
 import { THEATER_VIDEO_ATTR, THEATER_VIDEO_CLASS } from '../platform/active-video';
 
 export const THEATER_STAGE_ID = 'theater-everywhere-stage';
-export const DISNEY_THEATER_STAGE_ID = 'theater-everywhere-disney-stage';
-export const DISNEY_THEATER_STAGE_CLASS = 'theater-everywhere-disney-stage';
-export const TWITCH_THEATER_STAGE_CLASS = 'theater-everywhere-twitch-stage';
-export const NETFLIX_THEATER_STAGE_CLASS = 'theater-everywhere-netflix-stage';
-export const TENCENT_THEATER_STAGE_CLASS = 'theater-everywhere-tencent-stage';
 
 const VIEWPORT_PIN_EPSILON_PX = 1;
 
@@ -23,18 +17,6 @@ export function theaterViewportPinOffset(
   };
 }
 
-export function resolveTheaterViewportPin(options: {
-  twitchStage: boolean;
-  rect: { top: number; left: number };
-  current: { top: number; left: number };
-}): { top: number; left: number } | null {
-  if (options.twitchStage) {
-    if (options.current.top === 0 && options.current.left === 0) return null;
-    return { top: 0, left: 0 };
-  }
-  return theaterViewportPinOffset(options.rect, options.current);
-}
-
 function readPinnedPx(element: HTMLElement, property: 'top' | 'left'): number {
   const raw = element.style.getPropertyValue(property).trim();
   const match = /^(-?\d+(?:\.\d+)?)px$/.exec(raw);
@@ -43,14 +25,9 @@ function readPinnedPx(element: HTMLElement, property: 'top' | 'left'): number {
 
 export function applyTheaterViewportPin(element: HTMLElement): void {
   const rect = element.getBoundingClientRect();
-  const next = resolveTheaterViewportPin({
-    twitchStage: document.documentElement.classList.contains(TWITCH_THEATER_STAGE_CLASS)
-      || isTwitchHost(),
-    rect,
-    current: {
-      top: readPinnedPx(element, 'top'),
-      left: readPinnedPx(element, 'left')
-    }
+  const next = theaterViewportPinOffset(rect, {
+    top: readPinnedPx(element, 'top'),
+    left: readPinnedPx(element, 'left')
   });
   if (!next) return;
   const top = `${next.top}px`;
@@ -97,60 +74,4 @@ export function mountTheaterStage(): void {
 
 export function unmountTheaterStage(): void {
   document.getElementById(THEATER_STAGE_ID)?.remove();
-}
-
-export function mountDisneyTheaterStage(hostname: string): void {
-  if (!isDisneyHost(hostname)) return;
-  document.documentElement.classList.add(DISNEY_THEATER_STAGE_CLASS);
-  if (document.getElementById(DISNEY_THEATER_STAGE_ID)) return;
-  const stage = document.createElement('div');
-  stage.id = DISNEY_THEATER_STAGE_ID;
-  stage.setAttribute('aria-hidden', 'true');
-  document.documentElement.appendChild(stage);
-}
-
-export function mountTwitchTheaterStage(hostname: string): void {
-  if (!isTwitchHost(hostname)) return;
-  document.documentElement.classList.add(TWITCH_THEATER_STAGE_CLASS);
-}
-
-export function observeTwitchTheaterStage(hostname: string): () => void {
-  if (!isTwitchHost(hostname)) return () => {};
-  const html = document.documentElement;
-  const restore = (): void => {
-    if (!html.classList.contains(TWITCH_THEATER_STAGE_CLASS)) {
-      html.classList.add(TWITCH_THEATER_STAGE_CLASS);
-    }
-  };
-  restore();
-  const observer = new MutationObserver(restore);
-  observer.observe(html, { attributes: true, attributeFilter: ['class'] });
-  return () => observer.disconnect();
-}
-
-export function unmountDisneyTheaterStage(): void {
-  document.documentElement.classList.remove(DISNEY_THEATER_STAGE_CLASS);
-  document.getElementById(DISNEY_THEATER_STAGE_ID)?.remove();
-}
-
-export function unmountTwitchTheaterStage(): void {
-  document.documentElement.classList.remove(TWITCH_THEATER_STAGE_CLASS);
-}
-
-export function mountNetflixTheaterStage(hostname: string): void {
-  if (!isNetflixHost(hostname)) return;
-  document.documentElement.classList.add(NETFLIX_THEATER_STAGE_CLASS);
-}
-
-export function unmountNetflixTheaterStage(): void {
-  document.documentElement.classList.remove(NETFLIX_THEATER_STAGE_CLASS);
-}
-
-export function mountTencentTheaterStage(hostname: string): void {
-  if (!isTencentHost(hostname)) return;
-  document.documentElement.classList.add(TENCENT_THEATER_STAGE_CLASS);
-}
-
-export function unmountTencentTheaterStage(): void {
-  document.documentElement.classList.remove(TENCENT_THEATER_STAGE_CLASS);
 }

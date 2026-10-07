@@ -58,6 +58,7 @@ export function relayNetflixShadowClick(event: Event, hostId = NETFLIX_UI_HOST_I
     bubbles: true,
     cancelable: true,
     composed: false,
+    detail: event.detail,
     clientX: event.clientX,
     clientY: event.clientY,
     button: event.button,
