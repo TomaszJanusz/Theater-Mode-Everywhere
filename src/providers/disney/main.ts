@@ -8,6 +8,7 @@ import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
 import { publishHiddenJson } from '../../platform/hidden-json';
+import { installDisneyPlayNext } from './play-next';
 import { isDisneyHost } from '../hosts';
 
 export const MAX_BIF_BYTES = 16 * 1024 * 1024;
@@ -863,4 +864,5 @@ export function installDisneyMain(): void {
   if (isDisneyHost(window.location.hostname)) {
     ensureDisneyClock();
   }
+  installDisneyPlayNext();
 }
