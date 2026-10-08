@@ -47,6 +47,26 @@ Materiał: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQ
 
 ![YouTube: czat schowany przyciskiem TME](screenshots/youtube-chat-hidden.png)
 
+## Motyw czatu: jasny, ustawienia serwisu, ciemny
+
+Zrzuty wykonano 8 października 2026 w Chromium 153 uruchomionym graficznie przez Playwright/Xvfb, z osobnym tymczasowym profilem i zainstalowanym `dist/chrome-unpacked`. Sesja wylogowana. Ustawienie zmieniano w menu playera TME; nie klikano natywnych przełączników wyglądu serwisu i nie wysłano wiadomości.
+
+Wymuszenie działa tylko w sesji TME. Opcja „Service settings” zostawia wygląd serwisu bez zmian. Ciemny i jasny motyw nie zmienia `src` ramki.
+
+YouTube: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQekNa9g). Tło `yt-live-chat-renderer` wyniosło `rgb(15, 15, 15)` w motywie ciemnym i `rgb(255, 255, 255)` w jasnym.
+
+Twitch: [caedrel](https://www.twitch.tv/caedrel). Tło pokoju czatu wyniosło `rgb(24, 24, 27)` w motywie ciemnym i `rgb(255, 255, 255)` w jasnym. Tekst wiadomości podążał za paletą.
+
+![YouTube: menu TME z motywem czatu](screenshots/youtube-chat-theme-settings.png)
+
+![YouTube: ciemny motyw natywnego czatu](screenshots/youtube-chat-theme-dark.png)
+
+![YouTube: jasny motyw natywnego czatu](screenshots/youtube-chat-theme-light.png)
+
+![Twitch: ciemny motyw natywnego czatu](screenshots/twitch-chat-theme-dark.png)
+
+![Twitch: jasny motyw natywnego czatu](screenshots/twitch-chat-theme-light.png)
+
 ## Co pozostaje do kwalifikacji przed wydaniem
 
 Weryfikacja automatyczna:
