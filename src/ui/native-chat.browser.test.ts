@@ -392,16 +392,13 @@ async function installRoutes(page: Page, documents: { youtube?: string; twitch?:
   });
 }
 
-async function installStorage(page: Page, seed: Record<string, unknown> = {}): Promise<{ read(): Record<string, unknown> }> {
+async function installStorage(page: Page, seed: Record<string, unknown> = {}, navigationStorageKey?: string): Promise<{ read(): Record<string, unknown> }> {
   let storage: Record<string, unknown> = { keepControlsVisible: true, ...seed };
   await page.exposeFunction('__tmeStorageGet', () => storage);
   await page.exposeFunction('__tmeStorageSet', (patch: Record<string, unknown>) => {
     storage = { ...storage, ...patch };
   });
-  // tsx gives serialized nested functions a naming helper. Install it in every
-  // fixture frame, matching the existing Netflix browser harness.
-  await page.addInitScript('window.__name = target => target;');
-  await page.addInitScript(() => {
+  const initializeStorage = (navigationStorageKey?: string) => {
     const chromeMock = {
       storage: {
         sync: {
@@ -415,7 +412,17 @@ async function installStorage(page: Page, seed: Record<string, unknown> = {}): P
       }
     };
     Object.defineProperty(window, 'chrome', { configurable: true, writable: true, value: chromeMock });
-  });
+    if (navigationStorageKey) {
+      // Model dispatch to extension storage during pagehide without relying on
+      // Playwright bindings, which can be discarded with the unloading document.
+      const storage = chromeMock.storage.sync;
+      const get = storage.get;
+      storage.get = async () => ({ ...await get(), ...JSON.parse(localStorage.getItem(navigationStorageKey) || '{}') });
+    }
+  };
+  // tsx gives serialized nested functions a naming helper. Install the helper,
+  // mock, and optional reload wrapper in order within one script in every frame.
+  await page.addInitScript(`window.__name = target => target; (${initializeStorage.toString()})(${JSON.stringify(navigationStorageKey) ?? 'undefined'});`);
   return { read: () => storage };
 }
 
@@ -528,13 +535,13 @@ async function leaveTheater(page: Page): Promise<void> {
   await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
 }
 
-async function openPage(browser: { newPage(options: { viewport: { width: number; height: number } }): Promise<Page> }, target: { url: string; youtube?: string; twitch?: string }, viewport: { width: number; height: number }, seed: Record<string, unknown> = {}): Promise<{ page: Page; read(): Record<string, unknown> }> {
+async function openPage(browser: { newPage(options: { viewport: { width: number; height: number } }): Promise<Page> }, target: { url: string; youtube?: string; twitch?: string }, viewport: { width: number; height: number }, seed: Record<string, unknown> = {}, navigationStorageKey?: string): Promise<{ page: Page; read(): Record<string, unknown> }> {
   const page = await browser.newPage({ viewport });
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   (page as Page & { __errors?: string[] }).__errors = errors;
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const storage = await installStorage(page, seed);
+  const storage = await installStorage(page, seed, navigationStorageKey);
   await installRoutes(page, { youtube: target.youtube, twitch: target.twitch });
   await page.goto(target.url, { waitUntil: 'load' });
   return { page, read: storage.read };
@@ -1290,15 +1297,7 @@ describe('native chat browser session', () => {
           const { page, read } = await openPage(browser, {
             url: provider === 'youtube' ? YOUTUBE_WATCH : TWITCH_CHANNEL,
             youtube: youtubeDocument('visible'), twitch: twitchDocument()
-          }, { width: 1280, height: 800 }, seed);
-          // Playwright bindings can be discarded with the unloading document.
-          // Use synchronous, origin-persistent storage to model dispatch to the
-          // extension's storage process during pagehide.
-          await page.addInitScript(() => {
-            const storage = (window as unknown as { chrome: { storage: { sync: { get(): Promise<Record<string, unknown>> } } } }).chrome.storage.sync;
-            const get = storage.get;
-            storage.get = async () => ({ ...await get(), ...JSON.parse(localStorage.getItem('tme-navigation-storage') || '{}') });
-          });
+          }, { width: 1280, height: 800 }, seed, 'tme-navigation-storage');
           await boot(page);
           const mutate = () => page.evaluate(ending => {
             const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;

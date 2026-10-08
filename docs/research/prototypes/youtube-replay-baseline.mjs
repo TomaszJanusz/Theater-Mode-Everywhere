@@ -16,7 +16,6 @@ const snapshot = () => page.evaluate(() => {
 });
 try {
   await page.goto(url, { waitUntil: 'commit', timeout: 45000 });
-  await page.waitForFunction(() => document.querySelector('video')?.readyState === 4);
   const consent = page.locator('button').filter({ hasText: /^(Reject all|Accept all)$/ }).first();
   await consent.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   if (await consent.isVisible().catch(() => false)) {
