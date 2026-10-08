@@ -17,6 +17,10 @@ html.theater-everywhere-html-active [data-theater-chat-ancestor] {
   clip: auto !important;
   mask: none !important;
   will-change: auto !important;
+  /* YouTube's fullscreen panel keeps a filled slide-in animation. Its transform
+   * effect can establish a fixed-position containing block even when the
+   * computed transform is overridden to none, shifting chat offscreen. */
+  animation: none !important;
 }
 
 html.theater-everywhere-html-active [data-theater-chat] {

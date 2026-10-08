@@ -57,7 +57,8 @@ const PAGE_STYLE = `<style>
   html, body { margin: 0; background: #111; }
   video { width: 960px; height: 540px; background: #000; display: block; }
   #movie_player, .persistent-player { width: 960px; height: 540px; view-transition-name: picture; }
-  #secondary { view-transition-name: secondary-column; }
+  @keyframes native-panel-slide { from { transform: translateX(20px); } to { transform: translateX(0); } }
+  #secondary { view-transition-name: secondary-column; animation: native-panel-slide .01s forwards; }
   #chat, .right-column { display: block; width: 340px; height: 420px; }
   #chat-container { display: block; width: 340px; }
 </style>`;
