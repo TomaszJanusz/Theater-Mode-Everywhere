@@ -41,6 +41,13 @@ describe('shortcut matching', () => {
     assert.equal(matchesShortcut(key({ key: 'P', shiftKey: true, code: 'KeyP' }), 'Shift+P'), true);
     assert.equal(matchesShortcut(key({ key: 'P', code: 'KeyP' }), 'Shift+P'), false);
     assert.equal(matchesShortcut(key({ key: 'N', shiftKey: true, code: 'KeyN' }), 'Shift+N'), true);
+    assert.equal(defaultShortcuts.toggleCaptions, 'C');
+    assert.equal(defaultShortcuts.toggleChat, 'Alt+R');
+    assert.equal(shortcutsConflict('C', 'Alt+R'), false);
+    assert.equal(matchesShortcut(key({ key: 'r', code: 'KeyR' }), defaultShortcuts.toggleChat), false);
+    assert.equal(matchesShortcut(key({ key: 'r', altKey: true, code: 'KeyR' }), defaultShortcuts.toggleChat), true);
+    assert.equal(matchesShortcut(key({ key: 'c', shiftKey: true, code: 'KeyC' }), defaultShortcuts.toggleChat), false);
+    assert.equal(withShortcutDefaults({ toggleCaptions: 'Alt+R' }).toggleChat, '');
     assert.equal(defaultShortcuts.toggleMute, 'M');
     assert.equal(defaultShortcuts.increaseCaptionSize, '+');
     assert.equal(defaultShortcuts.decreaseCaptionSize, '-');

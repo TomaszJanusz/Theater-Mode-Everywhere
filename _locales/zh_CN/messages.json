@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "显示聊天"
   },
+  "toggleNativeChat": {
+    "message": "切换聊天"
+  },
   "hideNativeChat": {
     "message": "隐藏聊天"
   },
+  "settingsSectionChat": {
+    "message": "聊天"
+  },
+  "settingsSectionPlayer": {
+    "message": "播放器"
+  },
   "nativeChatWidth": {
-    "message": "聊天宽度"
+    "message": "宽度"
   },
   "nativeChatThemeUnavailable": {
     "message": "聊天使用服务的外观设置。所选主题在此页面不可用。"
   },
   "nativeChatTheme": {
-    "message": "聊天主题"
+    "message": "主题"
   },
   "nativeChatThemeLight": {
     "message": "浅色"

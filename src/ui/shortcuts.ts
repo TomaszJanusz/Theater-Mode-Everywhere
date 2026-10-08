@@ -18,6 +18,7 @@ export interface Shortcuts {
   toggleControlsPin: string;
   cycleFit: string;
   cycleLayout: string;
+  toggleChat: string;
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
@@ -43,6 +44,7 @@ export const defaultShortcuts: Shortcuts = {
   toggleControlsPin: 'Shift+H',
   cycleFit: 'Z',
   cycleLayout: 'Shift+L',
+  toggleChat: 'Alt+R',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
   decreaseCaptionSize: '-'
@@ -59,6 +61,9 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
   // Introducing Layout must not steal Shift+L from an existing custom action.
   if (typeof saved.cycleLayout !== 'string' && shortcutConflicts(next, 'cycleLayout', next.cycleLayout).length) {
     next.cycleLayout = '';
+  }
+  if (typeof saved.toggleChat !== 'string' && shortcutConflicts(next, 'toggleChat', next.toggleChat).length) {
+    next.toggleChat = '';
   }
   return next;
 }

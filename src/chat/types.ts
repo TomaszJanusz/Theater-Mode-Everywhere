@@ -34,8 +34,16 @@ export interface ChatSurface {
   initiallyVisible: boolean;
 }
 
+/** Service-owned control that opens a chat, including one not mounted yet. */
+export interface ChatActivation {
+  provider: ChatProvider;
+  contentKey: string;
+  control: HTMLElement;
+}
+
 export interface ChatState {
   surface: ChatSurface | null;
+  /** A mounted native chat or an enabled native control that can open one. */
   available: boolean;
   visible: boolean;
   /** Preferred right-dock width in pixels, clamped to the shared slider range. */

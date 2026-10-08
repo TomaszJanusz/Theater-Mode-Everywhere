@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "إظهار الدردشة"
   },
+  "toggleNativeChat": {
+    "message": "تبديل الدردشة"
+  },
   "hideNativeChat": {
     "message": "إخفاء الدردشة"
   },
+  "settingsSectionChat": {
+    "message": "الدردشة"
+  },
+  "settingsSectionPlayer": {
+    "message": "المشغل"
+  },
   "nativeChatWidth": {
-    "message": "عرض الدردشة"
+    "message": "العرض"
   },
   "nativeChatThemeUnavailable": {
     "message": "تستخدم الدردشة مظهر الخدمة. المظهر المحدد غير متاح في هذه الصفحة."
   },
   "nativeChatTheme": {
-    "message": "مظهر الدردشة"
+    "message": "المظهر"
   },
   "nativeChatThemeLight": {
     "message": "فاتح"

@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "チャットを表示"
   },
+  "toggleNativeChat": {
+    "message": "チャットの表示を切り替え"
+  },
   "hideNativeChat": {
     "message": "チャットを非表示"
   },
+  "settingsSectionChat": {
+    "message": "チャット"
+  },
+  "settingsSectionPlayer": {
+    "message": "プレーヤー"
+  },
   "nativeChatWidth": {
-    "message": "チャットの幅"
+    "message": "幅"
   },
   "nativeChatThemeUnavailable": {
     "message": "チャットはサービスの外観を使用しています。このページでは選択したテーマを利用できません。"
   },
   "nativeChatTheme": {
-    "message": "チャットのテーマ"
+    "message": "テーマ"
   },
   "nativeChatThemeLight": {
     "message": "ライト"

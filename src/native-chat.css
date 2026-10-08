@@ -127,94 +127,9 @@ html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-iron-overlay
   z-index: 2147483646 !important;
 }
 
-/* Width controls are TME chrome, rendered in its existing shadow root. */
-.theater-chat-width-row {
-  display: grid !important;
-  grid-template-columns: 1fr auto !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 12px 16px !important;
-  font-size: 13px !important;
-  color: inherit !important;
-}
-
-.theater-chat-width-slider {
-  grid-column: 1 / -1 !important;
-  width: 100% !important;
-  accent-color: var(--accent-color, #6366f1) !important;
-}
-
 .theater-chat-width-row[hidden],
+.theater-chat-theme-row[hidden],
+.theater-chat-theme-hint[hidden],
 .theater-chat-toggle[hidden] {
-  display: none !important;
-}
-
-.theater-chat-theme-row {
-  display: grid !important;
-  grid-template-columns: 1fr auto !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 12px 16px !important;
-  font-size: 13px !important;
-  color: inherit !important;
-}
-
-.theater-chat-theme-control {
-  grid-column: 1 / -1 !important;
-  display: block !important;
-  position: relative !important;
-  min-width: 0 !important;
-}
-
-.theater-chat-theme-arrow {
-  position: absolute !important;
-  inset-inline-end: 12px !important;
-  top: 50% !important;
-  width: 12px !important;
-  height: 12px !important;
-  transform: translateY(-50%) !important;
-  pointer-events: none !important;
-}
-
-.theater-chat-theme-select {
-  appearance: none !important;
-  box-sizing: border-box !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 6px 12px !important;
-  padding-inline-end: 36px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  border-radius: 6px !important;
-  background: #111 !important;
-  color: inherit !important;
-  color-scheme: dark !important;
-  font: inherit !important;
-}
-
-@media (forced-colors: active) {
-  .theater-chat-theme-select {
-    appearance: auto !important;
-    padding-inline-end: 12px !important;
-  }
-  .theater-chat-theme-arrow { display: none !important; }
-}
-
-.theater-chat-theme-select:focus-visible {
-  outline: 2px solid var(--accent-color, #6366f1) !important;
-  outline-offset: 2px !important;
-}
-
-.theater-chat-theme-row[hidden] {
-  display: none !important;
-}
-
-.theater-chat-theme-hint {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  color: inherit;
-  opacity: 0.75;
-}
-
-.theater-chat-theme-hint[hidden] {
   display: none !important;
 }

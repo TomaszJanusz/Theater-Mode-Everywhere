@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "Показати чат"
   },
+  "toggleNativeChat": {
+    "message": "Перемкнути чат"
+  },
   "hideNativeChat": {
     "message": "Приховати чат"
   },
+  "settingsSectionChat": {
+    "message": "Чат"
+  },
+  "settingsSectionPlayer": {
+    "message": "Програвач"
+  },
   "nativeChatWidth": {
-    "message": "Ширина чату"
+    "message": "Ширина"
   },
   "nativeChatThemeUnavailable": {
     "message": "Чат використовує оформлення сервісу. Вибрана тема недоступна на цій сторінці."
   },
   "nativeChatTheme": {
-    "message": "Тема чату"
+    "message": "Тема"
   },
   "nativeChatThemeLight": {
     "message": "Світла"

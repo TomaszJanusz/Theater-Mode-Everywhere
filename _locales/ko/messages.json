@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "채팅 표시"
   },
+  "toggleNativeChat": {
+    "message": "채팅 전환"
+  },
   "hideNativeChat": {
     "message": "채팅 숨기기"
   },
+  "settingsSectionChat": {
+    "message": "채팅"
+  },
+  "settingsSectionPlayer": {
+    "message": "플레이어"
+  },
   "nativeChatWidth": {
-    "message": "채팅 너비"
+    "message": "너비"
   },
   "nativeChatThemeUnavailable": {
     "message": "채팅은 서비스의 화면 설정을 사용합니다. 이 페이지에서는 선택한 테마를 사용할 수 없습니다."
   },
   "nativeChatTheme": {
-    "message": "채팅 테마"
+    "message": "테마"
   },
   "nativeChatThemeLight": {
     "message": "밝게"

@@ -29,6 +29,24 @@ export function createPlayerSettings(
   panel.setAttribute('aria-label', ctx.t('playerSettingsLabel'));
   const body = document.createElement('div');
   body.className = 'theater-settings-body';
+  const chatSection = document.createElement('div');
+  chatSection.className = 'theater-settings-section';
+  chatSection.dataset.settingsSection = 'chat';
+  chatSection.hidden = true;
+  const chatHeading = document.createElement('div');
+  chatHeading.className = 'theater-settings-heading';
+  chatHeading.textContent = ctx.t('settingsSectionChat');
+  const chatBody = document.createElement('div');
+  chatBody.className = 'theater-settings-section-body';
+  chatSection.append(chatHeading, chatBody);
+  const separator = document.createElement('div');
+  separator.className = 'theater-settings-separator';
+  separator.hidden = true;
+  separator.setAttribute('role', 'separator');
+  const playerHeading = document.createElement('div');
+  playerHeading.className = 'theater-settings-heading';
+  playerHeading.textContent = ctx.t('settingsSectionPlayer');
+  body.append(chatSection, separator, playerHeading);
   panel.append(body);
   ctx.paintOverlay(panel);
 

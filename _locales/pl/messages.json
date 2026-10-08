@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "Pokaż czat"
   },
+  "toggleNativeChat": {
+    "message": "Przełącz czat"
+  },
   "hideNativeChat": {
     "message": "Schowaj czat"
   },
+  "settingsSectionChat": {
+    "message": "Czat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Odtwarzacz"
+  },
   "nativeChatWidth": {
-    "message": "Szerokość czatu"
+    "message": "Szerokość"
   },
   "nativeChatThemeUnavailable": {
     "message": "Czat używa wyglądu serwisu. Wybrany motyw jest niedostępny na tej stronie."
   },
   "nativeChatTheme": {
-    "message": "Motyw czatu"
+    "message": "Motyw"
   },
   "nativeChatThemeLight": {
     "message": "Jasny"

@@ -1,11 +1,13 @@
 import { OwnedDom } from '../owned-dom';
 import type { ChatSurface } from '../types';
+import { THEATER_STAGE_BACKGROUND } from './stage';
 import type { ChatThemeAdapter, ForcedTheme } from './types';
 
 const paletteCache = new WeakMap<Document, { sheets: CSSStyleSheet[]; counts: number[]; classes: Partial<Record<ForcedTheme, string>> }>();
 
 export class TwitchChatThemeAdapter implements ChatThemeAdapter {
   private readonly owned = new OwnedDom();
+  private canvas: HTMLStyleElement | null = null;
   constructor(private readonly surface: ChatSurface) {}
   apply(theme: ForcedTheme): boolean {
     const surface = this.surface;
@@ -32,10 +34,33 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
       this.owned.setClass(parent, 'tw-root--theme-light', theme === 'light');
       this.owned.setClass(parent, 'tw-root--theme-dark', theme === 'dark');
     }
+    this.paintCanvas(theme);
     return true;
   }
 
-  restore(): void { this.owned.restoreAll(); }
+  restore(): void {
+    this.canvas?.remove();
+    this.canvas = null;
+    this.owned.restoreAll();
+  }
+
+  /** The service dark base is grey. Paint the chat canvas with the theater stage instead. */
+  private paintCanvas(theme: ForcedTheme): void {
+    if (theme !== 'dark') {
+      this.canvas?.remove();
+      this.canvas = null;
+      return;
+    }
+    const doc = this.surface.root.ownerDocument;
+    if (this.canvas?.isConnected || !doc.head) return;
+    const style = doc.createElement('style');
+    style.setAttribute('data-theater-chat-canvas', 'twitch');
+    style.textContent = `[data-theater-chat]{--color-background-base:${THEATER_STAGE_BACKGROUND}}` +
+      `[data-theater-chat] .stream-chat,[data-theater-chat] .chat-shell,[data-theater-chat] .chat-room,` +
+      `[data-theater-chat] [data-test-selector="chat-room-component-layout"]{background-color:${THEATER_STAGE_BACKGROUND} !important}`;
+    doc.head.append(style);
+    this.canvas = style;
+  }
 }
 
 /** Select the service's complete CSS token class; never reconstruct or hardcode a palette. */

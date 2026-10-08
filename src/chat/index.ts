@@ -1,4 +1,5 @@
 export type {
+  ChatActivation,
   ChatDock,
   ChatKind,
   ChatPreference,
@@ -11,6 +12,7 @@ export type {
 export type { ChatControllerOptions } from './controller';
 export { ChatController } from './controller';
 export { detectChatSurface } from './detect';
+export { detectChatActivation } from './activation';
 export { isNativeChatEvent } from './events';
 export { normalizeChatTheme } from './theme';
 export { isChatDocument } from './url';

@@ -118,7 +118,7 @@ import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
 import { isChatDocument, isNativeChatEvent } from '../chat';
-import { CHAT_PREFERENCES_STORAGE_KEY, hydrateChatPreferences, startNativeChatSession, stopNativeChatSession } from './chat';
+import { CHAT_PREFERENCES_STORAGE_KEY, hydrateChatPreferences, nativeChatState, startNativeChatSession, stopNativeChatSession, toggleNativeChat } from './chat';
 
 const session = new PlayerSession();
 const frames = new FrameCoordinator(() => session.ensureNonce());
@@ -275,6 +275,9 @@ function executeCommand(command: PlayerCommand): void {
     }
     case 'TOGGLE_CAPTIONS':
       void toggleTheaterCaptions();
+      break;
+    case 'TOGGLE_CHAT':
+      if (toggleNativeChat()) showToolbar();
       break;
     case 'STEP_CAPTION_SIZE':
       persistCaptionStyle({
@@ -1141,6 +1144,14 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_FIT' });
+      return true;
+    }
+
+    if (session.element && nativeChatState()?.available && matchesShortcut(event, shortcuts.toggleChat)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) executeCommand({ type: 'TOGGLE_CHAT' });
       return true;
     }
 

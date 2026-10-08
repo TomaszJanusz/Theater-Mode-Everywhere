@@ -169,6 +169,103 @@ describe('native chat controller', () => {
     }
   });
 
+  it('opens a YouTube chat from its metadata card before an iframe exists, without repeated native clicks', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
+    try {
+      const report = await page.evaluate(`(async () => {
+        const card = document.querySelector('yt-video-metadata-carousel-view-model');
+        let clicks = 0;
+        card.addEventListener('click', () => { clicks += 1; });
+        const c = new NativeChat.ChatController({document, href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK', onChange() {}, onLayoutChange() {}});
+        const initial = {available:c.state.available,visible:c.state.visible,surface:c.state.surface, clicks};
+        c.toggle(); c.refresh(); c.refresh();
+        await new Promise(r => setTimeout(r, 600));
+        const waiting = {clicks, visible:c.state.visible,video:document.documentElement.style.getPropertyValue('--theater-video-width')};
+        c.toggle(); // Cancel while the service is still loading.
+        document.querySelector('ytd-watch-flexy').insertAdjacentHTML('beforeend', '<ytd-live-chat-frame id="chat"><iframe id="chatframe" src="https://www.youtube.com/live_chat?v=AbCdEfGhIjK"></iframe></ytd-live-chat-frame>');
+        const frame = document.querySelector('iframe');
+        c.refresh();
+        const cancelled = {visible:c.state.visible,hidden:document.querySelector('#chat').hasAttribute('data-theater-chat-hidden')};
+        c.toggle(); c.hide(); c.show();
+        const opened = {visible:c.state.visible,sameFrame:c.state.surface.iframe === frame, clicks};
+        c.dispose();
+        return {initial, waiting, cancelled, opened};
+      })()`) as {
+        initial: {available: boolean; visible: boolean; surface: null; clicks: number};
+        waiting: {clicks: number; visible: boolean; video: string};
+        cancelled: {visible: boolean; hidden: boolean};
+        opened: {visible: boolean; sameFrame: boolean; clicks: number};
+      };
+      assert.deepEqual(report.initial, {available:true,visible:false,surface:null,clicks:0});
+      assert.deepEqual(report.waiting, {clicks:1,visible:false,video:'1280px'});
+      assert.deepEqual(report.cancelled, {visible:false,hidden:true});
+      assert.deepEqual(report.opened, {visible:true,sameFrame:true,clicks:1});
+    } finally { await page.close(); }
+  });
+
+  it('uses native YouTube Show chat and Twitch Expand Chat controls for collapsed components and stored preferences', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    for (const provider of ['youtube', 'twitch']) {
+      const html = provider === 'youtube'
+        ? `<ytd-watch-flexy video-id="AbCdEfGhIjK"><ytd-live-chat-frame id="chat" collapsed><iframe id="chatframe" src="https://www.youtube.com/live_chat?v=AbCdEfGhIjK"></iframe><div id="show-hide-button"><button id="open">Pokaż czat</button></div></ytd-live-chat-frame></ytd-watch-flexy>`
+        : `<div class="channel-root__right-column" style="width:0"><div class="chat-shell"><section id="chat" data-test-selector="chat-room-component-layout"><textarea id="draft">native draft</textarea></section></div></div><button id="open" data-a-target="right-column__toggle-collapse-btn" aria-label="Rozwiń czat">expand</button>`;
+      const page = await pageWith(html);
+      try {
+        const report = await page.evaluate(`(async () => {
+          const provider = ${JSON.stringify(provider)};
+          const chat = document.querySelector('#chat');
+          const original = document.querySelector('iframe, textarea');
+          let clicks = 0;
+          document.querySelector('#open').addEventListener('click', () => {
+            clicks += 1;
+            if (provider === 'youtube') {chat.removeAttribute('collapsed');document.querySelector('#show-hide-button').hidden=true;}
+            else { document.querySelector('.channel-root__right-column').style.width='340px';document.querySelector('#open').setAttribute('aria-label','Collapse Chat'); }
+          });
+          const c = new NativeChat.ChatController({document,href:() => provider === 'youtube' ? 'https://www.youtube.com/watch?v=AbCdEfGhIjK' : 'https://www.twitch.tv/example',onChange(){},onLayoutChange(){},initialPreferences:{[provider]:{visible:true,width:400}}});
+          c.refresh(); await new Promise(r => setTimeout(r, 200));
+          c.hide(); c.show(); c.refresh();
+          const result = {clicks,available:c.state.available,visible:c.state.visible,sameComponent:document.querySelector('iframe,textarea')===original};
+          if (provider === 'youtube') {chat.setAttribute('collapsed','');document.querySelector('#show-hide-button').hidden=false;}
+          else {document.querySelector('.channel-root__right-column').style.width='0';document.querySelector('#open').setAttribute('aria-label','Expand Chat');}
+          c.refresh();
+          const closedByService={visible:c.state.visible,clicks};
+          c.toggle();c.refresh();
+          const reopened={visible:c.state.visible,clicks};
+          c.dispose();return {result,closedByService,reopened};
+        })()`);
+        assert.deepEqual(report, {
+          result:{clicks:1,available:true,visible:true,sameComponent:true},
+          closedByService:{visible:false,clicks:1},reopened:{visible:true,clicks:2}
+        }, provider);
+      } finally { await page.close(); }
+    }
+  });
+
+  it('rejects disabled, unrelated and stale YouTube activation cards, detects late cards, and permits explicit retries', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Chapters"><button>Open panel</button></yt-video-metadata-carousel-view-model><yt-video-metadata-carousel-view-model id="card" role="button" aria-label="Live chat"><button disabled>Open panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
+    try {
+      const report = await page.evaluate(`(async () => {
+        let href = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
+        let clicks = 0;
+        const c = new NativeChat.ChatController({document,href:()=>href,onChange(){},onLayoutChange(){}});
+        const disabled = c.state.available;
+        document.querySelector('#card').addEventListener('click',()=>clicks++);
+        document.querySelector('#card button').disabled=false;
+        await new Promise(r=>setTimeout(r,200));
+        const late=c.state.available;
+        href='https://www.youtube.com/watch?v=OtherVideo1';c.refresh();const stale=c.state.available;
+        href='https://www.youtube.com/watch?v=AbCdEfGhIjK';c.refresh();c.show();c.refresh();c.refresh();
+        const once=clicks;
+        c.show();const retry=clicks;
+        c.dispose(); document.querySelector('#card').click();
+        return {disabled,late,stale,once,retry,disposedClick:clicks};
+      })()`);
+      assert.deepEqual(report, {disabled:false,late:true,stale:false,once:1,retry:2,disposedClick:3});
+    } finally { await page.close(); }
+  });
+
   it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(TWITCH);
@@ -758,7 +855,7 @@ describe('native chat controller', () => {
         latePopup: object; draft: string; sameDraft: boolean; classes: string; popupClasses: string;
         parentClasses: string; inlinePalette: string; inlineBackground: string; marker: string | null;
       };
-      assert.deepEqual(twitchReport.dark, {panel:'rgb(24, 24, 27)',text:'rgb(239, 239, 241)',input:'rgb(24, 24, 27)',inputText:'rgb(239, 239, 241)'});
+      assert.deepEqual(twitchReport.dark, {panel:'rgb(0, 0, 0)',text:'rgb(239, 239, 241)',input:'rgb(24, 24, 27)',inputText:'rgb(239, 239, 241)'});
       assert.deepEqual(twitchReport.latePopup, {bg:'rgb(24, 24, 27)',color:'rgb(239, 239, 241)'});
       assert.deepEqual(twitchReport.light, twitchReport.baseline);
       assert.deepEqual(twitchReport.restored, twitchReport.baseline);
@@ -854,9 +951,12 @@ describe('native chat controller', () => {
           }).map((row: {alias: string}) => row.alias);
         };
         const darkMismatches = compare('dark');
+        const rendererBg = () => getComputedStyle(frame.contentDocument!.querySelector('yt-live-chat-renderer')!).backgroundColor;
+        const darkCanvas = rendererBg();
         const inputDark = {bg: getComputedStyle(draft).backgroundColor, text: getComputedStyle(draft).color};
         controller.hide(); controller.setTheme('light');
         const lightMismatches = compare('light');
+        const lightCanvas = rendererBg();
         const inputLight = {bg: getComputedStyle(draft).backgroundColor, text: getComputedStyle(draft).color};
         controller.show(); controller.setTheme('dark');
         const unknown = doc.createElement('style');
@@ -878,10 +978,12 @@ describe('native chat controller', () => {
         controller.dispose();
         const restored = {dark: frame.contentDocument!.documentElement.hasAttribute('dark'),
           bridge: !!frame.contentDocument!.querySelector('[data-theater-chat-palette]'), mismatches: compare('dark')};
-        return {darkMismatches, lightMismatches, inputDark, inputLight, fallback, recovered, identity, replacement, restored, events};
+        return {darkMismatches, lightMismatches, darkCanvas, lightCanvas, inputDark, inputLight, fallback, recovered, identity, replacement, restored, events};
       }, {css, colors});
       assert.deepEqual(report.darkMismatches, []);
       assert.deepEqual(report.lightMismatches, []);
+      assert.equal(report.darkCanvas, 'rgb(0, 0, 0)');
+      assert.equal(report.lightCanvas, 'rgb(255, 255, 255)');
       assert.deepEqual(report.inputDark, {bg:'rgb(33, 33, 33)',text:'rgb(241, 241, 241)'});
       assert.deepEqual(report.inputLight, {bg:'rgb(255, 255, 255)',text:'rgb(15, 15, 15)'});
       assert.deepEqual(report.fallback, {status:'unavailable',requested:'dark',native:true,bridge:false,marker:null});

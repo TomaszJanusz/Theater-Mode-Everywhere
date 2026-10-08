@@ -76,6 +76,12 @@ export function nativeChatState(): ChatState | null {
   return controller?.state ?? null;
 }
 
+export function toggleNativeChat(): boolean {
+  if (!controller?.state.available) return false;
+  controller.toggle();
+  return true;
+}
+
 export function startNativeChatSession(onLayoutChange: () => void): void {
   stopNativeChatSession();
   controller = new ChatController({
@@ -113,18 +119,33 @@ export function mountNativeChatControls(
   button.className = 'theater-control-btn theater-chat-toggle';
   ctx.actions.setIcon(button, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>');
   const label = () => ctx.t(nativeChatState()?.visible ? 'hideNativeChat' : 'showNativeChat');
-  tooltip(button, label);
+  tooltip(button, () => {
+    const shortcut = ctx.ui().shortcuts.toggleChat;
+    return shortcut ? `${label()} <kbd>${shortcut}</kbd>` : label();
+  });
   scope.listen(button, 'click', () => {
     controller?.toggle();
     ctx.actions.showToolbar();
   });
   toolbar.append(button);
 
+  const chatSection = settingsPanel.querySelector<HTMLElement>('[data-settings-section="chat"]');
+  const chatSeparator = chatSection?.nextElementSibling instanceof HTMLElement
+    && chatSection.nextElementSibling.classList.contains('theater-settings-separator')
+    ? chatSection.nextElementSibling
+    : null;
+  const chatMount = chatSection?.querySelector('.theater-settings-section-body') ?? settingsPanel.querySelector('.theater-settings-body');
+
   const widthRow = document.createElement('label');
-  widthRow.className = 'theater-chat-width-row';
+  widthRow.className = 'theater-settings-row theater-chat-width-row';
+  const widthIcon = document.createElement('span');
+  widthIcon.className = 'theater-settings-icon';
+  ctx.actions.setIcon(widthIcon, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>');
   const widthLabel = document.createElement('span');
+  widthLabel.className = 'theater-settings-label';
   widthLabel.textContent = ctx.t('nativeChatWidth');
-  const widthValue = document.createElement('output');
+  const widthControl = document.createElement('span');
+  widthControl.className = 'theater-chat-inline';
   const slider = document.createElement('input');
   slider.type = 'range';
   slider.min = String(MIN_CHAT_WIDTH_PX);
@@ -132,13 +153,20 @@ export function mountNativeChatControls(
   slider.step = '10';
   slider.setAttribute('aria-label', ctx.t('nativeChatWidth'));
   slider.className = 'theater-chat-width-slider';
-  widthRow.append(widthLabel, widthValue, slider);
-  settingsPanel.querySelector('.theater-settings-body')?.append(widthRow);
+  const widthValue = document.createElement('output');
+  widthValue.className = 'theater-chat-width-value';
+  widthControl.append(slider, widthValue);
+  widthRow.append(widthIcon, widthLabel, widthControl);
+  chatMount?.append(widthRow);
   scope.listen(slider, 'input', () => controller?.setWidth(Number(slider.value)));
 
   const themeRow = document.createElement('label');
-  themeRow.className = 'theater-chat-theme-row';
+  themeRow.className = 'theater-settings-row theater-chat-theme-row';
+  const themeIcon = document.createElement('span');
+  themeIcon.className = 'theater-settings-icon';
+  ctx.actions.setIcon(themeIcon, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20z"/></svg>');
   const themeLabel = document.createElement('span');
+  themeLabel.className = 'theater-settings-label';
   themeLabel.textContent = ctx.t('nativeChatTheme');
   const themeSelect = document.createElement('select');
   themeSelect.className = 'theater-chat-theme-select';
@@ -164,16 +192,22 @@ export function mountNativeChatControls(
   themeArrow.setAttribute('aria-hidden', 'true');
   ctx.actions.setIcon(themeArrow, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 4.5 3 3 3-3"/></svg>');
   themeControl.append(themeSelect, themeArrow);
-  themeRow.append(themeLabel, themeControl, themeHint);
-  settingsPanel.querySelector('.theater-settings-body')?.append(themeRow);
+  themeRow.append(themeIcon, themeLabel, themeControl, themeHint);
+  chatMount?.append(themeRow);
   scope.listen(themeSelect, 'change', () => controller?.setTheme(normalizeChatTheme(themeSelect.value)));
 
   const update = () => {
     const state = nativeChatState();
-    button.hidden = !state?.available;
+    const available = Boolean(state?.available);
+    button.hidden = !available;
     button.setAttribute('aria-expanded', String(Boolean(state?.visible)));
     button.setAttribute('aria-label', label());
+    const shortcut = ctx.ui().shortcuts.toggleChat;
+    if (shortcut) button.setAttribute('aria-keyshortcuts', shortcut);
+    else button.removeAttribute('aria-keyshortcuts');
     button.classList.toggle('active', Boolean(state?.visible));
+    if (chatSection) chatSection.hidden = !available;
+    if (chatSeparator) chatSeparator.hidden = !available;
     widthRow.hidden = !state?.available || state.dock !== 'right';
     slider.disabled = !state?.visible;
     slider.value = String(state?.width ?? DEFAULT_CHAT_WIDTH_PX);

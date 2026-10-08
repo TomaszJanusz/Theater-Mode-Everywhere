@@ -170,6 +170,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   noSubtitlesAvailable: 'No subtitles available',
   disableSubtitles: 'Disable Subtitles',
   enableSubtitles: 'Enable Subtitles',
+  toggleNativeChat: 'Toggle chat',
   toggleSubtitles: 'Toggle Subtitles',
   increaseSubtitleSize: 'Increase Subtitle Size',
   decreaseSubtitleSize: 'Decrease Subtitle Size',

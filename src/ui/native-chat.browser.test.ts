@@ -560,7 +560,7 @@ async function readThemeControl(page: Page): Promise<ThemeControl> {
       disabled: select.disabled,
       value: select.value,
       label: select.getAttribute('aria-label'),
-      text: row.querySelector('span')?.textContent ?? null,
+      text: row.querySelector('.theater-settings-label')?.textContent ?? null,
       options: [...select.options].map(option => ({ value: option.value, text: option.text })),
       inSettings: Boolean(menu && select.closest('.theater-settings-body') && menu.parentElement?.querySelector('.player-settings-btn'))
     };
@@ -676,6 +676,16 @@ describe('native chat browser session', () => {
       assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
       assert.equal(layout.parentId, preserved.parentId, JSON.stringify(layout));
       assertRightDock(layout, 'youtube shown again');
+      await page.keyboard.press('c');
+      layout = await layoutOf(page);
+      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+      layout = await layoutOf(page);
+      assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
+      assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
 
       await setChatWidth(page, CHOSEN_WIDTH);
       await page.waitForFunction(width => {
@@ -910,6 +920,49 @@ describe('native chat browser session', () => {
     }
   });
 
+  it('exposes the chat toggle before YouTube mounts a frame and opens it with Alt+R', { timeout: 120_000 }, async t => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const { page } = await openPage(browser, {url:YOUTUBE_WATCH,youtube:youtubeDocument('none')}, {width:1280,height:800});
+      await page.evaluate(() => {
+        const card = document.createElement('yt-video-metadata-carousel-view-model');
+        card.setAttribute('role','button');card.setAttribute('aria-label','Live chat');
+        card.innerHTML='<button>Open panel</button>';
+        card.dataset.clicks='0';
+        card.addEventListener('click',() => {
+          card.dataset.clicks=String(Number(card.dataset.clicks)+1);
+          const chat = document.createElement('ytd-live-chat-frame');chat.id='chat';
+          const iframe=document.createElement('iframe');iframe.id='chatframe';
+          iframe.src='https://www.youtube.com/live_chat?v=abcdefghijk';
+          chat.append(iframe);document.querySelector('#secondary')?.append(chat);
+          (card.querySelector('button') as HTMLButtonElement).disabled=true;
+        });
+        document.querySelector('ytd-watch-flexy')?.append(card);
+      });
+      await boot(page);
+      const initial=await layoutOf(page);
+      assert.equal(initial.state?.available,true);
+      assert.equal(initial.state?.visible,false);
+      assert.equal(initial.toggleHidden,false);
+      assert.equal(initial.chatCount,0);
+      assertFullVideo(initial,'YouTube activation card only');
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
+      await page.locator('#chatframe').contentFrame().locator('#draft').fill('keep the native draft');
+      assertRightDock(await layoutOf(page),'YouTube opened through native card');
+      await page.locator('.theater-chat-toggle').focus();
+      await page.keyboard.press('Alt+R');
+      await page.waitForFunction(()=>!window.NativeChatTest.nativeChatState()?.visible);
+      await page.locator('.theater-chat-toggle').click();
+      await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
+      assert.equal(await page.locator('yt-video-metadata-carousel-view-model').getAttribute('data-clicks'),'1');
+      assert.equal(await page.locator('#chatframe').contentFrame().locator('#draft').inputValue(),'keep the native draft');
+      assert.deepEqual(pageErrors(page),[]);
+    } finally { await browser.close(); }
+  });
+
   it('leaves ordinary videos alone, adopts a late chat, and rebinds when that root is replaced', { timeout: 120_000 }, async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
@@ -1073,8 +1126,54 @@ describe('native chat browser session', () => {
       await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
       let theme = await readThemeControl(page);
       assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
-      assert.equal(theme.label, 'Chat theme', JSON.stringify(theme));
-      assert.equal(theme.text, 'Chat theme', JSON.stringify(theme));
+      assert.equal(theme.label, 'Theme', JSON.stringify(theme));
+      assert.equal(theme.text, 'Theme', JSON.stringify(theme));
+      await revealChatSettings(page);
+      const menu = await page.evaluate(() => {
+        const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+        const body = root?.querySelector('.theater-settings-body');
+        const chat = body?.querySelector('[data-settings-section="chat"]');
+        const width = root?.querySelector('.theater-chat-width-row');
+        const themeRow = root?.querySelector('.theater-chat-theme-row');
+        const sameRow = (row: Element | null | undefined) => {
+          const label = row?.querySelector('.theater-settings-label');
+          const control = row?.querySelector('input, select');
+          if (!(label instanceof HTMLElement) || !(control instanceof HTMLElement)) return false;
+          return Math.abs(label.getBoundingClientRect().top - control.getBoundingClientRect().top) < 12;
+        };
+        return {
+          order: [...(body?.children ?? [])].slice(0, 3).map(node => node.className),
+          chatHeading: chat?.querySelector('.theater-settings-heading')?.textContent ?? null,
+          playerHeading: body?.querySelector(':scope > .theater-settings-heading')?.textContent ?? null,
+          widthLabel: width?.querySelector('.theater-settings-label')?.textContent ?? null,
+          themeInChat: Boolean(themeRow && chat?.contains(themeRow)),
+          widthInline: sameRow(width),
+          themeInline: sameRow(themeRow),
+          chatActive: root?.querySelector('.theater-chat-toggle')?.classList.contains('active') ?? false,
+          chatColor: (() => {
+            const toggle = root?.querySelector('.theater-chat-toggle');
+            return toggle instanceof HTMLElement ? getComputedStyle(toggle).color : null;
+          })(),
+          idleColor: (() => {
+            const idle = root?.querySelector('.fullscreen-btn');
+            return idle instanceof HTMLElement ? getComputedStyle(idle).color : null;
+          })()
+        };
+      });
+      assert.deepEqual(menu.order, [
+        'theater-settings-section',
+        'theater-settings-separator',
+        'theater-settings-heading'
+      ], JSON.stringify(menu));
+      assert.equal(menu.chatHeading, 'Chat');
+      assert.equal(menu.playerHeading, 'Player');
+      assert.equal(menu.widthLabel, 'Width');
+      assert.equal(menu.themeInChat, true);
+      assert.equal(menu.widthInline, true);
+      assert.equal(menu.themeInline, true);
+      assert.equal(menu.chatActive, true);
+      assert.notEqual(menu.chatColor, menu.idleColor, JSON.stringify(menu));
+      await closeChatSettings(page);
       assert.equal(theme.value, 'native', JSON.stringify(theme));
       assert.equal(theme.hidden, false, JSON.stringify(theme));
       assert.equal(theme.disabled, false, JSON.stringify(theme));

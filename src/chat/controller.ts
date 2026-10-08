@@ -1,5 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
 import { detectChatSurface } from './detect';
+import { detectChatActivation, TWITCH_CHAT_TOGGLE_SELECTOR, YOUTUBE_CHAT_CARD_SELECTOR } from './activation';
 import {
   CHAT_GEOMETRY_PROPERTIES,
   type ChatLayout,
@@ -8,7 +9,7 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
-import type { ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
+import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
 import { parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
@@ -71,6 +72,8 @@ export class ChatController {
   private boundFrameSrc = '';
   private structureTimer: ReturnType<typeof setTimeout> | null = null;
   private viewportFrame = 0;
+  private activation: ChatActivation | null = null;
+  private attemptedActivation: (ChatActivation & { at: number }) | null = null;
 
   constructor(options: ChatControllerOptions) {
     this.options = options;
@@ -93,7 +96,20 @@ export class ChatController {
     if (this.disposed) return;
     const href = this.safeHref();
     this.lastIdentity = watchIdentity(href);
-    this.apply(detectChatSurface(this.options.document, href));
+    const surface = detectChatSurface(this.options.document, href);
+    this.activation = detectChatActivation(this.options.document, href, surface);
+    // Closing chat through the service's own UI is also a viewer choice.
+    // Do not immediately undo it with the previously shown TME preference.
+    const previous = this.current.surface;
+    if (this.activation && this.current.visible && previous?.provider === this.activation.provider
+      && previous.contentKey === this.activation.contentKey) {
+      const preference = this.ensurePreference(previous.provider, false);
+      preference.visible = false;
+      preference.visibilityLocked = true;
+      this.persist(previous.provider);
+    }
+    this.apply(surface);
+    this.openNativeChat();
   }
 
   show(): void {
@@ -101,13 +117,14 @@ export class ChatController {
   }
 
   hide(): void {
-    if (this.disposed || !this.current.visible) return;
+    if (this.disposed) return;
     if (this.focusInsideSurface()) this.options.focusToggle?.();
     this.setVisible(false);
   }
 
   toggle(): void {
-    if (this.current.visible) this.hide();
+    if (this.current.visible || (this.attemptedActivation && Date.now() - this.attemptedActivation.at < 5000
+      && this.preferenceForSurface(this.current.surface).visible)) this.hide();
     else this.show();
   }
 
@@ -146,6 +163,8 @@ export class ChatController {
     this.themeSession.dispose();
     this.surfaceOwned.restoreAll();
     this.documentOwned.restoreAll();
+    this.activation = null;
+    this.attemptedActivation = null;
     this.current = { ...EMPTY_STATE };
     this.options.onChange(this.current);
     this.options.onLayoutChange();
@@ -157,7 +176,7 @@ export class ChatController {
     const observer = new MutationObserver((records) => {
       if (this.structureChanged(records)) this.scheduleStructureRefresh();
     });
-    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'video-id'] });
+    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'video-id', 'collapsed', 'aria-label', 'aria-expanded', 'disabled', 'aria-disabled', 'hidden'] });
     this.scope.add(() => observer.disconnect());
 
     const view = this.options.document.defaultView;
@@ -184,7 +203,7 @@ export class ChatController {
     const frameRetargeted = Boolean(surface?.iframe) && (surface?.iframe?.getAttribute('src') || '') !== this.boundFrameSrc;
     const rootDetached = Boolean(surface && !surface.root.isConnected);
     const componentDetached = Boolean(surface?.contentRoot && !surface.contentRoot.isConnected);
-    if (!surface || identity !== this.lastIdentity || frameDetached || frameRetargeted || rootDetached || componentDetached) this.refresh();
+    if (!surface || this.activation || identity !== this.lastIdentity || frameDetached || frameRetargeted || rootDetached || componentDetached) this.refresh();
   }
 
   /**
@@ -196,6 +215,8 @@ export class ChatController {
     for (const record of records) {
       if (record.type === 'attributes') {
         const target = record.target;
+        if (target instanceof Element && (target.matches(TWITCH_CHAT_TOGGLE_SELECTOR + ', ' + YOUTUBE_CHAT_CARD_SELECTOR + ', ytd-live-chat-frame, #show-hide-button')
+          || target.closest(YOUTUBE_CHAT_CARD_SELECTOR + ', #show-hide-button'))) return true;
         if (target instanceof Element && target.matches('ytd-watch-flexy') && record.attributeName === 'video-id') return true;
         if (!(target instanceof HTMLIFrameElement)) continue;
         const src = target.getAttribute('src') || '';
@@ -229,6 +250,8 @@ export class ChatController {
 
   private additionMayMountChat(node: Node, surface: ChatSurface | null): boolean {
     if (!(node instanceof Element)) return false;
+    const activationSelector = TWITCH_CHAT_TOGGLE_SELECTOR + ', ' + YOUTUBE_CHAT_CARD_SELECTOR + ', #show-hide-button';
+    if (node.matches(activationSelector) || node.querySelector(activationSelector)) return true;
     if (node.matches('[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame')) {
       return true;
     }
@@ -270,7 +293,7 @@ export class ChatController {
     if (previous && (previous.root !== next?.root || (next !== null && !sameElements(previous.revealAncestors, next.revealAncestors)))) {
       this.surfaceOwned.restoreAll();
     }
-    if (next) this.bindSurface(next, this.preferenceFor(next).visible);
+    if (next) this.bindSurface(next, this.preferenceFor(next).visible && !this.activation);
     this.boundFrameSrc = next?.iframe?.getAttribute('src') || '';
     this.themeSession.update(next, this.preferenceForSurface(next).theme);
     this.publish(next);
@@ -327,7 +350,7 @@ export class ChatController {
     if (!html) return false;
     if (surface) this.documentOwned.setAttribute(html, 'data-theater-chat-active', '');
     else this.documentOwned.removeAttribute(html, 'data-theater-chat-active');
-    const visible = Boolean(surface) && this.preferenceForSurface(surface).visible;
+    const visible = Boolean(surface) && this.preferenceForSurface(surface).visible && !this.activation;
     if (surface && visible) this.documentOwned.setAttribute(html, 'data-theater-chat-visible', '');
     else this.documentOwned.removeAttribute(html, 'data-theater-chat-visible');
 
@@ -352,7 +375,7 @@ export class ChatController {
   private layoutFor(surface: ChatSurface | null): ChatLayout {
     const viewport = readViewport(this.options.document);
     const preference = this.preferenceForSurface(surface);
-    const mode = !surface ? 'absent' : preference.visible ? 'shown' : 'hidden';
+    const mode = !surface ? 'absent' : preference.visible && !this.activation ? 'shown' : 'hidden';
     return chatGeometry({
       viewportWidth: viewport.width,
       viewportHeight: viewport.height,
@@ -366,8 +389,8 @@ export class ChatController {
     const layout = this.layoutFor(surface);
     return {
       surface,
-      available: surface !== null,
-      visible: surface !== null && preference.visible,
+      available: surface !== null || this.activation !== null,
+      visible: surface !== null && preference.visible && !this.activation,
       width: preference.width,
       dock: layout.dock,
       theme: preference.theme,
@@ -376,13 +399,14 @@ export class ChatController {
   }
 
   private preferenceFor(surface: ChatSurface): MemoryPreference {
-    return this.ensurePreference(surface.provider, surface.initiallyVisible);
+    return this.ensurePreference(surface.provider, this.activation ? false : surface.initiallyVisible);
   }
 
   private preferenceForSurface(surface: ChatSurface | null): { visible: boolean; width: number; theme: ChatTheme } {
     const provider = surface?.provider ?? this.provider();
     if (!provider) return { visible: false, width: DEFAULT_CHAT_WIDTH_PX, theme: 'native' };
     if (!surface) {
+      if (this.activation) return this.ensurePreference(provider, false);
       const existing = this.memory.get(provider);
       return existing
         ? { visible: existing.visible, width: existing.width, theme: existing.theme }
@@ -425,13 +449,31 @@ export class ChatController {
     const provider = this.provider();
     if (!provider) return;
     const preference = this.ensurePreference(provider, this.current.surface?.initiallyVisible ?? null);
-    if (preference.visible === visible && preference.visibilityLocked) return;
+    if (visible) this.attemptedActivation = null; // An explicit retry may repeat a failed native action.
+    if (preference.visible === visible && preference.visibilityLocked) {
+      if (visible) this.refresh();
+      return;
+    }
     preference.visible = visible;
     preference.visibilityLocked = true;
     preference.seeded = true;
     preference.persistPending = false;
     this.persist(provider);
     this.refresh();
+  }
+
+  /** Click once per route/attempt. Polling only waits for service-owned DOM. */
+  private openNativeChat(): void {
+    const activation = this.activation;
+    if (!activation) {
+      if (this.current.visible) this.attemptedActivation = null;
+      return;
+    }
+    if (!this.preferenceForSurface(this.current.surface).visible || !activation.control.isConnected) return;
+    const previous = this.attemptedActivation;
+    if (previous?.contentKey === activation.contentKey && previous.provider === activation.provider) return;
+    this.attemptedActivation = { ...activation, at: Date.now() };
+    activation.control.click();
   }
 
   private persist(provider: ChatProvider): void {

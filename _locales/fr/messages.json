@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "Afficher le chat"
   },
+  "toggleNativeChat": {
+    "message": "Afficher ou masquer le chat"
+  },
   "hideNativeChat": {
     "message": "Masquer le chat"
   },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Lecteur"
+  },
   "nativeChatWidth": {
-    "message": "Largeur du chat"
+    "message": "Largeur"
   },
   "nativeChatThemeUnavailable": {
     "message": "Le chat utilise l’apparence du service. Le thème choisi n’est pas disponible sur cette page."
   },
   "nativeChatTheme": {
-    "message": "Thème du chat"
+    "message": "Thème"
   },
   "nativeChatThemeLight": {
     "message": "Clair"

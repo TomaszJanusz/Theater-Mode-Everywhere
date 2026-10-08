@@ -1,4 +1,5 @@
 import { OwnedDom } from '../owned-dom';
+import { THEATER_STAGE_BACKGROUND } from './stage';
 import type { ChatThemeAdapter, ForcedTheme } from './types';
 import { YOUTUBE_CHAT_KNOWN_REFERENCES, YOUTUBE_CHAT_MAPPED_ALIASES, YOUTUBE_CHAT_TOKEN_BRIDGE } from './youtube-palette';
 
@@ -6,6 +7,7 @@ import { YOUTUBE_CHAT_KNOWN_REFERENCES, YOUTUBE_CHAT_MAPPED_ALIASES, YOUTUBE_CHA
 export class YouTubeChatThemeAdapter implements ChatThemeAdapter {
   private readonly owned = new OwnedDom();
   private style: HTMLStyleElement | null = null;
+  private canvas: HTMLStyleElement | null = null;
   private sheets: readonly CSSStyleSheet[] = [];
   private ruleCounts: number[] = [];
   private recognized: string | null = null;
@@ -24,13 +26,31 @@ export class YouTubeChatThemeAdapter implements ChatThemeAdapter {
     }
     if (theme === 'dark') this.owned.setAttribute(this.doc.documentElement, 'dark', '');
     else this.owned.removeAttribute(this.doc.documentElement, 'dark');
+    this.paintCanvas(theme);
     return true;
   }
 
   restore(): void {
+    this.canvas?.remove();
+    this.canvas = null;
     this.style?.remove();
     this.style = null;
     this.owned.restoreAll();
+  }
+
+  /** YouTube's dark base is #0f0f0f. The message canvas uses the theater stage instead. */
+  private paintCanvas(theme: ForcedTheme): void {
+    if (theme !== 'dark') {
+      this.canvas?.remove();
+      this.canvas = null;
+      return;
+    }
+    if (this.canvas?.isConnected || !this.doc.head) return;
+    const style = this.doc.createElement('style');
+    style.setAttribute('data-theater-chat-canvas', 'youtube');
+    style.textContent = `html,body,yt-live-chat-app,yt-live-chat-renderer,yt-live-chat-header-renderer{background:${THEATER_STAGE_BACKGROUND} !important;background-color:${THEATER_STAGE_BACKGROUND} !important}`;
+    this.doc.head.append(style);
+    this.canvas = style;
   }
 
   private supported(): boolean {

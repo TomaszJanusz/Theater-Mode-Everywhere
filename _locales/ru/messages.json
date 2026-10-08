@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "Показать чат"
   },
+  "toggleNativeChat": {
+    "message": "Переключить чат"
+  },
   "hideNativeChat": {
     "message": "Скрыть чат"
   },
+  "settingsSectionChat": {
+    "message": "Чат"
+  },
+  "settingsSectionPlayer": {
+    "message": "Плеер"
+  },
   "nativeChatWidth": {
-    "message": "Ширина чата"
+    "message": "Ширина"
   },
   "nativeChatThemeUnavailable": {
     "message": "Чат использует оформление сервиса. Выбранная тема недоступна на этой странице."
   },
   "nativeChatTheme": {
-    "message": "Тема чата"
+    "message": "Тема"
   },
   "nativeChatThemeLight": {
     "message": "Светлая"

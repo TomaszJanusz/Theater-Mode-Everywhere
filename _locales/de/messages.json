@@ -611,17 +611,26 @@
   "showNativeChat": {
     "message": "Chat anzeigen"
   },
+  "toggleNativeChat": {
+    "message": "Chat umschalten"
+  },
   "hideNativeChat": {
     "message": "Chat ausblenden"
   },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Player"
+  },
   "nativeChatWidth": {
-    "message": "Chatbreite"
+    "message": "Breite"
   },
   "nativeChatThemeUnavailable": {
     "message": "Der Chat verwendet das Erscheinungsbild des Dienstes. Das gewählte Design ist auf dieser Seite nicht verfügbar."
   },
   "nativeChatTheme": {
-    "message": "Chat-Design"
+    "message": "Design"
   },
   "nativeChatThemeLight": {
     "message": "Hell"
