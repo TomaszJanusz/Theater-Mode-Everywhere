@@ -1,6 +1,6 @@
 # YouTube: złożoność niezależnego motywu czatu
 
-**Wynik: niezależny motyw da się uzyskać małym patchem CSS, lecz odporne pozyskiwanie palety pozostaje nierozwiązane.** Prototyp odtworzył zmierzone kolory natywnego motywu bez przeładowania ramki i bez podmieniania funkcji YouTube. To odwracalny eksperyment; draft PR #25 nadal zachowuje ustawienia YouTube, a wymuszanie udostępnia na Twitchu.
+**Wynik: niezależny motyw da się uzyskać patchem CSS opartym na natywnych tokenach obu palet.** Po przygotowaniu mapy aliasów nie jest potrzebne pobieranie przeciwnego arkusza podczas sesji. Prototypy odtworzyły zmierzone kolory bez przeładowania ramki i bez podmieniania funkcji YouTube. Do kwalifikacji pozostaje mapowanie tokenów oraz jego zgodność z aktualizacjami. To odwracalne eksperymenty; draft PR #25 nadal zachowuje ustawienia YouTube, a wymuszanie udostępnia na Twitchu.
 
 ## Pomiar na prawdziwym serwisie
 
@@ -44,20 +44,42 @@ Zrzuty przedstawiają **eksperymentalny CSS w istniejącym czacie**, a nie funkc
 
 ![Prototyp: później otwarte More options w ciemnej palecie](screenshots/youtube-chat-prototype-dark-more.png)
 
+## Uzupełnienie: most do semantycznych tokenów
+
+W tym samym `live_chat_base` są zarówno jasne, jak i ciemne definicje `--yt-sys-color-baseline--*`. Reguły wariantu `color-version=v2_0` mają po 207 deklaracji, w tym 203 tokeny tego systemu. Dostępne są między innymi `base-background`, `text-primary`, `text-secondary`, `menu-background`, `outline`, kolory akcji, statusów oraz klawiatury emoji. Natywne selektory wybierają paletę zależnie od `html[dark]`.
+
+Można ponownie połączyć skompilowane aliasy z tymi zmiennymi:
+
+```css
+:root:root:root {
+  --t3e41d7b17b187f69: var(--yt-sys-color-baseline--base-background);
+  --tffc2fd3a644f6275: var(--yt-sys-color-baseline--text-primary);
+  --t08a7c6c176cbc5c2: var(--yt-sys-color-baseline--menu-background);
+}
+```
+
+Porównanie wcześniejszych natywnych par light/dark pozwoliło dopasować 34 z 38 używanych różnic do par tokenów. W 13 przypadkach kilka różnych ról ma tę samą parę kolorów; dopasowanie wartości nie dowodzi znaczenia semantycznego. Pozostałe cztery aliasy odzwierciedlają dodatkowe nadpisania arkusza. Prototyp obsłużył je natywnymi tokenami z regułami zależnymi od `dark`, a obramowania przez `color-mix` z kryciem 20%. Nie wpisano do tego mostu własnych wartości RGB/hex.
+
+[Most CSS](prototypes/youtube-chat-theme-token-bridge.css) ma 3057 B. Nowy test na prawdziwym, wylogowanym YouTube w graficznym Chromium 153 wykonał native light → forced dark → forced light → restore. W czasie przełączania nie pobierał przeciwnego arkusza i nie zmieniał ustawień YouTube. Wszystkie 38 aliasów w obu motywach zgadzało się z wcześniejszym natywnym punktem odniesienia po porównaniu wartości RGBA. Menu Top chat otwierało się w obu motywach. Ten sam iframe i dokument, dodatkowe `load`: 0; natywna metoda niepodmieniona, pierwotne wartości aliasów przywrócone, błędy strony: 0.
+
+Surowe porównanie właściwości badanych węzłów wykazało tylko różny zapis obramowania Top fans: `color(srgb … / 0.2)` zamiast `rgba(…, 0.2)`, z identycznym kolorem po normalizacji. [Wyniki i kandydaci mapowania](prototypes/youtube-chat-theme-token-results.json) zachowują tę różnicę, zamiast traktować równość ciągów CSS jako równość kolorów.
+
+To zmniejsza trudność względem pierwszej oceny: druga paleta semantyczna już jest w dokumencie, więc jej pobieranie nie musi być częścią rozwiązania. Mapę przygotowano jednak badawczo na podstawie obu poprzednio zmierzonych natywnych motywów. Nie opracowano automatycznego, jednoznacznego mapowania nieznanej wersji. Most nadal zawiera wygenerowane nazwy aliasów oraz cztery specjalne powiązania. `color-mix` sprawdzono w Chromium 153; zgodność pozostałych przeglądarek i fallback wymagają kwalifikacji. Zalogowany edytor pozostaje niezweryfikowany.
+
 ## Złożoność wdrożenia i utrzymania
 
 | Warstwa | Ocena | Powód |
 | --- | --- | --- |
 | Korekta kolorów dla poznanej wersji | mała | Jedna reguła, 38–116 deklaracji, istniejąca metoda serwisu. |
 | Cykl życia w rozszerzeniu | średnia | Świat strony, gotowość komponentu, wymiana dokumentu, własność CSS, przywracanie i odrzucanie spóźnionych wyników. |
-| Pozyskiwanie obu aktualnych palet | duża, nierozwiązana | Dokument zawiera paletę wybranego motywu. Prototyp uzyskał drugą przez zmianę ustawień w tymczasowym profilu. |
+| Powiązanie aliasów z natywnymi tokenami | średnia/duża, do kwalifikacji | Obie palety semantyczne są dostępne; niejednoznaczne role i dodatkowe nadpisania wymagają mapowania oraz walidacji. |
 | Odporność na aktualizacje i eksperymenty | duża | Tokeny, warianty i priorytety nie mają publicznego kontraktu; potrzebne sprawdzanie kompletności i powrót do natywnego wyglądu. |
 | Wspólne UI i układ Twitch/YouTube | mała dodatkowa zmiana | Kontroler ma motyw, widoczność, szerokość i cykl życia. Strategia YouTube może współdzielić ten interfejs. |
 
 Wklejenie 38 hashy do kodu będzie małe, ale uzależni funkcję od obecnego builda. Patch 116 różnic jest ostrożniejszy wobec później ładowanych komponentów. Oba wymagają pary palet dla właściwej wersji i wariantu CSS.
 
-Nie ustalono stabilnego sposobu otrzymania przeciwnego arkusza z bieżącego dokumentu. Jego adres generuje serwis; zależy także od wariantu konfiguracji. Ręczna modyfikacja bitów URL, zmiana preferencji YouTube w tle albo przeładowanie oryginalnej ramki nie spełnia celu zachowania sesji. Dopasowanie aliasów po samym kolorze jest niejednoznaczne: wiele ról ma w jednym motywie tę samą wartość, a rozchodzi się w drugim.
+Nie ustalono stabilnego sposobu otrzymania przeciwnego arkusza z bieżącego dokumentu, ale most do natywnych tokenów pozwala uniknąć tego kroku dla zbadanej mapy. Adres arkusza generuje serwis; zależy także od wariantu konfiguracji. Ręczna modyfikacja bitów URL, zmiana preferencji YouTube w tle albo przeładowanie oryginalnej ramki nie spełnia celu zachowania sesji. Dopasowanie aliasów po samym kolorze pozostaje niejednoznaczne.
 
-`ChatController` i UI mogą pozostać wspólne. Adapter YouTube potrzebowałby dostawcy palet, sprawdzenia wersji/kompletności, obsługi świata strony oraz sesji konkretnego dokumentu. Po nieznanym buildzie lub błędzie powinien zachować natywny motyw i pokazać rzeczywistą dostępność opcji. Nie wymaga własnego klienta wiadomości.
+`ChatController` i UI mogą pozostać wspólne. Adapter YouTube potrzebowałby mapy aliasów lub dostawcy palet, sprawdzenia wersji/kompletności, obsługi świata strony oraz sesji konkretnego dokumentu. Po nieznanym buildzie lub błędzie powinien zachować natywny motyw i pokazać rzeczywistą dostępność opcji. Nie wymaga własnego klienta wiadomości.
 
-**Rekomendacja:** obecny draft pozostawić z natywnym motywem YouTube. Przed włączeniem niezależnych motywów rozwiązać pozyskiwanie palet i zakwalifikować zalogowany edytor, emoji, moderację, monetyzację, replay i warianty przeglądarek. Sesja wylogowana nie udostępniła rzeczywistego edytora; kolor wpisywanego tekstu pozostaje niezweryfikowany. Otwarcie menu nie potwierdza przepływu zmiany filtra ani wszystkich funkcji.
+**Rekomendacja:** obecny draft pozostawić z natywnym motywem YouTube. Dalszą implementację oprzeć na moście do semantycznych tokenów; przed włączeniem zakwalifikować mapowanie, zalogowany edytor, emoji, moderację, monetyzację, replay i warianty przeglądarek. Sesja wylogowana nie udostępniła rzeczywistego edytora; kolor wpisywanego tekstu pozostaje niezweryfikowany. Otwarcie menu nie potwierdza przepływu zmiany filtra ani wszystkich funkcji.

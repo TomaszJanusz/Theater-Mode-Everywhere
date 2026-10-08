@@ -1,0 +1,45 @@
+/* Research bridge for the observed YouTube CSS build; not shipped. */
+:root:root:root {
+  --t4726c68ef6d7b08f: var(--yt-sys-color-baseline--background-complete);
+  --tb8b31ac562fbe9b5: var(--yt-sys-color-baseline--genai-3-additive);
+  --tef70ca245445b52b: var(--yt-sys-color-baseline--genai-4-additive);
+  --t4d7776c28db21122: var(--yt-sys-color-baseline--text-complete);
+  --t5208fd177a788cfa: var(--yt-sys-color-baseline--text-error);
+  --t3f3bdb4140d3ead7: var(--yt-sys-color-baseline--text-warning);
+  --t7f4f2c6d54836ce0: var(--yt-sys-color-baseline--additive-background);
+  --t3e41d7b17b187f69: var(--yt-sys-color-baseline--base-background);
+  --t854c79338d8ca8a7: var(--yt-sys-color-baseline--error-indicator);
+  --t20480717de80f555: var(--yt-sys-color-baseline--outline);
+  --t2d807bb79e75606d: var(--yt-sys-color-baseline--call-to-action);
+  --t617db776af0de196: var(--yt-sys-color-baseline--call-to-action-hover);
+  --tb628117fc164ad87: var(--yt-sys-color-baseline--call-to-action-inverse);
+  --td545df04e2c659d7: var(--yt-sys-color-baseline--error-indicator);
+  --t1405e70a39276293: var(--yt-sys-color-baseline--inverted-background);
+  --t08a7c6c176cbc5c2: var(--yt-sys-color-baseline--menu-background);
+  --t8cdc9846a76caf1f: var(--yt-sys-color-baseline--mono-filled-hover);
+  --t416e5931fc464589: var(--yt-sys-color-baseline--outline);
+  --t518e925f61bdcb91: var(--yt-sys-color-baseline--raised-background);
+  --ta057e2d872f2a0d4: var(--yt-sys-color-baseline--state-mono-filled-hovered);
+  --t2c3e55cb638348df: var(--yt-sys-color-baseline--tonal-background-inverse);
+  --t1aab759cd9ddbe39: var(--yt-sys-color-baseline--state-mono-standard-hovered);
+  --tf5f050c65aebead5: var(--yt-sys-color-baseline--tonal-background);
+  --tfa3475c508f5dfef: var(--yt-sys-color-baseline--suggested-action);
+  --t7e34d5baa4ea6277: var(--yt-sys-color-baseline--text-disabled);
+  --tffc2fd3a644f6275: var(--yt-sys-color-baseline--text-primary);
+  --t4a6da19e16bf221a: var(--yt-sys-color-baseline--text-secondary);
+  --t904a88c623ca27ab: var(--yt-sys-color-baseline--themed-green);
+  --t2c3bbff6c15a3eb2: var(--yt-sys-color-baseline--themed-green-inverse);
+  --t0ccd1ace000d5e93: var(--yt-sys-color-baseline--themed-overlay-background);
+  --tc87f6a7f05e65fc4: var(--yt-sys-color-baseline--tonal-background);
+  --t4fb0f67b251e1a42: var(--yt-sys-color-baseline--touch-response);
+  --ta08e036410c14538: var(--yt-sys-color-baseline--touch-response-inverse);
+  --t7f9b7e1603e20b94: var(--yt-sys-color-baseline--touch-response);
+  --tf3fc855af2285f5f: color-mix(in srgb, var(--yt-sys-color-baseline--touch-response) 20%, transparent);
+  --t0a1249f7c9e82b5e: color-mix(in srgb, var(--yt-sys-color-baseline--touch-response-inverse) 20%, transparent);
+  --t0f59291ce5504543: var(--yt-sys-color-baseline--static-black);
+  --t6216186c28b3834b: var(--yt-sys-color-baseline--tonal-touch-light);
+}
+:root:root:root[dark] {
+  --t0f59291ce5504543: var(--yt-sys-color-baseline--overlay-text-primary-inverse);
+  --t6216186c28b3834b: var(--yt-sys-color-baseline--base-background);
+}
