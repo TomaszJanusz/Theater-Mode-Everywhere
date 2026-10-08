@@ -404,6 +404,13 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   // A constrained viewport must scroll rows without moving the menu shell or
   // hiding its last action. Exercise both inline directions with the real UI.
   await page.setViewportSize({ width: 800, height: 280 });
+  // The resize handler updates theater geometry on an animation frame.
+  // Measure the constrained layout only once that update has reached the UI.
+  await page.waitForFunction(() => {
+    const menu = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-settings-menu')!;
+    const rect = menu.getBoundingClientRect();
+    return rect.top >= 0 && rect.bottom <= window.innerHeight;
+  }, null, { timeout: 5000 });
   const scrollChecks = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     const bar = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
@@ -418,7 +425,10 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       body.scrollTop = body.scrollHeight;
       const after = menu.getBoundingClientRect();
       const last = body.lastElementChild!.getBoundingClientRect();
-      return { dir, passed: body.scrollTop > 0
+      return { dir, scrollTop: body.scrollTop, firstBefore,
+        firstAfter: body.firstElementChild!.getBoundingClientRect().top,
+        before: before.toJSON(), after: after.toJSON(), last: last.toJSON(),
+        lastClass: body.lastElementChild!.className, passed: body.scrollTop > 0
         && body.firstElementChild!.getBoundingClientRect().top < firstBefore
         && before.top === after.top && before.bottom === after.bottom
         && after.top >= 0 && after.bottom <= window.innerHeight

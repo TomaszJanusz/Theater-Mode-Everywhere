@@ -159,18 +159,44 @@ html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-iron-overlay
   color: inherit !important;
 }
 
-.theater-chat-theme-select {
+.theater-chat-theme-control {
   grid-column: 1 / -1 !important;
+  display: block !important;
+  position: relative !important;
+  min-width: 0 !important;
+}
+
+.theater-chat-theme-arrow {
+  position: absolute !important;
+  inset-inline-end: 12px !important;
+  top: 50% !important;
+  width: 12px !important;
+  height: 12px !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+}
+
+.theater-chat-theme-select {
+  appearance: none !important;
   box-sizing: border-box !important;
   width: 100% !important;
   margin: 0 !important;
-  padding: 6px 8px !important;
+  padding: 6px 12px !important;
+  padding-inline-end: 36px !important;
   border: 1px solid rgba(255, 255, 255, 0.24) !important;
   border-radius: 6px !important;
   background: #111 !important;
   color: inherit !important;
   color-scheme: dark !important;
   font: inherit !important;
+}
+
+@media (forced-colors: active) {
+  .theater-chat-theme-select {
+    appearance: auto !important;
+    padding-inline-end: 12px !important;
+  }
+  .theater-chat-theme-arrow { display: none !important; }
 }
 
 .theater-chat-theme-select:focus-visible {

@@ -36,8 +36,8 @@ interface MemoryPreference {
   /** User or stored choice. Native initial visibility must not replace it. */
   visibilityLocked: boolean;
   seeded: boolean;
-  /** Width changed before native visibility was known; persist once that seed lands. */
-  widthPending: boolean;
+  /** Width or theme changed before native visibility was known; persist once that seed lands. */
+  persistPending: boolean;
 }
 
 const EMPTY_STATE: ChatState = {
@@ -120,7 +120,7 @@ export class ChatController {
     if (preference.width === next) return;
     preference.width = next;
     if (preference.seeded || preference.visibilityLocked) this.persist(provider);
-    else preference.widthPending = true;
+    else preference.persistPending = true;
     this.refresh();
   }
 
@@ -133,7 +133,7 @@ export class ChatController {
     if (preference.theme === next) return;
     preference.theme = next;
     if (preference.seeded || preference.visibilityLocked) this.persist(provider);
-    else preference.widthPending = true;
+    else preference.persistPending = true;
     this.refresh();
   }
 
@@ -398,8 +398,8 @@ export class ChatController {
       if (initiallyVisible !== null && !existing.seeded && !existing.visibilityLocked) {
         existing.visible = initiallyVisible;
         existing.seeded = true;
-        if (existing.widthPending) {
-          existing.widthPending = false;
+        if (existing.persistPending) {
+          existing.persistPending = false;
           this.persist(provider);
         }
       }
@@ -414,7 +414,7 @@ export class ChatController {
       width: storedWidth ?? DEFAULT_CHAT_WIDTH_PX,
       visibilityLocked: storedVisible !== null,
       seeded: storedVisible !== null || initiallyVisible !== null,
-      widthPending: false
+      persistPending: false
     };
     this.memory.set(provider, created);
     return created;
@@ -429,7 +429,7 @@ export class ChatController {
     preference.visible = visible;
     preference.visibilityLocked = true;
     preference.seeded = true;
-    preference.widthPending = false;
+    preference.persistPending = false;
     this.persist(provider);
     this.refresh();
   }

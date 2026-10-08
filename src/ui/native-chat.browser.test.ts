@@ -1164,6 +1164,69 @@ describe('native chat browser session', () => {
       await browser.close();
     }
   });
+  it('flushes pending chat preferences on theater exit and immediate page reload', { timeout: 60_000 }, async t => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const browser = await chromium.launch({ headless: true });
+    try {
+      for (const provider of ['youtube', 'twitch'] as const) {
+        for (const ending of ['exit', 'reload'] as const) {
+          const seed = { nativeChatPreferences: { [provider]: { visible: true, width: 360, theme: 'native' } } };
+          const { page, read } = await openPage(browser, {
+            url: provider === 'youtube' ? YOUTUBE_WATCH : TWITCH_CHANNEL,
+            youtube: youtubeDocument('visible'), twitch: twitchDocument()
+          }, { width: 1280, height: 800 }, seed);
+          // Playwright bindings can be discarded with the unloading document.
+          // Use synchronous, origin-persistent storage to model dispatch to the
+          // extension's storage process during pagehide.
+          await page.addInitScript(() => {
+            const storage = (window as unknown as { chrome: { storage: { sync: { get(): Promise<Record<string, unknown>> } } } }).chrome.storage.sync;
+            const get = storage.get;
+            storage.get = async () => ({ ...await get(), ...JSON.parse(localStorage.getItem('tme-navigation-storage') || '{}') });
+          });
+          await boot(page);
+          const mutate = () => page.evaluate(ending => {
+            const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+            const chrome = (window as unknown as { chrome: { storage: { sync: { set(data: Record<string, unknown>): Promise<void> } } } }).chrome;
+            const writes: Record<string, unknown>[] = [];
+            const save = chrome.storage.sync.set;
+            chrome.storage.sync.set = data => {
+              writes.push(structuredClone(data));
+              localStorage.setItem('tme-navigation-storage', JSON.stringify(data));
+              return save(data);
+            };
+            const width = root.querySelector<HTMLInputElement>('.theater-chat-width-slider')!;
+            width.value = '440'; width.dispatchEvent(new Event('input', { bubbles: true }));
+            const theme = root.querySelector<HTMLSelectElement>('.theater-chat-theme-select')!;
+            theme.value = 'dark'; theme.dispatchEvent(new Event('change', { bubbles: true }));
+            root.querySelector<HTMLButtonElement>('.theater-chat-toggle')!.click();
+            // All changes happen in one task, before the debounce can expire.
+            const pendingWrites = writes.length;
+            if (ending === 'exit') root.querySelector<HTMLButtonElement>('.close-btn')!.click();
+            else window.location.reload();
+            return { pendingWrites, writes };
+          }, ending);
+          const result = ending === 'reload'
+            ? (await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), mutate()]))[1]
+            : await mutate();
+          assert.equal(result.pendingWrites, 0, provider + ' should debounce ordinary changes');
+          if (ending === 'exit') assert.deepEqual(result.writes, [{ nativeChatPreferences: {
+            [provider]: { visible: false, width: 440, theme: 'dark' }
+          } }], provider + ' should flush once during exit');
+          if (ending === 'exit') await waitForSaved(read, provider, value => !value.visible && value.width === 440 && value.theme === 'dark');
+          const durable = await page.evaluate(() => JSON.parse(localStorage.getItem('tme-navigation-storage') || '{}'));
+          assert.deepEqual(durable.nativeChatPreferences?.[provider], { visible: false, width: 440, theme: 'dark' });
+          await page.reload({ waitUntil: 'load' });
+          await boot(page);
+          const state = await page.evaluate(() => window.NativeChatTest.nativeChatState());
+          assert.equal(state?.visible, false); assert.equal(state?.width, 440); assert.equal(state?.theme, 'dark');
+          assert.deepEqual(pageErrors(page), []);
+          await page.close();
+        }
+      }
+    } finally { await browser.close(); }
+  });
+
   it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', {timeout: 60000}, async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }

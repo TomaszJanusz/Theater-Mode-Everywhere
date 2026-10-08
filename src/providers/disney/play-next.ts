@@ -80,6 +80,8 @@ function onDisneyPlayNextRequest(event: Event): void {
 
 function syncDisneyPlayNext(): void {
   const doc = document;
+  // MAIN runs at document_start, before the parser has created <html>.
+  if (!doc.documentElement) return;
   const playId = currentPlayId();
   if (!disneyPlayNextEnabled() || !playId) {
     remembered = null;

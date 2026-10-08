@@ -1,6 +1,6 @@
-# Natywny czat — implementacja i walidacja draft PR #25
+# Natywny czat — implementacja i walidacja PR #25
 
-[Draft PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) zachowuje istniejące czaty na stronach Twitch i YouTube, udostępnia chowanie, szerokość oraz niezależny motyw **Jasny / Ustawienia serwisu / Ciemny**. Zadanie: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej). [Opracowanie architektury](twitch-youtube-chat.md) opisuje szerszy zakres docelowy; nowe embedy na stronach zewnętrznych są osobnym etapem.
+[PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) zachowuje istniejące czaty na stronach Twitch i YouTube, udostępnia chowanie, szerokość oraz niezależny motyw **Jasny / Ustawienia serwisu / Ciemny**. Zadanie: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej). [Opracowanie architektury](twitch-youtube-chat.md) opisuje szerszy zakres docelowy; nowe embedy na stronach zewnętrznych są osobnym etapem.
 
 ## Wspólny kod i adaptery
 
@@ -50,10 +50,12 @@ Dodatkowe warianty: [jasne opcje Twitcha](screenshots/current/twitch-options-lig
 ## Testy i pozostała kwalifikacja
 
 - `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles`: sukces.
-- Testy URL, geometrii, kontrolera i UI czatu oraz lokalizacji: **28/28**, bez pominięć; w tym **25 testów czatu**.
-- Pełny `pnpm test`: **477/478**, bez pominięć. Jedyny błąd to timeout istniejącego testu Netflixa `boots at document_start and uses the attached signed-in session…`, `src/ui/netflix-runtime.browser.test.ts:476`. Ten timeout odtworzono wcześniej także na bazowym `main` (`a79a5417b42ec6ea27b5f339afbd16714b14bee3`). Zestaw nie jest w całości zielony.
-- Fixtures sprawdzają obie natywne palety YouTube i wszystkie 68 aliasów, kontrast edytora, zachowanie szkicu i klawiatury/IME, ukrywanie, zmianę dokumentu, przywracanie, fallback przy nieznanym aliasie w skrótowym `border-color` i odzyskanie palety po jego usunięciu. Nie zastępują testów serwisowych funkcji konta.
-- Wcześniejszy Chromium smoke przeszedł dla zainstalowanego rozszerzenia; Firefox smoke był diagnostyką z wstrzykniętych paczek. Nowy most palety nie ma jeszcze kwalifikacji na prawdziwych serwisach w Firefox.
-- CI uruchamia główny zestaw przed instalacją Playwright, więc na świeżym runnerze testy przeglądarkowe mogą zostać pominięte. Osobny krok po instalacji pozostaje do dodania; wcześniejszą zmianę workflow GitHub odrzucił z powodu braku uprawnienia `workflow` w połączeniu OAuth.
+- Testy URL, geometrii, kontrolera i UI czatu oraz lokalizacji: **29/29**, bez pominięć; w tym **26 testów czatu**.
+- Pełny `pnpm test`: **479/479**, bez pominięć. Naprawiono wcześniejszy timeout Netflixa: moduł Disney próbował użyć `document.documentElement` przed powstaniem `<html>` i przerywał instalację mostów MAIN. Test startu Netflixa sprawdza teraz również brak błędów strony.
+- Fixtures sprawdzają obie natywne palety YouTube i wszystkie 68 aliasów, kontrast edytora, zachowanie szkicu i klawiatury/IME, ukrywanie, zapis ustawień przy natychmiastowym wyjściu i przeładowaniu strony, zmianę dokumentu, przywracanie, fallback przy nieznanym aliasie w skrótowym `border-color` i odzyskanie palety po jego usunięciu. Nie zastępują testów serwisowych funkcji konta.
+- Chromium smoke dla zainstalowanego rozszerzenia: sukces, także w trybie `CI=true`. Sprawdzenie przewijania menu czeka teraz na aktualizację geometrii po zmniejszeniu okna; zachowuje kontrolę dostępności końcowej akcji w LTR i RTL. Firefox smoke pozostaje diagnostyką z wstrzykniętych paczek; most palety nie ma jeszcze kwalifikacji na prawdziwych serwisach w Firefox.
+- Workflowy CI i release instalują Chromium/Firefox oraz budują i weryfikują rozszerzenie przed `pnpm test`. Testy korzystające z zainstalowanego rozszerzenia potrzebują zarówno przeglądarki, jak i `dist/chrome-unpacked`.
+- Przełącznik motywu pozostaje natywnym `select`; dekoracyjna strzałka ma 12 px odstępu od końca pola w LTR i RTL. W trybie forced colors używana jest natywna strzałka przeglądarki.
+
 
 Przed wydaniem potrzebna jest kwalifikacja na zalogowanych kontach, moderacji, formularzy monetyzacji, rzeczywistego replay/Premiere, fullscreen, pełnej zmiany filtra i responsywnego układu YouTube oraz Chrome/Firefox. Zachowanie natywnego DOM ogranicza ingerencję, lecz nie gwarantuje każdej funkcji ani zgodności z przyszłymi zmianami prywatnego CSS serwisów.

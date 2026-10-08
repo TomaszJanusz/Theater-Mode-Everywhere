@@ -25,16 +25,22 @@ function notify(): void {
   for (const subscriber of subscribers) subscriber();
 }
 
+function flushPersist(): void {
+  if (persistTimer === undefined) return;
+  clearTimeout(persistTimer);
+  persistTimer = undefined;
+  window.removeEventListener('pagehide', flushPersist);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [CHAT_PREFERENCES_STORAGE_KEY]: preferences }).catch(() => {});
+    }
+  } catch { /* Native chat remains usable when extension storage is unavailable. */ }
+}
+
 function schedulePersist(): void {
   if (persistTimer !== undefined) clearTimeout(persistTimer);
-  persistTimer = setTimeout(() => {
-    persistTimer = undefined;
-    try {
-      if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-        void chrome.storage.sync.set({ [CHAT_PREFERENCES_STORAGE_KEY]: preferences }).catch(() => {});
-      }
-    } catch { /* Native chat remains usable when extension storage is unavailable. */ }
-  }, 350);
+  else window.addEventListener('pagehide', flushPersist);
+  persistTimer = setTimeout(flushPersist, 350);
 }
 
 function storedTheme(provider: ChatProvider): ChatTheme {
@@ -89,6 +95,7 @@ export function startNativeChatSession(onLayoutChange: () => void): void {
 }
 
 export function stopNativeChatSession(): void {
+  flushPersist();
   controller?.dispose();
   controller = null;
   notify();
@@ -150,7 +157,14 @@ export function mountNativeChatControls(
   themeHint.className = 'theater-chat-theme-hint';
   themeHint.id = 'theater-chat-theme-hint';
   themeHint.textContent = ctx.t('nativeChatThemeUnavailable');
-  themeRow.append(themeLabel, themeSelect, themeHint);
+  const themeControl = document.createElement('span');
+  themeControl.className = 'theater-chat-theme-control';
+  const themeArrow = document.createElement('span');
+  themeArrow.className = 'theater-chat-theme-arrow';
+  themeArrow.setAttribute('aria-hidden', 'true');
+  ctx.actions.setIcon(themeArrow, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 4.5 3 3 3-3"/></svg>');
+  themeControl.append(themeSelect, themeArrow);
+  themeRow.append(themeLabel, themeControl, themeHint);
   settingsPanel.querySelector('.theater-settings-body')?.append(themeRow);
   scope.listen(themeSelect, 'change', () => controller?.setTheme(normalizeChatTheme(themeSelect.value)));
 

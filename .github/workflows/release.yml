@@ -130,18 +130,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build Extension
-        run: pnpm run build
-
-      - name: Verify Bundles
-        run: pnpm verify:bundles
-
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -150,6 +138,18 @@ jobs:
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build Extension
+        run: pnpm run build
+
+      - name: Verify Bundles
+        run: pnpm verify:bundles
+
+      - name: Test
+        run: pnpm test
 
       - name: Smoke Chromium
         run: xvfb-run --auto-servernum pnpm smoke:chromium
