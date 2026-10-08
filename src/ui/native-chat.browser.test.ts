@@ -78,6 +78,7 @@ function youtubeDocument(mode: ChatMode): string {
         <video muted autoplay loop playsinline src="https://www.youtube.com/fixtures/vod.webm"></video>
       </div>
       <div id="secondary">${chat}</div>
+      <div id="below"></div>
     </ytd-watch-flexy>
     <script>
       const frame = document.getElementById('chatframe');
@@ -85,6 +86,12 @@ function youtubeDocument(mode: ChatMode): string {
       if (frame) {
         frame.addEventListener('load', () => { window.__chatLoads += 1; });
         frame.src = 'https://www.youtube.com/live_chat?v=abcdefghijk';
+        // YouTube reparents the native panel under #below on narrow windows.
+        window.addEventListener('resize', () => {
+          const container = document.getElementById('chat-container');
+          const target = document.getElementById(innerWidth < 900 ? 'below' : 'secondary');
+          if (container.parentElement !== target) target.moveBefore(container, null);
+        });
       }
     </script>
   </body></html>`;
@@ -725,8 +732,15 @@ describe('native chat browser session', () => {
 
       await page.setViewportSize({ width: 800, height: 720 });
       await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
+      await page.waitForFunction(() => document.getElementById('below')?.hasAttribute('data-theater-chat-ancestor'));
       layout = await layoutOf(page);
       assertBottomDock(layout, 'youtube narrow');
+      const narrowAncestor = await page.locator('#below').evaluate(element => ({
+        containsChat: element.contains(document.getElementById('chat')),
+        opacity: getComputedStyle(element).opacity,
+        visibility: getComputedStyle(element).visibility
+      }));
+      assert.deepEqual(narrowAncestor, { containsChat: true, opacity: '1', visibility: 'visible' });
       const beforeNarrowToggle = await layoutOf(page);
       await page.locator('.theater-chat-toggle').click();
       await page.locator('.theater-chat-toggle').click();
@@ -737,6 +751,7 @@ describe('native chat browser session', () => {
       assert.equal(layout.draft, beforeNarrowToggle.draft, JSON.stringify(layout));
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
+      await page.waitForFunction(() => document.getElementById('secondary')?.hasAttribute('data-theater-chat-ancestor'));
       layout = await layoutOf(page);
       assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
       assertRightDock(layout, 'youtube wide again');
