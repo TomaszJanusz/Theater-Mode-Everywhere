@@ -10,7 +10,7 @@ Adaptery w `src/chat/detect.ts` wskazują `ChatSurface`: serwis, materiał, live
 
 Panel zajmuje prawą część okna od 900 px szerokości; poniżej jest pod wideo. Szerokość prawego panelu można ustawić w zakresie 280–600 px. Wideo, toolbar, HUD i napisy korzystają z wymiarów pozostałego obszaru. Schowany kontener pozostaje w DOM, jest niewidoczny i `inert`. TME nie klonuje, nie przepina ani nie zmienia źródła ramki.
 
-## Sposób weryfikacji rzeczywistych serwisów
+## Weryfikacja Twitcha w przeglądarce T3
 
 Zrzuty w tym katalogu wykonano 8 października 2026 w współdzielonej przeglądarce T3, na prawdziwej stronie Twitch, bez zalogowanego konta. Do strony wstrzyknięto zbudowane `content.js`, `mainWorld.js` i `content.css`, aby zweryfikować kod TME w aktualnym DOM serwisów. To diagnostyka runtime na stronie; nie zastępuje testu zainstalowanego rozszerzenia, jego uprawnień i izolowanego świata.
 
@@ -32,6 +32,21 @@ Materiał: [ohnePixel live](https://www.twitch.tv/ohnepixel). Natywny czat zawie
 
 ![Twitch: czat pod wideo w wąskim oknie](screenshots/twitch-chat-bottom.png)
 
+## YouTube w osobnym Playwright
+
+Materiał: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQekNa9g). Test na prawdziwej stronie w Chromium 153, uruchomionym w trybie graficznym przez Playwright/Xvfb, z osobnym tymczasowym profilem i zainstalowanym `dist/chrome-unpacked`. Nie wstrzykiwano paczek w stronę; użyto normalnych content scripts rozszerzenia. Sesja wylogowana, odrzucono opcjonalne cookies.
+
+- Natywny czat wyświetlał rzeczywiste wiadomości, a wideo odtwarzało się przed i po wejściu do TME.
+- UI TME i przycisk czatu działały. W oknie 1440 × 900 wideo zajmowało 1080 × 900, a czat pozostałe 360 × 900.
+- Przycisk chował czat, oddawał wideo całe okno i ponownie pokazywał ten sam kontener oraz iframe. Kontener, rodzic, ramka, dokument i brak `src` pozostały bez zmian; licznik `load` dla hide/show wyniósł 0.
+- Natywne menu Top chat otwierało się bez zatrzymania wideo i udostępniało opcję Live chat.
+- Zrzuty poniżej potwierdzają boczny układ i chowanie. Pełny przebieg zmiany filtra oraz responsywny układ YouTube pozostają do kwalifikacji: późniejsza próba filtra i resize zakończyła się przeładowaniem dokumentu czatu; nie przypisano przyczyny TME ani serwisowi.
+- Nie logowano się, nie wysłano wiadomości, nie wykonano zakupu ani działania moderacyjnego.
+
+![YouTube: natywny czat obok playera i UI TME](screenshots/youtube-chat-visible.png)
+
+![YouTube: czat schowany przyciskiem TME](screenshots/youtube-chat-hidden.png)
+
 ## Co pozostaje do kwalifikacji przed wydaniem
 
 Weryfikacja automatyczna:
@@ -45,6 +60,6 @@ Weryfikacja automatyczna:
 
 Automatyczne fixtures sprawdzają mechanikę rozszerzenia: cykl życia, tożsamość ramki, brak dodatkowego load, szkic wiadomości, skróty, IME, fokus i odzyskanie układu. Nie potwierdzają serwisowych funkcji.
 
-Przed wydaniem nadal trzeba sprawdzić działający YouTube w obsługiwanej przeglądarce, oba serwisy na zalogowanym koncie, moderację, natywne formularze monetyzacji, live/Premiere i rzeczywisty replay, fullscreen oraz Chrome i Firefox z zainstalowanym rozszerzeniem. Faktycznych płatności nie deklarujemy jako zweryfikowanych. Nowe embedy i integracja czatu obok playera na dowolnej stronie zewnętrznej pozostają osobnym etapem.
+Przed wydaniem nadal trzeba sprawdzić responsywny układ i pełny przebieg zmiany filtra YouTube, oba serwisy na zalogowanym koncie, moderację, natywne formularze monetyzacji, live/Premiere i rzeczywisty replay, fullscreen oraz Chrome i Firefox z zainstalowanym rozszerzeniem. Faktycznych płatności nie deklarujemy jako zweryfikowanych. Nowe embedy i integracja czatu obok playera na dowolnej stronie zewnętrznej pozostają osobnym etapem.
 
 Zmiany DOM serwisów nie mają stabilnego kontraktu. Testy i zachowanie oryginalnej sesji ograniczają ryzyko, ale nie dają gwarancji zgodności z każdą przyszłą aktualizacją.
