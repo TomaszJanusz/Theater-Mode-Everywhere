@@ -29,6 +29,8 @@ Test przeglądarkowy umieszcza portale Twitcha, popup YouTube i dialog z backdro
 
 Wykonano 8 października 2026, w graficznym Chromium 153 przez Playwright/Xvfb, przy oknie 1440 × 900. Przeglądarka używała osobnego tymczasowego, wylogowanego profilu i **zainstalowanego `dist/chrome-unpacked`**. Zrzuty pokazują implementację rozszerzenia; nie wstrzykiwano prototypowej palety. Źródła: [YoungMulti live](https://www.twitch.tv/youngmulti) i [Rainy Porch Jazz live](https://www.youtube.com/watch?v=eao0EdKtvZg).
 
+**Aktualizacja po poprawce strzałki:** cztery zrzuty `twitch-options-{dark,light}.png` i `youtube-options-{dark,light}.png` wykonano ponownie z implementacją `8b2dcfc`, po świeżym buildzie i weryfikacji paczek, także z zainstalowanym rozszerzeniem. Pokazują odstęp strzałki **12 px** i miejsce na nią w polu **36 px**. [Nowe pomiary](screenshots/current/options-refresh-verification.json) zapisują commit, hashe paczek, geometrię oraz stan czatu i wideo. Pozostałe zdjęcia i pełne pomiary palet pochodzą z wcześniejszej sesji `91a4603`.
+
 | Widok | Twitch | YouTube |
 | --- | --- | --- |
 | Menu opcji TME | ![Twitch — opcje i ciemny czat](screenshots/current/twitch-options-dark.png) | ![YouTube — opcje i ciemny czat](screenshots/current/youtube-options-dark.png) |
@@ -45,7 +47,7 @@ Dodatkowe warianty: [jasne opcje Twitcha](screenshots/current/twitch-options-lig
 - **Twitch:** wymuszono dark → light → native. Tekst niewysłanego szkicu zmieniał się z `rgb(239, 239, 241)` na `rgb(14, 14, 16)`; panel odpowiednio `rgb(24, 24, 27)` / `rgb(255, 255, 255)`. Chat Settings było klikalne w trzech sprawdzonych punktach, także poza granicą panelu, nad wideo. Otwierał się natywny picker emotes oraz portal Chat Rules; jego przycisk był klikalny ponad TME. Hide/show i zmiany palety zachowały kontener, rodzica, edytor oraz szkic. Powrót do native odtworzył zmierzoną paletę początkową. Wideo podczas obu wariantów odtwarzało się (`readyState=4`).
 - **YouTube:** wszystkie 68 kolorów aliasów zgadzało się z niezależnym natywnym punktem odniesienia w obu wariantach po normalizacji RGBA. Top chat otwierało się i przyjmowało trafienia w obu motywach; More options miało czytelne natywne pozycje Participants, Reactions, Popout chat i Send feedback. Przełączenia i hide/show zachowały ten sam iframe i dokument, dodatkowe `load`: **0**. Główna strona pozostała jasna również przy ciemnym czacie. Powrót do native usunął most i odtworzył pierwotną flagę. Przed każdym z ośmiu zrzutów potwierdzono odtwarzanie wideo (`readyState=4`, `paused=false`).
 
-[Pomiary towarzyszące zrzutom](screenshots/current/verification.json) zawierają wyniki palet, tożsamości, hit testingu i odtwarzania. Nie wysłano wiadomości, nie kupowano produktów ani nie wykonywano moderacji. Edytor YouTube wymaga logowania i na prawdziwym serwisie pozostaje niezweryfikowany; jego kontrast, szkic i zachowanie klawiatury sprawdzają fixtures.
+[Pomiary pierwszej sesji](screenshots/current/verification.json) zawierają wyniki palet, tożsamości, hit testingu i odtwarzania; wpisy dotyczące czterech zrzutów opcji zastępują [pomiary aktualizacji](screenshots/current/options-refresh-verification.json). Nie wysłano wiadomości, nie kupowano produktów ani nie wykonywano moderacji. Edytor YouTube wymaga logowania i na prawdziwym serwisie pozostaje niezweryfikowany; jego kontrast, szkic i zachowanie klawiatury sprawdzają fixtures.
 
 ## Testy i pozostała kwalifikacja
 

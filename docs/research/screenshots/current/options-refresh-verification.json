@@ -1,0 +1,165 @@
+{
+  "capturedAt": "2026-10-08T20:29:53.501Z",
+  "sourceCommit": "8b2dcfcd3a1e66cc1a2001b19f0064d35dd8ad9b",
+  "method": "Installed dist/chrome-unpacked in headed Chromium / Playwright / Xvfb; temporary logged-out profile; no injected bundles or prototype palette",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "bundles": {
+    "content.js": "5d25569d93d84fc7f3de0edb622da3adba8c13386ddf29ee5d2c95a6a354d197",
+    "content.css": "b25b0d5bc2ede41b293b574720f9cc655e72c62b7c9458d150a6381b5a3b55fe",
+    "mainWorld.js": "21e495e650b764ee8c8747f87a00a79301e85823f251e909918de65ee0133b1d"
+  },
+  "captures": [
+    {
+      "file": "twitch-options-dark.png",
+      "url": "https://www.twitch.tv/youngmulti",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "theme": "dark",
+      "hintHidden": true,
+      "arrowInset": "12px",
+      "selectPaddingEnd": "36px",
+      "selectRect": {
+        "x": 722,
+        "y": 655.8125,
+        "width": 296,
+        "height": 32.1875,
+        "top": 655.8125,
+        "right": 1018,
+        "bottom": 688,
+        "left": 722
+      },
+      "arrowRect": {
+        "x": 994,
+        "y": 665.90625,
+        "width": 12,
+        "height": 12,
+        "top": 665.90625,
+        "right": 1006,
+        "bottom": 677.90625,
+        "left": 994
+      },
+      "chatIdentity": true,
+      "documentIdentity": true,
+      "additionalLoads": 0,
+      "chatBackground": "rgb(24, 24, 27)",
+      "video": {
+        "paused": false,
+        "readyState": 4
+      }
+    },
+    {
+      "file": "twitch-options-light.png",
+      "url": "https://www.twitch.tv/youngmulti",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "theme": "light",
+      "hintHidden": true,
+      "arrowInset": "12px",
+      "selectPaddingEnd": "36px",
+      "selectRect": {
+        "x": 722,
+        "y": 655.8125,
+        "width": 296,
+        "height": 32.1875,
+        "top": 655.8125,
+        "right": 1018,
+        "bottom": 688,
+        "left": 722
+      },
+      "arrowRect": {
+        "x": 994,
+        "y": 665.90625,
+        "width": 12,
+        "height": 12,
+        "top": 665.90625,
+        "right": 1006,
+        "bottom": 677.90625,
+        "left": 994
+      },
+      "chatIdentity": true,
+      "documentIdentity": true,
+      "additionalLoads": 0,
+      "chatBackground": "rgb(255, 255, 255)",
+      "video": {
+        "paused": false,
+        "readyState": 4
+      }
+    },
+    {
+      "file": "youtube-options-dark.png",
+      "url": "https://www.youtube.com/watch?v=eao0EdKtvZg",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "theme": "dark",
+      "hintHidden": true,
+      "arrowInset": "12px",
+      "selectPaddingEnd": "36px",
+      "selectRect": {
+        "x": 722,
+        "y": 655.8125,
+        "width": 296,
+        "height": 32.1875,
+        "top": 655.8125,
+        "right": 1018,
+        "bottom": 688,
+        "left": 722
+      },
+      "arrowRect": {
+        "x": 994,
+        "y": 665.90625,
+        "width": 12,
+        "height": 12,
+        "top": 665.90625,
+        "right": 1006,
+        "bottom": 677.90625,
+        "left": 994
+      },
+      "chatIdentity": true,
+      "documentIdentity": true,
+      "additionalLoads": 0,
+      "chatBackground": "rgb(15, 15, 15)",
+      "video": {
+        "paused": false,
+        "readyState": 4
+      }
+    },
+    {
+      "file": "youtube-options-light.png",
+      "url": "https://www.youtube.com/watch?v=eao0EdKtvZg",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "theme": "light",
+      "hintHidden": true,
+      "arrowInset": "12px",
+      "selectPaddingEnd": "36px",
+      "selectRect": {
+        "x": 722,
+        "y": 655.8125,
+        "width": 296,
+        "height": 32.1875,
+        "top": 655.8125,
+        "right": 1018,
+        "bottom": 688,
+        "left": 722
+      },
+      "arrowRect": {
+        "x": 994,
+        "y": 665.90625,
+        "width": 12,
+        "height": 12,
+        "top": 665.90625,
+        "right": 1006,
+        "bottom": 677.90625,
+        "left": 994
+      },
+      "chatIdentity": true,
+      "documentIdentity": true,
+      "additionalLoads": 0,
+      "chatBackground": "rgb(255, 255, 255)",
+      "video": {
+        "paused": false,
+        "readyState": 4
+      }
+    }
+  ],
+  "browserVersion": "153.0.8010.12"
+}

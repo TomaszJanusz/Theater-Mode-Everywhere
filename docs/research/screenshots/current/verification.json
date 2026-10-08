@@ -376,5 +376,7 @@
       },
       "screenshot": "twitch-rules-dark.png"
     }
-  }
+  },
+  "sourceCommit": "91a4603cf4e7c26242292f3313ab6854715f5291",
+  "optionsScreenshotsSupersededBy": "options-refresh-verification.json"
 }
