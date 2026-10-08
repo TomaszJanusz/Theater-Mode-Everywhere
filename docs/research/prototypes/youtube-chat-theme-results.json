@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-08",
+  "extensionCommit": "05fb0022c1e32d96475864d26e01b16f9a11dac1",
+  "browser": "Chromium 153, headed Playwright/Xvfb, disposable signed-out profile, installed extension",
+  "page": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+  "scope": "Reversible research CSS; no production theme change",
+  "nativeStylesheets": {
+    "light": [
+      "https://www.youtube.com/s/_/ytmainappweb/_/ss/k=ytmainappweb.live_chat_base.5nkP6EwX3D8.L.B1.O/am=AAAAAABgACAV/d=0/br=1/rs=AGKMywEbKRdEELLNM7nFKE3_fZQ28GtqeA"
+    ],
+    "dark": [
+      "https://www.youtube.com/s/_/ytmainappweb/_/ss/k=ytmainappweb.live_chat_base.5nkP6EwX3D8.L.B1.O/am=AAAAAABgBAEU/d=0/br=1/rs=AGKMywGUZnWGYzB3v1qtpFboeIavAqvmOg"
+    ]
+  },
+  "palette": {
+    "tokensPerTheme": 133,
+    "differingTokens": 116,
+    "referencedTokens": 47,
+    "referencedDifferingTokens": 38,
+    "minimalCssBytes": {
+      "light": 1202,
+      "dark": 1229
+    },
+    "fullDifferingPaletteCssBytes": {
+      "light": 3599,
+      "dark": 3629
+    },
+    "nativeSpecificity": [
+      ":root",
+      ":root:root"
+    ],
+    "prototypeSpecificity": ":root:root:root"
+  },
+  "colorsNative": {
+    "light": {
+      "yt-live-chat-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-header-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#label-text": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-message-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "button-view-model button": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgba(0, 0, 0, 0.2)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #message": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #author-name": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgba(17, 17, 17, 0.6)",
+        "border": "rgba(17, 17, 17, 0.6)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer yt-icon": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(15, 15, 15)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu #label": null,
+      "yt-live-chat-menu-popup-renderer": null,
+      "yt-live-chat-menu-popup-renderer #label": null,
+      "yt-live-chat-viewer-engagement-message-renderer": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#input": null
+    },
+    "dark": {
+      "yt-live-chat-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-header-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#label-text": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-message-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "button-view-model button": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgba(255, 255, 255, 0.2)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #message": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #author-name": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "border": "rgba(255, 255, 255, 0.7)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer yt-icon": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(241, 241, 241)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu": {
+        "background": "rgb(40, 40, 40)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu #label": null,
+      "yt-live-chat-menu-popup-renderer": null,
+      "yt-live-chat-menu-popup-renderer #label": null,
+      "yt-live-chat-viewer-engagement-message-renderer": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#input": null
+    }
+  },
+  "mismatches": {
+    "forcedDark": [],
+    "forcedLight": [],
+    "fullPaletteDark": [],
+    "after20Changes": [],
+    "restoreLight": [],
+    "restoreDark": [],
+    "committedHelperDark": [],
+    "committedHelperRestore": []
+  },
+  "darkIdentity": {
+    "sameFrame": true,
+    "sameDocument": true,
+    "sameSrc": true,
+    "loads": 0,
+    "mainDark": false
+  },
+  "lightIdentity": {
+    "sameFrame": true,
+    "sameDocument": true,
+    "sameSrc": true,
+    "loads": 0,
+    "mainDark": true
+  },
+  "hideShowCycles": 10,
+  "themeChanges": 20,
+  "nativeThemeMethodUnmodified": true,
+  "lateMoreOptions": [
+    {
+      "sel": "ytd-menu-popup-renderer",
+      "bg": "rgb(40, 40, 40)",
+      "color": "rgb(0, 0, 0)",
+      "text": "Participants\nReactions\nPopout chat\nSend feedback"
+    },
+    {
+      "sel": "tp-yt-paper-listbox#items",
+      "bg": "rgba(0, 0, 0, 0)",
+      "color": "rgb(241, 241, 241)",
+      "text": "Participants\nReactions\nPopout chat\nSend feedback"
+    }
+  ],
+  "committedHelper": {
+    "properties": 38,
+    "cssBytes": 1229
+  },
+  "limitations": [
+    "Signed out: real composer, draft, emoji picker, account and moderation dialogs unverified",
+    "Menu opening verified; filter selection/reload behavior outside this probe",
+    "Both palettes obtained by changing native Appearance in disposable profile; production acquisition unresolved",
+    "One live channel and one CSS build; replay, Firefox and other experiments unverified",
+    "No video playback qualification in this CSS probe"
+  ]
+}

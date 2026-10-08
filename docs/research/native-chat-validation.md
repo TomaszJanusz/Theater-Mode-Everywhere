@@ -73,6 +73,10 @@ Zrzuty YouTube poniżej pokazują **motywy wybrane natywnie w YouTube**, zachowa
 
 ![YouTube: pełny jasny motyw wybrany w serwisie](screenshots/youtube-chat-theme-light.png)
 
+## Eksperymentalny patch motywu YouTube
+
+[Analiza na żywym serwisie](youtube-chat-theme-patch.md) potwierdziła wykonalność niezależnego jasnego/ciemnego czatu przez dodatkową warstwę CSS. Bieżący wariant wymaga 38 aliasów (około 1,2 KB); pełna różnica palet obejmuje 116 aliasów (około 3,6 KB). Pomiary wybranych komponentów, menu, 20 zmian motywu, hide/show i przywrócenie przeszły bez wymiany dokumentu ani dodatkowego `load`. Pozyskiwanie obu aktualnych palet bez zmiany preferencji użytkownika pozostaje nierozwiązane. To prototyp badawczy poza paczką rozszerzenia; bieżące UI nadal respektuje ustawienia YouTube.
+
 ## Co pozostaje do kwalifikacji przed wydaniem
 
 Weryfikacja automatyczna:
