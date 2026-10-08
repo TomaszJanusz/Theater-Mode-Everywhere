@@ -98,6 +98,7 @@ Aktualna strzałka select ma odstęp 8 px i padding końcowy 28 px. Zrzuty bez s
 - Smoke uwzględnia 23 skróty w responsywnej pomocy, mierzy pierwszą widoczną akcję przy ukrytej sekcji czatu oraz czeka na zakończenie animacji przed porównaniem pozycji ikony.
 - Fixtures obejmują otwarcie bez istniejącego iframe, aktywator pojawiający się później, zapisane preferencje, anulowanie i ponowienie, natywne zamknięcie, niedostępny replay YouTube i odrębny komponent replay Twitcha. Sprawdzają też kontrast edytora, szkic/IME, wymianę dokumentu, fallback palety i jego odzyskanie.
 - Zgodnie z decyzją użytkownika **zalogowany edytor YouTube, moderacja i formularze konta/monetyzacji są poza zakresem tego zadania**. Nie są oznaczone jako sprawdzone ani jako blokery PR. Nie wysyłano wiadomości i nie wykonywano działań na kontach.
+- Galeria Firefox ujawnia osobne ograniczenie istniejącego zegara playera Twitch live: skończony, bardzo duży czas trwania z elementu wideo jest wyświetlany jak VOD. Kod klasyfikacji timeline nie zmieniał się w tym uzupełnieniu PR; kwalifikacja live powyżej dotyczy czatu, odtwarzania i układu, nie poprawności tego zegara.
 - Aktywna lub zaplanowana Premiere nie została sprawdzona. Archiwalna Premiere jest osobnym, zaliczonym przypadkiem w Chromium. Pełnego seek/replay YouTube w Firefox nie oznaczono jako zaliczonego.
 
 Zachowanie natywnego DOM ogranicza ingerencję, lecz nie gwarantuje każdej funkcji ani zgodności z przyszłymi zmianami prywatnego DOM/CSS serwisów.
