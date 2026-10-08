@@ -1,6 +1,8 @@
 # YouTube: złożoność niezależnego motywu czatu
 
-**Wynik: niezależny motyw da się uzyskać patchem CSS opartym na natywnych tokenach obu palet.** Po przygotowaniu mapy aliasów nie jest potrzebne pobieranie przeciwnego arkusza podczas sesji. Prototypy odtworzyły zmierzone kolory bez przeładowania ramki i bez podmieniania funkcji YouTube. Do kwalifikacji pozostaje mapowanie tokenów oraz jego zgodność z aktualizacjami. To odwracalne eksperymenty; draft PR #25 nadal zachowuje ustawienia YouTube, a wymuszanie udostępnia na Twitchu.
+**Wynik: niezależny motyw da się uzyskać patchem CSS opartym na natywnych tokenach obu palet.** Draft PR #25 zawiera już adapter YouTube używający tego mechanizmu oraz wspólną obsługę motywu z Twitchem. [Aktualna implementacja, nowe zrzuty i walidacja](native-chat-validation.md) zastępują wcześniejszy wariant z nieaktywnym przełącznikiem YouTube. Nie trzeba pobierać przeciwnego arkusza, przeładowywać ramki ani podmieniać funkcji serwisu.
+
+Dalsza część dokumentu zachowuje **historyczne pomiary prototypów**. Pierwszy odczyt CSSOM pominął aliasy w skrótowych deklaracjach CSS, takich jak `border-color`: wartości longhand mogą być puste przy `var()`. Pełne przeszukanie serializowanych deklaracji wykazało **68 używanych aliasów, z których 57 zmienia kolor**, zamiast wcześniejszych 47/38. Adapter obejmuje te 57 różnic; test porównuje wszystkie 68 z niezależnie odczytanymi natywnymi paletami. Wartości 38 i 47 poniżej opisują zakres dawnych eksperymentów, a nie pokrycie obecnego kodu.
 
 ## Pomiar na prawdziwym serwisie
 

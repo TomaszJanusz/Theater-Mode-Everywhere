@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { after, before, describe, it } from 'node:test';
 import type { Browser, Page } from 'playwright';
 
@@ -703,7 +703,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('uses the complete Twitch palette and preserves YouTube service appearance', async t => {
+  it('uses the complete Twitch palette and falls back safely on unrecognized YouTube CSS', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const twitch = await pageWith(TWITCH);
     const youtube = await pageWith(YOUTUBE);
@@ -797,7 +797,7 @@ describe('native chat controller', () => {
           marker:document.documentElement.getAttribute('data-theater-chat-theme')};
       })()`) as {theme:string;calls:number;loads:number;sameDocument:boolean;sameDraft:boolean;draft:string;
         sameSrc:boolean;dark:boolean;background:string;text:string;inlineBackground:string;marker:string|null};
-      assert.deepEqual(youtubeReport,{theme:'native',calls:0,loads:0,sameDocument:true,sameDraft:true,
+      assert.deepEqual(youtubeReport,{theme:'light',calls:0,loads:0,sameDocument:true,sameDraft:true,
         draft:'keep this YouTube draft',sameSrc:true,dark:false,background:'rgb(255, 255, 255)',
         text:'rgb(15, 15, 15)',inlineBackground:'',marker:null});
     } finally {
@@ -805,4 +805,92 @@ describe('native chat controller', () => {
       await youtube.close();
     }
   });
+  it('qualifies both YouTube palettes, preserves the composer, and restores native appearance on CSS or document replacement', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(YOUTUBE);
+    try {
+      const css = readFileSync(new URL('../../test/fixtures/youtube-chat-theme.css', import.meta.url), 'utf8');
+      const colors = JSON.parse(readFileSync(new URL('../../test/fixtures/youtube-chat-theme-colors.json', import.meta.url), 'utf8'));
+      await page.addScriptTag({content: 'globalThis.__name = fn => fn;'});
+      const report = await page.evaluate(async ({ css, colors }) => {
+        const api = (window as unknown as { NativeChat: typeof import('./index') }).NativeChat;
+        const frame = document.getElementById('chatframe') as HTMLIFrameElement;
+        const html = (dark = false) => {
+          const palette = dark ? colors.reduce((sheet: string, row: {alias: string; dark: string}) =>
+            sheet.replace(new RegExp(row.alias + ': [^;]+;'), row.alias + ': ' + row.dark + ';'), css) : css;
+          return '<!doctype html><html color-version="v2_0"' + (dark ? ' dark' : '') + '><head><style>' + palette + '</style></head><body><yt-live-chat-app></yt-live-chat-app><yt-live-chat-renderer><textarea id="draft">keep this draft</textarea><button id="menu">Menu</button><button id="fans">Fans</button></yt-live-chat-renderer></body></html>';
+        };
+        const load = async (dark = false) => {
+          const loaded = new Promise<void>(resolve => frame.addEventListener('load', () => resolve(), { once: true }));
+          frame.srcdoc = html(dark);
+          await loaded;
+        };
+        await load();
+        const doc = frame.contentDocument!;
+        const draft = doc.getElementById('draft') as HTMLTextAreaElement;
+        const src = frame.getAttribute('src');
+        let loads = 0;
+        frame.addEventListener('load', () => loads++);
+        let nativeCalls = 0;
+        const app = doc.querySelector('yt-live-chat-app') as HTMLElement & { setGlobalDarkTheme: () => void };
+        app.setGlobalDarkTheme = () => { nativeCalls++; };
+        const setter = app.setGlobalDarkTheme;
+        const events: string[] = [];
+        const controller = new api.ChatController({ document, href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK',
+          onChange: state => events.push(state.themeStatus), onLayoutChange() {},
+          initialPreferences: { youtube: { visible: true, width: 400, theme: 'dark' } } });
+        const compare = (theme: 'light' | 'dark') => {
+          const root = frame.contentDocument!.documentElement;
+          const values = getComputedStyle(root);
+          const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+          const ctx = canvas.getContext('2d')!;
+          const rgba = (value: string) => {
+            ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = value; ctx.fillRect(0, 0, 1, 1);
+            return JSON.stringify([...ctx.getImageData(0, 0, 1, 1).data]);
+          };
+          return colors.filter((row: { alias: string; light: string; dark: string }) => {
+            const actual = values.getPropertyValue(row.alias).trim();
+            return !actual || !CSS.supports('color', actual) || rgba(actual) !== rgba(row[theme]);
+          }).map((row: {alias: string}) => row.alias);
+        };
+        const darkMismatches = compare('dark');
+        const inputDark = {bg: getComputedStyle(draft).backgroundColor, text: getComputedStyle(draft).color};
+        controller.hide(); controller.setTheme('light');
+        const lightMismatches = compare('light');
+        const inputLight = {bg: getComputedStyle(draft).backgroundColor, text: getComputedStyle(draft).color};
+        controller.show(); controller.setTheme('dark');
+        const unknown = doc.createElement('style');
+        unknown.textContent = '#draft{border-color:var(--t0123456789abcdef)}'; doc.head.append(unknown);
+        await new Promise(resolve => setTimeout(resolve, 850));
+        const fallback = {status: controller.state.themeStatus, requested: controller.state.theme,
+          native: !doc.documentElement.hasAttribute('dark'), bridge: !!doc.querySelector('[data-theater-chat-palette]'),
+          marker: document.documentElement.getAttribute('data-theater-chat-theme')};
+        unknown.remove();
+        await new Promise(resolve => setTimeout(resolve, 850));
+        const recovered = controller.state.themeStatus;
+        const identity = {sameFrame: document.getElementById('chatframe') === frame, sameDocument: frame.contentDocument === doc,
+          sameDraft: doc.getElementById('draft') === draft, draft: draft.value, loads, sameSrc: frame.getAttribute('src') === src,
+          nativeCalls, sameSetter: app.setGlobalDarkTheme === setter, mainDark: document.documentElement.hasAttribute('dark')};
+        await load(true);
+        controller.setTheme('light');
+        const replacement = {status: controller.state.themeStatus, mismatches: compare('light'),
+          oldBridge: !!doc.querySelector('[data-theater-chat-palette]'), oldDark: doc.documentElement.hasAttribute('dark')};
+        controller.dispose();
+        const restored = {dark: frame.contentDocument!.documentElement.hasAttribute('dark'),
+          bridge: !!frame.contentDocument!.querySelector('[data-theater-chat-palette]'), mismatches: compare('dark')};
+        return {darkMismatches, lightMismatches, inputDark, inputLight, fallback, recovered, identity, replacement, restored, events};
+      }, {css, colors});
+      assert.deepEqual(report.darkMismatches, []);
+      assert.deepEqual(report.lightMismatches, []);
+      assert.deepEqual(report.inputDark, {bg:'rgb(33, 33, 33)',text:'rgb(241, 241, 241)'});
+      assert.deepEqual(report.inputLight, {bg:'rgb(255, 255, 255)',text:'rgb(15, 15, 15)'});
+      assert.deepEqual(report.fallback, {status:'unavailable',requested:'dark',native:true,bridge:false,marker:null});
+      assert.equal(report.recovered, 'applied');
+      assert.deepEqual(report.identity, {sameFrame:true,sameDocument:true,sameDraft:true,draft:'keep this draft',loads:0,sameSrc:true,nativeCalls:0,sameSetter:true,mainDark:false});
+      assert.deepEqual(report.replacement, {status:'applied',mismatches:[],oldBridge:false,oldDark:false});
+      assert.deepEqual(report.restored, {dark:true,bridge:false,mismatches:[]});
+      assert.ok(report.events.includes('unavailable'));
+    } finally { await page.close(); }
+  });
+
 });

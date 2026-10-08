@@ -6,6 +6,8 @@ export type ChatDock = 'right' | 'bottom';
 
 export type ChatTheme = 'light' | 'native' | 'dark';
 
+export type ChatThemeStatus = 'native' | 'applied' | 'unavailable';
+
 /** Per-provider choice. Messages and account data are never stored. */
 export interface ChatPreference {
   visible: boolean;
@@ -40,4 +42,6 @@ export interface ChatState {
   width: number;
   dock: ChatDock;
   theme: ChatTheme;
+  /** Requested choice is retained even if the service palette is unavailable. */
+  themeStatus: ChatThemeStatus;
 }

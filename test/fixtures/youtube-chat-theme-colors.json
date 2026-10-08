@@ -1,0 +1,342 @@
+[
+  {
+    "alias": "--t02c0a2c868c14ce8",
+    "light": "#e9e9e9",
+    "dark": "#e5e5e5"
+  },
+  {
+    "alias": "--t08a7c6c176cbc5c2",
+    "light": "#fff",
+    "dark": "#282828"
+  },
+  {
+    "alias": "--t0a1249f7c9e82b5e",
+    "light": "rgba(255,255,255,0.2)",
+    "dark": "rgba(0,0,0,0.2)"
+  },
+  {
+    "alias": "--t0ccd1ace000d5e93",
+    "light": "rgba(255,255,255,0.7)",
+    "dark": "rgba(0,0,0,0.8)"
+  },
+  {
+    "alias": "--t0f59291ce5504543",
+    "light": "#0f0f0f",
+    "dark": "#030303"
+  },
+  {
+    "alias": "--t124b7dafe9bc366d",
+    "light": "#007a65",
+    "dark": "#007a65"
+  },
+  {
+    "alias": "--t1405e70a39276293",
+    "light": "#0f0f0f",
+    "dark": "#f1f1f1"
+  },
+  {
+    "alias": "--t1aab759cd9ddbe39",
+    "light": "rgba(0,0,0,0.05)",
+    "dark": "rgba(255,255,255,0.05)"
+  },
+  {
+    "alias": "--t20480717de80f555",
+    "light": "rgba(0,0,0,0.1)",
+    "dark": "rgba(255,255,255,0.2)"
+  },
+  {
+    "alias": "--t2c3bbff6c15a3eb2",
+    "light": "#2ba640",
+    "dark": "#107516"
+  },
+  {
+    "alias": "--t2c3e55cb638348df",
+    "light": "rgba(255,255,255,0.1)",
+    "dark": "rgba(0,0,0,0.1)"
+  },
+  {
+    "alias": "--t2d807bb79e75606d",
+    "light": "#065fd4",
+    "dark": "#3ea6ff"
+  },
+  {
+    "alias": "--t3410c91649e5eb8a",
+    "light": "#333",
+    "dark": "#333"
+  },
+  {
+    "alias": "--t374de7a0f7f6b6a4",
+    "light": "#65b8ff",
+    "dark": "#65b8ff"
+  },
+  {
+    "alias": "--t3e41d7b17b187f69",
+    "light": "#fff",
+    "dark": "#0f0f0f"
+  },
+  {
+    "alias": "--t3f3bdb4140d3ead7",
+    "light": "#7c2900",
+    "dark": "#ffcd97"
+  },
+  {
+    "alias": "--t416e5931fc464589",
+    "light": "rgba(0,0,0,0.1)",
+    "dark": "rgba(255,255,255,0.2)"
+  },
+  {
+    "alias": "--t432fbdbd7f2f3f71",
+    "light": "rgba(255,255,255,0.15)",
+    "dark": "rgba(0,0,0,0.05)"
+  },
+  {
+    "alias": "--t441a0e44e495381a",
+    "light": "#263850",
+    "dark": "#def1ff"
+  },
+  {
+    "alias": "--t4726c68ef6d7b08f",
+    "light": "#deffde",
+    "dark": "rgba(0,63,13,0.6)"
+  },
+  {
+    "alias": "--t4a6da19e16bf221a",
+    "light": "#606060",
+    "dark": "#aaa"
+  },
+  {
+    "alias": "--t4aeaa857de8a786b",
+    "light": "#606060",
+    "dark": "#606060"
+  },
+  {
+    "alias": "--t4d4f132f4712716a",
+    "light": "#007a65",
+    "dark": "#007a65"
+  },
+  {
+    "alias": "--t4d7776c28db21122",
+    "light": "#005917",
+    "dark": "#a4ffa4"
+  },
+  {
+    "alias": "--t4e6df9b2b6b97e00",
+    "light": "#aa09aa",
+    "dark": "#aa09aa"
+  },
+  {
+    "alias": "--t4fb0f67b251e1a42",
+    "light": "#000",
+    "dark": "#fff"
+  },
+  {
+    "alias": "--t518e925f61bdcb91",
+    "light": "#fff",
+    "dark": "#212121"
+  },
+  {
+    "alias": "--t5208fd177a788cfa",
+    "light": "#990412",
+    "dark": "#ffbfbd"
+  },
+  {
+    "alias": "--t53dda9125e8d1324",
+    "light": "rgba(255,255,255,0.3)",
+    "dark": "rgba(255,255,255,0.15)"
+  },
+  {
+    "alias": "--t544e31714f63d53c",
+    "light": "rgba(255,255,255,0.15)",
+    "dark": "rgba(255,255,255,0.3)"
+  },
+  {
+    "alias": "--t5884672004d56120",
+    "light": "#ff4e45",
+    "dark": "#ff4e45"
+  },
+  {
+    "alias": "--t617db776af0de196",
+    "light": "#0556bf",
+    "dark": "#65b8ff"
+  },
+  {
+    "alias": "--t6216186c28b3834b",
+    "light": "#f1f1f1",
+    "dark": "#0f0f0f"
+  },
+  {
+    "alias": "--t6931aa1826b373b2",
+    "light": "rgba(255,255,255,0.15)",
+    "dark": "rgba(255,255,255,0.3)"
+  },
+  {
+    "alias": "--t7c4965c11f8537c0",
+    "light": "rgba(0,0,0,0.05)",
+    "dark": "rgba(255,255,255,0.1)"
+  },
+  {
+    "alias": "--t7d8b8e5ee291aec0",
+    "light": "rgba(255,255,255,0.1)",
+    "dark": "rgba(0,0,0,0.05)"
+  },
+  {
+    "alias": "--t7e34d5baa4ea6277",
+    "light": "#909090",
+    "dark": "#717171"
+  },
+  {
+    "alias": "--t7f4f2c6d54836ce0",
+    "light": "rgba(0,0,0,0.05)",
+    "dark": "rgba(255,255,255,0.1)"
+  },
+  {
+    "alias": "--t7f9b7e1603e20b94",
+    "light": "#000",
+    "dark": "#fff"
+  },
+  {
+    "alias": "--t854c79338d8ca8a7",
+    "light": "#c30027",
+    "dark": "#f57"
+  },
+  {
+    "alias": "--t8cdc9846a76caf1f",
+    "light": "#272727",
+    "dark": "#d9d9d9"
+  },
+  {
+    "alias": "--t904a88c623ca27ab",
+    "light": "#107516",
+    "dark": "#2ba640"
+  },
+  {
+    "alias": "--t99f774684cbb9703",
+    "light": "rgba(127,14,127,0.2)",
+    "dark": "rgba(127,14,127,0.3)"
+  },
+  {
+    "alias": "--t9bc0b740242da017",
+    "light": "#dadfe6",
+    "dark": "#515561"
+  },
+  {
+    "alias": "--t9d7bdcaefc975d44",
+    "light": "rgba(255,255,255,0.05)",
+    "dark": "rgba(255,255,255,0.2)"
+  },
+  {
+    "alias": "--ta057e2d872f2a0d4",
+    "light": "rgba(255,255,255,0.05)",
+    "dark": "rgba(0,0,0,0.05)"
+  },
+  {
+    "alias": "--ta08e036410c14538",
+    "light": "#fff",
+    "dark": "#000"
+  },
+  {
+    "alias": "--ta564d8212bccb16a",
+    "light": "#7f0e7f",
+    "dark": "#7f0e7f"
+  },
+  {
+    "alias": "--ta889dfda9605a358",
+    "light": "rgba(255,255,255,0.9)",
+    "dark": "rgba(15,15,15,0.8)"
+  },
+  {
+    "alias": "--taf1bdd961423c15f",
+    "light": "rgba(255,255,255,0.2)",
+    "dark": "rgba(255,255,255,0.05)"
+  },
+  {
+    "alias": "--taf7bd2f2e5a02772",
+    "light": "#3ea6ff",
+    "dark": "#3ea6ff"
+  },
+  {
+    "alias": "--tb628117fc164ad87",
+    "light": "#3ea6ff",
+    "dark": "#065fd4"
+  },
+  {
+    "alias": "--tb7d74bb3291c951d",
+    "light": "rgba(255,255,255,0.2)",
+    "dark": "rgba(0,0,0,0.1)"
+  },
+  {
+    "alias": "--tb8b31ac562fbe9b5",
+    "light": "rgba(170,9,170,0.2)",
+    "dark": "rgba(170,9,170,0.3)"
+  },
+  {
+    "alias": "--tc87f6a7f05e65fc4",
+    "light": "rgba(0,0,0,0.1)",
+    "dark": "rgba(255,255,255,0.1)"
+  },
+  {
+    "alias": "--td545df04e2c659d7",
+    "light": "#c30027",
+    "dark": "#f57"
+  },
+  {
+    "alias": "--td8562cdc203bc683",
+    "light": "#e5e5e5",
+    "dark": "#3f3f3f"
+  },
+  {
+    "alias": "--tdbe50d27d51f5093",
+    "light": "rgba(0,122,101,0.2)",
+    "dark": "rgba(0,122,101,0.3)"
+  },
+  {
+    "alias": "--tdc8af6750f0dad0d",
+    "light": "#0f0f0f",
+    "dark": "#0f0f0f"
+  },
+  {
+    "alias": "--te1b64e6971040396",
+    "light": "#d9d9d9",
+    "dark": "#272727"
+  },
+  {
+    "alias": "--ted4236536899e4b3",
+    "light": "rgba(255,255,255,0.3)",
+    "dark": "rgba(255,255,255,0.15)"
+  },
+  {
+    "alias": "--tef70ca245445b52b",
+    "light": "rgba(255,78,69,0.2)",
+    "dark": "rgba(255,78,69,0.3)"
+  },
+  {
+    "alias": "--tf0a0d1154827847f",
+    "light": "#ffeacf",
+    "dark": "rgba(124,41,0,0.6)"
+  },
+  {
+    "alias": "--tf3fc855af2285f5f",
+    "light": "rgba(0,0,0,0.2)",
+    "dark": "rgba(255,255,255,0.2)"
+  },
+  {
+    "alias": "--tf4689f158df519fa",
+    "light": "#e6e6e6",
+    "dark": "#e6e6e6"
+  },
+  {
+    "alias": "--tf5f050c65aebead5",
+    "light": "rgba(0,0,0,0.1)",
+    "dark": "rgba(255,255,255,0.1)"
+  },
+  {
+    "alias": "--tfa3475c508f5dfef",
+    "light": "#def1ff",
+    "dark": "#263850"
+  },
+  {
+    "alias": "--tffc2fd3a644f6275",
+    "light": "#0f0f0f",
+    "dark": "#f1f1f1"
+  }
+]

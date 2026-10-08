@@ -42,7 +42,9 @@ const YOUTUBE_WATCH = 'https://www.youtube.com/watch?v=abcdefghijk';
 const TWITCH_CHANNEL = 'https://www.twitch.tv/example';
 const CHOSEN_WIDTH = 420;
 
-const CHAT_FRAME = `<!doctype html><html><head><meta charset="utf-8"><title>Live chat</title></head><body>
+const YOUTUBE_THEME_CSS = readFileSync(new URL('../../test/fixtures/youtube-chat-theme.css', import.meta.url), 'utf8');
+
+const CHAT_FRAME = `<!doctype html><html color-version="v2_0"><head><meta charset="utf-8"><title>Live chat</title><style>${YOUTUBE_THEME_CSS}</style></head><body style="background:rgb(253,250,245)"><yt-live-chat-app></yt-live-chat-app>
 <textarea id="draft" aria-label="Say something"></textarea>
 <button type="button" id="send">Send</button>
 <script>
@@ -54,7 +56,8 @@ const CHAT_FRAME = `<!doctype html><html><head><meta charset="utf-8"><title>Live
 const PAGE_STYLE = `<style>
   html, body { margin: 0; background: #111; }
   video { width: 960px; height: 540px; background: #000; display: block; }
-  #movie_player, .persistent-player { width: 960px; height: 540px; }
+  #movie_player, .persistent-player { width: 960px; height: 540px; view-transition-name: picture; }
+  #secondary { view-transition-name: secondary-column; }
   #chat, .right-column { display: block; width: 340px; height: 420px; }
   #chat-container { display: block; width: 340px; }
 </style>`;
@@ -632,6 +635,20 @@ describe('native chat browser session', () => {
       assert.equal(layout.toggleLabel, 'Hide chat', JSON.stringify(layout));
       assert.equal(layout.secondaryAncestor, true, JSON.stringify(layout));
       assertRightDock(layout, 'youtube initial');
+      // Hit testing ignores the pointer-free backdrop; check the composited pixels.
+      // Native view-transition names must not trap a clickable chat below the stage.
+      const screenshot = await page.locator('iframe#chatframe').screenshot();
+      const pixel = await page.evaluate(async dataUrl => {
+        const image = new Image();
+        const loaded = new Promise<void>(resolve => { image.onload = () => resolve(); });
+        image.src = dataUrl; await loaded;
+        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(image, image.width/2, image.height/2, 1, 1, 0, 0, 1, 1);
+        return [...ctx.getImageData(0,0,1,1).data];
+      }, 'data:image/png;base64,' + screenshot.toString('base64'));
+      assert.deepEqual(pixel, [253,250,245,255], 'native chat must paint above the TME backdrop');
+
 
       const frame = page.frameLocator('#chatframe');
       await frame.locator('#draft').fill('hello-1');
@@ -1021,7 +1038,7 @@ describe('native chat browser session', () => {
     }
   });
 
-  it('persists Twitch chat theme and exposes YouTube service appearance without forced palettes', { timeout: 120_000 }, async t => {
+  it('shares theme options and retains independent preferences for Twitch and YouTube', { timeout: 120_000 }, async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
@@ -1068,25 +1085,25 @@ describe('native chat browser session', () => {
       await boot(page);
       await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
       theme = await readThemeControl(page);
-      assert.equal(theme.value, 'native', JSON.stringify(theme));
+      assert.equal(theme.value, 'dark', JSON.stringify(theme));
       assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, true, JSON.stringify(theme));
+      assert.equal(theme.disabled, false, JSON.stringify(theme));
       assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
       assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
       await setChatWidth(page, 440);
-      assert.equal(await page.locator('.theater-chat-theme-hint').isVisible(), true);
-      assert.equal(await page.locator('.theater-chat-theme-select').getAttribute('aria-describedby'), 'theater-chat-theme-hint');
-      assert.equal(await page.locator('.theater-chat-theme-hint').textContent(), 'YouTube chat follows the appearance selected in YouTube settings.');
-      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'native'});
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+      assert.equal(await page.locator('.theater-chat-theme-hint').isVisible(), false);
+      await chooseChatTheme(page, 'light');
+      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
       await closeChatSettings(page);
       await page.locator('.theater-chat-toggle').click();
       await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
       theme = await readThemeControl(page);
-      assert.equal(theme.value,'native');
-      assert.equal(theme.disabled,true);
+      assert.equal(theme.value,'light');
+      assert.equal(theme.disabled,false);
       await page.locator('.theater-chat-toggle').click();
       await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'native'});
+      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
       let layout = await layoutOf(page);
       assert.equal(layout.state?.width,440);
 
@@ -1102,7 +1119,7 @@ describe('native chat browser session', () => {
       await expectAppliedTheme(page, 'light');
       const separated = read().nativeChatPreferences as Record<string, { visible: boolean; width: number; theme: string }>;
       assert.deepEqual(Object.keys(separated).sort(), ['twitch', 'youtube']);
-      assert.deepEqual(separated.youtube, { visible: true, width: 440, theme: 'native' });
+      assert.deepEqual(separated.youtube, { visible: true, width: 440, theme: 'light' });
       assert.deepEqual(Object.keys(separated.twitch).sort(), ['theme', 'visible', 'width']);
 
       await chooseChatTheme(page, 'dark');
@@ -1137,8 +1154,8 @@ describe('native chat browser session', () => {
       await boot(page);
       await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
       theme = await readThemeControl(page);
-      assert.equal(theme.value, 'native', JSON.stringify(theme));
-      await expectAppliedTheme(page, 'native');
+      assert.equal(theme.value, 'light', JSON.stringify(theme));
+      await expectAppliedTheme(page, 'light');
       layout = await layoutOf(page);
       assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
       assert.equal(layout.state?.width, 440, JSON.stringify(layout.state));
@@ -1147,4 +1164,45 @@ describe('native chat browser session', () => {
       await browser.close();
     }
   });
+  it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', {timeout: 60000}, async t => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const browser = await chromium.launch({headless: true});
+    try {
+      for (const provider of ['twitch', 'youtube', 'youtube-dialog'] as const) {
+        const { page } = await openPage(browser, {url: provider === 'twitch' ? TWITCH_CHANNEL : YOUTUBE_WATCH,
+          twitch: twitchDocument(), youtube: youtubeDocument('visible')}, {width:1280,height:800});
+        // Native portal is already mounted before the extension's UI host.
+        await page.evaluate(provider => {
+          const popup = document.createElement(provider === 'youtube' ? 'ytd-popup-container' : provider === 'youtube-dialog' ? 'tp-yt-paper-dialog' : 'div');
+          if (provider === 'twitch') popup.className = 'tw-dialog-layer';
+          popup.id = 'native-popup'; popup.style.cssText = 'position:fixed;width:120px;height:70px;z-index:4';
+          popup.innerHTML = '<button id="native-popup-action" style="width:100%;height:100%">Native action</button>';
+          popup.querySelector('button')!.addEventListener('click', () => popup.setAttribute('data-clicked','true'));
+          if (provider === 'youtube-dialog') {
+            const backdrop = document.createElement('tp-yt-iron-overlay-backdrop');
+            backdrop.style.cssText = 'position:fixed;inset:0;z-index:2201';
+            document.body.append(backdrop);
+          }
+          document.body.append(popup);
+        }, provider);
+        await boot(page);
+        await page.evaluate(() => {
+          const settings = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.player-settings-btn')!;
+          const rect = settings.getBoundingClientRect(), popup = document.getElementById('native-popup')!;
+          popup.style.left = rect.x - 20 + 'px'; popup.style.top = rect.y - 20 + 'px';
+        });
+        const hit = await page.evaluate(() => {
+          const button = document.getElementById('native-popup-action')!, r = button.getBoundingClientRect();
+          return button.contains(document.elementFromPoint(r.x + r.width/2, r.y + r.height/2));
+        });
+        assert.equal(hit, true, provider + ' native popup was covered by TME');
+        await page.locator('#native-popup-action').click();
+        assert.equal(await page.locator('#native-popup').getAttribute('data-clicked'), 'true');
+        assert.deepEqual(pageErrors(page), []);
+        await page.close();
+      }
+    } finally { await browser.close(); }
+  });
+
 });

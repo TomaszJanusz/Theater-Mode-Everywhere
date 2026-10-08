@@ -617,8 +617,8 @@
   "nativeChatWidth": {
     "message": "聊天宽度"
   },
-  "nativeChatThemeYouTubeNative": {
-    "message": "YouTube 聊天使用 YouTube 设置中所选的主题。"
+  "nativeChatThemeUnavailable": {
+    "message": "聊天使用服务的外观设置。所选主题在此页面不可用。"
   },
   "nativeChatTheme": {
     "message": "聊天主题"

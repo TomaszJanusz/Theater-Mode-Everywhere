@@ -41,7 +41,7 @@ html.theater-everywhere-html-active [data-theater-chat] {
   visibility: visible !important;
   pointer-events: auto !important;
   cursor: auto;
-  z-index: 2147483647 !important;
+  z-index: 2147483645 !important;
 }
 
 html.theater-everywhere-html-active [data-theater-chat][data-theater-chat-hidden] {
@@ -89,12 +89,42 @@ html.theater-everywhere-twitch-stage [data-theater-chat] .stream-chat {
 
 /* Service-owned dialogs and popovers remain above the theater backdrop.
  * Their native positions and event handlers are preserved. */
+/* Leave an actual layer above TME chrome. At the browser's maximum z-index,
+ * equal values depended on insertion order and could cover native popovers. */
+html.theater-everywhere-html-active[data-theater-chat-active] {
+  --theater-chrome-z: 2147483645;
+  --theater-video-z: 2147483644;
+}
+
+html.theater-everywhere-html-active[data-theater-chat-active] .theater-everywhere-parent-active,
+html.theater-everywhere-html-active[data-theater-chat-active] [data-theater-chat-ancestor] {
+  z-index: auto !important;
+  /* YouTube names both columns for view transitions. Those names create
+   * stacking contexts even between transitions and trap chat below the stage. */
+  view-transition-name: none !important;
+}
+
+html.theater-everywhere-html-active[data-theater-chat-active] .theater-everywhere-video-active,
+html.theater-everywhere-html-active[data-theater-chat-active] [data-theater-everywhere],
+html.theater-everywhere-twitch-stage[data-theater-chat-active] .persistent-player {
+  z-index: 2147483644 !important;
+}
+
+html.theater-everywhere-html-active[data-theater-chat-active] #theater-everywhere-stage {
+  z-index: 2147483643 !important;
+}
+
 html.theater-everywhere-twitch-stage .ReactModalPortal,
 html.theater-everywhere-twitch-stage .ReactModal__Overlay,
 html.theater-everywhere-twitch-stage .tw-dialog-layer,
-html.theater-everywhere-html-active[data-theater-chat-active] ytd-popup-container {
+html.theater-everywhere-html-active[data-theater-chat-active] ytd-popup-container,
+html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-paper-dialog {
   z-index: 2147483647 !important;
   cursor: auto;
+}
+
+html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-iron-overlay-backdrop {
+  z-index: 2147483646 !important;
 }
 
 /* Width controls are TME chrome, rendered in its existing shadow root. */

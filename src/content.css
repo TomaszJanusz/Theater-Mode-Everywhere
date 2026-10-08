@@ -21,7 +21,7 @@
   contain: layout !important;
   display: block !important;
   pointer-events: none !important;
-  z-index: 2147483647 !important;
+  z-index: var(--theater-chrome-z, 2147483647) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1.4 !important;
   color: #f8fafc !important;

@@ -5,7 +5,8 @@ export type {
   ChatProvider,
   ChatState,
   ChatSurface,
-  ChatTheme
+  ChatTheme,
+  ChatThemeStatus
 } from './types';
 export type { ChatControllerOptions } from './controller';
 export { ChatController } from './controller';

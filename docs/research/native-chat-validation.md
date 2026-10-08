@@ -1,95 +1,59 @@
-# Natywny czat — zakres draft PR #25
+# Natywny czat — implementacja i walidacja draft PR #25
 
-[Draft PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) realizuje pierwszy etap [opracowania](twitch-youtube-chat.md): zachowanie istniejącego czatu na natywnych stronach Twitch i YouTube. Zadanie: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej).
+[Draft PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) zachowuje istniejące czaty na stronach Twitch i YouTube, udostępnia chowanie, szerokość oraz niezależny motyw **Jasny / Ustawienia serwisu / Ciemny**. Zadanie: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej). [Opracowanie architektury](twitch-youtube-chat.md) opisuje szerszy zakres docelowy; nowe embedy na stronach zewnętrznych są osobnym etapem.
 
-## Wspólny kod
+## Wspólny kod i adaptery
 
-Adaptery w `src/chat/detect.ts` wskazują `ChatSurface`: serwis, materiał, live/replay, oryginalny kontener, opcjonalną ramkę i przodków potrzebnych do prezentacji. Nie pobierają wiadomości i nie implementują funkcji konta.
+Adaptery detekcji w `src/chat/detect.ts` wskazują `ChatSurface`: oryginalny kontener, istniejącą ramkę, serwis, materiał, live/replay i przodków potrzebnych do prezentacji. Wiadomości i funkcje konta nadal obsługuje serwis. `ChatSurface` jest opisem istniejącego czatu, a nie rendererem wiadomości ani magistralą jego akcji.
 
-`ChatController` zarządza wykrywaniem, cyklem życia, widocznością, fokusem i geometrią. `src/ui/chat.ts` łączy go z istniejącym UI i zapisem preferencji rozszerzenia. Przycisk pokaż/schowaj oraz ustawienie szerokości korzystają z tego samego kodu dla obu serwisów. Kontroler udostępnia metody `show`, `hide`, `toggle`, `setWidth`, `refresh` i `dispose`; adaptery dostarczają opis powierzchni. `ChatSurface` nie jest rendererem wiadomości ani magistralą akcji serwisowego czatu.
+Wspólny `ChatController` obsługuje widoczność, szerokość, układ, fokus i cykl życia. `src/ui/chat.ts` zapewnia jednakowe UI i zapis preferencji osobno dla Twitcha i YouTube. Panel jest po prawej od 900 px szerokości okna; poniżej znajduje się pod wideo. Szerokość bocznego panelu wynosi 280–600 px. Player, toolbar, HUD i napisy korzystają z pozostałego obszaru. Schowany kontener pozostaje w DOM, jest niewidoczny i `inert`.
 
-Panel zajmuje prawą część okna od 900 px szerokości; poniżej jest pod wideo. Szerokość prawego panelu można ustawić w zakresie 280–600 px. Wideo, toolbar, HUD i napisy korzystają z wymiarów pozostałego obszaru. Schowany kontener pozostaje w DOM, jest niewidoczny i `inert`. TME nie klonuje, nie przepina ani nie zmienia źródła ramki.
+`ChatThemeSession` wspólnie obsługuje zastosowanie wyboru, gotowość dokumentu, wymianę ramki, ponowne sprawdzenie palety oraz przywracanie zmian po wyborze „Ustawienia serwisu” lub wyjściu z TME. Dwa adaptery palety implementują ten sam kontrakt `apply(theme)` / `restore()`:
 
-## Weryfikacja Twitcha w przeglądarce T3
+| Serwis | Jak stosowana jest paleta |
+| --- | --- |
+| Twitch | Adapter znajduje kompletną klasę natywnych tokenów w aktualnym CSS. Stosuje ją do czatu i portali oraz przełącza natywne flagi jasnego/ciemnego wyglądu. Wygenerowana nazwa klasy nie jest zapisana w TME. |
+| YouTube | Adapter zmienia `dark` tylko w istniejącym dokumencie czatu i dodaje własny, usuwalny arkusz łączący 57 skompilowanych aliasów z natywnymi tokenami palety. Nie pobiera przeciwnego arkusza ani nie wywołuje lub podmienia funkcji YouTube. |
 
-Zrzuty w tym katalogu wykonano 8 października 2026 w współdzielonej przeglądarce T3, na prawdziwej stronie Twitch, bez zalogowanego konta. Do strony wstrzyknięto zbudowane `content.js`, `mainWorld.js` i `content.css`, aby zweryfikować kod TME w aktualnym DOM serwisów. To diagnostyka runtime na stronie; nie zastępuje testu zainstalowanego rozszerzenia, jego uprawnień i izolowanego świata.
+Oba serwisy mają aktywny przełącznik, również przy schowanym czacie i dolnym panelu. Wybór nie zmienia zapisanych ustawień wyglądu serwisu. Jeśli adapter nie rozpozna potrzebnej palety, usuwa wymuszenie i pozostawia natywny wygląd z wyjaśnieniem w UI; preferencja użytkownika pozostaje zachowana.
 
-### Twitch
+YouTube nie ma publicznego kontraktu tych aliasów. Rozpoznawanie sprawdza obecność obu palet, wymagane deklaracje i odwołania do znanych aliasów w CSS, także w deklaracjach skrótowych, oraz obsługę `color-mix`. Pełny odczyt aktualnego CSS wykazał **68 używanych aliasów: 57 różnic między motywami i 11 stałych kolorów**. Most nie zawiera własnych RGB/hex; jeden dawny token dla linii wątku jest odczytywany z natywnej jasnej deklaracji, którą nowy system YouTube nadpisuje na korzeniu. [Historia prototypów](youtube-chat-theme-patch.md) wyjaśnia wcześniejszy, niepełny pomiar 47/38.
 
-Materiał: [ohnePixel live](https://www.twitch.tv/ohnepixel). Natywny czat zawierał rzeczywiste wiadomości, emotes, badges i przypiętą wiadomość.
+## Warstwy i natywne menu
 
-- Panel czatu oraz player zajmowały rozłączne obszary.
-- Schowanie oddawało playerowi całe okno; pokazanie zachowywało tożsamość kontenera i jego rodzica.
-- Natywne menu Chat Settings otwierało się nad playerem.
-- Przy oknie 800 × 800 czat zajmował obszar pod wideo.
-- Nie wysłano wiadomości, nie wykonano zakupu ani działania moderacyjnego.
+Natywne portale i dialogi mają warstwę nad TME. Obniżono warstwę playera i chrome TME tylko w sesji z wykrytym czatem. W łańcuchu przodków usuwane są także konteksty tworzone przez `view-transition-name` YouTube; samo `z-index: auto` nie wystarczało. CSS działa wyłącznie podczas TME i przywraca natywną prezentację po wyjściu.
 
-![Twitch: natywny czat obok playera](screenshots/twitch-chat-visible.png)
+Test przeglądarkowy umieszcza portale Twitcha, popup YouTube i dialog z backdropem **przed** hostem TME, nakłada je na jego przycisk ustawień i wideo, a następnie sprawdza trafienie i rzeczywiste kliknięcie. Osobny odczyt pikseli ramki wykrywa sytuację, w której czat istnieje i przyjmuje kliknięcia, ale pozostaje namalowany pod czarną sceną.
 
-![Twitch: czat schowany](screenshots/twitch-chat-hidden.png)
+## Nowe zrzuty z prawdziwych serwisów
 
-![Twitch: natywne ustawienia czatu](screenshots/twitch-native-settings.png)
+Wykonano 8 października 2026, w graficznym Chromium 153 przez Playwright/Xvfb, przy oknie 1440 × 900. Przeglądarka używała osobnego tymczasowego, wylogowanego profilu i **zainstalowanego `dist/chrome-unpacked`**. Zrzuty pokazują implementację rozszerzenia; nie wstrzykiwano prototypowej palety. Źródła: [YoungMulti live](https://www.twitch.tv/youngmulti) i [Rainy Porch Jazz live](https://www.youtube.com/watch?v=eao0EdKtvZg).
 
-![Twitch: czat pod wideo w wąskim oknie](screenshots/twitch-chat-bottom.png)
+| Widok | Twitch | YouTube |
+| --- | --- | --- |
+| Menu opcji TME | ![Twitch — opcje i ciemny czat](screenshots/current/twitch-options-dark.png) | ![YouTube — opcje i ciemny czat](screenshots/current/youtube-options-dark.png) |
+| Jasny czat | ![Twitch — jasny czat i szkic](screenshots/current/twitch-light.png) | ![YouTube — jasny czat](screenshots/current/youtube-light.png) |
+| Ciemny czat | ![Twitch — ciemny czat i szkic](screenshots/current/twitch-dark.png) | ![YouTube — ciemny czat](screenshots/current/youtube-dark.png) |
+| Natywne menu | ![Twitch — Chat Settings nad playerem](screenshots/current/twitch-settings-dark.png) | ![YouTube — More options](screenshots/current/youtube-more-options-dark.png) |
+| Dodatkowe natywne UI | ![Twitch — wybór emotes](screenshots/current/twitch-emotes-dark.png) | ![YouTube — Top chat](screenshots/current/youtube-top-chat-dark.png) |
+| Schowany czat | ![Twitch — schowany czat](screenshots/current/twitch-hidden.png) | ![YouTube — schowany czat](screenshots/current/youtube-hidden.png) |
 
-## YouTube w osobnym Playwright
+Dodatkowe warianty: [jasne opcje Twitcha](screenshots/current/twitch-options-light.png), [jasne menu Twitcha](screenshots/current/twitch-settings-light.png), [jasne opcje YouTube](screenshots/current/youtube-options-light.png), [jasne Top chat](screenshots/current/youtube-top-chat-light.png), [ciemny portal Chat Rules](screenshots/current/twitch-rules-dark.png) i [jasny Chat Rules](screenshots/current/twitch-rules-light.png). Wcześniejsze zrzuty i prototypy pozostają historycznym materiałem; powyższa galeria przedstawia bieżącą funkcję.
 
-Materiał: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQekNa9g). Test na prawdziwej stronie w Chromium 153, uruchomionym w trybie graficznym przez Playwright/Xvfb, z osobnym tymczasowym profilem i zainstalowanym `dist/chrome-unpacked`. Nie wstrzykiwano paczek w stronę; użyto normalnych content scripts rozszerzenia. Sesja wylogowana, odrzucono opcjonalne cookies.
+### Wyniki na serwisach
 
-- Natywny czat wyświetlał rzeczywiste wiadomości, a wideo odtwarzało się przed i po wejściu do TME.
-- UI TME i przycisk czatu działały. W oknie 1440 × 900 wideo zajmowało 1080 × 900, a czat pozostałe 360 × 900.
-- Przycisk chował czat, oddawał wideo całe okno i ponownie pokazywał ten sam kontener oraz iframe. Kontener, rodzic, ramka, dokument i brak `src` pozostały bez zmian; licznik `load` dla hide/show wyniósł 0.
-- Natywne menu Top chat otwierało się bez zatrzymania wideo i udostępniało opcję Live chat.
-- Zrzuty poniżej potwierdzają boczny układ i chowanie. Pełny przebieg zmiany filtra oraz responsywny układ YouTube pozostają do kwalifikacji: późniejsza próba filtra i resize zakończyła się przeładowaniem dokumentu czatu; nie przypisano przyczyny TME ani serwisowi.
-- Nie logowano się, nie wysłano wiadomości, nie wykonano zakupu ani działania moderacyjnego.
+- **Twitch:** wymuszono dark → light → native. Tekst niewysłanego szkicu zmieniał się z `rgb(239, 239, 241)` na `rgb(14, 14, 16)`; panel odpowiednio `rgb(24, 24, 27)` / `rgb(255, 255, 255)`. Chat Settings było klikalne w trzech sprawdzonych punktach, także poza granicą panelu, nad wideo. Otwierał się natywny picker emotes oraz portal Chat Rules; jego przycisk był klikalny ponad TME. Hide/show i zmiany palety zachowały kontener, rodzica, edytor oraz szkic. Powrót do native odtworzył zmierzoną paletę początkową. Wideo podczas obu wariantów odtwarzało się (`readyState=4`).
+- **YouTube:** wszystkie 68 kolorów aliasów zgadzało się z niezależnym natywnym punktem odniesienia w obu wariantach po normalizacji RGBA. Top chat otwierało się i przyjmowało trafienia w obu motywach; More options miało czytelne natywne pozycje Participants, Reactions, Popout chat i Send feedback. Przełączenia i hide/show zachowały ten sam iframe i dokument, dodatkowe `load`: **0**. Główna strona pozostała jasna również przy ciemnym czacie. Powrót do native usunął most i odtworzył pierwotną flagę. Przed każdym z ośmiu zrzutów potwierdzono odtwarzanie wideo (`readyState=4`, `paused=false`).
 
-![YouTube: natywny czat obok playera i UI TME](screenshots/youtube-chat-visible.png)
+[Pomiary towarzyszące zrzutom](screenshots/current/verification.json) zawierają wyniki palet, tożsamości, hit testingu i odtwarzania. Nie wysłano wiadomości, nie kupowano produktów ani nie wykonywano moderacji. Edytor YouTube wymaga logowania i na prawdziwym serwisie pozostaje niezweryfikowany; jego kontrast, szkic i zachowanie klawiatury sprawdzają fixtures.
 
-![YouTube: czat schowany przyciskiem TME](screenshots/youtube-chat-hidden.png)
-
-## Motyw czatu i kontrast
-
-Na Twitchu opcje „Jasny / Ustawienia serwisu / Ciemny” są aktywne podczas sesji TME, także przy schowanym czacie i dolnym panelu. Adapter wyszukuje pełną klasę palety w aktualnym CSS Twitcha oraz przełącza natywne flagi wyglądu kontenera i portali. Nie ma własnej listy kolorów ani podmian funkcji serwisu. Jeśli arkusza nie można odczytać lub palety rozpoznać, czat zachowuje natywny wygląd. Wygenerowana nazwa klasy nie jest zapisana w kodzie.
-
-Ponowny test na [caedrel](https://www.twitch.tv/caedrel), Chromium 153 przez Playwright/Xvfb z zainstalowanym rozszerzeniem, obejmował wpisany, niewysłany szkic „TME — test kontrastu tekstu”, menu Chat Settings oraz przełączenie dark → light → service settings. T3 utracił dostęp do hosta automatyzacji podczas tej sesji, więc wykorzystano osobną przeglądarkę. Oryginalny kontener, edytor i szkic pozostały zachowane. Wariant ciemny: pole `rgb(24, 24, 27)`, tekst `rgb(239, 239, 241)`; jasny: pole `rgb(255, 255, 255)`, tekst `rgb(14, 14, 16)`. Powrót do ustawień serwisu odtworzył jasny punkt odniesienia. Nie wysłano wiadomości.
-
-![Twitch: ciemna paleta z czytelnym szkicem](screenshots/twitch-chat-theme-dark.png)
-
-![Twitch: ciemne natywne menu ustawień](screenshots/twitch-chat-theme-dark-menu.png)
-
-![Twitch: jasna paleta z zachowanym szkicem](screenshots/twitch-chat-theme-light.png)
-
-**YouTube zachowuje motyw wybrany w ustawieniach YouTube.** Przełącznik TME pokazuje „Ustawienia serwisu”, jest nieaktywny i ma widoczne wyjaśnienie. Starsze preferencje wymuszające jasny/ciemny są ignorowane podczas sesji i normalizowane przy kolejnym zapisie. Widoczność i szerokość działają nadal.
-
-Przyczynę mieszanego wyglądu odtworzono na prawdziwym [YouTube Live](https://www.youtube.com/watch?v=1-LpQekNa9g). `setGlobalDarkTheme(true)` przełącza `html[dark]` i semantyczną paletę, ale bieżący `live_chat_base` zawiera także skompilowane aliasy kolorów `--t…` w `:root`, zależne od motywu wybranego przy ładowaniu dokumentu. Tło renderera, tekst Top chat i obszar logowania korzystają z tych aliasów. Wymuszenie samego ciemnego atrybutu oraz tła renderera mieszało dwie palety. Natywne przełączenie w menu YouTube ładuje inny arkusz i wymienia dokument czatu.
-
-Usunięto częściowe wymuszanie YouTube i jego most w świecie strony. TME nie przeładowuje czatu ani nie zmienia preferencji YouTube. Pełne wymuszanie motywu niezależnego od ustawień serwisu wymaga osobnego rozwiązania i kwalifikacji; obecna wersja nie deklaruje tej funkcji.
-
-Zrzuty YouTube poniżej pokazują **motywy wybrane natywnie w YouTube**, zachowane przez TME, a nie wymuszanie palety przez TME. Sesja wylogowana: pole edycji dostępne po zalogowaniu nie zostało zweryfikowane na serwisie. Poprzednie zrzuty z mieszaną paletą zastąpiono.
-
-![YouTube: ustawienia TME z wyjaśnieniem natywnego motywu](screenshots/youtube-chat-theme-settings.png)
-
-![YouTube: pełny ciemny motyw wybrany w serwisie](screenshots/youtube-chat-theme-dark.png)
-
-![YouTube: pełny jasny motyw wybrany w serwisie](screenshots/youtube-chat-theme-light.png)
-
-## Eksperymentalny patch motywu YouTube
-
-[Analiza na żywym serwisie](youtube-chat-theme-patch.md) potwierdziła wykonalność niezależnego jasnego/ciemnego czatu przez dodatkową warstwę CSS. Pierwszy wariant wymaga 38 aliasów (około 1,2 KB); pełna różnica palet obejmuje 116 aliasów (około 3,6 KB). Pomiary wybranych komponentów, menu, 20 zmian motywu, hide/show i przywrócenie przeszły bez wymiany dokumentu ani dodatkowego `load`. Kolejny prototyp połączył te aliasy z natywnymi tokenami `--yt-sys-color-baseline--*`: obie palety są dostępne w tym samym arkuszu, więc po przygotowaniu mapy nie trzeba pobierać przeciwnego arkusza. Zmierzone 38 kolorów zgadzało się w obu motywach; główną kwestią pozostaje poprawność mapowania po aktualizacjach. To prototypy badawcze poza paczką rozszerzenia; bieżące UI nadal respektuje ustawienia YouTube.
-
-## Co pozostaje do kwalifikacji przed wydaniem
-
-Weryfikacja automatyczna:
+## Testy i pozostała kwalifikacja
 
 - `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles`: sukces.
-- 23 testy kontraktu i sesji czatu: sukces, bez pominiętych testów.
-- `pnpm test` (równolegle): 474/476. Oprócz Netflixa test odliczania w `src/ui/service-actions.browser.test.ts:288` nie zmieścił się w tolerancji czasu. Ponowna kwalifikacja seryjna: 464/465, plus 11/11 testów `src/providers/service-actions.browser.test.ts` — łącznie 475/476, bez pominięć. Test odliczania i Bilibili przechodzą seryjnie bez zmian kodu; wcześniejszy obciążony przebieg miał także timeout Bilibili. Test Netflixa `boots at document_start and uses the attached signed-in session…` kończy się timeoutem w `src/ui/netflix-runtime.browser.test.ts:476`. Identyczny wynik odtworzono w osobnym katalogu na bazowym commicie `a79a5417b42ec6ea27b5f339afbd16714b14bee3`; nie jest to regresja czatu.
-- Chromium smoke: sukces dla zainstalowanej paczki rozszerzenia. Weryfikuje istniejące przepływy playera i fullscreen na lokalnych fixtures.
-- Firefox smoke: sukces w trybie diagnostycznym z wstrzykniętych paczek; Playwright nie ładuje niepodpisanego dodatku MV3. Nie stanowi kwalifikacji uprawnień ani natywnego czatu Firefox.
-- Testy przeglądarkowe zgłaszają jawne pominięcie, jeśli Chromium nie jest zainstalowany. Wszystkie nowe testy wykonano lokalnie bez pominięć. Istniejący CI uruchamia główny zestaw przed instalacją Playwright; na świeżym runnerze te testy mogą być pominięte. Dodanie osobnego kroku po instalacji pozostaje do wykonania: GitHub odrzucił zmianę workflow z powodu braku uprawnienia `workflow` w połączeniu OAuth.
+- Testy URL, geometrii, kontrolera i UI czatu oraz lokalizacji: **28/28**, bez pominięć; w tym **25 testów czatu**.
+- Pełny `pnpm test`: **477/478**, bez pominięć. Jedyny błąd to timeout istniejącego testu Netflixa `boots at document_start and uses the attached signed-in session…`, `src/ui/netflix-runtime.browser.test.ts:476`. Ten timeout odtworzono wcześniej także na bazowym `main` (`a79a5417b42ec6ea27b5f339afbd16714b14bee3`). Zestaw nie jest w całości zielony.
+- Fixtures sprawdzają obie natywne palety YouTube i wszystkie 68 aliasów, kontrast edytora, zachowanie szkicu i klawiatury/IME, ukrywanie, zmianę dokumentu, przywracanie, fallback przy nieznanym aliasie w skrótowym `border-color` i odzyskanie palety po jego usunięciu. Nie zastępują testów serwisowych funkcji konta.
+- Wcześniejszy Chromium smoke przeszedł dla zainstalowanego rozszerzenia; Firefox smoke był diagnostyką z wstrzykniętych paczek. Nowy most palety nie ma jeszcze kwalifikacji na prawdziwych serwisach w Firefox.
+- CI uruchamia główny zestaw przed instalacją Playwright, więc na świeżym runnerze testy przeglądarkowe mogą zostać pominięte. Osobny krok po instalacji pozostaje do dodania; wcześniejszą zmianę workflow GitHub odrzucił z powodu braku uprawnienia `workflow` w połączeniu OAuth.
 
-Automatyczne fixtures sprawdzają mechanikę rozszerzenia: cykl życia, tożsamość ramki, brak dodatkowego load, szkic wiadomości, skróty, IME, fokus i odzyskanie układu. Nie potwierdzają serwisowych funkcji.
-
-Przed wydaniem nadal trzeba sprawdzić responsywny układ i pełny przebieg zmiany filtra YouTube, oba serwisy na zalogowanym koncie, moderację, natywne formularze monetyzacji, live/Premiere i rzeczywisty replay, fullscreen oraz Chrome i Firefox z zainstalowanym rozszerzeniem. Faktycznych płatności nie deklarujemy jako zweryfikowanych. Nowe embedy i integracja czatu obok playera na dowolnej stronie zewnętrznej pozostają osobnym etapem.
-
-Zmiany DOM serwisów nie mają stabilnego kontraktu. Testy i zachowanie oryginalnej sesji ograniczają ryzyko, ale nie dają gwarancji zgodności z każdą przyszłą aktualizacją.
+Przed wydaniem potrzebna jest kwalifikacja na zalogowanych kontach, moderacji, formularzy monetyzacji, rzeczywistego replay/Premiere, fullscreen, pełnej zmiany filtra i responsywnego układu YouTube oraz Chrome/Firefox. Zachowanie natywnego DOM ogranicza ingerencję, lecz nie gwarantuje każdej funkcji ani zgodności z przyszłymi zmianami prywatnego CSS serwisów.

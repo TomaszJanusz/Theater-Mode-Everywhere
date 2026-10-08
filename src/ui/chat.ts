@@ -149,7 +149,7 @@ export function mountNativeChatControls(
   const themeHint = document.createElement('span');
   themeHint.className = 'theater-chat-theme-hint';
   themeHint.id = 'theater-chat-theme-hint';
-  themeHint.textContent = ctx.t('nativeChatThemeYouTubeNative');
+  themeHint.textContent = ctx.t('nativeChatThemeUnavailable');
   themeRow.append(themeLabel, themeSelect, themeHint);
   settingsPanel.querySelector('.theater-settings-body')?.append(themeRow);
   scope.listen(themeSelect, 'change', () => controller?.setTheme(normalizeChatTheme(themeSelect.value)));
@@ -165,10 +165,10 @@ export function mountNativeChatControls(
     slider.value = String(state?.width ?? DEFAULT_CHAT_WIDTH_PX);
     widthValue.value = slider.value + ' px';
     themeRow.hidden = !state?.available;
-    const serviceThemeOnly = state?.surface?.provider === 'youtube';
-    themeSelect.disabled = !state?.available || serviceThemeOnly;
-    themeHint.hidden = !serviceThemeOnly;
-    if (serviceThemeOnly) themeSelect.setAttribute('aria-describedby', themeHint.id);
+    const themeUnavailable = state?.themeStatus === 'unavailable';
+    themeSelect.disabled = !state?.available;
+    themeHint.hidden = !themeUnavailable;
+    if (themeUnavailable) themeSelect.setAttribute('aria-describedby', themeHint.id);
     else themeSelect.removeAttribute('aria-describedby');
     const theme = displayedTheme(state);
     if (themeSelect.value !== theme) themeSelect.value = theme;

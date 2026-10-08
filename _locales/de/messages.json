@@ -617,8 +617,8 @@
   "nativeChatWidth": {
     "message": "Chatbreite"
   },
-  "nativeChatThemeYouTubeNative": {
-    "message": "Der YouTube-Chat verwendet das in den YouTube-Einstellungen ausgewählte Design."
+  "nativeChatThemeUnavailable": {
+    "message": "Der Chat verwendet das Erscheinungsbild des Dienstes. Das gewählte Design ist auf dieser Seite nicht verfügbar."
   },
   "nativeChatTheme": {
     "message": "Chat-Design"

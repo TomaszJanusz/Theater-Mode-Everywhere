@@ -617,8 +617,8 @@
   "nativeChatWidth": {
     "message": "عرض الدردشة"
   },
-  "nativeChatThemeYouTubeNative": {
-    "message": "تستخدم دردشة YouTube المظهر المحدد في إعدادات YouTube."
+  "nativeChatThemeUnavailable": {
+    "message": "تستخدم الدردشة مظهر الخدمة. المظهر المحدد غير متاح في هذه الصفحة."
   },
   "nativeChatTheme": {
     "message": "مظهر الدردشة"

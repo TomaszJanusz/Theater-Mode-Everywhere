@@ -430,7 +430,7 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   'max-height': 'var(--theater-video-height, 100vh)',
   'min-width': 'var(--theater-video-width, 100vw)',
   'min-height': 'var(--theater-video-height, 100vh)',
-  'z-index': '2147483647',
+  'z-index': 'var(--theater-video-z, 2147483647)',
   opacity: '1',
   'pointer-events': 'auto',
   margin: '0',

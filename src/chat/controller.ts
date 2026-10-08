@@ -46,7 +46,8 @@ const EMPTY_STATE: ChatState = {
   visible: false,
   width: DEFAULT_CHAT_WIDTH_PX,
   dock: 'right',
-  theme: 'native'
+  theme: 'native',
+  themeStatus: 'native'
 };
 
 /**
@@ -59,7 +60,9 @@ export class ChatController {
   private readonly scope = new DisposableScope();
   private readonly surfaceOwned = new OwnedDom();
   private readonly documentOwned = new OwnedDom();
-  private readonly themeSession = new ChatThemeSession();
+  private readonly themeSession = new ChatThemeSession(() => {
+    if (!this.disposed) this.publish(this.current.surface);
+  });
   private readonly memory = new Map<ChatProvider, MemoryPreference>();
   private current: ChatState = { ...EMPTY_STATE };
   private started = false;
@@ -126,7 +129,7 @@ export class ChatController {
     const provider = this.provider();
     if (!provider) return;
     const preference = this.ensurePreference(provider, this.current.surface?.initiallyVisible ?? null);
-    const next = provider === 'youtube' ? 'native' : normalizeChatTheme(theme);
+    const next = normalizeChatTheme(theme);
     if (preference.theme === next) return;
     preference.theme = next;
     if (preference.seeded || preference.visibilityLocked) this.persist(provider);
@@ -367,7 +370,8 @@ export class ChatController {
       visible: surface !== null && preference.visible,
       width: preference.width,
       dock: layout.dock,
-      theme: preference.theme
+      theme: preference.theme,
+      themeStatus: this.themeSession.status
     };
   }
 
@@ -405,7 +409,7 @@ export class ChatController {
     const storedWidth = stored && Number.isFinite(stored.width) ? clampChatWidth(stored.width) : null;
     const storedVisible = stored && typeof stored.visible === 'boolean' ? stored.visible : null;
     const created: MemoryPreference = {
-      theme: provider === 'youtube' ? 'native' : normalizeChatTheme(stored?.theme),
+      theme: normalizeChatTheme(stored?.theme),
       visible: storedVisible ?? initiallyVisible ?? true,
       width: storedWidth ?? DEFAULT_CHAT_WIDTH_PX,
       visibilityLocked: storedVisible !== null,
@@ -485,6 +489,7 @@ function sameState(left: ChatState, right: ChatState): boolean {
   return left.available === right.available
     && left.visible === right.visible
     && left.theme === right.theme
+    && left.themeStatus === right.themeStatus
     && left.width === right.width
     && left.dock === right.dock
     && left.surface === right.surface;
