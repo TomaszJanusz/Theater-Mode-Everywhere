@@ -79,6 +79,39 @@ describe('native chat controller', () => {
     return page;
   }
 
+  it('preserves Twitch VOD replay without replacing it with the live channel chat', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(`<div class="right-column" data-a-target="right-column-chat-bar">
+      <div class="video-chat"><div class="video-chat__message-list-wrapper"></div></div>
+    </div>`);
+    try {
+      const report = await page.evaluate(`(() => {
+        const replay = NativeChat.detectChatSurface(document, 'https://www.twitch.tv/videos/55');
+        const original = document.querySelector('.video-chat');
+        const controller = new NativeChat.ChatController({document, href: () => 'https://www.twitch.tv/videos/55', onChange() {}, onLayoutChange() {}});
+        controller.start(); controller.hide(); controller.show();
+        const result = { kind: replay?.kind, key: replay?.contentKey,
+          same: replay?.contentRoot === original && document.querySelector('.video-chat') === original,
+          root: replay?.root.matches('.right-column'), visible: controller.state.visible,
+          live: NativeChat.detectChatSurface(document, 'https://www.twitch.tv/example') };
+        controller.dispose(); return result;
+      })()`);
+      assert.deepEqual(report, { kind: 'replay', key: '55', same: true, root: true, visible: true, live: null });
+    } finally { await page.close(); }
+  });
+
+  it('rejects an empty YouTube replay frame when the native shell reports unavailability', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK">
+      <ytd-live-chat-frame id="chat" collapsed hide-chat-frame>
+        <iframe id="chatframe"></iframe>
+        <ytd-message-renderer>Live chat replay is disabled for this video.</ytd-message-renderer>
+      </ytd-live-chat-frame></ytd-watch-flexy>`);
+    try {
+      assert.equal(await page.evaluate(`NativeChat.detectChatSurface(document, 'https://www.youtube.com/watch?v=AbCdEfGhIjK')`), null);
+    } finally { await page.close(); }
+  });
+
   it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`);

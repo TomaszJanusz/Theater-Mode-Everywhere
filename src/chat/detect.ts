@@ -22,7 +22,12 @@ export function detectChatSurface(document: Document, href: string): ChatSurface
 }
 
 function detectTwitch(document: Document, contentKey: string, kind: ChatKind): ChatSurface | null {
-  const section = document.querySelector(TWITCH_CHAT_SECTION_SELECTOR)
+  // VOD replay uses video-chat rather than the live chat-room component.
+  // Keep it scoped to Twitch's native column and to replay routes.
+  const section = (kind === 'replay'
+    ? document.querySelector('.right-column .video-chat, [data-a-target="right-column-chat-bar"] .video-chat')
+    : null)
+    ?? document.querySelector(TWITCH_CHAT_SECTION_SELECTOR)
     ?? document.querySelector('.right-column .chat-room, [data-a-target="right-column-chat-bar"] .chat-room');
   if (!(section instanceof HTMLElement)) return null;
   const root = twitchRoot(section);
@@ -81,6 +86,11 @@ function selectYouTubeFrame(document: Document, contentKey: string): { iframe: H
     }
     const nativeFrame = node.id === 'chatframe' && node.closest('ytd-live-chat-frame');
     const watchId = node.closest('ytd-watch-flexy')?.getAttribute('video-id');
+    // An unavailable replay can retain an empty iframe alongside the native
+    // status message. That placeholder is not an available chat surface.
+    if (!source && nativeFrame instanceof HTMLElement
+      && nativeFrame.hasAttribute('hide-chat-frame')
+      && nativeFrame.querySelector('ytd-message-renderer')?.textContent?.trim()) continue;
     // YouTube navigates chatframe programmatically, often without a src attribute.
     // Require the native component and its current stamped watch identity.
     if (nativeFrame && watchId === contentKey && (source || !rawSrc || rawSrc === 'about:blank')) {

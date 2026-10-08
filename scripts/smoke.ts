@@ -325,6 +325,10 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (placement.length) fail(`Toolbar actions were lost, duplicated or misplaced: ${JSON.stringify(placement)}`);
   const gear = page.locator('.player-settings-btn');
   const menu = page.locator('.theater-settings-menu');
+  await gear.evaluate(async button => {
+    const bar = button.closest('.theater-controls-wrapper')!;
+    await Promise.all(bar.getAnimations({ subtree: true }).map(animation => animation.finished));
+  });
   const closedGearIcon = await gear.locator('svg').boundingBox();
   await gear.focus();
   await gear.press('Enter');
@@ -421,15 +425,19 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       bar.setAttribute('dir', dir);
       body.scrollTop = 0;
       const before = menu.getBoundingClientRect();
-      const firstBefore = body.firstElementChild!.getBoundingClientRect().top;
+      // Chat's hidden section can precede the player rows on ordinary videos.
+      // Measure a rendered action rather than that zero-size section wrapper.
+      const first = [...body.querySelectorAll<HTMLElement>('.theater-settings-row')]
+        .find(row => row.getClientRects().length > 0)!;
+      const firstBefore = first.getBoundingClientRect().top;
       body.scrollTop = body.scrollHeight;
       const after = menu.getBoundingClientRect();
       const last = body.lastElementChild!.getBoundingClientRect();
       return { dir, scrollTop: body.scrollTop, firstBefore,
-        firstAfter: body.firstElementChild!.getBoundingClientRect().top,
+        firstAfter: first.getBoundingClientRect().top,
         before: before.toJSON(), after: after.toJSON(), last: last.toJSON(),
         lastClass: body.lastElementChild!.className, passed: body.scrollTop > 0
-        && body.firstElementChild!.getBoundingClientRect().top < firstBefore
+        && first.getBoundingClientRect().top < firstBefore
         && before.top === after.top && before.bottom === after.bottom
         && after.top >= 0 && after.bottom <= window.innerHeight
         && last.top >= after.top && last.bottom <= after.bottom };
@@ -589,6 +597,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await cc.press('Enter');
   await captionsMenu.waitFor();
   await page.keyboard.press('Escape');
+  await captionsMenu.waitFor({ state: 'hidden' });
   if (await captionsMenu.isVisible() || !await theaterEntered(page)
       || !await cc.evaluate(button => button.matches(':focus'))) {
     fail('Escape did not dismiss captions and return focus without leaving theater mode.');
@@ -1105,18 +1114,18 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
   await page.keyboard.press('Shift+L');
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
-  if (wide.columns !== 2 || wide.rows !== 22 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  if (wide.columns !== 2 || wide.rows !== 23 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });
   const narrow = await inspect();
-  if (narrow.columns !== 1 || narrow.rows !== 22 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  if (narrow.columns !== 1 || narrow.rows !== 23 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-close-btn').press('Enter');
   await help.waitFor({ state: 'detached' });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.keyboard.press('Escape');
   await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
-  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 22 shortcuts in responsive two/one-column help passed');
+  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 23 shortcuts in responsive two/one-column help passed');
 }
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {
