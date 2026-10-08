@@ -14,6 +14,33 @@ export function twitchIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('twitch');
 }
 
+/** Native VOD seeking updates Twitch's playback clock and replay together. */
+export function handleTwitchMediaSeek(detail: { time?: number }, video: Element | null): boolean {
+  if (!isTwitchHost() || !/^\/videos\/\d+(?:\/|$)/.test(window.location.pathname)
+    || !(video instanceof HTMLVideoElement) || typeof detail.time !== 'number' || !Number.isFinite(detail.time)
+    || !Number.isFinite(video.duration) || video.duration <= 0) return false;
+  const player = video.closest('.video-player');
+  const seekbar = player?.querySelector<HTMLElement>('[data-a-target="player-seekbar"]');
+  if (!seekbar) return false;
+  const bounds = seekbar.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return false;
+  const ratio = Math.min(1, Math.max(0, detail.time / video.duration));
+  const clientX = bounds.left + bounds.width * ratio;
+  const event = new MouseEvent('click', {
+    bubbles: true, cancelable: true,
+    clientX,
+    clientY: bounds.top + bounds.height / 2
+  });
+  // MouseEventInit rounds to integer pixels. Retain subpixel precision for
+  // short keyboard seeks on recordings lasting many hours.
+  Object.defineProperties(event, {
+    clientX: { value: clientX },
+    pageX: { value: clientX + window.scrollX }
+  });
+  seekbar.dispatchEvent(event);
+  return true;
+}
+
 type TwitchHarvest = {
   videoId?: string;
   title?: string;

@@ -33,6 +33,7 @@ import {
   harvestTwitchResponseJson,
   harvestTwitchResponseText,
   harvestTwitchXhr,
+  handleTwitchMediaSeek,
   installTwitchMain,
   isAllowedTwitchStoryboardUrl,
   readTwitchSnapshot,
@@ -586,6 +587,7 @@ export function installMainWorldRuntime(): void {
     if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;
     if (handleYoutubeMediaSeek(detail, video)) return;
+    if (handleTwitchMediaSeek(detail, video)) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {
       video.currentTime = detail.time;
     }
