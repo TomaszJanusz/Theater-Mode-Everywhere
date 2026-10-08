@@ -1,0 +1,511 @@
+{
+  "name": "tokenBridge",
+  "available": {
+    "base": "#fff",
+    "text": "#0f0f0f",
+    "mix": true
+  },
+  "cssBytes": 3057,
+  "mappingPairs": 38,
+  "dark": {
+    "theme": "dark",
+    "mismatches": [],
+    "nodes": {
+      "yt-live-chat-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-header-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#label-text": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-message-renderer": {
+        "background": "rgb(15, 15, 15)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "button-view-model button": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "color(srgb 1 1 1 / 0.2)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #message": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #author-name": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgba(255, 255, 255, 0.7)",
+        "border": "rgba(255, 255, 255, 0.7)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer yt-icon": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(241, 241, 241)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu": {
+        "background": "rgb(40, 40, 40)",
+        "color": "rgb(241, 241, 241)",
+        "border": "rgb(241, 241, 241)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu #label": null,
+      "yt-live-chat-menu-popup-renderer": null,
+      "yt-live-chat-menu-popup-renderer #label": null,
+      "yt-live-chat-viewer-engagement-message-renderer": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(255, 255, 255)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#input": null
+    }
+  },
+  "light": {
+    "theme": "light",
+    "mismatches": [],
+    "nodes": {
+      "yt-live-chat-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-header-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#label-text": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-message-renderer": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "button-view-model button": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "color(srgb 0 0 0 / 0.2)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #message": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer #author-name": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgba(17, 17, 17, 0.6)",
+        "border": "rgba(17, 17, 17, 0.6)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "yt-live-chat-text-message-renderer yt-icon": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(15, 15, 15)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu": {
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "tp-yt-paper-listbox#menu #label": null,
+      "yt-live-chat-menu-popup-renderer": null,
+      "yt-live-chat-menu-popup-renderer #label": null,
+      "yt-live-chat-viewer-engagement-message-renderer": {
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(15, 15, 15)",
+        "border": "rgb(15, 15, 15)",
+        "fill": "rgb(0, 0, 0)",
+        "stroke": "none"
+      },
+      "#input": null
+    }
+  },
+  "identity": {
+    "sameFrame": true,
+    "sameDocument": true,
+    "loads": 0,
+    "mainDark": false
+  },
+  "setterUntouched": true,
+  "restoreAliasesMatch": true,
+  "nodeDifferences": {
+    "dark": [
+      "button-view-model button"
+    ],
+    "light": [
+      "button-view-model button"
+    ]
+  },
+  "date": "2026-10-08",
+  "account": "signed out",
+  "runtimeOppositeStylesheetFetch": false,
+  "runtimeNativePreferenceChange": false,
+  "directMappings": 34,
+  "specialBindings": 4,
+  "ambiguousColorPairs": 13,
+  "mappingCandidates": [
+    {
+      "alias": "--tf3fc855af2285f5f",
+      "light": "rgba(0,0,0,0.2)",
+      "dark": "rgba(255,255,255,0.2)",
+      "candidates": []
+    },
+    {
+      "alias": "--t0f59291ce5504543",
+      "light": "#0f0f0f",
+      "dark": "#030303",
+      "candidates": []
+    },
+    {
+      "alias": "--t6216186c28b3834b",
+      "light": "#f1f1f1",
+      "dark": "#0f0f0f",
+      "candidates": []
+    },
+    {
+      "alias": "--t4726c68ef6d7b08f",
+      "light": "#deffde",
+      "dark": "rgba(0,63,13,0.6)",
+      "candidates": [
+        "--yt-sys-color-baseline--background-complete"
+      ]
+    },
+    {
+      "alias": "--tb8b31ac562fbe9b5",
+      "light": "rgba(170,9,170,0.2)",
+      "dark": "rgba(170,9,170,0.3)",
+      "candidates": [
+        "--yt-sys-color-baseline--genai-3-additive"
+      ]
+    },
+    {
+      "alias": "--tef70ca245445b52b",
+      "light": "rgba(255,78,69,0.2)",
+      "dark": "rgba(255,78,69,0.3)",
+      "candidates": [
+        "--yt-sys-color-baseline--genai-4-additive"
+      ]
+    },
+    {
+      "alias": "--t4d7776c28db21122",
+      "light": "#005917",
+      "dark": "#a4ffa4",
+      "candidates": [
+        "--yt-sys-color-baseline--text-complete"
+      ]
+    },
+    {
+      "alias": "--t5208fd177a788cfa",
+      "light": "#990412",
+      "dark": "#ffbfbd",
+      "candidates": [
+        "--yt-sys-color-baseline--text-error"
+      ]
+    },
+    {
+      "alias": "--t3f3bdb4140d3ead7",
+      "light": "#7c2900",
+      "dark": "#ffcd97",
+      "candidates": [
+        "--yt-sys-color-baseline--text-warning"
+      ]
+    },
+    {
+      "alias": "--t7f4f2c6d54836ce0",
+      "light": "rgba(0,0,0,0.05)",
+      "dark": "rgba(255,255,255,0.1)",
+      "candidates": [
+        "--yt-sys-color-baseline--additive-background",
+        "--yt-sys-color-baseline--tonal-rim"
+      ]
+    },
+    {
+      "alias": "--t3e41d7b17b187f69",
+      "light": "#fff",
+      "dark": "#0f0f0f",
+      "candidates": [
+        "--yt-sys-color-baseline--base-background",
+        "--yt-sys-color-baseline--text-primary-inverse"
+      ]
+    },
+    {
+      "alias": "--t854c79338d8ca8a7",
+      "light": "#c30027",
+      "dark": "#f57",
+      "candidates": [
+        "--yt-sys-color-baseline--error-indicator",
+        "--yt-sys-color-baseline--brand-red-contrast",
+        "--yt-sys-color-baseline--add-on-red-primary"
+      ]
+    },
+    {
+      "alias": "--t20480717de80f555",
+      "light": "rgba(0,0,0,0.1)",
+      "dark": "rgba(255,255,255,0.2)",
+      "candidates": [
+        "--yt-sys-color-baseline--outline",
+        "--yt-sys-color-baseline--mono-tonal-hover",
+        "--yt-sys-color-baseline--button-chip-background-hover"
+      ]
+    },
+    {
+      "alias": "--t2d807bb79e75606d",
+      "light": "#065fd4",
+      "dark": "#3ea6ff",
+      "candidates": [
+        "--yt-sys-color-baseline--call-to-action"
+      ]
+    },
+    {
+      "alias": "--t617db776af0de196",
+      "light": "#0556bf",
+      "dark": "#65b8ff",
+      "candidates": [
+        "--yt-sys-color-baseline--call-to-action-hover"
+      ]
+    },
+    {
+      "alias": "--tb628117fc164ad87",
+      "light": "#3ea6ff",
+      "dark": "#065fd4",
+      "candidates": [
+        "--yt-sys-color-baseline--call-to-action-inverse"
+      ]
+    },
+    {
+      "alias": "--td545df04e2c659d7",
+      "light": "#c30027",
+      "dark": "#f57",
+      "candidates": [
+        "--yt-sys-color-baseline--error-indicator",
+        "--yt-sys-color-baseline--brand-red-contrast",
+        "--yt-sys-color-baseline--add-on-red-primary"
+      ]
+    },
+    {
+      "alias": "--t1405e70a39276293",
+      "light": "#0f0f0f",
+      "dark": "#f1f1f1",
+      "candidates": [
+        "--yt-sys-color-baseline--inverted-background",
+        "--yt-sys-color-baseline--text-primary"
+      ]
+    },
+    {
+      "alias": "--t08a7c6c176cbc5c2",
+      "light": "#fff",
+      "dark": "#282828",
+      "candidates": [
+        "--yt-sys-color-baseline--menu-background"
+      ]
+    },
+    {
+      "alias": "--t8cdc9846a76caf1f",
+      "light": "#272727",
+      "dark": "#d9d9d9",
+      "candidates": [
+        "--yt-sys-color-baseline--mono-filled-hover"
+      ]
+    },
+    {
+      "alias": "--t416e5931fc464589",
+      "light": "rgba(0,0,0,0.1)",
+      "dark": "rgba(255,255,255,0.2)",
+      "candidates": [
+        "--yt-sys-color-baseline--outline",
+        "--yt-sys-color-baseline--mono-tonal-hover",
+        "--yt-sys-color-baseline--button-chip-background-hover"
+      ]
+    },
+    {
+      "alias": "--t0a1249f7c9e82b5e",
+      "light": "rgba(255,255,255,0.2)",
+      "dark": "rgba(0,0,0,0.2)",
+      "candidates": []
+    },
+    {
+      "alias": "--t518e925f61bdcb91",
+      "light": "#fff",
+      "dark": "#212121",
+      "candidates": [
+        "--yt-sys-color-baseline--raised-background"
+      ]
+    },
+    {
+      "alias": "--ta057e2d872f2a0d4",
+      "light": "rgba(255,255,255,0.05)",
+      "dark": "rgba(0,0,0,0.05)",
+      "candidates": [
+        "--yt-sys-color-baseline--state-mono-filled-hovered"
+      ]
+    },
+    {
+      "alias": "--t2c3e55cb638348df",
+      "light": "rgba(255,255,255,0.1)",
+      "dark": "rgba(0,0,0,0.1)",
+      "candidates": [
+        "--yt-sys-color-baseline--tonal-background-inverse",
+        "--yt-sys-color-baseline--state-mono-filled-pressed"
+      ]
+    },
+    {
+      "alias": "--t1aab759cd9ddbe39",
+      "light": "rgba(0,0,0,0.05)",
+      "dark": "rgba(255,255,255,0.05)",
+      "candidates": [
+        "--yt-sys-color-baseline--state-mono-standard-hovered"
+      ]
+    },
+    {
+      "alias": "--tf5f050c65aebead5",
+      "light": "rgba(0,0,0,0.1)",
+      "dark": "rgba(255,255,255,0.1)",
+      "candidates": [
+        "--yt-sys-color-baseline--tonal-background",
+        "--yt-sys-color-baseline--state-mono-standard-pressed"
+      ]
+    },
+    {
+      "alias": "--tfa3475c508f5dfef",
+      "light": "#def1ff",
+      "dark": "#263850",
+      "candidates": [
+        "--yt-sys-color-baseline--suggested-action"
+      ]
+    },
+    {
+      "alias": "--t7e34d5baa4ea6277",
+      "light": "#909090",
+      "dark": "#717171",
+      "candidates": [
+        "--yt-sys-color-baseline--text-disabled"
+      ]
+    },
+    {
+      "alias": "--tffc2fd3a644f6275",
+      "light": "#0f0f0f",
+      "dark": "#f1f1f1",
+      "candidates": [
+        "--yt-sys-color-baseline--inverted-background",
+        "--yt-sys-color-baseline--text-primary"
+      ]
+    },
+    {
+      "alias": "--t4a6da19e16bf221a",
+      "light": "#606060",
+      "dark": "#aaa",
+      "candidates": [
+        "--yt-sys-color-baseline--text-secondary"
+      ]
+    },
+    {
+      "alias": "--t904a88c623ca27ab",
+      "light": "#107516",
+      "dark": "#2ba640",
+      "candidates": [
+        "--yt-sys-color-baseline--themed-green"
+      ]
+    },
+    {
+      "alias": "--t2c3bbff6c15a3eb2",
+      "light": "#2ba640",
+      "dark": "#107516",
+      "candidates": [
+        "--yt-sys-color-baseline--themed-green-inverse"
+      ]
+    },
+    {
+      "alias": "--t0ccd1ace000d5e93",
+      "light": "rgba(255,255,255,0.7)",
+      "dark": "rgba(0,0,0,0.8)",
+      "candidates": [
+        "--yt-sys-color-baseline--themed-overlay-background"
+      ]
+    },
+    {
+      "alias": "--tc87f6a7f05e65fc4",
+      "light": "rgba(0,0,0,0.1)",
+      "dark": "rgba(255,255,255,0.1)",
+      "candidates": [
+        "--yt-sys-color-baseline--tonal-background",
+        "--yt-sys-color-baseline--state-mono-standard-pressed"
+      ]
+    },
+    {
+      "alias": "--t4fb0f67b251e1a42",
+      "light": "#000",
+      "dark": "#fff",
+      "candidates": [
+        "--yt-sys-color-baseline--touch-response",
+        "--yt-sys-color-baseline--wordmark-text",
+        "--yt-sys-color-baseline--system-bar"
+      ]
+    },
+    {
+      "alias": "--ta08e036410c14538",
+      "light": "#fff",
+      "dark": "#000",
+      "candidates": [
+        "--yt-sys-color-baseline--touch-response-inverse"
+      ]
+    },
+    {
+      "alias": "--t7f9b7e1603e20b94",
+      "light": "#000",
+      "dark": "#fff",
+      "candidates": [
+        "--yt-sys-color-baseline--touch-response",
+        "--yt-sys-color-baseline--wordmark-text",
+        "--yt-sys-color-baseline--system-bar"
+      ]
+    }
+  ],
+  "note": "Raw node comparison differs only in border serialization: color(srgb ... / 0.2) versus rgba(..., 0.2); all 38 aliases match after RGBA sampling. This is a measured build mapping, not a stable semantic contract. Runtime uses native token values; mapping was prepared from prior native light/dark captures. Composer, account dialogs, replay and Firefox unqualified."
+}

@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "컨트롤 자동 숨김"
   },
+  "showNativeChat": {
+    "message": "채팅 표시"
+  },
+  "toggleNativeChat": {
+    "message": "채팅 전환"
+  },
+  "hideNativeChat": {
+    "message": "채팅 숨기기"
+  },
+  "settingsSectionChat": {
+    "message": "채팅"
+  },
+  "settingsSectionPlayer": {
+    "message": "플레이어"
+  },
+  "nativeChatWidth": {
+    "message": "너비"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "채팅은 서비스의 화면 설정을 사용합니다. 이 페이지에서는 선택한 테마를 사용할 수 없습니다."
+  },
+  "nativeChatTheme": {
+    "message": "테마"
+  },
+  "nativeChatThemeLight": {
+    "message": "밝게"
+  },
+  "nativeChatThemeNative": {
+    "message": "서비스 설정"
+  },
+  "nativeChatThemeDark": {
+    "message": "어둡게"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "채팅이 포함된 전체 화면을 사용할 수 없습니다. 극장 모드는 계속 활성화됩니다."
+  },
   "playerSettingsLabel": {
     "message": "플레이어 설정"
   },

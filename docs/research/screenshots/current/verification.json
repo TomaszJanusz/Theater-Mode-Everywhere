@@ -1,0 +1,382 @@
+{
+  "date": "2026-10-08",
+  "browser": "Chromium 153 (headed, Playwright/Xvfb)",
+  "extension": "installed dist/chrome-unpacked",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "account": "logged out; no messages sent, purchases or moderation performed",
+  "youtube": {
+    "url": "https://www.youtube.com/watch?v=eao0EdKtvZg",
+    "checks": [
+      {
+        "theme": "dark",
+        "dark": true,
+        "bridge": true,
+        "mismatches": [],
+        "messages": 31,
+        "composer": false,
+        "colors": {
+          "panel": "rgb(15, 15, 15)",
+          "label": "rgb(241, 241, 241)"
+        }
+      },
+      {
+        "screenshot": "youtube-options-dark",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46810.972743
+        }
+      },
+      {
+        "screenshot": "youtube-dark",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46811.388274
+        }
+      },
+      {
+        "menu": "Top chat",
+        "theme": "dark",
+        "hits": [
+          {
+            "x": 34,
+            "y": 23,
+            "inside": true
+          },
+          {
+            "x": 191,
+            "y": 93,
+            "inside": true
+          },
+          {
+            "x": 348,
+            "y": 163,
+            "inside": true
+          }
+        ],
+        "parentHit": true
+      },
+      {
+        "screenshot": "youtube-top-chat-dark",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46812.560684
+        }
+      },
+      {
+        "theme": "light",
+        "dark": false,
+        "bridge": true,
+        "mismatches": [],
+        "messages": 31,
+        "composer": false,
+        "colors": {
+          "panel": "rgb(255, 255, 255)",
+          "label": "rgb(15, 15, 15)"
+        }
+      },
+      {
+        "screenshot": "youtube-options-light",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46814.189855
+        }
+      },
+      {
+        "screenshot": "youtube-light",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46814.622719
+        }
+      },
+      {
+        "menu": "Top chat",
+        "theme": "light",
+        "hits": [
+          {
+            "x": 34,
+            "y": 23,
+            "inside": true
+          },
+          {
+            "x": 191,
+            "y": 93,
+            "inside": true
+          },
+          {
+            "x": 348,
+            "y": 163,
+            "inside": true
+          }
+        ],
+        "parentHit": true
+      },
+      {
+        "screenshot": "youtube-top-chat-light",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46815.871936
+        }
+      },
+      {
+        "menu": "More options",
+        "theme": "dark",
+        "rect": {
+          "x": 110.078125,
+          "y": 52,
+          "width": 199.921875,
+          "height": 160,
+          "top": 52,
+          "right": 310,
+          "bottom": 212,
+          "left": 110.078125
+        },
+        "text": "Participants\n    \n  \n  \n\n\n\n   \n  Reactions\n  \n  \n  \n\n\n\n  \n\n\n\n\n  \n  \n    Popout chat\n    \n  \n  \n\n\n\n  \n    \n      \n      Send feedback",
+        "hit": true
+      },
+      {
+        "screenshot": "youtube-more-options-dark",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46818.313981
+        }
+      },
+      {
+        "screenshot": "youtube-hidden",
+        "video": {
+          "ready": 4,
+          "paused": false,
+          "time": 46819.563082
+        }
+      },
+      {
+        "identity": {
+          "sameFrame": true,
+          "sameDocument": true,
+          "loads": 0
+        },
+        "mainDark": false,
+        "video": {
+          "paused": false,
+          "readyState": 4
+        }
+      },
+      {
+        "restored": {
+          "dark": false,
+          "bridge": false
+        }
+      }
+    ]
+  },
+  "twitch": {
+    "url": "https://www.twitch.tv/youngmulti",
+    "checks": [
+      {
+        "theme": "dark",
+        "panel": "rgb(24, 24, 27)",
+        "text": "rgb(14, 14, 16)",
+        "input": "rgba(0, 0, 0, 0)",
+        "inputText": "rgb(239, 239, 241)",
+        "draft": "TME — niewysłany test kontrastu",
+        "video": {
+          "paused": false,
+          "ready": 4
+        }
+      },
+      {
+        "theme": "dark",
+        "menu": "Chat Settings",
+        "rect": {
+          "x": 1048,
+          "y": 517.21875,
+          "width": 320,
+          "height": 342.78125,
+          "top": 517.21875,
+          "right": 1368,
+          "bottom": 860,
+          "left": 1048
+        },
+        "colors": {
+          "bg": "rgba(0, 0, 0, 0)",
+          "text": "rgb(239, 239, 241)"
+        },
+        "hits": [
+          {
+            "x": 1060,
+            "y": 537.21875,
+            "inside": true
+          },
+          {
+            "x": 1208,
+            "y": 688.609375,
+            "inside": true
+          },
+          {
+            "x": 1356,
+            "y": 848,
+            "inside": true
+          }
+        ],
+        "extendsOverVideo": true
+      },
+      {
+        "theme": "light",
+        "panel": "rgb(255, 255, 255)",
+        "text": "rgb(14, 14, 16)",
+        "input": "rgba(0, 0, 0, 0)",
+        "inputText": "rgb(14, 14, 16)",
+        "draft": "TME — niewysłany test kontrastu",
+        "video": {
+          "paused": false,
+          "ready": 4
+        }
+      },
+      {
+        "theme": "light",
+        "menu": "Chat Settings",
+        "rect": {
+          "x": 1048,
+          "y": 517.21875,
+          "width": 320,
+          "height": 342.78125,
+          "top": 517.21875,
+          "right": 1368,
+          "bottom": 860,
+          "left": 1048
+        },
+        "colors": {
+          "bg": "rgba(0, 0, 0, 0)",
+          "text": "rgb(14, 14, 16)"
+        },
+        "hits": [
+          {
+            "x": 1060,
+            "y": 537.21875,
+            "inside": true
+          },
+          {
+            "x": 1208,
+            "y": 688.609375,
+            "inside": true
+          },
+          {
+            "x": 1356,
+            "y": 848,
+            "inside": true
+          }
+        ],
+        "extendsOverVideo": true
+      },
+      {
+        "emotes": 4,
+        "rects": [
+          {
+            "label": "Close emote picker",
+            "rect": {
+              "x": 1388.5,
+              "y": 466,
+              "width": 32,
+              "height": 32,
+              "top": 466,
+              "right": 1420.5,
+              "bottom": 498,
+              "left": 1388.5
+            }
+          },
+          {
+            "label": "Frequently Used Emotes",
+            "rect": {
+              "x": 1385,
+              "y": 514,
+              "width": 47,
+              "height": 28,
+              "top": 514,
+              "right": 1432,
+              "bottom": 542,
+              "left": 1385
+            }
+          },
+          {
+            "label": "YoungMulti's Emotes",
+            "rect": {
+              "x": 1382,
+              "y": 550,
+              "width": 50,
+              "height": 28,
+              "top": 550,
+              "right": 1432,
+              "bottom": 578,
+              "left": 1382
+            }
+          },
+          {
+            "label": "Emote picker",
+            "rect": {
+              "x": 1396,
+              "y": 816,
+              "width": 32,
+              "height": 32,
+              "top": 816,
+              "right": 1428,
+              "bottom": 848,
+              "left": 1396
+            }
+          }
+        ]
+      },
+      {
+        "identity": {
+          "sameChat": true,
+          "sameParent": true,
+          "sameInput": true
+        },
+        "draft": "TME — niewysłany test kontrastu"
+      },
+      {
+        "baseline": {
+          "panel": "rgb(255, 255, 255)",
+          "text": "rgb(14, 14, 16)",
+          "input": "rgba(0, 0, 0, 0)",
+          "inputText": "rgb(14, 14, 16)",
+          "draft": "TME — niewysłany test kontrastu",
+          "video": {
+            "paused": false,
+            "ready": 4
+          }
+        },
+        "restored": {
+          "panel": "rgb(255, 255, 255)",
+          "text": "rgb(14, 14, 16)",
+          "input": "rgba(0, 0, 0, 0)",
+          "inputText": "rgb(14, 14, 16)",
+          "draft": "TME — niewysłany test kontrastu",
+          "video": {
+            "paused": false,
+            "ready": 4
+          }
+        }
+      }
+    ],
+    "rulesDark": {
+      "buttonHit": true,
+      "nativePortal": true,
+      "video": {
+        "ready": 4,
+        "paused": false
+      },
+      "screenshot": "twitch-rules-dark.png"
+    }
+  },
+  "sourceCommit": "91a4603cf4e7c26242292f3313ab6854715f5291",
+  "optionsScreenshotsSupersededBy": "options-refresh-verification.json"
+}

@@ -4,12 +4,12 @@ html.theater-everywhere-html-active #masthead-container,
 html.theater-everywhere-html-active ytd-masthead,
 html.theater-everywhere-html-active #guide,
 html.theater-everywhere-html-active ytd-mini-guide-renderer,
-html.theater-everywhere-html-active #secondary,
-html.theater-everywhere-html-active #below,
+html.theater-everywhere-html-active #secondary:not([data-theater-chat-ancestor]),
+html.theater-everywhere-html-active #below:not([data-theater-chat-ancestor]),
 html.theater-everywhere-html-active ytd-watch-metadata,
 html.theater-everywhere-html-active ytd-comments,
 html.theater-everywhere-html-active ytd-playlist-panel-renderer,
-html.theater-everywhere-html-active #chat,
+html.theater-everywhere-html-active #chat:not([data-theater-chat]),
 html.theater-everywhere-html-active .ytp-chrome-top,
 html.theater-everywhere-html-active .ytp-chrome-bottom,
 html.theater-everywhere-html-active .ytp-gradient-top,
@@ -26,8 +26,8 @@ html.theater-everywhere-html-active .ytp-player-content {
 
 html.theater-everywhere-html-active .ytp-caption-window-container {
   position: fixed !important;
-  inset: auto 0 var(--theater-caption-bottom, 48px) 0 !important;
-  width: 100% !important;
+  inset: auto auto calc(100vh - var(--theater-video-height, 100vh) + var(--theater-caption-bottom, 48px)) 0 !important;
+  width: var(--theater-video-width, 100%) !important;
   height: auto !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;

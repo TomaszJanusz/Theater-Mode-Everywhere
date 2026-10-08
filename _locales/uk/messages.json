@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "Елементи керування ховаються автоматично"
   },
+  "showNativeChat": {
+    "message": "Показати чат"
+  },
+  "toggleNativeChat": {
+    "message": "Перемкнути чат"
+  },
+  "hideNativeChat": {
+    "message": "Приховати чат"
+  },
+  "settingsSectionChat": {
+    "message": "Чат"
+  },
+  "settingsSectionPlayer": {
+    "message": "Програвач"
+  },
+  "nativeChatWidth": {
+    "message": "Ширина"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Чат використовує оформлення сервісу. Вибрана тема недоступна на цій сторінці."
+  },
+  "nativeChatTheme": {
+    "message": "Тема"
+  },
+  "nativeChatThemeLight": {
+    "message": "Світла"
+  },
+  "nativeChatThemeNative": {
+    "message": "Налаштування сервісу"
+  },
+  "nativeChatThemeDark": {
+    "message": "Темна"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Повноекранний режим із чатом недоступний. Режим кіно залишається активним."
+  },
   "playerSettingsLabel": {
     "message": "Налаштування програвача"
   },

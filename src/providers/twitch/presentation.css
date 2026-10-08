@@ -4,8 +4,8 @@
 html.theater-everywhere-twitch-stage .persistent-player {
   position: fixed !important;
   inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  width: var(--theater-video-width, 100vw) !important;
+  height: var(--theater-video-height, 100vh) !important;
   max-width: none !important;
   max-height: none !important;
   transform: none !important;
@@ -28,8 +28,8 @@ html.theater-everywhere-twitch-stage .tw-aspect {
 
 html.theater-everywhere-twitch-stage .side-nav,
 html.theater-everywhere-twitch-stage .top-nav,
-html.theater-everywhere-twitch-stage .right-column,
-html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"] {
+html.theater-everywhere-twitch-stage .right-column:not([data-theater-chat], [data-theater-chat-ancestor], [data-theater-chat] *),
+html.theater-everywhere-twitch-stage [data-a-target="right-column-chat-bar"]:not([data-theater-chat], [data-theater-chat-ancestor], [data-theater-chat] *) {
   visibility: hidden !important;
   pointer-events: none !important;
 }

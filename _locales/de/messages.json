@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "Steuerelemente werden automatisch ausgeblendet"
   },
+  "showNativeChat": {
+    "message": "Chat anzeigen"
+  },
+  "toggleNativeChat": {
+    "message": "Chat umschalten"
+  },
+  "hideNativeChat": {
+    "message": "Chat ausblenden"
+  },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Player"
+  },
+  "nativeChatWidth": {
+    "message": "Breite"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Der Chat verwendet das Erscheinungsbild des Dienstes. Das gewählte Design ist auf dieser Seite nicht verfügbar."
+  },
+  "nativeChatTheme": {
+    "message": "Design"
+  },
+  "nativeChatThemeLight": {
+    "message": "Hell"
+  },
+  "nativeChatThemeNative": {
+    "message": "Diensteinstellungen"
+  },
+  "nativeChatThemeDark": {
+    "message": "Dunkel"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Vollbild mit Chat ist nicht verfügbar. Der Kinomodus bleibt aktiv."
+  },
   "playerSettingsLabel": {
     "message": "Player-Einstellungen"
   },

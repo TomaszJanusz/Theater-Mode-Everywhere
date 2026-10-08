@@ -24,6 +24,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
+import { mountNativeChatControls, nativeChatState } from './chat';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 
@@ -737,6 +738,10 @@ export function createControls(ctx: PlayerChromeContext) {
             setTimeout(resumeIfPaused, 150);
           })
           .catch(() => {
+            if (nativeChatState()?.visible) {
+              ctx.actions.triggerStatusIndicator(t('nativeChatFullscreenUnavailable'), '');
+              return;
+            }
             if (!native || typeof native.requestFullscreen !== 'function') return;
             native.requestFullscreen()
               .then(() => {
@@ -959,6 +964,8 @@ export function createControls(ctx: PlayerChromeContext) {
 
     rightSec.appendChild(pipBtn);
     rightSec.appendChild(fullscreenBtn);
+
+    mountNativeChatControls(ctx, controlsScope, rightSec, settings.panel, bindCustomTooltip);
 
     rightSec.append(settings.container);
 

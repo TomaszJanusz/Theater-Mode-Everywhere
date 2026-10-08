@@ -414,12 +414,15 @@ describe('netflix runtime browser regressions', () => {
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage();
+      const pageErrors: string[] = [];
+      page.on('pageerror', error => pageErrors.push(error.message));
       const bundle = esbuildBundle();
       // An extension MAIN script really runs before <html> exists.
       await page.addInitScript('window.__name = (target) => target;');
       await page.addInitScript(bundle);
       await page.route('https://www.netflix.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>Netflix</title><body><div class="watch-video"><div data-uia="player" data-videoid="70248290"><div id="session-element"><video></video><div class="player-timedtext"></div></div></div></div></body>` }));
       await page.goto('https://www.netflix.com/watch/70248290');
+      assert.deepEqual(pageErrors, [], 'document_start must not abort before installing the Netflix bridge');
       await page.addStyleTag({ content: readStylesheet(new URL('../content.css', import.meta.url)) });
       const canvas = await page.evaluate(() => {
         document.documentElement.classList.add('theater-everywhere-netflix-stage');

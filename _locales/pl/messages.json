@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "Kontrolki chowają się automatycznie"
   },
+  "showNativeChat": {
+    "message": "Pokaż czat"
+  },
+  "toggleNativeChat": {
+    "message": "Przełącz czat"
+  },
+  "hideNativeChat": {
+    "message": "Schowaj czat"
+  },
+  "settingsSectionChat": {
+    "message": "Czat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Odtwarzacz"
+  },
+  "nativeChatWidth": {
+    "message": "Szerokość"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Czat używa wyglądu serwisu. Wybrany motyw jest niedostępny na tej stronie."
+  },
+  "nativeChatTheme": {
+    "message": "Motyw"
+  },
+  "nativeChatThemeLight": {
+    "message": "Jasny"
+  },
+  "nativeChatThemeNative": {
+    "message": "Ustawienia serwisu"
+  },
+  "nativeChatThemeDark": {
+    "message": "Ciemny"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Pełny ekran z czatem jest niedostępny. Tryb kinowy pozostaje aktywny."
+  },
   "playerSettingsLabel": {
     "message": "Ustawienia odtwarzacza"
   },

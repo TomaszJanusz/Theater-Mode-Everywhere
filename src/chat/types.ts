@@ -1,0 +1,55 @@
+export type ChatProvider = 'twitch' | 'youtube';
+
+export type ChatKind = 'live' | 'replay';
+
+export type ChatDock = 'right' | 'bottom';
+
+export type ChatTheme = 'light' | 'native' | 'dark';
+
+export type ChatThemeStatus = 'native' | 'applied' | 'unavailable';
+
+/** Per-provider choice. Messages and account data are never stored. */
+export interface ChatPreference {
+  visible: boolean;
+  width: number;
+  /** Missing in older preferences; defaults to the service's own appearance. */
+  theme?: ChatTheme;
+}
+
+/**
+ * A native chat that already belongs to the page.
+ * `root` stays in the service's light-DOM tree; TME never reparents it.
+ */
+export interface ChatSurface {
+  provider: ChatProvider;
+  contentKey: string;
+  kind: ChatKind;
+  root: HTMLElement;
+  /** Native component inside a persistent outer column, used to detect replacement. */
+  contentRoot?: HTMLElement;
+  iframe?: HTMLIFrameElement;
+  /** Ancestors whose own visibility or opacity would otherwise keep the chat hidden. */
+  revealAncestors: HTMLElement[];
+  /** Visibility observed at detection, before a stored or in-session choice is applied. */
+  initiallyVisible: boolean;
+}
+
+/** Service-owned control that opens a chat, including one not mounted yet. */
+export interface ChatActivation {
+  provider: ChatProvider;
+  contentKey: string;
+  control: HTMLElement;
+}
+
+export interface ChatState {
+  surface: ChatSurface | null;
+  /** A mounted native chat or an enabled native control that can open one. */
+  available: boolean;
+  visible: boolean;
+  /** Preferred right-dock width in pixels, clamped to the shared slider range. */
+  width: number;
+  dock: ChatDock;
+  theme: ChatTheme;
+  /** Requested choice is retained even if the service palette is unavailable. */
+  themeStatus: ChatThemeStatus;
+}

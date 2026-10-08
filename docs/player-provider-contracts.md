@@ -26,6 +26,12 @@ Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, an
 
 Provider presentation code owns host containers, discovery preferences, native renderer styling, and stage policies. Shared UI owns viewport geometry, chrome, input, and teardown. Factories under `providers/` compose host implementations; their explicit provider selection is intentional. Cross-world and iframe protocols remain platform responsibilities and must retain their provenance checks.
 
+## Native chat
+
+`chat/types.ts` defines `ChatSurface`, a description of the page's existing chat container, identity, live/replay kind, optional iframe and ancestors needed for presentation. It does not render messages or expose account actions. `chat/detect.ts` owns service detection and identity checks; `ChatController` owns visibility, width, geometry, observation and cleanup. The player runtime starts and stops the chat session on theater entry and exit. `ui/chat.ts` renders one shared toggle, width slider and theme select, and persists visibility, width and theme per service; pending writes flush on session stop and `pagehide`.
+
+`ChatThemeSession` owns palette readiness, document identity and restoration. `ChatThemeAdapter` supplies `apply` and `restore`; Twitch discovers the complete native palette class, while YouTube maps known compiled aliases to existing native palette tokens in the original chat document. An unavailable palette restores service appearance and keeps the requested preference. Chat layout and theme changes preserve the native container and iframe. Native menus, portals, keyboard events and chat-only documents retain service ownership. [Usage and qualification](research/native-chat-validation.md) distinguish the implemented behavior from replay/account/browser coverage still needed before release.
+
 ## Adding a feature or provider
 
 1. Define a small shared contract for the feature, including availability and cleanup where needed.

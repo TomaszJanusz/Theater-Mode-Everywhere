@@ -1,0 +1,164 @@
+{
+  "at": "2026-10-08T23:23:38.021Z",
+  "sourceCommit": "fcc8f2a917b19abf1d5b85fcdd2bed46d73b5e3c",
+  "browser": "chromium",
+  "installation": "installed unpacked extension",
+  "shortcut": "Alt+R",
+  "firefoxAutoplayAllowed": false,
+  "bundles": {
+    "content.js": "ed4cffda05761b857160a8859ab6df2e55dbee59fb727e2371729946be6cbafc",
+    "content.css": "29c3953450228ca7622ff59e89a709e7ff2429dd823c06a08f966ae78321f75b",
+    "mainWorld.js": "c67f1db0f573255e2155295ea8199e358441e02fd5ef2be2c5c2f2e7a4e32e76"
+  },
+  "providers": {
+    "youtube": {
+      "status": "service-disabled replay",
+      "url": "https://www.youtube.com/watch?v=wYSncx9zLIU",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "visibilityState": "visible",
+      "theater": true,
+      "visible": false,
+      "active": false,
+      "nativeCollapsed": true,
+      "twitchToggle": null,
+      "sameComponent": false,
+      "videoWidth": "1440px",
+      "videoHeight": "900px",
+      "video": {
+        "readyState": 4,
+        "paused": false,
+        "time": 7.947752,
+        "error": null
+      },
+      "fullscreen": null,
+      "shortcut": "Alt+R",
+      "headings": [
+        {
+          "text": "Chat",
+          "transform": "uppercase"
+        },
+        {
+          "text": "Player",
+          "transform": "uppercase"
+        }
+      ],
+      "icons": 2,
+      "theme": "native",
+      "fallback": false,
+      "restored": {
+        "url": "https://www.youtube.com/watch?v=wYSncx9zLIU",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "visibilityState": "visible",
+        "theater": false,
+        "visible": false,
+        "active": false,
+        "nativeCollapsed": true,
+        "twitchToggle": null,
+        "sameComponent": false,
+        "videoWidth": "",
+        "videoHeight": "",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 8.266061,
+          "error": null
+        },
+        "fullscreen": null,
+        "headings": [],
+        "fallback": false
+      }
+    },
+    "twitch": {
+      "metadata": {
+        "title": "[EN/ES CC]🔥NOPIXEL 5.0 ERWIN KNUCKLES DZIEN 15🔥!G4 !holy !flashskins VODY na !yt - Twitch"
+      },
+      "firstSeek": 300,
+      "secondSeek": 900,
+      "before": {
+        "time": 284.923626,
+        "paused": false,
+        "messages": 46,
+        "fingerprint": 2160300937,
+        "header": "Chat on Videos",
+        "timestamps": [
+          "4:44",
+          "4:44",
+          "4:44"
+        ]
+      },
+      "after": {
+        "time": 867.316982,
+        "paused": true,
+        "messages": 51,
+        "fingerprint": 2355345621,
+        "header": "Chat on Videos",
+        "timestamps": [
+          "14:27",
+          "14:27",
+          "14:27"
+        ]
+      },
+      "status": "replay preserved through hide/show and toolbar seeking",
+      "url": "https://www.twitch.tv/videos/2885653163",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "visibilityState": "visible",
+      "theater": true,
+      "visible": true,
+      "active": true,
+      "nativeCollapsed": null,
+      "twitchToggle": "Collapse Chat",
+      "sameComponent": true,
+      "videoWidth": "1080px",
+      "videoHeight": "900px",
+      "video": {
+        "readyState": 4,
+        "paused": true,
+        "time": 867.316982,
+        "error": null
+      },
+      "chat": {
+        "x": 1080,
+        "y": 0,
+        "width": 360,
+        "height": 900
+      },
+      "fullscreen": null,
+      "shortcut": "Alt+R",
+      "headings": [
+        {
+          "text": "Chat",
+          "transform": "uppercase"
+        },
+        {
+          "text": "Player",
+          "transform": "uppercase"
+        }
+      ],
+      "icons": 2,
+      "theme": "native",
+      "fallback": false,
+      "restored": {
+        "url": "https://www.twitch.tv/videos/2885653163",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "visibilityState": "visible",
+        "theater": false,
+        "visible": false,
+        "active": false,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "sameComponent": true,
+        "videoWidth": "",
+        "videoHeight": "",
+        "video": {
+          "readyState": 4,
+          "paused": true,
+          "time": 867.316982,
+          "error": null
+        },
+        "fullscreen": null,
+        "headings": [],
+        "fallback": false
+      }
+    }
+  }
+}

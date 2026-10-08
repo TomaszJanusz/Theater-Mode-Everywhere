@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "Masquage automatique des commandes"
   },
+  "showNativeChat": {
+    "message": "Afficher le chat"
+  },
+  "toggleNativeChat": {
+    "message": "Afficher ou masquer le chat"
+  },
+  "hideNativeChat": {
+    "message": "Masquer le chat"
+  },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Lecteur"
+  },
+  "nativeChatWidth": {
+    "message": "Largeur"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Le chat utilise l’apparence du service. Le thème choisi n’est pas disponible sur cette page."
+  },
+  "nativeChatTheme": {
+    "message": "Thème"
+  },
+  "nativeChatThemeLight": {
+    "message": "Clair"
+  },
+  "nativeChatThemeNative": {
+    "message": "Paramètres du service"
+  },
+  "nativeChatThemeDark": {
+    "message": "Sombre"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Le plein écran avec le chat est indisponible. Le mode cinéma reste actif."
+  },
   "playerSettingsLabel": {
     "message": "Réglages du lecteur"
   },

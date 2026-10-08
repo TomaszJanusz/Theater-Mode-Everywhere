@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "Controls auto-hide"
   },
+  "showNativeChat": {
+    "message": "Show chat"
+  },
+  "toggleNativeChat": {
+    "message": "Toggle chat"
+  },
+  "hideNativeChat": {
+    "message": "Hide chat"
+  },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionPlayer": {
+    "message": "Player"
+  },
+  "nativeChatWidth": {
+    "message": "Width"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Chat is using the service appearance. The selected theme is unavailable on this page."
+  },
+  "nativeChatTheme": {
+    "message": "Theme"
+  },
+  "nativeChatThemeLight": {
+    "message": "Light"
+  },
+  "nativeChatThemeNative": {
+    "message": "Service settings"
+  },
+  "nativeChatThemeDark": {
+    "message": "Dark"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Fullscreen with chat is unavailable. Theater mode remains active."
+  },
   "playerSettingsLabel": {
     "message": "Player settings"
   },

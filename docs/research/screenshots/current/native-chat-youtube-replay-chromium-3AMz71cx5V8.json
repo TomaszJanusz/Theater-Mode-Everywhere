@@ -1,0 +1,93 @@
+{
+  "at": "2026-10-08T22:41:55.651Z",
+  "sourceCommit": "81af3cfe0685bd812131645b4393e809319a0d9d",
+  "browser": "chromium",
+  "installation": "installed unpacked extension",
+  "shortcut": "Alt+R",
+  "firefoxAutoplayAllowed": false,
+  "bundles": {
+    "content.js": "ed4cffda05761b857160a8859ab6df2e55dbee59fb727e2371729946be6cbafc",
+    "content.css": "29c3953450228ca7622ff59e89a709e7ff2429dd823c06a08f966ae78321f75b",
+    "mainWorld.js": "21e495e650b764ee8c8747f87a00a79301e85823f251e909918de65ee0133b1d"
+  },
+  "providers": {
+    "youtube": {
+      "filter": "Top chat replay → Live chat replay",
+      "status": "replay preserved through hide/show and seeking",
+      "before": {
+        "time": 303.565595,
+        "paused": false,
+        "messages": 42,
+        "fingerprint": 2324878132,
+        "frameUrl": "https://www.youtube.com/live_chat_replay?continuation=op2w0wRyGl5DaWtxSndvWVZVTTFhMU13YkRjMmEwTXdlRTk2VFZCMFQyMVRSa2QzRWdzelFVMTZOekZqZURWV09Cb1Q2cWpkdVFFTkNnc3pRVTE2TnpGamVEVldPQ0FCTUFBJTNEQAFyDAgEGAIgACgAMAA4AHgB",
+        "header": "Live chat replay\nTop fans"
+      },
+      "after": {
+        "time": 903.919744,
+        "paused": true,
+        "messages": 49,
+        "fingerprint": 1379168628,
+        "frameUrl": "https://www.youtube.com/live_chat_replay?continuation=op2w0wRyGl5DaWtxSndvWVZVTTFhMU13YkRjMmEwTXdlRTk2VFZCMFQyMVRSa2QzRWdzelFVMTZOekZqZURWV09Cb1Q2cWpkdVFFTkNnc3pRVTE2TnpGamVEVldPQ0FCTUFBJTNEQAFyDAgEGAIgACgAMAA4AHgB",
+        "header": "Live chat replay\nTop fans"
+      },
+      "url": "https://www.youtube.com/watch?v=3AMz71cx5V8",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+      "theater": true,
+      "visible": true,
+      "active": true,
+      "nativeCollapsed": false,
+      "twitchToggle": null,
+      "sameComponent": true,
+      "videoWidth": "1080px",
+      "videoHeight": "900px",
+      "video": {
+        "readyState": 4,
+        "paused": true,
+        "time": 903.919744,
+        "error": null
+      },
+      "chat": {
+        "x": 1080,
+        "y": 0,
+        "width": 360,
+        "height": 900
+      },
+      "fullscreen": null,
+      "shortcut": "Alt+R",
+      "headings": [
+        {
+          "text": "Chat",
+          "transform": "uppercase"
+        },
+        {
+          "text": "Player",
+          "transform": "uppercase"
+        }
+      ],
+      "icons": 2,
+      "theme": "native",
+      "fallback": false,
+      "restored": {
+        "url": "https://www.youtube.com/watch?v=3AMz71cx5V8",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
+        "theater": false,
+        "visible": false,
+        "active": false,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "sameComponent": true,
+        "videoWidth": "",
+        "videoHeight": "",
+        "video": {
+          "readyState": 4,
+          "paused": true,
+          "time": 903.919744,
+          "error": null
+        },
+        "fullscreen": null,
+        "headings": [],
+        "fallback": false
+      }
+    }
+  }
+}

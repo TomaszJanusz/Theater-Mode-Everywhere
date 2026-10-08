@@ -608,6 +608,42 @@
   "controlsUnpinnedHud": {
     "message": "操作バーを自動的に非表示にします"
   },
+  "showNativeChat": {
+    "message": "チャットを表示"
+  },
+  "toggleNativeChat": {
+    "message": "チャットの表示を切り替え"
+  },
+  "hideNativeChat": {
+    "message": "チャットを非表示"
+  },
+  "settingsSectionChat": {
+    "message": "チャット"
+  },
+  "settingsSectionPlayer": {
+    "message": "プレーヤー"
+  },
+  "nativeChatWidth": {
+    "message": "幅"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "チャットはサービスの外観を使用しています。このページでは選択したテーマを利用できません。"
+  },
+  "nativeChatTheme": {
+    "message": "テーマ"
+  },
+  "nativeChatThemeLight": {
+    "message": "ライト"
+  },
+  "nativeChatThemeNative": {
+    "message": "サービスの設定"
+  },
+  "nativeChatThemeDark": {
+    "message": "ダーク"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "チャット付きの全画面表示は利用できません。シアターモードは有効なままです。"
+  },
   "playerSettingsLabel": {
     "message": "プレーヤー設定"
   },

@@ -30,11 +30,17 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
       - name: Typecheck
         run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
 
       - name: Build Extension
         run: pnpm build
@@ -44,14 +50,8 @@ jobs:
       - name: Verify Bundles
         run: pnpm verify:bundles
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Test
+        run: pnpm test
 
       - name: Smoke Chromium
         run: xvfb-run --auto-servernum pnpm smoke:chromium
