@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "Chat width"
   },
+  "nativeChatTheme": {
+    "message": "Chat theme"
+  },
+  "nativeChatThemeLight": {
+    "message": "Light"
+  },
+  "nativeChatThemeNative": {
+    "message": "Service settings"
+  },
+  "nativeChatThemeDark": {
+    "message": "Dark"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "Fullscreen with chat is unavailable. Theater mode remains active."
   },

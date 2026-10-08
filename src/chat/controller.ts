@@ -8,7 +8,8 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
-import type { ChatPreference, ChatProvider, ChatState, ChatSurface } from './types';
+import type { ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
+import { ChatThemeSession, normalizeChatTheme } from './theme';
 import { parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
 /** Fallback discovery for SPA navigations and chats mounted after theater starts. */
@@ -29,6 +30,7 @@ export interface ChatControllerOptions {
 }
 
 interface MemoryPreference {
+  theme: ChatTheme;
   visible: boolean;
   width: number;
   /** User or stored choice. Native initial visibility must not replace it. */
@@ -43,7 +45,8 @@ const EMPTY_STATE: ChatState = {
   available: false,
   visible: false,
   width: DEFAULT_CHAT_WIDTH_PX,
-  dock: 'right'
+  dock: 'right',
+  theme: 'native'
 };
 
 /**
@@ -56,6 +59,7 @@ export class ChatController {
   private readonly scope = new DisposableScope();
   private readonly surfaceOwned = new OwnedDom();
   private readonly documentOwned = new OwnedDom();
+  private readonly themeSession = new ChatThemeSession();
   private readonly memory = new Map<ChatProvider, MemoryPreference>();
   private current: ChatState = { ...EMPTY_STATE };
   private started = false;
@@ -117,12 +121,26 @@ export class ChatController {
     this.refresh();
   }
 
+  setTheme(theme: ChatTheme): void {
+    if (this.disposed) return;
+    const provider = this.provider();
+    if (!provider) return;
+    const preference = this.ensurePreference(provider, this.current.surface?.initiallyVisible ?? null);
+    const next = normalizeChatTheme(theme);
+    if (preference.theme === next) return;
+    preference.theme = next;
+    if (preference.seeded || preference.visibilityLocked) this.persist(provider);
+    else preference.widthPending = true;
+    this.refresh();
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.scope.dispose();
     this.clearStructureTimer();
     this.clearViewportFrame();
+    this.themeSession.dispose();
     this.surfaceOwned.restoreAll();
     this.documentOwned.restoreAll();
     this.current = { ...EMPTY_STATE };
@@ -251,6 +269,7 @@ export class ChatController {
     }
     if (next) this.bindSurface(next, this.preferenceFor(next).visible);
     this.boundFrameSrc = next?.iframe?.getAttribute('src') || '';
+    this.themeSession.update(next, this.preferenceForSurface(next).theme);
     this.publish(next);
   }
 
@@ -347,7 +366,8 @@ export class ChatController {
       available: surface !== null,
       visible: surface !== null && preference.visible,
       width: preference.width,
-      dock: layout.dock
+      dock: layout.dock,
+      theme: preference.theme
     };
   }
 
@@ -355,17 +375,17 @@ export class ChatController {
     return this.ensurePreference(surface.provider, surface.initiallyVisible);
   }
 
-  private preferenceForSurface(surface: ChatSurface | null): { visible: boolean; width: number } {
+  private preferenceForSurface(surface: ChatSurface | null): { visible: boolean; width: number; theme: ChatTheme } {
     const provider = surface?.provider ?? this.provider();
-    if (!provider) return { visible: false, width: DEFAULT_CHAT_WIDTH_PX };
+    if (!provider) return { visible: false, width: DEFAULT_CHAT_WIDTH_PX, theme: 'native' };
     if (!surface) {
       const existing = this.memory.get(provider);
       return existing
-        ? { visible: existing.visible, width: existing.width }
-        : { visible: false, width: DEFAULT_CHAT_WIDTH_PX };
+        ? { visible: existing.visible, width: existing.width, theme: existing.theme }
+        : { visible: false, width: DEFAULT_CHAT_WIDTH_PX, theme: 'native' };
     }
     const preference = this.preferenceFor(surface);
-    return { visible: preference.visible, width: preference.width };
+    return { visible: preference.visible, width: preference.width, theme: preference.theme };
   }
 
   private ensurePreference(provider: ChatProvider, initiallyVisible: boolean | null): MemoryPreference {
@@ -385,6 +405,7 @@ export class ChatController {
     const storedWidth = stored && Number.isFinite(stored.width) ? clampChatWidth(stored.width) : null;
     const storedVisible = stored && typeof stored.visible === 'boolean' ? stored.visible : null;
     const created: MemoryPreference = {
+      theme: normalizeChatTheme(stored?.theme),
       visible: storedVisible ?? initiallyVisible ?? true,
       width: storedWidth ?? DEFAULT_CHAT_WIDTH_PX,
       visibilityLocked: storedVisible !== null,
@@ -412,7 +433,7 @@ export class ChatController {
   private persist(provider: ChatProvider): void {
     const preference = this.memory.get(provider);
     if (!preference) return;
-    this.options.persistPreference?.(provider, { visible: preference.visible, width: preference.width });
+    this.options.persistPreference?.(provider, { visible: preference.visible, width: preference.width, theme: preference.theme });
   }
 
   private provider(): ChatProvider | null {
@@ -463,6 +484,7 @@ function sameElements(left: readonly HTMLElement[], right: readonly HTMLElement[
 function sameState(left: ChatState, right: ChatState): boolean {
   return left.available === right.available
     && left.visible === right.visible
+    && left.theme === right.theme
     && left.width === right.width
     && left.dock === right.dock
     && left.surface === right.surface;

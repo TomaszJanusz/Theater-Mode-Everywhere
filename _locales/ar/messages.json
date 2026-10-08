@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "عرض الدردشة"
   },
+  "nativeChatTheme": {
+    "message": "مظهر الدردشة"
+  },
+  "nativeChatThemeLight": {
+    "message": "فاتح"
+  },
+  "nativeChatThemeNative": {
+    "message": "إعدادات الخدمة"
+  },
+  "nativeChatThemeDark": {
+    "message": "داكن"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "ملء الشاشة مع الدردشة غير متاح. يظل وضع المسرح مفعّلاً."
   },

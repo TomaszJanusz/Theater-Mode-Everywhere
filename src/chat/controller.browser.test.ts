@@ -702,4 +702,162 @@ describe('native chat controller', () => {
       await popout.close();
     }
   });
+
+  it('forces each service palette during the session and restores the previous appearance', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const twitch = await pageWith(TWITCH);
+    const youtube = await pageWith(YOUTUBE);
+    try {
+      const twitchReport = await twitch.evaluate(`(() => {
+        const column = document.getElementById('column');
+        const room = document.querySelector('[data-test-selector="chat-room-component-layout"]');
+        const draft = document.getElementById('draft');
+        draft.value = 'keep this draft';
+        const controller = new window.NativeChat.ChatController({
+          document,
+          href: () => 'https://www.twitch.tv/SomeChannel',
+          onChange() {},
+          onLayoutChange() {}
+        });
+        controller.setTheme('dark');
+        const dark = {
+          theme: controller.state.theme,
+          text: column.style.getPropertyValue('--color-text-base'),
+          background: room.style.getPropertyValue('background-color'),
+          color: getComputedStyle(room).color,
+          panel: getComputedStyle(room).backgroundColor,
+          target: room.getAttribute('data-a-target'),
+          draft: draft.value,
+          marker: document.documentElement.getAttribute('data-theater-chat-theme')
+        };
+        controller.setTheme('native');
+        const restored = {
+          theme: controller.state.theme,
+          text: column.style.getPropertyValue('--color-text-base'),
+          background: room.style.getPropertyValue('background-color'),
+          marker: document.documentElement.getAttribute('data-theater-chat-theme'),
+          color: column.style.color,
+          draft: draft.value
+        };
+        controller.dispose();
+        return { dark, restored };
+      })()`) as {
+        dark: { theme: string; text: string; background: string; color: string; panel: string; target: string; draft: string; marker: string };
+        restored: { theme: string; text: string; background: string; marker: string | null; color: string; draft: string };
+      };
+      assert.equal(twitchReport.dark.theme, 'dark');
+      assert.equal(twitchReport.dark.text, '#efeff1');
+      assert.equal(twitchReport.dark.background, 'var(--color-background-base)');
+      assert.equal(twitchReport.dark.color, 'rgb(239, 239, 241)');
+      assert.equal(twitchReport.dark.panel, 'rgb(24, 24, 27)');
+      assert.equal(twitchReport.dark.target, 'chat-theme-light');
+      assert.equal(twitchReport.dark.draft, 'keep this draft');
+      assert.equal(twitchReport.dark.marker, 'dark');
+      assert.equal(twitchReport.restored.theme, 'native');
+      assert.equal(twitchReport.restored.text, '');
+      assert.equal(twitchReport.restored.background, '');
+      assert.equal(twitchReport.restored.marker, null);
+      assert.equal(twitchReport.restored.color, 'rgb(1, 2, 3)');
+      assert.equal(twitchReport.restored.draft, 'keep this draft');
+
+      const youtubeReport = await youtube.evaluate(`(async () => {
+        const frame = document.getElementById('chatframe');
+        const src = frame.getAttribute('src');
+        frame.srcdoc = '<!doctype html><html><head><style>html[dark]{--yt-live-chat-background-color:#0f0f0f}html:not([dark]){--yt-live-chat-background-color:#fff}</style></head><body><yt-live-chat-app id="app"></yt-live-chat-app><yt-live-chat-renderer id="renderer"></yt-live-chat-renderer><script>document.getElementById("app").setGlobalDarkTheme=function(dark){this.dataset.calls=(this.dataset.calls||"")+(dark?"D":"L");if(dark)document.documentElement.setAttribute("dark","");else document.documentElement.removeAttribute("dark");};</script></body></html>';
+        await new Promise((resolve) => frame.addEventListener('load', () => resolve(null), { once: true }));
+        const controller = new window.NativeChat.ChatController({
+          document,
+          href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK',
+          onChange() {},
+          onLayoutChange() {}
+        });
+        const chat = frame.contentDocument;
+        const app = chat.getElementById('app');
+        const renderer = chat.getElementById('renderer');
+        controller.setTheme('dark');
+        const dark = {
+          theme: controller.state.theme,
+          calls: app.dataset.calls,
+          htmlDark: chat.documentElement.hasAttribute('dark'),
+          background: renderer.style.getPropertyValue('background-color'),
+          src: frame.getAttribute('src')
+        };
+        controller.setTheme('light');
+        const light = {
+          theme: controller.state.theme,
+          calls: app.dataset.calls,
+          htmlDark: chat.documentElement.hasAttribute('dark')
+        };
+        controller.setTheme('native');
+        controller.dispose();
+        return {
+          dark,
+          light,
+          restored: {
+            calls: app.dataset.calls,
+            htmlDark: chat.documentElement.hasAttribute('dark'),
+            background: renderer.style.getPropertyValue('background-color'),
+            src: frame.getAttribute('src'),
+            marker: document.documentElement.getAttribute('data-theater-chat-theme')
+          },
+          src
+        };
+      })()`) as {
+        dark: { theme: string; calls: string; htmlDark: boolean; background: string; src: string };
+        light: { theme: string; calls: string; htmlDark: boolean };
+        restored: { calls: string; htmlDark: boolean; background: string; src: string; marker: string | null };
+        src: string;
+      };
+      assert.equal(youtubeReport.dark.theme, 'dark');
+      assert.equal(youtubeReport.dark.calls, 'D');
+      assert.equal(youtubeReport.dark.htmlDark, true);
+      assert.equal(youtubeReport.dark.background, 'var(--yt-live-chat-background-color)');
+      assert.equal(youtubeReport.dark.src, youtubeReport.src);
+      assert.equal(youtubeReport.light.theme, 'light');
+      assert.equal(youtubeReport.light.calls, 'DL');
+      assert.equal(youtubeReport.light.htmlDark, false);
+      assert.equal(youtubeReport.restored.calls, 'DL');
+      assert.equal(youtubeReport.restored.htmlDark, false);
+      assert.equal(youtubeReport.restored.background, '');
+      assert.equal(youtubeReport.restored.src, youtubeReport.src);
+      assert.equal(youtubeReport.restored.marker, null);
+
+      await youtube.evaluate(`(() => {
+        const frame = document.getElementById('chatframe');
+        frame.srcdoc = '<!doctype html><html><body><yt-live-chat-app id="app"></yt-live-chat-app><yt-live-chat-renderer id="renderer"></yt-live-chat-renderer><script>document.getElementById("app").setGlobalDarkTheme=function(dark){this.dataset.calls=(this.dataset.calls||"")+(dark?"D":"L");if(dark)document.documentElement.setAttribute("dark","");else document.documentElement.removeAttribute("dark");};</script></body></html>';
+      })()`);
+      await youtube.waitForFunction(() => {
+        const frame = document.querySelector('#chatframe');
+        return frame instanceof HTMLIFrameElement && frame.contentDocument?.getElementById('app')?.dataset.calls === undefined
+          && frame.contentDocument?.getElementById('app');
+      });
+      const bridge = await youtube.evaluate(`(async () => {
+        const frame = document.getElementById('chatframe');
+        const chat = frame.contentDocument;
+        const app = chat.getElementById('app');
+        const settle = () => new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+        window.NativeChat.installYouTubeChatThemeBridge(document);
+        document.documentElement.setAttribute('data-theater-chat-theme', 'dark');
+        await settle();
+        const forced = { calls: app.dataset.calls, htmlDark: chat.documentElement.hasAttribute('dark'), background: chat.getElementById('renderer').style.getPropertyValue('background-color') };
+        document.documentElement.removeAttribute('data-theater-chat-theme');
+        await settle();
+        return {
+          forced,
+          restored: { calls: app.dataset.calls, htmlDark: chat.documentElement.hasAttribute('dark') }
+        };
+      })()`) as {
+        forced: { calls: string; htmlDark: boolean; background: string };
+        restored: { calls: string; htmlDark: boolean };
+      };
+      assert.equal(bridge.forced.calls, 'D');
+      assert.equal(bridge.forced.htmlDark, true);
+      assert.equal(bridge.forced.background, '');
+      assert.equal(bridge.restored.calls, 'DL');
+      assert.equal(bridge.restored.htmlDark, false);
+    } finally {
+      await twitch.close();
+      await youtube.close();
+    }
+  });
 });

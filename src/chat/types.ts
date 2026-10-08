@@ -4,10 +4,14 @@ export type ChatKind = 'live' | 'replay';
 
 export type ChatDock = 'right' | 'bottom';
 
+export type ChatTheme = 'light' | 'native' | 'dark';
+
 /** Per-provider choice. Messages and account data are never stored. */
 export interface ChatPreference {
   visible: boolean;
   width: number;
+  /** Missing in older preferences; defaults to the service's own appearance. */
+  theme?: ChatTheme;
 }
 
 /**
@@ -35,4 +39,5 @@ export interface ChatState {
   /** Preferred right-dock width in pixels, clamped to the shared slider range. */
   width: number;
   dock: ChatDock;
+  theme: ChatTheme;
 }

@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "チャットの幅"
   },
+  "nativeChatTheme": {
+    "message": "チャットのテーマ"
+  },
+  "nativeChatThemeLight": {
+    "message": "ライト"
+  },
+  "nativeChatThemeNative": {
+    "message": "サービスの設定"
+  },
+  "nativeChatThemeDark": {
+    "message": "ダーク"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "チャット付きの全画面表示は利用できません。シアターモードは有効なままです。"
   },

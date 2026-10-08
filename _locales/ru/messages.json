@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "Ширина чата"
   },
+  "nativeChatTheme": {
+    "message": "Тема чата"
+  },
+  "nativeChatThemeLight": {
+    "message": "Светлая"
+  },
+  "nativeChatThemeNative": {
+    "message": "Настройки сервиса"
+  },
+  "nativeChatThemeDark": {
+    "message": "Тёмная"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "Полноэкранный режим с чатом недоступен. Режим кино остаётся активным."
   },

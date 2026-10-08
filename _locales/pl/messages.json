@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "Szerokość czatu"
   },
+  "nativeChatTheme": {
+    "message": "Motyw czatu"
+  },
+  "nativeChatThemeLight": {
+    "message": "Jasny"
+  },
+  "nativeChatThemeNative": {
+    "message": "Ustawienia serwisu"
+  },
+  "nativeChatThemeDark": {
+    "message": "Ciemny"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "Pełny ekran z czatem jest niedostępny. Tryb kinowy pozostaje aktywny."
   },

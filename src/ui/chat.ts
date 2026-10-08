@@ -5,7 +5,9 @@ import {
   MIN_CHAT_WIDTH_PX,
   type ChatPreference,
   type ChatProvider,
-  type ChatState
+  type ChatState,
+  type ChatTheme,
+  normalizeChatTheme
 } from '../chat';
 import type { DisposableScope } from '../core/disposable-scope';
 import type { PlayerChromeContext } from './runtime-context';
@@ -23,6 +25,28 @@ function notify(): void {
   for (const subscriber of subscribers) subscriber();
 }
 
+function schedulePersist(): void {
+  if (persistTimer !== undefined) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = undefined;
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+        void chrome.storage.sync.set({ [CHAT_PREFERENCES_STORAGE_KEY]: preferences }).catch(() => {});
+      }
+    } catch { /* Native chat remains usable when extension storage is unavailable. */ }
+  }, 350);
+}
+
+function storedTheme(provider: ChatProvider): ChatTheme {
+  return normalizeChatTheme(preferences[provider]?.theme);
+}
+
+function displayedTheme(state: ChatState | null): ChatTheme {
+  if (state?.theme === 'light' || state?.theme === 'native' || state?.theme === 'dark') return state.theme;
+  const provider = state?.surface?.provider;
+  return provider ? storedTheme(provider) : 'native';
+}
+
 export function hydrateChatPreferences(value: unknown): void {
   if (!value || typeof value !== 'object') return;
   const candidate = value as Record<string, unknown>;
@@ -32,7 +56,11 @@ export function hydrateChatPreferences(value: unknown): void {
     if (!entry || typeof entry !== 'object') continue;
     const pref = entry as Partial<ChatPreference>;
     if (typeof pref.visible === 'boolean' && typeof pref.width === 'number' && Number.isFinite(pref.width)) {
-      next[provider] = { visible: pref.visible, width: Math.min(MAX_CHAT_WIDTH_PX, Math.max(MIN_CHAT_WIDTH_PX, pref.width)) };
+      next[provider] = {
+        visible: pref.visible,
+        width: Math.min(MAX_CHAT_WIDTH_PX, Math.max(MIN_CHAT_WIDTH_PX, pref.width)),
+        theme: normalizeChatTheme(pref.theme)
+      };
     }
   }
   preferences = next;
@@ -52,16 +80,9 @@ export function startNativeChatSession(onLayoutChange: () => void): void {
     onLayoutChange,
     focusToggle: () => queryPlayerUi<HTMLButtonElement>('.theater-chat-toggle')?.focus(),
     persistPreference: (provider, preference) => {
-      preferences[provider] = preference;
-      if (persistTimer !== undefined) clearTimeout(persistTimer);
-      persistTimer = setTimeout(() => {
-        persistTimer = undefined;
-        try {
-          if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-            void chrome.storage.sync.set({ [CHAT_PREFERENCES_STORAGE_KEY]: preferences }).catch(() => {});
-          }
-        } catch { /* Native chat remains usable when extension storage is unavailable. */ }
-      }, 350);
+      const theme = 'theme' in preference ? normalizeChatTheme(preference.theme) : storedTheme(provider);
+      preferences[provider] = { visible: preference.visible, width: preference.width, theme };
+      schedulePersist();
     }
   });
   notify();
@@ -108,6 +129,27 @@ export function mountNativeChatControls(
   settingsPanel.querySelector('.theater-settings-body')?.append(widthRow);
   scope.listen(slider, 'input', () => controller?.setWidth(Number(slider.value)));
 
+  const themeRow = document.createElement('label');
+  themeRow.className = 'theater-chat-theme-row';
+  const themeLabel = document.createElement('span');
+  themeLabel.textContent = ctx.t('nativeChatTheme');
+  const themeSelect = document.createElement('select');
+  themeSelect.className = 'theater-chat-theme-select';
+  themeSelect.setAttribute('aria-label', ctx.t('nativeChatTheme'));
+  for (const [value, messageName] of [
+    ['light', 'nativeChatThemeLight'],
+    ['native', 'nativeChatThemeNative'],
+    ['dark', 'nativeChatThemeDark']
+  ] as const) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = ctx.t(messageName);
+    themeSelect.append(option);
+  }
+  themeRow.append(themeLabel, themeSelect);
+  settingsPanel.querySelector('.theater-settings-body')?.append(themeRow);
+  scope.listen(themeSelect, 'change', () => controller?.setTheme(normalizeChatTheme(themeSelect.value)));
+
   const update = () => {
     const state = nativeChatState();
     button.hidden = !state?.available;
@@ -118,6 +160,10 @@ export function mountNativeChatControls(
     slider.disabled = !state?.visible;
     slider.value = String(state?.width ?? DEFAULT_CHAT_WIDTH_PX);
     widthValue.value = slider.value + ' px';
+    themeRow.hidden = !state?.available;
+    themeSelect.disabled = !state?.available;
+    const theme = displayedTheme(state);
+    if (themeSelect.value !== theme) themeSelect.value = theme;
   };
   subscribers.add(update);
   scope.add(() => subscribers.delete(update));

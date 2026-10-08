@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "Chatbreite"
   },
+  "nativeChatTheme": {
+    "message": "Chat-Design"
+  },
+  "nativeChatThemeLight": {
+    "message": "Hell"
+  },
+  "nativeChatThemeNative": {
+    "message": "Diensteinstellungen"
+  },
+  "nativeChatThemeDark": {
+    "message": "Dunkel"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "Vollbild mit Chat ist nicht verfügbar. Der Kinomodus bleibt aktiv."
   },

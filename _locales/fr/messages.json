@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "Largeur du chat"
   },
+  "nativeChatTheme": {
+    "message": "Thème du chat"
+  },
+  "nativeChatThemeLight": {
+    "message": "Clair"
+  },
+  "nativeChatThemeNative": {
+    "message": "Paramètres du service"
+  },
+  "nativeChatThemeDark": {
+    "message": "Sombre"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "Le plein écran avec le chat est indisponible. Le mode cinéma reste actif."
   },

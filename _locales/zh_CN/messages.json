@@ -617,6 +617,18 @@
   "nativeChatWidth": {
     "message": "聊天宽度"
   },
+  "nativeChatTheme": {
+    "message": "聊天主题"
+  },
+  "nativeChatThemeLight": {
+    "message": "浅色"
+  },
+  "nativeChatThemeNative": {
+    "message": "服务设置"
+  },
+  "nativeChatThemeDark": {
+    "message": "深色"
+  },
   "nativeChatFullscreenUnavailable": {
     "message": "无法使用带聊天的全屏模式。影院模式保持开启。"
   },
