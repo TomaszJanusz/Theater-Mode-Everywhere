@@ -2,16 +2,14 @@ import { disneyTimeline } from './disney';
 import { netflixTimeline } from './netflix';
 import type { HostSeekDispatch, HostSeekInput, TimelineBounds } from './types';
 import { youtubeTimeline } from './youtube';
-import { twitchTimeline } from './twitch';
 
 export { LIVE_EDGE_SECONDS, MAX_LIVE_DVR_SECONDS, MIN_LIVE_DVR_SECONDS } from './limits';
 export type { HostSeekDispatch, HostSeekInput, MediaSeekDetail, TimelineBounds } from './types';
 
 // Isolated dispatch order. YouTube live does not read its integration flag.
 // Disney seeks and reads its clock on the host with the flag ignored. Netflix
-// seeks only while its flag is on. Twitch VOD uses its native seek control to
-// keep replay chat on the service's playback clock.
-const PROVIDERS = [youtubeTimeline, disneyTimeline, netflixTimeline, twitchTimeline] as const;
+// seeks only while its flag is on. MAIN still routes Netflix, then Disney, then YouTube.
+const PROVIDERS = [youtubeTimeline, disneyTimeline, netflixTimeline] as const;
 
 export function hostLiveHint(video: HTMLVideoElement): boolean {
   return PROVIDERS.some((provider) => provider.liveHint?.(video) === true);
