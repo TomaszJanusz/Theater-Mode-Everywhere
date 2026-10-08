@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-08T23:06:01.296Z",
+  "url": "https://www.youtube.com/watch?v=ORf39npHolQ",
+  "addonInstalled": false,
+  "firefoxAutoplayAllowed": true,
+  "before": {
+    "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+    "time": 0.577298,
+    "duration": 9196.561,
+    "readyState": 4,
+    "paused": false,
+    "playerClasses": "html5-video-player ytp-transparent ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-exp-ppp-update ytp-livebadge-color ytp-grid-scrollable ytp-delhi-modern ytp-delhi-modern-icons ytp-delhi-horizontal-volume-controls ytp-delhi-modern-compact-controls ad-created ytp-fit-cover-video ytp-fine-scrubbing-exp ytp-cards-teaser-dismissible ytp-hide-info-bar ytp-large-width-mode ytp-disable-bottom-gradient ytp-autonav-endscreen-cancelled-state ytp-branding-shown ytp-hide-fullscreen-title ytp-fullscreen-metadata-top playing-mode",
+    "adState": -1
+  },
+  "target": 300,
+  "after": {
+    "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+    "time": 296.9526418786692,
+    "duration": 9196.561,
+    "readyState": 1,
+    "paused": false,
+    "playerClasses": "html5-video-player ytp-transparent ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-exp-ppp-update ytp-livebadge-color ytp-grid-scrollable ytp-delhi-modern ytp-delhi-modern-icons ytp-delhi-horizontal-volume-controls ytp-delhi-modern-compact-controls ad-created ytp-fit-cover-video ytp-fine-scrubbing-exp ytp-cards-teaser-dismissible ytp-hide-info-bar ytp-large-width-mode ytp-disable-bottom-gradient ytp-autonav-endscreen-cancelled-state ytp-branding-shown ytp-hide-fullscreen-title ytp-fullscreen-metadata-top playing-mode buffering-mode",
+    "adState": -1
+  },
+  "status": "native seek did not finish buffering within 10 seconds"
+}

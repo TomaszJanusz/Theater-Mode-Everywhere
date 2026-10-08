@@ -1,0 +1,757 @@
+{
+  "at": "2026-10-08T23:32:55.119Z",
+  "sourceCommit": "fcc8f2a917b19abf1d5b85fcdd2bed46d73b5e3c",
+  "browser": "firefox",
+  "installation": "temporary addon",
+  "shortcut": "Alt+R",
+  "firefoxAutoplayAllowed": true,
+  "bundles": {
+    "content.js": "ed4cffda05761b857160a8859ab6df2e55dbee59fb727e2371729946be6cbafc",
+    "content.css": "29c3953450228ca7622ff59e89a709e7ff2429dd823c06a08f966ae78321f75b",
+    "mainWorld.js": "c67f1db0f573255e2155295ea8199e358441e02fd5ef2be2c5c2f2e7a4e32e76"
+  },
+  "providers": {
+    "youtube": {
+      "collapsed": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": false,
+        "active": true,
+        "nativeCollapsed": true,
+        "twitchToggle": null,
+        "nativeClicks": 0,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1440px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46796.615697,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "opened": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 1,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46800.469845,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "hidden": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": false,
+        "active": true,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 1,
+        "sameComponent": true,
+        "videoWidth": "1440px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46801.098136,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "reshown": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 1,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46801.230763,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "openingFile": "youtube-opened-from-native-collapse-firefox.png",
+      "paintedSamples": 176,
+      "settings": [
+        {
+          "file": "youtube-options-dark-firefox.png",
+          "paintedSamples": 68,
+          "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+          "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+          "visibilityState": "visible",
+          "theater": true,
+          "visible": true,
+          "active": true,
+          "nativeCollapsed": false,
+          "twitchToggle": null,
+          "nativeClicks": 1,
+          "frameLoads": 1,
+          "sameComponent": true,
+          "videoWidth": "1080px",
+          "videoHeight": "900px",
+          "video": {
+            "readyState": 4,
+            "paused": false,
+            "time": 46802.753073,
+            "error": null
+          },
+          "chat": {
+            "x": 1080,
+            "y": 0,
+            "width": 360,
+            "height": 900
+          },
+          "fullscreen": null,
+          "shortcut": "Alt+R",
+          "headings": [
+            {
+              "text": "Chat",
+              "transform": "uppercase"
+            },
+            {
+              "text": "Player",
+              "transform": "uppercase"
+            }
+          ],
+          "icons": 2,
+          "theme": "dark",
+          "fallback": false
+        },
+        {
+          "file": "youtube-options-light-firefox.png",
+          "paintedSamples": 176,
+          "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+          "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+          "visibilityState": "visible",
+          "theater": true,
+          "visible": true,
+          "active": true,
+          "nativeCollapsed": false,
+          "twitchToggle": null,
+          "nativeClicks": 1,
+          "frameLoads": 1,
+          "sameComponent": true,
+          "videoWidth": "1080px",
+          "videoHeight": "900px",
+          "video": {
+            "readyState": 4,
+            "paused": false,
+            "time": 46804.276577,
+            "error": null
+          },
+          "chat": {
+            "x": 1080,
+            "y": 0,
+            "width": 360,
+            "height": 900
+          },
+          "fullscreen": null,
+          "shortcut": "Alt+R",
+          "headings": [
+            {
+              "text": "Chat",
+              "transform": "uppercase"
+            },
+            {
+              "text": "Player",
+              "transform": "uppercase"
+            }
+          ],
+          "icons": 2,
+          "theme": "light",
+          "fallback": false
+        }
+      ],
+      "fullscreen": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 3,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "985px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46810.554219,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 985
+        },
+        "fullscreen": "HTML",
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "responsive": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 6,
+        "sameComponent": true,
+        "videoWidth": "820px",
+        "videoHeight": "540px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46816.144235,
+          "error": null
+        },
+        "chat": {
+          "x": 0,
+          "y": 540,
+          "width": 820,
+          "height": 360
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "filter": "Top chat → Live chat",
+      "restored": {
+        "url": "https://www.youtube.com/watch?v=1-LpQekNa9g",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": false,
+        "visible": false,
+        "active": false,
+        "nativeCollapsed": false,
+        "twitchToggle": null,
+        "nativeClicks": 1,
+        "frameLoads": 8,
+        "sameComponent": true,
+        "videoWidth": "",
+        "videoHeight": "",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 46822.346738,
+          "error": null
+        },
+        "fullscreen": null,
+        "headings": [],
+        "fallback": false
+      }
+    },
+    "twitch": {
+      "collapsed": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": false,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Expand Chat",
+        "nativeClicks": 0,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1440px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 1,
+          "paused": false,
+          "time": 0.005333,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "opened": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 1.11322,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "hidden": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": false,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1440px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 1.954218,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "reshown": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "900px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 2.162752,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 900
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "openingFile": "twitch-opened-from-native-collapse-firefox.png",
+      "paintedSamples": 176,
+      "settings": [
+        {
+          "file": "twitch-options-dark-firefox.png",
+          "paintedSamples": 61,
+          "url": "https://www.twitch.tv/ewroon",
+          "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+          "visibilityState": "visible",
+          "theater": true,
+          "visible": true,
+          "active": true,
+          "nativeCollapsed": null,
+          "twitchToggle": "Collapse Chat",
+          "nativeClicks": 1,
+          "frameLoads": 0,
+          "sameComponent": true,
+          "videoWidth": "1080px",
+          "videoHeight": "900px",
+          "video": {
+            "readyState": 4,
+            "paused": false,
+            "time": 3.324716,
+            "error": null
+          },
+          "chat": {
+            "x": 1080,
+            "y": 0,
+            "width": 360,
+            "height": 900
+          },
+          "fullscreen": null,
+          "shortcut": "Alt+R",
+          "headings": [
+            {
+              "text": "Chat",
+              "transform": "uppercase"
+            },
+            {
+              "text": "Player",
+              "transform": "uppercase"
+            }
+          ],
+          "icons": 2,
+          "theme": "dark",
+          "fallback": false
+        },
+        {
+          "file": "twitch-options-light-firefox.png",
+          "paintedSamples": 175,
+          "url": "https://www.twitch.tv/ewroon",
+          "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+          "visibilityState": "visible",
+          "theater": true,
+          "visible": true,
+          "active": true,
+          "nativeCollapsed": null,
+          "twitchToggle": "Collapse Chat",
+          "nativeClicks": 1,
+          "frameLoads": 0,
+          "sameComponent": true,
+          "videoWidth": "1080px",
+          "videoHeight": "900px",
+          "video": {
+            "readyState": 4,
+            "paused": false,
+            "time": 5.647246,
+            "error": null
+          },
+          "chat": {
+            "x": 1080,
+            "y": 0,
+            "width": 360,
+            "height": 900
+          },
+          "fullscreen": null,
+          "shortcut": "Alt+R",
+          "headings": [
+            {
+              "text": "Chat",
+              "transform": "uppercase"
+            },
+            {
+              "text": "Player",
+              "transform": "uppercase"
+            }
+          ],
+          "icons": 2,
+          "theme": "light",
+          "fallback": false
+        }
+      ],
+      "fullscreen": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "1080px",
+        "videoHeight": "985px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 8.223818,
+          "error": null
+        },
+        "chat": {
+          "x": 1080,
+          "y": 0,
+          "width": 360,
+          "height": 985
+        },
+        "fullscreen": "HTML",
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "responsive": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": true,
+        "visible": true,
+        "active": true,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "820px",
+        "videoHeight": "540px",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 10.128748,
+          "error": null
+        },
+        "chat": {
+          "x": 0,
+          "y": 540,
+          "width": 820,
+          "height": 360
+        },
+        "fullscreen": null,
+        "shortcut": "Alt+R",
+        "headings": [
+          {
+            "text": "Chat",
+            "transform": "uppercase"
+          },
+          {
+            "text": "Player",
+            "transform": "uppercase"
+          }
+        ],
+        "icons": 2,
+        "theme": "native",
+        "fallback": false
+      },
+      "restored": {
+        "url": "https://www.twitch.tv/ewroon",
+        "ua": "Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0",
+        "visibilityState": "visible",
+        "theater": false,
+        "visible": false,
+        "active": false,
+        "nativeCollapsed": null,
+        "twitchToggle": "Collapse Chat",
+        "nativeClicks": 1,
+        "frameLoads": 0,
+        "sameComponent": true,
+        "videoWidth": "",
+        "videoHeight": "",
+        "video": {
+          "readyState": 4,
+          "paused": false,
+          "time": 11.781222,
+          "error": null
+        },
+        "fullscreen": null,
+        "headings": [],
+        "fallback": false
+      }
+    }
+  },
+  "addonId": "theater-everywhere@tomaszjanusz.dev"
+}

@@ -4,21 +4,17 @@ Wpis: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtu
 
 ## Aktualny zakres i obsługa
 
-Stan na 8 października 2026: [PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) jest otwarty do review, poza trybem draft. Implementacja jest dostępna na jego gałęzi; nie stanowi jeszcze wydanej funkcji wersji 1.5.0. Kod funkcji odpowiada `8b2dcfc`, a galeria została odświeżona w `4255228`.
+Stan na 9 października 2026: [PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) jest otwarty do review. Bieżący kod: `fcc8f2a`; implementacja nie została jeszcze wydana.
 
-TME zachowuje istniejący czat na stronach Twitch i YouTube. Po wejściu do theater przycisk czatu na pasku pokazuje lub chowa panel. W ustawieniach playera dostępne są szerokość bocznego panelu oraz motyw **Jasny / Ustawienia serwisu / Ciemny**. Domyślna szerokość to 360 px, zakres 280–600 px. Od 900 px szerokości okna czat znajduje się po prawej; w węższym oknie pod wideo, bez suwaka szerokości. Motyw można zmieniać także przy schowanym czacie. Suwak jest wtedy nieaktywny. Gdy strona nie udostępnia wykrywalnego czatu, kontrolki czatu nie są pokazywane.
+TME zachowuje oryginalny czat na stronach Twitch i YouTube. Przycisk czatu i **Alt+R** pokazują lub chowają panel oraz uruchamiają natywny aktywator, gdy widz zwinął czat. YouTube może udostępnić go przez boks pod filmem, również w archiwum. Adapter odróżnia taki boks od pustej ramki z komunikatem niedostępności. Twitch VOD używa osobnego natywnego komponentu replay. TME pozostawia transport `fetch` Twitcha bez opakowania; próby na serwisie wykazały, że wcześniejsze opakowanie blokowało aktualizację replay po seeku. Obserwacja odpowiedzi JSON/text nadal zbiera metadane.
 
-Widoczność, szerokość i motyw są zapisywane osobno dla Twitcha i YouTube. Bez wcześniejszego wyboru TME respektuje zastaną widoczność i motyw serwisu. Chowanie, zmiana szerokości i motywu nie przenoszą kontenera ani nie zastępują ramki. Nie zmieniają filtra Top chat/Live chat. Przy niedostępnej palecie TME zachowuje natywny wygląd z wyjaśnieniem i zapamiętuje żądany motyw. [Instrukcja i szczegóły aktualnej implementacji](native-chat-validation.md) zawierają także zapis preferencji, lifecycle, zrzuty i dowody.
+Ustawienia **CHAT** nad **PLAYER** zawierają szerokość panelu (domyślnie 360 px, zakres 280–600 px) i motyw **Jasny / Ustawienia serwisu / Ciemny**. Od 900 px okna czat jest po prawej; poniżej pod wideo, bez suwaka szerokości. Przy schowanym czacie wideo zajmuje cały obszar, suwak jest nieaktywny, a wybór motywu pozostaje dostępny. Preferencje zapisują się osobno dla platform. Bez wcześniejszego wyboru respektowany jest zastany stan serwisu.
 
-| Zakres | Stan |
-| --- | --- |
-| Układ, chowanie, niezależny motyw Twitch/YouTube | Zaimplementowane; sprawdzone na wylogowanych stronach live w Chromium z zainstalowanym rozszerzeniem. |
-| Klawiatura, szkic/IME, wymiana dokumentu, zapis przy wyjściu/reload, warstwy menu | Pokryte testami; rzeczywisty edytor i szkic sprawdzono na Twitchu, zalogowany edytor YouTube pozostaje do kwalifikacji. |
-| Replay/Premiere, funkcje konta, moderacja, monetyzacja, pełny przebieg filtra i responsywny YouTube, live Firefox | Detekcja uwzględnia replay, lecz pełna kwalifikacja tych funkcji przed wydaniem nadal pozostaje do wykonania. |
-| Fullscreen i PiP | Przy widocznym czacie odmowa fullscreen dokumentu pozostawia theater z komunikatem; video PiP obejmuje wideo. Fullscreen na rzeczywistych serwisach pozostaje do kwalifikacji. |
-| Dowolne strony zewnętrzne, nowe oficjalne embedy, osobne flagi czatu | Dalszy zakres projektu; obecny PR nie dodaje tworzenia embedów ani osobnych flag czatu. |
+Panel nie jest przenoszony, klonowany ani zastępowany nowym iframe. TME nie zmienia filtra Top chat/Live chat. Gdy paleta jest niedostępna, pozostaje wygląd serwisu z wyjaśnieniem i zapamiętaną preferencją. [Raport walidacji](native-chat-validation.md) zawiera aktualną galerię, wyniki prawdziwych serwisów, hashe paczek i konkretne ograniczenia.
 
-Ostatnia pełna walidacja kodu `8b2dcfc`: **479/479 testów, bez pominięć**, w tym **29/29 testów czatu i lokalizacji (26 czatu)**; typecheck, build, weryfikacja paczek i Chromium smoke z `CI=true` przeszły. [Raport walidacji](native-chat-validation.md) rozdziela sprawdzone zachowania od pozostałych kryteriów wydania. Gotowość PR do review nie oznacza zakończenia kwalifikacji wszystkich funkcji serwisów.
+Pełny zestaw: **487/487 testów, bez pominięć**; typecheck, build i weryfikacja paczek przeszły. Chromium smoke używa zainstalowanego rozszerzenia; Firefox smoke jest diagnostyką paczek, a osobne próby live/replay instalują rzeczywisty tymczasowy dodatek. Wyniki fullscreen, responsywności, filtrów i archiwów opisano w raporcie, bez przenoszenia rezultatów między przeglądarkami.
+
+Zgodnie z decyzją użytkownika zalogowany edytor YouTube, moderacja i formularze konta/monetyzacji są poza zakresem tego zadania. Nie są oznaczone jako sprawdzone ani jako blokery PR. Zewnętrzne embedy i osobne flagi czatu pozostają dalszym etapem projektu. Video PiP obejmuje wideo.
 
 ## Pierwotne założenia projektu
 
