@@ -9,6 +9,7 @@ import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { isChatDocument, isNativeChatEvent } from '../chat';
+import { isTwitchHost } from '../providers/hosts';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -152,20 +153,25 @@ export function installMainWorldRuntime(): void {
       return result;
     };
 
-    let currentFetch = wrapFetch(window.fetch.bind(window));
-    try {
-      Object.defineProperty(window, 'fetch', {
-        configurable: true,
-        enumerable: true,
-        get() {
-          return currentFetch;
-        },
-        set(next: typeof fetch) {
-          currentFetch = typeof next === 'function' ? wrapFetch(next) : next;
-        }
-      });
-    } catch {
-      window.fetch = currentFetch;
+    // Twitch replaces fetch with its own transport. Wrapping that replacement
+    // freezes native VOD replay after seeking, even outside theater mode.
+    // Response JSON/text observers and XHR still harvest Twitch metadata.
+    if (!isTwitchHost(window.location.hostname)) {
+      let currentFetch = wrapFetch(window.fetch.bind(window));
+      try {
+        Object.defineProperty(window, 'fetch', {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return currentFetch;
+          },
+          set(next: typeof fetch) {
+            currentFetch = typeof next === 'function' ? wrapFetch(next) : next;
+          }
+        });
+      } catch {
+        window.fetch = currentFetch;
+      }
     }
 
     const originalXhrOpen = XMLHttpRequest.prototype.open;
