@@ -13,14 +13,32 @@ interface StyleRecord {
   applied: string;
 }
 
+interface ClassRecord {
+  element: Element;
+  name: string;
+  previous: boolean;
+  applied: boolean;
+}
+
 /**
- * Remembers individual attributes and CSS custom properties TME sets.
+ * Remembers individual class tokens, attributes, and CSS properties TME sets.
  * Restore writes those entries back only when the current value is still the one
  * we applied, so a later service edit to the same name — or any other inline style — stays.
  */
 export class OwnedDom {
   private attributes: AttributeRecord[] = [];
   private styles: StyleRecord[] = [];
+  private classes: ClassRecord[] = [];
+
+  setClass(element: Element, name: string, enabled: boolean): void {
+    let record = this.classes.find(entry => entry.element === element && entry.name === name);
+    if (!record) {
+      record = { element, name, previous: element.classList.contains(name), applied: enabled };
+      this.classes.push(record);
+    }
+    record.applied = enabled;
+    element.classList.toggle(name, enabled);
+  }
 
   setAttribute(element: Element, name: string, value: string): void {
     const record = this.attribute(element, name);
@@ -52,6 +70,11 @@ export class OwnedDom {
   }
 
   restoreAll(): void {
+    for (const record of this.classes.splice(0)) {
+      if (record.element.classList.contains(record.name) === record.applied) {
+        record.element.classList.toggle(record.name, record.previous);
+      }
+    }
     for (const record of this.styles.splice(0)) {
       if (record.element.style.getPropertyValue(record.name) !== record.applied || record.element.style.getPropertyPriority(record.name)) continue;
       if (record.previous) record.element.style.setProperty(record.name, record.previous, record.priority);

@@ -1021,7 +1021,7 @@ describe('native chat browser session', () => {
     }
   });
 
-  it('shares chat theme across YouTube and Twitch and keeps it with visibility and width', { timeout: 120_000 }, async t => {
+  it('persists Twitch chat theme and exposes YouTube service appearance without forced palettes', { timeout: 120_000 }, async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
@@ -1042,7 +1042,7 @@ describe('native chat browser session', () => {
 
       const seeded = {
         nativeChatPreferences: {
-          youtube: { visible: true, width: 400, theme: 'sepia' },
+          youtube: { visible: true, width: 400, theme: 'dark' },
           twitch: { visible: true, width: 380 }
         }
       };
@@ -1070,67 +1070,25 @@ describe('native chat browser session', () => {
       theme = await readThemeControl(page);
       assert.equal(theme.value, 'native', JSON.stringify(theme));
       assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
+      assert.equal(theme.disabled, true, JSON.stringify(theme));
       assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
       assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
-      let layout = await layoutOf(page);
-      assert.equal(layout.state?.width, 400, JSON.stringify(layout.state));
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-
-      await chooseChatTheme(page, 'light');
-      await expectSavedTheme(read, 'youtube', { visible: true, width: 400, theme: 'light' });
-      await expectAppliedTheme(page, 'light');
-      await chooseChatTheme(page, 'dark');
-      await expectSavedTheme(read, 'youtube', { visible: true, width: 400, theme: 'dark' });
-      await expectAppliedTheme(page, 'dark');
-      await chooseChatTheme(page, 'native');
-      await expectSavedTheme(read, 'youtube', { visible: true, width: 400, theme: 'native' });
-      await expectAppliedTheme(page, 'native');
-
+      await setChatWidth(page, 440);
+      assert.equal(await page.locator('.theater-chat-theme-hint').isVisible(), true);
+      assert.equal(await page.locator('.theater-chat-theme-select').getAttribute('aria-describedby'), 'theater-chat-theme-hint');
+      assert.equal(await page.locator('.theater-chat-theme-hint').textContent(), 'YouTube chat follows the appearance selected in YouTube settings.');
+      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'native'});
+      await closeChatSettings(page);
       await page.locator('.theater-chat-toggle').click();
       await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
       theme = await readThemeControl(page);
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
-      assert.equal(theme.value, 'native', JSON.stringify(theme));
-      await chooseChatTheme(page, 'dark');
-      await expectSavedTheme(read, 'youtube', { visible: false, width: 400, theme: 'dark' });
-      await expectAppliedTheme(page, 'dark');
-      await chooseChatTheme(page, 'native');
-      await expectSavedTheme(read, 'youtube', { visible: false, width: 400, theme: 'native' });
-      await expectAppliedTheme(page, 'native');
-      await chooseChatTheme(page, 'dark');
-      await expectSavedTheme(read, 'youtube', { visible: false, width: 400, theme: 'dark' });
-      await expectAppliedTheme(page, 'dark');
-      theme = await readThemeControl(page);
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
-      const savedWhileHidden = read().nativeChatPreferences as Record<string, { visible: boolean; width: number; theme: string }>;
-      assert.deepEqual(Object.keys(savedWhileHidden.youtube).sort(), ['theme', 'visible', 'width']);
-      assert.deepEqual(savedWhileHidden.twitch, { visible: true, width: 380, theme: 'native' });
-
-      await closeChatSettings(page);
-      await page.setViewportSize({ width: 800, height: 720 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
-      layout = await layoutOf(page);
-      assert.equal(layout.widthRowHidden, true, JSON.stringify(layout));
-      theme = await readThemeControl(page);
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
-      assert.equal(theme.value, 'dark', JSON.stringify(theme));
+      assert.equal(theme.value,'native');
+      assert.equal(theme.disabled,true);
       await page.locator('.theater-chat-toggle').click();
       await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      layout = await layoutOf(page);
-      assertBottomDock(layout, 'youtube theme on bottom dock');
-      theme = await readThemeControl(page);
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.value, 'dark', JSON.stringify(theme));
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.theme, 'dark', JSON.stringify(layout.state));
-      assertRightDock(layout, 'youtube theme restored to the right dock');
-      await expectSavedTheme(read, 'youtube', { visible: true, width: 400, theme: 'dark' });
+      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'native'});
+      let layout = await layoutOf(page);
+      assert.equal(layout.state?.width,440);
 
       await page.goto(TWITCH_CHANNEL, { waitUntil: 'load' });
       await boot(page);
@@ -1144,9 +1102,28 @@ describe('native chat browser session', () => {
       await expectAppliedTheme(page, 'light');
       const separated = read().nativeChatPreferences as Record<string, { visible: boolean; width: number; theme: string }>;
       assert.deepEqual(Object.keys(separated).sort(), ['twitch', 'youtube']);
-      assert.deepEqual(separated.youtube, { visible: true, width: 400, theme: 'dark' });
+      assert.deepEqual(separated.youtube, { visible: true, width: 440, theme: 'native' });
       assert.deepEqual(Object.keys(separated.twitch).sort(), ['theme', 'visible', 'width']);
 
+      await chooseChatTheme(page, 'dark');
+      await expectAppliedTheme(page, 'dark');
+      await closeChatSettings(page);
+      await page.locator('.theater-chat-toggle').click();
+      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+      theme = await readThemeControl(page);
+      assert.equal(theme.hidden,false);
+      assert.equal(theme.disabled,false);
+      assert.equal(theme.value,'dark');
+      await page.setViewportSize({width:800,height:720});
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
+      await chooseChatTheme(page,'light');
+      await expectSavedTheme(read,'twitch',{visible:false,width:380,theme:'light'});
+      await closeChatSettings(page);
+      await page.locator('.theater-chat-toggle').click();
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+      assertBottomDock(await layoutOf(page),'Twitch theme on bottom dock');
+      await page.setViewportSize({width:1280,height:800});
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
       await page.reload({ waitUntil: 'load' });
       await boot(page);
       await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
@@ -1160,11 +1137,11 @@ describe('native chat browser session', () => {
       await boot(page);
       await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
       theme = await readThemeControl(page);
-      assert.equal(theme.value, 'dark', JSON.stringify(theme));
-      await expectAppliedTheme(page, 'dark');
+      assert.equal(theme.value, 'native', JSON.stringify(theme));
+      await expectAppliedTheme(page, 'native');
       layout = await layoutOf(page);
       assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.width, 400, JSON.stringify(layout.state));
+      assert.equal(layout.state?.width, 440, JSON.stringify(layout.state));
       assert.deepEqual(pageErrors(page), []);
     } finally {
       await browser.close();

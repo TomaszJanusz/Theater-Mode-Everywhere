@@ -617,6 +617,9 @@
   "nativeChatWidth": {
     "message": "Szerokość czatu"
   },
+  "nativeChatThemeYouTubeNative": {
+    "message": "Czat YouTube używa motywu wybranego w ustawieniach YouTube."
+  },
   "nativeChatTheme": {
     "message": "Motyw czatu"
   },

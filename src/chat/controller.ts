@@ -126,7 +126,7 @@ export class ChatController {
     const provider = this.provider();
     if (!provider) return;
     const preference = this.ensurePreference(provider, this.current.surface?.initiallyVisible ?? null);
-    const next = normalizeChatTheme(theme);
+    const next = provider === 'youtube' ? 'native' : normalizeChatTheme(theme);
     if (preference.theme === next) return;
     preference.theme = next;
     if (preference.seeded || preference.visibilityLocked) this.persist(provider);
@@ -405,7 +405,7 @@ export class ChatController {
     const storedWidth = stored && Number.isFinite(stored.width) ? clampChatWidth(stored.width) : null;
     const storedVisible = stored && typeof stored.visible === 'boolean' ? stored.visible : null;
     const created: MemoryPreference = {
-      theme: normalizeChatTheme(stored?.theme),
+      theme: provider === 'youtube' ? 'native' : normalizeChatTheme(stored?.theme),
       visible: storedVisible ?? initiallyVisible ?? true,
       width: storedWidth ?? DEFAULT_CHAT_WIDTH_PX,
       visibilityLocked: storedVisible !== null,

@@ -17,6 +17,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   nativeChatThemeLight: "Light",
   nativeChatThemeNative: "Service settings",
   nativeChatThemeDark: "Dark",
+  nativeChatThemeYouTubeNative: "YouTube chat follows the appearance selected in YouTube settings.",
   nativeChatFullscreenUnavailable: "Fullscreen with chat is unavailable. Theater mode remains active.",
   extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",

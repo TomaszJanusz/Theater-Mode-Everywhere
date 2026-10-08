@@ -151,3 +151,14 @@ html.theater-everywhere-html-active[data-theater-chat-active] ytd-popup-containe
 .theater-chat-theme-row[hidden] {
   display: none !important;
 }
+
+.theater-chat-theme-hint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.theater-chat-theme-hint[hidden] {
+  display: none !important;
+}

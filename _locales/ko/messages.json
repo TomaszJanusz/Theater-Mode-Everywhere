@@ -617,6 +617,9 @@
   "nativeChatWidth": {
     "message": "채팅 너비"
   },
+  "nativeChatThemeYouTubeNative": {
+    "message": "YouTube 채팅은 YouTube 설정에서 선택한 테마를 사용합니다."
+  },
   "nativeChatTheme": {
     "message": "채팅 테마"
   },

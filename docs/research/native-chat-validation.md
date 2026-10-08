@@ -47,33 +47,39 @@ Materiał: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQ
 
 ![YouTube: czat schowany przyciskiem TME](screenshots/youtube-chat-hidden.png)
 
-## Motyw czatu: jasny, ustawienia serwisu, ciemny
+## Motyw czatu i kontrast
 
-Zrzuty wykonano 8 października 2026 w Chromium 153 uruchomionym graficznie przez Playwright/Xvfb, z osobnym tymczasowym profilem i zainstalowanym `dist/chrome-unpacked`. Sesja wylogowana. Ustawienie zmieniano w menu playera TME; nie klikano natywnych przełączników wyglądu serwisu i nie wysłano wiadomości.
+Na Twitchu opcje „Jasny / Ustawienia serwisu / Ciemny” są aktywne podczas sesji TME, także przy schowanym czacie i dolnym panelu. Adapter wyszukuje pełną klasę palety w aktualnym CSS Twitcha oraz przełącza natywne flagi wyglądu kontenera i portali. Nie ma własnej listy kolorów ani podmian funkcji serwisu. Jeśli arkusza nie można odczytać lub palety rozpoznać, czat zachowuje natywny wygląd. Wygenerowana nazwa klasy nie jest zapisana w kodzie.
 
-Wymuszenie działa tylko w sesji TME. Opcja „Service settings” zostawia wygląd serwisu bez zmian. Ciemny i jasny motyw nie zmienia `src` ramki.
+Ponowny test na [caedrel](https://www.twitch.tv/caedrel), Chromium 153 przez Playwright/Xvfb z zainstalowanym rozszerzeniem, obejmował wpisany, niewysłany szkic „TME — test kontrastu tekstu”, menu Chat Settings oraz przełączenie dark → light → service settings. T3 utracił dostęp do hosta automatyzacji podczas tej sesji, więc wykorzystano osobną przeglądarkę. Oryginalny kontener, edytor i szkic pozostały zachowane. Wariant ciemny: pole `rgb(24, 24, 27)`, tekst `rgb(239, 239, 241)`; jasny: pole `rgb(255, 255, 255)`, tekst `rgb(14, 14, 16)`. Powrót do ustawień serwisu odtworzył jasny punkt odniesienia. Nie wysłano wiadomości.
 
-YouTube: [Lofi Girl — transmisja live](https://www.youtube.com/watch?v=1-LpQekNa9g). Tło `yt-live-chat-renderer` wyniosło `rgb(15, 15, 15)` w motywie ciemnym i `rgb(255, 255, 255)` w jasnym.
+![Twitch: ciemna paleta z czytelnym szkicem](screenshots/twitch-chat-theme-dark.png)
 
-Twitch: [caedrel](https://www.twitch.tv/caedrel). Tło pokoju czatu wyniosło `rgb(24, 24, 27)` w motywie ciemnym i `rgb(255, 255, 255)` w jasnym. Tekst wiadomości podążał za paletą.
+![Twitch: ciemne natywne menu ustawień](screenshots/twitch-chat-theme-dark-menu.png)
 
-![YouTube: menu TME z motywem czatu](screenshots/youtube-chat-theme-settings.png)
+![Twitch: jasna paleta z zachowanym szkicem](screenshots/twitch-chat-theme-light.png)
 
-![YouTube: ciemny motyw natywnego czatu](screenshots/youtube-chat-theme-dark.png)
+**YouTube zachowuje motyw wybrany w ustawieniach YouTube.** Przełącznik TME pokazuje „Ustawienia serwisu”, jest nieaktywny i ma widoczne wyjaśnienie. Starsze preferencje wymuszające jasny/ciemny są ignorowane podczas sesji i normalizowane przy kolejnym zapisie. Widoczność i szerokość działają nadal.
 
-![YouTube: jasny motyw natywnego czatu](screenshots/youtube-chat-theme-light.png)
+Przyczynę mieszanego wyglądu odtworzono na prawdziwym [YouTube Live](https://www.youtube.com/watch?v=1-LpQekNa9g). `setGlobalDarkTheme(true)` przełącza `html[dark]` i semantyczną paletę, ale bieżący `live_chat_base` zawiera także skompilowane aliasy kolorów `--t…` w `:root`, zależne od motywu wybranego przy ładowaniu dokumentu. Tło renderera, tekst Top chat i obszar logowania korzystają z tych aliasów. Wymuszenie samego ciemnego atrybutu oraz tła renderera mieszało dwie palety. Natywne przełączenie w menu YouTube ładuje inny arkusz i wymienia dokument czatu.
 
-![Twitch: ciemny motyw natywnego czatu](screenshots/twitch-chat-theme-dark.png)
+Usunięto częściowe wymuszanie YouTube i jego most w świecie strony. TME nie przeładowuje czatu ani nie zmienia preferencji YouTube. Pełne wymuszanie motywu niezależnego od ustawień serwisu wymaga osobnego rozwiązania i kwalifikacji; obecna wersja nie deklaruje tej funkcji.
 
-![Twitch: jasny motyw natywnego czatu](screenshots/twitch-chat-theme-light.png)
+Zrzuty YouTube poniżej pokazują **motywy wybrane natywnie w YouTube**, zachowane przez TME, a nie wymuszanie palety przez TME. Sesja wylogowana: pole edycji dostępne po zalogowaniu nie zostało zweryfikowane na serwisie. Poprzednie zrzuty z mieszaną paletą zastąpiono.
+
+![YouTube: ustawienia TME z wyjaśnieniem natywnego motywu](screenshots/youtube-chat-theme-settings.png)
+
+![YouTube: pełny ciemny motyw wybrany w serwisie](screenshots/youtube-chat-theme-dark.png)
+
+![YouTube: pełny jasny motyw wybrany w serwisie](screenshots/youtube-chat-theme-light.png)
 
 ## Co pozostaje do kwalifikacji przed wydaniem
 
 Weryfikacja automatyczna:
 
 - `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles`: sukces.
-- 21 nowych testów kontraktu i sesji czatu: sukces, bez pominiętych testów.
-- `pnpm test`: 473/474. Test Netflixa `boots at document_start and uses the attached signed-in session…` kończy się timeoutem w `src/ui/netflix-runtime.browser.test.ts:476`. Identyczny wynik odtworzono w osobnym katalogu na bazowym commicie `a79a5417b42ec6ea27b5f339afbd16714b14bee3`; nie jest to regresja czatu.
+- 23 testy kontraktu i sesji czatu: sukces, bez pominiętych testów.
+- `pnpm test` (równolegle): 474/476. Oprócz Netflixa test odliczania w `src/ui/service-actions.browser.test.ts:288` nie zmieścił się w tolerancji czasu. Ponowna kwalifikacja seryjna: 464/465, plus 11/11 testów `src/providers/service-actions.browser.test.ts` — łącznie 475/476, bez pominięć. Test odliczania i Bilibili przechodzą seryjnie bez zmian kodu; wcześniejszy obciążony przebieg miał także timeout Bilibili. Test Netflixa `boots at document_start and uses the attached signed-in session…` kończy się timeoutem w `src/ui/netflix-runtime.browser.test.ts:476`. Identyczny wynik odtworzono w osobnym katalogu na bazowym commicie `a79a5417b42ec6ea27b5f339afbd16714b14bee3`; nie jest to regresja czatu.
 - Chromium smoke: sukces dla zainstalowanej paczki rozszerzenia. Weryfikuje istniejące przepływy playera i fullscreen na lokalnych fixtures.
 - Firefox smoke: sukces w trybie diagnostycznym z wstrzykniętych paczek; Playwright nie ładuje niepodpisanego dodatku MV3. Nie stanowi kwalifikacji uprawnień ani natywnego czatu Firefox.
 - Testy przeglądarkowe zgłaszają jawne pominięcie, jeśli Chromium nie jest zainstalowany. Wszystkie nowe testy wykonano lokalnie bez pominięć. Istniejący CI uruchamia główny zestaw przed instalacją Playwright; na świeżym runnerze te testy mogą być pominięte. Dodanie osobnego kroku po instalacji pozostaje do wykonania: GitHub odrzucił zmianę workflow z powodu braku uprawnienia `workflow` w połączeniu OAuth.

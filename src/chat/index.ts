@@ -11,7 +11,7 @@ export type { ChatControllerOptions } from './controller';
 export { ChatController } from './controller';
 export { detectChatSurface } from './detect';
 export { isNativeChatEvent } from './events';
-export { installYouTubeChatThemeBridge, normalizeChatTheme } from './theme';
+export { normalizeChatTheme } from './theme';
 export { isChatDocument } from './url';
 export {
   CHAT_DOCK_BREAKPOINT_PX,

@@ -617,6 +617,9 @@
   "nativeChatWidth": {
     "message": "チャットの幅"
   },
+  "nativeChatThemeYouTubeNative": {
+    "message": "YouTube チャットには YouTube の設定で選択したテーマが適用されます。"
+  },
   "nativeChatTheme": {
     "message": "チャットのテーマ"
   },

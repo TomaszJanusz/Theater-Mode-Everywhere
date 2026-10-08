@@ -9,7 +9,6 @@ import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { isChatDocument, isNativeChatEvent } from '../chat';
-import { installYouTubeChatThemeBridge } from '../chat/theme';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -60,7 +59,6 @@ import {
 
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
-  installYouTubeChatThemeBridge(document);
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
 
   function requestUrl(input: RequestInfo | URL): string {

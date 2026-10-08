@@ -617,6 +617,9 @@
   "nativeChatWidth": {
     "message": "Chat width"
   },
+  "nativeChatThemeYouTubeNative": {
+    "message": "YouTube chat follows the appearance selected in YouTube settings."
+  },
   "nativeChatTheme": {
     "message": "Chat theme"
   },

@@ -617,6 +617,9 @@
   "nativeChatWidth": {
     "message": "Ширина чату"
   },
+  "nativeChatThemeYouTubeNative": {
+    "message": "Чат YouTube використовує тему, вибрану в налаштуваннях YouTube."
+  },
   "nativeChatTheme": {
     "message": "Тема чату"
   },
