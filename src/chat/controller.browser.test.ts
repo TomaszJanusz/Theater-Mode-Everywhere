@@ -112,6 +112,25 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
+  it('opens a Polish YouTube archive card before its replay frame mounts', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK">
+      <yt-video-metadata-carousel-view-model aria-label="Ponowne odtwarzanie czatu na żywo">
+        <button type="button" onclick="window.opened = (window.opened || 0) + 1">Otwórz panel</button>
+      </yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
+    try {
+      const report = await page.evaluate(`(() => {
+        const controller = new NativeChat.ChatController({document, href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK', onChange() {}, onLayoutChange() {}});
+        controller.start();
+        const before = { available: controller.state.available, surface: controller.state.surface };
+        controller.show(); controller.refresh();
+        const opened = window.opened;
+        controller.dispose(); return { before, opened };
+      })()`);
+      assert.deepEqual(report, { before: { available: true, surface: null }, opened: 1 });
+    } finally { await page.close(); }
+  });
+
   it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`);

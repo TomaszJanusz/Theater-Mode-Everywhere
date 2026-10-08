@@ -8,6 +8,7 @@ export const YOUTUBE_CHAT_CARD_SELECTOR = 'yt-video-metadata-carousel-view-model
 // unknown labels fail closed instead of opening a different metadata panel.
 const CHAT_TITLES = new Set([
   'live chat', 'chat replay', 'live chat replay', 'czat na żywo', 'powtórka czatu',
+  'ponowne odtwarzanie czatu', 'ponowne odtwarzanie czatu na żywo',
   'chat en directo', 'repetición del chat', 'chat ao vivo', 'replay do chat',
   'chat en direct', 'rediffusion du chat', 'livechat', 'chat dal vivo',
   'чат', 'чат трансляции', 'повтор чата', 'чат наживо', 'повтор чату',
