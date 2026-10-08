@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Preserve existing Twitch and YouTube chat in theater mode, beside the picture or below it in narrow windows. Show/hide chat from the player toolbar and choose its width and Light / Service settings / Dark theme from Player settings; preferences are remembered per service. [Usage, validation and remaining release qualification](docs/research/native-chat-validation.md).
+
 - Change the Centered/Raised picture layout from Player settings or the configurable Shift+L shortcut. The preference is shared with Settings → Appearance.
 
 - Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted.

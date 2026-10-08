@@ -4,7 +4,9 @@
 
 Dalsza część dokumentu zachowuje **historyczne pomiary prototypów**. Pierwszy odczyt CSSOM pominął aliasy w skrótowych deklaracjach CSS, takich jak `border-color`: wartości longhand mogą być puste przy `var()`. Pełne przeszukanie serializowanych deklaracji wykazało **68 używanych aliasów, z których 57 zmienia kolor**, zamiast wcześniejszych 47/38. Adapter obejmuje te 57 różnic; test porównuje wszystkie 68 z niezależnie odczytanymi natywnymi paletami. Wartości 38 i 47 poniżej opisują zakres dawnych eksperymentów, a nie pokrycie obecnego kodu.
 
-## Pomiar na prawdziwym serwisie
+Obecny adapter działa bez wywoływania metod serwisu w świecie strony: wspólna `ChatThemeSession` stosuje adapter do aktualnego dokumentu oryginalnej ramki i odtwarza jego własny snapshot przy wyborze `native`, wymianie dokumentu lub wyjściu z theater. Brak znanej kompletnej palety usuwa wymuszenie, zachowuje wybór użytkownika i pokazuje wyjaśnienie. Kod funkcji: `8b2dcfc`; [zrzuty ustawień odświeżone po poprawce strzałki](native-chat-validation.md) pochodzą z `4255228`.
+
+## Historyczny pomiar na prawdziwym serwisie
 
 Test wykonano 8 października 2026 na [Lofi Girl Live](https://www.youtube.com/watch?v=1-LpQekNa9g), w graficznym Chromium 153 przez Playwright/Xvfb. Osobny profil był wylogowany i miał zainstalowane rozszerzenie z commita `05fb0022c1e32d96475864d26e01b16f9a11dac1`. Nie korzystano z konta użytkownika. Przeglądarka T3 nie otrzymała działającego czatu od YouTube; pomiary dotyczą osobnego Chromium.
 
@@ -68,7 +70,7 @@ Surowe porównanie właściwości badanych węzłów wykazało tylko różny zap
 
 To zmniejsza trudność względem pierwszej oceny: druga paleta semantyczna już jest w dokumencie, więc jej pobieranie nie musi być częścią rozwiązania. Mapę przygotowano jednak badawczo na podstawie obu poprzednio zmierzonych natywnych motywów. Nie opracowano automatycznego, jednoznacznego mapowania nieznanej wersji. Most nadal zawiera wygenerowane nazwy aliasów oraz cztery specjalne powiązania. `color-mix` sprawdzono w Chromium 153; zgodność pozostałych przeglądarek i fallback wymagają kwalifikacji. Zalogowany edytor pozostaje niezweryfikowany.
 
-## Złożoność wdrożenia i utrzymania
+## Historyczna ocena złożoności wdrożenia i utrzymania
 
 | Warstwa | Ocena | Powód |
 | --- | --- | --- |

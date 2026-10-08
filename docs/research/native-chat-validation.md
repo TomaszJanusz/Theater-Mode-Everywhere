@@ -2,6 +2,23 @@
 
 [PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) zachowuje istniejące czaty na stronach Twitch i YouTube, udostępnia chowanie, szerokość oraz niezależny motyw **Jasny / Ustawienia serwisu / Ciemny**. Zadanie: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej). [Opracowanie architektury](twitch-youtube-chat.md) opisuje szerszy zakres docelowy; nowe embedy na stronach zewnętrznych są osobnym etapem.
 
+Stan dokumentacji: 8 października 2026, kod `8b2dcfc`, aktualizacja zrzutów `4255228`. PR jest otwarty do review, poza trybem draft. Poniżej opisano funkcję z gałęzi PR; nie jest to deklaracja jej wydania w 1.5.0.
+
+## Obsługa czatu
+
+1. Wejdź do theater na stronie Twitch lub YouTube z istniejącym czatem. Przycisk czatu na pasku playera pokazuje lub chowa panel; przy braku wykrytego czatu przycisk i jego ustawienia pozostają ukryte.
+2. W ustawieniach playera wybierz szerokość bocznego panelu (domyślnie 360 px, zakres 280–600 px) lub motyw **Jasny / Ustawienia serwisu / Ciemny**. Motyw dotyczy czatu i nie zmienia preferencji wyglądu zapisanych w serwisie.
+3. Od 900 px szerokości okna panel jest po prawej. W węższym oknie znajduje się pod wideo i nie pokazuje suwaka szerokości. Przy schowanym czacie suwak bocznego panelu jest nieaktywny; wybór motywu pozostaje dostępny w obu układach.
+4. Gdy paleta jest nierozpoznana lub dokument czatu jeszcze nie jest gotowy, TME używa wyglądu serwisu i pokazuje wyjaśnienie przy wyborze motywu. Wybrana opcja pozostaje zapamiętana; sesja ponawia sprawdzenie dostępności palety.
+
+TME respektuje zastaną widoczność, jeśli użytkownik nie zapisał wcześniej własnego wyboru. Nie zmienia filtra Top chat/Live chat ani nie tworzy czatu, którego serwis nie udostępnia. Ukrywanie nie usuwa istniejącego DOM; odbieranie wiadomości w tle nadal zależy od serwisu i przeglądarki. Przy odmowie fullscreen dokumentu i widocznym czacie TME pozostaje w theater z komunikatem, zamiast przechodzić na fullscreen samego wideo. Zwykłe video PiP obejmuje tylko wideo.
+
+## Preferencje i cykl życia
+
+`src/ui/chat.ts` zapisuje `visible`, `width` i `theme` pod kluczem `nativeChatPreferences` w `chrome.storage.sync`, osobno dla `twitch` i `youtube`. Zmiany są grupowane przez 350 ms; oczekujący zapis jest wysyłany przy zakończeniu sesji i `pagehide`. Brak lub nieprawidłowy motyw w starszych preferencjach daje `native`, bez zapisu migracyjnego podczas samego odczytu. TME nie zapisuje wiadomości, szkiców ani danych konta; szkic pozostaje w edytorze serwisu.
+
+Runtime playera uruchamia i kończy wspólną sesję czatu podczas wejścia i wyjścia z theater. Kontroler obserwuje strukturę strony i odpytuje tożsamość trasy co 500 ms; dopisywanie wiadomości wewnątrz zachowanego komponentu nie powoduje ponownego wykrywania. Zmiany viewportu są grupowane przez `requestAnimationFrame`. Sesja motywu co 700 ms sprawdza gotowość i tożsamość dokumentu; przy jego wymianie odtwarza stan starego adaptera i tworzy nowy snapshot dla nowego dokumentu. Wyjście odłącza obserwatory/timery i przywraca własne zmiany DOM/CSS. Obsługa zdarzeń pomija natywny czat, jego portale oraz samodzielne dokumenty czatu w światach MAIN i isolated.
+
 ## Wspólny kod i adaptery
 
 Adaptery detekcji w `src/chat/detect.ts` wskazują `ChatSurface`: oryginalny kontener, istniejącą ramkę, serwis, materiał, live/replay i przodków potrzebnych do prezentacji. Wiadomości i funkcje konta nadal obsługuje serwis. `ChatSurface` jest opisem istniejącego czatu, a nie rendererem wiadomości ani magistralą jego akcji.
@@ -34,6 +51,7 @@ Wykonano 8 października 2026, w graficznym Chromium 153 przez Playwright/Xvfb, 
 | Widok | Twitch | YouTube |
 | --- | --- | --- |
 | Menu opcji TME | ![Twitch — opcje i ciemny czat](screenshots/current/twitch-options-dark.png) | ![YouTube — opcje i ciemny czat](screenshots/current/youtube-options-dark.png) |
+| Menu opcji TME, jasny czat | ![Twitch — opcje i jasny czat](screenshots/current/twitch-options-light.png) | ![YouTube — opcje i jasny czat](screenshots/current/youtube-options-light.png) |
 | Jasny czat | ![Twitch — jasny czat i szkic](screenshots/current/twitch-light.png) | ![YouTube — jasny czat](screenshots/current/youtube-light.png) |
 | Ciemny czat | ![Twitch — ciemny czat i szkic](screenshots/current/twitch-dark.png) | ![YouTube — ciemny czat](screenshots/current/youtube-dark.png) |
 | Natywne menu | ![Twitch — Chat Settings nad playerem](screenshots/current/twitch-settings-dark.png) | ![YouTube — More options](screenshots/current/youtube-more-options-dark.png) |
@@ -51,7 +69,7 @@ Dodatkowe warianty: [jasne opcje Twitcha](screenshots/current/twitch-options-lig
 
 ## Testy i pozostała kwalifikacja
 
-- `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles`: sukces.
+- Ostatnia pełna kwalifikacja kodu `8b2dcfc`: `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles`: sukces. Aktualizacja czterech zrzutów ponownie przeszła build i weryfikację paczek; sprawdzono odtwarzanie, tożsamość czatu/dokumentu, brak dodatkowych `load` oraz odstęp strzałki 12 px we wszystkich czterech wariantach.
 - Testy URL, geometrii, kontrolera i UI czatu oraz lokalizacji: **29/29**, bez pominięć; w tym **26 testów czatu**.
 - Pełny `pnpm test`: **479/479**, bez pominięć. Naprawiono wcześniejszy timeout Netflixa: moduł Disney próbował użyć `document.documentElement` przed powstaniem `<html>` i przerywał instalację mostów MAIN. Test startu Netflixa sprawdza teraz również brak błędów strony.
 - Fixtures sprawdzają obie natywne palety YouTube i wszystkie 68 aliasów, kontrast edytora, zachowanie szkicu i klawiatury/IME, ukrywanie, zapis ustawień przy natychmiastowym wyjściu i przeładowaniu strony, zmianę dokumentu, przywracanie, fallback przy nieznanym aliasie w skrótowym `border-color` i odzyskanie palety po jego usunięciu. Nie zastępują testów serwisowych funkcji konta.

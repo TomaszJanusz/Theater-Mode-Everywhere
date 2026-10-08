@@ -2,19 +2,41 @@
 
 Wpis: [TME-18](https://linear.app/privacybrand/issue/TME-18/czaty-twitch-i-youtube-natywna-integracja-chowanie-i-zachowanie-pelnej). Notion: [opracowanie — prywatny szkic](https://app.notion.com/p/3f219f2ad8388114b21cd09bdc089573?pvs=204).
 
+## Aktualny zakres i obsługa
+
+Stan na 8 października 2026: [PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25) jest otwarty do review, poza trybem draft. Implementacja jest dostępna na jego gałęzi; nie stanowi jeszcze wydanej funkcji wersji 1.5.0. Kod funkcji odpowiada `8b2dcfc`, a galeria została odświeżona w `4255228`.
+
+TME zachowuje istniejący czat na stronach Twitch i YouTube. Po wejściu do theater przycisk czatu na pasku pokazuje lub chowa panel. W ustawieniach playera dostępne są szerokość bocznego panelu oraz motyw **Jasny / Ustawienia serwisu / Ciemny**. Domyślna szerokość to 360 px, zakres 280–600 px. Od 900 px szerokości okna czat znajduje się po prawej; w węższym oknie pod wideo, bez suwaka szerokości. Motyw można zmieniać także przy schowanym czacie. Suwak jest wtedy nieaktywny. Gdy strona nie udostępnia wykrywalnego czatu, kontrolki czatu nie są pokazywane.
+
+Widoczność, szerokość i motyw są zapisywane osobno dla Twitcha i YouTube. Bez wcześniejszego wyboru TME respektuje zastaną widoczność i motyw serwisu. Chowanie, zmiana szerokości i motywu nie przenoszą kontenera ani nie zastępują ramki. Nie zmieniają filtra Top chat/Live chat. Przy niedostępnej palecie TME zachowuje natywny wygląd z wyjaśnieniem i zapamiętuje żądany motyw. [Instrukcja i szczegóły aktualnej implementacji](native-chat-validation.md) zawierają także zapis preferencji, lifecycle, zrzuty i dowody.
+
+| Zakres | Stan |
+| --- | --- |
+| Układ, chowanie, niezależny motyw Twitch/YouTube | Zaimplementowane; sprawdzone na wylogowanych stronach live w Chromium z zainstalowanym rozszerzeniem. |
+| Klawiatura, szkic/IME, wymiana dokumentu, zapis przy wyjściu/reload, warstwy menu | Pokryte testami; rzeczywisty edytor i szkic sprawdzono na Twitchu, zalogowany edytor YouTube pozostaje do kwalifikacji. |
+| Replay/Premiere, funkcje konta, moderacja, monetyzacja, pełny przebieg filtra i responsywny YouTube, live Firefox | Detekcja uwzględnia replay, lecz pełna kwalifikacja tych funkcji przed wydaniem nadal pozostaje do wykonania. |
+| Fullscreen i PiP | Przy widocznym czacie odmowa fullscreen dokumentu pozostawia theater z komunikatem; video PiP obejmuje wideo. Fullscreen na rzeczywistych serwisach pozostaje do kwalifikacji. |
+| Dowolne strony zewnętrzne, nowe oficjalne embedy, osobne flagi czatu | Dalszy zakres projektu; obecny PR nie dodaje tworzenia embedów ani osobnych flag czatu. |
+
+Ostatnia pełna walidacja kodu `8b2dcfc`: **479/479 testów, bez pominięć**, w tym **29/29 testów czatu i lokalizacji (26 czatu)**; typecheck, build, weryfikacja paczek i Chromium smoke z `CI=true` przeszły. [Raport walidacji](native-chat-validation.md) rozdziela sprawdzone zachowania od pozostałych kryteriów wydania. Gotowość PR do review nie oznacza zakończenia kwalifikacji wszystkich funkcji serwisów.
+
+## Pierwotne założenia projektu
+
+Poniższe porównania, plan i kryteria odbioru zachowują opracowanie dla bazowego commita `a79a541`. Opisy brakujących kontraktów, planowanych flag i obserwatorów dotyczą tamtego etapu. Aktualny kontrakt [ChatSurface i ChatState](../../src/chat/types.ts) oraz [kontroler](../../src/chat/controller.ts) są już zaimplementowane; lifecycle jest podłączony przez `startNativeChatSession` / `stopNativeChatSession` w runtime playera. Statusy proponowane niżej nie są polami obecnego `ChatSurface`.
+
 ## Rekomendacja
 
 Zachować istniejący, natywny czat Twitcha i YouTube oraz jego sesję. TME powinno sterować geometrią playera, panelem czatu i przyciskiem pokaż/schowaj, pozostawiając renderowanie wiadomości, logowanie, moderację i transakcje serwisowi. Na stronach zewnętrznych preferować już istniejący czat; nowy oficjalny embed dopuszczać jako osobny, sprawdzony wariant live.
 
 To rekomendacja architektoniczna wynikająca z kodu i dokumentacji, nie potwierdzenie działania prototypu. Warunkiem wydania jest brak regresji względem funkcji dostępnych na tej samej stronie, koncie, transmisji i przeglądarce bez TME. Nie można zagwarantować wszystkich przyszłych funkcji ani odporności na dowolną zmianę DOM. Można ograniczyć obszar zależności i zapewnić powrót do natywnego widoku.
 
-## Podstawa opracowania
+## Podstawa pierwotnego opracowania
 
 Data: 2026-10-08. Repozytorium: Theater-Mode-Everywhere, wersja package.json 1.5.0, commit a79a5417b42ec6ea27b5f339afbd16714b14bee3. Wykonano analizę statyczną lokalnego kodu oraz sprawdzenie oficjalnej dokumentacji. Nie przeprowadzono testów zalogowanych sesji, moderacji ani zakupów na działających czatach.
 
 Istniejące zadania: [TME-7 — YouTube Integration v2](https://linear.app/privacybrand/issue/TME-7/youtube-integration-v2) i [TME-8 — Twitch Integration v2](https://linear.app/privacybrand/issue/TME-8/twitch-integration-v2). Oba obejmują live i VOD. To opracowanie definiuje wspólną architekturę i kryteria odbioru.
 
-## Co wymaga zmiany w obecnym TME
+## Co wymagało zmiany w bazowym TME
 
 - [YouTube presentation.css](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/a79a5417b42ec6ea27b5f339afbd16714b14bee3/src/providers/youtube/presentation.css#L1) ukrywa zarówno #chat, jak i #secondary. Przywrócenie widoczności samego czatu nie wystarczy: opacity: 0 na przodku nadal ukrywa cały poddrzewo. Wyjątek musi obejmować kontener czatu, jego potrzebnych przodków oraz wymagane natywne dialogi.
 - [Twitch presentation.css](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/a79a5417b42ec6ea27b5f339afbd16714b14bee3/src/providers/twitch/presentation.css#L1) rozciąga .persistent-player na viewport i ukrywa .right-column oraz right-column-chat-bar. Potrzebny jest warunkowy układ z miejscem na prawą kolumnę.
@@ -52,7 +74,7 @@ YouTube live chat URL: `https://www.youtube.com/live_chat?v={videoId}&embed_doma
 
 Nowy embed zależy także od CSP strony, zasad frame-ancestors/X-Frame-Options serwisu, referrera oraz dostępu do sesji. Uprawnienia host_permissions rozszerzenia nie znoszą tych ograniczeń. Nie obchodzić blokad. Wariant zewnętrzny kwalifikować osobno w Chrome i Firefox z blokowaniem cookies. Źródło: [MDN — third-party cookies](https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Third-party_cookies).
 
-## Projekt architektury i UI
+## Pierwotny projekt architektury i UI
 
 1. **Adapter czatu na platformę.** Proponowany kontrakt ChatSurface: provider, contentKey, kind (live/replay), root, iframe?, status oraz dispose. Statusy: wykrywanie, dostępny, niedostępny z powodu serwisu, integracja nieobsługiwana. Flagi mają opisywać możliwości potwierdzone; nie wnioskować o uprawnieniach konta z samej obecności iframe.
 2. **Kontroler przypisany do PlayerSession.** Używać epoch i DisposableScope do odpinania obserwatorów, zamykania poprzednich powiązań i odrzucania spóźnionych wyników po nawigacji. ChatSurface pozostaje osobnym kontraktem obok PlaybackSurface.
@@ -88,7 +110,7 @@ Każdy wynik porównywać z natywną stroną bez TME na tym samym koncie i mater
 - **Monetyzacja:** sprawdzić dostępność i poprawną prezentację natywnych formularzy bez niezamówionego zakupu. Faktyczny przepływ płatności wymaga oddzielnego, kontrolowanego testu; bez niego nie deklarować weryfikacji transakcji.
 - **Automatyzacja:** testy kontraktu i lifecycle oraz fixtures browser dla hide/restore, fokusów, nawigacji i ramek; uzupełnić kontrolowanymi testami na żywych serwisach. Fixture nie dowodzi działania serwisowej funkcji ani logowania.
 
-## Kolejność realizacji
+## Pierwotna kolejność realizacji
 
 1. Spike natywnego czatu na Twitch i YouTube: kontener, przodkowie, warstwy, najtrudniejsze dialogi oraz fullscreen. Rozstrzygnąć wykonalność przed deklaracją pełnej zgodności.
 2. Wspólny ChatSurface i kontroler sesji, jeden prostokąt wideo, toggle i preferencje; integracja w TME-7 oraz TME-8.
@@ -97,4 +119,4 @@ Każdy wynik porównywać z natywną stroną bez TME na tym samym koncie i mater
 
 ## Stan realizacji
 
-Pierwsza implementacja znajduje się na [draft PR #25](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25). [Dokument walidacji](native-chat-validation.md) rozdziela zrealizowany wspólny kontroler i adaptery, testy automatyczne, rzeczywiste zrzuty oraz pozostałą kwalifikację przed wydaniem. Proponowany wyżej docelowy zakres jest szerszy niż obecny draft.
+Implementacja znajduje się na [PR #25, gotowym do review](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/pull/25). Aktualny zakres opisano na początku tego dokumentu, a [raport walidacji](native-chat-validation.md) zawiera dowody i pozostałą kwalifikację przed wydaniem. Pierwotny zakres docelowy jest szerszy niż ten PR.
