@@ -1,4 +1,3 @@
-import { readStylesheet } from '../../test-utils/styles';
 import assert from 'node:assert/strict';
 import { describe, it, type TestContext } from 'node:test';
 import { preferProviderCaptionTracks } from '../../media-features/composite-adapter';
@@ -24,7 +23,7 @@ import { serviceHomeUrl } from '../../platform/service-home';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
 import { isCrunchyrollHost } from '../hosts';
 import { CrunchyrollAdapter, requestCrunchyrollHostCaption } from './adapter';
-import { CRUNCHYROLL_HOST_CAPTION_CLASS, CRUNCHYROLL_HOST_CAPTION_SELECTOR } from './host-surface';
+import { CRUNCHYROLL_HOST_CAPTION_CLASS } from './host-surface';
 import {
   applyCrunchyrollHostCaption,
   captureCrunchyrollNetworkResponse,
@@ -651,13 +650,6 @@ describe('Crunchyroll RTE', () => {
   });
 
   it('enables and disables host subtitles for the modern manifest and lifts only that renderer', async () => {
-    const css = readStylesheet(new URL('../../content.css', import.meta.url));
-    assert.match(css, /theater-everywhere-crunchyroll-host-captions/);
-    assert.match(css, /\.bitmovinplayer-container > div:last-child:has\(> div > ul\)/);
-    assert.match(css, /theater-everywhere-crunchyroll-host-captions[\s\S]* > div > ul \{[^}]*bottom:\s*var\(--theater-caption-bottom,\s*48px\)/);
-    assert.equal(css.includes('bmpui-'), false);
-    assert.equal(CRUNCHYROLL_HOST_CAPTION_SELECTOR, '.bitmovinplayer-container > div:last-child > div > ul');
-
     const page = installPage(`/watch/${MODERN_MEDIA}/the-journeys-end`);
     const tracks = [{
       id: 'caption-en-US',

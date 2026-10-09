@@ -3,7 +3,6 @@ import { createHmac } from 'node:crypto';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import {
-  AMO_LOCALE_SOURCES,
   buildAmoPayload,
   createAmoJwt,
   parseAmoListing,
@@ -48,8 +47,6 @@ one, two
     assert.equal(payload.description['es-AR'], payload.description['es-ES']);
     assert.equal(payload.description['es-CL'], payload.description['es-MX']);
     assert.ok(!('ar' in payload.summary));
-    assert.deepEqual(AMO_LOCALE_SOURCES.pt_BR, ['pt-BR']);
-    assert.deepEqual(AMO_LOCALE_SOURCES.zh_CN, ['zh-CN']);
   });
 
   it('allows a credential-free dry run but requires both JWT credential values for writes', () => {

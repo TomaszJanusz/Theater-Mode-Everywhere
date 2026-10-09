@@ -64,10 +64,6 @@ function mainYouTubeVideo(): HTMLVideoElement {
 }
 
 describe('switchable theater videos', () => {
-  it('keeps a real YouTube watch player', () => {
-    assert.equal(isSwitchableTheaterVideo(mainYouTubeVideo()), true);
-  });
-
   it('ignores empty leftover videos with no source or metadata', () => {
     assert.equal(isSwitchableTheaterVideo(fakeVideo({
       box: { width: 880, height: 495 }
@@ -83,21 +79,7 @@ describe('switchable theater videos', () => {
     assert.deepEqual(selectSwitchableVideos([spare, current]), [current]);
   });
 
-  it('ignores a leftover hidden YouTube Shorts player on a watch page', () => {
-    const main = mainYouTubeVideo();
-    const shorts = fakeVideo({
-      currentSrc: 'blob:https://www.youtube.com/shorts-leftover',
-      readyState: 0,
-      hosts: ['#shorts-player', 'ytd-shorts', '[hidden]'],
-      box: { width: 0, height: 0 },
-      clientWidth: 0,
-      clientHeight: 0
-    });
-    assert.equal(isSwitchableTheaterVideo(shorts), false);
-    assert.deepEqual(selectSwitchableVideos([main, shorts]), [main]);
-  });
-
-  it('ignores YouTube hover-preview and miniplayer hosts', () => {
+  it('offers only the main video when other sourced players are Shorts, previews or miniplayers', () => {
     const preview = fakeVideo({
       currentSrc: 'blob:https://www.youtube.com/preview',
       videoWidth: 640,
@@ -125,10 +107,21 @@ describe('switchable theater videos', () => {
       hosts: ['ytd-miniplayer'],
       box: { width: 400, height: 225 }
     });
+    const shorts = fakeVideo({
+      currentSrc: 'blob:https://www.youtube.com/shorts-leftover',
+      videoWidth: 1920,
+      videoHeight: 1080,
+      readyState: 4,
+      duration: 12,
+      hosts: ['#shorts-player', 'ytd-shorts']
+    });
 
     assert.equal(isSwitchableTheaterVideo(preview), false);
     assert.equal(isSwitchableTheaterVideo(inline), false);
     assert.equal(isSwitchableTheaterVideo(mini), false);
+    assert.equal(isSwitchableTheaterVideo(shorts), false);
+    const main = mainYouTubeVideo();
+    assert.deepEqual(selectSwitchableVideos([main, preview, inline, mini, shorts]), [main]);
   });
 
   it('ignores zero-size players even when they still have a blob src', () => {
@@ -140,19 +133,6 @@ describe('switchable theater videos', () => {
       clientWidth: 0,
       clientHeight: 0
     })), false);
-  });
-
-  it('does not offer switch when the only extra videos are YouTube previews', () => {
-    const main = mainYouTubeVideo();
-    const inline = fakeVideo({
-      currentSrc: 'blob:https://www.youtube.com/inline',
-      videoWidth: 640,
-      videoHeight: 360,
-      readyState: 4,
-      hosts: ['#inline-player'],
-      box: { width: 228, height: 124 }
-    });
-    assert.deepEqual(selectSwitchableVideos([main, inline]), [main]);
   });
 
   it('still offers switch between two real players', () => {

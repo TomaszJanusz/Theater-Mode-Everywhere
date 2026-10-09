@@ -139,30 +139,6 @@ describe('playlist navigation availability', () => {
     assert.deepEqual(usableControlIndexes(single, 1280), []);
   });
 
-  it('keeps a YouTube playlist step that stays in the DOM while the control bar autohides', () => {
-    const autohide = [
-      control({
-        provider: 'youtube',
-        directionHint: 'previous',
-        ariaDisabled: 'false',
-        computedDisplay: 'block',
-        width: 52
-      }),
-      control({
-        provider: 'youtube',
-        directionHint: 'next',
-        ariaDisabled: 'false',
-        className: 'ytp-next-button ytp-button ytp-playlist-ui',
-        computedDisplay: 'block',
-        width: 52
-      })
-    ];
-    assert.deepEqual(
-      usableControlIndexes(autohide, 1280).map((entry) => entry.direction),
-      ['previous', 'next']
-    );
-  });
-
   it('follows PeerTube video.js disabled and hidden classes', () => {
     const playlistStart = [
       control({

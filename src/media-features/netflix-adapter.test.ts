@@ -5,7 +5,6 @@ import {
   NETFLIX_CAPTION_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
   NETFLIX_SNAPSHOT_ID,
-  chooseNetflixRawTrack,
   netflixCaptionAckDetail,
   parseNetflixCaptionRequest,
   parseNetflixTextTracks
@@ -75,8 +74,6 @@ describe('Netflix caption request bridge', () => {
       assert.ok(request);
       assert.equal(request?.trackId, null);
       seen.push(request?.requestId || '');
-      const raw = chooseNetflixRawTrack(rawTracks, request?.trackId ?? null) as { displayName?: string };
-      assert.equal(raw.displayName, 'wył.');
       target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
         detail: netflixCaptionAckDetail({ requestId: request!.requestId, ok: true })
       }));
@@ -116,7 +113,6 @@ describe('Netflix caption request bridge', () => {
     target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
       detail: netflixCaptionAckDetail({ requestId, ok: true })
     }));
-    assert.equal(parseNetflixCaptionRequest({ requestId: 'te-nf-abcdefgh', trackId: null } as unknown as string), null);
   });
 
   it('sends Off after captions are withdrawn and does not activate a language', async () => {

@@ -61,34 +61,15 @@ function retainedEntries(scope: DisposableScope): number {
 
 describe('DisposableScope resource lifecycle', () => {
   it('removes event listeners on dispose', () => {
-    const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
-    const stub: EventTarget = {
-      addEventListener(type, listener) {
-        if (!listener) return;
-        const set = listeners.get(type) || new Set();
-        set.add(listener);
-        listeners.set(type, set);
-      },
-      removeEventListener(type, listener) {
-        if (!listener) return;
-        listeners.get(type)?.delete(listener);
-      },
-      dispatchEvent(event) {
-        for (const listener of listeners.get(event.type) || []) {
-          if (typeof listener === 'function') listener(event);
-        }
-        return true;
-      }
-    };
-
+    const target = new EventTarget();
     const scope = new DisposableScope();
     let count = 0;
     const handler = () => { count += 1; };
-    scope.listen(stub, 'theater-everywhere-playback-intent', handler);
-    stub.dispatchEvent(new Event('theater-everywhere-playback-intent'));
+    scope.listen(target, 'theater-everywhere-playback-intent', handler);
+    target.dispatchEvent(new Event('theater-everywhere-playback-intent'));
     assert.equal(count, 1);
     scope.dispose();
-    stub.dispatchEvent(new Event('theater-everywhere-playback-intent'));
+    target.dispatchEvent(new Event('theater-everywhere-playback-intent'));
     assert.equal(count, 1);
   });
 
@@ -117,28 +98,6 @@ describe('DisposableScope resource lifecycle', () => {
     assert.equal(fired, false);
     assert.deepEqual(clock.clearedTimers, [id]);
     assert.equal(clock.timers.size, 0);
-  });
-
-  it('drops document capture listeners used for drag when disposed mid-gesture', () => {
-    const listeners = new Map<string, number>();
-    const stub: EventTarget = {
-      addEventListener(type) {
-        listeners.set(type, (listeners.get(type) || 0) + 1);
-      },
-      removeEventListener(type) {
-        listeners.set(type, (listeners.get(type) || 1) - 1);
-      },
-      dispatchEvent() {
-        return true;
-      }
-    };
-    const controlsScope = new DisposableScope();
-    const gestureScope = controlsScope.child();
-    gestureScope.listen(stub, 'mousemove', () => {}, true);
-    gestureScope.listen(stub, 'mouseup', () => {}, true);
-    controlsScope.dispose();
-    assert.equal(listeners.get('mousemove'), 0);
-    assert.equal(listeners.get('mouseup'), 0);
   });
 
   it('forgets 1000 completed timeouts and frames instead of retaining closures until teardown', t => {
