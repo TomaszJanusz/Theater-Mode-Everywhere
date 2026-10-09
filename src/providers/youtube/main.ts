@@ -21,6 +21,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import { sanitizeContentTitle, youtubePlayerTitle } from '../../media-features/content-title';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isYouTubeHost } from '../hosts';
+import { installYouTubeQueueNavigation } from './queue-main';
 
 export function youtubeIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('youtube');
@@ -644,6 +645,7 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
 }
 
 export function installYoutubeMain(): void {
+  installYouTubeQueueNavigation();
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;
     try {
