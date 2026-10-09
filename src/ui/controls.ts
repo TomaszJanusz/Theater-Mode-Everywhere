@@ -710,7 +710,13 @@ export function createControls(ctx: PlayerChromeContext) {
       </svg>
     `;
 
-    setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
+    const syncFullscreenButton = () => {
+      const active = Boolean(document.fullscreenElement);
+      fullscreenBtn.classList.toggle('active', active);
+      fullscreenBtn.setAttribute('aria-pressed', String(active));
+      setIcon(fullscreenBtn, active ? exitFullscreenIcon : enterFullscreenIcon);
+    };
+    syncFullscreenButton();
 
     let wasPlayingBeforeFullscreen = false;
 
@@ -758,7 +764,7 @@ export function createControls(ctx: PlayerChromeContext) {
     });
 
     const onFullscreenChange = () => {
-      setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
+      syncFullscreenButton();
       showToolbar();
       if (wasPlayingBeforeFullscreen && video.paused) {
         setTimeout(() => {
