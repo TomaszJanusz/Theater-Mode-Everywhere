@@ -1,0 +1,241 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: Theater Mode Everywhere
+        - generic [ref=e12]:
+          - button "What's New" [ref=e13] [cursor=pointer]
+          - link "Homepage" [ref=e17] [cursor=pointer]:
+            - /url: https://theater.tomaszjanusz.dev
+          - link "Report a Bug" [ref=e22] [cursor=pointer]:
+            - /url: https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml
+      - paragraph [ref=e26]: Configure website exclusions, appearance, and theater mode keyboard shortcuts.
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - heading "Appearance" [level=2] [ref=e31]
+            - paragraph [ref=e32]: Choose the accent used by controls, sliders, shortcuts, and highlights.
+          - radiogroup "Accent color" [ref=e34]:
+            - radio "Use System as the accent color" [checked] [ref=e35] [cursor=pointer]:
+              - generic [ref=e37]: System
+            - radio "Use Teal as the accent color" [ref=e38] [cursor=pointer]:
+              - generic [ref=e40]: Teal
+            - radio "Use Blue as the accent color" [ref=e41] [cursor=pointer]:
+              - generic [ref=e43]: Blue
+            - radio "Use Green as the accent color" [ref=e44] [cursor=pointer]:
+              - generic [ref=e46]: Green
+            - radio "Use Yellow as the accent color" [ref=e47] [cursor=pointer]:
+              - generic [ref=e49]: Yellow
+            - radio "Use Orange as the accent color" [ref=e50] [cursor=pointer]:
+              - generic [ref=e52]: Orange
+            - radio "Use Red as the accent color" [ref=e53] [cursor=pointer]:
+              - generic [ref=e55]: Red
+            - radio "Use Pink as the accent color" [ref=e56] [cursor=pointer]:
+              - generic [ref=e58]: Pink
+            - radio "Use Purple as the accent color" [ref=e59] [cursor=pointer]:
+              - generic [ref=e61]: Purple
+            - radio "Use Gray as the accent color" [ref=e62] [cursor=pointer]:
+              - generic [ref=e64]: Gray
+        - complementary [ref=e65]:
+          - link "Privacy Thing" [ref=e66] [cursor=pointer]:
+            - /url: https://privacything.com
+            - generic [ref=e68]:
+              - img "Privacy Thing" [ref=e69]
+              - generic [ref=e109]: Free and open source.
+            - generic [ref=e110]: "Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site."
+      - generic [ref=e115]:
+        - generic [ref=e116]:
+          - heading "Features" [level=2] [ref=e117]
+          - paragraph [ref=e118]: Turn optional theater mode behavior on or off.
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - generic [ref=e122] [cursor=pointer]: Volume Boost
+              - paragraph [ref=e123]: Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.
+            - generic [ref=e124] [cursor=pointer]:
+              - checkbox "Volume Boost"
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - generic [ref=e128]: Rich Theater Experience (Experimental)
+              - paragraph [ref=e130]:
+                - text: Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service—read more
+                - button "here" [ref=e131] [cursor=pointer]
+                - text: .
+            - generic [ref=e132] [cursor=pointer]:
+              - checkbox "Rich Theater Experience (Experimental)" [checked]
+      - generic [ref=e134]:
+        - generic [ref=e135]:
+          - heading "Website Exclusions" [level=2] [ref=e136]
+          - paragraph [ref=e137]: Exclude websites where you do not want theater mode to activate automatically.
+        - generic [ref=e138]:
+          - generic [ref=e140]:
+            - textbox "e.g., youtube.com or paste a URL" [ref=e141]
+            - button "+" [ref=e142] [cursor=pointer]
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - heading "Excluded Websites" [level=3] [ref=e146]
+              - generic [ref=e147]: "0"
+            - generic [ref=e149]:
+              - heading "No exclusions yet" [level=3] [ref=e152]
+              - paragraph [ref=e153]: Theater mode will activate automatically on all video pages.
+          - paragraph [ref=e154]: "Tip: You can also manage exclusions directly by clicking the extension icon in your browser toolbar."
+      - generic [ref=e155]:
+        - generic [ref=e156]:
+          - heading "Keyboard Shortcuts" [level=2] [ref=e157]
+          - paragraph [ref=e158]: Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported.
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - heading "General Controls" [level=3] [ref=e162]
+              - generic [ref=e163]:
+                - generic [ref=e164]: Toggle Theater Mode
+                - generic [ref=e165]:
+                  - textbox "Toggle Theater Mode" [ref=e166] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: T
+                  - button "Reset to default" [ref=e167] [cursor=pointer]
+              - generic [ref=e170]:
+                - generic [ref=e171]: Exit Theater Mode
+                - generic [ref=e172]:
+                  - textbox "Exit Theater Mode" [ref=e173] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: Escape
+                  - button "Reset to default" [ref=e174] [cursor=pointer]
+              - generic [ref=e177]:
+                - generic [ref=e178]:
+                  - generic [ref=e179]: Switch Video on Page
+                  - paragraph [ref=e180]: Works only when the page has more than one HTML5 video.
+                - generic [ref=e181]:
+                  - textbox "Switch Video on Page" [ref=e182] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: Shift+T
+                  - button "Reset to default" [ref=e183] [cursor=pointer]
+              - generic [ref=e186]:
+                - generic [ref=e187]: Cycle Video Fit
+                - generic [ref=e188]:
+                  - textbox "Cycle Video Fit" [ref=e189] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: Z
+                  - button "Reset to default" [ref=e190] [cursor=pointer]
+              - generic [ref=e193]:
+                - generic [ref=e194]: Toggle Subtitles
+                - generic [ref=e195]:
+                  - textbox "Toggle Subtitles" [ref=e196] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: C
+                  - button "Reset to default" [ref=e197] [cursor=pointer]
+              - generic [ref=e200]:
+                - generic [ref=e201]: Increase Subtitle Size
+                - generic [ref=e202]:
+                  - textbox "Increase Subtitle Size" [ref=e203] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: +
+                  - button "Reset to default" [ref=e204] [cursor=pointer]
+              - generic [ref=e207]:
+                - generic [ref=e208]: Decrease Subtitle Size
+                - generic [ref=e209]:
+                  - textbox "Decrease Subtitle Size" [ref=e210] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: "-"
+                  - button "Reset to default" [ref=e211] [cursor=pointer]
+              - generic [ref=e214]:
+                - generic [ref=e215]: Show/Hide Help
+                - generic [ref=e216]:
+                  - textbox "Show/Hide Help" [ref=e217] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: H
+                  - button "Reset to default" [ref=e218] [cursor=pointer]
+            - generic [ref=e221]:
+              - heading "Playback & Volume Controls" [level=3] [ref=e222]
+              - generic [ref=e223]:
+                - generic [ref=e224]: Play / Pause
+                - generic [ref=e225]:
+                  - textbox "Play / Pause" [ref=e226] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: Space
+                  - button "Reset to default" [ref=e227] [cursor=pointer]
+              - generic [ref=e230]:
+                - generic [ref=e231]: Seek Backward (5s)
+                - generic [ref=e232]:
+                  - textbox "Seek Backward (5s)" [ref=e233] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: ArrowLeft
+                  - button "Reset to default" [ref=e234] [cursor=pointer]
+              - generic [ref=e237]:
+                - generic [ref=e238]: Seek Forward (5s)
+                - generic [ref=e239]:
+                  - textbox "Seek Forward (5s)" [ref=e240] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: ArrowRight
+                  - button "Reset to default" [ref=e241] [cursor=pointer]
+              - generic [ref=e244]:
+                - generic [ref=e245]: Volume Up (5%)
+                - generic [ref=e246]:
+                  - textbox "Volume Up (5%)" [ref=e247] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: ArrowUp
+                  - button "Reset to default" [ref=e248] [cursor=pointer]
+              - generic [ref=e251]:
+                - generic [ref=e252]: Volume Down (5%)
+                - generic [ref=e253]:
+                  - textbox "Volume Down (5%)" [ref=e254] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: ArrowDown
+                  - button "Reset to default" [ref=e255] [cursor=pointer]
+              - generic [ref=e258]:
+                - generic [ref=e259]: Toggle mute
+                - generic [ref=e260]:
+                  - textbox "Toggle mute" [ref=e261] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: M
+                  - button "Reset to default" [ref=e262] [cursor=pointer]
+            - generic [ref=e265]:
+              - heading "Frame, Fullscreen & PiP" [level=3] [ref=e266]
+              - generic [ref=e267]:
+                - generic [ref=e268]: Frame Step Backward (0.04s)
+                - generic [ref=e269]:
+                  - textbox "Frame Step Backward (0.04s)" [ref=e270] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: <
+                  - button "Reset to default" [ref=e271] [cursor=pointer]
+              - generic [ref=e274]:
+                - generic [ref=e275]: Frame Step Forward (0.04s)
+                - generic [ref=e276]:
+                  - textbox "Frame Step Forward (0.04s)" [ref=e277] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: ">"
+                  - button "Reset to default" [ref=e278] [cursor=pointer]
+              - generic [ref=e281]:
+                - generic [ref=e282]: Toggle Fullscreen
+                - generic [ref=e283]:
+                  - textbox "Toggle Fullscreen" [ref=e284] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: F
+                  - button "Reset to default" [ref=e285] [cursor=pointer]
+              - generic [ref=e288]:
+                - generic [ref=e289]: Toggle Picture-in-Picture
+                - generic [ref=e290]:
+                  - textbox "Toggle Picture-in-Picture" [ref=e291] [cursor=pointer]:
+                    - /placeholder: Press keys...
+                    - text: P
+                  - button "Reset to default" [ref=e292] [cursor=pointer]
+          - button "Reset to defaults" [ref=e296] [cursor=pointer]
+    - contentinfo [ref=e297]:
+      - generic [ref=e298]:
+        - paragraph [ref=e299]:
+          - text: © 2026
+          - link "Tomasz Janusz" [ref=e300] [cursor=pointer]:
+            - /url: https://tomaszjanusz.dev
+          - text: . All rights reserved.
+        - paragraph [ref=e301]: Made with ❤ in 🇵🇱
+  - dialog [ref=e303]:
+    - heading "What's New" [level=2] [ref=e305]
+    - generic [ref=e307]:
+      - paragraph [ref=e308]: Meet Rich Theater Experience, with extra playback tools for supported video services.
+      - list [ref=e309]:
+        - listitem [ref=e310]: "Better captions: choose a track, customize how subtitles look, and keep your preferred language for each site."
+        - listitem [ref=e311]: "More context on the timeline: jump between chapters and see YouTube's Most Replayed moments."
+        - listitem [ref=e312]: "Preview before you seek: hover over the timeline to see video thumbnails on supported YouTube, Vimeo, Patreon, Twitch, and Disney+ players."
+      - paragraph [ref=e313]: Enable Rich Theater Experience (Experimental) from the extension popup on supported sites, or from the Settings page. It's still experimental, so some features may vary by service :)
+    - button "Got it" [active] [ref=e315] [cursor=pointer]

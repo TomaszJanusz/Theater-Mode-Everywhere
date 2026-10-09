@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - heading "Theater Everywhere — Test Page" [level=1] [ref=e2]
+  - paragraph [ref=e3]: Use this page to test the key bindings and theater mode styling inside your browser viewport.
+  - generic [ref=e4]:
+    - heading "How to test:" [level=3] [ref=e5]
+    - list [ref=e6]:
+      - listitem [ref=e7]: Start playing the video below.
+      - listitem [ref=e8]: Press the T key on your keyboard to expand the video player to fill the browser window.
+      - listitem [ref=e9]: Use CC to switch subtitle tracks, and hover the timeline for chapter titles.
+      - listitem [ref=e10]: Press the T key again or the Escape key to restore the standard layout.
+      - listitem [ref=e11]: Try toggling the extension on/off for this page via the toolbar popup and manage settings.

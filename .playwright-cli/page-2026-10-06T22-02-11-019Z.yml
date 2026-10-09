@@ -1,0 +1,10 @@
+- generic [active] [ref=f1e1]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=f1e2]:
+              - button "Wróć do przeglądania" [ref=f1e10] [cursor=pointer]
+              - img "gpc opt-out" [ref=f1e11]
+            - alert [ref=f1e12]
