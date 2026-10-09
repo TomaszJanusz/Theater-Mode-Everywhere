@@ -257,12 +257,15 @@ function executeCommand(command: PlayerCommand): void {
     case 'PLAY_PAUSE': {
       const surface = sessionSurface();
       if (!surface) break;
-      if (surface.nativeMedia instanceof HTMLVideoElement) {
-        cancelPendingSeekResume(surface.nativeMedia);
-        toggleVideoPlayback(surface.nativeMedia);
+      const native = surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null;
+      const willPlay = native ? (!mediaHasSource(native) || native.paused) : surface.paused;
+      if (native) {
+        cancelPendingSeekResume(native);
+        toggleVideoPlayback(native);
       } else {
         toggleDirectPlayback(surface);
       }
+      triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
       break;
     }
     case 'SEEK_BY': {
@@ -916,11 +919,9 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.stopPropagation();
     e.stopImmediatePropagation();
     // Space is toggled in the page MAIN world so YouTube cannot steal the key.
+    // That path announces the HUD through theater-everywhere-playback-intent.
     if (e.key === ' ' || e.code === 'Space') return true;
-    const native = video.nativeMedia instanceof HTMLVideoElement ? video.nativeMedia : null;
-    const willPlay = native ? (!mediaHasSource(native) || native.paused) : video.paused;
     executeCommand({ type: 'PLAY_PAUSE' });
-    triggerPlaybackIndicator(willPlay ? 'play' : 'pause');
   } else if (!e.repeat && matchesShortcut(e, shortcuts.previousVideo) && playlistNavigationAvailable().previous) {
     e.preventDefault();
     e.stopPropagation();
