@@ -103,9 +103,9 @@ type NetflixReport = {
 };
 
 describe('service action CTA', () => {
-  it('renders and activates an arbitrary provider through the shared action contract', async () => {
+  it('renders and activates an arbitrary provider through the shared action contract', async t => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage();
@@ -139,9 +139,9 @@ describe('service action CTA', () => {
     } finally { await browser.close(); }
   });
 
-  it('redocks native cue replacements before paint, restores overwritten motion and disconnects on exit', async () => {
+  it('redocks native cue replacements before paint, restores overwritten motion and disconnects on exit', async t => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -156,10 +156,20 @@ describe('service action CTA', () => {
         const scope = new TeServiceActions.DisposableScope();
         const captions = TeServiceActions.createNetflixHostCaptions(document);
         const features = { readHostCaptionLayout:()=>captions.read(), setCaptionLineLimit:()=>{} };
-        const toolbar = TeServiceActions.createToolbar({ session:{element:video}, queryPlayerUi:selector=>selector === '.theater-controls-wrapper' ? {_mediaFeatures:features} : null, queryPlayerUiAll:()=>[] });
+        const controls = document.createElement('div');
+        controls.className = 'theater-controls-wrapper';
+        controls._mediaFeatures = features;
+        document.body.append(controls);
+        const chromeContext = {
+          session:{element:video,currentEpoch:1,isIdle:false,isExiting:false},
+          queryPlayerUi:selector=>document.querySelector(selector),
+          queryPlayerUiAll:selector=>Array.from(document.querySelectorAll(selector))
+        };
+        const toolbar = TeServiceActions.createToolbar(chromeContext);
+        scope.add(()=>toolbar.resetCaptionDock());
         const host = document.querySelector('.player-timedtext');
         let calls=0;
-        scope.add(captions.observe(()=>{ calls++; toolbar.updateCaptionDock(); }));
+        scope.add(captions.observe(()=>{ calls++; toolbar.updateCaptionDock(true); }));
         const replace = async text => {
           host.style.cssText = 'display:block';
           host.innerHTML = '<div class="player-timedtext-text-container"><span>' + text + '</span></div>';
@@ -181,12 +191,9 @@ describe('service action CTA', () => {
         obstacle.style.setProperty('bottom', '0px', 'important');
         obstacle.style.setProperty('height', '200px', 'important');
         document.body.append(obstacle);
-        const liftedToolbar = TeServiceActions.createToolbar({
-          session:{element:video},
-          queryPlayerUi: selector => selector === '.theater-controls-wrapper' ? {_mediaFeatures:features} : null,
-          queryPlayerUiAll: selector => selector === '.theater-service-action-host' ? [obstacle] : []
-        });
-        liftedToolbar.updateCaptionDock();
+        const liftedToolbar = TeServiceActions.createToolbar(chromeContext);
+        scope.add(()=>liftedToolbar.resetCaptionDock());
+        liftedToolbar.updateCaptionDock(true);
         const lifted = {
           bottom: document.documentElement.style.getPropertyValue('--theater-caption-bottom'),
           transition: host.style.getPropertyValue('transition'),
@@ -228,9 +235,9 @@ describe('service action CTA', () => {
     } finally { await browser.close(); }
   });
 
-  it('shows both postplay actions, mirrors the native countdown and clears open menus without restarting it', async () => {
+  it('shows both postplay actions, mirrors the native countdown and clears open menus without restarting it', async t => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
@@ -264,7 +271,11 @@ describe('service action CTA', () => {
         fill.style.transform = 'translateX(0)';
       })(${JSON.stringify(CSS)})`);
       assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Następny odcinek', 'Wyświetl napisy końcowe']);
-      await page.waitForTimeout(250);
+      await page.waitForFunction(() => {
+        const fill = document.querySelector('[data-uia="next-episode-seamless-button-draining"] .inner');
+        const animation = fill?.getAnimations()[0];
+        return animation && (animation.effect?.getComputedTiming().progress ?? 0) > 0.1;
+      });
       const paused = await page.evaluate(`(() => {
         const fill = document.querySelector('[data-uia="next-episode-seamless-button-draining"] .inner');
         const animation = fill.getAnimations()[0];
@@ -275,10 +286,9 @@ describe('service action CTA', () => {
         window.__menuOpen = true;
         return animation.effect.getComputedTiming().progress;
       })()`) as number;
-      await page.waitForTimeout(100);
-      assert.equal(await page.locator('.theater-service-action').first().isVisible(), false);
+      await page.locator('.theater-service-action').first().waitFor({ state: 'hidden' });
       await page.evaluate('window.__menuOpen = false');
-      await page.waitForTimeout(100);
+      await page.locator('.theater-service-action').first().waitFor({ state: 'visible' });
       const mirrored = await page.evaluate(`(() => {
         const root = document.getElementById('theater-everywhere-ui').shadowRoot;
         const button = root.querySelector('.theater-service-action');
@@ -289,8 +299,7 @@ describe('service action CTA', () => {
       assert.ok(Math.abs(mirrored.progress - mirrored.native) < 0.01);
       assert.equal(mirrored.same, true, 'polls/menu changes retain the same button');
       assert.deepEqual(mirrored.clicks, [], 'RTE never advances the episode itself');
-      await page.evaluate('window.__nativeCountdown.play()');
-      await page.waitForTimeout(1000);
+      await page.evaluate('window.__nativeCountdown.play(); window.__nativeCountdown.finished');
       assert.deepEqual(await page.evaluate('window.__postplayClicks'), [], 'native countdown completion does not invoke a second RTE action');
       await page.locator('.theater-service-action').filter({ hasText: 'Wyświetl napisy końcowe' }).click();
       assert.deepEqual(await page.evaluate('window.__postplayClicks'), ['credits']);
@@ -298,21 +307,24 @@ describe('service action CTA', () => {
       assert.equal(await page.locator('.theater-service-action').count(), 0);
     } finally { await browser.close(); }
   });
-  it('reads live Netflix controls and keeps one CTA through stale clicks and disposal', async () => {
+  it('reads live Netflix controls and keeps one CTA through stale clicks and disposal', async t => {
     let executable = '';
     const { chromium } = await import('playwright');
     try {
       executable = chromium.executablePath();
     } catch {
+      t.skip('Chromium is unavailable');
       return;
     }
-    if (!existsSync(executable)) return;
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
 
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
       page.setDefaultTimeout(4000);
       await page.setContent('<!doctype html><body></body>', { waitUntil: 'domcontentloaded' });
+      await page.clock.install();
+      await page.exposeFunction('__advanceCtaClock', () => page.clock.runFor(120));
       await page.addScriptTag({ content: uiBundle });
       await page.addScriptTag({ content: netflixBundle });
       await page.addScriptTag({ content: shadowBundle });
@@ -607,7 +619,7 @@ describe('service action CTA', () => {
 
         const beforeDispose = reads;
         scope.dispose();
-        await new Promise((resolve) => setTimeout(resolve, 120));
+        await window.__advanceCtaClock();
         return {
           live,
           atomic,
@@ -719,10 +731,9 @@ describe('service action CTA', () => {
       const keys = await page.evaluate('window.__ctaClicks') as number;
       assert.equal(keys, 2);
       await page.evaluate('window.__ctaScope.dispose()');
-      await page.waitForTimeout(80);
-      assert.equal(await page.locator('.theater-service-action').count(), 0);
+      await page.locator('.theater-service-action').waitFor({ state: 'detached' });
       const afterDispose = await page.evaluate('window.__ctaClicks') as number;
-      await page.waitForTimeout(80);
+      await page.clock.runFor(80);
       assert.equal(await page.evaluate('window.__ctaClicks') as number, afterDispose);
     } finally {
       await browser.close();

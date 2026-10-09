@@ -470,7 +470,7 @@ async function watchWorlds(page: Page): Promise<() => Promise<WorldRow[]>> {
   });
   await client.send('Runtime.enable');
   return async () => {
-    await delay(200);
+    await waitFor('extension isolated world', () => contexts.some(context => context.type === 'isolated' && context.origin.startsWith('chrome-extension://')));
     const rows: WorldRow[] = [];
     for (const context of contexts) {
       if (context.name.includes('__playwright')) continue;
@@ -595,7 +595,7 @@ async function hoverScrubber(page: Page, ratio: number): Promise<void> {
   const box = await page.locator('.theater-scrubber-container').boundingBox();
   if (!box) throw new Error('scrubber missing');
   await page.mouse.move(box.x + Math.max(12, box.width * ratio), box.y + box.height / 2);
-  await delay(250);
+  await page.locator('.theater-scrubber-tooltip.visible').waitFor();
 }
 
 describe('bilibili.tv extension runtime', () => {
@@ -613,6 +613,7 @@ describe('bilibili.tv extension runtime', () => {
       page.setDefaultTimeout(15000);
       page.on('pageerror', (error) => notes.push(error.message));
       const worldsOf = await watchWorlds(page);
+      await page.clock.install();
       await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => {
         const view = window as FixtureWindow;
@@ -621,7 +622,7 @@ describe('bilibili.tv extension runtime', () => {
           && view.__fixtureSentinel === 'page-main-only';
       });
       await dismissDialog(page);
-      await delay(400);
+      await page.clock.runFor(400);
 
       const before = await page.evaluate(() => {
         const view = window as FixtureWindow;

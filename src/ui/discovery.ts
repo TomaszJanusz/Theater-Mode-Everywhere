@@ -1,5 +1,5 @@
 import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
-import { isTencentWasmFrameDocument } from '../providers/tencent/wasm-player';
+import { isProviderPlaybackFrameDocument } from '../providers/playback-session';
 import {
   prepareProviderShadowRoot,
   providerRankedVideo,
@@ -181,7 +181,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
   }
 
   function findBestVideo(): HTMLVideoElement | null {
-    if (isTencentWasmFrameDocument()) return null;
+    if (isProviderPlaybackFrameDocument()) return null;
     const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
     if (videos.length === 0) return null;
     const pool = selectSwitchableVideos(videos);

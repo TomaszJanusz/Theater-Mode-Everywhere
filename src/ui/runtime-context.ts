@@ -20,6 +20,7 @@ import {
   requestVideoPlay
 } from '../host-play';
 import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
+import { DEFAULT_VOLUME_BOOST_ENABLED } from './volume-boost-settings';
 import type { PlaybackSurface } from '../playback-surface';
 
 export interface BoostedVideoElement extends HTMLVideoElement {
@@ -42,6 +43,7 @@ export type ChromeRefs = {
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
   subtitlesOn: boolean;
   volumeBoostEnabled: boolean;
+  playbackDecisionRevision: number;
   providerFlags: MediaProviderFlags;
   helpOverlay: HTMLElement | null;
   parentPlaylistNav: PlaylistNavState;
@@ -58,7 +60,7 @@ export type PlayerChromeActions = {
   showToolbar(event?: Event): void;
   hideToolbar(): void;
   scheduleToolbarHide(): void;
-  updateCaptionDock(): void;
+  updateCaptionDock(immediate?: boolean): void;
   closeTheaterPopovers(): void;
   blurMouseToggle(event: MouseEvent, button: HTMLElement): void;
   hideHelpOverlay(restoreFocus?: boolean): void;
@@ -134,7 +136,8 @@ export function createChromeRefs(): ChromeRefs {
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},
     subtitlesOn: false,
-    volumeBoostEnabled: false,
+    volumeBoostEnabled: DEFAULT_VOLUME_BOOST_ENABLED,
+    playbackDecisionRevision: 0,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,
     parentPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null },

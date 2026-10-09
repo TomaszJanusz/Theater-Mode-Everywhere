@@ -1,7 +1,7 @@
 import { readStylesheet } from '../../test-utils/styles';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
 import { preferProviderCaptionTracks } from '../../media-features/composite-adapter';
 import { crunchyrollCdnFile } from '../../media-features/crunchyroll-cdn';
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
@@ -235,8 +235,32 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** A task turn drains host/bridge promise chains without depending on wall-clock delays. */
+function flushTasks(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+function controlledClock(t: TestContext) {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const advance = async (ms: number) => {
+    // Resume asynchronous host polling between virtual ticks, as real timer tasks would.
+    await flushTasks();
+    for (let elapsed = 0; elapsed < ms;) {
+      const step = Math.min(10, ms - elapsed);
+      t.mock.timers.tick(step);
+      elapsed += step;
+      await flushTasks();
+    }
+  };
+  const settle = async <T>(pending: Promise<T>, budget = CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS + 100): Promise<T> => {
+    let completed = false;
+    void pending.then(() => { completed = true; }, () => { completed = true; });
+    await flushTasks();
+    for (let elapsed = 0; !completed && elapsed < budget; elapsed += 10) await advance(10);
+    assert.equal(completed, true, `operation did not settle within ${budget}ms of virtual time`);
+    return pending;
+  };
+  return { advance, settle };
 }
 
 describe('Crunchyroll RTE', () => {
@@ -753,7 +777,8 @@ describe('Crunchyroll RTE', () => {
     } finally { page.restore(); }
   });
 
-  it('waits for a delayed host track list before the first enable and the first off', async () => {
+  it('waits for a delayed host track list before the first enable and the first off', async t => {
+    const clock = controlledClock(t);
     const page = installPage(`/watch/${MODERN_MEDIA}/the-journeys-end`);
     const tracks = [
       { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, url: VTT_SIGNED },
@@ -795,13 +820,13 @@ describe('Crunchyroll RTE', () => {
       assert.ok(japanese);
       assert.equal(JSON.stringify(menu).includes(SIGNATURE), false);
 
-      const first = await adapter.activateCaptionTrack(english.id);
+      const first = await clock.settle(adapter.activateCaptionTrack(english.id));
       assert.equal(first.status, 'active');
       assert.equal(tracks[0].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
       assert.equal(acks.at(-1)?.ok, true);
 
-      const off = await adapter.activateCaptionTrack(null);
+      const off = await clock.settle(adapter.activateCaptionTrack(null));
       assert.equal(off.status, 'off');
       assert.equal(tracks[0].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
@@ -809,40 +834,40 @@ describe('Crunchyroll RTE', () => {
       assert.equal(acks.at(-1)?.trackId, null);
 
       const enabling = adapter.activateCaptionTrack(english.id);
-      await wait(15);
+      await clock.advance(15);
       page.location.pathname = `/watch/${OTHER}/next`;
-      assert.equal((await enabling).status, 'failed');
+      assert.equal((await clock.settle(enabling)).status, 'failed');
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      await wait(50);
+      await clock.advance(50);
       page.location.pathname = `/watch/${MODERN_MEDIA}/the-journeys-end`;
       tracks[0].enabled = false;
       tracks[1].enabled = false;
       await adapter.reload();
       const pending = adapter.activateCaptionTrack(english.id);
-      await wait(10);
+      await clock.advance(10);
       page.attrs.add('data-te-crunchyroll-integration-off');
-      assert.equal((await pending).status, 'failed');
+      assert.equal((await clock.settle(pending)).status, 'failed');
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
       page.attrs.delete('data-te-crunchyroll-integration-off');
-      await wait(40);
+      await clock.advance(40);
       tracks[0].enabled = false;
       tracks[1].enabled = false;
       await adapter.reload();
 
       const staleOn = adapter.activateCaptionTrack(english.id);
-      await wait(15);
+      await clock.advance(15);
       const newerOff = adapter.activateCaptionTrack(null);
-      assert.equal((await staleOn).status, 'failed');
-      assert.equal((await newerOff).status, 'off');
+      assert.equal((await clock.settle(staleOn)).status, 'failed');
+      assert.equal((await clock.settle(newerOff)).status, 'off');
       assert.equal(tracks[0].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
       assert.equal(acks.filter((ack) => ack.trackId === 'caption-en-US').at(-1)?.ok, false);
 
       const staleTrack = adapter.activateCaptionTrack(english.id);
-      await wait(15);
+      await clock.advance(15);
       const replacement = adapter.activateCaptionTrack(japanese.id);
-      assert.equal((await staleTrack).status, 'failed');
-      assert.equal((await replacement).status, 'active');
+      assert.equal((await clock.settle(staleTrack)).status, 'failed');
+      assert.equal((await clock.settle(replacement)).status, 'active');
       assert.equal(tracks[0].enabled, false);
       assert.equal(tracks[1].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
@@ -851,7 +876,8 @@ describe('Crunchyroll RTE', () => {
     } finally { page.restore(); }
   });
 
-  it('turns host captions off after invalidate clears the snapshot, and not on another route', async () => {
+  it('turns host captions off after invalidate clears the snapshot, and not on another route', async t => {
+    const clock = controlledClock(t);
     const page = installPage(`/watch/${MODERN_MEDIA}/the-journeys-end`);
     const tracks = [
       { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, url: VTT_SIGNED },
@@ -886,36 +912,37 @@ describe('Crunchyroll RTE', () => {
       const menu = await adapter.listCaptionTracks();
       const english = menu.find((track) => track.id.endsWith(':caption-en-US'))!;
       // Controller.invalidate() clears the adapter, then asks for Off. The host target has to survive that order.
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       assert.equal(tracks[0].enabled, true);
       adapter.invalidate();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(tracks[0].enabled, false);
       assert.equal(calls.filter((call) => call.startsWith('disable:')).length, 1);
 
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       let armed = calls.length;
       adapter.invalidate();
       page.location.pathname = `/watch/${OTHER}/next`;
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(calls.length, armed);
       assert.equal(tracks[0].enabled, true);
-      await wait(40);
+      await clock.advance(40);
       assert.equal(tracks[0].enabled, true);
 
       page.location.pathname = `/watch/${MODERN_MEDIA}/the-journeys-end`;
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       armed = calls.length;
       page.attrs.add('data-te-crunchyroll-integration-off');
       adapter.invalidate();
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(calls.length, armed);
       assert.equal(tracks[0].enabled, true);
     } finally { page.restore(); }
   });
 
-  it('acks the latest host caption after one queued settle and rejects the intermediate', async () => {
+  it('acks the latest host caption after one queued settle and rejects the intermediate', async t => {
+    const clock = controlledClock(t);
     assert.equal(CRUNCHYROLL_CAPTION_ACK_TIMEOUT_MS, 2 * CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 200);
     const listDelay = CRUNCHYROLL_HOST_CAPTION_SETTLE_MS - 120;
     assert.ok(listDelay * 2 > CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 200);
@@ -959,12 +986,12 @@ describe('Crunchyroll RTE', () => {
       const english = menu.find((track) => track.id.endsWith(':caption-en-US'))!;
       const japanese = menu.find((track) => track.id.endsWith(':caption-ja-JP'))!;
       const first = adapter.activateCaptionTrack(english.id);
-      await wait(40);
+      await clock.advance(40);
       const middleAt = Date.now();
       const middle = adapter.activateCaptionTrack(null).then((result) => ({ result, elapsed: Date.now() - middleAt }));
       const latestAt = Date.now();
       const latest = adapter.activateCaptionTrack(japanese.id).then((result) => ({ result, elapsed: Date.now() - latestAt }));
-      const [firstResult, middleTimed, latestTimed] = await Promise.all([first, middle, latest]);
+      const [firstResult, middleTimed, latestTimed] = await clock.settle(Promise.all([first, middle, latest]));
       assert.equal(firstResult.status, 'failed');
       assert.equal(middleTimed.result.status, 'failed');
       assert.equal(latestTimed.result.status, 'active');
@@ -978,7 +1005,7 @@ describe('Crunchyroll RTE', () => {
       const japaneseEnable = calls.indexOf('enable:caption-ja-JP');
       assert.equal(calls.filter((call) => call === 'enable:caption-en-US').length, 1);
       assert.ok(japaneseEnable > englishEnable);
-      await wait(50);
+      await clock.advance(50);
       assert.equal(tracks[0].enabled, false);
       assert.equal(tracks[1].enabled, true);
       assert.equal(acks.filter((ack) => ack.ok && ack.trackId === 'caption-en-US').length, 0);
@@ -1432,7 +1459,8 @@ describe('Crunchyroll RTE', () => {
     assert.equal(parseCrunchyrollCaptionBody(ASS_BODY, 'ass')[0]?.text, 'Hello there');
   });
 
-  it('keeps the host lift until Off is confirmed and does not adopt an external track', async () => {
+  it('keeps the host lift until Off is confirmed and does not adopt an external track', async t => {
+    const clock = controlledClock(t);
     const page = installPage(`/watch/${MODERN_MEDIA}/the-journeys-end`);
     const tracks = [
       { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, url: VTT_SIGNED },
@@ -1469,14 +1497,14 @@ describe('Crunchyroll RTE', () => {
       let armed = calls.length;
       external.invalidate();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      assert.equal((await external.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(external.activateCaptionTrack(null))).status, 'off');
       assert.equal(calls.length, armed);
       assert.equal(tracks[0].enabled, true);
 
       const choosing = new CrunchyrollAdapter();
       await choosing.listCaptionTracks();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
-      assert.equal((await choosing.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(choosing.activateCaptionTrack(null))).status, 'off');
       assert.equal(tracks[0].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
 
@@ -1484,11 +1512,11 @@ describe('Crunchyroll RTE', () => {
       const menu = await adapter.listCaptionTracks();
       const english = menu.find((track) => track.id.endsWith(':caption-en-US'))!;
       const japanese = menu.find((track) => track.id.endsWith(':caption-ja-JP'))!;
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
 
       mode = 'keep-enabled';
-      assert.equal((await adapter.activateCaptionTrack(japanese.id)).status, 'failed');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(japanese.id))).status, 'failed');
       assert.equal(tracks[0].enabled, true);
       assert.equal(tracks[1].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
@@ -1496,29 +1524,29 @@ describe('Crunchyroll RTE', () => {
       armed = calls.length;
       adapter.invalidate();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(calls.length, armed + 1);
       assert.equal(tracks[0].enabled, false);
-      await wait(30);
+      await clock.advance(30);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
 
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       mode = 'throw-disable';
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'failed');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'failed');
       assert.equal(tracks[0].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
       mode = 'lie-after-disable';
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'failed');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'failed');
       assert.equal(tracks[0].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
       armed = calls.length;
       adapter.invalidate();
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(calls.length, armed);
 
       mode = 'work';
       tracks[0].enabled = false;
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       const moved = adapter.activateCaptionTrack(null);
       page.location.pathname = `/watch/${OTHER}/next`;
       assert.equal((await moved).status, 'failed');
@@ -1528,7 +1556,7 @@ describe('Crunchyroll RTE', () => {
       page.location.pathname = `/watch/${MODERN_MEDIA}/the-journeys-end`;
       tracks[0].enabled = false;
       await adapter.reload();
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       const integrationOff = adapter.activateCaptionTrack(null);
       page.attrs.add('data-te-crunchyroll-integration-off');
       assert.equal((await integrationOff).status, 'failed');
@@ -1537,26 +1565,26 @@ describe('Crunchyroll RTE', () => {
 
       tracks[0].enabled = false;
       await adapter.reload();
-      assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
       mode = 'gate';
       let classWhenStaleOffFinished = false;
       const staleOff = adapter.activateCaptionTrack(null).then((result) => {
         classWhenStaleOffFinished = page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS);
         return result;
       });
-      await flush();
+      await flushTasks();
       mode = 'work';
       const replacement = adapter.activateCaptionTrack(english.id);
       releaseDisable();
       assert.equal((await staleOff).status, 'failed');
       assert.equal(classWhenStaleOffFinished, true);
-      assert.equal((await replacement).status, 'active');
+      assert.equal((await clock.settle(replacement)).status, 'active');
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
       assert.equal(tracks[0].enabled, true);
 
       mode = 'noop-disable';
       const offAt = Date.now();
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'failed');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'failed');
       const offElapsed = Date.now() - offAt;
       assert.ok(offElapsed > CRUNCHYROLL_HOST_CAPTION_SETTLE_MS - 50, `off elapsed ${offElapsed}`);
       assert.ok(offElapsed < CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 700, `off elapsed ${offElapsed}`);
@@ -2103,7 +2131,8 @@ describe('Crunchyroll RTE', () => {
     } finally { page.restore(); }
   });
 
-  it('stops an oversized Crunchyroll body without a second clone or an arrayBuffer fallback', async () => {
+  it('stops an oversized Crunchyroll body without a second clone or an arrayBuffer fallback', async t => {
+    const clock = controlledClock(t);
     const runtime = readFileSync(new URL('../../platform/main-world-runtime.ts', import.meta.url), 'utf8');
     assert.match(runtime, /consumeCrunchyrollWrappedFetch\(url, response, foreignProviderHarvestUrl\)/);
     const page = installPage();
@@ -2181,12 +2210,9 @@ describe('Crunchyroll RTE', () => {
       const hanging = counted([chunk(8, 1)], 1);
       globalThis.fetch = ((input: unknown) => Promise.resolve(hanging.response(String(input), null))) as typeof fetch;
       const hangAt = Date.now();
-      const hung = await Promise.race([
-        loadCrunchyrollUrl(BIF_SIGNED, 40, () => true, 'buffer', 16),
-        wait(500).then(() => 'still-hanging' as const)
-      ]);
+      const hung = await clock.settle(loadCrunchyrollUrl(BIF_SIGNED, 40, () => true, 'buffer', 16), 40);
       assert.equal(hung, null);
-      assert.ok(Date.now() - hangAt < 400);
+      assert.equal(Date.now() - hangAt, 40);
       assert.equal(hanging.cancelled(), true);
 
       const text = new TextEncoder().encode('{"ok":true}');
@@ -2196,8 +2222,8 @@ describe('Crunchyroll RTE', () => {
 
       globalThis.fetch = (() => Promise.resolve(new Response('', { status: 404 }))) as typeof fetch;
       harvestCrunchyrollData(PLAY, playback());
-      await flush();
-      await flush();
+      await flushTasks();
+      await flushTasks();
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
 
       const bif = new Uint8Array(rokuBif([0, 1]));
@@ -2217,8 +2243,8 @@ describe('Crunchyroll RTE', () => {
       };
       assert.equal(consumeCrunchyrollWrappedFetch(BIF_SIGNED, passive, () => false), 'handled');
       assert.equal(clones, 1);
-      await flush();
-      await flush();
+      await flushTasks();
+      await flushTasks();
       assert.equal(arrayBuffers, 0);
       assert.equal((await passive.arrayBuffer()).byteLength, bif.byteLength);
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-1');
@@ -2275,8 +2301,8 @@ describe('Crunchyroll RTE', () => {
       (malformed as Response & { clone: () => Response }).clone = () => { throw new Error('clone'); };
       (malformed as Response & { text: () => Promise<string> }).text = () => { throw new Error('text'); };
       captureCrunchyrollNetworkResponse(BIF_SIGNED, malformed);
-      await flush();
-      await flush();
+      await flushTasks();
+      await flushTasks();
       assert.equal(blobCount, published);
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, 'blob:crunchyroll-bif-1');
 
@@ -2306,8 +2332,8 @@ describe('Crunchyroll RTE', () => {
       page.attrs.add('data-te-crunchyroll-integration-off');
       assert.equal(readCrunchyrollSnapshot(), null);
       captureCrunchyrollNetworkResponse(BIF_SIGNED, streamedResponse(bif, { url: BIF_SIGNED, contentLength: null }));
-      await flush();
-      await flush();
+      await flushTasks();
+      await flushTasks();
       page.attrs.delete('data-te-crunchyroll-integration-off');
       assert.equal(readCrunchyrollSnapshot()?.bifBlobUrl, undefined);
     } finally {
@@ -2482,7 +2508,8 @@ describe('Crunchyroll RTE', () => {
     } finally { page.restore(); }
   });
 
-  it('turns off only the owned track when the adapter is disposed', async () => {
+  it('turns off only the owned track when the adapter is disposed', async t => {
+    const clock = controlledClock(t);
     const route = `/watch/${MODERN_MEDIA}/the-journeys-end`;
     const page = installPage(route);
     const forced = {
@@ -2528,21 +2555,21 @@ describe('Crunchyroll RTE', () => {
         mode = 'work';
         tracks[0].enabled = false;
         tracks[1].enabled = false;
-        assert.equal((await adapter.activateCaptionTrack(english.id)).status, 'active');
+        assert.equal((await clock.settle(adapter.activateCaptionTrack(english.id))).status, 'active');
         assert.equal(tracks[0].enabled, true);
       };
 
       await activateEnglish();
       let armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
       assert.equal(tracks[0].enabled, false);
       assert.equal(forced.enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
       armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.length, armed);
 
       await activateEnglish();
@@ -2550,18 +2577,18 @@ describe('Crunchyroll RTE', () => {
       tracks[1].enabled = true;
       armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.length, armed);
       assert.equal(tracks[1].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      await flush();
+      await flushTasks();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
 
       forced.enabled = true;
       await activateEnglish();
       armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
       assert.equal(tracks[0].enabled, false);
       assert.equal(forced.enabled, true);
@@ -2573,7 +2600,7 @@ describe('Crunchyroll RTE', () => {
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
       armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.slice(armed).join(','), 'disable:caption-en-US');
       assert.equal(tracks[0].enabled, false);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
@@ -2581,10 +2608,10 @@ describe('Crunchyroll RTE', () => {
       await activateEnglish();
       mode = 'throw-disable';
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(tracks[0].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
-      await flush();
+      await flushTasks();
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
 
       mode = 'work';
@@ -2593,7 +2620,7 @@ describe('Crunchyroll RTE', () => {
       mode = 'noop-disable';
       const started = Date.now();
       adapter.dispose();
-      await wait(CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 80);
+      await clock.advance(CRUNCHYROLL_HOST_CAPTION_SETTLE_MS + 80);
       assert.ok(Date.now() - started >= CRUNCHYROLL_HOST_CAPTION_SETTLE_MS);
       assert.equal(tracks[0].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
@@ -2604,7 +2631,7 @@ describe('Crunchyroll RTE', () => {
       armed = calls.length;
       page.location.pathname = `/watch/${OTHER}/next`;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.length, armed);
       assert.equal(tracks[0].enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
@@ -2615,7 +2642,7 @@ describe('Crunchyroll RTE', () => {
       page.attrs.add('data-te-crunchyroll-integration-off');
       armed = calls.length;
       adapter.dispose();
-      await flush();
+      await flushTasks();
       assert.equal(calls.length, armed);
       assert.equal(tracks[0].enabled, true);
       page.attrs.delete('data-te-crunchyroll-integration-off');
@@ -3247,7 +3274,8 @@ describe('Crunchyroll RTE', () => {
     } finally { page.restore(); }
   });
 
-  it('releases ownership after a delayed Off and keeps it when disable never lands', async () => {
+  it('releases ownership after a delayed Off and keeps it when disable never lands', async t => {
+    const clock = controlledClock(t);
     const route = `/watch/${MODERN_MEDIA}/the-journeys-end`;
     const page = installPage(route);
     const track = { id: 'caption-en-US', lang: 'en-US', label: 'English', kind: 'subtitle', enabled: false, url: VTT_SIGNED };
@@ -3270,15 +3298,15 @@ describe('Crunchyroll RTE', () => {
       const adapter = new CrunchyrollAdapter();
       const menu = await adapter.listCaptionTracks();
       const english = menu[0].id;
-      assert.equal((await adapter.activateCaptionTrack(english)).status, 'active');
-      assert.equal((await adapter.activateCaptionTrack(null)).status, 'off');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english))).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(null))).status, 'off');
       assert.equal(track.enabled, false);
       track.enabled = true;
       calls.length = 0;
-      assert.equal((await adapter.activateCaptionTrack(english)).status, 'active');
+      assert.equal((await clock.settle(adapter.activateCaptionTrack(english))).status, 'active');
       assert.deepEqual(calls, []);
       adapter.dispose();
-      await wait(150);
+      await clock.advance(150);
       assert.equal(track.enabled, true);
       assert.deepEqual(calls, []);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);
@@ -3288,14 +3316,14 @@ describe('Crunchyroll RTE', () => {
       disableMode = 'throw';
       const retained = new CrunchyrollAdapter();
       const retainedMenu = await retained.listCaptionTracks();
-      assert.equal((await retained.activateCaptionTrack(retainedMenu[0].id)).status, 'active');
-      assert.equal((await retained.activateCaptionTrack(null)).status, 'failed');
+      assert.equal((await clock.settle(retained.activateCaptionTrack(retainedMenu[0].id))).status, 'active');
+      assert.equal((await clock.settle(retained.activateCaptionTrack(null))).status, 'failed');
       assert.equal(track.enabled, true);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), true);
       disableMode = 'delay';
       retained.dispose();
-      await flush();
-      await wait(150);
+      await flushTasks();
+      await clock.advance(150);
       assert.equal(track.enabled, false);
       assert.deepEqual(calls, ['enable:caption-en-US', 'disable:caption-en-US', 'disable:caption-en-US']);
       assert.equal(page.classes.has(CRUNCHYROLL_HOST_CAPTION_CLASS), false);

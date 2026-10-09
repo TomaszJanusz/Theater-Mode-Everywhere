@@ -1,3 +1,4 @@
+import { installXhrHarvest } from './xhr-harvest';
 import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
@@ -174,31 +175,20 @@ export function installMainWorldRuntime(): void {
       }
     }
 
-    const originalXhrOpen = XMLHttpRequest.prototype.open;
-    const originalXhrSend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.open = function(this: XMLHttpRequest) {
-      (this as XMLHttpRequest & { _theaterTimedtextUrl?: string })._theaterTimedtextUrl = String(arguments[1] || '');
-      return originalXhrOpen.apply(this, arguments as unknown as Parameters<XMLHttpRequest['open']>);
-    };
-    XMLHttpRequest.prototype.send = function(this: XMLHttpRequest) {
-      this.addEventListener('loadend', function(this: XMLHttpRequest) {
-        const url = this.responseURL || (this as XMLHttpRequest & { _theaterTimedtextUrl?: string })._theaterTimedtextUrl || '';
-        if (this.status < 200 || this.status >= 300) return;
-        if (disneyIntegrationEnabled() && isAllowedDisneyBifUrl(url)) harvestDisneyBifFromXhr(this);
-        const body = isAllowedDisneyBifUrl(url) ? null : xhrResponseText(this);
-        if (body) cacheTimedtextBody(url, body);
-        harvestTwitchXhr(url, body, this);
-        if (body) harvestDisneyBody(url, body);
-        noteCrunchyrollManifest(url);
-        if (body) harvestTencentBody(url, body);
-        if (body) harvestCrunchyrollBody(url, body);
-        if (this.responseType === 'json') harvestTencentData(url, this.response);
-        if (this.responseType === 'json') harvestCrunchyrollData(url, this.response);
-        if (this.response instanceof ArrayBuffer && isCrunchyrollBifUrl(url)) rememberCrunchyrollBif(this.response, url);
-        if (body) harvestYoutubeHeatmapText(url, body);
-      });
-      return originalXhrSend.apply(this, arguments as unknown as Parameters<XMLHttpRequest['send']>);
-    };
+    installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
+      if (disneyIntegrationEnabled() && isAllowedDisneyBifUrl(url)) harvestDisneyBifFromXhr(xhr);
+      const body = isAllowedDisneyBifUrl(url) ? null : xhrResponseText(xhr);
+      if (body) cacheTimedtextBody(url, body);
+      harvestTwitchXhr(url, body, xhr);
+      if (body) harvestDisneyBody(url, body);
+      noteCrunchyrollManifest(url);
+      if (body) harvestTencentBody(url, body);
+      if (body) harvestCrunchyrollBody(url, body);
+      if (xhr.responseType === 'json') harvestTencentData(url, xhr.response);
+      if (xhr.responseType === 'json') harvestCrunchyrollData(url, xhr.response);
+      if (xhr.response instanceof ArrayBuffer && isCrunchyrollBifUrl(url)) rememberCrunchyrollBif(xhr.response, url);
+      if (body) harvestYoutubeHeatmapText(url, body);
+    });
 
     function xhrResponseText(xhr: XMLHttpRequest): string | null {
       try {

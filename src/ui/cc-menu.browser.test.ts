@@ -9,9 +9,16 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CSS = readStylesheet(path.join(SRC, 'content.css'));
 
 describe('caption language menu', () => {
-  it('keeps scrolled language rows below the title bar', async () => {
+  it('keeps scrolled language rows below the title bar', async (t) => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    let executable = '';
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      t.skip('Chromium module or browser path is unavailable');
+      return;
+    }
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

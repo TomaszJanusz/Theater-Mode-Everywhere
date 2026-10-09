@@ -6,6 +6,9 @@ import { createServiceActions } from '../providers/service-actions';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
 import type { PlayerCommand } from '../core/player-session';
+import { togglePictureInPicture } from './picture-in-picture';
+import { createFullscreenRecovery } from './fullscreen-recovery';
+import { waitForSeekCompletion } from './seek-completion';
 import {
   isAtLiveEdge,
   isVideoAtLiveEdge,
@@ -37,7 +40,7 @@ interface TooltipState {
   element: HTMLDivElement | null;
 }
 
-export function createControls(ctx: PlayerChromeContext) {
+export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void) {
   const session = ctx.session;
   const refs = ctx.refs;
   const ui = ctx.ui;
@@ -49,7 +52,7 @@ export function createControls(ctx: PlayerChromeContext) {
   const eventPathMatches = ctx.eventPathMatches;
   const paintOverlay = ctx.paintOverlay;
   const showToolbar = (event?: Event) => ctx.actions.showToolbar(event);
-  const updateCaptionDock = () => ctx.actions.updateCaptionDock();
+  const updateCaptionDock = (immediate?: boolean | Event) => ctx.actions.updateCaptionDock(immediate === true);
   const closeTheaterPopovers = () => ctx.actions.closeTheaterPopovers();
   const blurMouseToggle = (event: MouseEvent, button: HTMLElement) => ctx.actions.blurMouseToggle(event, button);
   const setIcon = (el: HTMLElement, svg: string) => ctx.actions.setIcon(el, svg);
@@ -165,6 +168,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
     const controlsScope = new DisposableScope();
     let gestureScope: DisposableScope | null = null;
+    let seekCompletionScope: DisposableScope | null = null;
 
     const wrapper = document.createElement('div') as ExtendedHTMLDivElement;
     wrapper.className = 'theater-controls-wrapper';
@@ -195,9 +199,7 @@ export function createControls(ctx: PlayerChromeContext) {
     });
     wrapper.addEventListener('pointermove', updateCaptionDock);
     wrapper.addEventListener('transitionend', updateCaptionDock);
-    wrapper.addEventListener('pointerleave', () => {
-      window.requestAnimationFrame(updateCaptionDock);
-    });
+    wrapper.addEventListener('pointerleave', updateCaptionDock);
 
     // 1. Scrubber (Progress bar)
     const scrubberContainer = document.createElement('div');
@@ -331,9 +333,7 @@ export function createControls(ctx: PlayerChromeContext) {
     const volumeContainer = document.createElement('div');
     volumeContainer.className = 'theater-volume-container theater-popover';
     volumeContainer.addEventListener('pointerenter', updateCaptionDock);
-    volumeContainer.addEventListener('pointerleave', () => {
-      window.requestAnimationFrame(updateCaptionDock);
-    });
+    volumeContainer.addEventListener('pointerleave', updateCaptionDock);
 
     const volumeBtn = document.createElement('button');
     volumeBtn.className = 'theater-control-btn volume-btn';
@@ -567,9 +567,7 @@ export function createControls(ctx: PlayerChromeContext) {
     const speedContainer = document.createElement('div');
     speedContainer.className = 'theater-speed-container theater-popover';
     speedContainer.addEventListener('pointerenter', updateCaptionDock);
-    speedContainer.addEventListener('pointerleave', () => {
-      window.requestAnimationFrame(updateCaptionDock);
-    });
+    speedContainer.addEventListener('pointerleave', updateCaptionDock);
 
     const speedBtn = document.createElement('button');
     speedBtn.className = 'theater-control-btn speed-btn';
@@ -678,18 +676,7 @@ export function createControls(ctx: PlayerChromeContext) {
     syncPipButton();
     video.addEventListener('enterpictureinpicture', syncPipButton);
     video.addEventListener('leavepictureinpicture', syncPipButton);
-    pipBtn.addEventListener('click', () => {
-      if (!video.capabilities.pictureInPicture) return;
-      if (document.pictureInPictureElement) {
-        document.exitPictureInPicture().catch(console.error);
-        return;
-      }
-      try {
-        void Promise.resolve(video.requestPictureInPicture()).catch(console.error);
-      } catch (error) {
-        console.error('Failed to request Picture-in-Picture:', error);
-      }
-    });
+    pipBtn.addEventListener('click', () => togglePictureInPicture(video));
 
     // Fullscreen Button
     const fullscreenBtn = document.createElement('button');
@@ -712,44 +699,42 @@ export function createControls(ctx: PlayerChromeContext) {
 
     setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
 
-    let wasPlayingBeforeFullscreen = false;
+    const controlsEpoch = session.currentEpoch;
+    const fullscreenRecovery = createFullscreenRecovery(controlsScope, video,
+      () => session.currentEpoch === controlsEpoch && session.element === video.element
+        && !session.isIdle && !session.isExiting,
+      () => refs.playbackDecisionRevision);
 
     const toggleFullscreen = () => {
-      wasPlayingBeforeFullscreen = !video.paused;
-    
-      const resumeIfPaused = () => {
-        if (wasPlayingBeforeFullscreen && video.paused) {
-          video.play().catch(console.error);
-        }
+      const operation = fullscreenRecovery.begin();
+      if (!operation.isCurrent()) return;
+      const resume = () => operation.schedule();
+      const fail = (error: unknown) => {
+        operation.cancel();
+        console.error(error);
       };
-
-      if (document.fullscreenElement) {
-        document.exitFullscreen()
-          .then(() => {
-            setTimeout(resumeIfPaused, 150);
-          })
-          .catch(console.error);
-      } else {
-        const target = session.element
-          ? document.documentElement
-          : (native?.parentElement || native || document.documentElement);
-        target.requestFullscreen()
-          .then(() => {
-            setTimeout(resumeIfPaused, 150);
-          })
-          .catch(() => {
+      try {
+        if (document.fullscreenElement) {
+          void document.exitFullscreen().then(resume, fail);
+        } else {
+          const target = session.element
+            ? document.documentElement
+            : (native?.parentElement || native || document.documentElement);
+          void target.requestFullscreen().then(resume, () => {
+            if (!operation.isCurrent()) return;
             if (nativeChatState()?.visible) {
+              operation.cancel();
               ctx.actions.triggerStatusIndicator(t('nativeChatFullscreenUnavailable'), '');
               return;
             }
-            if (!native || typeof native.requestFullscreen !== 'function') return;
-            native.requestFullscreen()
-              .then(() => {
-                setTimeout(resumeIfPaused, 150);
-              })
-              .catch(console.error);
+            if (!native || typeof native.requestFullscreen !== 'function') {
+              operation.cancel();
+              return;
+            }
+            try { void native.requestFullscreen().then(resume, fail); } catch (error) { fail(error); }
           });
-      }
+        }
+      } catch (error) { fail(error); }
     };
     refs.currentToggleFullscreen = toggleFullscreen;
 
@@ -760,13 +745,7 @@ export function createControls(ctx: PlayerChromeContext) {
     const onFullscreenChange = () => {
       setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
       showToolbar();
-      if (wasPlayingBeforeFullscreen && video.paused) {
-        setTimeout(() => {
-          if (video.paused) {
-            video.play().catch(console.error);
-          }
-        }, 50);
-      }
+      fullscreenRecovery.onFullscreenChange();
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
 
@@ -806,7 +785,7 @@ export function createControls(ctx: PlayerChromeContext) {
       ccMenu,
       scrubberTrack,
       t,
-      onCaptionChange: updateCaptionDock,
+      onCaptionChange: () => updateCaptionDock(true),
       onSubtitleLayoutChange: (on) => ctx.actions.applySubtitleLayout(on),
       onCaptionHud: showCaptionHud,
       onCaptionStyleChange: persistCaptionStyle,
@@ -1155,6 +1134,10 @@ export function createControls(ctx: PlayerChromeContext) {
     };
 
     let tooltipFrame = 0;
+    controlsScope.add(() => {
+      if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
+      tooltipFrame = 0;
+    });
     let pendingTooltipX = 0;
     const onScrubberMouseMove = (e: MouseEvent) => {
       if (isDragging || !playbackWindow(video).seekable) return;
@@ -1224,6 +1207,8 @@ export function createControls(ctx: PlayerChromeContext) {
     const onScrubberMouseDown = (e: MouseEvent) => {
       if (!playbackWindow(video).seekable) return;
       e.preventDefault();
+      seekCompletionScope?.dispose();
+      seekCompletionScope = null;
       isDragging = true;
       scrubberContainer.classList.add('dragging');
       handleSeekEvent(e.clientX, 'immediate');
@@ -1233,45 +1218,21 @@ export function createControls(ctx: PlayerChromeContext) {
       };
 
       const onMouseUp = (upEvt: MouseEvent) => {
-        handleSeekEvent(upEvt.clientX, 'immediate');
-      
-        const onSeeked = () => {
+        seekCompletionScope?.dispose();
+        seekCompletionScope = new DisposableScope();
+        waitForSeekCompletion(seekCompletionScope, video, () => {
+          seekCompletionScope = null;
           isDragging = false;
           scrubberContainer.classList.remove('dragging');
-          video.removeEventListener('seeked', onSeeked);
-        
-          // Hide tooltip if cursor is not over the scrubber container
           const rect = scrubberContainer.getBoundingClientRect();
-          if (
-            upEvt.clientX < rect.left ||
-            upEvt.clientX > rect.right ||
-            upEvt.clientY < rect.top ||
-            upEvt.clientY > rect.bottom
-          ) {
+          if (upEvt.clientX < rect.left || upEvt.clientX > rect.right
+            || upEvt.clientY < rect.top || upEvt.clientY > rect.bottom) {
             tooltip.classList.remove('visible');
             mediaFeatures.setHeatmapHover(null);
           }
-        };
-        video.addEventListener('seeked', onSeeked);
-      
-        controlsScope.timeout(() => {
-          isDragging = false;
-          scrubberContainer.classList.remove('dragging');
-          video.removeEventListener('seeked', onSeeked);
-        
-          // Hide tooltip if cursor is not over the scrubber container
-          const rect = scrubberContainer.getBoundingClientRect();
-          if (
-            upEvt.clientX < rect.left ||
-            upEvt.clientX > rect.right ||
-            upEvt.clientY < rect.top ||
-            upEvt.clientY > rect.bottom
-          ) {
-            tooltip.classList.remove('visible');
-            mediaFeatures.setHeatmapHover(null);
-          }
-        }, 150);
+        });
 
+        handleSeekEvent(upEvt.clientX, 'immediate');
         gestureScope?.dispose();
         gestureScope = null;
       };
@@ -1287,6 +1248,8 @@ export function createControls(ctx: PlayerChromeContext) {
     const onScrubberTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       if (!playbackWindow(video).seekable) return;
+      seekCompletionScope?.dispose();
+      seekCompletionScope = null;
       isDragging = true;
       scrubberContainer.classList.add('dragging');
       handleSeekEvent(e.touches[0].clientX, 'immediate');
@@ -1298,26 +1261,19 @@ export function createControls(ctx: PlayerChromeContext) {
       };
 
       const onTouchEnd = (endEvt: TouchEvent) => {
+        seekCompletionScope?.dispose();
+        seekCompletionScope = new DisposableScope();
+        waitForSeekCompletion(seekCompletionScope, video, () => {
+          seekCompletionScope = null;
+          isDragging = false;
+          scrubberContainer.classList.remove('dragging');
+          tooltip.classList.remove('visible');
+          mediaFeatures.setHeatmapHover(null);
+        });
+
         if (endEvt.changedTouches.length === 1) {
           handleSeekEvent(endEvt.changedTouches[0].clientX, 'immediate');
         }
-        const onSeeked = () => {
-          isDragging = false;
-          scrubberContainer.classList.remove('dragging');
-          video.removeEventListener('seeked', onSeeked);
-          tooltip.classList.remove('visible');
-          mediaFeatures.setHeatmapHover(null);
-        };
-        video.addEventListener('seeked', onSeeked);
-      
-        controlsScope.timeout(() => {
-          isDragging = false;
-          scrubberContainer.classList.remove('dragging');
-          video.removeEventListener('seeked', onSeeked);
-          tooltip.classList.remove('visible');
-          mediaFeatures.setHeatmapHover(null);
-        }, 150);
-
         gestureScope?.dispose();
         gestureScope = null;
       };
@@ -1326,6 +1282,7 @@ export function createControls(ctx: PlayerChromeContext) {
       gestureScope = new DisposableScope();
       gestureScope.listen(document, 'touchmove', onTouchMove, { capture: true, passive: true });
       gestureScope.listen(document, 'touchend', onTouchEnd, true);
+      gestureScope.listen(document, 'touchcancel', onTouchEnd, true);
     };
     scrubberContainer.addEventListener('touchstart', onScrubberTouchStart, { passive: true });
 
@@ -1403,6 +1360,15 @@ export function createControls(ctx: PlayerChromeContext) {
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
+      fullscreenRecovery.invalidate();
+      gestureScope?.dispose();
+      gestureScope = null;
+      seekCompletionScope?.dispose();
+      seekCompletionScope = null;
+      if (seekTimeout) clearTimeout(seekTimeout);
+      seekTimeout = null;
+      isDragging = false;
+      scrubberContainer.classList.remove('dragging');
       clearPendingMediaSeek(video);
       if (!mediaFeatures.retainCaptionsOnElementReset()) {
         mediaFeatures.invalidate();
@@ -1419,6 +1385,7 @@ export function createControls(ctx: PlayerChromeContext) {
       setBuffering(true, true);
     };
     const onPageMediaChange = () => {
+      fullscreenRecovery.invalidate();
       void mediaFeatures.refresh();
     };
     const onVolumeChange = () => {
@@ -1497,6 +1464,8 @@ export function createControls(ctx: PlayerChromeContext) {
       refs.onVolumeAdjustedCallback = null;
       gestureScope?.dispose();
       gestureScope = null;
+      seekCompletionScope?.dispose();
+      seekCompletionScope = null;
       controlsScope.dispose();
       video.removeEventListener('play', onPlay);
       video.removeEventListener('pause', onPause);
@@ -1582,6 +1551,7 @@ export function createControls(ctx: PlayerChromeContext) {
 
   // Cleans up custom controls
   function destroyCustomControls(): void {
+    onDestroy?.();
     ctx.actions.hideHelpOverlay(false);
     const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
     if (wrapper?._videoListenersCleanup) {

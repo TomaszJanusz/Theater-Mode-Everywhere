@@ -339,12 +339,12 @@ describe('playlist navigation availability', () => {
 });
 
 describe('playlist navigation DOM', () => {
-  it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async () => {
+  it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -506,17 +506,17 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });
 
-  it('uses the native Netflix toolbar Next control and refuses a stale click', async () => {
+  it('uses the native Netflix toolbar Next control and refuses a stale click', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -764,17 +764,17 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });
 
-  it('uses the Disney control-bar next episode and leaves the end card alone', async () => {
+  it('uses the Disney control-bar next episode and leaves the end card alone', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -1007,7 +1007,7 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });

@@ -23,12 +23,12 @@ describe('Disney theater captions', () => {
     assert.match(DISNEY_CAPTION_SHADOW_CSS, /bottom:\s*0 !important/);
   });
 
-  it('injects caption CSS when Disney creates the timed-text region after theater mounts', async () => {
+  it('injects caption CSS when Disney creates the timed-text region after theater mounts', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
         buildSync: (options: {
           stdin: { contents: string; resolveDir: string; sourcefile: string; loader: 'ts' };
@@ -98,7 +98,7 @@ describe('Disney theater captions', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });

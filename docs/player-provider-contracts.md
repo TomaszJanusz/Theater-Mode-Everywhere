@@ -24,6 +24,8 @@ Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, an
 
 `playback-surface.ts` defines the player's playback surface and capabilities. `playback-window.ts` handles shared timeline geometry, seek clamping, and pending-seek state. Host clocks and seek dispatch policies live in `providers/timeline/`. Controls consume the generic clock reader and observer rather than reading service-specific datasets or events.
 
+`providers/playback-session.ts` selects theater targets and opens provider-owned playback sessions. A session supplies a `PlaybackSurface`, a pointer-catcher capability, a replacement notification and idempotent disposal. Tencent owns WASM discovery, bridge setup and replacement observation; shared UI handles controls and viewport restoration when it receives a replacement.
+
 Provider presentation code owns host containers, discovery preferences, native renderer styling, and stage policies. Shared UI owns viewport geometry, chrome, input, and teardown. Factories under `providers/` compose host implementations; their explicit provider selection is intentional. Cross-world and iframe protocols remain platform responsibilities and must retain their provenance checks.
 
 ## Native chat

@@ -26,6 +26,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function toFiniteNumber(value: unknown): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -169,14 +170,15 @@ export function isYoutubeWatchJsonUrl(url: string, pageHref?: string): boolean {
 }
 
 export function youtubeWatchJsonVideoId(raw: unknown): string | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const obj = raw as Record<string, any>;
+  const obj = asRecord(raw);
+  if (!obj) return null;
+  const endpointVideoId = (value: unknown) => asRecord(asRecord(value)?.watchEndpoint)?.videoId;
   const candidates = [
-    obj.videoDetails?.videoId,
-    obj.playerResponse?.videoDetails?.videoId,
-    obj.currentVideoEndpoint?.watchEndpoint?.videoId,
-    obj.response?.currentVideoEndpoint?.watchEndpoint?.videoId,
-    obj.nextResponse?.currentVideoEndpoint?.watchEndpoint?.videoId
+    asRecord(obj.videoDetails)?.videoId,
+    asRecord(asRecord(obj.playerResponse)?.videoDetails)?.videoId,
+    endpointVideoId(obj.currentVideoEndpoint),
+    endpointVideoId(asRecord(obj.response)?.currentVideoEndpoint),
+    endpointVideoId(asRecord(obj.nextResponse)?.currentVideoEndpoint)
   ];
   for (const id of candidates) {
     if (typeof id === 'string' && id.length > 0 && id.length <= 20) return id;

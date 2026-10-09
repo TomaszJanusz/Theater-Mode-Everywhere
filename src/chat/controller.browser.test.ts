@@ -75,6 +75,15 @@ describe('native chat controller', () => {
     if (!browser) throw new Error('browser unavailable');
     const page = await browser.newPage({ viewport });
     await page.setContent(`<!doctype html><html><body>${html}<button id="toggle" type="button">chat</button></body></html>`, { waitUntil: 'domcontentloaded' });
+    // Install before controller construction so debounce, discovery and theme
+    // timers advance only when the fixture requests their documented horizon.
+    const start = new Date('2026-01-01T00:00:00Z');
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(new Date(start.getTime() + 1000));
+    await page.exposeFunction('__advanceNativeChatClock', async (phase: 'task' | 'structure' | 'discovery' | 'theme') => {
+      const horizon = { task: 0, structure: 80, discovery: 500, theme: 700 }[phase];
+      await page.clock.runFor(horizon);
+    });
     await page.addScriptTag({ content: code });
     return page;
   }
@@ -232,7 +241,7 @@ describe('native chat controller', () => {
         const c = new NativeChat.ChatController({document, href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK', onChange() {}, onLayoutChange() {}});
         const initial = {available:c.state.available,visible:c.state.visible,surface:c.state.surface, clicks};
         c.toggle(); c.refresh(); c.refresh();
-        await new Promise(r => setTimeout(r, 600));
+        await window.__advanceNativeChatClock('discovery');
         const waiting = {clicks, visible:c.state.visible,video:document.documentElement.style.getPropertyValue('--theater-video-width')};
         c.toggle(); // Cancel while the service is still loading.
         document.querySelector('ytd-watch-flexy').insertAdjacentHTML('beforeend', '<ytd-live-chat-frame id="chat"><iframe id="chatframe" src="https://www.youtube.com/live_chat?v=AbCdEfGhIjK"></iframe></ytd-live-chat-frame>');
@@ -275,7 +284,7 @@ describe('native chat controller', () => {
             else { document.querySelector('.channel-root__right-column').style.width='340px';document.querySelector('#open').setAttribute('aria-label','Collapse Chat'); }
           });
           const c = new NativeChat.ChatController({document,href:() => provider === 'youtube' ? 'https://www.youtube.com/watch?v=AbCdEfGhIjK' : 'https://www.twitch.tv/example',onChange(){},onLayoutChange(){},initialPreferences:{[provider]:{visible:true,width:400}}});
-          c.refresh(); await new Promise(r => setTimeout(r, 200));
+          c.refresh(); await window.__advanceNativeChatClock('structure');
           c.hide(); c.show(); c.refresh();
           const result = {clicks,available:c.state.available,visible:c.state.visible,sameComponent:document.querySelector('iframe,textarea')===original};
           if (provider === 'youtube') {chat.setAttribute('collapsed','');document.querySelector('#show-hide-button').hidden=false;}
@@ -305,7 +314,7 @@ describe('native chat controller', () => {
         const disabled = c.state.available;
         document.querySelector('#card').addEventListener('click',()=>clicks++);
         document.querySelector('#card button').disabled=false;
-        await new Promise(r=>setTimeout(r,200));
+        await window.__advanceNativeChatClock('structure');
         const late=c.state.available;
         href='https://www.youtube.com/watch?v=OtherVideo1';c.refresh();const stale=c.state.available;
         href='https://www.youtube.com/watch?v=AbCdEfGhIjK';c.refresh();c.show();c.refresh();c.refresh();
@@ -353,7 +362,7 @@ describe('native chat controller', () => {
           line.textContent = 'hello ' + index;
           lines.append(line);
         }
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await window.__advanceNativeChatClock('discovery');
         const duringMessages = scans;
         draft.focus();
         const viewport = { width: window.innerWidth, height: window.innerHeight };
@@ -399,7 +408,7 @@ describe('native chat controller', () => {
         const replacement = column.cloneNode(true);
         replacement.id = 'next-column';
         document.getElementById('layout').append(replacement);
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await window.__advanceNativeChatClock('structure');
         const replaced = {
           oldMarked: old.hasAttribute('data-theater-chat'),
           nextMarked: replacement.hasAttribute('data-theater-chat'),
@@ -577,7 +586,7 @@ describe('native chat controller', () => {
         });
         scans = 0;
         for (let index = 0; index < 20; index += 1) chat.append(document.createElement('div'));
-        await new Promise((resolve) => setTimeout(resolve, 180));
+        await window.__advanceNativeChatClock('discovery');
         const duringMessages = scans;
         controller.toggle();
         controller.toggle();
@@ -593,7 +602,7 @@ describe('native chat controller', () => {
           src: frame.getAttribute('src')
         };
         frame.setAttribute('src', 'https://www.youtube.com/live_chat?v=OtherVideo1');
-        await new Promise((resolve) => setTimeout(resolve, 1100));
+        await window.__advanceNativeChatClock('discovery');
         return {
           duringMessages,
           before,
@@ -645,7 +654,7 @@ describe('native chat controller', () => {
         });
         const missing = { available: controller.state.available, dock: controller.state.dock };
         document.getElementById('layout').insertAdjacentHTML('beforeend', '<div class="right-column" data-a-target="right-column-chat-bar" id="column"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__collapsed"></div></section></div>');
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await window.__advanceNativeChatClock('structure');
         const found = {
           available: controller.state.available,
           visible: controller.state.visible,
@@ -697,16 +706,16 @@ describe('native chat controller', () => {
         const originalDocument = frame.contentDocument;
         let loads = 0;
         frame.addEventListener('load', () => loads++);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await window.__advanceNativeChatClock('task');
         const beforeLoads = loads;
         const surface = api.detectChatSurface(document, 'https://www.youtube.com/@LofiGirl/live');
         const controller = new api.ChatController({document,
           href: () => 'https://www.youtube.com/watch?v=AbCdEfGhIjK', onChange() {}, onLayoutChange() {}});
         controller.hide(); controller.show();
-        await new Promise(resolve => setTimeout(resolve, 120));
+        await window.__advanceNativeChatClock('discovery');
         const preserved = frame.contentDocument === originalDocument && loads === beforeLoads && !frame.hasAttribute('src');
         watch.setAttribute('video-id', 'OtherVideo1');
-        await new Promise(resolve => setTimeout(resolve, 120));
+        await window.__advanceNativeChatClock('structure');
         const staleAvailable = controller.state.available;
         const next = api.detectChatSurface(document, 'https://www.youtube.com/@LofiGirl/live');
         frame.setAttribute('src', 'https://www.youtube.com/live_chat?v=WrongVideo1');
@@ -732,11 +741,11 @@ describe('native chat controller', () => {
         const shownInert = column.inert;
         const old = column.querySelector('.chat-room');
         old.remove();
-        await new Promise(resolve => setTimeout(resolve, 120));
+        await window.__advanceNativeChatClock('structure');
         const missing = !controller.state.available;
         const next = document.createElement('section'); next.className = 'chat-room';
         column.append(next);
-        await new Promise(resolve => setTimeout(resolve, 120));
+        await window.__advanceNativeChatClock('structure');
         const rebound = controller.state.surface?.root === column && controller.state.surface?.contentRoot === next;
         controller.dispose();
         return {originalInert, shownInert, missing, rebound, restoredInert: column.inert};
@@ -885,7 +894,7 @@ describe('native chat controller', () => {
         portal.innerHTML = '<div class="NativeLight tw-root--theme-light"><textarea class="chat-input">native popup</textarea></div>';
         document.body.append(portal);
         controller.hide();
-        await new Promise(resolve => setTimeout(resolve, 850));
+        await window.__advanceNativeChatClock('theme');
         const popup = portal.querySelector('textarea');
         const latePopup = {bg:getComputedStyle(popup).backgroundColor,color:getComputedStyle(popup).color};
         controller.setTheme('light');
@@ -936,7 +945,7 @@ describe('native chat controller', () => {
           href:()=> 'https://www.youtube.com/watch?v=AbCdEfGhIjK',onChange(){},onLayoutChange(){},
           initialPreferences:{youtube:{visible:true,width:400,theme:'dark'}}});
         controller.setTheme('dark');controller.hide();controller.show();controller.setTheme('light');
-        await new Promise(resolve=>setTimeout(resolve,850));
+        await window.__advanceNativeChatClock('theme');
         const theme=controller.state.theme;
         controller.dispose();
         return {theme,calls,loads,sameDocument:frame.contentDocument===chat,
@@ -1013,12 +1022,12 @@ describe('native chat controller', () => {
         controller.show(); controller.setTheme('dark');
         const unknown = doc.createElement('style');
         unknown.textContent = '#draft{border-color:var(--t0123456789abcdef)}'; doc.head.append(unknown);
-        await new Promise(resolve => setTimeout(resolve, 850));
+        await (window as unknown as { __advanceNativeChatClock(phase: 'theme'): Promise<void> }).__advanceNativeChatClock('theme');
         const fallback = {status: controller.state.themeStatus, requested: controller.state.theme,
           native: !doc.documentElement.hasAttribute('dark'), bridge: !!doc.querySelector('[data-theater-chat-palette]'),
           marker: document.documentElement.getAttribute('data-theater-chat-theme')};
         unknown.remove();
-        await new Promise(resolve => setTimeout(resolve, 850));
+        await (window as unknown as { __advanceNativeChatClock(phase: 'theme'): Promise<void> }).__advanceNativeChatClock('theme');
         const recovered = controller.state.themeStatus;
         const identity = {sameFrame: document.getElementById('chatframe') === frame, sameDocument: frame.contentDocument === doc,
           sameDraft: doc.getElementById('draft') === draft, draft: draft.value, loads, sameSrc: frame.getAttribute('src') === src,
