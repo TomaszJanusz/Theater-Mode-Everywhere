@@ -71,68 +71,136 @@ export function createToolbar(ctx: PlayerChromeContext) {
     if (event.detail >= 1) button.blur();
   }
 
-  function isPaintedOverlay(el: Element | null): el is Element {
-    if (!el) return false;
-    const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) <= 0.05) return false;
-    const rect = el.getBoundingClientRect();
-    return rect.width > 1 && rect.height > 1;
-  }
-
-  function overlayRect(el: Element): DockRect {
-    const rect = el.getBoundingClientRect();
-    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
-  }
-
-  function chromeLayoutRect(el: HTMLElement): DockRect {
-    const rect = el.getBoundingClientRect();
-    const bottomOffset = Number.parseFloat(getComputedStyle(el).bottom) || 0;
-    const bottom = (ctx.session.element?.getBoundingClientRect().bottom ?? window.innerHeight) - bottomOffset;
-    return {
-      left: rect.left,
-      right: rect.right,
-      top: bottom - el.offsetHeight,
-      bottom
+  const obstacleSelector = [
+    '.theater-service-action-host',
+    '.theater-scrubber-tooltip.visible',
+    '.theater-cc-menu.visible',
+    '.theater-menu.is-open > .theater-cc-menu',
+    '.theater-settings-menu.visible',
+    '.theater-menu.is-open > .theater-settings-menu',
+    '.theater-button-tooltip.visible',
+    '.theater-volume-container:hover .theater-volume-panel',
+    '.theater-speed-container:hover .theater-speed-panel',
+    '.theater-volume-container:focus-within .theater-volume-panel',
+    '.theater-speed-container:focus-within .theater-speed-panel'
+  ].join(',');
+  const candidateSelector = '.theater-service-action-host, .theater-scrubber-tooltip, .theater-cc-menu, '
+    + '.theater-settings-menu, .theater-button-tooltip, .theater-volume-panel, .theater-speed-panel';
+  let dockFrame: number | null = null;
+  let measuringCaptionDock = false;
+  let controlsCache: (HTMLElement & {
+    _mediaFeatures?: {
+      setCaptionLineLimit(maxLines: number): void;
+      readHostCaptionLayout(): HostCaptionLayout | null;
     };
+  }) | null = null;
+  let dockOverlayCache: HTMLElement | null = null;
+  let overlayTextCache: HTMLElement | null = null;
+  let candidates: Element[] = [];
+  let candidatesDirty = true;
+  let dockObserver: MutationObserver | null = null;
+  let dockResizeObserver: ResizeObserver | null = null;
+
+  function resetCaptionDock(): void {
+    if (dockFrame !== null) window.cancelAnimationFrame(dockFrame);
+    dockFrame = null;
+    dockObserver?.disconnect();
+    dockResizeObserver?.disconnect();
+    dockObserver = null;
+    dockResizeObserver = null;
+    controlsCache = null;
+    dockOverlayCache = null;
+    overlayTextCache = null;
+    candidates = [];
+    candidatesDirty = true;
+    captionDockLifted = false;
   }
 
-  function raisedLetterbox(): { band: number; viewportHeight: number } {
+  function refreshDockElements(): void {
+    if (!controlsCache?.isConnected) {
+      dockObserver?.disconnect();
+      dockResizeObserver?.disconnect();
+      controlsCache = ctx.queryPlayerUi('.theater-controls-wrapper');
+      if (!controlsCache) return;
+      candidatesDirty = true;
+      const root = controlsCache.getRootNode();
+      dockObserver = new MutationObserver(records => {
+        // Visibility changes reuse the cached nodes; only changed structure
+        // requires discovery. Text and style changes still update geometry.
+        if (records.some(record => record.type === 'childList'
+          && [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === Node.ELEMENT_NODE))) {
+          candidatesDirty = true;
+        }
+        updateCaptionDock();
+      });
+      dockObserver.observe(root, {
+        childList: true, subtree: true, characterData: true,
+        attributes: true, attributeFilter: ['class', 'style']
+      });
+      dockResizeObserver = typeof ResizeObserver === 'undefined'
+        ? null : new ResizeObserver(() => updateCaptionDock());
+    }
+    if (!candidatesDirty) return;
+    candidatesDirty = false;
+    dockOverlayCache = ctx.queryPlayerUi('.theater-caption-overlay');
+    overlayTextCache = dockOverlayCache?.querySelector('.theater-caption-overlay-text') ?? null;
+    candidates = ctx.queryPlayerUiAll(candidateSelector);
+    dockResizeObserver?.disconnect();
+    for (const element of [controlsCache, dockOverlayCache, ...candidates]) {
+      if (element) dockResizeObserver?.observe(element);
+    }
+  }
+
+  function updateCaptionDock(immediate = false): void {
+    if (!ctx.session.element) {
+      resetCaptionDock();
+      document.documentElement.style.removeProperty('--theater-caption-bottom');
+      return;
+    }
+    if (immediate) {
+      if (dockFrame !== null) window.cancelAnimationFrame(dockFrame);
+      dockFrame = null;
+      if (!ctx.session.isIdle && !ctx.session.isExiting) measureCurrentCaptionDock(ctx.session.element);
+      return;
+    }
+    if (dockFrame !== null) return;
+    const epoch = ctx.session.currentEpoch;
     const element = ctx.session.element;
-    const video = element instanceof HTMLVideoElement ? element : null;
-    const rect = element?.getBoundingClientRect();
-    const viewportWidth = rect && rect.width > 0 ? rect.width : window.innerWidth;
-    const viewportHeight = rect && rect.height > 0 ? rect.height : window.innerHeight;
-    return {
-      band: horizontalLetterboxPx({
-        videoWidth: video?.videoWidth ?? 0,
-        videoHeight: video?.videoHeight ?? 0,
-        viewportWidth,
-        viewportHeight
-      }),
-      viewportHeight
-    };
+    dockFrame = window.requestAnimationFrame(() => {
+      dockFrame = null;
+      if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element
+        || ctx.session.isIdle || ctx.session.isExiting) return;
+      measureCurrentCaptionDock(element);
+    });
   }
 
   let captionDockLifted = false;
   const captionDockMotionMode = new WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>();
 
-  function updateCaptionDock(): void {
-    if (!ctx.session.element) {
-      document.documentElement.style.removeProperty('--theater-caption-bottom');
-      return;
-    }
+  function measureCurrentCaptionDock(element: HTMLElement): void {
+    // Updating the line cap can synchronously redraw overlay captions and call
+    // back into this path. The outer measurement reads that updated height.
+    if (measuringCaptionDock) return;
+    measuringCaptionDock = true;
+    try { measureCaptionDock(element); } finally { measuringCaptionDock = false; }
+  }
 
+  function measureCaptionDock(element: HTMLElement): void {
+    refreshDockElements();
+    const mediaRect = element.getBoundingClientRect();
+    const viewportWidth = mediaRect.width || window.innerWidth;
+    const viewportHeight = mediaRect.height || window.innerHeight;
     const raised = document.documentElement.classList.contains('theater-everywhere-picture-top');
-    const { band, viewportHeight } = raised ? raisedLetterbox() : { band: 0, viewportHeight: 0 };
+    const video = element instanceof HTMLVideoElement ? element : null;
+    const band = raised ? horizontalLetterboxPx({
+      videoWidth: video?.videoWidth ?? 0,
+      videoHeight: video?.videoHeight ?? 0,
+      viewportWidth, viewportHeight
+    }) : 0;
     const placeInBand = raised && band > 0;
-    const overlay = ctx.queryPlayerUi('.theater-caption-overlay.visible') as HTMLElement | null;
-    const overlayText = overlay?.querySelector('.theater-caption-overlay-text') as HTMLElement | null;
-    const features = ctx.queryPlayerUi('.theater-controls-wrapper') as {
-      _mediaFeatures?: {
-        setCaptionLineLimit(maxLines: number): void;
-        readHostCaptionLayout(): HostCaptionLayout | null;
-      }
-    } | null;
+    const overlay = dockOverlayCache?.classList.contains('visible') ? dockOverlayCache : null;
+    const overlayText = overlay ? overlayTextCache : null;
+    const features = controlsCache;
     const hostCaption = features?._mediaFeatures?.readHostCaptionLayout() ?? null;
     const overlayLineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
     const lineHeight = overlayLineHeight > 0 ? overlayLineHeight : (hostCaption?.lineHeight ?? 0);
@@ -144,26 +212,23 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const captionSize = overlayCaption ?? hostCaption;
 
     const obstacles: DockRect[] = [];
-    const controls = ctx.queryPlayerUi('.theater-controls-wrapper.visible') as HTMLElement | null;
-    if (controls && controls.offsetWidth > 1 && controls.offsetHeight > 1) {
-      obstacles.push(chromeLayoutRect(controls));
+    const controls = controlsCache?.classList.contains('visible') ? controlsCache : null;
+    if (controls) {
+      const rect = controls.getBoundingClientRect();
+      if (rect.width > 1 && rect.height > 1) {
+        const bottomOffset = Number.parseFloat(getComputedStyle(controls).bottom) || 0;
+        const bottom = mediaRect.bottom - bottomOffset;
+        obstacles.push({ left: rect.left, right: rect.right, top: bottom - controls.offsetHeight, bottom });
+      }
     }
-    for (const selector of [
-      '.theater-service-action-host',
-      '.theater-scrubber-tooltip.visible',
-      '.theater-cc-menu.visible',
-      '.theater-menu.is-open > .theater-cc-menu',
-      '.theater-settings-menu.visible',
-      '.theater-menu.is-open > .theater-settings-menu',
-      '.theater-button-tooltip.visible',
-      '.theater-volume-container:hover .theater-volume-panel',
-      '.theater-speed-container:hover .theater-speed-panel',
-      '.theater-volume-container:focus-within .theater-volume-panel',
-      '.theater-speed-container:focus-within .theater-speed-panel'
-    ]) {
-      ctx.queryPlayerUiAll(selector).forEach((el) => {
-        if (isPaintedOverlay(el)) obstacles.push(overlayRect(el));
-      });
+    for (const el of candidates) {
+      if (!el.isConnected || !el.matches(obstacleSelector)) continue;
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) <= 0.05) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 1 && rect.height > 1) {
+        obstacles.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
+      }
     }
 
     const rows = overlayCaption
@@ -184,8 +249,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const bottom = computeCaptionDockBottom({
       captionSize,
       obstacles,
-      viewportWidth: ctx.session.element.getBoundingClientRect().width || window.innerWidth,
-      viewportHeight: ctx.session.element.getBoundingClientRect().height || window.innerHeight,
+      viewportWidth,
+      viewportHeight,
       ...(restBottom !== undefined ? { restBottom } : {})
     });
     const lifted = restBottom !== undefined ? bottom > restBottom : bottom > CAPTION_DOCK_REST_BOTTOM;
@@ -194,8 +259,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // land in the same frame as the new height, or the block slides up or down.
     // A picture move is the exception: captions travel with the video.
     const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
-    const dockOverlay = (overlay ?? ctx.queryPlayerUi('.theater-caption-overlay')) as HTMLElement | null;
-    applyCaptionDockMotion(dockOverlay, motion, captionDockMotionMode);
+    applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode);
     applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
     captionDockLifted = lifted;
     const nextBottom = `${bottom}px`;
@@ -357,6 +421,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     showToolbar,
     hideToolbar,
     updateCaptionDock,
+    resetCaptionDock,
     closeTheaterPopovers,
     blurMouseToggle,
     preventDoubleToggle,

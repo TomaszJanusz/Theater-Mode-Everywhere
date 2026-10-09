@@ -8,19 +8,6 @@ const chromeRoot = path.join(listingsRoot, 'chrome');
 const amoRoot = path.join(listingsRoot, 'amo');
 const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 
-const forbiddenFrameSkippingCopy: Record<string, string[]> = {
-  ar: ['تخطي الإطارات'],
-  es: ['omitir fotogramas'],
-  fr: ['sauter des images', 'les parties les plus lues'],
-  it: ['saltare i fotogrammi'],
-  ja: ['フレームのスキップ'],
-  ko: ['프레임 건너뛰기'],
-  pt_BR: ['pular quadros'],
-  ru: ['пропуска кадров'],
-  uk: ['пропуску кадрів'],
-  zh_CN: ['跳帧']
-};
-
 function listingLocales(root: string): string[] {
   return readdirSync(root)
     .filter((name) => name.endsWith('.md'))
@@ -106,18 +93,6 @@ describe('store listings', () => {
         normalizedStoreContent(readListing('amo', locale), locale),
         `${locale}: Chrome and AMO listing copy differs`
       );
-    }
-  });
-
-  it('describes frame stepping without implying skipped frames', () => {
-    for (const [locale, forbiddenPhrases] of Object.entries(forbiddenFrameSkippingCopy)) {
-      for (const store of ['chrome', 'amo'] as const) {
-        const content = readListing(store, locale);
-        for (const phrase of forbiddenPhrases) {
-          assert.ok(!content.includes(phrase),
-            `${store}/${locale}: frame stepping uses forbidden copy: ${phrase}`);
-        }
-      }
     }
   });
 

@@ -18,7 +18,8 @@ import {
 import { isAllowedMediaFetchUrl, MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
-import { sanitizeContentTitle, youtubePlayerTitle } from '../../media-features/content-title';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/parsers/youtube-player-response';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isYouTubeHost } from '../hosts';
 import { installYouTubeQueueNavigation } from './queue-main';
@@ -135,7 +136,19 @@ function isAuxiliaryYoutubePlayer(el: Element | null): boolean {
   return Boolean(el.closest('ytd-shorts, ytd-video-preview, ytd-miniplayer, [hidden]'));
 }
 
-function findYoutubePlayer(): any {
+type YoutubePlayer = Element & {
+  getOption?: (module: string, option: string) => unknown;
+  setOption?: (module: string, option: string, value: Record<string, unknown>) => void;
+  loadModule?: (module: string) => void;
+  unloadModule?: (module: string) => void;
+  toggleSubtitles?: () => void;
+  getPlayerResponse?: () => unknown;
+  setSize?: (width: number, height: number) => void;
+  seekTo?: (time: number, allowSeekAhead: boolean) => void;
+  seekToLiveHead?: () => void;
+};
+
+function findYoutubePlayer(): YoutubePlayer | null {
   const movie = document.getElementById('movie_player');
   if (movie && !isAuxiliaryYoutubePlayer(movie)) return movie;
   const players = Array.from(document.querySelectorAll('.html5-video-player'));
@@ -232,47 +245,68 @@ export function captureTimedtextResponse(url: string, response: Response): void 
   }).catch(() => {});
 }
 
-function captionTrackFromPlayer(languageCode: string | null, kind: string | null): Record<string, unknown> | null {
-  const player = findYoutubePlayer();
-  const list = player?.getOption?.('captions', 'tracklist');
-  const tracks = Array.isArray(list) ? list : [];
-  const matches = languageCode
-    ? tracks.filter((track: any) => track && track.languageCode === languageCode)
-    : tracks;
-  if (kind) {
-    const exact = matches.find((track: any) => track.kind === kind);
-    if (exact) return exact;
-  } else {
-    const manual = matches.find((track: any) => !track.kind);
-    if (manual) return manual;
-  }
-  if (matches[0]) return matches[0];
-  if (languageCode) {
-    const track: Record<string, string> = { languageCode };
-    if (kind) track.kind = kind;
-    return track;
-  }
-  return null;
+let captionOperation = 0;
+
+function invalidateYoutubeCaptions(): void {
+  captionOperation += 1;
+}
+
+function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
+  const list = typeof player.getOption === 'function' ? player.getOption('captions', 'tracklist') : null;
+  return Array.isArray(list) ? list.flatMap((value) => {
+    const track = youtubeRecord(value);
+    return track && typeof track.languageCode === 'string'
+      && (track.kind === undefined || typeof track.kind === 'string') ? [track] : [];
+  }) : [];
+}
+
+function captionTrackFromPlayer(
+  player: YoutubePlayer,
+  languageCode: string | null,
+  kind: string | null
+): Record<string, unknown> | null {
+  const tracks = playerCaptionTracks(player);
+  const matches = languageCode ? tracks.filter((track) => track.languageCode === languageCode) : tracks;
+  const preferred = kind ? matches.find((track) => track.kind === kind) : matches.find((track) => !track.kind);
+  if (preferred || matches[0]) return preferred || matches[0];
+  return languageCode ? { languageCode, ...(kind ? { kind } : {}) } : null;
 }
 
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-async function waitForCaptionTracklist(player: any, timeoutMs = 2000): Promise<any[]> {
+async function waitForCaptionTracklist(player: YoutubePlayer, current: () => boolean, timeoutMs = 2000): Promise<void> {
   const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
+  while (current() && Date.now() - started < timeoutMs) {
     try {
-      player?.loadModule?.('captions');
+      if (typeof player.loadModule === 'function') player.loadModule('captions');
     } catch {
       // Module may already be loaded.
     }
-    const list = player?.getOption?.('captions', 'tracklist');
-    if (Array.isArray(list) && list.length > 0) return list;
+    if (playerCaptionTracks(player).length > 0) return;
     await waitMs(100);
   }
-  const list = player?.getOption?.('captions', 'tracklist');
-  return Array.isArray(list) ? list : [];
+}
+
+function captionRequestIsCurrent(player: YoutubePlayer | null, generation: number): () => boolean {
+  if (!player) return () => false;
+  const video = player.querySelector('video');
+  const currentSrc = video?.currentSrc || '';
+  const source = video?.getAttribute('src');
+  const sourceObject = video?.srcObject;
+  const pageId = youtubePageVideoId(window.location.href);
+  const responseId = typeof player.getPlayerResponse === 'function' ? youtubeResponseVideoId(player.getPlayerResponse()) : null;
+  if (pageId && responseId && pageId !== responseId) return () => false;
+  return () => generation === captionOperation
+    && youtubeIntegrationEnabled()
+    && findYoutubePlayer() === player
+    && player.querySelector('video') === video
+    && (video?.currentSrc || '') === currentSrc
+    && video?.getAttribute('src') === source
+    && video?.srcObject === sourceObject
+    && youtubePageVideoId(window.location.href) === pageId
+    && (typeof player.getPlayerResponse === 'function' ? youtubeResponseVideoId(player.getPlayerResponse()) : null) === responseId;
 }
 
 async function ensureYoutubeCaptions(
@@ -280,59 +314,63 @@ async function ensureYoutubeCaptions(
   kind: string | null,
   forceReset = false
 ): Promise<boolean> {
-  const button = document.querySelector('.ytp-subtitles-button') as HTMLElement | null;
+  const generation = ++captionOperation;
   const player = findYoutubePlayer();
+  if (!player) return false;
+  const current = captionRequestIsCurrent(player, generation);
+  const button = player.querySelector<HTMLElement>('.ytp-subtitles-button');
+  if (!current()) return false;
   if (forceReset) {
     try {
-      player?.unloadModule?.('captions');
+      if (typeof player.unloadModule === 'function') player.unloadModule('captions');
     } catch {
       // Player may not expose unloadModule.
     }
-    disableYoutubeCaptions();
+    disablePlayerCaptions(player, button);
     await waitMs(80);
+    if (!current()) return false;
   }
+  await waitForCaptionTracklist(player, current);
+  if (!current()) return false;
   try {
-    player?.loadModule?.('captions');
-  } catch {
-    // Module may already be loaded.
-  }
-  await waitForCaptionTracklist(player);
-  try {
-    const track = captionTrackFromPlayer(languageCode, kind);
-    if (track && typeof player?.setOption === 'function') {
+    const track = captionTrackFromPlayer(player, languageCode, kind);
+    if (track && typeof player.setOption === 'function') {
       player.setOption('captions', 'track', track);
       return true;
     }
   } catch {
     // Fall through to the control button.
   }
+  if (!current()) return false;
   const alreadyOn = button?.getAttribute('aria-pressed') === 'true';
-  if (!alreadyOn && button) {
+  if (!alreadyOn && button?.isConnected && player.contains(button)) {
     button.click();
     return true;
   }
-  try {
-    if (!alreadyOn && typeof player?.toggleSubtitles === 'function') {
-      player.toggleSubtitles();
-      return true;
-    }
-  } catch {
-    return false;
+  if (!alreadyOn && typeof player.toggleSubtitles === 'function') {
+    player.toggleSubtitles();
+    return true;
   }
   return alreadyOn;
 }
 
-function disableYoutubeCaptions(): void {
-  const button = document.querySelector('.ytp-subtitles-button') as HTMLElement | null;
-  if (button?.getAttribute('aria-pressed') === 'true') {
+function disablePlayerCaptions(player: YoutubePlayer | null, button: HTMLElement | null): void {
+  if (!player?.isConnected || findYoutubePlayer() !== player) return;
+  if (button?.isConnected && player.contains(button) && button.getAttribute('aria-pressed') === 'true') {
     button.click();
     return;
   }
   try {
-    findYoutubePlayer()?.setOption?.('captions', 'track', {});
+    if (typeof player?.setOption === 'function') player.setOption('captions', 'track', {});
   } catch {
     // Native captions can stay off without this.
   }
+}
+
+function disableYoutubeCaptions(): void {
+  invalidateYoutubeCaptions();
+  const player = findYoutubePlayer();
+  disablePlayerCaptions(player, player?.querySelector<HTMLElement>('.ytp-subtitles-button') || null);
 }
 
 function waitForCachedBody(url: string, timeoutMs: number): Promise<string | null> {
@@ -397,6 +435,8 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
 
 export async function fetchTimedtextWithPot(url: string): Promise<string | null> {
   if (!youtubeIntegrationEnabled()) return null;
+  const current = captionRequestIsCurrent(findYoutubePlayer(), captionOperation);
+  const requestedVideoId = timedtextVideoId(url);
   const cached = findCachedBody(url);
   if (cached) return cached;
   const direct = await fetchTimedtextDirect(url);
@@ -410,6 +450,10 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
     if (afterWait) return afterWait;
   }
 
+  if (!current()) return findCachedBody(url);
+  const pageVideoId = youtubePageVideoId(window.location.href);
+  if (requestedVideoId && pageVideoId && requestedVideoId !== pageVideoId) return null;
+
   captionMintInFlight = (async () => {
     let languageCode: string | null = null;
     let kind: string | null = null;
@@ -420,7 +464,7 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
     } catch {
       languageCode = null;
     }
-    await ensureYoutubeCaptions(languageCode, kind, true);
+    if (!await ensureYoutubeCaptions(languageCode, kind, true)) return null;
     return waitForCachedBody(url, 8000);
   })();
 
@@ -436,25 +480,27 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
 
 function youtubeResponseVideoId(raw: unknown): string | null {
   if (!raw || typeof raw !== 'object') return null;
-  const videoId = (raw as { videoDetails?: { videoId?: unknown } }).videoDetails?.videoId;
+  const videoId = youtubeRecord(youtubeRecord(raw)?.videoDetails)?.videoId;
   return typeof videoId === 'string' ? videoId : null;
 }
 
 function pickYoutubePlayerResponse(): unknown {
-  const win = window as any;
+  const win = window as Window & { ytInitialPlayerResponse?: unknown; ytplayer?: unknown };
   let live: unknown = null;
   try {
-    live = findYoutubePlayer()?.getPlayerResponse?.() || null;
+    const player = findYoutubePlayer();
+    live = typeof player?.getPlayerResponse === 'function' ? player.getPlayerResponse() : null;
   } catch {
     live = null;
   }
   const boot = win.ytInitialPlayerResponse || null;
   let config: unknown = null;
   try {
-    if (win.ytplayer?.config?.args?.raw_player_response) {
-      config = win.ytplayer.config.args.raw_player_response;
-    } else if (typeof win.ytplayer?.config?.args?.player_response === 'string') {
-      config = JSON.parse(win.ytplayer.config.args.player_response);
+    const args = youtubeRecord(youtubeRecord(youtubeRecord(win.ytplayer)?.config)?.args);
+    if (args?.raw_player_response) {
+      config = args.raw_player_response;
+    } else if (typeof args?.player_response === 'string') {
+      config = JSON.parse(args.player_response);
     }
   } catch {
     config = null;
@@ -491,10 +537,11 @@ function readYoutubeDomTitle(): string | null {
 
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
   try {
-    const raw = pickYoutubePlayerResponse() as any;
+    const raw = pickYoutubePlayerResponse();
+    const metadata = readYoutubePlayerMetadata(raw);
     const heatmap = heatmapForCurrentPage(raw);
     const domTitle = readYoutubeDomTitle() || undefined;
-    if (!raw || typeof raw !== 'object') {
+    if (!metadata) {
       if (!heatmap && !domTitle) return null;
       const videoId = youtubePageVideoId(window.location.href);
       return {
@@ -504,27 +551,8 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       };
     }
 
-    const videoDetails = raw.videoDetails || {};
-    const captionTracks = (raw.captions?.playerCaptionsTracklistRenderer?.captionTracks || [])
-      .slice(0, 40)
-      .map((track: any, index: number) => {
-        const baseUrl = typeof track?.baseUrl === 'string' ? track.baseUrl : '';
-        if (!baseUrl || baseUrl.length > 32000) return null;
-        const language = String(track.languageCode || '').slice(0, 16);
-        const label = String(track.name?.simpleText || track.name?.runs?.[0]?.text || language).slice(0, 80);
-        return {
-          id: `youtube:${String(track.vssId || language || index).slice(0, 40)}`,
-          language,
-          label,
-          kind: track.kind === 'asr' ? 'captions' : 'subtitles',
-          autoGenerated: track.kind === 'asr',
-          baseUrl
-        };
-      })
-      .filter(Boolean);
-
     const pageVideoId = youtubePageVideoId(window.location.href);
-    const playerVideoId = typeof videoDetails.videoId === 'string' ? videoDetails.videoId : null;
+    const playerVideoId = metadata.videoId || null;
     let markers = findYoutubeChapterMarkers(raw);
     if (markers.length === 0) {
       const win = window as Window & { ytInitialData?: unknown };
@@ -535,20 +563,9 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       }
     }
 
-    const description = typeof videoDetails.shortDescription === 'string'
-      ? videoDetails.shortDescription.slice(0, 20000)
-      : undefined;
-    const title = youtubePlayerTitle(videoDetails, raw?.microformat?.playerMicroformatRenderer?.title) || domTitle;
-
     return {
-      videoId: typeof videoDetails.videoId === 'string' ? videoDetails.videoId.slice(0, 20) : undefined,
-      ...(title ? { title } : {}),
-      duration: Number(videoDetails.lengthSeconds) || undefined,
-      description,
-      captionTracks,
-      storyboardSpec: typeof raw.storyboards?.playerStoryboardSpecRenderer?.spec === 'string'
-        ? raw.storyboards.playerStoryboardSpecRenderer.spec.slice(0, 4000)
-        : undefined,
+      ...metadata,
+      ...(metadata.title || domTitle ? { title: metadata.title || domTitle } : {}),
       markers,
       ...(heatmap ? { heatmap } : {})
     };
@@ -582,12 +599,12 @@ function refreshYoutubePlayerLayout(): void {
   }
 }
 
-function youtubeWallNow(player: any): number | null {
+function youtubeWallNow(player: YoutubePlayer | null): number | null {
   const now = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuenow'));
   return Number.isFinite(now) ? now : null;
 }
 
-function youtubeWallLiveHead(player: any): number | null {
+function youtubeWallLiveHead(player: YoutubePlayer | null): number | null {
   const max = Number(player?.querySelector?.('.ytp-progress-bar')?.getAttribute('aria-valuemax'));
   return Number.isFinite(max) ? max : null;
 }
@@ -653,13 +670,24 @@ export function installYoutubeMain(): void {
     } catch {
       return;
     }
-    const data = event.data;
-    if (data && data.type === 'theater-everywhere-timedtext-body' && data.record && typeof data.record.body === 'string') {
-      if (typeof data.record.url !== 'string' || !isAllowedTimedtextUrl(data.record.url)) return;
-      timedtextBodies.push(data.record as CachedTimedtext);
+    const data = youtubeRecord(event.data);
+    const record = youtubeRecord(data?.record);
+    if (data?.type === 'theater-everywhere-timedtext-body' && typeof record?.body === 'string') {
+      if (typeof record.url !== 'string' || !isAllowedTimedtextUrl(record.url) || record.body.length > MAX_CAPTION_BYTES) return;
+      const cached = createTimedtextCacheRecord(record.url, record.body);
+      if (!cached) return;
+      timedtextBodies.push(cached);
       if (timedtextBodies.length > 20) timedtextBodies.shift();
     }
   });
+
+  ['yt-navigate-start', 'yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'].forEach((name) => {
+    window.addEventListener(name, invalidateYoutubeCaptions);
+    document.addEventListener(name, invalidateYoutubeCaptions);
+  });
+  document.addEventListener('loadstart', (event) => {
+    if (event.target === findYoutubePlayer()?.querySelector('video')) invalidateYoutubeCaptions();
+  }, true);
 
   ['yt-navigate-finish', 'yt-page-data-updated', 'yt-player-updated'].forEach((name) => {
     window.addEventListener(name, publishCurrentYoutubeSnapshot);
@@ -670,7 +698,7 @@ export function installYoutubeMain(): void {
   });
 
   window.addEventListener('theater-everywhere-youtube-captions', (event: Event) => {
-    const detail = (event as CustomEvent<{ requestId?: number; enabled?: boolean; language?: string; kind?: string | null }>).detail || {};
+    const detail = youtubeRecord((event as CustomEvent<unknown>).detail) || {};
     const requestId = detail.requestId;
     const respond = (ok: boolean) => {
       window.dispatchEvent(new CustomEvent('theater-everywhere-youtube-captions-result', {
@@ -678,12 +706,18 @@ export function installYoutubeMain(): void {
       }));
     };
     try {
-      if (!youtubeIntegrationEnabled()) {
+      if (typeof detail.enabled !== 'boolean' || !youtubeIntegrationEnabled()) {
+        if (detail.enabled === false) invalidateYoutubeCaptions();
         respond(false);
         return;
       }
-      if (detail.enabled) {
-        void ensureYoutubeCaptions(detail.language || null, detail.kind || null, true);
+      if (detail.enabled === true) {
+        void ensureYoutubeCaptions(
+          typeof detail.language === 'string' ? detail.language : null,
+          typeof detail.kind === 'string' ? detail.kind : null,
+          true
+        ).then(respond, () => respond(false));
+        return;
       } else {
         disableYoutubeCaptions();
       }

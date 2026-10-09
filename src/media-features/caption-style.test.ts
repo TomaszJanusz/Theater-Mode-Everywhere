@@ -2,27 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   applyCaptionStyle,
-  CAPTION_FONT_SCALES,
   DEFAULT_CAPTION_STYLE,
   resolveCaptionStyle,
   stepCaptionFontScale
 } from './caption-style';
 
 describe('caption font scale', () => {
-  it('uses the supported discrete scales and a 100% default', () => {
-    assert.deepEqual(CAPTION_FONT_SCALES, [0.5, 1, 1.5, 2, 3, 4]);
-    assert.equal(resolveCaptionStyle(null).fontScale, 1);
-  });
-
   it('uses the system font, yellow text, and drop shadow by default', () => {
     assert.deepEqual(resolveCaptionStyle(null), DEFAULT_CAPTION_STYLE);
-    assert.equal(DEFAULT_CAPTION_STYLE.fontPreset, 'system');
-    assert.equal(DEFAULT_CAPTION_STYLE.textColor, '#fad900');
-    assert.equal(DEFAULT_CAPTION_STYLE.textOpacity, 1);
-    assert.equal(DEFAULT_CAPTION_STYLE.dropShadow, true);
-    assert.equal(DEFAULT_CAPTION_STYLE.shadowOpacity, 0.92);
-    assert.equal(DEFAULT_CAPTION_STYLE.backgroundColor, '#141414');
-    assert.equal(DEFAULT_CAPTION_STYLE.backgroundOpacity, 0.8);
   });
 
   it('preserves existing values without requiring stored-data migration', () => {

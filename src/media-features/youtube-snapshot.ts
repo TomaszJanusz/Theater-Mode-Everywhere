@@ -1,4 +1,4 @@
-import type { YoutubePlayerSnapshot } from './probe';
+import { normalizeYoutubeSnapshot, type YoutubePlayerSnapshot } from './probe';
 
 export const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
 export const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
@@ -10,9 +10,7 @@ export function readPublishedYoutubeSnapshot(
   const text = el?.textContent || '';
   if (!text) return null;
   try {
-    const data = JSON.parse(text);
-    if (!data || typeof data !== 'object') return null;
-    return data as YoutubePlayerSnapshot;
+    return normalizeYoutubeSnapshot(JSON.parse(text));
   } catch {
     return null;
   }

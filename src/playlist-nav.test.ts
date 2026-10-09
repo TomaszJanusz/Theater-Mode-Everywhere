@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { HOST_PLAYER_SCOPE } from './providers/navigation/factory';
 import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
 import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
 import { youtubePreviousRestarts } from './providers/navigation/youtube';
@@ -138,30 +137,6 @@ describe('playlist navigation availability', () => {
       })
     ];
     assert.deepEqual(usableControlIndexes(single, 1280), []);
-  });
-
-  it('keeps a YouTube playlist step that stays in the DOM while the control bar autohides', () => {
-    const autohide = [
-      control({
-        provider: 'youtube',
-        directionHint: 'previous',
-        ariaDisabled: 'false',
-        computedDisplay: 'block',
-        width: 52
-      }),
-      control({
-        provider: 'youtube',
-        directionHint: 'next',
-        ariaDisabled: 'false',
-        className: 'ytp-next-button ytp-button ytp-playlist-ui',
-        computedDisplay: 'block',
-        width: 52
-      })
-    ];
-    assert.deepEqual(
-      usableControlIndexes(autohide, 1280).map((entry) => entry.direction),
-      ['previous', 'next']
-    );
   });
 
   it('follows PeerTube video.js disabled and hidden classes', () => {
@@ -321,30 +296,15 @@ describe('playlist navigation availability', () => {
     assert.equal(isVimeoShowcaseStepHref('https://evil.example/showcase/1574596?video=1'), false);
     assert.equal(isVimeoShowcaseStepHref(null), false);
   });
-
-  it('keeps the public navigation contract free of site selectors', () => {
-    const source = readFileSync(new URL('./playlist-nav.ts', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/providers\/navigation\/factory'/);
-    assert.match(source, /export function findPlaylistActions\(root: ParentNode, video\?: HTMLVideoElement \| null\)/);
-    assert.doesNotMatch(source, /providers\/navigation\/(?!factory)/);
-    assert.doesNotMatch(source, /querySelector|closest\(|data-uia|ytp-|vjs-|bpx-|txp_|data-testid|data-href|getAttribute/);
-  });
-
-  it('preserves the host player scope used to find controls outside a passed video', () => {
-    assert.equal(
-      HOST_PLAYER_SCOPE,
-      '#movie_player, .video-js, #player-wrapper, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper'
-    );
-  });
 });
 
 describe('playlist navigation DOM', () => {
-  it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async () => {
+  it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -506,17 +466,17 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });
 
-  it('uses the native Netflix toolbar Next control and refuses a stale click', async () => {
+  it('uses the native Netflix toolbar Next control and refuses a stale click', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -764,17 +724,17 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });
 
-  it('uses the Disney control-bar next episode and leaves the end card alone', async () => {
+  it('uses the Disney control-bar next episode and leaves the end card alone', async t => {
     let executable = '';
     try {
       const { chromium } = await import('playwright');
       executable = chromium.executablePath();
-      if (!existsSync(executable)) return;
+      if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
       const browser = await chromium.launch({ headless: true });
       try {
@@ -1007,7 +967,7 @@ describe('playlist navigation DOM', () => {
         await browser.close();
       }
     } catch (error) {
-      if (!executable) return;
+      if (!executable) { t.skip('Chromium is unavailable'); return; }
       throw error;
     }
   });

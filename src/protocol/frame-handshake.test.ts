@@ -5,41 +5,9 @@ import {
   createSessionId,
   isTrustedFrameEnvelope,
   parseFrameMessage,
-  readFrameEnvelope,
-  type FrameEnvelope
+  readFrameEnvelope
 } from './frame-messages';
 import { createWorldMessage, parseWorldMessage, readWorldEnvelope } from './world-messages';
-
-type FrameNode = {
-  origin: string;
-  sessionId: string | null;
-  nonce: string | null;
-  theater: boolean;
-  inbox: FrameEnvelope[];
-};
-
-function deliver(from: FrameNode, to: FrameNode, type: FrameEnvelope['type']): void {
-  const sessionId = from.sessionId || to.sessionId || createSessionId();
-  const nonce = from.nonce || to.nonce || createSessionId();
-  to.inbox.push(createFrameMessage(type, sessionId, {}, nonce, from.origin));
-}
-
-function accept(
-  node: FrameNode,
-  envelope: FrameEnvelope,
-  fromParent: boolean,
-  fromChild: boolean,
-  trustedOrigin = false
-): boolean {
-  return isTrustedFrameEnvelope(envelope, {
-    eventOrigin: envelope.origin,
-    trustedOrigin,
-    fromParent,
-    fromChild,
-    activeSessionId: node.sessionId,
-    activeNonce: node.nonce
-  });
-}
 
 describe('F-01 frame session handshake', () => {
   it('parses a versioned envelope and rejects a forged payload', () => {
@@ -231,77 +199,30 @@ describe('F-01 frame session handshake', () => {
     }), true);
   });
 
-  it('treats EXIT as idempotent for a matching session', () => {
-    const sessionId = createSessionId();
-    let theater = true;
-    let current: string | null = sessionId;
-    const exit = (incoming: string) => {
-      if (current && incoming !== current) return false;
-      theater = false;
-      current = null;
-      return true;
-    };
-    assert.equal(exit(sessionId), true);
-    assert.equal(theater, false);
-    assert.equal(exit(sessionId), true);
-  });
-
-  it('keeps parent and child on the same sessionId from FRAME_ENTER', () => {
-    const child: FrameNode = {
-      origin: 'https://www.youtube-nocookie.com',
-      sessionId: createSessionId(),
-      nonce: createSessionId(),
-      theater: true,
-      inbox: []
-    };
-    const parent: FrameNode = {
-      origin: 'https://parent.example',
-      sessionId: null,
-      nonce: null,
-      theater: false,
-      inbox: []
-    };
-
-    deliver(child, parent, 'FRAME_ENTER');
-    const enter = parent.inbox.pop();
-    assert.ok(enter);
-    assert.equal(accept(parent, enter, false, true, true), true);
-    parent.sessionId = enter.sessionId;
-    parent.nonce = enter.nonce;
-    parent.theater = true;
-    assert.equal(parent.sessionId, child.sessionId);
-
-    deliver(child, parent, 'FRAME_EXIT');
-    const childExit = parent.inbox.pop();
-    assert.ok(childExit);
-    assert.equal(accept(parent, childExit, false, true), true);
-    parent.theater = false;
-    parent.sessionId = null;
-    deliver(parent, child, 'FRAME_EXITED');
-    assert.equal(child.inbox[0]?.type, 'FRAME_EXITED');
-
-    parent.theater = true;
-    parent.sessionId = child.sessionId;
-    parent.nonce = child.nonce;
-    deliver(parent, child, 'FRAME_EXIT');
-    const parentExit = child.inbox.pop();
-    assert.ok(parentExit);
-    assert.equal(accept(child, parentExit, true, false), true);
-    child.theater = false;
-
-    assert.equal(accept(parent, createFrameMessage('FRAME_EXIT', child.sessionId || '', {}, child.nonce || '', child.origin), false, true), true);
-  });
-
-  it('rejects an untrusted source even with a valid envelope', () => {
-    const envelope = createFrameMessage('FRAME_EXIT', createSessionId(), {}, 'n', 'https://child.example');
-    assert.equal(isTrustedFrameEnvelope(envelope, {
-      eventOrigin: envelope.origin,
-      trustedOrigin: false,
-      fromParent: false,
-      fromChild: false,
-      activeSessionId: envelope.sessionId,
-      activeNonce: envelope.nonce
-    }), false);
+  it('accepts exits only from a known frame and the matching active session, including repeated idle exits', () => {
+    for (const type of ['FRAME_EXIT', 'FRAME_EXITED'] as const) {
+      const envelope = createFrameMessage(type, createSessionId(), {}, 'n', 'https://child.example');
+      for (const source of [
+        { fromParent: true, fromChild: false },
+        { fromParent: false, fromChild: true },
+        { fromParent: false, fromChild: false }
+      ]) {
+        for (const [activeSessionId, sessionAccepted] of [
+          [envelope.sessionId, true],
+          ['another-session', false],
+          [null, true]
+        ] as const) {
+          assert.equal(isTrustedFrameEnvelope(envelope, {
+            eventOrigin: envelope.origin,
+            trustedOrigin: false,
+            ...source,
+            activeSessionId,
+            activeNonce: 'different-nonce'
+          }), (source.fromParent || source.fromChild) && sessionAccepted,
+          `${type}: source=${JSON.stringify(source)}, activeSessionId=${activeSessionId}`);
+        }
+      }
+    }
   });
 });
 

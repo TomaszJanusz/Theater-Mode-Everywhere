@@ -1,3 +1,4 @@
+import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
 import { createShortcutEditor } from './shortcut-editor';
 import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
@@ -88,8 +89,8 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
-  { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, fallback: false },
-  { id: 'volume-boost-toggle', key: 'volumeBoostEnabled', fallback: false }
+  { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
+  { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
 ] as const;
 
 async function init() {
@@ -125,6 +126,10 @@ async function init() {
           ? resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue)
           : selectedPictureAlign();
         renderPictureAlignOptions(align);
+      }
+      if (changes[VOLUME_BOOST_STORAGE_KEY]) {
+        const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
+        if (toggle) toggle.checked = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
       }
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
@@ -608,9 +613,7 @@ async function init() {
       for (const item of FEATURE_TOGGLES) {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
         if (!toggle) continue;
-        if (data[item.key] === undefined) toggle.checked = item.fallback;
-        else toggle.checked = item.key === KEEP_CONTROLS_VISIBLE_STORAGE_KEY
-          ? resolveKeepControlsVisible(data[item.key]) : Boolean(data[item.key]);
+        toggle.checked = item.resolve(data[item.key]);
       }
       const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
       if (richTheaterToggle) richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(data));

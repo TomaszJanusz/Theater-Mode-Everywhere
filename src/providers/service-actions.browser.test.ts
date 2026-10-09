@@ -42,9 +42,16 @@ const disneyBundle = bundle('TeDisneyActions', 'providers/disney/service-actions
 const crunchyBundle = bundle('TeCrunchyActions', 'providers/crunchyroll/service-actions.ts');
 
 describe('disney and crunchyroll service actions', () => {
-  it('reads Disney skip, up-next, and end-card controls from open shadow roots', async () => {
+  it('reads Disney skip, up-next, and end-card controls from open shadow roots', async (t) => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    let executable = '';
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      t.skip('Chromium module or browser path is unavailable');
+      return;
+    }
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage();
@@ -185,9 +192,16 @@ describe('disney and crunchyroll service actions', () => {
     }
   });
 
-  it('keeps a Crunchyroll skip through control fade and announces next only at the ending', async () => {
+  it('keeps a Crunchyroll skip through control fade and announces next only at the ending', async (t) => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    let executable = '';
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      t.skip('Chromium module or browser path is unavailable');
+      return;
+    }
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage();

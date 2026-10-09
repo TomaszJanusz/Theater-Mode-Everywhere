@@ -1120,8 +1120,11 @@ describe('native chat browser session', () => {
     const browser = await chromium.launch({ headless: true });
     try {
       const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
+      // Capture controller timers before boot, then observe absence across two
+      // complete 500ms discovery polls without waiting for wall-clock time.
+      await absent.page.clock.install();
       await boot(absent.page);
-      await absent.page.evaluate(() => new Promise(resolve => window.setTimeout(resolve, 1100)));
+      await absent.page.clock.runFor(1000);
       let layout = await layoutOf(absent.page);
       assert.equal(layout.state?.available, false, JSON.stringify(layout.state));
       assert.equal(layout.toggleHidden, true, JSON.stringify(layout));
@@ -1253,8 +1256,11 @@ describe('native chat browser session', () => {
     ];
     try {
       const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
+      // Capture controller timers before boot, then observe absence across two
+      // complete 500ms discovery polls without waiting for wall-clock time.
+      await absent.page.clock.install();
       await boot(absent.page);
-      await absent.page.evaluate(() => new Promise(resolve => window.setTimeout(resolve, 1100)));
+      await absent.page.clock.runFor(1000);
       const absentTheme = await readThemeControl(absent.page);
       assert.equal(absentTheme.hidden, true, JSON.stringify(absentTheme));
       assert.equal(absentTheme.disabled, true, JSON.stringify(absentTheme));

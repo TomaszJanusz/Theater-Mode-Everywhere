@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import {
@@ -16,45 +16,19 @@ const autoOpenRelease: WhatsNewRelease = {
 };
 
 describe('What\'s New release configuration', () => {
-  it('announces Rich Theater Experience and opens Settings after an update', () => {
-    assert.equal(WHATS_NEW_RELEASE.id, 'rich-theater-experience');
-    assert.deepEqual(WHATS_NEW_RELEASE.itemKeys, [
-      'whatsNewItemCaptions',
-      'whatsNewItemChapters',
-      'whatsNewItemPreviews'
-    ]);
-    assert.equal(shouldAutoOpenWhatsNewOnUpdate(
-      { reason: 'update', previousVersion: '1.4.0' }
-    ), true);
-  });
-
-  it('has Rich Theater Experience copy in every locale without legacy items', () => {
+  it('references available announcement messages in the canonical catalog', () => {
     const requiredKeys = [
       'whatsNewLead',
-      'whatsNewItemCaptions',
-      'whatsNewItemChapters',
-      'whatsNewItemPreviews',
+      ...WHATS_NEW_RELEASE.itemKeys,
       'whatsNewThanks'
     ];
-    const legacyKeys = [
-      'whatsNewItemFit',
-      'whatsNewItemSwitchVideo',
-      'whatsNewItemSettings'
-    ];
-    const localesDir = resolve(import.meta.dirname, '../_locales');
-
-    for (const locale of readdirSync(localesDir)) {
-      const messages = JSON.parse(readFileSync(resolve(localesDir, locale, 'messages.json'), 'utf8')) as Record<
-        string,
-        { message?: string }
-      >;
-      for (const key of requiredKeys) {
-        assert.equal(typeof messages[key]?.message, 'string', `${locale} is missing ${key}`);
-        assert.ok(messages[key].message?.trim(), `${locale} has an empty ${key}`);
-      }
-      for (const key of legacyKeys) {
-        assert.equal(messages[key], undefined, `${locale} still contains ${key}`);
-      }
+    // Catalog shape, other locales and key parity are covered in scripts/locales.test.ts.
+    const messages = JSON.parse(readFileSync(resolve(import.meta.dirname, '../_locales/en/messages.json'), 'utf8')) as Record<
+      string,
+      { message?: string }
+    >;
+    for (const key of requiredKeys) {
+      assert.ok(messages[key]?.message?.trim(), `announcement references missing or empty message ${key}`);
     }
   });
 
@@ -90,7 +64,9 @@ describe('What\'s New release configuration', () => {
   });
 
   it('uses a release and target-version-specific idempotency key', () => {
-    assert.equal(whatsNewAutoOpenStorageKey('2.0.0', autoOpenRelease),
-      'whatsNewAutoOpenedRelease:major-update:2.0.0');
+    const key = whatsNewAutoOpenStorageKey('2.0.0', autoOpenRelease);
+    assert.equal(whatsNewAutoOpenStorageKey('2.0.0', autoOpenRelease), key);
+    assert.notEqual(whatsNewAutoOpenStorageKey('2.0.1', autoOpenRelease), key);
+    assert.notEqual(whatsNewAutoOpenStorageKey('2.0.0', { ...autoOpenRelease, id: 'next-release' }), key);
   });
 });

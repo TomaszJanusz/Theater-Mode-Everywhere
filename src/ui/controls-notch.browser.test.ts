@@ -9,9 +9,16 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CSS = readStylesheet(path.join(SRC, 'content.css'));
 
 describe('player bar notch', () => {
-  it('drops the open trigger onto the bar’s bottom border without moving the icon', async () => {
+  it('drops the open trigger onto the bar’s bottom border without moving the icon', async (t) => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    let executable = '';
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      t.skip('Chromium module or browser path is unavailable');
+      return;
+    }
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage({ viewport: { width: 900, height: 400 } });

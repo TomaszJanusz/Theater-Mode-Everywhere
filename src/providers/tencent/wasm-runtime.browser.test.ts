@@ -218,12 +218,11 @@ describe('tencent wasm theater runtime', () => {
         current.replaceWith(next);
       });
       await page.waitForFunction(() => document.getElementById('player-3')?.hasAttribute('data-theater-everywhere') === true);
-      // The preceding toggle starts a 200ms guard; replacements can finish sooner.
-      await page.waitForTimeout(250);
-      await page.keyboard.press('t');
+      // Exit immediately, then re-enter through the replacement's own frame.
+      // This verifies reverse states without depending on the page toggle guard.
+      await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
-      await page.waitForTimeout(250);
-      await page.keyboard.press('t');
+      await page.frameLocator('#player-3 iframe').locator('body').press('t');
       await page.waitForFunction(() => document.getElementById('player-3')?.hasAttribute('data-theater-everywhere') === true);
       await page.keyboard.press('Escape');
 

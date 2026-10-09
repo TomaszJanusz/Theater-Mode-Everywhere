@@ -1,3 +1,6 @@
+import { togglePictureInPicture } from './picture-in-picture';
+import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
+import { reloadForVolumeBoost } from '../platform/volume-boost-reload';
 import {
   CAPTION_STYLE_STORAGE_KEY,
   resolveCaptionStyle,
@@ -24,7 +27,6 @@ import {
   toggleDirectPlayback,
   toggleVideoPlayback
 } from '../host-play';
-import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
 import { nativePlaybackSurface, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 import {
   emptyPlaylistNav,
@@ -40,8 +42,8 @@ import {
   seekBy,
   seekToMediaTime
 } from '../playback-window';
+import { isInactiveThumbPlayerVideo } from '../switchable-videos';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
-import { isTencentHost } from '../providers/hosts';
 import { providerSharesPlaybackHost } from '../providers/discovery';
 import {
   bindProviderPlayback,
@@ -53,14 +55,13 @@ import {
   unmountProviderStages
 } from '../providers/stage';
 import {
-  isTencentWasmFrameDocument,
-  isTencentWasmPlayerElement,
-  isUsableTencentWasmPlayer,
-  readTencentWasmHostToggle,
-  replacementTencentWasmHost,
-  selectTencentTheaterTarget
-} from '../providers/tencent/wasm-player';
-import { openTencentWasmSurface } from '../providers/tencent/wasm-bridge';
+  findProviderTheaterTarget,
+  isProviderPlaybackFrameDocument,
+  openProviderPlaybackSession,
+  providerFullscreenTarget,
+  readProviderHostToggle,
+  type ProviderPlaybackSession
+} from '../providers/playback-session';
 import {
   applyTheaterViewportPin,
   markTheaterVideo,
@@ -149,7 +150,7 @@ const hud = createHud(ctx);
 const toolbar = createToolbar(ctx);
 const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
-const controls = createControls(ctx);
+const controls = createControls(ctx, toolbar.resetCaptionDock);
 
 const {
   triggerSeekIndicator,
@@ -177,12 +178,13 @@ const {
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
 
-let wasmSurface: PlaybackSurface | null = null;
-let wasmWatch: { dispose(): void } | null = null;
+let cancelBoostReload: (() => void) | null = null;
+
+let providerPlayback: ProviderPlaybackSession | null = null;
 let removeWasmCatcher: (() => void) | null = null;
 
 function sessionSurface(): PlaybackSurface | null {
-  if (wasmSurface && session.element === wasmSurface.element) return wasmSurface;
+  if (providerPlayback && session.element === providerPlayback.surface.element) return providerPlayback.surface;
   if (session.element instanceof HTMLVideoElement) return nativePlaybackSurface(session.element);
   return null;
 }
@@ -255,6 +257,7 @@ function executeCommand(command: PlayerCommand): void {
   if (!session.dispatch(command)) return;
   switch (command.type) {
     case 'PLAY_PAUSE': {
+      refs.playbackDecisionRevision += 1;
       const surface = sessionSurface();
       if (!surface) break;
       const native = surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null;
@@ -837,7 +840,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     const data = await chrome.storage.sync.get([
       'blacklist',
       'shortcuts',
-      'volumeBoostEnabled',
+      VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
       KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
       ...mediaProviderFlagStorageKeys(),
@@ -851,7 +854,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
-    refs.volumeBoostEnabled = data.volumeBoostEnabled !== undefined ? data.volumeBoostEnabled : false;
+    refs.volumeBoostEnabled = resolveVolumeBoostEnabled(data[VOLUME_BOOST_STORAGE_KEY]);
     applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
     uiStore.dispatch({
       type: 'HYDRATE',
@@ -993,21 +996,7 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    if (video.capabilities.pictureInPicture && document.pictureInPictureEnabled) {
-      if (document.pictureInPictureElement) {
-        document.exitPictureInPicture().catch(err => {
-          console.error('[Theater Everywhere] Exit PiP failed:', err);
-        });
-      } else {
-        try {
-          void Promise.resolve(video.requestPictureInPicture()).catch(err => {
-            console.error('[Theater Everywhere] Request PiP failed:', err);
-          });
-        } catch (err) {
-          console.error('[Theater Everywhere] Request PiP failed:', err);
-        }
-      }
-    }
+    togglePictureInPicture(video);
   } else if (matchesShortcut(e, shortcuts.toggleFullscreen)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1193,7 +1182,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) {
-        if (isTencentWasmFrameDocument()) {
+        if (isProviderPlaybackFrameDocument()) {
           frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'toggle' });
         } else {
           toggleTheaterMode();
@@ -1205,7 +1194,7 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       if (!event.repeat) {
-        if (isTencentWasmFrameDocument()) {
+        if (isProviderPlaybackFrameDocument()) {
           frames.postToParent('FRAME_HOST_TOGGLE', createSessionId(), { action: 'fullscreen' });
         } else {
           claimFullscreenShortcut();
@@ -1288,7 +1277,10 @@ function initialize(): void {
   });
   listeners.playbackIntent = (event: Event) => {
     const action = (event as CustomEvent<{ action?: 'play' | 'pause' }>).detail?.action;
-    if (action === 'play' || action === 'pause') triggerPlaybackIndicator(action);
+    if (action === 'play' || action === 'pause') {
+      refs.playbackDecisionRevision += 1;
+      triggerPlaybackIndicator(action);
+    }
   };
   session.runtimeScope.listen(window, 'theater-everywhere-playback-intent', listeners.playbackIntent);
   listeners.keyup = (event: KeyboardEvent) => {
@@ -1405,7 +1397,7 @@ function initialize(): void {
 
   // 4. Cross-iframe postMessage listener
   listeners.message = (event: MessageEvent) => {
-    const hostToggle = readTencentWasmHostToggle(event, {
+    const hostToggle = readProviderHostToggle(event, {
       hostname: window.location.hostname,
       href: window.location.href,
       root: document
@@ -1540,28 +1532,14 @@ function focusTheaterPage(): void {
 }
 
 function findTheaterTarget(): HTMLElement | null {
-  if (isTencentWasmFrameDocument()) return null;
-  if (!isTencentHost()) return findBestVideo();
-  const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
-  const pool = selectSwitchableVideos(videos);
-  const best = findBestVideo();
-  const switchable = pool.length > 0 ? (best && pool.includes(best) ? best : pool[0]) : null;
-  const wasm = Array.from(document.querySelectorAll('fake-iframe-video')).find((element) => isUsableTencentWasmPlayer(element)) || null;
-  return selectTencentTheaterTarget({
-    switchable,
-    wasm,
-    fallback: best,
-    wasmFrameDocument: false
-  });
+  return findProviderTheaterTarget({ findBestVideo, findAllVideosDeep });
 }
 
-function releaseWasmSession(): void {
-  wasmWatch?.dispose();
-  wasmWatch = null;
+function releaseProviderPlayback(): void {
   removeWasmCatcher?.();
   removeWasmCatcher = null;
-  wasmSurface?.dispose?.();
-  wasmSurface = null;
+  providerPlayback?.dispose();
+  providerPlayback = null;
 }
 
 function mountWasmCatcher(): void {
@@ -1573,37 +1551,22 @@ function mountWasmCatcher(): void {
   removeWasmCatcher = bindWasmCatcher(catcher);
 }
 
-function attachWasmSession(element: HTMLElement): void {
-  if (element.shadowRoot) injectStylesIntoShadowRoot(element.shadowRoot);
-  wasmSurface = openTencentWasmSurface(element);
-  createCustomControls(wasmSurface);
-  mountWasmCatcher();
-  watchTencentWasm(element);
-}
-
-function watchTencentWasm(element: HTMLElement): void {
-  wasmWatch?.dispose();
-  const scope = session.runtimeScope.child();
-  wasmWatch = scope;
-  const observer = new MutationObserver(() => {
-    if (session.element !== element || isElementInDOMDeep(element)) return;
-    const candidates = Array.from(document.querySelectorAll('fake-iframe-video')).filter((item) => isUsableTencentWasmPlayer(item));
-    const next = replacementTencentWasmHost(element, candidates, isElementInDOMDeep);
-    if (next) rebindTencentWasm(next);
+function attachProviderPlayback(element: HTMLElement): void {
+  const epoch = session.currentEpoch;
+  providerPlayback = openProviderPlaybackSession(element, {
+    isCurrent: () => session.element === element && session.currentEpoch === epoch && !session.isExiting,
+    onReplacement: rebindProviderPlayback
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  scope.add(() => observer.disconnect());
+  if (!providerPlayback) return;
+  if (element.shadowRoot) injectStylesIntoShadowRoot(element.shadowRoot);
+  createCustomControls(providerPlayback.surface);
+  if (providerPlayback.needsPointerCatcher) mountWasmCatcher();
 }
 
-function rebindTencentWasm(next: HTMLElement): void {
+function rebindProviderPlayback(next: HTMLElement): void {
   const previous = session.element;
-  wasmWatch?.dispose();
-  wasmWatch = null;
   destroyCustomControls();
-  removeWasmCatcher?.();
-  removeWasmCatcher = null;
-  wasmSurface?.dispose?.();
-  wasmSurface = null;
+  releaseProviderPlayback();
   if (previous) {
     unmarkTheaterVideo(previous);
     restoreTheaterElementInlineStyles(previous);
@@ -1614,15 +1577,11 @@ function rebindTencentWasm(next: HTMLElement): void {
   remountProviderStages(window.location.hostname, next);
   applyTheaterElementInlineStyles(next);
   refreshTheaterAncestors(next);
-  attachWasmSession(next);
+  attachProviderPlayback(next);
 }
 
 function fullscreenTheaterTarget(): HTMLElement | null {
-  if (!isTencentHost()) {
-    const active = refs.activeVideo;
-    if (active && isElementInDOMDeep(active)) return active;
-  }
-  return findTheaterTarget();
+  return providerFullscreenTarget(refs.activeVideo, findTheaterTarget);
 }
 
 function claimFullscreenShortcut(): void {
@@ -1876,37 +1835,16 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     // Preemptively enable CORS on the video so Web Audio (Volume Boost) can
     // access decoded audio later without a visible reload at boost time.
     // The theater mode visual transition masks any brief re-fetch.
-    if (refs.volumeBoostEnabled && !video.crossOrigin) {
-      video.crossOrigin = 'anonymous';
-      const savedTime = video.currentTime;
-      const wasPlaying = !video.paused;
-      const src = video.currentSrc || video.src;
-      if (src) {
-        video.src = src;
-        video.load();
-        const onReady = () => {
-          video.removeEventListener('canplay', onReady);
-          video.currentTime = savedTime;
-          if (wasPlaying) {
-            video.play().catch(() => {});
-          }
-        };
-        video.addEventListener('canplay', onReady, { once: true });
-        // If CORS fails (server doesn't support it), remove the attribute
-        // so the video can reload without CORS. Mark as boost-unavailable.
-        const onError = () => {
-          video.removeEventListener('error', onError);
-          video.removeEventListener('canplay', onReady);
-          video.crossOrigin = null as any;
-          video.src = src;
-          video.load();
-          video.currentTime = savedTime;
-          if (wasPlaying) {
-            video.play().catch(() => {});
-          }
-        };
-        video.addEventListener('error', onError, { once: true });
-      }
+    cancelBoostReload?.();
+    cancelBoostReload = null;
+    if (refs.volumeBoostEnabled) {
+      const epoch = session.currentEpoch;
+      const revision = refs.playbackDecisionRevision;
+      cancelBoostReload = reloadForVolumeBoost(video, {
+        signal: session.signal,
+        isCurrent: () => session.element === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle,
+        canResume: () => refs.playbackDecisionRevision === revision
+      });
     }
 
     // Isolate pointer and mouse events to block double-toggles in custom players
@@ -1931,8 +1869,8 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   if (element.tagName === 'VIDEO') {
     createCustomControls(element as HTMLVideoElement);
     keepTheaterVideoBound(element as HTMLVideoElement);
-  } else if (isTencentWasmPlayerElement(element)) {
-    attachWasmSession(element);
+  } else {
+    attachProviderPlayback(element);
     focusTheaterPage();
   }
 }
@@ -1945,6 +1883,8 @@ function exitTheaterMode(
 ): void {
   if (!session.dispatch({ type: 'EXIT', origin, sessionId, from })) return;
   const closedSessionId = session.id;
+  cancelBoostReload?.();
+  cancelBoostReload = null;
   try {
   hideHelpOverlay();
   stopNativeChatSession();
@@ -1973,10 +1913,10 @@ function exitTheaterMode(
     video.classList.remove('controls-visible');
   }
 
-  if (session.element && (session.element.tagName === 'VIDEO' || isTencentWasmPlayerElement(session.element))) {
+  if (session.element && (session.element.tagName === 'VIDEO' || providerPlayback)) {
     destroyCustomControls();
   }
-  releaseWasmSession();
+  releaseProviderPlayback();
 
   if (session.element) {
     unmarkTheaterVideo(session.element);
@@ -2077,6 +2017,10 @@ export function bootstrapPlayerRuntime(): void {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
+
+      if (changes[VOLUME_BOOST_STORAGE_KEY]) {
+        refs.volumeBoostEnabled = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
+      }
 
       if (changes.blacklist) {
         void checkBlacklistAndInit();

@@ -39,15 +39,16 @@ function esbuildBundle(): string {
 }
 
 describe('netflix runtime browser regressions', () => {
-  it('hides ancestor videos, rebinds after a style-only hide, restores mask longhands, and boots MAIN without a player id', async () => {
+  it('hides ancestor videos, rebinds after a style-only hide, restores mask longhands, and boots MAIN without a player id', async (t) => {
     let executable = '';
     const { chromium } = await import('playwright');
     try {
       executable = chromium.executablePath();
     } catch {
+      t.skip('Chromium module or browser path is unavailable');
       return;
     }
-    if (!existsSync(executable)) return;
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
 
     const playback = compile('../providers/netflix/playback.ts', 'NetflixPlayback');
     const stage = compile('../providers/netflix/stage.ts', 'NetflixStage');
@@ -256,11 +257,11 @@ describe('netflix runtime browser regressions', () => {
           observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
           window.__snapMutations = () => count;
         })()`);
+        const clockStart = new Date('2026-01-01T00:00:00Z');
+        await bootPage.clock.install({ time: clockStart });
+        await bootPage.clock.pauseAt(new Date(clockStart.getTime() + 1000));
         await bootPage.addScriptTag({ content: bundle });
-        const started = Date.now();
-        await bootPage.evaluate('document.title');
-        assert.ok(Date.now() - started < 2000);
-        await bootPage.waitForTimeout(250);
+        await bootPage.clock.runFor(250);
         const mutations = await bootPage.evaluate('window.__snapMutations()') as number;
         await bootPage.close();
         return mutations;
@@ -275,15 +276,16 @@ describe('netflix runtime browser regressions', () => {
     }
   });
 
-  it('treats fallback and loading on a return ancestor as unavailable while Off still applies', async () => {
+  it('treats fallback and loading on a return ancestor as unavailable while Off still applies', async (t) => {
     let executable = '';
     const { chromium } = await import('playwright');
     try {
       executable = chromium.executablePath();
     } catch {
+      t.skip('Chromium module or browser path is unavailable');
       return;
     }
-    if (!existsSync(executable)) return;
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
 
     const bundle = esbuildBundle();
     const browser = await chromium.launch({ headless: true });
@@ -408,9 +410,16 @@ describe('netflix runtime browser regressions', () => {
       await browser.close();
     }
   });
-  it('boots at document_start and uses the attached signed-in session across captions, seeks, previews and episode changes', async () => {
+  it('boots at document_start and uses the attached signed-in session across captions, seeks, previews and episode changes', async (t) => {
     const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
+    let executable = '';
+    try {
+      executable = chromium.executablePath();
+    } catch {
+      t.skip('Chromium module or browser path is unavailable');
+      return;
+    }
+    if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
     const browser = await chromium.launch({ headless: true });
     try {
       const page = await browser.newPage();

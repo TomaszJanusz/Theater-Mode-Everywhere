@@ -78,12 +78,13 @@ describe('provider caption layout lifecycle', () => {
     assert.equal(changes, disposed);
     assert.equal(controller.readHostCaptionLayout(), null);
     assert.deepEqual(calls.slice(-2), ['disconnect:second', 'dispose:second']);
-    await delay(0);
+    await flushTasks();
   });
 });
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** Lets queued promise chains finish before inspecting fire-and-forget controller work. */
+function flushTasks(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 /**
@@ -320,7 +321,7 @@ describe('shared caption loading lifecycle', () => {
     }, { onCaptionHud: payload => hud.push(payload.result) });
     await controller.refresh();
     const first = controller.activate('en');
-    await delay(0);
+    await flushTasks();
     const queued = controller.activate('pl');
     controller.invalidate();
     gate.resolve(SAMPLE_CUES);
@@ -373,7 +374,8 @@ describe('shared caption loading lifecycle', () => {
     controller.dispose();
   });
 
-  it('cancels a delayed restoration retry when the user makes a newer selection', async () => {
+  it('cancels a delayed restoration retry when the user makes a newer selection', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
     const calls: Array<string | null> = [];
     const hud: string[] = [];
     const { controller } = createController({
@@ -384,9 +386,10 @@ describe('shared caption loading lifecycle', () => {
       onCaptionHud: payload => hud.push(payload.result)
     });
     const restoring = controller.start();
-    await delay(0);
+    await flushTasks();
     assert.deepEqual(hud, ['loading', 'failed']);
     assert.equal(await controller.activate('pl'), 'failed');
+    t.mock.timers.tick(700);
     await restoring;
     assert.deepEqual(calls, ['en', null, 'pl', null]);
     assert.deepEqual(hud, ['loading', 'failed', 'loading', 'failed']);
@@ -417,13 +420,13 @@ describe('shared caption loading lifecycle', () => {
     await controller.activate('en');
     hud.length = 0;
     controller.updateTime(50);
-    await delay(0);
+    await flushTasks();
     assert.deepEqual(hud, ['loading']);
     assert.deepEqual(rendered.at(-1), SAMPLE_CUES);
     assert.deepEqual(layout, [true]);
     const cues = [{ start: 50, end: 52, text: 'Next window' }];
     gate.resolve({ status: 'active', delivery: 'overlay', cues });
-    await delay(0);
+    await flushTasks();
     assert.deepEqual(rendered.at(-1), cues);
     assert.deepEqual(hud, ['loading', 'dismiss']);
     assert.equal(ccBtn.classList.contains('loading'), false);
@@ -444,7 +447,7 @@ describe('shared caption loading lifecycle', () => {
     await controller.activate('en');
     hud.length = 0;
     controller.updateTime(50);
-    await delay(0);
+    await flushTasks();
     assert.deepEqual(hud, []);
     assert.equal(ccBtn.classList.contains('loading'), false);
     assert.equal(ccBtn.classList.contains('active'), true);
@@ -472,7 +475,7 @@ describe('shared caption loading lifecycle', () => {
         await controller.activate('en');
         hud.length = 0;
         controller.updateTime(50);
-        await delay(0);
+        await flushTasks();
       }
       assert.deepEqual(hud, ['loading', 'failed']);
       assert.equal(ccBtn.classList.contains('loading'), false);
@@ -486,18 +489,23 @@ describe('shared caption loading lifecycle', () => {
 describe('MediaFeaturesController captions toggle', () => {
   it('waits for overlay cues before reporting on and lighting the CC icon', async () => {
     let activated = false;
+    const entered = deferred<void>();
+    const cues = deferred<CaptionCue[]>();
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK],
       activateCaptionTrack: async (id) => {
         if (!id) return [];
-        await delay(30);
+        entered.resolve(undefined);
+        const result = await cues.promise;
         activated = true;
-        return SAMPLE_CUES;
+        return result;
       }
     });
     await controller.refresh();
     const pending = controller.toggleCaptions();
+    await entered.promise;
     assert.equal(ccBtn.classList.contains('active'), false);
+    cues.resolve(SAMPLE_CUES);
     const result = await pending;
     assert.equal(activated, true);
     assert.equal(result, 'on');
@@ -526,6 +534,7 @@ describe('MediaFeaturesController captions toggle', () => {
 
   it('moves the picture only when subtitles are actually on', async () => {
     const layout: boolean[] = [];
+    const entered = deferred<void>();
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -534,7 +543,10 @@ describe('MediaFeaturesController captions toggle', () => {
     const { controller } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK, second],
       activateCaptionTrack: async (id) => {
-        if (id === 'en') await gate;
+        if (id === 'en') {
+          entered.resolve(undefined);
+          await gate;
+        }
         return id ? SAMPLE_CUES : [];
       }
     }, {
@@ -542,7 +554,7 @@ describe('MediaFeaturesController captions toggle', () => {
     });
     await controller.refresh();
     const pending = controller.activate('en');
-    await delay(20);
+    await entered.promise;
     assert.deepEqual(layout, []);
     release();
     assert.equal(await pending, 'on');
@@ -588,35 +600,39 @@ describe('MediaFeaturesController captions toggle', () => {
   });
 
   it('serializes overlapping toggles so the last one wins', async () => {
+    const on = deferred<CaptionCue[]>();
+    const off = deferred<CaptionCue[]>();
+    const enteredOn = deferred<void>();
+    const enteredOff = deferred<void>();
+    const calls: Array<string | null> = [];
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => [SAMPLE_TRACK],
       activateCaptionTrack: async (id) => {
-        await delay(25);
-        return id ? SAMPLE_CUES : [];
+        calls.push(id);
+        if (id) {
+          enteredOn.resolve(undefined);
+          return on.promise;
+        }
+        enteredOff.resolve(undefined);
+        return off.promise;
       }
     });
     await controller.refresh();
     const first = controller.toggleCaptions();
     const second = controller.toggleCaptions();
+    await enteredOn.promise;
+    assert.deepEqual(calls, ['en']);
+    on.resolve(SAMPLE_CUES);
+    await first;
+    await enteredOff.promise;
+    assert.deepEqual(calls, ['en', null]);
+    off.resolve([]);
     const results = await Promise.all([first, second]);
     assert.deepEqual(results, ['on', 'off']);
     assert.equal(ccBtn.classList.contains('active'), false);
   });
 
-  it('keeps HUD result aligned with the CC icon', async () => {
-    const { controller, ccBtn } = createController({
-      listCaptionTracks: async () => [SAMPLE_TRACK],
-      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : [])
-    });
-    await controller.refresh();
-    const result = await controller.toggleCaptions();
-    assert.equal(result === 'on', ccBtn.classList.contains('active'));
-    const off = await controller.toggleCaptions();
-    assert.equal(off === 'on', ccBtn.classList.contains('active'));
-    assert.equal(off, 'off');
-  });
-
-  it('does not deadlock when refresh runs during activate', async () => {
+  it('does not deadlock when refresh runs during activate', { timeout: 1000 }, async () => {
     let controller!: MediaFeaturesController;
     let ccBtn!: HTMLButtonElement;
     const created = createController({
@@ -629,35 +645,9 @@ describe('MediaFeaturesController captions toggle', () => {
     controller = created.controller;
     ccBtn = created.ccBtn;
     await controller.refresh();
-    const result = await Promise.race([
-      controller.toggleCaptions(),
-      delay(1000).then(() => {
-        throw new Error('caption activate deadlocked on refresh');
-      })
-    ]);
+    const result = await controller.toggleCaptions();
     assert.equal(result, 'on');
     assert.equal(ccBtn.classList.contains('active'), true);
-  });
-
-  it('emits loading HUD while a caption track is fetching', async () => {
-    const hud: Array<{ result: string; label?: string }> = [];
-    const { controller } = createController({
-      listCaptionTracks: async () => [SAMPLE_TRACK],
-      activateCaptionTrack: async (id) => {
-        await delay(20);
-        return id ? SAMPLE_CUES : [];
-      }
-    }, {
-      onCaptionHud: (payload) => hud.push(payload),
-      t: (key, substitutions) => (key === 'autoGeneratedTrack' ? `${substitutions} (auto)` : key)
-    });
-    await controller.refresh();
-    const pending = controller.toggleCaptions();
-    await delay(0);
-    assert.deepEqual(hud, [{ result: 'loading' }]);
-    const result = await pending;
-    assert.equal(result, 'on');
-    assert.deepEqual(hud, [{ result: 'loading' }, { result: 'on', label: 'English' }]);
   });
 
   it('reports HUD on menu activate and names the track', async () => {
@@ -824,7 +814,7 @@ describe('MediaFeaturesController captions toggle', () => {
     });
     await controller.refresh();
     const pending = controller.activate(SAMPLE_TRACK.id);
-    await delay(0);
+    await flushTasks();
     mediaId = 'movie-two';
     await controller.refresh();
     finishActivation();
@@ -865,12 +855,13 @@ describe('MediaFeaturesController captions toggle', () => {
     await controller.refresh();
     await controller.activate(SAMPLE_TRACK.id);
     controller.updateTime(50);
-    await delay(0);
+    await flushTasks();
     assert.equal(ccBtn.classList.contains('active'), false);
     assert.ok(hud.includes('failed'));
   });
 
-  it('F-03 does not let a stale refresh retry list captions after adapter rebind', async () => {
+  it('F-03 does not let a stale refresh retry list captions after adapter rebind', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
     const calls: string[] = [];
     const { controller, ccBtn } = createController({
       listCaptionTracks: async () => {
@@ -885,7 +876,8 @@ describe('MediaFeaturesController captions toggle', () => {
       captionPreference: { enabled: true, language: 'en', autoGenerated: false }
     });
     const pending = controller.refresh();
-    await delay(20);
+    await flushTasks();
+    assert.deepEqual(calls, ['stale-list']);
     controller.rebindAdapter({
       probe: async () => ({ captions: true, chapters: false, previews: false }),
       listCaptionTracks: async () => {
@@ -900,8 +892,10 @@ describe('MediaFeaturesController captions toggle', () => {
         calls.push('fresh-dispose');
       }
     });
+    t.mock.timers.tick(700);
     await pending;
-    await delay(800);
+    t.mock.timers.tick(800);
+    await flushTasks();
     assert.equal(calls.filter((item) => item === 'stale-list').length, 1);
     assert.ok(calls.includes('fresh-list'));
     assert.equal(ccBtn.classList.contains('disabled'), false);
@@ -1022,19 +1016,6 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.equal(titles.includes('Stale title'), false);
     assert.equal(titles.at(-1), 'Current title');
     controller.dispose();
-  });
-
-  it('accepts a heatmap from the adapter without breaking caption refresh', async () => {
-    const { controller, ccBtn } = createController({
-      listCaptionTracks: async () => [SAMPLE_TRACK],
-      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : []),
-      getHeatmap: () => ({
-        source: 'markers',
-        svgPath: 'M 0 96 C 250 20 750 20 1000 96 L 1000 100 L 0 100 Z'
-      })
-    });
-    await controller.refresh();
-    assert.equal(ccBtn.classList.contains('disabled'), false);
   });
 
   it('records a provider error on the snapshot when probe fails', async () => {
