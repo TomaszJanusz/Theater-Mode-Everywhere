@@ -72,7 +72,7 @@ describe('Volume Boost CORS reload ownership', () => {
       assert.equal(video.crossOrigin, null);
       assert.equal(video.currentTime, 0);
       assert.equal(video.plays, 0);
-      assert.equal(video.loads, 1);
+      assert.equal(video.loads, 2);
     }
   });
 

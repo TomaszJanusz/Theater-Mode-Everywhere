@@ -1,6 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
 
-/** CORS is retained after success for Web Audio; cancellation restores only our attribute. */
+/** CORS stays after success for Web Audio. Cancelling an in-flight CORS load reloads without it. */
 export function reloadForVolumeBoost(
   video: HTMLVideoElement,
   options: { signal: AbortSignal; isCurrent(): boolean; canResume(): boolean }
@@ -24,9 +24,15 @@ export function reloadForVolumeBoost(
     else video.setAttribute('crossorigin', originalCors);
   };
   const cancel = () => {
+    const loadInFlight = phase === 'cors' && ownsCors();
     if (phase !== 'done') restoreCors();
     phase = 'done';
     scope.dispose();
+    // Removing crossorigin does not abort the CORS fetch already in progress.
+    if (loadInFlight && video.srcObject === null && source() === originalSource
+      && video.getAttribute('crossorigin') === originalCors) {
+      try { video.load(); } catch { /* The host owns recovery when load() itself fails. */ }
+    }
   };
   const current = () => !scope.isDisposed && !options.signal.aborted && options.isCurrent()
     && video.srcObject === null && source() === originalSource
