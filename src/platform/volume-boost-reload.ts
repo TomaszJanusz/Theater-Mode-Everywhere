@@ -23,24 +23,38 @@ export function reloadForVolumeBoost(
     if (originalCors === null) video.removeAttribute('crossorigin');
     else video.setAttribute('crossorigin', originalCors);
   };
-  const cancel = () => {
+  const cancel = (recoverLoad: boolean) => {
     const loadInFlight = phase === 'cors' && ownsCors();
     if (phase !== 'done') restoreCors();
     phase = 'done';
     scope.dispose();
-    // Removing crossorigin does not abort the CORS fetch already in progress.
-    if (loadInFlight && video.srcObject === null && source() === originalSource
-      && video.getAttribute('crossorigin') === originalCors) {
-      try { video.load(); } catch { /* The host owns recovery when load() itself fails. */ }
-    }
+    // load() pauses the media and resets its position, so the replacement
+    // request needs its own canplay handler after the scoped listener is gone.
+    if (!recoverLoad || !loadInFlight || video.srcObject !== null || source() !== originalSource
+      || video.getAttribute('crossorigin') !== originalCors) return;
+    const stop = () => {
+      video.removeEventListener('canplay', recover);
+      video.removeEventListener('error', stop);
+    };
+    const recover = () => {
+      stop();
+      if (video.srcObject !== null || source() !== originalSource
+        || video.getAttribute('crossorigin') !== originalCors) return;
+      if (video.currentSrc && video.currentSrc !== originalCurrentSrc) return;
+      if (Number.isFinite(savedTime)) video.currentTime = savedTime;
+      if (wasPlaying && options.canResume()) void video.play().catch(() => {});
+    };
+    video.addEventListener('canplay', recover);
+    video.addEventListener('error', stop);
+    try { video.load(); } catch { stop(); }
   };
   const current = () => !scope.isDisposed && !options.signal.aborted && options.isCurrent()
     && video.srcObject === null && source() === originalSource
     && (phase === 'cors' ? ownsCors() : video.getAttribute('crossorigin') === originalCors);
-  scope.listen(options.signal, 'abort', cancel, { once: true });
+  scope.listen(options.signal, 'abort', () => cancel(true), { once: true });
   scope.listen(video, 'canplay', () => {
     if (!current() || (video.currentSrc && video.currentSrc !== originalCurrentSrc)) {
-      cancel();
+      cancel(false);
       return;
     }
     phase = 'done';
@@ -50,7 +64,7 @@ export function reloadForVolumeBoost(
   });
   scope.listen(video, 'error', () => {
     if (!current() || phase === 'fallback') {
-      cancel();
+      cancel(false);
       return;
     }
     restoreCors();
@@ -59,7 +73,7 @@ export function reloadForVolumeBoost(
     video.load();
   });
   if (typeof MutationObserver === 'function') {
-    const observer = new MutationObserver(() => { if (!current()) cancel(); });
+    const observer = new MutationObserver(() => { if (!current()) cancel(false); });
     observer.observe(video, { attributes: true, attributeFilter: ['src', 'crossorigin', 'type', 'media'], childList: true, subtree: true });
     scope.add(() => observer.disconnect());
   }
@@ -67,7 +81,7 @@ export function reloadForVolumeBoost(
   try {
     video.load();
   } catch {
-    cancel();
+    cancel(false);
   }
-  return cancel;
+  return () => cancel(true);
 }

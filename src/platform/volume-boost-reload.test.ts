@@ -19,8 +19,8 @@ class Video extends EventTarget {
   setAttribute(name: string, value: string) { this.attrs.set(name, value); }
   removeAttribute(name: string) { this.attrs.delete(name); }
   querySelectorAll() { return this.sources; }
-  load() { this.loads += 1; this.currentTime = 0; }
-  play() { this.plays += 1; return Promise.resolve(); }
+  load() { this.loads += 1; this.currentTime = 0; this.paused = true; }
+  play() { this.plays += 1; this.paused = false; return Promise.resolve(); }
 }
 
 function start(video: Video, overrides: Partial<{ isCurrent(): boolean; canResume(): boolean }> = {}) {
@@ -61,19 +61,40 @@ describe('Volume Boost CORS reload ownership', () => {
     assert.equal(video.loads, 2);
   });
 
-  it('cancels on exit or rebind without reviving old playback', () => {
+  it('restores the host position after cancelling an in-flight CORS load', () => {
     for (const action of ['exit', 'rebind'] as const) {
       const video = new Video();
       const operation = start(video);
       if (action === 'exit') operation.cancel();
       else operation.abort.abort();
-      video.dispatchEvent(new Event('canplay'));
-      video.dispatchEvent(new Event('error'));
       assert.equal(video.crossOrigin, null);
-      assert.equal(video.currentTime, 0);
-      assert.equal(video.plays, 0);
       assert.equal(video.loads, 2);
+      assert.equal(video.paused, true);
+      assert.equal(video.currentTime, 0);
+      video.dispatchEvent(new Event('canplay'));
+      assert.equal(video.currentTime, 17);
+      assert.equal(video.plays, 1);
+      assert.equal(video.paused, false);
+      video.dispatchEvent(new Event('error'));
+      video.dispatchEvent(new Event('canplay'));
+      assert.equal(video.loads, 2);
+      assert.equal(video.plays, 1);
     }
+
+    const held = new Video();
+    start(held, { canResume: () => false }).cancel();
+    held.dispatchEvent(new Event('canplay'));
+    assert.equal(held.currentTime, 17);
+    assert.equal(held.plays, 0);
+    assert.equal(held.paused, true);
+
+    const replaced = new Video();
+    start(replaced).cancel();
+    replaced.setAttribute('src', 'https://example.com/next.mp4');
+    replaced.currentTime = 4;
+    replaced.dispatchEvent(new Event('canplay'));
+    assert.equal(replaced.currentTime, 4);
+    assert.equal(replaced.plays, 0);
   });
 
   it('rejects source/player changes and newer pause decisions', () => {
