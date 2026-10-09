@@ -2,18 +2,29 @@ import { OwnedDom } from '../owned-dom';
 import type { ChatSurface } from '../types';
 import { THEATER_STAGE_BACKGROUND } from './stage';
 import type { ChatThemeAdapter, ForcedTheme } from './types';
+import { TWITCH_THEME_BRIDGE, TWITCH_THEME_TOKENS } from './twitch-palette';
 
 const paletteCache = new WeakMap<Document, { sheets: CSSStyleSheet[]; counts: number[]; classes: Partial<Record<ForcedTheme, string>> }>();
 
 export class TwitchChatThemeAdapter implements ChatThemeAdapter {
   private readonly owned = new OwnedDom();
   private canvas: HTMLStyleElement | null = null;
+  private bridge: HTMLStyleElement | null = null;
   constructor(private readonly surface: ChatSurface) {}
   apply(theme: ForcedTheme): boolean {
     const surface = this.surface;
     const doc = surface.root.ownerDocument;
-    const paletteClass = twitchPaletteClass(doc, theme);
-    if (!paletteClass) { this.restore(); return false; }
+    let paletteClass = twitchPaletteClass(doc, theme);
+    if (!paletteClass) {
+      if (!supportsTokenBridge(doc)) { this.restore(); return false; }
+      if (!this.bridge?.isConnected) {
+        this.bridge = doc.createElement('style');
+        this.bridge.setAttribute('data-theater-chat-palette', 'twitch');
+        this.bridge.textContent = TWITCH_THEME_BRIDGE;
+        doc.head.append(this.bridge);
+      }
+      paletteClass = `theater-chat-theme-${theme}`;
+    }
     const otherPalette = twitchPaletteClass(doc, theme === 'dark' ? 'light' : 'dark');
     const portalRoots = [...doc.querySelectorAll<HTMLElement>('.ReactModalPortal, .ReactModal__Overlay, .tw-dialog-layer')];
     const themedRoots = new Set<HTMLElement>([surface.root, ...portalRoots]);
@@ -21,6 +32,10 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
       for (const nested of root.querySelectorAll<HTMLElement>('.tw-root--theme-light, .tw-root--theme-dark')) themedRoots.add(nested);
     }
     for (const root of themedRoots) {
+      for (const name of ['light', 'dark']) {
+        const bridgeClass = `theater-chat-theme-${name}`;
+        if (root.classList.contains(bridgeClass)) this.owned.setClass(root, bridgeClass, false);
+      }
       if (otherPalette && root.classList.contains(otherPalette)) this.owned.setClass(root, otherPalette, false);
       this.owned.setClass(root, paletteClass, true);
       this.owned.setClass(root, 'tw-root--theme-light', theme === 'light');
@@ -39,6 +54,8 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
   }
 
   restore(): void {
+    this.bridge?.remove();
+    this.bridge = null;
     this.canvas?.remove();
     this.canvas = null;
     this.owned.restoreAll();
@@ -63,7 +80,7 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
   }
 }
 
-/** Select the service's complete CSS token class; never reconstruct or hardcode a palette. */
+/** Prefer the service's complete CSS token class whenever it has been emitted. */
 function twitchPaletteClass(doc: Document, theme: ForcedTheme): string | null {
   const sheets = [...doc.styleSheets];
   const counts = sheets.map(sheet => { try { return sheet.cssRules.length; } catch { return -1; } });
@@ -96,6 +113,7 @@ function findPaletteClass(rules: CSSRuleList, candidates: Element[], theme: Forc
     // Generated names are discovered from the current stylesheet, not stored selectors.
     const match = /^\.([\w-]+)(?:\.\1)?$/.exec(styleRule.selectorText.trim());
     if (!match) continue;
+    if (match[1].startsWith('theater-chat-theme-')) continue;
     const nativeMatch = candidates.some(element => element.matches(styleRule.selectorText));
     const normalizedBase = base.replace(/\s/g, '');
     const semanticMatch = normalizedBase === (theme === 'light' ? 'var(--color-white)' : 'var(--color-hinted-grey-2)');
@@ -103,4 +121,26 @@ function findPaletteClass(rules: CSSRuleList, candidates: Element[], theme: Forc
     if (semanticMatch || (nativeMatch && normalizedBase !== oppositeBase)) return match[1];
   }
   return null;
+}
+
+/** Qualify against the service's emitted palette, never against our own bridge. */
+function supportsTokenBridge(doc: Document): boolean {
+  const visit = (rules: CSSRuleList): boolean => {
+    for (const rule of rules) {
+      if ('cssRules' in rule && visit((rule as CSSGroupingRule).cssRules)) return true;
+      if (!('style' in rule) || !('selectorText' in rule)) continue;
+      const { style, selectorText } = rule as CSSStyleRule;
+      if (!/^\.([\w-]+)(?:\.\1)?$/.test(selectorText.trim()) || selectorText.includes('theater-chat-theme-')) continue;
+      const base = style.getPropertyValue('--color-background-base').trim();
+      const index = base === 'var(--color-white)' ? 0 : base === 'var(--color-hinted-grey-2)' ? 1 : null;
+      if (index === null) continue;
+      if (Object.entries(TWITCH_THEME_TOKENS).every(([name, values]) =>
+        style.getPropertyValue(name).trim() === values[index])) return true;
+    }
+    return false;
+  };
+  for (const sheet of doc.styleSheets) {
+    try { if (visit(sheet.cssRules)) return true; } catch { /* Opaque service sheets cannot qualify. */ }
+  }
+  return false;
 }

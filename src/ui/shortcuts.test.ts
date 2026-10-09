@@ -74,6 +74,18 @@ describe('shortcut matching', () => {
     assert.equal(matchesShortcut(key({ key: 't', shiftKey: true, code: 'KeyT' }), 'Shift+T'), true);
   });
 
+  it('matches and records macOS Option letters by physical key, with exact modifiers', () => {
+    const optionR = key({ key: '®', code: 'KeyR', altKey: true });
+    assert.equal(matchesShortcut(optionR, 'Alt+R'), true);
+    assert.equal(shortcutFromEvent(optionR), 'Alt+R');
+    assert.equal(matchesShortcut(optionR, 'R'), false);
+    assert.equal(matchesShortcut(optionR, 'Alt+T'), false);
+    assert.equal(matchesShortcut(key({ key: '®', code: 'KeyR', altKey: true, shiftKey: true }), 'Alt+R'), false);
+    assert.equal(matchesShortcut(key({ key: '®', code: 'KeyR' }), 'R'), false);
+    assert.equal(matchesShortcut(key({ key: 'å', code: 'KeyA' }), 'A'), false);
+    assert.equal(matchesShortcut(key({ key: 'r', code: 'KeyR', ctrlKey: true, altKey: true }), 'Alt+R'), false);
+  });
+
   it('renders + and Ctrl++ as real keys instead of empty kbd parts', () => {
     assert.deepEqual(shortcutDisplayParts('+'), ['+']);
     assert.deepEqual(shortcutDisplayParts('Ctrl++'), ['Ctrl', '+']);

@@ -1088,6 +1088,18 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 .theater-menu.is-open > .theater-settings-menu,
 .theater-settings-menu.visible { display: flex !important; }
 
+.theater-settings-menu.is-position-held {
+  inset-inline-end: auto !important;
+  left: var(--theater-menu-held-left) !important;
+}
+
+/* Resizing separates the panel from its moving gear. Use a complete shell
+   until it closes and returns to the gear on the next opening. */
+.theater-menu.is-open > .theater-settings-menu.is-position-held::before {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
 /* Rows scroll. The shell stays on the menu, so the notch does not travel with them. */
 .theater-settings-body {
   position: relative !important;

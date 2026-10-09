@@ -91,6 +91,12 @@ html.theater-everywhere-twitch-stage [data-theater-chat] .stream-chat {
   height: 100% !important;
 }
 
+/* TME owns chat visibility during theater, including when the native column
+ * is collapsed. Keep the service control in DOM for programmatic activation. */
+html.theater-everywhere-twitch-stage [data-a-target="right-column__toggle-collapse-btn"] {
+  display: none !important;
+}
+
 /* Service-owned dialogs and popovers remain above the theater backdrop.
  * Their native positions and event handlers are preserved. */
 /* Leave an actual layer above TME chrome. At the browser's maximum z-index,

@@ -4,6 +4,22 @@ const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
 const SUPPRESS_CLASS = 'is-suppressed';
 
+function releaseMenuPosition(panel: HTMLElement): void {
+  panel.classList.remove('is-position-held');
+  panel.style.removeProperty('--theater-menu-held-left');
+}
+
+/** Keep a settings slider under the pointer as the video/bar changes width.
+ * Hold until the menu closes, so pointerup does not move it either. */
+export function holdMenuPosition(panel: HTMLElement): void {
+  if (panel.classList.contains('is-position-held')) return;
+  const parent = panel.offsetParent;
+  if (!(parent instanceof HTMLElement)) return;
+  const left = panel.getBoundingClientRect().left - parent.getBoundingClientRect().left;
+  panel.style.setProperty('--theater-menu-held-left', `${left}px`);
+  panel.classList.add('is-position-held');
+}
+
 /**
  * Close a hover/click menu. A following hover does not reopen it until the
  * pointer leaves and comes back, so Escape and outside clicks stay closed.
@@ -18,6 +34,7 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   panel.classList.remove(PINNED_CLASS);
   host.classList.remove(OPEN_CLASS);
   host.classList.add(SUPPRESS_CLASS);
+  releaseMenuPosition(panel);
   trigger.setAttribute('aria-expanded', 'false');
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
   if (restoreFocus) trigger.focus();
@@ -56,7 +73,10 @@ export function bindMenuPopover(options: {
   const show = (pin: boolean, focusFirst: boolean) => {
     const already = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
     options.onBeforeOpen?.();
-    if (!already) options.prepare?.();
+    if (!already) {
+      releaseMenuPosition(panel);
+      options.prepare?.();
+    }
     host.classList.remove(SUPPRESS_CLASS);
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
@@ -76,7 +96,10 @@ export function bindMenuPopover(options: {
     show(false, false);
   });
   scope.listen(host, 'pointerleave', () => {
-    if (!panel.classList.contains(PINNED_CLASS)) host.classList.remove(OPEN_CLASS);
+    if (!panel.classList.contains(PINNED_CLASS)) {
+      host.classList.remove(OPEN_CLASS);
+      releaseMenuPosition(panel);
+    }
     window.requestAnimationFrame(() => {
       syncExpanded();
       options.onChange?.();
@@ -111,6 +134,7 @@ export function bindMenuPopover(options: {
   };
   scope.listen(panel, 'focusout', closeOnFocusLeave);
   scope.listen(trigger, 'focusout', closeOnFocusLeave);
+  scope.listen(window, 'resize', () => releaseMenuPosition(panel));
 
   return { close };
 }

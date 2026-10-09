@@ -12,6 +12,7 @@ import {
 import type { DisposableScope } from '../core/disposable-scope';
 import type { PlayerChromeContext } from './runtime-context';
 import { queryPlayerUi } from './root';
+import { holdMenuPosition } from './menu-popover';
 
 export const CHAT_PREFERENCES_STORAGE_KEY = 'nativeChatPreferences';
 type ChatPreferences = Partial<Record<ChatProvider, ChatPreference>>;
@@ -158,7 +159,11 @@ export function mountNativeChatControls(
   widthControl.append(slider, widthValue);
   widthRow.append(widthIcon, widthLabel, widthControl);
   chatMount?.append(widthRow);
-  scope.listen(slider, 'input', () => controller?.setWidth(Number(slider.value)));
+  scope.listen(slider, 'pointerdown', () => holdMenuPosition(settingsPanel));
+  scope.listen(slider, 'input', () => {
+    holdMenuPosition(settingsPanel);
+    controller?.setWidth(Number(slider.value));
+  });
 
   const themeRow = document.createElement('label');
   themeRow.className = 'theater-settings-row theater-chat-theme-row';
