@@ -1,0 +1,57 @@
+{
+  "browser": "firefox",
+  "url": "https://www.twitch.tv/hasanabi",
+  "at": "2026-10-09T00:26:53.210Z",
+  "bundles": {
+    "content.js": "29735b797fccf1d6c84aaa2c7a8181192f2cacf14afd6836280246bf2f8fd018",
+    "content.css": "11694b2bd5c56153f748a5dcd3088c86fe1b3b433b146903ab6dd6b61a61d1ff",
+    "mainWorld.js": "e1372956031d620ef103819d117f907b6f8a0283b0f3a5a57c2b2b9c9ef926a8"
+  },
+  "darkStartup": {
+    "dark": true,
+    "hasLight": false
+  },
+  "openedByOptionR": true,
+  "realAltR": true,
+  "themes": [
+    {
+      "theme": "light",
+      "base": "#ffffff",
+      "text": "#0e0e10",
+      "input": "#ffffff",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    },
+    {
+      "theme": "dark",
+      "base": "#18181b",
+      "text": "#efeff1",
+      "input": "#18181b",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    },
+    {
+      "theme": "light",
+      "base": "#ffffff",
+      "text": "#0e0e10",
+      "input": "#ffffff",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    }
+  ],
+  "drag": [
+    {
+      "width": "590",
+      "menuLeft": 700
+    },
+    {
+      "width": "290",
+      "menuLeft": 700
+    },
+    {
+      "width": "600",
+      "menuLeft": 700
+    }
+  ],
+  "restored": true
+}

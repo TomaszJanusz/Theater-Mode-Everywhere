@@ -70,10 +70,16 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
 
 const shiftedKeys = '<>?:"{}|_+~!@#$%^&*()';
 
+// macOS Option changes key (Option+R is ®). Use the physical letter for Alt
+// bindings, while leaving ordinary typing and punctuation bindings unchanged.
+function altLetter(event: KeyboardEvent): string | null {
+  return event.altKey && /^Key[A-Z]$/.test(event.code) ? event.code.slice(3) : null;
+}
+
 export function shortcutFromEvent(event: KeyboardEvent): string {
   if (event.isComposing || ['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'Dead', 'Unidentified', 'Process'].includes(event.key)) return '';
-  const key = event.key === ' ' || event.key === 'Spacebar' ? 'Space'
-    : event.key.length === 1 ? event.key.toUpperCase() : event.key;
+  const key = altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
+    : event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
     event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
     .filter(Boolean).join('+');
@@ -148,7 +154,8 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
     || e.code === 'NumpadAdd'
     || e.code === 'Equal'
   );
-  if (!isCompatiblePlus && eventKey !== targetKey && e.code.toUpperCase() !== targetKey) return false;
+  if (!isCompatiblePlus && eventKey !== targetKey && e.code.toUpperCase() !== targetKey
+      && altLetter(e) !== targetKey) return false;
 
   const hasCtrl = parts.includes('Ctrl');
   const hasAlt = parts.includes('Alt');

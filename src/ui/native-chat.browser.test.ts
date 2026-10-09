@@ -43,6 +43,7 @@ const TWITCH_CHANNEL = 'https://www.twitch.tv/example';
 const CHOSEN_WIDTH = 420;
 
 const YOUTUBE_THEME_CSS = readFileSync(new URL('../../test/fixtures/youtube-chat-theme.css', import.meta.url), 'utf8');
+const TWITCH_THEME_CSS = readFileSync(new URL('../../test/fixtures/twitch-chat-theme.css', import.meta.url), 'utf8');
 
 const CHAT_FRAME = `<!doctype html><html color-version="v2_0"><head><meta charset="utf-8"><title>Live chat</title><style>${YOUTUBE_THEME_CSS}</style></head><body style="background:rgb(253,250,245)"><yt-live-chat-app></yt-live-chat-app>
 <textarea id="draft" aria-label="Say something"></textarea>
@@ -103,6 +104,7 @@ function twitchDocument(): string {
       <video muted autoplay loop playsinline src="https://www.twitch.tv/fixtures/vod.webm"></video>
     </div>
     <div class="right-column" data-a-target="right-column-chat-bar">
+      <button type="button" data-a-target="right-column__toggle-collapse-btn" aria-label="Collapse Chat">Native toggle</button>
       <div class="chat-shell">
         <div class="stream-chat">
           <section class="chat-room" data-test-selector="chat-room-component-layout" style="color: rgb(1, 2, 3)">
@@ -631,6 +633,132 @@ async function expectAppliedTheme(page: Page, theme: 'light' | 'native' | 'dark'
 }
 
 describe('native chat browser session', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`fixes Twitch Option+R, native toggle, and slider drift in ${engine}`, { timeout: 120_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      try {
+        const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
+        const nativeToggle = page.locator('[data-a-target="right-column__toggle-collapse-btn"]');
+        assert.equal(await nativeToggle.isVisible(), true);
+        await boot(page);
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+        assert.equal(await nativeToggle.isVisible(), false);
+        const optionR = () => page.evaluate(() => {
+          // macOS Option+R produces ®; Linux Playwright Alt+R alone cannot cover this.
+          document.querySelector('video')!.dispatchEvent(new KeyboardEvent('keydown', {
+            key: '®', code: 'KeyR', altKey: true, bubbles: true, cancelable: true
+          }));
+        });
+        await optionR();
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === false);
+        await optionR();
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === true);
+
+        await revealChatSettings(page);
+        const menu = page.locator('.theater-settings-menu');
+        const slider = page.locator('.theater-chat-width-slider');
+        const before = await menu.boundingBox();
+        const track = await slider.boundingBox();
+        assert.ok(before && track);
+        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+        await page.mouse.down();
+        for (const fraction of [.8, .15, .95]) {
+          await page.mouse.move(track.x + track.width * fraction, track.y + track.height / 2, { steps: 8 });
+          const after = await menu.boundingBox();
+          assert.ok(after);
+          assert.ok(Math.abs(after.x - before.x) < 1, `settings drifted during drag: ${JSON.stringify({before, after})}`);
+        }
+        await page.mouse.up();
+        const width = Number(await slider.inputValue());
+        assert.ok(width > 540, `the gauge stopped following the pointer: ${width}`);
+        const layout = await layoutOf(page);
+        assert.equal(layout.state?.width, width);
+        assertRightDock(layout, `${engine} resized`);
+        const released = await menu.boundingBox();
+        assert.ok(released && Math.abs(released.x - before.x) < 1, 'pointerup moved the menu');
+        await closeChatSettings(page);
+        await revealChatSettings(page);
+        const reopened = await menu.boundingBox();
+        assert.ok(reopened && Math.abs(reopened.x - before.x) > 100, 'reopening did not reanchor to the resized bar');
+        await leaveTheater(page);
+        assert.equal(await nativeToggle.isVisible(), true);
+        assert.deepEqual(pageErrors(page), []);
+      } finally { await browser.close(); }
+    });
+
+    it(`provides the missing light palette on a dark Twitch startup in ${engine}`, { timeout: 120_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      try {
+        // Only the dark declaration is emitted on a native dark startup.
+        const darkCSS = TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark'));
+        const html = twitchDocument().replace('<html>', '<html class="NativeDark tw-root--theme-dark">')
+          .replace('</head>', `<style id="service-palette">${darkCSS}</style></head>`)
+          .replace('class="right-column"', 'class="right-column NativeDark tw-root--theme-dark"');
+        const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: html }, { width: 1280, height: 800 });
+        await boot(page);
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.available);
+        await chooseChatTheme(page, 'light');
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+        // Compare all 1002 native tokens with a separate full service palette,
+        // including shared primitives and tokens outside the compiled bridge.
+        const verify = async (selector = '[data-theater-chat]') => page.evaluate(({ css, selector }) => {
+          const reference = document.createElement('div');
+          const shadow = reference.attachShadow({ mode: 'open' });
+          shadow.innerHTML = `<style>${css}</style><div class="NativeLight"></div>`;
+          document.body.append(reference);
+          const expected = getComputedStyle(shadow.querySelector('div')!);
+          const actual = getComputedStyle(document.querySelector(selector)!);
+          const names = [...(shadow.querySelector('style')!.sheet!.cssRules[0] as CSSStyleRule).style];
+          const mismatches = names.filter(name => name.startsWith('--') &&
+            actual.getPropertyValue(name).trim() !== expected.getPropertyValue(name).trim());
+          reference.remove();
+          return { checked: names.length, mismatches };
+        }, { css: TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeLight.NativeLight'), TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark')), selector });
+        const comparison = await verify();
+        assert.ok(comparison.checked >= 1002);
+        assert.deepEqual(comparison.mismatches, []);
+        await page.evaluate(() => {
+          const portal = document.createElement('div');
+          portal.className = 'ReactModalPortal';
+          portal.innerHTML = '<div id="late-popup" class="NativeDark tw-root--theme-dark">Native popup</div>';
+          document.body.append(portal);
+        });
+        await page.waitForFunction(() => document.querySelector('#late-popup')?.classList.contains('theater-chat-theme-light'));
+        assert.deepEqual((await verify('#late-popup')).mismatches, []);
+        await expectSavedTheme(read, 'twitch', { visible: true, width: 360, theme: 'light' });
+        await chooseChatTheme(page, 'dark');
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+        await chooseChatTheme(page, 'light');
+        assert.deepEqual((await verify()).mismatches, []);
+        await chooseChatTheme(page, 'native');
+        assert.equal(await page.locator('[data-theater-chat]').evaluate(el => el.className.includes('theater-chat-theme-')), false);
+        assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
+        assert.equal(await page.evaluate(() => document.documentElement.classList.contains('tw-root--theme-dark')), true);
+        await chooseChatTheme(page, 'light');
+        const nativeText = await page.evaluate(() => {
+          const rule = (document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule);
+          const previous = rule.style.getPropertyValue('--color-text-base');
+          rule.style.setProperty('--color-text-base', 'magenta');
+          return previous;
+        });
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'unavailable');
+        assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
+        await page.evaluate(value => {
+          const rule = document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule;
+          rule.style.setProperty('--color-text-base', value);
+        }, nativeText);
+        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+        assert.deepEqual((await verify()).mismatches, []);
+        await leaveTheater(page);
+        assert.deepEqual(pageErrors(page), []);
+      } finally { await browser.close(); }
+    });
+  }
+
   it('keeps YouTube chat in place while docking, resizing, remembering width, and restoring the page', { timeout: 120_000 }, async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }

@@ -4,6 +4,8 @@
 
 Stan: 9 października 2026, kod `fcc8f2a`. PR pozostaje otwarty do review; funkcja nie została jeszcze wydana.
 
+Uzupełnienie po merge PR #25: [poprawki Option+R, brakującej jasnej palety Twitcha, natywnej strzałki oraz uciekającego menu suwaka](twitch-chat-fixes.md). Poniższy zapis opisuje kwalifikację sprzed tych poprawek.
+
 ## Obsługa
 
 - Przycisk czatu i domyślny skrót **Alt+R** pokazują lub chowają panel. Pomoc, tooltip i edytor skrótów używają wspólnego ustawienia. Zapisane własne skróty użytkownika są zachowane.

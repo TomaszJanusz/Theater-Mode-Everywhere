@@ -1,0 +1,52 @@
+{
+  "browser": "chromium",
+  "url": "https://www.twitch.tv/hasanabi",
+  "at": "2026-10-09T00:23:14.582Z",
+  "darkStartup": {
+    "dark": true,
+    "hasLight": false
+  },
+  "openedByOptionR": true,
+  "realAltR": true,
+  "themes": [
+    {
+      "theme": "light",
+      "base": "#ffffff",
+      "text": "#0e0e10",
+      "input": "#ffffff",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    },
+    {
+      "theme": "dark",
+      "base": "#18181b",
+      "text": "#efeff1",
+      "input": "#18181b",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    },
+    {
+      "theme": "light",
+      "base": "#ffffff",
+      "text": "#0e0e10",
+      "input": "#ffffff",
+      "composer": "rgba(0, 0, 0, 0)",
+      "fallback": false
+    }
+  ],
+  "drag": [
+    {
+      "width": "590",
+      "menuLeft": 700
+    },
+    {
+      "width": "290",
+      "menuLeft": 700
+    },
+    {
+      "width": "600",
+      "menuLeft": 700
+    }
+  ],
+  "restored": true
+}
