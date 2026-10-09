@@ -1,65 +1,79 @@
-# Theater Everywhere — agent guide
+# Theater Everywhere
 
-This is a TypeScript browser extension for Chromium and Firefox, built with Vite and pnpm. It maximizes video players and adds shared playback UI with optional service integrations. `AGENTS.md` is the canonical instruction file; `CLAUDE.md` must remain a relative symlink to it.
+## Product
 
-## Engineering principles
+Theater Everywhere is a TypeScript extension for Chromium and Firefox, built with Vite and pnpm. It maximizes HTML5 players and adds shared playback controls; Rich Theater Experience (RTE) supplies optional service integrations. Protect generic playback, native host behavior, browser compatibility and low overhead. The extension should improve watching without getting in the way.
 
-- Aim for ambitious outcomes through simple systems and behavior that feels obvious. Understand the real constraint, then choose the smallest model that makes correct behavior unsurprising.
-- Measure twice, cut once: trace the relevant execution path, ownership and failure modes before editing. Investigate enough to resolve uncertainty; avoid analysis that does not affect the decision.
-- Honor the developer's intent in a minimal, realistic way. Complete the requested behavior, including necessary integration and cleanup, without expanding into adjacent features or unrelated refactors.
-- Apply YAGNI: implement today's requirements. Do not add speculative extension points, dependencies, configuration layers or frameworks for architectural appearance.
-- Do not preserve accidental complexity merely because it exists. Simplify within the task's scope when the simpler design preserves required behavior and compatibility.
-- Apply DRY to knowledge and behavior: one owner for each rule, state transition and calculation. Similar syntax alone does not justify combining code with different responsibilities.
+`AGENTS.md` is the canonical guide. Keep `CLAUDE.md` as a relative symlink to it. Follow the developer's explicit instructions when they override these defaults.
 
-## Code quality and modularity
+## Taste
 
-- Prefer small, cohesive modules with explicit inputs, outputs and ownership. Separate pure parsing/calculation from DOM access, network requests and side effects.
-- Search for existing contracts and helpers before adding new ones. Put reusable behavior at the narrowest shared boundary that needs it; avoid copying a feature into each provider or creating a generic utility with unrelated responsibilities.
-- Extract abstractions from concrete use cases. A small interface is useful when it isolates a real boundary, even with one implementation; hypothetical future consumers are insufficient justification.
-- Keep entrypoints and composition code focused on wiring. Put domain behavior in the module that owns it, and keep provider details out of shared player components.
-- Use precise TypeScript types and validate external data at boundaries. Avoid broad `any`, unchecked casts and silent fallbacks that hide invalid state.
-- Follow local naming and formatting. Use comments to explain constraints and non-obvious decisions. Remove obsolete code made redundant by the change; avoid unrelated cleanup.
+Aim high with a simple design. Understand the constraint, then choose the smallest model that makes correct behavior obvious. Measure twice, cut once; apply YAGNI and DRY. Simplify accidental complexity within the task's scope, preserve required behavior, and finish the requested integration without expanding into adjacent work.
 
-## Repository boundaries
+- **Keep modules cohesive.** Make inputs, outputs and ownership explicit. Separate parsing and calculation from DOM, network and other side effects. Entrypoints wire modules together.
+- **Reuse behavior, not coincidence.** Find existing contracts and helpers first. Share rules at the narrowest useful boundary; similar syntax is not enough. A small interface can isolate a real boundary with one implementation. Future consumers alone do not justify machinery.
+- **Keep types honest.** Use strict TypeScript and validate external data. Avoid broad `any`, unchecked casts and fallbacks that conceal invalid state.
+- **Give shared UI one owner.** Reuse tokens, control states and layout rules. Fix the shared component or lifecycle before adding per-button, per-screen or per-provider exceptions.
+- **Keep settings consistent.** Reuse shared defaults and normalization, such as appearance resolvers and `withShortcutDefaults`. UI and runtime must interpret saved preferences alike; avoid independent inline defaults.
+- **Explain the surprising part.** Follow local naming and formatting. Comments explain intent or constraints. Remove code made obsolete by the change; keep unrelated cleanup out.
 
-Read [`docs/player-provider-contracts.md`](docs/player-provider-contracts.md) before changing player/provider boundaries, and consult the relevant feature documentation under `docs/`.
+## Code boundaries
 
-- `src/providers/`: host detection, selectors, native player APIs, clocks, availability, presentation and service commands. Providers translate host behavior into shared contracts.
-- `src/core/`: player/session ownership, shared lifecycle and coordination. Reuse `PlayerSession` and `DisposableScope` where appropriate.
-- `src/ui/`: shared rendering, controls, menus, input and layout. Consume capabilities and contracts rather than adding service-specific branches.
-- `src/media-features/`: media adapters, metadata, caption operations, parsing and rendering. Preserve existing host-caption ownership and user preferences.
-- `src/platform/` and `src/protocol/`: browser/page integration and cross-world/frame communication. Retain message validation, provenance and session checks.
-- `popup/`, `options/`, `_locales/` and `src/i18n.ts`: extension settings and localized UI. Keep message keys, placeholders and fallbacks consistent across catalogs.
-- `scripts/`, `manifest.json` and `.github/workflows/`: build, packaging and delivery. `dist/` and ZIPs are generated artifacts; change their sources and do not commit generated packages.
+Read [`docs/player-provider-contracts.md`](docs/player-provider-contracts.md) before changing player/provider boundaries.
 
-## Runtime invariants
+- `src/providers/` owns host detection, selectors, native APIs, clocks, availability, presentation and commands. Translate host quirks into shared contracts here.
+- `src/core/` owns sessions, lifecycle and coordination. Reuse `PlayerSession` and `DisposableScope` where appropriate.
+- `src/ui/` owns shared controls, menus, rendering, input and layout. Consume contracts and capabilities instead of service-specific branches.
+- `src/media-features/` owns adapters, metadata, caption operations, parsing and rendering.
+- `src/platform/` and `src/protocol/` own browser/page integration and cross-world/frame communication.
+- `popup/` and `options/` own extension settings UI. Keep `_locales/` keys, placeholders and `src/i18n.ts` fallbacks consistent.
+- `scripts/`, `manifest.json` and `.github/workflows/` own build and delivery. Change sources, not generated `dist/` output or ZIPs; do not commit generated packages.
 
-- Async results and observer callbacks must belong to the current session, media and adapter before mutating state or UI. Use existing epoch/identity checks and cancellation; an `AbortSignal` alone does not protect every continuation.
-- Every listener, observer, timer, subscription and host mutation needs an owner and cleanup. Rebinding, SPA navigation and theater exit must reject stale work and restore host state. Cleanup must be safe to repeat.
-- Revalidate provider actions when activated, including identity and availability. Providers own native timing and expiry; shared UI displays their state.
-- Preserve generic HTML5 playback, iframe behavior and Chromium/Firefox compatibility. Unavailable provider features should degrade through existing capability paths.
-- Keep keyboard and pointer actions on the same behavior path. Preserve focus, accessible labels, menu handling and editable-field shortcut guards.
+## Runtime
 
-## Proportionate verification
+- **Reject stale work.** Async results and callbacks must still match the current session, media and adapter before mutating state or UI. Use existing epoch/identity guards and cancellation. An `AbortSignal` alone does not protect every continuation.
+- **Own cleanup.** Listeners, observers, timers, subscriptions and host mutations need an owner. Rebinding, SPA navigation and theater exit must invalidate old work and restore host state. Cleanup must be safe to repeat.
+- **Let providers own host behavior.** Revalidate identity and availability when activating an action. Providers own native timing and expiry; UI displays their state. Preserve host-caption ownership and user preferences.
+- **Keep boundaries checked.** Retain message validation, provenance and session checks. Unavailable provider features degrade through existing capability paths.
+- **Share interaction behavior.** Keyboard and pointer actions use the same implementation. Preserve focus, accessible labels, menu handling and shortcut guards for editable fields.
+- **Keep frequent callbacks cheap.** Avoid repeated DOM scans, JSON parsing, network requests and layout reads on playback or observer updates. Reuse computed data within its valid lifetime. Prefer events to new polling; scope observers and animations to when needed, and stop them on cleanup.
 
-Choose checks by the behavior and risk changed. State what each check establishes. Preserve required CI gates; selective local verification is not permission to weaken them.
+## Affected paths
 
-- Documentation-only changes: inspect content, links/symlinks and whitespace. Application tests, builds and browser smoke runs are unnecessary.
-- TypeScript changes: run `pnpm typecheck` and relevant existing tests. Focused tests use `pnpm exec tsx --test <test-file> [...]`; `pnpm test` is an explicit file list in `package.json`, so register new tests there when needed.
-- Add regression tests for meaningful failure modes and changed contracts. Assert observable behavior, including lifecycle or stale-result cases when relevant; avoid tests that merely mirror implementation or add maintenance cost without useful coverage.
-- Shared lifecycle, protocol or widely used contract changes warrant broader tests. Bundling, entrypoint, manifest or packaging changes warrant `pnpm build` and `pnpm verify:bundles`. Build success does not establish type safety.
-- Use smoke tests sparingly. Run or extend them for a concrete integration risk that narrower tests cannot establish, such as installed-extension startup, script-world wiring or iframe entry/exit. Identify that risk first, reuse existing fixtures and avoid duplicating unit coverage. Build before `pnpm smoke:chromium` or `pnpm smoke:firefox`.
-- Provider behavior or visual changes that depend on a real host need targeted browser verification. Confirm the intended extension build and active theater/RTE state before measuring; capture screenshots when appearance matters. A fixture smoke test does not prove authenticated host behavior. Report skipped checks and unavailable browser/provider coverage explicitly; a diagnostic injection fallback is not an installed-extension pass.
-- Run `git diff --check` before handing off. Repeat successful checks only after relevant edits or new evidence of a problem.
+Before calling a cross-cutting change done, account for the paths it affects:
 
-## Sources of truth and progress tracking
+- **Entry points:** controls, shortcuts, player settings, popup and options.
+- **Playback:** generic HTML5, relevant providers, RTE enabled/disabled and unsupported capabilities.
+- **Execution:** top-level pages, iframes and MAIN/isolated worlds where applicable.
+- **Browsers:** Chromium and Firefox, including known differences.
+- **Reverse states:** enter/exit, enable/disable, replacement, navigation and restoration. Keep both behavior and visible state correct.
 
-- Notion is the source of truth for product requirements, architecture, design decisions and durable project documentation. Consult the relevant project pages when the task depends on that context; flag conflicts with the implementation rather than silently choosing one interpretation.
-- Linear is the source of truth for tracking work and progress: tasks, status, priorities, dependencies and completion criteria. Use the relevant issue to understand the scope and track actual progress; mark work complete only when its acceptance criteria are met and verification gaps are explicit.
-- GitHub owns code, pull requests, CI and review evidence. When updating documentation or tracking work, link to the relevant Notion pages, Linear issues and GitHub artifacts instead of maintaining competing copies of status or decisions.
+This is an impact check, not a demand to run every browser or smoke test. Verify applicable paths proportionately; state when a path is unaffected or unverified.
 
-## Working and reporting
+## Verification
 
-- Check the current checkout and `git status` first. Preserve unrelated modifications and untracked files. Keep the diff scoped and reviewable.
-- Continue within the authorized task; ask only when missing information materially changes the outcome or an action needs additional authority. Do not create branches, commit, push or publish without authorization.
-- Report the resulting behavior, important design choices, checks actually run and any remaining gaps. Distinguish source/test evidence from live runtime evidence. Never claim verification that did not happen.
+Use the smallest useful proof. Broaden checks when risk crosses shared contracts, browser targets or packaging. Preserve CI gates.
+
+- **Docs only:** check content, links, symlinks and whitespace. Skip application tests and builds.
+- **TypeScript:** run `pnpm typecheck` and relevant tests with `pnpm exec tsx --test <test-file> [...]`. `pnpm test` lists files explicitly in `package.json`; register new tests there when needed.
+- **Regressions:** cover meaningful behavior and failure modes, including stale results and cleanup where relevant. Tests should catch a plausible bug, not mirror implementation. Simple reversible changes do not automatically need new tests.
+- **Determinism:** wait for observable state. Use fake timers or an injected clock for time semantics. Avoid arbitrary sleeps and retries that mask races; do not assert exact GPU-dependent output.
+- **Builds:** bundling, entrypoint, manifest and packaging changes warrant `pnpm build` and `pnpm verify:bundles`. A build does not establish type safety.
+- **Smoke:** run or extend smoke tests only for a named integration risk narrower checks cannot establish, such as installed startup, script-world wiring or iframe entry/exit. Reuse fixtures and build before `pnpm smoke:chromium` or `pnpm smoke:firefox`.
+- **Real hosts:** verify host-dependent behavior with the intended extension build and active theater/RTE state. Capture screenshots for appearance, video for timing when useful. Fixture checks do not prove authenticated host behavior; diagnostic injection is not an installed-extension pass.
+- **Finish:** run `git diff --check`. Report skips and coverage gaps. Repeat successful checks only after relevant edits or new evidence.
+
+## Docs and tracking
+
+- **Notion** is the source of truth for requirements, architecture and durable decisions. Consult relevant pages when needed; flag conflicts with implementation.
+- **Linear** tracks scope, status, priorities, dependencies and acceptance criteria. Mark work complete when those criteria are met and verification gaps are explicit.
+- **GitHub** records code, PRs, CI and reviews. Link related artifacts instead of keeping competing status copies.
+- **Document the reason.** Local `docs/` hold code-adjacent contracts, constraints and procedures. Keep local explanations in comments; use documentation for reasoning that crosses boundaries. Link to code instead of enumerating its fields or narrating control flow.
+- **Keep guidance current.** Rewrite or remove outdated text when a decision changes. Most UI tweaks need no new page. Temporary plans, scratch files and diagnostic captures stay outside committed source unless explicitly requested or needed as durable project evidence.
+
+## Delivery
+
+- Check the checkout and `git status` first. Preserve unrelated changes and untracked files; keep the diff reviewable.
+- Continue within the authorized scope. Ask when missing information changes the outcome or additional authority is needed. Branches, commits, pushes and publishing require authorization; permission to commit or push does not authorize a version bump, release tag or release workflow.
+- Stop only processes or browser sessions you started for the task, using their recorded identity. Preserve the developer's running sessions and settings.
+- Report the resulting behavior, important choices, checks actually run and remaining gaps. Distinguish source/test evidence from live runtime evidence.
