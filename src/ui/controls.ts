@@ -697,7 +697,13 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       </svg>
     `;
 
-    setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
+    const syncFullscreenButton = () => {
+      const active = Boolean(document.fullscreenElement);
+      fullscreenBtn.classList.toggle('active', active);
+      fullscreenBtn.setAttribute('aria-pressed', String(active));
+      setIcon(fullscreenBtn, active ? exitFullscreenIcon : enterFullscreenIcon);
+    };
+    syncFullscreenButton();
 
     const controlsEpoch = session.currentEpoch;
     const fullscreenRecovery = createFullscreenRecovery(controlsScope, video,
@@ -743,7 +749,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     });
 
     const onFullscreenChange = () => {
-      setIcon(fullscreenBtn, document.fullscreenElement ? exitFullscreenIcon : enterFullscreenIcon);
+      syncFullscreenButton();
       showToolbar();
       fullscreenRecovery.onFullscreenChange();
     };

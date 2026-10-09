@@ -1033,9 +1033,10 @@ html.theater-using-overlay-captions .mejs-captions-layer {
   font-weight: 650 !important;
 }
 
-/* Subtitles CC active state styling */
+/* Active player toggles share the accent color. */
 .theater-control-btn.cc-btn.active,
 .theater-control-btn.pip-btn.active,
+.theater-control-btn.fullscreen-btn.active,
 .theater-control-btn.controls-visibility-toggle.active,
 .theater-control-btn.theater-chat-toggle.active {
   color: var(--accent-color, #6366f1) !important;

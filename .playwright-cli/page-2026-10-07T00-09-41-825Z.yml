@@ -1,0 +1,282 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: Theater Mode Everywhere
+      - generic [ref=e12]:
+        - button "Co nowego" [ref=e13] [cursor=pointer]
+        - link "Strona główna" [ref=e17] [cursor=pointer]:
+          - /url: https://theater.tomaszjanusz.dev
+        - link "Zgłoś błąd" [ref=e22] [cursor=pointer]:
+          - /url: https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml
+    - paragraph [ref=e26]: Skonfiguruj wykluczenia stron, wygląd i skróty klawiszowe trybu kinowego.
+  - link "Privacy Thing" [ref=e27] [cursor=pointer]:
+    - /url: https://privacything.com
+    - img "Privacy Thing" [ref=e30]
+    - generic [ref=e70]: "Oto moje nowe rozszerzenie! Z Privacy Thing sam decydujesz, jakie dane o Tobie widzi dowolna strona: lokalizację, język, strefę czasową i wiele, wiele innych. Ogranicza śledzenie Cię między stronami."
+    - generic [ref=e71]: Bezpłatne i z otwartym kodem źródłowym.
+  - generic [ref=e75]:
+    - generic [ref=e76]:
+      - generic [ref=e77]:
+        - heading "Wygląd" [level=2] [ref=e78]
+        - paragraph [ref=e79]: Wybierz położenie obrazu oraz akcent kontrolek, suwaków, skrótów i podświetleń.
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - paragraph [ref=e82]: Układ
+          - radiogroup "Układ" [ref=e83]:
+            - radio "Na środku Obraz zostaje na środku ekranu. Najlepsze dla ekranów 16:9." [checked] [ref=e84] [cursor=pointer]:
+              - generic [ref=e89]:
+                - generic [ref=e90]: Na środku
+                - generic [ref=e91]: Obraz zostaje na środku ekranu. Najlepsze dla ekranów 16:9.
+            - generic [ref=e92]:
+              - radio "U góry Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów 16:10 i 4:3." [ref=e93] [cursor=pointer]:
+                - generic [ref=e99]:
+                  - generic [ref=e100]: U góry
+                  - generic [ref=e101]: Obraz podjeżdża do góry, a czarny pas pod nim zostaje na napisy. Najlepsze dla ekranów 16:10 i 4:3.
+              - generic [ref=e102]:
+                - generic [ref=e103]:
+                  - generic [ref=e104]: U góry tylko z napisami
+                  - paragraph [ref=e105]: Z włączonymi napisami obraz jest u góry, a z wyłączonymi na środku.
+                - generic [ref=e106]:
+                  - switch "U góry tylko z napisami" [disabled]
+        - generic [ref=e108]:
+          - paragraph [ref=e109]: Kolor akcentu
+          - radiogroup "Kolor akcentu" [ref=e110]:
+            - radio "Użyj koloru Systemowy jako akcentu" [ref=e111] [cursor=pointer]:
+              - generic [ref=e113]: Systemowy
+            - radio "Użyj koloru Morski jako akcentu" [ref=e114] [cursor=pointer]:
+              - generic [ref=e116]: Morski
+            - radio "Użyj koloru Niebieski jako akcentu" [checked] [ref=e117] [cursor=pointer]:
+              - generic [ref=e119]: Niebieski
+            - radio "Użyj koloru Zielony jako akcentu" [ref=e120] [cursor=pointer]:
+              - generic [ref=e122]: Zielony
+            - radio "Użyj koloru Żółty jako akcentu" [ref=e123] [cursor=pointer]:
+              - generic [ref=e125]: Żółty
+            - radio "Użyj koloru Pomarańczowy jako akcentu" [ref=e126] [cursor=pointer]:
+              - generic [ref=e128]: Pomarańczowy
+            - radio "Użyj koloru Czerwony jako akcentu" [ref=e129] [cursor=pointer]:
+              - generic [ref=e131]: Czerwony
+            - radio "Użyj koloru Różowy jako akcentu" [ref=e132] [cursor=pointer]:
+              - generic [ref=e134]: Różowy
+            - radio "Użyj koloru Fioletowy jako akcentu" [ref=e135] [cursor=pointer]:
+              - generic [ref=e137]: Fioletowy
+            - radio "Użyj koloru Szary jako akcentu" [ref=e138] [cursor=pointer]:
+              - generic [ref=e140]: Szary
+    - generic [ref=e141]:
+      - generic [ref=e142]:
+        - heading "Funkcje" [level=2] [ref=e143]
+        - paragraph [ref=e144]: Włącz lub wyłącz opcjonalne zachowania trybu kinowego.
+      - generic [ref=e145]:
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148] [cursor=pointer]: Zawsze pokazuj kontrolki
+            - paragraph [ref=e149]: Zachowaj widoczność kontrolek odtwarzania i paska postępu w trybie kinowym. Tytuł i kursor nadal chowają się przy bezczynności.
+          - generic [ref=e150] [cursor=pointer]:
+            - checkbox "Zawsze pokazuj kontrolki"
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154] [cursor=pointer]: Wzmocnienie głośności
+            - paragraph [ref=e155]: Wzmocnij głośność do 300% za pomocą Web Audio API. Przy pierwszym wejściu w tryb kinowy z tą opcją może pojawić się krótki wskaźnik ładowania.
+          - generic [ref=e156] [cursor=pointer]:
+            - checkbox "Wzmocnienie głośności"
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - generic [ref=e160]: Rich Theater Experience (Eksperymentalne)
+            - paragraph [ref=e162]:
+              - text: Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej
+              - button "tutaj" [ref=e163] [cursor=pointer]
+              - text: .
+          - generic [ref=e164] [cursor=pointer]:
+            - checkbox "Rich Theater Experience (Eksperymentalne)" [checked]
+    - generic [ref=e166]:
+      - generic [ref=e167]:
+        - heading "Wykluczenia stron" [level=2] [ref=e168]
+        - paragraph [ref=e169]: Wyklucz strony, na których tryb kinowy nie powinien uruchamiać się automatycznie.
+      - generic [ref=e170]:
+        - generic [ref=e172]:
+          - textbox "np. youtube.com albo wklej URL" [ref=e173]
+          - button "+" [ref=e174] [cursor=pointer]
+        - generic [ref=e176]:
+          - generic [ref=e177]:
+            - heading "Wykluczone strony" [level=3] [ref=e178]
+            - generic [ref=e179]: "0"
+          - generic [ref=e181]:
+            - heading "Brak wykluczeń" [level=3] [ref=e184]
+            - paragraph [ref=e185]: Tryb kinowy będzie automatycznie aktywowany na wszystkich stronach z wideo.
+        - paragraph [ref=e186]: "Wskazówka: wykluczeniami możesz też zarządzać bezpośrednio po kliknięciu ikony rozszerzenia na pasku przeglądarki."
+    - generic [ref=e187]:
+      - generic [ref=e188]:
+        - heading "Skróty klawiszowe" [level=2] [ref=e189]
+        - paragraph [ref=e190]: Kliknij dowolne pole i naciśnij wybraną kombinację klawiszy. Obsługiwane są modyfikatory takie jak Ctrl, Alt i Shift.
+      - generic [ref=e191]:
+        - generic [ref=e192]:
+          - generic [ref=e193]:
+            - heading "Sterowanie ogólne" [level=3] [ref=e194]
+            - generic [ref=e195]:
+              - generic [ref=e196]: Przełącz tryb kinowy
+              - generic [ref=e197]:
+                - textbox "Przełącz tryb kinowy" [ref=e198] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: T
+                - 'button "Przywróć domyślne: Przełącz tryb kinowy" [ref=e199] [cursor=pointer]'
+            - generic [ref=e202]:
+              - generic [ref=e203]: Wyjdź z trybu kinowego
+              - generic [ref=e204]:
+                - textbox "Wyjdź z trybu kinowego" [ref=e205] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Escape
+                - 'button "Przywróć domyślne: Wyjdź z trybu kinowego" [ref=e206] [cursor=pointer]'
+            - generic [ref=e209]:
+              - generic [ref=e210]:
+                - generic [ref=e211]: Przełącz wideo na stronie
+                - paragraph [ref=e212]: Działa tylko, gdy na stronie jest więcej niż jedno wideo HTML5.
+              - generic [ref=e213]:
+                - textbox "Przełącz wideo na stronie" [ref=e214] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Shift+T
+                - 'button "Przywróć domyślne: Przełącz wideo na stronie" [ref=e215] [cursor=pointer]'
+            - generic [ref=e218]:
+              - generic [ref=e219]: Zmień dopasowanie wideo
+              - generic [ref=e220]:
+                - textbox "Zmień dopasowanie wideo" [ref=e221] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Z
+                - 'button "Przywróć domyślne: Zmień dopasowanie wideo" [ref=e222] [cursor=pointer]'
+            - generic [ref=e225]:
+              - generic [ref=e226]: Zmień układ obrazu
+              - generic [ref=e227]:
+                - textbox "Zmień układ obrazu" [ref=e228] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Shift+L
+                - 'button "Przywróć domyślne: Zmień układ obrazu" [ref=e229] [cursor=pointer]'
+            - generic [ref=e232]:
+              - generic [ref=e233]: Włącz/wyłącz napisy
+              - generic [ref=e234]:
+                - textbox "Włącz/wyłącz napisy" [ref=e235] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: C
+                - 'button "Przywróć domyślne: Włącz/wyłącz napisy" [ref=e236] [cursor=pointer]'
+            - generic [ref=e239]:
+              - generic [ref=e240]: Powiększ napisy
+              - generic [ref=e241]:
+                - textbox "Powiększ napisy" [ref=e242] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: +
+                - 'button "Przywróć domyślne: Powiększ napisy" [ref=e243] [cursor=pointer]'
+            - generic [ref=e246]:
+              - generic [ref=e247]: Zmniejsz napisy
+              - generic [ref=e248]:
+                - textbox "Zmniejsz napisy" [ref=e249] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: "-"
+                - 'button "Przywróć domyślne: Zmniejsz napisy" [ref=e250] [cursor=pointer]'
+            - generic [ref=e253]:
+              - generic [ref=e254]: Przełącz widoczność kontrolek
+              - generic [ref=e255]:
+                - textbox "Przełącz widoczność kontrolek" [ref=e256] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Shift+H
+                - 'button "Przywróć domyślne: Przełącz widoczność kontrolek" [ref=e257] [cursor=pointer]'
+            - generic [ref=e260]:
+              - generic [ref=e261]: Pokaż/ukryj pomoc
+              - generic [ref=e262]:
+                - textbox "Pokaż/ukryj pomoc" [ref=e263] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: H
+                - 'button "Przywróć domyślne: Pokaż/ukryj pomoc" [ref=e264] [cursor=pointer]'
+          - generic [ref=e267]:
+            - heading "Odtwarzanie i głośność" [level=3] [ref=e268]
+            - generic [ref=e269]:
+              - generic [ref=e270]: Odtwórz / wstrzymaj
+              - generic [ref=e271]:
+                - textbox "Odtwórz / wstrzymaj" [ref=e272] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Space
+                - 'button "Przywróć domyślne: Odtwórz / wstrzymaj" [ref=e273] [cursor=pointer]'
+            - generic [ref=e276]:
+              - generic [ref=e277]: Poprzedni
+              - generic [ref=e278]:
+                - textbox "Poprzedni" [ref=e279] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Shift+P
+                - 'button "Przywróć domyślne: Poprzedni" [ref=e280] [cursor=pointer]'
+            - generic [ref=e283]:
+              - generic [ref=e284]: Następny
+              - generic [ref=e285]:
+                - textbox "Następny" [ref=e286] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: Shift+N
+                - 'button "Przywróć domyślne: Następny" [ref=e287] [cursor=pointer]'
+            - generic [ref=e290]:
+              - generic [ref=e291]: Cofnij (5 s)
+              - generic [ref=e292]:
+                - textbox "Cofnij (5 s)" [ref=e293] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: ArrowLeft
+                - 'button "Przywróć domyślne: Cofnij (5 s)" [ref=e294] [cursor=pointer]'
+            - generic [ref=e297]:
+              - generic [ref=e298]: Przewiń do przodu (5 s)
+              - generic [ref=e299]:
+                - textbox "Przewiń do przodu (5 s)" [ref=e300] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: ArrowRight
+                - 'button "Przywróć domyślne: Przewiń do przodu (5 s)" [ref=e301] [cursor=pointer]'
+            - generic [ref=e304]:
+              - generic [ref=e305]: Głośniej (5%)
+              - generic [ref=e306]:
+                - textbox "Głośniej (5%)" [ref=e307] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: ArrowUp
+                - 'button "Przywróć domyślne: Głośniej (5%)" [ref=e308] [cursor=pointer]'
+            - generic [ref=e311]:
+              - generic [ref=e312]: Ciszej (5%)
+              - generic [ref=e313]:
+                - textbox "Ciszej (5%)" [ref=e314] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: ArrowDown
+                - 'button "Przywróć domyślne: Ciszej (5%)" [ref=e315] [cursor=pointer]'
+            - generic [ref=e318]:
+              - generic [ref=e319]: Włącz/wyłącz wyciszenie
+              - generic [ref=e320]:
+                - textbox "Włącz/wyłącz wyciszenie" [ref=e321] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: M
+                - 'button "Przywróć domyślne: Włącz/wyłącz wyciszenie" [ref=e322] [cursor=pointer]'
+          - generic [ref=e325]:
+            - heading "Klatki, pełny ekran i PiP" [level=3] [ref=e326]
+            - generic [ref=e327]:
+              - generic [ref=e328]: Cofnij o klatkę (0,04 s)
+              - generic [ref=e329]:
+                - textbox "Cofnij o klatkę (0,04 s)" [ref=e330] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: <
+                - 'button "Przywróć domyślne: Cofnij o klatkę (0,04 s)" [ref=e331] [cursor=pointer]'
+            - generic [ref=e334]:
+              - generic [ref=e335]: Przejdź o klatkę do przodu (0,04 s)
+              - generic [ref=e336]:
+                - textbox "Przejdź o klatkę do przodu (0,04 s)" [ref=e337] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: ">"
+                - 'button "Przywróć domyślne: Przejdź o klatkę do przodu (0,04 s)" [ref=e338] [cursor=pointer]'
+            - generic [ref=e341]:
+              - generic [ref=e342]: Przełącz pełny ekran
+              - generic [ref=e343]:
+                - textbox "Przełącz pełny ekran" [ref=e344] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: F
+                - 'button "Przywróć domyślne: Przełącz pełny ekran" [ref=e345] [cursor=pointer]'
+            - generic [ref=e348]:
+              - generic [ref=e349]: Przełącz obraz w obrazie
+              - generic [ref=e350]:
+                - textbox "Przełącz obraz w obrazie" [ref=e351] [cursor=pointer]:
+                  - /placeholder: Naciśnij klawisze...
+                  - text: P
+                - 'button "Przywróć domyślne: Przełącz obraz w obrazie" [ref=e352] [cursor=pointer]'
+        - button "Przywróć domyślne" [ref=e356] [cursor=pointer]
+  - contentinfo [ref=e357]:
+    - generic [ref=e358]:
+      - paragraph [ref=e359]:
+        - text: © 2026
+        - link "Tomasz Janusz" [ref=e360] [cursor=pointer]:
+          - /url: https://tomaszjanusz.dev
+        - text: . Wszelkie prawa zastrzeżone.
+      - paragraph [ref=e361]: Stworzono z ❤ w 🇵🇱

@@ -1,0 +1,150 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - link "Skip to content" [ref=e8] [cursor=pointer]:
+      - /url: "#main"
+    - generic [ref=e14]:
+      - link "Skip to content" [ref=e16] [cursor=pointer]:
+        - /url: "#main"
+      - main [ref=e20]:
+        - generic [ref=e21]:
+          - generic [aria-hidden]:
+            - generic:
+              - generic:
+                - progressbar
+                - progressbar
+              - progressbar
+              - progressbar
+              - progressbar
+              - progressbar
+              - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+            - generic:
+              - generic:
+                - progressbar
+                - generic:
+                  - progressbar
+                  - progressbar
+              - generic:
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+                - progressbar
+          - generic [ref=e22]:
+            - img "P" [ref=e24]
+            - generic [ref=e26]: You’re almost there!Sign in to see this page in Projekty
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic [ref=e29]:
+                  - generic [ref=e31]:
+                    - generic [ref=e32]: Email
+                    - textbox "Email" [active] [ref=e34]:
+                      - /placeholder: Enter your email address...
+                    - generic [ref=e35]: Use an organization email to easily collaborate with teammates
+                    - generic:
+                      - textbox [aria-hidden]
+                    - button "Continue" [ref=e36] [cursor=pointer]
+                  - generic [ref=e38]: or continue with
+                - generic [ref=e39]:
+                  - button "Google" [ref=e40] [cursor=pointer]
+                  - button "ChatGPT" [ref=e53] [cursor=pointer]
+                  - button "Apple" [ref=e58] [cursor=pointer]
+                  - button "Microsoft" [ref=e62] [cursor=pointer]
+                  - button "Passkey" [ref=e70] [cursor=pointer]
+                  - button "SSO" [ref=e74] [cursor=pointer]
+              - generic [ref=e80]:
+                - text: New user?
+                - link "Sign up" [ref=e81] [cursor=pointer]:
+                  - /url: /signup
+          - paragraph [ref=e83]:
+            - text: By continuing, you acknowledge that you understand and agree to the
+            - link "Terms & Conditions" [ref=e84] [cursor=pointer]:
+              - /url: https://www.notion.so/notion/Terms-and-Privacy-28ffdd083dc3473e9c2da6ec011b58ac
+            - text: and
+            - link "Privacy Policy" [ref=e85] [cursor=pointer]:
+              - /url: https://www.notion.com/trust/privacy-policy
+          - generic [ref=e86]:
+            - link "What is Notion?" [ref=e88] [cursor=pointer]:
+              - /url: https://www.notion.com/product
+            - generic [ref=e91]: ·
+            - 'button "Language: English (US)" [ref=e93] [cursor=pointer]'
+            - generic [ref=e98]: ·
+            - button "Message support" [ref=e100] [cursor=pointer]
+  - generic [ref=e102]:
+    - generic [ref=e103]:
+      - text: Notion uses cookies. See
+      - link "Cookie Notice" [ref=e104] [cursor=pointer]:
+        - /url: https://www.notion.com/trust/cookie-notice
+      - text: for details.
+    - generic [ref=e106]:
+      - button "Accept all" [ref=e107] [cursor=pointer]
+      - button "Reject all" [ref=e109] [cursor=pointer]
+      - button [ref=e112] [cursor=pointer]
+  - status [ref=e115]
+  - alert [ref=e116]

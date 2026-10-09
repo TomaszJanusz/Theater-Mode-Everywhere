@@ -1,0 +1,197 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e8]:
+      - img "Cookies" [ref=e10]
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Cookies and Advertising Choices
+        - paragraph [ref=e14]:
+          - text: Twitch uses personal data collected on our services, such as page visits, through
+          - link "cookies" [ref=e16] [cursor=pointer]:
+            - /url: https://www.twitch.tv/p/legal/cookie-policy/
+          - text: and other device identifiers to generate personalized content, remember preferences, analyze usage to improve products, and measure the effectiveness of campaigns to acquire new users. If you agree, we will also permit other Amazon services and up to 109 trusted third party partners to obtain data from our services or store and access cookies on your device to deliver personalized ads, measure effectiveness, and create audience insights. We will also personalize the ads we show you on Twitch using cookies and personal information we may receive from third parties. The ads you see on other sites may also be personalized based on your use of Twitch. See our
+          - link "Cookie Notice" [ref=e18] [cursor=pointer]:
+            - /url: https://www.twitch.tv/p/legal/cookie-policy/
+          - text: and
+          - link "Privacy Notice" [ref=e20] [cursor=pointer]:
+            - /url: https://www.twitch.tv/p/legal/privacy-notice/
+          - text: to learn more. By clicking "Accept", you consent to these activities. Click “Reject” to decline, or “Customize” to make more detailed choices or to learn more. You can change your choices at any time.
+      - generic [ref=e21]:
+        - button "Accept" [ref=e24]
+        - button "Customize" [ref=e30]
+        - button "Reject" [ref=e36]
+    - navigation [ref=e40]:
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - button "Skip to... ⌥ P" [ref=e44]:
+            - generic [ref=e46]:
+              - text: Skip to...
+              - generic [ref=e47]:
+                - generic [ref=e48]: ⌥
+                - generic [ref=e50]: P
+          - link "Twitch Home" [ref=e57] [cursor=pointer]:
+            - /url: /
+            - figure [ref=e59]
+          - link "Browse" [ref=e70] [cursor=pointer]:
+            - /url: /directory
+            - paragraph [ref=e73]: Browse
+          - button "More Options" [ref=e78]
+        - search [ref=e83]:
+          - generic [ref=e86]:
+            - searchbox "Search Input" [ref=e90]
+            - button "Search Button" [disabled] [ref=e92]
+        - generic [ref=e98]:
+          - button "Prime offers" [ref=e105]
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - button "Log In" [ref=e110]
+              - button "Sign Up" [ref=e114]
+            - button "User Menu" [ref=e120]:
+              - button "User Menu" [ref=e121]
+    - generic [ref=e122]:
+      - complementary [ref=e124]:
+        - generic [ref=e127]:
+          - button "Collapse Side Nav" [ref=e130]
+          - navigation "Left Navigation" [ref=e132]:
+            - group "Live Channels" [ref=e136]:
+              - heading "Live Channels" [level=3] [ref=e138]
+              - generic [ref=e139]:
+                - link "RadioSurprise Music Live 197 viewers" [ref=e143] [cursor=pointer]:
+                  - /url: /radiosurprise
+                  - generic [ref=e147]:
+                    - generic [ref=e148]:
+                      - paragraph [ref=e150]: RadioSurprise
+                      - paragraph [ref=e152]: Music
+                    - generic [ref=e154]:
+                      - paragraph [ref=e156]: Live
+                      - generic [ref=e157]:
+                        - text: "197"
+                        - paragraph [ref=e158]: 197 viewers
+                - link "Nexe_ Just Chatting Live 1.9K viewers" [ref=e162] [cursor=pointer]:
+                  - /url: /nexe_
+                  - generic [ref=e166]:
+                    - generic [ref=e167]:
+                      - paragraph [ref=e169]: Nexe_
+                      - paragraph [ref=e171]: Just Chatting
+                    - generic [ref=e173]:
+                      - paragraph [ref=e175]: Live
+                      - generic [ref=e176]:
+                        - text: 1.9K
+                        - paragraph [ref=e177]: 1.9K viewers
+                - link "Emiru Just Chatting Live 12.2K viewers" [ref=e181] [cursor=pointer]:
+                  - /url: /emiru
+                  - generic [ref=e185]:
+                    - generic [ref=e186]:
+                      - paragraph [ref=e188]: Emiru
+                      - paragraph [ref=e190]: Just Chatting
+                    - generic [ref=e192]:
+                      - paragraph [ref=e194]: Live
+                      - generic [ref=e195]:
+                        - text: 12.2K
+                        - paragraph [ref=e196]: 12.2K viewers
+                - link "ironmouse Watch Your Plastic Duck Live 6.2K viewers" [ref=e200] [cursor=pointer]:
+                  - /url: /ironmouse
+                  - generic [ref=e204]:
+                    - generic [ref=e205]:
+                      - paragraph [ref=e207]: ironmouse
+                      - paragraph [ref=e209]: Watch Your Plastic Duck
+                    - generic [ref=e211]:
+                      - paragraph [ref=e213]: Live
+                      - generic [ref=e214]:
+                        - text: 6.2K
+                        - paragraph [ref=e215]: 6.2K viewers
+                - link "xQc Grand Theft Auto V Live 31.3K viewers" [ref=e219] [cursor=pointer]:
+                  - /url: /xqc
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - paragraph [ref=e226]: xQc
+                      - paragraph [ref=e228]: Grand Theft Auto V
+                    - generic [ref=e230]:
+                      - paragraph [ref=e232]: Live
+                      - generic [ref=e233]:
+                        - text: 31.3K
+                        - paragraph [ref=e234]: 31.3K viewers
+                - link "vanillamace Grand Theft Auto V Live 14.7K viewers" [ref=e238] [cursor=pointer]:
+                  - /url: /vanillamace
+                  - generic [ref=e242]:
+                    - generic [ref=e243]:
+                      - paragraph [ref=e245]: vanillamace
+                      - paragraph [ref=e247]: Grand Theft Auto V
+                    - generic [ref=e249]:
+                      - paragraph [ref=e251]: Live
+                      - generic [ref=e252]:
+                        - text: 14.7K
+                        - paragraph [ref=e253]: 14.7K viewers
+                - link "Kasix Waterpark Simulator Live 698 viewers" [ref=e257] [cursor=pointer]:
+                  - /url: /kasix
+                  - generic [ref=e261]:
+                    - generic [ref=e262]:
+                      - paragraph [ref=e264]: Kasix
+                      - paragraph [ref=e266]: Waterpark Simulator
+                    - generic [ref=e268]:
+                      - paragraph [ref=e270]: Live
+                      - generic [ref=e271]:
+                        - text: "698"
+                        - paragraph [ref=e272]: 698 viewers
+                - link "zackrawrr World of Warcraft Live 42K viewers" [ref=e276] [cursor=pointer]:
+                  - /url: /zackrawrr
+                  - generic [ref=e280]:
+                    - generic [ref=e281]:
+                      - paragraph [ref=e283]: zackrawrr
+                      - paragraph [ref=e285]: World of Warcraft
+                    - generic [ref=e287]:
+                      - paragraph [ref=e289]: Live
+                      - generic [ref=e290]:
+                        - text: 42K
+                        - paragraph [ref=e291]: 42K viewers
+                - link "Dakillzor World of Tanks Live 1.9K viewers" [ref=e295] [cursor=pointer]:
+                  - /url: /dakillzor
+                  - generic [ref=e299]:
+                    - generic [ref=e300]:
+                      - paragraph [ref=e302]: Dakillzor
+                      - paragraph [ref=e304]: World of Tanks
+                    - generic [ref=e306]:
+                      - paragraph [ref=e308]: Live
+                      - generic [ref=e309]:
+                        - text: 1.9K
+                        - paragraph [ref=e310]: 1.9K viewers
+                - link "PrinceZam Minecraft Live 698 viewers" [ref=e314] [cursor=pointer]:
+                  - /url: /princezam
+                  - generic [ref=e318]:
+                    - generic [ref=e319]:
+                      - paragraph [ref=e321]: PrinceZam
+                      - paragraph [ref=e323]: Minecraft
+                    - generic [ref=e325]:
+                      - paragraph [ref=e327]: Live
+                      - generic [ref=e328]:
+                        - text: "698"
+                        - paragraph [ref=e329]: 698 viewers
+      - main [ref=e330]:
+        - generic [ref=e332]:
+          - region "Stream Information" [ref=e346]
+          - generic [ref=e354]:
+            - generic "Twitch video player" [ref=e355]
+            - region "Player Controls" [ref=e360]:
+              - generic [ref=e363]:
+                - paragraph [ref=e364]: Just one second...
+                - paragraph [ref=e366]: Jaice's content is intended for certain audiences
+                - paragraph [ref=e368]: "It may contain: Mature-rated game"
+                - generic [ref=e369]:
+                  - paragraph [ref=e370]: This content may not be appropriate for you to watch.
+                  - paragraph [ref=e372]:
+                    - text: Manage the types of content that you see in your content preference
+                    - link "settings" [ref=e373] [cursor=pointer]:
+                      - /url: https://help.twitch.tv/s/article/how-to-customize-content#ContentDisplayPreferences
+                    - text: .
+                - generic [ref=e374]:
+                  - button "Start Watching" [ref=e376]
+                  - link "Go Home" [ref=e379] [cursor=pointer]:
+                    - /url: /
+      - generic:
+        - complementary "Right Column":
+          - button "Collapse Chat" [ref=e384]
+          - generic:
+            - complementary "Stream Chat":
+              - generic [ref=e385]: Chat on Videos
+    - contentinfo
+  - status [ref=e398]
+  - alert [ref=e399]
