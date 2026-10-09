@@ -8,7 +8,7 @@ import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 import { readVimeoShowcaseControls } from './vimeo-showcase';
-import { readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './youtube';
+import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './youtube';
 
 export const HOST_PLAYER_SCOPE = [
   YOUTUBE_PLAYER_SELECTOR,
@@ -24,14 +24,16 @@ export function findProviderPlaylistActions(
   video: HTMLVideoElement | null | undefined,
   helpers: PlaylistNavigationHelpers
 ): PlaylistAction[] {
-  const host = hostActions(root, video, helpers);
+  const queue = findYouTubeQueueNavigation(root, video, helpers);
+  const host = queue.actions.concat(hostActions(root, video, helpers).filter(action => !queue.claimed.has(action.direction)));
   const href = () => pageHref(root);
   const dedicated = [
     ...findNetflixPlaylistActions(root, video, href),
     ...findDisneyPlaylistActions(root, href)
   ];
   const claimed = new Set(host.map((action) => action.direction));
-  return host.concat(dedicated.filter((action) => !claimed.has(action.direction)));
+  return host.concat(dedicated.filter((action) => !claimed.has(action.direction)))
+    .sort((a, b) => a.direction === b.direction ? 0 : a.direction === 'previous' ? -1 : 1);
 }
 
 function hostActions(
