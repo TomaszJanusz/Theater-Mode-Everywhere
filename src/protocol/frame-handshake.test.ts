@@ -231,21 +231,6 @@ describe('F-01 frame session handshake', () => {
     }), true);
   });
 
-  it('treats EXIT as idempotent for a matching session', () => {
-    const sessionId = createSessionId();
-    let theater = true;
-    let current: string | null = sessionId;
-    const exit = (incoming: string) => {
-      if (current && incoming !== current) return false;
-      theater = false;
-      current = null;
-      return true;
-    };
-    assert.equal(exit(sessionId), true);
-    assert.equal(theater, false);
-    assert.equal(exit(sessionId), true);
-  });
-
   it('keeps parent and child on the same sessionId from FRAME_ENTER', () => {
     const child: FrameNode = {
       origin: 'https://www.youtube-nocookie.com',

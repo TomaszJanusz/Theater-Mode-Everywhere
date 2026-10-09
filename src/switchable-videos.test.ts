@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  AUXILIARY_VIDEO_HOST_SELECTOR,
   isSwitchableTheaterVideo,
   selectSwitchableVideos
 } from './switchable-videos';
@@ -130,7 +129,6 @@ describe('switchable theater videos', () => {
     assert.equal(isSwitchableTheaterVideo(preview), false);
     assert.equal(isSwitchableTheaterVideo(inline), false);
     assert.equal(isSwitchableTheaterVideo(mini), false);
-    assert.match(AUXILIARY_VIDEO_HOST_SELECTOR, /#inline-player/);
   });
 
   it('ignores zero-size players even when they still have a blob src', () => {

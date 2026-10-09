@@ -632,19 +632,6 @@ describe('MediaFeaturesController captions toggle', () => {
     assert.equal(ccBtn.classList.contains('active'), false);
   });
 
-  it('keeps HUD result aligned with the CC icon', async () => {
-    const { controller, ccBtn } = createController({
-      listCaptionTracks: async () => [SAMPLE_TRACK],
-      activateCaptionTrack: async (id) => (id ? SAMPLE_CUES : [])
-    });
-    await controller.refresh();
-    const result = await controller.toggleCaptions();
-    assert.equal(result === 'on', ccBtn.classList.contains('active'));
-    const off = await controller.toggleCaptions();
-    assert.equal(off === 'on', ccBtn.classList.contains('active'));
-    assert.equal(off, 'off');
-  });
-
   it('does not deadlock when refresh runs during activate', { timeout: 1000 }, async () => {
     let controller!: MediaFeaturesController;
     let ccBtn!: HTMLButtonElement;

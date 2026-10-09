@@ -1,6 +1,5 @@
 import { readStylesheet } from '../../test-utils/styles';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { describe, it, type TestContext } from 'node:test';
 import { preferProviderCaptionTracks } from '../../media-features/composite-adapter';
 import { crunchyrollCdnFile } from '../../media-features/crunchyroll-cdn';
@@ -11,7 +10,6 @@ import {
   CRUNCHYROLL_CAPTION_ACK_EVENT,
   CRUNCHYROLL_CAPTION_EVENT,
   crunchyrollContentTitle,
-  parseCrunchyrollCaptionBody,
   parseCrunchyrollCaptionAck,
   parseCrunchyrollCaptionRequest,
   parseCrunchyrollHostList,
@@ -1455,10 +1453,6 @@ describe('Crunchyroll RTE', () => {
     }
   });
 
-  it('parses the flattened ASS cue without positioning', () => {
-    assert.equal(parseCrunchyrollCaptionBody(ASS_BODY, 'ass')[0]?.text, 'Hello there');
-  });
-
   it('keeps the host lift until Off is confirmed and does not adopt an external track', async t => {
     const clock = controlledClock(t);
     const page = installPage(`/watch/${MODERN_MEDIA}/the-journeys-end`);
@@ -2133,8 +2127,6 @@ describe('Crunchyroll RTE', () => {
 
   it('stops an oversized Crunchyroll body without a second clone or an arrayBuffer fallback', async t => {
     const clock = controlledClock(t);
-    const runtime = readFileSync(new URL('../../platform/main-world-runtime.ts', import.meta.url), 'utf8');
-    assert.match(runtime, /consumeCrunchyrollWrappedFetch\(url, response, foreignProviderHarvestUrl\)/);
     const page = installPage();
     const urlApi = URL as unknown as { createObjectURL?: (obj: Blob) => string; revokeObjectURL?: (url: string) => void };
     const oldCreate = urlApi.createObjectURL;

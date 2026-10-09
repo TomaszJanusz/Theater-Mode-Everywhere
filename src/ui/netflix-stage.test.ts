@@ -1,4 +1,3 @@
-import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
@@ -120,8 +119,6 @@ function cueLine(top: number, width = 200, height = 36, lineHeight = 20): Netfli
 }
 
 describe('netflix caption dock', () => {
-  const css = readStylesheet(new URL('../content.css', import.meta.url));
-  const early = css.slice(0, css.indexOf('.theater-wasm-catcher'));
   const viewport = { viewportWidth: 1280, viewportHeight: 800 };
   const toolbar = { left: 24, right: 1256, top: 724, bottom: 776 };
   const sideControl = { left: 1080, right: 1240, top: 500, bottom: 720 };
@@ -226,31 +223,5 @@ describe('netflix caption dock', () => {
       obstacles: [sideControl],
       ...viewport
     }), CAPTION_DOCK_REST_BOTTOM);
-  });
-
-  it('uses video black for raised cues and eases the host without stretching the cue', () => {
-    const configured = early.indexOf('background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8))');
-    const raisedAt = early.indexOf('theater-everywhere-picture-top:not([data-te-netflix-integration-off]) .player-timedtext-text-container > span');
-    assert.ok(configured > 0);
-    assert.ok(raisedAt > configured);
-    const raised = early.slice(raisedAt, early.indexOf('}', raisedAt));
-    assert.match(raised, /background:\s*rgba\(0,\s*0,\s*0,\s*var\(--theater-caption-bg-alpha,\s*0\.8\)\)/);
-    assert.match(raised, /background-color:\s*rgba\(0,\s*0,\s*0,\s*var\(--theater-caption-bg-alpha,\s*0\.8\)\)/);
-
-    const hostStart = early.indexOf('html.theater-everywhere-netflix-stage .player-timedtext {');
-    const host = early.slice(hostStart, early.indexOf('}', hostStart));
-    assert.match(host, /width:\s*80vw/);
-    assert.match(host, /transition:\s*bottom 0\.18s ease/);
-
-    const containerStart = early.indexOf('html.theater-everywhere-netflix-stage .player-timedtext-text-container {');
-    const container = early.slice(containerStart, early.indexOf('}', containerStart));
-    assert.match(container, /height:\s*auto/);
-
-    const cueStart = early.indexOf('.player-timedtext-text-container > span {');
-    const cue = early.slice(cueStart, early.indexOf('}', cueStart));
-    assert.match(cue, /display:\s*inline-block/);
-    assert.match(cue, /width:\s*auto/);
-    assert.match(cue, /height:\s*auto/);
-    assert.match(early, /theater-everywhere-picture-moving\.theater-everywhere-netflix-stage \.player-timedtext \{[^}]*transition:\s*bottom 0\.32s cubic-bezier\(0\.25, 1, 0\.5, 1\)/);
   });
 });

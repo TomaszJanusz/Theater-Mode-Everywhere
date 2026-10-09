@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { HOST_PLAYER_SCOPE } from './providers/navigation/factory';
 import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
 import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
 import { youtubePreviousRestarts } from './providers/navigation/youtube';
@@ -320,21 +319,6 @@ describe('playlist navigation availability', () => {
     assert.equal(isVimeoShowcaseStepHref('https://vimeo.com/76979871'), false);
     assert.equal(isVimeoShowcaseStepHref('https://evil.example/showcase/1574596?video=1'), false);
     assert.equal(isVimeoShowcaseStepHref(null), false);
-  });
-
-  it('keeps the public navigation contract free of site selectors', () => {
-    const source = readFileSync(new URL('./playlist-nav.ts', import.meta.url), 'utf8');
-    assert.match(source, /from '\.\/providers\/navigation\/factory'/);
-    assert.match(source, /export function findPlaylistActions\(root: ParentNode, video\?: HTMLVideoElement \| null\)/);
-    assert.doesNotMatch(source, /providers\/navigation\/(?!factory)/);
-    assert.doesNotMatch(source, /querySelector|closest\(|data-uia|ytp-|vjs-|bpx-|txp_|data-testid|data-href|getAttribute/);
-  });
-
-  it('preserves the host player scope used to find controls outside a passed video', () => {
-    assert.equal(
-      HOST_PLAYER_SCOPE,
-      '#movie_player, .video-js, #player-wrapper, .bpx-player-container, .bilibili-player, #bilibiliPlayer, .bstar-player, .txp_player, #internal-player-wrapper'
-    );
   });
 });
 

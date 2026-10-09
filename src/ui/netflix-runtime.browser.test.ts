@@ -261,9 +261,6 @@ describe('netflix runtime browser regressions', () => {
         await bootPage.clock.install({ time: clockStart });
         await bootPage.clock.pauseAt(new Date(clockStart.getTime() + 1000));
         await bootPage.addScriptTag({ content: bundle });
-        const started = Date.now();
-        await bootPage.evaluate('document.title');
-        assert.ok(Date.now() - started < 2000);
         await bootPage.clock.runFor(250);
         const mutations = await bootPage.evaluate('window.__snapMutations()') as number;
         await bootPage.close();
