@@ -1,6 +1,7 @@
 /**
- * A one-second tick stays sharp for most of that second.
- * The glyph never fades out: on 12px type a heavy blur reads as a blank.
+ * A changed digit rolls through its slot and is sharp for most of the second.
+ * Glyphs keep the clock color at full opacity; a mask on the slot window does
+ * the fading, so the ink never dims or flashes brighter.
  */
 export const TIME_DIGIT_TRANSITION_MS = 320;
 
@@ -68,36 +69,43 @@ function makeGlyph(doc: Document, ch: string): HTMLSpanElement {
 
 const settleTimers = new WeakMap<HTMLElement, number>();
 
-function setSlotChar(slot: HTMLElement, next: string, animate: boolean): void {
+/** Separators never change, so they stay a plain glyph that sizes their slot. */
+function slotWindow(slot: HTMLElement): HTMLElement | null {
+  return slot.querySelector<HTMLElement>(':scope > .theater-time-roll');
+}
+
+function setSlotChar(slot: HTMLElement, next: string, animate: boolean, countsDown: boolean): void {
   if (slot.dataset.ch === next && slot.childElementCount > 0) return;
   const doc = slot.ownerDocument;
   const view = doc.defaultView;
   const reduce = view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const previous = slot.dataset.ch;
-  let glyph = slot.querySelector<HTMLElement>('.theater-time-glyph');
-  if (!animate || reduce || previous === undefined || !glyph) {
-    slot.replaceChildren(makeGlyph(doc, next));
-    slot.dataset.ch = next;
+  slot.dataset.ch = next;
+  const pending = settleTimers.get(slot);
+  if (pending !== undefined) view?.clearTimeout(pending);
+  const roll = slotWindow(slot);
+  const current = roll?.querySelector<HTMLElement>(':scope > .theater-time-glyph:not(.is-leaving)');
+  if (!animate || reduce || previous === undefined || !roll || !current) {
+    (roll ?? slot).replaceChildren(makeGlyph(doc, next));
+    slot.classList.remove('is-rolling');
     return;
   }
 
-  for (const extra of [...slot.querySelectorAll('.theater-time-glyph')]) {
-    if (extra !== glyph) extra.remove();
-  }
-  glyph.textContent = next === ' ' ? '' : next;
-  glyph.classList.remove('is-entering');
-  void glyph.offsetWidth;
-  glyph.classList.add('is-entering');
-  slot.dataset.ch = next;
-  const pending = settleTimers.get(glyph);
-  if (pending !== undefined) view?.clearTimeout(pending);
-  const settle = () => glyph.classList.remove('is-entering');
-  glyph.onanimationend = (event) => {
-    if (event.target !== glyph || event.elapsedTime <= 0) return;
-    settle();
+  for (const stale of roll.querySelectorAll(':scope > .is-leaving')) stale.remove();
+  current.classList.remove('is-entering');
+  current.classList.add('is-leaving');
+  const entering = makeGlyph(doc, next);
+  entering.classList.add('is-entering');
+  roll.append(entering);
+  slot.classList.toggle('is-counting-down', countsDown);
+  slot.classList.add('is-rolling');
+  const settle = () => {
+    current.remove();
+    entering.classList.remove('is-entering');
+    slot.classList.remove('is-rolling');
   };
   const timer = view?.setTimeout(settle, TIME_DIGIT_TRANSITION_MS + 80);
-  if (timer !== undefined) settleTimers.set(glyph, timer);
+  if (timer !== undefined) settleTimers.set(slot, timer);
 }
 
 export function renderTimeReadout(host: HTMLElement, value: string, animate: boolean): void {
@@ -111,15 +119,22 @@ export function renderTimeReadout(host: HTMLElement, value: string, animate: boo
       const slot = doc.createElement('span');
       const kind = slotKind(ch);
       slot.className = `theater-time-slot${kind === 'digit' ? '' : ` is-${kind}`}`;
+      if (kind !== 'sep') {
+        const roll = doc.createElement('span');
+        roll.className = 'theater-time-roll';
+        slot.appendChild(roll);
+      }
       host.appendChild(slot);
-      setSlotChar(slot, ch, false);
+      setSlotChar(slot, ch, false, false);
     }
     return;
   }
-  const slots = host.querySelectorAll<HTMLElement>('.theater-time-slot');
+  const slots = [...host.querySelectorAll<HTMLElement>('.theater-time-slot')];
+  // Same mask, so the strings compare like the times they show.
+  const countsDown = value < slots.map((slot) => slot.dataset.ch ?? '').join('');
   for (let i = 0; i < value.length; i += 1) {
     const slot = slots[i];
-    if (slot) setSlotChar(slot, value[i], animate);
+    if (slot) setSlotChar(slot, value[i], animate, countsDown);
   }
 }
 

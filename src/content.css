@@ -814,29 +814,76 @@ button.theater-time-end:hover {
   inset: auto !important;
 }
 
-.theater-time-glyph.is-entering {
-  animation: theater-time-blur-in 320ms linear both !important;
+/* A window wider and taller than the slot, so the rolling glyph's blur is not
+   cut at the 1ch cell. Glyphs inside keep exactly the slot's box. */
+.theater-time-roll {
+  position: absolute !important;
+  inset: -0.5em -0.5ch !important;
+  pointer-events: none !important;
 }
 
-/* filter: blur() is clipped away inside the transformed bar, so the glyph
-   vanishes. A text-shadow of the same radius stays a readable soft digit. */
-@keyframes theater-time-blur-in {
-  0%, 55% {
-    color: transparent;
-    text-shadow: 0 0 1.5px var(--theater-time-ink, var(--text-secondary, #a1a1aa));
-  }
-  100% {
-    text-shadow: 0 0 0 transparent;
-  }
+.theater-time-roll > .theater-time-glyph {
+  inset: 0.5em 0.5ch !important;
+}
+
+/* The mask fades the glyphs at the window edges; their ink stays the clock
+   color. The opaque band covers a resting digit, and a glyph one travel away
+   sits wholly in the clear band. */
+.theater-time-slot.is-rolling > .theater-time-roll {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 15%, #000 30%, #000 70%, transparent 85%) !important;
+  mask-image: linear-gradient(to bottom, transparent 15%, #000 30%, #000 70%, transparent 85%) !important;
+}
+
+.theater-time-slot {
+  --theater-time-roll-from: 1.3em;
+}
+
+.theater-time-slot.is-counting-down {
+  --theater-time-roll-from: -1.3em;
+}
+
+/* Motion lands early; the blur clears on its own slower curve so the new
+   digit reads soft through the middle of the tick and sharp by its end. */
+.theater-time-glyph.is-entering {
+  animation:
+    theater-time-roll-in 320ms cubic-bezier(0.25, 1, 0.5, 1) both,
+    theater-time-sharpen 320ms cubic-bezier(0.45, 0, 0.55, 1) both !important;
+}
+
+.theater-time-glyph.is-leaving {
+  animation:
+    theater-time-roll-out 320ms cubic-bezier(0.25, 1, 0.5, 1) both,
+    theater-time-soften 320ms cubic-bezier(0.25, 1, 0.5, 1) both !important;
+}
+
+@keyframes theater-time-roll-in {
+  from { transform: translateY(var(--theater-time-roll-from)); }
+  to { transform: none; }
+}
+
+@keyframes theater-time-roll-out {
+  from { transform: none; }
+  to { transform: translateY(calc(-1 * var(--theater-time-roll-from))); }
+}
+
+@keyframes theater-time-sharpen {
+  from { filter: blur(1.2px); }
+  to { filter: blur(0); }
+}
+
+@keyframes theater-time-soften {
+  from { filter: blur(0); }
+  to { filter: blur(1.2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theater-time-glyph.is-entering {
+  .theater-time-glyph.is-entering,
+  .theater-time-glyph.is-leaving {
     animation: none !important;
-    color: currentColor !important;
-    text-shadow: none !important;
-    filter: none !important;
-    opacity: 1 !important;
+  }
+
+  .theater-time-glyph.is-leaving {
+    display: none !important;
   }
 }
 

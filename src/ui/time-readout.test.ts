@@ -45,11 +45,11 @@ describe('clock labels', () => {
     assert.ok(TIME_DIGIT_TRANSITION_MS <= 400);
     assert.ok(TIME_DIGIT_TRANSITION_MS >= 280);
     const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../content.css'), 'utf8');
-    assert.match(css, new RegExp(`theater-time-blur-in ${TIME_DIGIT_TRANSITION_MS}ms`));
-    const keyframes = css.match(/@keyframes theater-time-blur-in \{[\s\S]*?\n\}/)?.[0] ?? '';
-    assert.match(keyframes, /text-shadow: 0 0 1\.5px var\(--theater-time-ink, var\(--text-secondary, #a1a1aa\)\)/);
-    assert.doesNotMatch(keyframes, /#f4f4f5/);
-    assert.doesNotMatch(keyframes, /filter/);
-    assert.doesNotMatch(css, /theater-time-blur-out/);
+    for (const name of ['roll-in', 'sharpen', 'roll-out', 'soften']) {
+      assert.match(css, new RegExp(`theater-time-${name} ${TIME_DIGIT_TRANSITION_MS}ms`));
+      const keyframes = css.match(new RegExp(`@keyframes theater-time-${name} \\{[\\s\\S]*?\\n\\}`))?.[0] ?? '';
+      assert.ok(keyframes, name);
+      assert.doesNotMatch(keyframes, /color|opacity|text-shadow/, `${name} keeps the ink as it is`);
+    }
   });
 });
