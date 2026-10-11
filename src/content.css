@@ -725,6 +725,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   font-variant-ligatures: none !important;
   font-kerning: none !important;
   color: var(--text-secondary, #a1a1aa) !important;
+  --theater-time-ink: var(--text-secondary, #a1a1aa);
   user-select: none !important;
   white-space: nowrap !important;
   flex: 0 0 auto !important;
@@ -757,6 +758,7 @@ button.theater-time-end {
 
 button.theater-time-end:hover {
   color: var(--text-primary, #f8fafc) !important;
+  --theater-time-ink: var(--text-primary, #f8fafc);
 }
 
 .theater-time-readout,
@@ -821,7 +823,7 @@ button.theater-time-end:hover {
 @keyframes theater-time-blur-in {
   0%, 55% {
     color: transparent;
-    text-shadow: 0 0 1.5px #f4f4f5;
+    text-shadow: 0 0 1.5px var(--theater-time-ink, var(--text-secondary, #a1a1aa));
   }
   100% {
     text-shadow: 0 0 0 transparent;

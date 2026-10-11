@@ -142,6 +142,7 @@ describe('split time readout', () => {
       assert.equal(sample.filter, 'none', JSON.stringify(sample));
       assert.ok(shadowBlur >= 1.4, JSON.stringify(sample));
       assert.equal(sample.color, 'rgba(0, 0, 0, 0)', JSON.stringify(sample));
+      assert.match(sample.textShadow || '', /rgb\(161,\s*161,\s*170\)/, JSON.stringify(sample));
     } finally {
       await browser.close();
     }

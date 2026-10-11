@@ -47,7 +47,8 @@ describe('clock labels', () => {
     const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../content.css'), 'utf8');
     assert.match(css, new RegExp(`theater-time-blur-in ${TIME_DIGIT_TRANSITION_MS}ms`));
     const keyframes = css.match(/@keyframes theater-time-blur-in \{[\s\S]*?\n\}/)?.[0] ?? '';
-    assert.match(keyframes, /text-shadow: 0 0 1\.5px #f4f4f5/);
+    assert.match(keyframes, /text-shadow: 0 0 1\.5px var\(--theater-time-ink, var\(--text-secondary, #a1a1aa\)\)/);
+    assert.doesNotMatch(keyframes, /#f4f4f5/);
     assert.doesNotMatch(keyframes, /filter/);
     assert.doesNotMatch(css, /theater-time-blur-out/);
   });
