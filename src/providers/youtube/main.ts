@@ -1,6 +1,7 @@
 import {
   createTimedtextCacheRecord,
   findCachedTimedtextBody,
+  selectCaptionTrackOption,
   signYoutubeCaptionUrl,
   timedtextHasPot,
   timedtextVideoId,
@@ -263,13 +264,10 @@ function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
 function captionTrackFromPlayer(
   player: YoutubePlayer,
   languageCode: string | null,
-  kind: string | null
+  kind: string | null,
+  translationCode: string | null
 ): Record<string, unknown> | null {
-  const tracks = playerCaptionTracks(player);
-  const matches = languageCode ? tracks.filter((track) => track.languageCode === languageCode) : tracks;
-  const preferred = kind ? matches.find((track) => track.kind === kind) : matches.find((track) => !track.kind);
-  if (preferred || matches[0]) return preferred || matches[0];
-  return languageCode ? { languageCode, ...(kind ? { kind } : {}) } : null;
+  return selectCaptionTrackOption(playerCaptionTracks(player), languageCode, kind, translationCode);
 }
 
 function waitMs(ms: number): Promise<void> {
@@ -312,6 +310,7 @@ function captionRequestIsCurrent(player: YoutubePlayer | null, generation: numbe
 async function ensureYoutubeCaptions(
   languageCode: string | null,
   kind: string | null,
+  translationCode: string | null,
   forceReset = false
 ): Promise<boolean> {
   const generation = ++captionOperation;
@@ -333,7 +332,7 @@ async function ensureYoutubeCaptions(
   await waitForCaptionTracklist(player, current);
   if (!current()) return false;
   try {
-    const track = captionTrackFromPlayer(player, languageCode, kind);
+    const track = captionTrackFromPlayer(player, languageCode, kind, translationCode);
     if (track && typeof player.setOption === 'function') {
       player.setOption('captions', 'track', track);
       return true;
@@ -457,14 +456,16 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
   captionMintInFlight = (async () => {
     let languageCode: string | null = null;
     let kind: string | null = null;
+    let translationCode: string | null = null;
     try {
       const parsed = new URL(url, window.location.href);
       languageCode = parsed.searchParams.get('lang');
       kind = parsed.searchParams.get('kind');
+      translationCode = parsed.searchParams.get('tlang');
     } catch {
       languageCode = null;
     }
-    if (!await ensureYoutubeCaptions(languageCode, kind, true)) return null;
+    if (!await ensureYoutubeCaptions(languageCode, kind, translationCode, true)) return null;
     return waitForCachedBody(url, 8000);
   })();
 
@@ -715,6 +716,7 @@ export function installYoutubeMain(): void {
         void ensureYoutubeCaptions(
           typeof detail.language === 'string' ? detail.language : null,
           typeof detail.kind === 'string' ? detail.kind : null,
+          typeof detail.translation === 'string' ? detail.translation : null,
           true
         ).then(respond, () => respond(false));
         return;

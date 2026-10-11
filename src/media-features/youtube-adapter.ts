@@ -97,8 +97,36 @@ function mergeYoutubeCaptionAuth(targetUrl: string, sourceUrl: string): string {
   }
 }
 
+function explicitParam(url: string, key: string): string {
+  try {
+    return new URL(url, 'https://www.youtube.com').searchParams.get(key)?.toLowerCase() || '';
+  } catch {
+    return '';
+  }
+}
+
+function sameCaptionRequest(targetUrl: string, sourceUrl: string): boolean {
+  const targetLang = explicitParam(targetUrl, 'lang');
+  const sourceLang = explicitParam(sourceUrl, 'lang');
+  const lang = (code: string) => code.trim().toLowerCase().replace(/_/g, '-').split('-')[0] || '';
+  const compatible = (left: string, right: string) => {
+    const a = lang(left);
+    const b = lang(right);
+    return Boolean(a) && a === b;
+  };
+  if ((targetLang || sourceLang) && !compatible(targetLang, sourceLang)) return false;
+  const targetTranslation = explicitParam(targetUrl, 'tlang');
+  const sourceTranslation = explicitParam(sourceUrl, 'tlang');
+  if ((targetTranslation || sourceTranslation) && !compatible(targetTranslation, sourceTranslation)) return false;
+  const targetKind = explicitParam(targetUrl, 'kind');
+  const sourceKind = explicitParam(sourceUrl, 'kind');
+  if (targetKind && sourceKind && targetKind !== sourceKind) return false;
+  return true;
+}
+
 function signYoutubeCaptionUrl(targetUrl: string, sourceUrls: string[]): string {
   const targetId = timedtextVideoId(targetUrl);
+  const eligible: string[] = [];
   for (const source of sourceUrls) {
     if (!timedtextHasPot(source)) continue;
     const sourceId = timedtextVideoId(source);
@@ -107,9 +135,10 @@ function signYoutubeCaptionUrl(targetUrl: string, sourceUrls: string[]): string 
     } else if (sourceId) {
       continue;
     }
-    return mergeYoutubeCaptionAuth(targetUrl, source);
+    eligible.push(source);
   }
-  return targetUrl;
+  const matched = eligible.find((source) => sameCaptionRequest(targetUrl, source)) || eligible[0];
+  return matched ? mergeYoutubeCaptionAuth(targetUrl, matched) : targetUrl;
 }
 
 function looksLikeHtmlError(body: string): boolean {
