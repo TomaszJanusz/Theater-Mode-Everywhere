@@ -91,7 +91,7 @@ function resolveQueue(): Resolution | null {
   const list = url.searchParams.get('list');
   if (list && list !== queueId) return null;
   const rows = indexRows(panel);
-  const entries = contents.map((value, index) => readEntry(record(value).playlistPanelVideoRenderer, index, rows, queueId));
+  const entries = contents.map((value, index) => readEntry(playlistVideo(value), index, rows, queueId));
   const matching = entries.flatMap((entry, index) => entry?.id === videoId ? [index] : []);
   const selected = matching.filter(index => entries[index]?.selected);
   const localIndex = integer(data.localCurrentIndex);
@@ -110,7 +110,6 @@ function resolveQueue(): Resolution | null {
   // Its selected row can already be the first *upcoming* item, with endpoint index 0.
   const pendingQueue = queueId.startsWith('TL') && current === 0 && currentEntry.placeholder
     && matching.length === 1 && integer(data.currentIndex) === 0;
-  if (!trustedSequence && !pendingQueue) return null;
   const sameOrder = trustedSequence && sequence.length === entries.length
     && entries.every((entry, index) => entry?.id === sequence[index]);
   if (sameOrder && sequenceIndex !== current) return null;
@@ -130,7 +129,7 @@ function resolveQueue(): Resolution | null {
       // There is no prior queue item before this linkless playback placeholder.
       // YouTube can misleadingly preview the upcoming item on Previous here.
       boundary = direction === 'previous';
-    } else {
+    } else if (trustedSequence) {
       const targetId = (sequence as string[])[sequenceIndex! + offset];
       if (typeof targetId === 'string') {
         const candidates = entries.filter((entry): entry is QueueEntry => entry?.id === targetId);
@@ -143,6 +142,11 @@ function resolveQueue(): Resolution | null {
         // A recommendation outside a complete finite queue is a confirmed end.
         boundary = direction === 'next' && complete && Boolean(nativeId) && candidates.length === 0;
       }
+    } else if (!nativeStepUsable(player, direction)) {
+      // The player can hide both steps while this panel still lists the queue.
+      // A visible player step keeps its own target, including shuffle and restart.
+      const neighbor = entries[current + offset];
+      if (neighbor?.anchor) target = neighbor;
     }
     if (target?.anchor) {
       const key = JSON.stringify([queueId, videoId, currentEntry.identity, direction, target.id, target.identity]);
@@ -154,6 +158,13 @@ function resolveQueue(): Resolution | null {
     }
   }
   return { snapshot, targets };
+}
+
+function playlistVideo(value: unknown): unknown {
+  const item = record(value);
+  if (item.playlistPanelVideoRenderer) return item.playlistPanelVideoRenderer;
+  const primary = record(record(item.playlistPanelVideoWrapperRenderer).primaryRenderer);
+  return primary.playlistPanelVideoRenderer ?? null;
 }
 
 function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string): QueueEntry | null {
@@ -169,9 +180,12 @@ function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string)
   if (anchor && data.isPlayable !== false && !data.unplayableText && !row?.hasAttribute('disabled')) {
     const url = new URL(anchor.href, window.location.href);
     const endpointIndex = integer(endpoint.index);
+    const linkIndex = url.searchParams.get('index');
+    // Queue links sometimes omit index. A present index that disagrees is another occurrence.
+    const indexAgrees = endpointIndex == null || linkIndex == null || Number(linkIndex) === endpointIndex + 1;
     if (url.origin === window.location.origin && url.pathname === '/watch'
       && url.searchParams.get('v') === id && url.searchParams.get('list') === queueId
-      && (endpointIndex == null || Number(url.searchParams.get('index')) === endpointIndex + 1)
+      && indexAgrees
       && anchor.getAttribute('aria-disabled') !== 'true') usableAnchor = anchor;
   }
   const titleData = record(data.title);
@@ -184,6 +198,18 @@ function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string)
     placeholder: !endpoint.videoId && !anchor?.getAttribute('href'),
     title: title.length <= 180 ? title : '', imageUrl: imageUrl.length <= 2000 ? imageUrl : ''
   };
+}
+
+function nativeStepUsable(player: HTMLElement, direction: PlaylistDirection): boolean {
+  const button = player.querySelector(direction === 'next' ? '.ytp-next-button' : '.ytp-prev-button');
+  if (!(button instanceof HTMLElement)) return false;
+  if (button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true') return false;
+  if (button.style.display === 'none') return false;
+  try {
+    return getComputedStyle(button).display !== 'none';
+  } catch {
+    return true;
+  }
 }
 
 function nativePreviewId(player: HTMLElement, direction: PlaylistDirection): string {

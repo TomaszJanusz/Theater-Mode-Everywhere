@@ -190,6 +190,35 @@ for (const [name, browserType] of [['Chromium', chromium], ['Firefox', firefox]]
         assert.equal((await read(page)).find(a=>a.direction==='next')?.preview?.title, 'Native next');
       } finally { await browser.close(); }
     });
+
+    it('uses the visible queue when YouTube hides player steps and its playlist index is wrong', async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+      const browser = await browserType.launch({headless:true});
+      try {
+        const page = await browser.newPage();
+        await setup(page);
+        // Index 0 points at "a" while "b" is playing, and both player steps are hidden.
+        await page.evaluate(`window.__state.index=0;
+          document.querySelectorAll('#movie_player button').forEach(b=>b.style.display='none');`);
+        assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Queue c']);
+        await activate(page, 'next');
+        assert.deepEqual(await clicks(page), ['/watch?v=c&list=PLfixture&index=3']);
+        await page.evaluate(`window.__clicks=[];
+          document.querySelectorAll('#movie_player button').forEach(b=>b.style.display='');`);
+        assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Native previous','Native next']);
+        await page.evaluate(`document.querySelectorAll('#movie_player button').forEach(b=>b.remove());`);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['previous','next']);
+        await page.evaluate(`window.__clicks=[]; window.__state.index=1;
+          document.querySelectorAll('ytd-playlist-panel-video-renderer a').forEach(a=>{
+            const url=new URL(a.href); url.searchParams.delete('index'); a.setAttribute('href', url.pathname+url.search);
+          });
+          const panel=document.querySelector('ytd-playlist-panel-renderer');
+          panel.data={...panel.data, contents:panel.data.contents.map(item=>({playlistPanelVideoWrapperRenderer:{primaryRenderer:item}}))};`);
+        assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Queue c']);
+        await activate(page, 'previous');
+        assert.deepEqual(await clicks(page), ['/watch?v=a&list=PLfixture']);
+      } finally { await browser.close(); }
+    });
   });
 }
 
