@@ -1038,7 +1038,8 @@ button.theater-time-end:hover {
 .theater-loading-spinner {
   width: 48px !important;
   height: 48px !important;
-  border: 4px solid rgba(255, 255, 255, 0.15) !important;
+  /* Neutral grey keeps the track readable over dark and bright frames alike. */
+  border: 4px solid rgba(150, 150, 150, 0.6) !important;
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
@@ -2359,7 +2360,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 .caption-hud-spinner {
   width: 22px !important;
   height: 22px !important;
-  border: 2.5px solid rgba(255, 255, 255, 0.2) !important;
+  border: 2.5px solid rgba(150, 150, 150, 0.6) !important;
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
