@@ -42,8 +42,8 @@ describe('clock labels', () => {
   });
 
   it('settles well inside the one-second tick', () => {
-    assert.ok(TIME_DIGIT_TRANSITION_MS <= 220);
-    assert.ok(TIME_DIGIT_TRANSITION_MS >= 120);
+    assert.ok(TIME_DIGIT_TRANSITION_MS <= 400);
+    assert.ok(TIME_DIGIT_TRANSITION_MS >= 280);
     const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../content.css'), 'utf8');
     assert.match(css, new RegExp(`theater-time-blur-in ${TIME_DIGIT_TRANSITION_MS}ms`));
     assert.match(css, new RegExp(`theater-time-blur-out ${TIME_DIGIT_TRANSITION_MS}ms`));

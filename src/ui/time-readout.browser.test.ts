@@ -89,4 +89,56 @@ describe('split time readout', () => {
       await browser.close();
     }
   });
+
+  it('is still blurred halfway through a digit change', async () => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) return;
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: 400, height: 200 } });
+      await page.setContent('<div id="host"></div>');
+      const sample = await page.evaluate(`(css => {
+        const host = document.querySelector('#host');
+        const shadow = host.attachShadow({ mode: 'open' });
+        const style = document.createElement('style');
+        style.textContent = css;
+        const slot = document.createElement('span');
+        slot.className = 'theater-time-slot';
+        slot.innerHTML = '<span class="theater-time-glyph is-leaving">1</span><span class="theater-time-glyph is-entering">2</span>';
+        const bar = document.createElement('div');
+        bar.className = 'theater-controls-wrapper visible';
+        const readout = document.createElement('span');
+        readout.className = 'theater-time-display';
+        readout.dataset.mode = 'clock';
+        readout.append(slot);
+        bar.append(readout);
+        shadow.append(style, bar);
+        const animations = slot.getAnimations({ subtree: true });
+        if (animations.length < 2) return { animations: animations.length };
+        for (const animation of animations) {
+          const duration = Number(animation.effect && animation.effect.getTiming ? animation.effect.getTiming().duration : 0);
+          animation.pause();
+          animation.currentTime = duration * 0.5;
+        }
+        const read = (selector) => {
+          const glyph = slot.querySelector(selector);
+          const style = getComputedStyle(glyph);
+          return { opacity: Number(style.opacity), filter: style.filter };
+        };
+        return { animations: animations.length, entering: read('.is-entering'), leaving: read('.is-leaving') };
+      })(${JSON.stringify(CSS)})`) as {
+        animations: number;
+        entering?: { opacity: number; filter: string };
+        leaving?: { opacity: number; filter: string };
+      };
+      const blurPx = (filter: string | undefined) => Number((filter || '').match(/blur\(([.\d]+)px\)/)?.[1]);
+      assert.equal(sample.animations, 2, JSON.stringify(sample));
+      assert.ok(sample.entering && sample.entering.opacity > 0.35 && sample.entering.opacity < 0.75, JSON.stringify(sample));
+      assert.ok(sample.leaving && sample.leaving.opacity > 0.25 && sample.leaving.opacity < 0.65, JSON.stringify(sample));
+      assert.ok(blurPx(sample.entering?.filter) >= 6, JSON.stringify(sample));
+      assert.ok(blurPx(sample.leaving?.filter) >= 6, JSON.stringify(sample));
+    } finally {
+      await browser.close();
+    }
+  });
 });

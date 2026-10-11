@@ -1,5 +1,9 @@
-/** Short enough that a digit ticking once a second stays sharp for most of that second. */
-export const TIME_DIGIT_TRANSITION_MS = 180;
+/**
+ * A one-second tick stays sharp for the rest of that second.
+ * Ease-in-out keeps the blur visible through the middle of this window;
+ * an ease-out this short only flickers.
+ */
+export const TIME_DIGIT_TRANSITION_MS = 320;
 
 export type TimeShape = {
   hourDigits: number;
@@ -92,6 +96,9 @@ function setSlotChar(slot: HTMLElement, next: string, animate: boolean): void {
   incoming.classList.add('is-entering');
   slot.appendChild(incoming);
   slot.dataset.ch = next;
+  const settle = () => incoming.classList.remove('is-entering');
+  incoming.addEventListener('animationend', settle, { once: true });
+  view?.setTimeout(settle, TIME_DIGIT_TRANSITION_MS + 80);
 }
 
 export function renderTimeReadout(host: HTMLElement, value: string, animate: boolean): void {
