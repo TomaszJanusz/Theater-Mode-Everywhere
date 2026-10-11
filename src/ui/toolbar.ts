@@ -341,6 +341,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+    // A cancelled press cannot move focus, so a click on the picture would
+    // otherwise leave shortcuts typing into a page field, chat or iframe.
+    if (e.type === 'pointerdown') ctx.actions.focusTheaterPage();
 
     if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO') {
       ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });

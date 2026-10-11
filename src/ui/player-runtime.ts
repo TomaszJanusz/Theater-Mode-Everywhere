@@ -414,6 +414,7 @@ function bindChromeActions(): void {
     cycleTheaterVideo,
     exitTheaterMode,
     enterTheaterMode,
+    focusTheaterPage,
     refreshHostPlayerLayout,
     setIcon: toolbar.setIcon,
     setTooltipContent: toolbar.setTooltipContent,

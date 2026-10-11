@@ -224,6 +224,81 @@ async function assertTheaterToggle(page: Page): Promise<void> {
   }
 }
 
+async function enterTheaterFromPicture(page: Page): Promise<void> {
+  await delay(250);
+  await page.locator('video#player').click();
+  await page.keyboard.press('t');
+  await page.waitForFunction((videoClass) => document.querySelector('video#player')?.classList.contains(videoClass),
+    THEATER_VIDEO_CLASS, { timeout: 10_000 });
+}
+
+async function exitTheater(page: Page): Promise<void> {
+  await page.keyboard.press('Escape');
+  await page.waitForFunction((htmlClass) => !document.documentElement.classList.contains(htmlClass),
+    THEATER_HTML_CLASS, { timeout: 10_000 });
+}
+
+async function assertPictureClickReclaimsKeys(page: Page): Promise<void> {
+  await enterTheaterFromPicture(page);
+  // Focus left in a host field behind theater, as after typing in chat or search.
+  await page.evaluate(() => {
+    const field = document.createElement('input');
+    field.id = 'smoke-host-field';
+    document.body.prepend(field);
+    field.focus();
+  });
+  const mutedBefore = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.muted);
+  await page.mouse.click(640, 300);
+  await page.keyboard.press('m');
+  const mutedAfter = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.muted);
+  if (mutedAfter === mutedBefore) fail('A click on the theater picture did not take keyboard focus back from the page.');
+  await page.keyboard.press('m');
+  await page.mouse.click(640, 300);
+  await page.evaluate(() => document.querySelector('#smoke-host-field')?.remove());
+  await exitTheater(page);
+}
+
+async function assertScrubberPreviewLeaves(page: Page): Promise<void> {
+  await enterTheaterFromPicture(page);
+  await page.locator('video#player').evaluate(async (video: HTMLVideoElement & { _smokeStream?: MediaProvider | null }) => {
+    video._smokeStream = video.srcObject;
+    video.srcObject = null;
+    video.src = '/vod.webm';
+    video.loop = true;
+    await video.play();
+  });
+  await page.waitForFunction(() => {
+    const video = document.querySelector<HTMLVideoElement>('video#player');
+    return Boolean(video && Number.isFinite(video.duration) && video.seekable.length > 0);
+  });
+  const scrubber = page.locator('.theater-scrubber-container');
+  const box = await scrubber.boundingBox();
+  if (!box) fail('Scrubber is not laid out.');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const tooltip = page.locator('.theater-scrubber-tooltip');
+  await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')?.shadowRoot
+    ?.querySelector('.theater-scrubber-tooltip.visible'));
+  await page.mouse.move(640, 200);
+  // A pointer that leaves before the queued hover frame must not bring the preview back.
+  const lingering = await scrubber.evaluate(async (element, x) => {
+    element.dispatchEvent(new MouseEvent('mousemove', { clientX: x, bubbles: true, composed: true }));
+    element.dispatchEvent(new MouseEvent('mouseleave'));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return element.closest('.theater-controls-row')?.querySelector('.theater-scrubber-tooltip')?.classList.contains('visible');
+  }, box.x + box.width / 3);
+  if (lingering || await tooltip.evaluate((element) => element.classList.contains('visible'))) {
+    fail('The scrubber preview stayed visible after the pointer left the scrubber.');
+  }
+  await page.locator('video#player').evaluate(async (video: HTMLVideoElement & { _smokeStream?: MediaProvider | null }) => {
+    video.removeAttribute('src');
+    video.srcObject = video._smokeStream ?? null;
+    delete video._smokeStream;
+    video.loop = false;
+    await video.play();
+  });
+  await exitTheater(page);
+}
+
 async function assertThumbPlayerSwap(page: Page): Promise<void> {
   await delay(250);
   await page.evaluate(() => {
@@ -1318,6 +1393,9 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await waitForPlayer(page);
     await assertTheaterToggle(page);
     console.log('smoke:chromium local player T/Escape passed');
+    await assertPictureClickReclaimsKeys(page);
+    await assertScrubberPreviewLeaves(page);
+    console.log('smoke:chromium picture focus and scrubber preview passed');
     await assertThumbPlayerSwap(page);
     console.log('smoke:chromium ThumbPlayer video swap passed');
     await page.reload({ waitUntil: 'domcontentloaded' });

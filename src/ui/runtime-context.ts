@@ -85,6 +85,7 @@ export type PlayerChromeActions = {
   cycleTheaterVideo(direction?: 'next' | 'prev'): void;
   exitTheaterMode(origin?: ExitOrigin, sessionId?: string, from?: ExitFrom): void;
   enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void;
+  focusTheaterPage(): void;
   refreshHostPlayerLayout(): void;
   setIcon(element: HTMLElement, svg: string): void;
   setTooltipContent(element: HTMLElement, rawText: string): void;

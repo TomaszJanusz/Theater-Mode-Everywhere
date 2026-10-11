@@ -1190,6 +1190,8 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     };
 
     const onScrubberMouseLeave = () => {
+      if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
+      tooltipFrame = 0;
       if (!isDragging) {
         tooltip.classList.remove('visible');
         mediaFeatures.setHeatmapHover(null);
