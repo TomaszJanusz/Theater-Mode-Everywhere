@@ -932,7 +932,9 @@ button.theater-time-end:hover {
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 50% !important;
   width: 100px !important;
   height: 100px !important;
@@ -2022,7 +2024,9 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 10px 18px !important;
   display: flex !important;
@@ -2053,7 +2057,9 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 10px 18px !important;
   display: flex !important;
@@ -2116,14 +2122,16 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 12px !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   color: #ffffff !important;
   text-decoration: none !important;
   cursor: pointer !important;
   pointer-events: none !important;
-  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, outline-color 0.2s ease, color 0.2s ease !important;
 }
 
 .theater-everywhere-header-hud.visible .theater-home-pill {
@@ -2137,8 +2145,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
   ) !important;
-  border-color: rgba(99, 102, 241, 0.3) !important;
-  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  outline-color: rgba(99, 102, 241, 0.3) !important;
+  outline-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
@@ -2172,7 +2180,9 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 12px 20px !important;
   display: flex !important;
@@ -2266,7 +2276,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-everywhere-volume-overlay.boosted {
-  border-color: rgba(245, 158, 11, 0.4) !important;
+  outline-color: rgba(245, 158, 11, 0.4) !important;
 }
 
 .theater-everywhere-volume-overlay.boosted .volume-hud-text {
@@ -2832,7 +2842,9 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   margin: 0 !important;
   padding: 8px 14px !important;
   overflow: hidden !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline-offset: 1px !important;
   border-radius: 12px !important;
   background: rgba(15, 15, 15, 0.5) !important;
   backdrop-filter: blur(16px) saturate(140%) !important;
@@ -2854,7 +2866,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   cursor: pointer !important;
   pointer-events: auto !important;
   user-select: none !important;
-  transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+  transition: background-color 0.2s ease, background-image 0.2s ease, outline-color 0.2s ease, color 0.2s ease !important;
 }
 
 .theater-service-action:hover,
@@ -2864,8 +2876,8 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
   ) !important;
-  border-color: rgba(99, 102, 241, 0.3) !important;
-  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  outline-color: rgba(99, 102, 241, 0.3) !important;
+  outline-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
