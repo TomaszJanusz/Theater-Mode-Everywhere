@@ -28,6 +28,31 @@ Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, an
 
 Provider presentation code owns host containers, discovery preferences, native renderer styling, and stage policies. Shared UI owns viewport geometry, chrome, input, and teardown. Factories under `providers/` compose host implementations; their explicit provider selection is intentional. Cross-world and iframe protocols remain platform responsibilities and must retain their provenance checks.
 
+## Automatic theater entry
+
+`ProviderDefinition.watchPlayback` is an optional positive declaration: `pageIdentity`
+returns a stable watch-video identity, and `mainVideo` confirms the current content
+video in MAIN, rejecting ads, auxiliary players and stale route/player identities.
+Providers without this declaration never enter automatically. The synchronous
+string bridge in `providers/watch-playback.ts` confirms the exact element; the
+runtime also applies the existing switchable-video filters and discovery ranking.
+
+`ui/auto-theater-runtime.ts` listens for playback and existing provider navigation
+publications, and calls the regular theater entry path. YouTube observes only the
+main player's ad-state classes, since ad completion need not emit another playing
+event. The opt-in preference defaults off; a visit records entry so exiting or
+changing preferences cannot reenter the same content. New content identities reset
+that record. Automatic entry requires an enabled provider, an allowed domain, a
+top-level document, active playback, no fullscreen and no focused editable field.
+
+YouTube `/watch` and ordinary Vimeo clip pages declare this capability. Vimeo pages
+whose video lives in an iframe remain ineligible. Patreon posts mix inline media;
+Twitch uses stitched ads; Disney+ and Netflix need ad-plan discrimination; Bilibili
+and Bilibili.tv need qualified main-player/content identity and ad guards; Tencent
+also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
+These providers remain undeclared until those content boundaries are qualified.
+Vimeo showcases, live events and OTT pages are also excluded.
+
 ## Native chat
 
 `chat/types.ts` defines `ChatSurface`, a description of the page's existing chat container, identity, live/replay kind, optional iframe and ancestors needed for presentation. It does not render messages or expose account actions. `chat/detect.ts` owns service detection and identity checks; `ChatController` owns visibility, width, geometry, observation and cleanup. The player runtime starts and stops the chat session on theater entry and exit. `ui/chat.ts` renders one shared toggle, width slider and theme select, and persists visibility, width and theme per service; pending writes flush on session stop and `pagehide`.

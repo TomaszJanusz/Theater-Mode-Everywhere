@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "Зроблено з <span class=\"heart\">❤</span> в 🇵🇱"
   },
+  "autoEnterTheaterTitle": {
+    "message": "Автоматично вмикати режим кінотеатру"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Вмикати режим кінотеатру, коли основне відео починає відтворюватися на сторінках перегляду підтримуваних сервісів з увімкненим Rich Theater Experience."
+  },
   "keepControlsVisibleTitle": {
     "message": "Завжди показувати елементи керування"
   },

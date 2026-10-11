@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "Fatto con <span class=\"heart\">❤</span> in 🇵🇱"
   },
+  "autoEnterTheaterTitle": {
+    "message": "Attiva automaticamente la modalità cinema"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Attiva la modalità cinema quando il video principale inizia la riproduzione nelle pagine di visione dei servizi supportati con Rich Theater Experience attivo."
+  },
   "keepControlsVisibleTitle": {
     "message": "Mostra sempre i controlli"
   },

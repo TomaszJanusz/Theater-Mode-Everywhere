@@ -1,3 +1,4 @@
+import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
 import { createShortcutEditor } from './shortcut-editor';
@@ -89,6 +90,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
+  { id: 'auto-enter-theater-toggle', key: AUTO_THEATER_STORAGE_KEY, resolve: resolveAutoEnterTheater },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
 ] as const;
@@ -130,6 +132,10 @@ async function init() {
       if (changes[VOLUME_BOOST_STORAGE_KEY]) {
         const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
         if (toggle) toggle.checked = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
+      }
+      if (changes[AUTO_THEATER_STORAGE_KEY]) {
+        const toggle = document.getElementById('auto-enter-theater-toggle') as HTMLInputElement | null;
+        if (toggle) toggle.checked = resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue);
       }
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
         const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;

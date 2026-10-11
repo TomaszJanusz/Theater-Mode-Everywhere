@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "Stworzono z <span class=\"heart\">❤</span> w 🇵🇱"
   },
+  "autoEnterTheaterTitle": {
+    "message": "Automatycznie włączaj tryb kinowy"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Włączaj tryb kinowy, gdy główne wideo zaczyna się odtwarzać na stronach oglądania obsługiwanych serwisów z włączoną funkcją Rich Theater Experience."
+  },
   "keepControlsVisibleTitle": {
     "message": "Zawsze pokazuj kontrolki"
   },

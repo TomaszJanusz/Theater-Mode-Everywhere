@@ -1,3 +1,4 @@
+import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { installXhrHarvest } from './xhr-harvest';
 import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
@@ -213,6 +214,7 @@ export function installMainWorldRuntime(): void {
   }
 
   if (harvestHost) {
+    installWatchPlaybackQueries();
     installYoutubeMain();
     installTwitchMain();
     installDisneyMain();

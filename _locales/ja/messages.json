@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "ポーランド 🇵🇱 で <span class=\"heart\">❤</span> を込めて制作"
   },
+  "autoEnterTheaterTitle": {
+    "message": "シアターモードを自動的に開始"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Rich Theater Experienceが有効な場合、対応サービスの視聴ページでメイン動画の再生が始まるとシアターモードに切り替えます。"
+  },
   "keepControlsVisibleTitle": {
     "message": "操作バーを常に表示"
   },

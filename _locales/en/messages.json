@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "Made with <span class=\"heart\">❤</span> in 🇵🇱"
   },
+  "autoEnterTheaterTitle": {
+    "message": "Automatically enter theater mode"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
+  },
   "keepControlsVisibleTitle": {
     "message": "Always show controls"
   },

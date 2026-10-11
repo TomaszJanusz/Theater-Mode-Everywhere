@@ -1,3 +1,5 @@
+import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisit } from './auto-theater';
+import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
 import { reloadForVolumeBoost } from '../platform/volume-boost-reload';
@@ -934,8 +936,40 @@ function refreshExtensionAccentColor(): void {
   }
 }
 
+let autoEnterTheaterEnabled = false;
+let autoTheaterPolicyAllowed = false;
+let settingsLoadEpoch = 0;
+const autoTheaterVisit: { current: AutoTheaterVisit } = { current: { identity: null, entered: false } };
+let autoTheaterRuntime: AutoTheaterRuntime | null = null;
+
+function syncAutoTheaterRuntime(): void {
+  if (!refs.isInitialized || !autoEnterTheaterEnabled || !autoTheaterPolicyAllowed || window !== window.top) {
+    autoTheaterRuntime?.dispose();
+    autoTheaterRuntime = null;
+    return;
+  }
+  if (autoTheaterRuntime) {
+    autoTheaterRuntime.refresh();
+    return;
+  }
+  autoTheaterRuntime = createAutoTheaterRuntime({
+    visit: autoTheaterVisit,
+    enabled: () => autoEnterTheaterEnabled,
+    policyAllowed: () => autoTheaterPolicyAllowed,
+    providerFlags: () => refs.providerFlags,
+    editableFocused: () => editableFieldFocused() || theaterDialogOpen(),
+    theaterActive: () => session.hasUi,
+    transitioning: () => refs.isTransitioning,
+    findBestVideo,
+    enter: enterTheaterMode
+  });
+}
+
 async function checkBlacklistAndInit(): Promise<void> {
   const currentHostname = window.location.hostname;
+  const epoch = ++settingsLoadEpoch;
+  // A pending policy read must never auto-enter under the previous blacklist.
+  autoTheaterPolicyAllowed = false;
 
   if (typeof chrome === 'undefined' || !chrome.storage?.sync) {
     if (!refs.isInitialized) initialize();
@@ -946,6 +980,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     const data = await chrome.storage.sync.get([
       'blacklist',
       'shortcuts',
+      AUTO_THEATER_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
       KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
@@ -958,6 +993,8 @@ async function checkBlacklistAndInit(): Promise<void> {
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
     ]);
+    if (epoch !== settingsLoadEpoch) return;
+    autoEnterTheaterEnabled = resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]);
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
@@ -981,6 +1018,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     refs.captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
     
     const isBlacklisted = resolveDomainPolicy(currentHostname, blacklist).effective;
+    autoTheaterPolicyAllowed = !isBlacklisted;
 
     // Nested provider frames stay active so YouTube/Vimeo embeds still work
     // when the provider hostname is excluded at the top-level site.
@@ -999,8 +1037,12 @@ async function checkBlacklistAndInit(): Promise<void> {
         initialize();
       }
     }
+    syncAutoTheaterRuntime();
     refreshExtensionAccentColor();
   } catch (err) {
+    if (epoch !== settingsLoadEpoch) return;
+    autoEnterTheaterEnabled = false;
+    syncAutoTheaterRuntime();
     console.error('[Theater Everywhere] Error loading settings:', err);
     // Safe fallback: initialize if storage fails
     if (!refs.isInitialized) {
@@ -1016,6 +1058,14 @@ function getActiveElementDeep(): Element | null {
     activeEl = activeEl.shadowRoot.activeElement;
   }
   return activeEl;
+}
+
+function editableFieldFocused(activeEl = getActiveElementDeep() as HTMLElement | null): boolean {
+  return Boolean(activeEl && (
+    (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
+    activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT' ||
+    activeEl.isContentEditable || activeEl.getAttribute('role') === 'textbox'
+  ));
 }
 
 function theaterDialogOpen(): boolean {
@@ -1133,6 +1183,10 @@ function initialize(): void {
   if (refs.isInitialized) return;
 
   session.resetRuntimeScope();
+  session.runtimeScope.add(() => {
+    autoTheaterRuntime?.dispose();
+    autoTheaterRuntime = null;
+  });
 
   const publishEntryShortcuts = () => {
     const shortcuts = ui().shortcuts;
@@ -1165,12 +1219,7 @@ function initialize(): void {
     }
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
-    const isEditable = activeEl && (
-      (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
-      activeEl.tagName === 'TEXTAREA' ||
-      activeEl.isContentEditable ||
-      activeEl.getAttribute('role') === 'textbox'
-    );
+    const isEditable = editableFieldFocused(activeEl);
     if (isEditable) return false;
     if (theaterDialogOpen()) return false;
 
@@ -1426,12 +1475,7 @@ function initialize(): void {
       event.stopImmediatePropagation();
       return;
     }
-    const isEditable = activeEl && (
-      (activeEl.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button', 'submit', 'image', 'file'].includes((activeEl as HTMLInputElement).type)) ||
-      activeEl.tagName === 'TEXTAREA' ||
-      activeEl.isContentEditable ||
-      activeEl.getAttribute('role') === 'textbox'
-    );
+    const isEditable = editableFieldFocused(activeEl);
     if (isEditable) return;
     if (theaterDialogOpen()) return;
     const shortcuts = ui().shortcuts || defaultShortcuts;
@@ -1594,6 +1638,7 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'popstate', listeners.navigate!);
 
   refs.isInitialized = true;
+  syncAutoTheaterRuntime();
 }
 
 // Cleanup and remove listeners
@@ -2123,8 +2168,13 @@ export function bootstrapPlayerRuntime(): void {
         refs.volumeBoostEnabled = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
       }
 
-      if (changes.blacklist) {
+      if (changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY]
+          || mediaProviderFlagStorageKeys().some((key) => changes[key])) {
         void checkBlacklistAndInit();
+      }
+
+      if (changes[AUTO_THEATER_STORAGE_KEY]) {
+        autoEnterTheaterEnabled = resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue);
       }
 
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
@@ -2172,6 +2222,7 @@ export function bootstrapPlayerRuntime(): void {
         }
         applyProviderFlags(resolveMediaProviderFlags(merged));
       }
+      syncAutoTheaterRuntime();
     });
   }
 }

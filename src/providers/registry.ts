@@ -1,3 +1,6 @@
+import { youtubeWatchPlayback } from './youtube/watch-playback';
+import { vimeoWatchPlayback } from './vimeo/watch-playback';
+import type { WatchPlayback } from './watch-playback';
 import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 
@@ -9,12 +12,13 @@ export type ProviderId = 'native' | MediaProviderId;
 export type ProviderDefinition = {
   id: ProviderId;
   matchesHost: (hostname: string) => boolean;
+  watchPlayback?: WatchPlayback;
 };
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
-  { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname) },
-  { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname) },
+  { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname), watchPlayback: youtubeWatchPlayback },
+  { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },

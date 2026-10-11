@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Theater Everywhere YouTube watch fixture</title>
+  <style>
+    html, body { margin: 0; background: #111; }
+    video { width: 640px; height: 360px; background: #000; }
+  </style>
+</head>
+<body>
+  <input id="search" aria-label="Search">
+  <ytd-watch-flexy>
+    <div id="movie_player" class="html5-video-player">
+      <video id="player" class="html5-main-video" muted playsinline></video>
+    </div>
+  </ytd-watch-flexy>
+  <script>
+    // Registered by the host before the isolated extension finishes reading settings.
+    window.hostEntryKeys = [];
+    window.addEventListener('keydown', event => {
+      if (['KeyF', 'KeyT', 'KeyG'].includes(event.code)) window.hostEntryKeys.push(event.code);
+    }, true);
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+    const paint = () => {
+      if (!ctx) return;
+      ctx.fillStyle = '#1b1b1b';
+      ctx.fillRect(0, 0, 640, 360);
+      ctx.fillStyle = '#f4f4f5';
+      ctx.fillRect(40, 40, 180, 100);
+    };
+    paint();
+    setInterval(paint, 250);
+    const video = document.getElementById('player');
+    const player = document.getElementById('movie_player');
+    player.contentId = new URL(location.href).searchParams.get('v');
+    player.getVideoData = () => ({ video_id: player.contentId });
+    player.getPlayerState = () => video.paused ? 2 : 1;
+    if (new URL(location.href).searchParams.has('ad')) player.classList.add('ad-showing');
+    if (video && canvas.captureStream) {
+      video.srcObject = canvas.captureStream(12);
+      video.play().catch(() => {});
+    }
+  </script>
+</body>
+</html>

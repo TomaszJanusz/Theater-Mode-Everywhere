@@ -1445,6 +1445,161 @@ async function assertParentBlacklist(page: Page, origin: string, context: Browse
   }
 }
 
+async function assertAutoTheater(page: Page, context: BrowserContext): Promise<void> {
+  const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+  const fixture = readFileSync(path.join(ROOT, 'test/fixtures/youtube-watch.html'), 'utf8');
+  await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: fixture }));
+  await context.route('https://player.vimeo.com/**', route => route.fulfill({ contentType: 'text/html', body: fixture
+    .replace('class="html5-video-player"', 'class="player"')
+    .replace("player.contentId = new URL(location.href).searchParams.get('v');", "window.playerConfig = { video: { id: 123456 } }; player.contentId = '123456';") }));
+  const url = 'https://www.youtube.com/watch?v=abcdefghijk';
+  const playEvent = async () => {
+    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')!.readyState > 2);
+    await page.locator('video#player').evaluate((video: HTMLVideoElement) => {
+      video.dispatchEvent(new Event('playing'));
+    });
+  };
+  const assertIdle = async (reason: string) => {
+    // MAIN query and theater entry are synchronous. The rAF also lets queued
+    // provider/mutation notifications finish before checking the visible state.
+    await playEvent();
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+    if (await theaterEntered(page)) throw new Error(`Auto theater entered for ${reason}`);
+  };
+  const waitEntered = () => page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
+  const waitIdle = () => page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
+    await page.goto(url);
+    await waitForPlayer(page);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    await assertIdle('disabled setting');
+    // The actual options toggle persists and live-enables an already playing video.
+    const options = await context.newPage();
+    try {
+      await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
+        { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
+      await options.goto(new URL('options/options.html', worker.url()).href);
+      const toggle = options.locator('#auto-enter-theater-toggle');
+      await toggle.waitFor({ state: 'attached' });
+      if (await toggle.isChecked()) throw new Error('Auto theater options default must be off');
+      await options.locator('label.toggle-switch').filter({ has: toggle }).click();
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
+      await waitEntered();
+    } finally {
+      await options.close();
+    }
+    await page.keyboard.press('Escape');
+    await waitIdle();
+    await assertIdle('the same video after exit');
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: true }));
+    await assertIdle('preference off/on after exit');
+
+    // URL changes before the live player identity: never maximize stale content.
+    await page.evaluate(() => {
+      history.pushState({}, '', '/watch?v=lmnopqrstuv');
+      document.dispatchEvent(new Event('yt-navigate-finish'));
+    });
+    await assertIdle('stale video after SPA navigation');
+    await page.evaluate(() => {
+      const player = document.getElementById('movie_player') as HTMLElement & { contentId: string };
+      player.contentId = 'lmnopqrstuv';
+    });
+    await playEvent();
+    await waitEntered();
+    await page.keyboard.press('Escape');
+    await waitIdle();
+
+    await page.goto(`${url}&ad=1`);
+    await waitForPlayer(page);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    await assertIdle('an ad in the main player');
+    await page.evaluate(() => document.getElementById('movie_player')?.classList.remove('ad-showing'));
+    await waitEntered();
+    await page.keyboard.press('Escape');
+    await waitIdle();
+
+    await page.goto('https://www.youtube.com/');
+    await waitForPlayer(page);
+    await assertIdle('the home feed');
+    await worker.evaluate(() => chrome.storage.sync.set({ youtubeIntegrationEnabled: false }));
+    await page.goto(url);
+    await waitForPlayer(page);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await assertIdle('disabled RTE');
+    await page.locator('#search').focus();
+    await worker.evaluate(() => chrome.storage.sync.set({ youtubeIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await assertIdle('a focused editable field');
+    await page.locator('#search').evaluate((input: HTMLInputElement) => input.blur());
+    await page.evaluate(() => {
+      const watch = document.querySelector('ytd-watch-flexy')!;
+      const preview = document.createElement('ytd-video-preview');
+      watch.replaceWith(preview);
+      preview.appendChild(watch);
+    });
+    await assertIdle('an auxiliary hover preview');
+
+    await worker.evaluate(() => chrome.storage.sync.set({ blacklist: ['youtube.com'] }));
+    await page.goto(url);
+    await waitForPlayer(page);
+    await assertIdle('a blacklisted domain');
+    await worker.evaluate(() => chrome.storage.sync.set({ blacklist: [], youtubeIntegrationEnabled: false }));
+    await page.goto(url);
+    await waitForPlayer(page);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await page.locator('video#player').evaluate((video: HTMLVideoElement) => { video.style.width = '40px'; video.style.height = '30px'; });
+    await worker.evaluate(() => chrome.storage.sync.set({ youtubeIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-youtube-integration-off'));
+    await assertIdle('a micro video');
+
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
+    await page.goto(url);
+    await waitForPlayer(page);
+    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')!.readyState > 2);
+    await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.pause());
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: true }));
+    await assertIdle('paused content');
+    // A trusted click grants fullscreen; enabling auto entry must leave it alone.
+    await page.locator('video#player').evaluate((video: HTMLVideoElement) => {
+      video.addEventListener('click', () => { void video.requestFullscreen(); }, { once: true });
+    });
+    await page.locator('video#player').click();
+    await page.waitForFunction(() => Boolean(document.fullscreenElement));
+    await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.play());
+    await assertIdle('document fullscreen');
+    await page.evaluate(() => document.exitFullscreen());
+
+    // A supported provider in a child frame must not send FRAME_ENTER upwards.
+    await page.goto('https://www.youtube.com/');
+    await page.locator('video#player').evaluate(video => video.remove());
+    await page.evaluate(() => {
+      const child = document.createElement('iframe');
+      child.id = 'auto-child'; child.src = '/watch?v=abcdefghijk';
+      document.body.appendChild(child);
+    });
+    const child = page.frameLocator('#auto-child');
+    await child.locator('video#player').waitFor();
+    await child.locator('video#player').evaluate((video: HTMLVideoElement) => video.dispatchEvent(new Event('playing')));
+    await child.locator('html[data-theater-everywhere-entry-shortcuts]').waitFor();
+    if (await child.locator('video#player').evaluate(video => video.classList.contains('theater-everywhere-video-active'))
+        || await theaterEntered(page)) throw new Error('Auto theater entered inside an iframe');
+
+    await page.goto('https://player.vimeo.com/video/123456');
+    await waitForPlayer(page);
+    await waitEntered();
+    await page.keyboard.press('Escape');
+    await waitIdle();
+    await assertIdle('the same Vimeo clip after exit');
+    console.log('smoke:chromium installed auto theater: live setting, exit, SPA identity, ads, feed, RTE, focus, preview, blacklist, micro video, paused content, fullscreen, iframe and Vimeo passed');
+  } finally {
+    await worker.evaluate(() => chrome.storage.sync.remove(['autoEnterTheater', 'youtubeIntegrationEnabled', 'blacklist']));
+    await context.unroute('https://www.youtube.com/**');
+    await context.unroute('https://player.vimeo.com/**');
+  }
+}
+
 async function smokeChromium(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
@@ -1471,6 +1626,10 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
     const page = context.pages()[0] || await context.newPage();
+    if (process.env.THEATER_SMOKE_AUTO_THEATER_ONLY === '1') {
+      await assertAutoTheater(page, context);
+      return;
+    }
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await assertTheaterToggle(page);
@@ -1497,6 +1656,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await assertIframeHandshake(page, origin);
     console.log('smoke:chromium same-origin iframe handshake passed');
 
+    await assertAutoTheater(page, context);
     await assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');

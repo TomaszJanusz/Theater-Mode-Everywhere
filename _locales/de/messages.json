@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "Mit <span class=\"heart\">❤</span> in 🇵🇱 gemacht"
   },
+  "autoEnterTheaterTitle": {
+    "message": "Kinomodus automatisch aktivieren"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Aktiviere den Kinomodus, wenn das Hauptvideo auf einer Wiedergabeseite eines unterstützten Dienstes bei aktiviertem Rich Theater Experience startet."
+  },
   "keepControlsVisibleTitle": {
     "message": "Steuerelemente immer anzeigen"
   },

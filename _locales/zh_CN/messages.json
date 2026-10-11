@@ -665,6 +665,12 @@
   "madeInPoland": {
     "message": "用 <span class=\"heart\">❤</span> 制造于 🇵🇱"
   },
+  "autoEnterTheaterTitle": {
+    "message": "自动进入影院模式"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入影院模式。"
+  },
   "keepControlsVisibleTitle": {
     "message": "始终显示控件"
   },
