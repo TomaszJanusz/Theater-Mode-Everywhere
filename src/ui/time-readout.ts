@@ -1,7 +1,6 @@
 /**
- * A one-second tick stays sharp for the rest of that second.
- * Ease-in-out keeps the blur visible through the middle of this window;
- * an ease-out this short only flickers.
+ * A one-second tick stays sharp for most of that second.
+ * The glyph never fades out: on 12px type a heavy blur reads as a blank.
  */
 export const TIME_DIGIT_TRANSITION_MS = 320;
 
@@ -67,38 +66,38 @@ function makeGlyph(doc: Document, ch: string): HTMLSpanElement {
   return glyph;
 }
 
+const settleTimers = new WeakMap<HTMLElement, number>();
+
 function setSlotChar(slot: HTMLElement, next: string, animate: boolean): void {
   if (slot.dataset.ch === next && slot.childElementCount > 0) return;
   const doc = slot.ownerDocument;
   const view = doc.defaultView;
   const reduce = view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const previous = slot.dataset.ch;
-  if (!animate || reduce || previous === undefined) {
+  let glyph = slot.querySelector<HTMLElement>('.theater-time-glyph');
+  if (!animate || reduce || previous === undefined || !glyph) {
     slot.replaceChildren(makeGlyph(doc, next));
     slot.dataset.ch = next;
     return;
   }
 
-  for (const glyph of [...slot.querySelectorAll('.theater-time-glyph')]) {
-    if (glyph.classList.contains('is-leaving')) {
-      glyph.remove();
-      continue;
-    }
-    glyph.classList.remove('is-entering');
-    glyph.classList.add('is-leaving');
-    glyph.setAttribute('aria-hidden', 'true');
-    const remove = () => glyph.remove();
-    glyph.addEventListener('animationend', remove, { once: true });
-    view?.setTimeout(remove, TIME_DIGIT_TRANSITION_MS + 80);
+  for (const extra of [...slot.querySelectorAll('.theater-time-glyph')]) {
+    if (extra !== glyph) extra.remove();
   }
-
-  const incoming = makeGlyph(doc, next);
-  incoming.classList.add('is-entering');
-  slot.appendChild(incoming);
+  glyph.textContent = next === ' ' ? '' : next;
+  glyph.classList.remove('is-entering');
+  void glyph.offsetWidth;
+  glyph.classList.add('is-entering');
   slot.dataset.ch = next;
-  const settle = () => incoming.classList.remove('is-entering');
-  incoming.addEventListener('animationend', settle, { once: true });
-  view?.setTimeout(settle, TIME_DIGIT_TRANSITION_MS + 80);
+  const pending = settleTimers.get(glyph);
+  if (pending !== undefined) view?.clearTimeout(pending);
+  const settle = () => glyph.classList.remove('is-entering');
+  glyph.onanimationend = (event) => {
+    if (event.target !== glyph || event.elapsedTime <= 0) return;
+    settle();
+  };
+  const timer = view?.setTimeout(settle, TIME_DIGIT_TRANSITION_MS + 80);
+  if (timer !== undefined) settleTimers.set(glyph, timer);
 }
 
 export function renderTimeReadout(host: HTMLElement, value: string, animate: boolean): void {
