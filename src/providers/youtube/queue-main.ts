@@ -23,14 +23,14 @@ type QueueEntry = {
   identity: string;
   selected: boolean;
   placeholder: boolean;
-  anchor: HTMLAnchorElement | null;
+  activate: (() => void) | null;
   title: string;
   imageUrl: string;
 };
 type RowIndex = { byData: Map<unknown, HostNode[]>; byIdentity: Map<string, HostNode[]> };
 type Resolution = {
   snapshot: Omit<YouTubeQueueSnapshot, 'requestId'>;
-  targets: Partial<Record<PlaylistDirection, HTMLAnchorElement>>;
+  targets: Partial<Record<PlaylistDirection, () => void>>;
 };
 
 let installed = false;
@@ -48,14 +48,14 @@ export function installYouTubeQueueNavigation(): void {
   window.addEventListener(YOUTUBE_QUEUE_GO, (event: Event) => {
     const key = (event as CustomEvent<unknown>).detail;
     if (typeof key !== 'string' || key.length > 4000) return;
-    // Re-read both the model and live row. A saved action cannot click a new neighbor.
+    // Re-read the model and native command. A saved action cannot select a new neighbor.
     const resolved = safelyResolveQueue();
     if (!resolved) return;
     for (const direction of ['previous', 'next'] as const) {
       const step = resolved.snapshot[direction];
-      const anchor = resolved.targets[direction];
-      if (step.kind === 'item' && step.key === key && anchor?.isConnected) {
-        try { anchor.click(); } catch { /* Host navigation may disappear mid-click. */ }
+      const activate = resolved.targets[direction];
+      if (step.kind === 'item' && step.key === key && activate) {
+        try { activate(); } catch { /* Host navigation may disappear mid-click. */ }
         return;
       }
     }
@@ -91,7 +91,7 @@ function resolveQueue(): Resolution | null {
   const list = url.searchParams.get('list');
   if (list && list !== queueId) return null;
   const rows = indexRows(panel);
-  const entries = contents.map((value, index) => readEntry(playlistVideo(value), index, rows, queueId));
+  const entries = contents.map((value, index) => readEntry(playlistVideo(value), index, rows, queueId, panel));
   const matching = entries.flatMap((entry, index) => entry?.id === videoId ? [index] : []);
   const selected = matching.filter(index => entries[index]?.selected);
   const localIndex = integer(data.localCurrentIndex);
@@ -146,13 +146,13 @@ function resolveQueue(): Resolution | null {
       // The player can hide both steps while this panel still lists the queue.
       // A visible player step keeps its own target, including shuffle and restart.
       const neighbor = entries[current + offset];
-      if (neighbor?.anchor) target = neighbor;
+      if (neighbor?.activate) target = neighbor;
     }
-    if (target?.anchor) {
+    if (target?.activate) {
       const key = JSON.stringify([queueId, videoId, currentEntry.identity, direction, target.id, target.identity]);
       const step: YouTubeQueueStep = { kind: 'item', key, title: target.title, imageUrl: target.imageUrl };
       snapshot[direction] = step;
-      targets[direction] = target.anchor;
+      targets[direction] = target.activate;
     } else if (boundary) {
       snapshot[direction] = { kind: 'boundary' };
     }
@@ -167,26 +167,36 @@ function playlistVideo(value: unknown): unknown {
   return primary.playlistPanelVideoRenderer ?? null;
 }
 
-function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string): QueueEntry | null {
+function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string, panel: HTMLElement): QueueEntry | null {
   const data = record(raw);
   const id = string(data.videoId);
   if (!id) return null;
-  const endpoint = record(record(data.navigationEndpoint).watchEndpoint);
+  const navigationEndpoint = record(data.navigationEndpoint);
+  const endpoint = record(navigationEndpoint.watchEndpoint);
   const identity = string(data.playlistSetVideoId) || JSON.stringify([index, id, endpoint.index]);
   const candidates = rows.byData.get(data) ?? rows.byIdentity.get(rowIdentity(data)) ?? [];
   const row = candidates.length === 1 ? candidates[0] : null;
   const anchor = row?.querySelector<HTMLAnchorElement>('a#wc-endpoint, a[href]') ?? null;
-  let usableAnchor: HTMLAnchorElement | null = null;
-  if (anchor && data.isPlayable !== false && !data.unplayableText && !row?.hasAttribute('disabled')) {
-    const url = new URL(anchor.href, window.location.href);
-    const endpointIndex = integer(endpoint.index);
-    const linkIndex = url.searchParams.get('index');
-    // Queue links sometimes omit index. A present index that disagrees is another occurrence.
-    const indexAgrees = endpointIndex == null || linkIndex == null || Number(linkIndex) === endpointIndex + 1;
-    if (url.origin === window.location.origin && url.pathname === '/watch'
-      && url.searchParams.get('v') === id && url.searchParams.get('list') === queueId
-      && indexAgrees
-      && anchor.getAttribute('aria-disabled') !== 'true') usableAnchor = anchor;
+  let activate: QueueEntry['activate'] = null;
+  const playable = data.isPlayable !== false && !data.unplayableText
+    && !row?.hasAttribute('disabled') && anchor?.getAttribute('aria-disabled') !== 'true';
+  if (playable && anchor?.getAttribute('href')) {
+    if (matchesQueueUrl(anchor.href, id, queueId, endpoint.index)) {
+      activate = () => { if (anchor.isConnected) anchor.click(); };
+    }
+  } else if (playable && candidates.length <= 1 && endpoint.videoId === id && endpoint.playlistId === queueId
+    && (endpoint.index == null || integer(endpoint.index) != null)) {
+    const endpointUrl = string(record(record(navigationEndpoint.commandMetadata).webCommandMetadata).url);
+    if (endpointUrl && matchesQueueUrl(endpointUrl, id, queueId, endpoint.index)) {
+      // Collapsed/virtualized panels can retain their model without row links.
+      // Let YouTube's playlist manager carry its queue context through navigation.
+      activate = () => {
+        if (!panel.isConnected) return;
+        panel.dispatchEvent(new CustomEvent('yt-navigate', {
+          bubbles: true, composed: true, cancelable: true, detail: { endpoint: navigationEndpoint }
+        }));
+      };
+    }
   }
   const titleData = record(data.title);
   const title = (string(titleData.simpleText) || (Array.isArray(titleData.runs)
@@ -194,10 +204,24 @@ function readEntry(raw: unknown, index: number, rows: RowIndex, queueId: string)
   const images = record(data.thumbnail).thumbnails;
   const imageUrl = Array.isArray(images) ? string(record(images[images.length - 1]).url) : '';
   return {
-    id, identity, selected: data.selected === true, anchor: usableAnchor,
+    id, identity, selected: data.selected === true, activate,
     placeholder: !endpoint.videoId && !anchor?.getAttribute('href'),
     title: title.length <= 180 ? title : '', imageUrl: imageUrl.length <= 2000 ? imageUrl : ''
   };
+}
+
+function matchesQueueUrl(href: string, videoId: string, queueId: string, index: unknown): boolean {
+  try {
+    const url = new URL(href, window.location.href);
+    const endpointIndex = integer(index);
+    const linkIndex = url.searchParams.get('index');
+    // Queue links sometimes omit index. A present index that disagrees is another occurrence.
+    const indexAgrees = endpointIndex == null || linkIndex == null || Number(linkIndex) === endpointIndex + 1;
+    return url.origin === window.location.origin && url.pathname === '/watch'
+      && url.searchParams.get('v') === videoId && url.searchParams.get('list') === queueId && indexAgrees;
+  } catch {
+    return false;
+  }
 }
 
 function nativeStepUsable(player: HTMLElement, direction: PlaylistDirection): boolean {

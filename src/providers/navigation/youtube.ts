@@ -30,7 +30,7 @@ export function findYouTubeQueueNavigation(
       restarts: false,
       activate() {
         if (!player.isConnected || (video && !player.contains(video))) return;
-        // MAIN revalidates the exact queue occurrence and clicks its current link.
+        // MAIN revalidates the exact queue occurrence and invokes its native navigation.
         requestYouTubeQueueStep(doc, step.key);
       }
     });

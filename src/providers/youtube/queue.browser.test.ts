@@ -40,6 +40,10 @@ const fixture = `(() => {
   player.getPlaylistIndex = () => window.__state.index;
   player.getPlaylistId = () => window.__state.queueId;
   document.querySelectorAll('#movie_player button').forEach(b => b.onclick = () => window.__clicks.push(b.textContent));
+  document.addEventListener('yt-navigate', e => {
+    e.preventDefault();
+    window.__clicks.push(e.detail.endpoint.commandMetadata.webCommandMetadata.url);
+  });
   window.__render = (ids, current, {placeholder=false, unavailable=-1, continuation=false}={}) => {
     const panel = document.querySelector('ytd-playlist-panel-renderer');
     const items = panel.querySelector('#items');
@@ -47,7 +51,9 @@ const fixture = `(() => {
     const contents = ids.map((id, i) => {
       const renderer = {videoId:id, playlistSetVideoId:'entry-' + i, selected:i===current,
         title:{simpleText:'Queue ' + id}, thumbnail:{thumbnails:[{url:'https://i.ytimg.com/vi/'+id+'/default.jpg'}]},
-        navigationEndpoint:{watchEndpoint:{videoId:id,playlistId:window.__state.queueId,index:placeholder ? i-1 : i}}};
+        navigationEndpoint:{
+          commandMetadata:{webCommandMetadata:{url:'/watch?v='+id+'&list='+window.__state.queueId+'&index='+(placeholder ? i : i+1)}},
+          watchEndpoint:{videoId:id,playlistId:window.__state.queueId,index:placeholder ? i-1 : i}}};
       const row = document.createElement('ytd-playlist-panel-video-renderer');
       row.data = renderer;
       if(renderer.selected) row.setAttribute('selected','');
@@ -130,6 +136,82 @@ for (const [name, browserType] of [['Chromium', chromium], ['Firefox', firefox]]
         assert.equal(actions[0].preview?.title, 'Queue c');
         await activate(page, 'next');
         assert.deepEqual(await clicks(page), ['/watch?v=c&list=TLsession&index=1']);
+      } finally { await browser.close(); }
+    });
+
+    it('navigates through the host endpoint when the collapsed panel has no rows or links', async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+      const browser = await browserType.launch({headless:true});
+      try {
+        const page = await browser.newPage();
+        await setup(page);
+        await page.evaluate(`document.querySelectorAll('#movie_player button').forEach(b=>b.remove());
+          document.querySelector('#items').replaceChildren();`);
+        assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Queue c']);
+        await activate(page, 'previous');
+        await activate(page, 'next');
+        assert.deepEqual(await clicks(page), ['/watch?v=a&list=PLfixture&index=1','/watch?v=c&list=PLfixture&index=3']);
+        // A retained renderer whose link has not been stamped has the same command path.
+        await page.evaluate(`window.__clicks=[];window.__render(['a','b','c'],1);
+          document.querySelectorAll('#items a').forEach(a=>a.removeAttribute('href'));
+          window.__model.contents[2].playlistPanelVideoRenderer.thumbnail={};`);
+        assert.equal((await read(page)).find(a=>a.direction==='next')?.preview, null);
+        await activate(page, 'next');
+        assert.deepEqual(await clicks(page), ['/watch?v=c&list=PLfixture&index=3']);
+        // A new queue's linkless current-video placeholder is never a command target.
+        await page.evaluate(`window.__clicks=[];history.replaceState(null,'','/watch?v=b');
+          window.__state={video:'b',queueId:'TLsession',sequence:['b','c'],index:0};
+          document.getElementById('movie_player').getPlaylistId=()=>null;
+          window.__render(['b','c'],1,{placeholder:true});document.querySelector('#items').replaceChildren();`);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['next']);
+        await activate(page, 'next');
+        assert.deepEqual(await clicks(page), ['/watch?v=c&list=TLsession&index=1']);
+      } finally { await browser.close(); }
+    });
+
+    it('revalidates model-only commands against edits, route identity, and unavailable targets', async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+      const browser = await browserType.launch({headless:true});
+      try {
+        const page = await browser.newPage();
+        await setup(page);
+        await page.evaluate(`document.querySelectorAll('#movie_player button').forEach(b=>b.remove());
+          window.__state.sequence=['a','b','b','c'];window.__state.index=2;
+          window.__render(['a','b','b','c'],2);document.querySelector('#items').replaceChildren();`);
+        await activate(page, 'previous');
+        assert.deepEqual(await clicks(page), ['/watch?v=b&list=PLfixture&index=2']);
+        await page.evaluate(`window.__clicks=[];window.__stale=${readExpression}.find(a=>a.direction==='previous');
+          window.__model.contents[1].playlistPanelVideoRenderer.navigationEndpoint.commandMetadata.webCommandMetadata.url='/watch?v=b&list=PLfixture&index=3';
+          window.__stale.activate();`);
+        assert.deepEqual(await clicks(page), []);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['next']);
+        await page.evaluate(`window.__stale=${readExpression}.find(a=>a.direction==='next');
+          window.__state.sequence=['c','b','b','a'];window.__render(['c','b','b','a'],2);
+          document.querySelector('#items').replaceChildren();window.__stale.activate();`);
+        assert.deepEqual(await clicks(page), []);
+        await page.evaluate(`window.__stale=${readExpression}.find(a=>a.direction==='next');
+          window.__model.contents.pop();window.__state.sequence.pop();window.__stale.activate();`);
+        assert.deepEqual(await clicks(page), []);
+        await page.evaluate(`window.__stale=${readExpression}.find(a=>a.direction==='previous');
+          window.__state.video='a';window.__stale.activate();`);
+        assert.deepEqual(await clicks(page), []);
+        assert.deepEqual(await read(page), []);
+        await page.evaluate(`window.__state={video:'b',queueId:'PLfixture',sequence:['a','b','c'],index:1};
+          window.__render(['a','b','c'],1,{unavailable:2});document.querySelector('#items').replaceChildren();`);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['previous']);
+        await page.evaluate(`window.__model.contents[0].playlistPanelVideoRenderer.navigationEndpoint.watchEndpoint.playlistId='PLother';`);
+        assert.deepEqual(await read(page), []);
+        await page.evaluate(`window.__render(['a','b','c'],1);document.querySelector('#items').replaceChildren();
+          window.__model.contents[2].playlistPanelVideoRenderer.navigationEndpoint.commandMetadata.webCommandMetadata.url='http://[';`);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['previous']);
+        await page.evaluate(`window.__model.contents[2].playlistPanelVideoRenderer.navigationEndpoint.commandMetadata.webCommandMetadata.url='/watch?v=c&list=PLfixture&index=3';
+          window.__model.contents[2].playlistPanelVideoRenderer.navigationEndpoint.watchEndpoint.index='2';`);
+        assert.deepEqual((await read(page)).map(a=>a.direction), ['previous']);
+        await page.evaluate(`window.__render(['a','b','c'],1);document.querySelector('#items').replaceChildren();
+          window.__stale=${readExpression}.find(a=>a.direction==='next');
+          document.documentElement.setAttribute('data-te-youtube-integration-off','');window.__stale.activate();`);
+        assert.deepEqual(await clicks(page), []);
+        assert.deepEqual(await read(page), []);
       } finally { await browser.close(); }
     });
 
