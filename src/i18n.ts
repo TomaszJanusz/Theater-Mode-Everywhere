@@ -15,6 +15,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   controlsVisibilityOn: "On",
   controlsVisibilityOff: "Off",
   autoEnterTheaterTitle: "Automatically enter theater mode",
+  autoEnterTheaterOn: "On",
+  autoEnterTheaterOff: "Off",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
   keepControlsVisibleTitle: "Always show controls",
   keepControlsVisibleDescription: "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.",

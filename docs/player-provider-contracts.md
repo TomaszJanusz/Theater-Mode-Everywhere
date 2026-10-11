@@ -33,8 +33,11 @@ Provider presentation code owns host containers, discovery preferences, native r
 `ProviderDefinition.watchPlayback` is an optional positive declaration: `pageIdentity`
 returns a stable watch-video identity, and `mainVideo` confirms the current content
 video in MAIN, rejecting ads, auxiliary players and stale route/player identities.
-Providers without this declaration never enter automatically. The synchronous
-string bridge in `providers/watch-playback.ts` confirms the exact element; the
+YouTube's player API can still report buffering at the native `playing` event;
+playback readiness therefore comes from the video, while the provider confirms
+content identity and excludes ads. Providers without this declaration never enter
+automatically. The synchronous string bridge in `providers/watch-playback.ts`
+confirms the exact element; the
 runtime also applies the existing switchable-video filters and discovery ranking.
 
 `ui/auto-theater-runtime.ts` listens for playback and existing provider navigation

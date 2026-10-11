@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "Автоматично вмикати режим кінотеатру"
   },
+  "autoEnterTheaterOn": {
+    "message": "Увімк."
+  },
+  "autoEnterTheaterOff": {
+    "message": "Вимк."
+  },
   "autoEnterTheaterDescription": {
     "message": "Вмикати режим кінотеатру, коли основне відео починає відтворюватися на сторінках перегляду підтримуваних сервісів з увімкненим Rich Theater Experience."
   },

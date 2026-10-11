@@ -1077,6 +1077,23 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     updateHelpRow();
     controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
 
+    const autoTheaterBtn = document.createElement('button');
+    autoTheaterBtn.className = 'theater-control-btn auto-theater-btn';
+    autoTheaterBtn.title = t('autoEnterTheaterDescription');
+    setIcon(autoTheaterBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="m10 8 6 4-6 4z"/></svg>`);
+    autoTheaterBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      executeCommand({ type: 'TOGGLE_AUTO_THEATER' });
+    });
+    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'), 'footer');
+    const updateAutoTheaterRow = () => {
+      autoTheaterBtn.classList.toggle('active', ui().autoEnterTheater);
+      autoTheaterBtn.setAttribute('aria-pressed', String(ui().autoEnterTheater));
+      autoTheaterRow.update('', t(ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'));
+    };
+    updateAutoTheaterRow();
+    controlsScope.add(ctx.uiStore.subscribe(updateAutoTheaterRow));
+
     const extensionSettingsBtn = document.createElement('button');
     extensionSettingsBtn.type = 'button';
     extensionSettingsBtn.className = 'theater-control-btn extension-settings-btn';

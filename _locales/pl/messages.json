@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "Automatycznie włączaj tryb kinowy"
   },
+  "autoEnterTheaterOn": {
+    "message": "Wł."
+  },
+  "autoEnterTheaterOff": {
+    "message": "Wył."
+  },
   "autoEnterTheaterDescription": {
     "message": "Włączaj tryb kinowy, gdy główne wideo zaczyna się odtwarzać na stronach oglądania obsługiwanych serwisów z włączoną funkcją Rich Theater Experience."
   },

@@ -402,7 +402,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   const placement = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     const primary = ['play-pause-btn', 'playlist-prev-btn', 'playlist-next-btn', 'volume-btn', 'speed-btn', 'cc-btn', 'pip-btn', 'fullscreen-btn', 'close-btn'];
-    const secondary = ['video-fit-btn', 'picture-layout-btn', 'controls-visibility-toggle', 'help-btn'];
+    const secondary = ['video-fit-btn', 'picture-layout-btn', 'controls-visibility-toggle', 'help-btn', 'auto-theater-btn'];
     return [...primary.map(name => ({ name, expected: '.theater-controls-row' })), ...secondary.map(name => ({ name, expected: '.theater-settings-menu' }))]
       .filter(({ name, expected }) => {
         const buttons = root.querySelectorAll(`.${name}`);
@@ -593,6 +593,16 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
+  await page.keyboard.press('Tab');
+  const autoTheater = menu.locator('.auto-theater-btn');
+  if (!await autoTheater.evaluate(button => button.matches(':focus')
+      && button.nextElementSibling?.classList.contains('extension-settings-btn'))) fail('Auto theater must immediately precede extension settings.');
+  const autoBefore = await autoTheater.getAttribute('aria-pressed');
+  await page.keyboard.press('Space');
+  if (await autoTheater.getAttribute('aria-pressed') === autoBefore) fail('Space did not toggle automatic theater entry.');
+  await page.keyboard.press('Enter');
+  if (await autoTheater.getAttribute('aria-pressed') !== autoBefore
+      || await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) fail('Auto theater keyboard activation changed playback or failed to restore the preference.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.extension-settings-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab skipped extension settings.');
@@ -1561,7 +1571,7 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
   await context.route('https://player.vimeo.com/**', route => route.fulfill({ contentType: 'text/html', body: fixture
     .replace('class="html5-video-player"', 'class="player"')
     .replace("player.contentId = new URL(location.href).searchParams.get('v');", "window.playerConfig = { video: { id: 123456 } }; player.contentId = '123456';") }));
-  const url = 'https://www.youtube.com/watch?v=abcdefghijk';
+  const url = 'https://www.youtube.com/watch?v=abcdefghijk&state=3';
   const playEvent = async () => {
     await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')!.readyState > 2);
     await page.locator('video#player').evaluate((video: HTMLVideoElement) => {
@@ -1595,6 +1605,22 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
       await options.locator('label.toggle-switch').filter({ has: toggle }).click();
       await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
       await waitEntered();
+      const gear = page.locator('.player-settings-btn');
+      await gear.press('Enter');
+      const auto = page.locator('.auto-theater-btn');
+      await auto.waitFor({ state: 'visible' });
+      if (await auto.getAttribute('aria-pressed') !== 'true') throw new Error('Player menu did not reflect the options preference');
+      if (process.env.THEATER_SMOKE_SCREENSHOT) {
+        await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-auto-entry.png') });
+      }
+      await auto.press('Enter');
+      await options.waitForFunction(() => !(document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === false);
+      await auto.press('Space');
+      await options.waitForFunction(() => (document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
+      if (await auto.getAttribute('aria-pressed') !== 'true') throw new Error('Player menu did not retain the enabled preference');
+      await page.keyboard.press('Escape'); // Close only the settings panel.
     } finally {
       await options.close();
     }
@@ -1604,6 +1630,13 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: true }));
     await assertIdle('preference off/on after exit');
+
+    // A new document enters with the saved preference while YouTube's API still
+    // reports buffering. No synthetic second playing event may be needed.
+    await page.goto(url);
+    await waitEntered();
+    await page.keyboard.press('Escape');
+    await waitIdle();
 
     // URL changes before the live player identity: never maximize stale content.
     await page.evaluate(() => {
@@ -1701,7 +1734,7 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
     await page.keyboard.press('Escape');
     await waitIdle();
     await assertIdle('the same Vimeo clip after exit');
-    console.log('smoke:chromium installed auto theater: live setting, exit, SPA identity, ads, feed, RTE, focus, preview, blacklist, micro video, paused content, fullscreen, iframe and Vimeo passed');
+    console.log('smoke:chromium installed auto theater: options/menu sync, saved setting, buffering API, exit, SPA identity, ads, feed, RTE, focus, preview, blacklist, micro video, paused content, fullscreen, iframe and Vimeo passed');
   } finally {
     await worker.evaluate(() => chrome.storage.sync.remove(['autoEnterTheater', 'youtubeIntegrationEnabled', 'blacklist']));
     await context.unroute('https://www.youtube.com/**');

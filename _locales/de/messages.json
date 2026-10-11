@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "Kinomodus automatisch aktivieren"
   },
+  "autoEnterTheaterOn": {
+    "message": "Ein"
+  },
+  "autoEnterTheaterOff": {
+    "message": "Aus"
+  },
   "autoEnterTheaterDescription": {
     "message": "Aktiviere den Kinomodus, wenn das Hauptvideo auf einer Wiedergabeseite eines unterstützten Dienstes bei aktiviertem Rich Theater Experience startet."
   },

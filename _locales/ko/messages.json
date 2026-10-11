@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "자동으로 시어터 모드 시작"
   },
+  "autoEnterTheaterOn": {
+    "message": "켜짐"
+  },
+  "autoEnterTheaterOff": {
+    "message": "꺼짐"
+  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experience가 활성화되어 있으면 지원되는 서비스의 시청 페이지에서 주요 동영상 재생이 시작될 때 시어터 모드로 전환합니다."
   },

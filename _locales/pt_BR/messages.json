@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "Ativar o modo cinema automaticamente"
   },
+  "autoEnterTheaterOn": {
+    "message": "Sim"
+  },
+  "autoEnterTheaterOff": {
+    "message": "Não"
+  },
   "autoEnterTheaterDescription": {
     "message": "Ative o modo cinema quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
   },

@@ -10,6 +10,7 @@ import {
 import { defaultShortcuts, type Shortcuts } from './shortcuts';
 import { DEFAULT_AUDIO_SETTINGS, sameAudioSettings, type AudioSettings } from '../audio-settings';
 import { DEFAULT_VOLUME_BOOST_ENABLED } from './volume-boost-settings';
+import { DEFAULT_AUTO_ENTER_THEATER } from './auto-theater';
 
 export type PlayerUiState = {
   theaterActive: boolean;
@@ -21,6 +22,7 @@ export type PlayerUiState = {
   raiseOnlyWithSubtitles: boolean;
   audio: AudioSettings;
   volumeBoost: boolean;
+  autoEnterTheater: boolean;
   accentColor: AccentColorPreset;
   captionStyle: CaptionStyle;
   shortcuts: Shortcuts;
@@ -37,6 +39,7 @@ export type PlayerUiAction =
   | { type: 'SET_RAISE_ONLY_WITH_SUBTITLES'; value: boolean }
   | { type: 'SET_AUDIO'; value: AudioSettings }
   | { type: 'SET_VOLUME_BOOST'; value: boolean }
+  | { type: 'SET_AUTO_ENTER_THEATER'; value: boolean }
   | { type: 'SET_ACCENT'; value: AccentColorPreset }
   | { type: 'SET_CAPTION_STYLE'; value: CaptionStyle }
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
@@ -51,6 +54,7 @@ const defaultState = (): PlayerUiState => ({
   raiseOnlyWithSubtitles: false,
   audio: DEFAULT_AUDIO_SETTINGS,
   volumeBoost: DEFAULT_VOLUME_BOOST_ENABLED,
+  autoEnterTheater: DEFAULT_AUTO_ENTER_THEATER,
   accentColor: DEFAULT_ACCENT_COLOR,
   captionStyle: resolveCaptionStyle(null),
   shortcuts: { ...defaultShortcuts }
@@ -67,6 +71,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     && left.raiseOnlyWithSubtitles === right.raiseOnlyWithSubtitles
     && sameAudioSettings(left.audio, right.audio)
     && left.volumeBoost === right.volumeBoost
+    && left.autoEnterTheater === right.autoEnterTheater
     && left.accentColor === right.accentColor
     && left.captionStyle === right.captionStyle
     && left.shortcuts === right.shortcuts
@@ -105,6 +110,9 @@ function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
       break;
     case 'SET_VOLUME_BOOST':
       next = { ...state, volumeBoost: action.value };
+      break;
+    case 'SET_AUTO_ENTER_THEATER':
+      next = { ...state, autoEnterTheater: action.value };
       break;
     case 'SET_ACCENT':
       next = { ...state, accentColor: action.value };

@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "الدخول إلى وضع السينما تلقائيًا"
   },
+  "autoEnterTheaterOn": {
+    "message": "تشغيل"
+  },
+  "autoEnterTheaterOff": {
+    "message": "إيقاف"
+  },
   "autoEnterTheaterDescription": {
     "message": "ادخل إلى وضع السينما عندما يبدأ تشغيل الفيديو الرئيسي على صفحات المشاهدة في الخدمات المدعومة مع تفعيل Rich Theater Experience."
   },

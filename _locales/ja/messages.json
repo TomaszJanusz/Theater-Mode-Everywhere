@@ -685,6 +685,12 @@
   "autoEnterTheaterTitle": {
     "message": "シアターモードを自動的に開始"
   },
+  "autoEnterTheaterOn": {
+    "message": "オン"
+  },
+  "autoEnterTheaterOff": {
+    "message": "オフ"
+  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experienceが有効な場合、対応サービスの視聴ページでメイン動画の再生が始まるとシアターモードに切り替えます。"
   },

@@ -1,4 +1,5 @@
 export const AUTO_THEATER_STORAGE_KEY = 'autoEnterTheater';
+export const DEFAULT_AUTO_ENTER_THEATER = false;
 
 export function resolveAutoEnterTheater(value: unknown): boolean {
   return value === true;

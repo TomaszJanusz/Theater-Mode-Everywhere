@@ -463,6 +463,9 @@ function executeCommand(command: PlayerCommand): void {
     case 'TOGGLE_VOLUME_BOOST':
       toggleVolumeBoostCommand();
       break;
+    case 'TOGGLE_AUTO_THEATER':
+      toggleAutoTheaterCommand();
+      break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
       break;
@@ -991,14 +994,13 @@ function refreshExtensionAccentColor(): void {
   }
 }
 
-let autoEnterTheaterEnabled = false;
 let autoTheaterPolicyAllowed = false;
 let settingsLoadEpoch = 0;
 const autoTheaterVisit: { current: AutoTheaterVisit } = { current: { identity: null, entered: false } };
 let autoTheaterRuntime: AutoTheaterRuntime | null = null;
 
 function syncAutoTheaterRuntime(): void {
-  if (!refs.isInitialized || !autoEnterTheaterEnabled || !autoTheaterPolicyAllowed || window !== window.top) {
+  if (!refs.isInitialized || !ui().autoEnterTheater || !autoTheaterPolicyAllowed || window !== window.top) {
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
     return;
@@ -1009,7 +1011,7 @@ function syncAutoTheaterRuntime(): void {
   }
   autoTheaterRuntime = createAutoTheaterRuntime({
     visit: autoTheaterVisit,
-    enabled: () => autoEnterTheaterEnabled,
+    enabled: () => ui().autoEnterTheater,
     policyAllowed: () => autoTheaterPolicyAllowed,
     providerFlags: () => refs.providerFlags,
     editableFocused: () => editableFieldFocused() || theaterDialogOpen(),
@@ -1018,6 +1020,21 @@ function syncAutoTheaterRuntime(): void {
     findBestVideo,
     enter: enterTheaterMode
   });
+}
+
+function toggleAutoTheaterCommand(): void {
+  const next = !ui().autoEnterTheater;
+  uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: next });
+  syncAutoTheaterRuntime();
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [AUTO_THEATER_STORAGE_KEY]: next }).catch(error => {
+        console.error('[Theater Everywhere] Could not save automatic theater entry:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save automatic theater entry:', error);
+  }
 }
 
 async function checkBlacklistAndInit(): Promise<void> {
@@ -1049,7 +1066,6 @@ async function checkBlacklistAndInit(): Promise<void> {
       CAPTION_PREF_STORAGE_KEY
     ]);
     if (epoch !== settingsLoadEpoch) return;
-    autoEnterTheaterEnabled = resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]);
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
@@ -1057,6 +1073,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
+        autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
@@ -1096,7 +1113,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     refreshExtensionAccentColor();
   } catch (err) {
     if (epoch !== settingsLoadEpoch) return;
-    autoEnterTheaterEnabled = false;
+    uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: false });
     syncAutoTheaterRuntime();
     console.error('[Theater Everywhere] Error loading settings:', err);
     // Safe fallback: initialize if storage fails
@@ -2240,7 +2257,7 @@ export function bootstrapPlayerRuntime(): void {
       }
 
       if (changes[AUTO_THEATER_STORAGE_KEY]) {
-        autoEnterTheaterEnabled = resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue);
+        uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue) });
       }
 
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {

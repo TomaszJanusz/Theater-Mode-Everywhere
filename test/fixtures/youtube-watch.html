@@ -38,7 +38,9 @@
     const player = document.getElementById('movie_player');
     player.contentId = new URL(location.href).searchParams.get('v');
     player.getVideoData = () => ({ video_id: player.contentId });
-    player.getPlayerState = () => video.paused ? 2 : 1;
+    // YouTube can still report buffering when the native playing event fires.
+    player.reportedState = Number(new URL(location.href).searchParams.get('state') || 1);
+    player.getPlayerState = () => video.paused ? 2 : player.reportedState;
     if (new URL(location.href).searchParams.has('ad')) player.classList.add('ad-showing');
     if (video && canvas.captureStream) {
       video.srcObject = canvas.captureStream(12);

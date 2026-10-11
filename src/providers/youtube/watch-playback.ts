@@ -4,7 +4,6 @@ import type { WatchPlayback } from '../watch-playback';
 
 type WatchPlayer = HTMLElement & {
   getVideoData?: () => { video_id?: unknown };
-  getPlayerState?: () => unknown;
 };
 
 export const youtubeWatchPlayback: WatchPlayback = {
@@ -15,7 +14,9 @@ export const youtubeWatchPlayback: WatchPlayback = {
     if (!player || !watch || watch.hasAttribute('hidden')) return null;
     // The same element plays prerolls. Content metadata alone is insufficient.
     if (player.matches('.ad-showing, .ad-interrupting')) return null;
-    if (player.getVideoData?.().video_id !== identity || player.getPlayerState?.() !== 1) return null;
+    // getPlayerState() can still report buffering during the video's playing
+    // event. The shared bridge checks the media's actual playback state.
+    if (player.getVideoData?.().video_id !== identity) return null;
     const videos = player.querySelectorAll<HTMLVideoElement>('video.html5-main-video');
     return videos.length === 1 ? videos[0] : null;
   },
