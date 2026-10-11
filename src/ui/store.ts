@@ -8,7 +8,7 @@ import {
   type VideoFitMode
 } from './appearance';
 import { defaultShortcuts, type Shortcuts } from './shortcuts';
-import { DEFAULT_VOICE_BOOST, type VoiceBoostLevel } from './voice-boost-settings';
+import { DEFAULT_AUDIO_SETTINGS, sameAudioSettings, type AudioSettings } from '../audio-settings';
 
 export type PlayerUiState = {
   theaterActive: boolean;
@@ -18,7 +18,7 @@ export type PlayerUiState = {
   videoFit: VideoFitMode;
   pictureAlign: PictureAlign;
   raiseOnlyWithSubtitles: boolean;
-  voiceBoost: VoiceBoostLevel;
+  audio: AudioSettings;
   accentColor: AccentColorPreset;
   captionStyle: CaptionStyle;
   shortcuts: Shortcuts;
@@ -33,7 +33,7 @@ export type PlayerUiAction =
   | { type: 'SET_VIDEO_FIT'; value: VideoFitMode }
   | { type: 'SET_PICTURE_ALIGN'; value: PictureAlign }
   | { type: 'SET_RAISE_ONLY_WITH_SUBTITLES'; value: boolean }
-  | { type: 'SET_VOICE_BOOST'; value: VoiceBoostLevel }
+  | { type: 'SET_AUDIO'; value: AudioSettings }
   | { type: 'SET_ACCENT'; value: AccentColorPreset }
   | { type: 'SET_CAPTION_STYLE'; value: CaptionStyle }
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
@@ -46,7 +46,7 @@ const defaultState = (): PlayerUiState => ({
   videoFit: DEFAULT_VIDEO_FIT,
   pictureAlign: DEFAULT_PICTURE_ALIGN,
   raiseOnlyWithSubtitles: false,
-  voiceBoost: DEFAULT_VOICE_BOOST,
+  audio: DEFAULT_AUDIO_SETTINGS,
   accentColor: DEFAULT_ACCENT_COLOR,
   captionStyle: resolveCaptionStyle(null),
   shortcuts: { ...defaultShortcuts }
@@ -61,7 +61,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     && left.videoFit === right.videoFit
     && left.pictureAlign === right.pictureAlign
     && left.raiseOnlyWithSubtitles === right.raiseOnlyWithSubtitles
-    && left.voiceBoost === right.voiceBoost
+    && sameAudioSettings(left.audio, right.audio)
     && left.accentColor === right.accentColor
     && left.captionStyle === right.captionStyle
     && left.shortcuts === right.shortcuts
@@ -95,8 +95,8 @@ function reduce(state: PlayerUiState, action: PlayerUiAction): PlayerUiState {
     case 'SET_RAISE_ONLY_WITH_SUBTITLES':
       next = { ...state, raiseOnlyWithSubtitles: action.value };
       break;
-    case 'SET_VOICE_BOOST':
-      next = { ...state, voiceBoost: action.value };
+    case 'SET_AUDIO':
+      next = { ...state, audio: action.value };
       break;
     case 'SET_ACCENT':
       next = { ...state, accentColor: action.value };

@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Сильное"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Недоступно"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "Усиление голоса недоступно для этого видео"
+  "audioUnavailableHud": {
+    "message": "Настройки звука недоступны для этого видео"
   },
   "voiceBoostHud": {
     "message": "Усиление голоса: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Выравнивание громкости"
+  },
+  "volumeLevelingOff": {
+    "message": "Выкл."
+  },
+  "volumeLevelingLight": {
+    "message": "Слабое"
+  },
+  "volumeLevelingStrong": {
+    "message": "Сильное"
+  },
+  "volumeLevelingHud": {
+    "message": "Выравнивание громкости: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Басы"
+  },
+  "bassLess": {
+    "message": "Меньше"
+  },
+  "bassOriginal": {
+    "message": "Исходные"
+  },
+  "bassMore": {
+    "message": "Больше"
+  },
+  "bassHud": {
+    "message": "Басы: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Чат"
+  },
+  "settingsSectionAudio": {
+    "message": "Звук"
   },
   "settingsSectionPlayer": {
     "message": "Плеер"

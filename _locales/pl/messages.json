@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Mocne"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Niedostępne"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "Wzmocnienie głosu jest niedostępne dla tego wideo"
+  "audioUnavailableHud": {
+    "message": "Ustawienia dźwięku są niedostępne dla tego wideo"
   },
   "voiceBoostHud": {
     "message": "Wzmocnienie głosu: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Wyrównanie głośności"
+  },
+  "volumeLevelingOff": {
+    "message": "Wył."
+  },
+  "volumeLevelingLight": {
+    "message": "Lekkie"
+  },
+  "volumeLevelingStrong": {
+    "message": "Mocne"
+  },
+  "volumeLevelingHud": {
+    "message": "Wyrównanie głośności: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Bas"
+  },
+  "bassLess": {
+    "message": "Mniej"
+  },
+  "bassOriginal": {
+    "message": "Oryginalny"
+  },
+  "bassMore": {
+    "message": "Więcej"
+  },
+  "bassHud": {
+    "message": "Bas: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Czat"
+  },
+  "settingsSectionAudio": {
+    "message": "Dźwięk"
   },
   "settingsSectionPlayer": {
     "message": "Odtwarzacz"

@@ -110,17 +110,23 @@ import {
   STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
-  STATUS_HUD_VOICE_BOOST_ICON
+  AUDIO_SETTING_ICONS
 } from './hud';
 import {
-  DEFAULT_VOICE_BOOST,
-  nextVoiceBoost,
-  resolveVoiceBoost,
-  VOICE_BOOST_EVENT,
-  VOICE_BOOST_STORAGE_KEY,
-  voiceBoostLabelKey,
-  type VoiceBoostLevel
-} from './voice-boost-settings';
+  AUDIO_HUD_KEYS,
+  AUDIO_SETTINGS_EVENT,
+  AUDIO_STORAGE_KEYS,
+  audioLevelLabelKey,
+  cycleAudioSetting,
+  DEFAULT_AUDIO_SETTINGS,
+  isNeutralAudio,
+  resolveAudioSettings,
+  resolveStoredAudioSettings,
+  sameAudioSettings,
+  writeAudioDataset,
+  type AudioSettingName,
+  type AudioSettings
+} from '../audio-settings';
 import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
@@ -222,64 +228,64 @@ function prepareWebAudio(video: HTMLVideoElement): void {
   });
 }
 
-function voiceBoostNeedsCors(video: HTMLVideoElement): boolean {
-  return ui().voiceBoost !== 'off' && !webAudioCorsTried.has(video)
+function audioNeedsCors(video: HTMLVideoElement): boolean {
+  return !isNeutralAudio(ui().audio) && !webAudioCorsTried.has(video)
     && mediaAudioAccess(video, window.location.origin) === 'needs-cors';
 }
 
-function voiceBoostAvailable(video: HTMLVideoElement): boolean {
+function audioAvailable(video: HTMLVideoElement): boolean {
   const access = mediaAudioAccess(video, window.location.origin);
   if (access === 'protected') return false;
   // Loaded again without CORS: the server refused it.
   return !(access === 'needs-cors' && webAudioCorsTried.has(video) && video.readyState >= 1);
 }
 
-let voiceBoostVideo: HTMLVideoElement | null = null;
+let audioVideo: HTMLVideoElement | null = null;
 
-function pushVoiceBoost(video: HTMLVideoElement, level: VoiceBoostLevel): void {
-  if ((video.dataset.theaterVoice ?? DEFAULT_VOICE_BOOST) === level) return;
-  video.dataset.theaterVoice = level;
-  video.dispatchEvent(new CustomEvent(VOICE_BOOST_EVENT, { bubbles: true, composed: true }));
+function pushAudioSettings(video: HTMLVideoElement, settings: AudioSettings): void {
+  if (!writeAudioDataset(video.dataset, settings)) return;
+  video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));
 }
 
-/** The level follows the theater video; any other element returns to its own sound. */
-function syncVoiceBoost(): void {
+/** Settings follow the theater video; any other element returns to its own sound. */
+function syncAudioSettings(): void {
   const video = sessionNativeVideo();
-  if (voiceBoostVideo && voiceBoostVideo !== video) pushVoiceBoost(voiceBoostVideo, 'off');
-  voiceBoostVideo = video;
+  if (audioVideo && audioVideo !== video) pushAudioSettings(audioVideo, DEFAULT_AUDIO_SETTINGS);
+  audioVideo = video;
   if (!video) return;
-  if (voiceBoostNeedsCors(video)) prepareWebAudio(video);
-  pushVoiceBoost(video, ui().voiceBoost);
+  if (audioNeedsCors(video)) prepareWebAudio(video);
+  pushAudioSettings(video, ui().audio);
 }
 
-function releaseVoiceBoost(): void {
-  if (voiceBoostVideo) pushVoiceBoost(voiceBoostVideo, 'off');
-  voiceBoostVideo = null;
+function releaseAudioSettings(): void {
+  if (audioVideo) pushAudioSettings(audioVideo, DEFAULT_AUDIO_SETTINGS);
+  audioVideo = null;
 }
 
-function applyVoiceBoost(level: VoiceBoostLevel): void {
-  if (level === ui().voiceBoost) return;
-  uiStore.dispatch({ type: 'SET_VOICE_BOOST', value: level });
-  syncVoiceBoost();
+function applyAudioSettings(settings: AudioSettings): void {
+  if (sameAudioSettings(settings, ui().audio)) return;
+  uiStore.dispatch({ type: 'SET_AUDIO', value: settings });
+  syncAudioSettings();
 }
 
-function cycleVoiceBoost(): void {
+function cycleAudioSettingCommand(name: AudioSettingName): void {
   const video = sessionNativeVideo();
-  if (!video || !voiceBoostAvailable(video)) {
-    triggerStatusIndicator(t('voiceBoostUnavailableHud'), STATUS_HUD_VOICE_BOOST_ICON);
+  const icon = AUDIO_SETTING_ICONS[name].hud;
+  if (!video || !audioAvailable(video)) {
+    triggerStatusIndicator(t('audioUnavailableHud'), icon);
     return;
   }
-  const next = nextVoiceBoost(ui().voiceBoost);
-  applyVoiceBoost(next);
-  triggerStatusIndicator(t('voiceBoostHud', t(voiceBoostLabelKey(next))), STATUS_HUD_VOICE_BOOST_ICON);
+  const next = cycleAudioSetting(ui().audio, name);
+  applyAudioSettings(next);
+  triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), icon);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-      void chrome.storage.sync.set({ [VOICE_BOOST_STORAGE_KEY]: next }).catch(error => {
-        console.error('[Theater Everywhere] Could not save voice boost:', error);
+      void chrome.storage.sync.set({ [AUDIO_STORAGE_KEYS[name]]: next[name] }).catch(error => {
+        console.error('[Theater Everywhere] Could not save audio setting:', error);
       });
     }
   } catch (error) {
-    console.error('[Theater Everywhere] Could not save voice boost:', error);
+    console.error('[Theater Everywhere] Could not save audio setting:', error);
   }
 }
 
@@ -397,8 +403,8 @@ function executeCommand(command: PlayerCommand): void {
     case 'TOGGLE_CONTROLS_PIN':
       toggleControlsPin();
       break;
-    case 'CYCLE_VOICE_BOOST':
-      cycleVoiceBoost();
+    case 'CYCLE_AUDIO':
+      cycleAudioSettingCommand(command.setting);
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -512,8 +518,8 @@ function bindChromeActions(): void {
     exitTheaterMode,
     enterTheaterMode,
     focusTheaterPage,
-    syncVoiceBoost,
-    voiceBoostAvailable,
+    syncAudioSettings,
+    audioAvailable,
     refreshHostPlayerLayout,
     setIcon: toolbar.setIcon,
     setTooltipContent: toolbar.setTooltipContent,
@@ -947,7 +953,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
       PICTURE_ALIGN_STORAGE_KEY,
-      VOICE_BOOST_STORAGE_KEY,
+      ...Object.values(AUDIO_STORAGE_KEYS),
       RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
@@ -963,7 +969,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
-        voiceBoost: resolveVoiceBoost(data[VOICE_BOOST_STORAGE_KEY]),
+        audio: resolveStoredAudioSettings(data),
         raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
@@ -1939,7 +1945,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     // The theater mode visual transition masks any brief re-fetch.
     cancelBoostReload?.();
     cancelBoostReload = null;
-    if (refs.volumeBoostEnabled || voiceBoostNeedsCors(video)) prepareWebAudio(video);
+    if (refs.volumeBoostEnabled || audioNeedsCors(video)) prepareWebAudio(video);
 
     // Isolate pointer and mouse events to block double-toggles in custom players
     const eventTypes = ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'];
@@ -2007,7 +2013,7 @@ function exitTheaterMode(
     video.classList.remove('controls-visible');
   }
 
-  releaseVoiceBoost();
+  releaseAudioSettings();
   if (session.element && (session.element.tagName === 'VIDEO' || providerPlayback)) {
     destroyCustomControls();
   }
@@ -2139,8 +2145,12 @@ export function bootstrapPlayerRuntime(): void {
       if (changes[PICTURE_ALIGN_STORAGE_KEY]) {
         applyPictureAlign(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
       }
-      if (changes[VOICE_BOOST_STORAGE_KEY]) {
-        applyVoiceBoost(resolveVoiceBoost(changes[VOICE_BOOST_STORAGE_KEY].newValue));
+      if (Object.values(AUDIO_STORAGE_KEYS).some((key) => changes[key])) {
+        const current = ui().audio;
+        applyAudioSettings(resolveAudioSettings((name) => {
+          const change = changes[AUDIO_STORAGE_KEYS[name]];
+          return change ? change.newValue : current[name];
+        }));
       }
       if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
         applyRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);

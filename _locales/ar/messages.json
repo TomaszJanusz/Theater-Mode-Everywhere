@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "قوي"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "غير متاح"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "تعزيز الحوار غير متاح لهذا الفيديو"
+  "audioUnavailableHud": {
+    "message": "إعدادات الصوت غير متاحة لهذا الفيديو"
   },
   "voiceBoostHud": {
     "message": "تعزيز الحوار: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "موازنة مستوى الصوت"
+  },
+  "volumeLevelingOff": {
+    "message": "إيقاف"
+  },
+  "volumeLevelingLight": {
+    "message": "خفيفة"
+  },
+  "volumeLevelingStrong": {
+    "message": "قوية"
+  },
+  "volumeLevelingHud": {
+    "message": "موازنة مستوى الصوت: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "الجهير"
+  },
+  "bassLess": {
+    "message": "أقل"
+  },
+  "bassOriginal": {
+    "message": "الأصلي"
+  },
+  "bassMore": {
+    "message": "أكثر"
+  },
+  "bassHud": {
+    "message": "الجهير: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "الدردشة"
+  },
+  "settingsSectionAudio": {
+    "message": "الصوت"
   },
   "settingsSectionPlayer": {
     "message": "المشغل"

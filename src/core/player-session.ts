@@ -1,3 +1,4 @@
+import type { AudioSettingName } from '../audio-settings';
 import { DisposableScope } from './disposable-scope';
 import { createSessionId } from '../protocol/frame-messages';
 import { emptyMediaSnapshot, type MediaSnapshot } from './media-snapshot';
@@ -23,7 +24,7 @@ export type PlayerCommand =
   | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
   | { type: 'CYCLE_FIT' }
   | { type: 'CYCLE_LAYOUT' }
-  | { type: 'CYCLE_VOICE_BOOST' }
+  | { type: 'CYCLE_AUDIO'; setting: AudioSettingName }
   | { type: 'TOGGLE_HELP' }
   | { type: 'TOGGLE_CONTROLS_PIN' };
 

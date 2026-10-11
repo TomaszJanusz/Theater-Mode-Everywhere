@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Сильне"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Недоступно"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "Посилення голосу недоступне для цього відео"
+  "audioUnavailableHud": {
+    "message": "Налаштування звуку недоступні для цього відео"
   },
   "voiceBoostHud": {
     "message": "Посилення голосу: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Вирівнювання гучності"
+  },
+  "volumeLevelingOff": {
+    "message": "Вимк."
+  },
+  "volumeLevelingLight": {
+    "message": "Слабке"
+  },
+  "volumeLevelingStrong": {
+    "message": "Сильне"
+  },
+  "volumeLevelingHud": {
+    "message": "Вирівнювання гучності: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Баси"
+  },
+  "bassLess": {
+    "message": "Менше"
+  },
+  "bassOriginal": {
+    "message": "Оригінальні"
+  },
+  "bassMore": {
+    "message": "Більше"
+  },
+  "bassHud": {
+    "message": "Баси: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Чат"
+  },
+  "settingsSectionAudio": {
+    "message": "Звук"
   },
   "settingsSectionPlayer": {
     "message": "Програвач"

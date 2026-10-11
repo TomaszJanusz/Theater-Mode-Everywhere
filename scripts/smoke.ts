@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
+import { chromium, firefox, type BrowserContext, type Locator, type Page } from 'playwright';
 
 type SmokeBrowser = 'chromium' | 'firefox';
 
@@ -571,11 +571,13 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Tab');
   if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');
-  if (!await menu.locator('.voice-boost-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the voice boost setting.');
-  await page.keyboard.press('Tab');
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
+  for (const name of ['voice', 'leveling', 'bass']) {
+    await page.keyboard.press('Tab');
+    if (!await menu.locator(`.audio-${name}-btn`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
+  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.extension-settings-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab skipped extension settings.');
@@ -1165,39 +1167,48 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
   console.log('smoke layout: settings row, repeat/input/help guards, Fit/Fill/Stretch, saved preference and live shortcut updates passed');
 }
 
-async function assertVoiceBoost(page: Page, context?: BrowserContext): Promise<void> {
+async function assertAudioSettings(page: Page, context?: BrowserContext): Promise<void> {
   const video = page.locator('video#player');
   const gear = page.locator('.player-settings-btn');
-  const row = page.locator('.voice-boost-btn');
   const hud = page.locator('.theater-everywhere-volume-overlay.status-hud');
-  const shapes = (locator: typeof row) => locator.locator('svg').first().evaluate(svg => svg.innerHTML);
-  const voiceState = () => video.evaluate((video: HTMLVideoElement) => ({
-    level: video.dataset.theaterVoice, graph: video.dataset.theaterBoostReady === 'true'
+  const shapes = (locator: Locator) => locator.locator('svg').first().evaluate(svg => svg.innerHTML);
+  const media = () => video.evaluate((video: HTMLVideoElement) => ({
+    voice: video.dataset.theaterVoice, leveling: video.dataset.theaterLeveling, bass: video.dataset.theaterBass
   }));
-  const cycleTo = async (detail: string) => {
+  const cycleTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string) => {
+    const row = page.locator(`.audio-${name}-btn`);
     await row.click();
-    await page.waitForFunction(detail => document.getElementById('theater-everywhere-ui')?.shadowRoot
-      ?.querySelector('.voice-boost-btn .theater-settings-detail')?.textContent === detail, detail);
-    if (await hud.innerText() !== `Voice boost: ${detail}`) fail(`Voice boost HUD did not confirm ${detail}.`);
-    if (await shapes(hud) !== await shapes(row)) fail('Voice boost HUD icon differs from its settings row.');
+    await page.waitForFunction(([name, detail]) => document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector(`.audio-${name}-btn .theater-settings-detail`)?.textContent === detail, [name, detail]);
+    if (await hud.innerText() !== `${hudLabel}: ${detail}`) fail(`${hudLabel} HUD did not confirm ${detail}.`);
+    if (await shapes(hud) !== await shapes(row)) fail(`${hudLabel} HUD icon differs from its settings row.`);
   };
 
-  if (!await row.isVisible()) await gear.click();
-  await row.waitFor();
-  if (await row.locator('.theater-settings-detail').innerText() !== 'Off') fail('Voice boost should default to Off.');
-  if (await row.getAttribute('aria-keyshortcuts') !== null) fail('Voice boost row advertises a shortcut it does not have.');
-  await cycleTo('Light');
+  if (!await page.locator('.audio-voice-btn').isVisible()) await gear.click();
+  const section = page.locator('[data-settings-section="audio"]');
+  await section.waitFor();
+  if (await section.locator('.theater-settings-heading').textContent() !== 'Audio') fail('Audio section heading is missing.');
+  const details = await section.locator('.theater-settings-detail').allInnerTexts();
+  if (details.join('|') !== 'Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
+  if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== null) fail('Audio rows advertise shortcuts they do not have.');
+  await cycleTo('voice', 'Voice boost', 'Light');
   // The click is the user activation the MAIN world needs to start Web Audio.
   await page.waitForFunction(() => {
     const player = document.querySelector<HTMLVideoElement>('video#player');
     return player?.dataset.theaterVoice === 'light' && player.dataset.theaterBoostReady === 'true';
   });
-  await cycleTo('Strong');
-  if ((await voiceState()).level !== 'strong') fail('Strong voice boost did not reach the media element.');
+  await cycleTo('leveling', 'Volume leveling', 'Light');
+  await cycleTo('leveling', 'Volume leveling', 'Strong');
+  await cycleTo('bass', 'Bass', 'More');
+  if (JSON.stringify(await media()) !== JSON.stringify({ voice: 'light', leveling: 'strong', bass: 'more' })) {
+    fail(`Audio settings did not reach the media element: ${JSON.stringify(await media())}`);
+  }
   if (context) {
     const worker = await extensionWorker(context);
-    const saved = await worker.evaluate(() => chrome.storage.sync.get('voiceBoost'));
-    if (saved.voiceBoost !== 'strong') fail(`Voice boost was not saved: ${JSON.stringify(saved)}`);
+    const saved = await worker.evaluate(() => chrome.storage.sync.get(['voiceBoost', 'volumeLeveling', 'bassLevel']));
+    if (saved.voiceBoost !== 'light' || saved.volumeLeveling !== 'strong' || saved.bassLevel !== 'more') {
+      fail(`Audio settings were not saved: ${JSON.stringify(saved)}`);
+    }
   }
 
   const layout = page.locator('.picture-layout-btn');
@@ -1209,19 +1220,28 @@ async function assertVoiceBoost(page: Page, context?: BrowserContext): Promise<v
 
   await page.keyboard.press('Escape'); // Close settings.
   await exitTheater(page);
-  if ((await voiceState()).level !== 'off') fail('Voice boost kept processing the host player after theater exit.');
+  if (JSON.stringify(await media()) !== JSON.stringify({ voice: 'off', leveling: 'off', bass: 'original' })) {
+    fail('Audio settings kept processing the host player after theater exit.');
+  }
   await enterTheaterFromPicture(page);
-  await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterVoice === 'strong');
+  await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterLeveling === 'strong');
   if (context) {
     const worker = await extensionWorker(context);
-    await worker.evaluate(() => chrome.storage.sync.set({ voiceBoost: 'off' }));
-    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterVoice === 'off');
+    await worker.evaluate(() => chrome.storage.sync.remove(['voiceBoost', 'volumeLeveling', 'bassLevel']));
+    await page.waitForFunction(() => {
+      const player = document.querySelector<HTMLVideoElement>('video#player');
+      return player?.dataset.theaterVoice === 'off' && player.dataset.theaterLeveling === 'off' && player.dataset.theaterBass === 'original';
+    });
   } else {
     await gear.click();
-    await cycleTo('Off');
+    await cycleTo('voice', 'Voice boost', 'Strong');
+    await cycleTo('voice', 'Voice boost', 'Off');
+    await cycleTo('leveling', 'Volume leveling', 'Off');
+    await cycleTo('bass', 'Bass', 'Less');
+    await cycleTo('bass', 'Bass', 'Original');
     await page.keyboard.press('Escape');
   }
-  console.log('smoke voice boost: settings cycle, HUD icons, MAIN-world graph, saved level and exit restore passed');
+  console.log('smoke audio: section, three settings, HUD icons, MAIN-world graph, saved levels and exit restore passed');
 }
 
 async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: BrowserContext): Promise<void> {
@@ -1238,7 +1258,7 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
   await page.keyboard.press('f');
   await page.waitForFunction(() => !document.fullscreenElement);
   await assertPictureLayout(page, context);
-  await assertVoiceBoost(page, context);
+  await assertAudioSettings(page, context);
   await page.keyboard.press('h');
   const help = page.locator('.theater-help-overlay');
   await help.waitFor();

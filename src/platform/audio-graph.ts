@@ -1,6 +1,6 @@
-import type { VoiceBoostLevel } from '../ui/voice-boost-settings';
+import { isNeutralAudio, type AudioSettings } from '../audio-settings';
 
-type Preset = {
+type VoicePreset = {
   /** Dialogue band added on top of the centre (mid) signal. */
   dialogue: number;
   /** Level of the stereo difference (side) signal, where music and ambience spread. */
@@ -11,53 +11,86 @@ type Preset = {
   trim: number;
 };
 
-const PRESETS: Record<Exclude<VoiceBoostLevel, 'off'>, Preset> = {
+const VOICE_PRESETS: Record<Exclude<AudioSettings['voice'], 'off'>, VoicePreset> = {
   light: { dialogue: 1, side: 0.8, threshold: -24, ratio: 2.5, trim: 0.8 },
   strong: { dialogue: 2.5, side: 0.55, threshold: -30, ratio: 4, trim: 0.85 }
 };
 
-const FADE_SECONDS = 0.03;
-
-export type VoiceBoostChain = {
-  readonly input: AudioNode;
-  readonly output: AudioNode;
-  setLevel(level: VoiceBoostLevel): void;
-};
+type LevelingPreset = { threshold: number; knee: number; ratio: number; attack: number; release: number; trim: number };
 
 /**
- * Dialogue is mixed to the centre of almost every stereo track, so the chain
- * lifts the speech band of mid = (L+R)/2 and lowers side = (L-R)/2, then
- * compresses and limits. "Off" crossfades to the untouched signal.
+ * A low threshold with the compressor's automatic makeup gain lifts quiet
+ * passages and quiet videos while holding loud ones back. "Strong" is the
+ * night setting: explosions barely rise above dialogue.
  */
-export function createVoiceBoostChain(ctx: BaseAudioContext): VoiceBoostChain {
-  const gain = (value: number) => {
-    const node = ctx.createGain();
-    node.gain.value = value;
-    return node;
-  };
+const LEVELING_PRESETS: Record<Exclude<AudioSettings['leveling'], 'off'>, LevelingPreset> = {
+  light: { threshold: -32, knee: 18, ratio: 2.5, attack: 0.02, release: 0.8, trim: 0.9 },
+  strong: { threshold: -40, knee: 12, ratio: 6, attack: 0.004, release: 0.5, trim: 1 }
+};
 
-  const input = gain(1);
-  const output = gain(1);
-  const dry = gain(1);
-  const wet = gain(0);
+const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6 };
+
+const FADE_SECONDS = 0.03;
+
+export type AudioChain = {
+  readonly input: AudioNode;
+  readonly output: AudioNode;
+  apply(settings: AudioSettings): void;
+};
+
+type Stage = { input: AudioNode; output: AudioNode };
+
+function gainNode(ctx: BaseAudioContext, value: number): GainNode {
+  const node = ctx.createGain();
+  node.gain.value = value;
+  return node;
+}
+
+function glide(ctx: BaseAudioContext, param: AudioParam, value: number): void {
+  param.cancelScheduledValues(ctx.currentTime);
+  param.setTargetAtTime(value, ctx.currentTime, FADE_SECONDS);
+}
+
+/** Crossfades between the untouched signal and an effect so switching never clicks. */
+function crossfade(ctx: BaseAudioContext, effect: Stage) {
+  const input = gainNode(ctx, 1);
+  const output = gainNode(ctx, 1);
+  const dry = gainNode(ctx, 1);
+  const wet = gainNode(ctx, 0);
   input.connect(dry).connect(output);
+  input.connect(effect.input);
+  effect.output.connect(wet).connect(output);
+  return {
+    input,
+    output,
+    setActive(active: boolean) {
+      glide(ctx, dry.gain, active ? 0 : 1);
+      glide(ctx, wet.gain, active ? 1 : 0);
+    }
+  };
+}
 
+/**
+ * Dialogue is mixed to the centre of almost every stereo track, so the voice
+ * stage lifts the speech band of mid = (L+R)/2 and lowers side = (L-R)/2,
+ * then compresses.
+ */
+function voiceStage(ctx: BaseAudioContext) {
   // Splitting 5.1 discretely would keep only front left/right and drop the
   // centre channel that carries dialogue; downmix to stereo first.
-  const stereo = gain(1);
+  const stereo = gainNode(ctx, 1);
   stereo.channelCount = 2;
   stereo.channelCountMode = 'explicit';
   stereo.channelInterpretation = 'speakers';
-  input.connect(stereo);
   const split = ctx.createChannelSplitter(2);
   stereo.connect(split);
 
-  const mid = gain(0.5);
+  const mid = gainNode(ctx, 0.5);
   split.connect(mid, 0);
   split.connect(mid, 1);
-  const side = gain(1);
-  const sideLeft = gain(0.5);
-  const sideRight = gain(-0.5);
+  const side = gainNode(ctx, 1);
+  const sideLeft = gainNode(ctx, 0.5);
+  const sideRight = gainNode(ctx, -0.5);
   split.connect(sideLeft, 0);
   split.connect(sideRight, 1);
   sideLeft.connect(side);
@@ -69,15 +102,15 @@ export function createVoiceBoostChain(ctx: BaseAudioContext): VoiceBoostChain {
   band.type = 'bandpass';
   band.frequency.value = 2000;
   band.Q.value = 0.6;
-  const dialogue = gain(0);
-  const midOut = gain(1);
+  const dialogue = gainNode(ctx, 0);
+  const midOut = gainNode(ctx, 1);
   mid.connect(midOut);
   mid.connect(band).connect(dialogue).connect(midOut);
-  const sideOut = gain(1);
+  const sideOut = gainNode(ctx, 1);
   side.connect(sideOut);
 
   const merge = ctx.createChannelMerger(2);
-  const sideInverted = gain(-1);
+  const sideInverted = gainNode(ctx, -1);
   midOut.connect(merge, 0, 0);
   sideOut.connect(merge, 0, 0);
   midOut.connect(merge, 0, 1);
@@ -87,37 +120,94 @@ export function createVoiceBoostChain(ctx: BaseAudioContext): VoiceBoostChain {
   compressor.knee.value = 12;
   compressor.attack.value = 0.005;
   compressor.release.value = 0.25;
-  const trim = gain(1);
-  const limiter = ctx.createDynamicsCompressor();
-  limiter.threshold.value = -1;
-  limiter.knee.value = 0;
-  limiter.ratio.value = 20;
-  limiter.attack.value = 0.002;
-  limiter.release.value = 0.1;
-  merge.connect(compressor).connect(trim).connect(limiter).connect(wet).connect(output);
+  const trim = gainNode(ctx, 1);
+  merge.connect(compressor).connect(trim);
 
-  const glide = (param: AudioParam, value: number) => {
-    param.cancelScheduledValues(ctx.currentTime);
-    param.setTargetAtTime(value, ctx.currentTime, FADE_SECONDS);
-  };
-
+  const fade = crossfade(ctx, { input: stereo, output: trim });
   return {
-    input,
-    output,
-    setLevel(level) {
-      if (level === 'off') {
-        glide(dry.gain, 1);
-        glide(wet.gain, 0);
-        return;
-      }
-      const preset = PRESETS[level];
+    input: fade.input,
+    output: fade.output,
+    set(level: AudioSettings['voice']) {
+      if (level === 'off') return fade.setActive(false);
+      const preset = VOICE_PRESETS[level];
       dialogue.gain.value = preset.dialogue;
       sideOut.gain.value = preset.side;
       compressor.threshold.value = preset.threshold;
       compressor.ratio.value = preset.ratio;
       trim.gain.value = preset.trim;
-      glide(dry.gain, 0);
-      glide(wet.gain, 1);
+      fade.setActive(true);
+    }
+  };
+}
+
+function bassStage(ctx: BaseAudioContext) {
+  // A 0 dB shelf passes the signal through unchanged.
+  const shelf = ctx.createBiquadFilter();
+  shelf.type = 'lowshelf';
+  shelf.frequency.value = 150;
+  shelf.gain.value = 0;
+  return {
+    input: shelf,
+    output: shelf,
+    set(level: AudioSettings['bass']) {
+      glide(ctx, shelf.gain, BASS_SHELF_DB[level]);
+    }
+  };
+}
+
+function levelingStage(ctx: BaseAudioContext) {
+  const compressor = ctx.createDynamicsCompressor();
+  const trim = gainNode(ctx, 1);
+  compressor.connect(trim);
+  const fade = crossfade(ctx, { input: compressor, output: trim });
+  return {
+    input: fade.input,
+    output: fade.output,
+    set(level: AudioSettings['leveling']) {
+      if (level === 'off') return fade.setActive(false);
+      const preset = LEVELING_PRESETS[level];
+      compressor.threshold.value = preset.threshold;
+      compressor.knee.value = preset.knee;
+      compressor.ratio.value = preset.ratio;
+      compressor.attack.value = preset.attack;
+      compressor.release.value = preset.release;
+      trim.gain.value = preset.trim;
+      fade.setActive(true);
+    }
+  };
+}
+
+/** Voice, then bass, then leveling, with one limiter guarding full scale. */
+export function createAudioChain(ctx: BaseAudioContext): AudioChain {
+  const voice = voiceStage(ctx);
+  const bass = bassStage(ctx);
+  const leveling = levelingStage(ctx);
+  const threshold = -1;
+  const ratio = 20;
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = threshold;
+  limiter.knee.value = 0;
+  limiter.ratio.value = ratio;
+  limiter.attack.value = 0.002;
+  limiter.release.value = 0.1;
+  // Web Audio applies makeup gain of 0.6 x the full-scale reduction; undo it
+  // so the limiter only touches peaks. Untouched audio bypasses it entirely.
+  const makeupDb = 0.6 * (-threshold - -threshold / ratio);
+  const unmakeup = gainNode(ctx, 10 ** (-makeupDb / 20));
+  limiter.connect(unmakeup);
+  const guard = crossfade(ctx, { input: limiter, output: unmakeup });
+  voice.output.connect(bass.input);
+  bass.output.connect(leveling.input);
+  leveling.output.connect(guard.input);
+
+  return {
+    input: voice.input,
+    output: guard.output,
+    apply(settings) {
+      voice.set(settings.voice);
+      bass.set(settings.bass);
+      leveling.set(settings.leveling);
+      guard.setActive(!isNeutralAudio(settings));
     }
   };
 }

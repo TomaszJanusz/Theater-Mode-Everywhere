@@ -4,8 +4,8 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { mediaAudioAccess } from './media-audio-access';
-import { createVoiceBoostChain, type VoiceBoostChain } from './voice-boost-graph';
-import { resolveVoiceBoost, VOICE_BOOST_EVENT } from '../ui/voice-boost-settings';
+import { createAudioChain, type AudioChain } from './audio-graph';
+import { AUDIO_SETTINGS_EVENT, isNeutralAudio, readAudioDataset } from '../audio-settings';
 import { queryPlayerUi } from '../ui/root';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
@@ -240,17 +240,17 @@ export function installMainWorldRuntime(): void {
 
       const ctx = new AudioCtx();
       const source = ctx.createMediaElementSource(video);
-      const voice = createVoiceBoostChain(ctx);
+      const chain = createAudioChain(ctx);
       const gain = ctx.createGain();
 
-      source.connect(voice.input);
-      voice.output.connect(gain);
+      source.connect(chain.input);
+      chain.output.connect(gain);
       gain.connect(ctx.destination);
-      voice.setLevel(resolveVoiceBoost(video.dataset.theaterVoice));
+      chain.apply(readAudioDataset(video.dataset));
 
       boosted._theaterAudioCtx = ctx;
       boosted._theaterGainNode = gain;
-      boosted._theaterVoiceChain = voice;
+      boosted._theaterAudioChain = chain;
       video.dataset.theaterBoostReady = 'true';
       window.dispatchEvent(new CustomEvent('theater-everywhere-boost-ready'));
 
@@ -615,17 +615,17 @@ export function installMainWorldRuntime(): void {
     }
   });
 
-  window.addEventListener(VOICE_BOOST_EVENT, (event: Event) => {
+  window.addEventListener(AUDIO_SETTINGS_EVENT, (event: Event) => {
     const video = event.composedPath()[0];
     if (!(video instanceof HTMLVideoElement)) return;
-    const level = resolveVoiceBoost(video.dataset.theaterVoice);
-    const chain = (video as HTMLVideoElement & { _theaterVoiceChain?: VoiceBoostChain })._theaterVoiceChain;
+    const settings = readAudioDataset(video.dataset);
+    const chain = (video as HTMLVideoElement & { _theaterAudioChain?: AudioChain })._theaterAudioChain;
     if (chain) {
-      chain.setLevel(level);
+      chain.apply(settings);
       return;
     }
     const multiplier = parseFloat(video.dataset.theaterBoost || '1.0');
-    if (level === 'off') {
+    if (isNeutralAudio(settings)) {
       if (pendingVideo === video && !(multiplier > 1)) pendingVideo = null;
       return;
     }
@@ -638,7 +638,7 @@ export function installMainWorldRuntime(): void {
       if (pendingVideo === video && navigator.userActivation?.isActive) setupAudioGraph(video);
     };
     setupWhileActive();
-    // A CORS reload started for this level is usable once metadata arrives.
+    // A CORS reload started for these settings is usable once metadata arrives.
     if (pendingVideo === video) video.addEventListener('loadedmetadata', setupWhileActive, { once: true });
   }, true);
 }

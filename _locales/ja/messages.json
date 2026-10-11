@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "強"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "利用不可"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "この動画では音声強調を使用できません"
+  "audioUnavailableHud": {
+    "message": "この動画ではオーディオ設定を使用できません"
   },
   "voiceBoostHud": {
     "message": "音声強調: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "音量の均一化"
+  },
+  "volumeLevelingOff": {
+    "message": "オフ"
+  },
+  "volumeLevelingLight": {
+    "message": "弱"
+  },
+  "volumeLevelingStrong": {
+    "message": "強"
+  },
+  "volumeLevelingHud": {
+    "message": "音量の均一化: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "低音"
+  },
+  "bassLess": {
+    "message": "少なめ"
+  },
+  "bassOriginal": {
+    "message": "オリジナル"
+  },
+  "bassMore": {
+    "message": "多め"
+  },
+  "bassHud": {
+    "message": "低音: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "チャット"
+  },
+  "settingsSectionAudio": {
+    "message": "オーディオ"
   },
   "settingsSectionPlayer": {
     "message": "プレーヤー"

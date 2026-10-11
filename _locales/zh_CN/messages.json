@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "强力"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "不可用"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "此视频不支持人声增强"
+  "audioUnavailableHud": {
+    "message": "此视频不支持音频设置"
   },
   "voiceBoostHud": {
     "message": "人声增强：$1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "音量均衡"
+  },
+  "volumeLevelingOff": {
+    "message": "关"
+  },
+  "volumeLevelingLight": {
+    "message": "轻度"
+  },
+  "volumeLevelingStrong": {
+    "message": "强力"
+  },
+  "volumeLevelingHud": {
+    "message": "音量均衡：$1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "低音"
+  },
+  "bassLess": {
+    "message": "减弱"
+  },
+  "bassOriginal": {
+    "message": "原始"
+  },
+  "bassMore": {
+    "message": "增强"
+  },
+  "bassHud": {
+    "message": "低音：$1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "聊天"
+  },
+  "settingsSectionAudio": {
+    "message": "音频"
   },
   "settingsSectionPlayer": {
     "message": "播放器"

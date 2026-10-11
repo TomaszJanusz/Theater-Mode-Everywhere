@@ -2,6 +2,7 @@ import { sanitizeContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
 import type { PlayerChromeContext } from './runtime-context';
+import type { AudioSettingName } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
@@ -31,9 +32,23 @@ const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/>
 export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
 export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
 
-const VOICE_BOOST_SHAPES = '<path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.16-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.66 3.05 1 4.55a5.77 5.77 0 0 1 .03 2.76L2 20"/><path d="M19.8 17.8a7.5 7.5 0 0 0 0-10.6"/><path d="M17 15a3.5 3.5 0 0 0 0-5"/>';
-export const VOICE_BOOST_ICON = strokeIcon(VOICE_BOOST_SHAPES, 16);
-export const STATUS_HUD_VOICE_BOOST_ICON = strokeIcon(VOICE_BOOST_SHAPES, 28);
+const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
+  // A speaking head.
+  voice: '<path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.16-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.66 3.05 1 4.55a5.77 5.77 0 0 1 .03 2.76L2 20"/><path d="M19.8 17.8a7.5 7.5 0 0 0 0-10.6"/><path d="M17 15a3.5 3.5 0 0 0 0-5"/>',
+  // Even level bars held between two limits.
+  leveling: '<path d="M3 4h18"/><path d="M3 20h18"/><path d="M6 9v6"/><path d="M10 8v8"/><path d="M14 9v6"/><path d="M18 8v8"/>',
+  // A loudspeaker with its woofer.
+  bass: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/>'
+};
+const audioIcons = (name: AudioSettingName) => ({
+  menu: strokeIcon(AUDIO_SETTING_SHAPES[name], 16),
+  hud: strokeIcon(AUDIO_SETTING_SHAPES[name], 28)
+});
+export const AUDIO_SETTING_ICONS: Record<AudioSettingName, { menu: string; hud: string }> = {
+  voice: audioIcons('voice'),
+  leveling: audioIcons('leveling'),
+  bass: audioIcons('bass')
+};
 
 export type CaptionHudView =
   | { kind: 'dismiss' }

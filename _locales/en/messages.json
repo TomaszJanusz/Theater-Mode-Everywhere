@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Strong"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Unavailable"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "Voice boost is unavailable for this video"
+  "audioUnavailableHud": {
+    "message": "Audio settings are unavailable for this video"
   },
   "voiceBoostHud": {
     "message": "Voice boost: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Volume leveling"
+  },
+  "volumeLevelingOff": {
+    "message": "Off"
+  },
+  "volumeLevelingLight": {
+    "message": "Light"
+  },
+  "volumeLevelingStrong": {
+    "message": "Strong"
+  },
+  "volumeLevelingHud": {
+    "message": "Volume leveling: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Bass"
+  },
+  "bassLess": {
+    "message": "Less"
+  },
+  "bassOriginal": {
+    "message": "Original"
+  },
+  "bassMore": {
+    "message": "More"
+  },
+  "bassHud": {
+    "message": "Bass: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Chat"
+  },
+  "settingsSectionAudio": {
+    "message": "Audio"
   },
   "settingsSectionPlayer": {
     "message": "Player"

@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Forte"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Indisponível"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "O realce de voz está indisponível para este vídeo"
+  "audioUnavailableHud": {
+    "message": "As configurações de áudio estão indisponíveis para este vídeo"
   },
   "voiceBoostHud": {
     "message": "Realce de voz: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Nivelamento de volume"
+  },
+  "volumeLevelingOff": {
+    "message": "Desativado"
+  },
+  "volumeLevelingLight": {
+    "message": "Leve"
+  },
+  "volumeLevelingStrong": {
+    "message": "Forte"
+  },
+  "volumeLevelingHud": {
+    "message": "Nivelamento de volume: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Graves"
+  },
+  "bassLess": {
+    "message": "Menos"
+  },
+  "bassOriginal": {
+    "message": "Original"
+  },
+  "bassMore": {
+    "message": "Mais"
+  },
+  "bassHud": {
+    "message": "Graves: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Chat"
+  },
+  "settingsSectionAudio": {
+    "message": "Áudio"
   },
   "settingsSectionPlayer": {
     "message": "Player"

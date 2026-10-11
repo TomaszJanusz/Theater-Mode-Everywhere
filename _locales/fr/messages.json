@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "Forte"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "Indisponible"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "L’amplification des voix est indisponible pour cette vidéo"
+  "audioUnavailableHud": {
+    "message": "Les réglages audio sont indisponibles pour cette vidéo"
   },
   "voiceBoostHud": {
     "message": "Amplification des voix : $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Égalisation du volume"
+  },
+  "volumeLevelingOff": {
+    "message": "Désactivée"
+  },
+  "volumeLevelingLight": {
+    "message": "Légère"
+  },
+  "volumeLevelingStrong": {
+    "message": "Forte"
+  },
+  "volumeLevelingHud": {
+    "message": "Égalisation du volume : $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Basses"
+  },
+  "bassLess": {
+    "message": "Moins"
+  },
+  "bassOriginal": {
+    "message": "Original"
+  },
+  "bassMore": {
+    "message": "Plus"
+  },
+  "bassHud": {
+    "message": "Basses : $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "Chat"
+  },
+  "settingsSectionAudio": {
+    "message": "Audio"
   },
   "settingsSectionPlayer": {
     "message": "Lecteur"

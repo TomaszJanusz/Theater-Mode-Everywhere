@@ -24,8 +24,8 @@ import {
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
-import { PICTURE_LAYOUT_ICON, VOICE_BOOST_ICON } from './hud';
-import { voiceBoostLabelKey } from './voice-boost-settings';
+import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON } from './hud';
+import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
@@ -963,26 +963,30 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     if (native && video.capabilities.nativeMedia) {
-      const voiceBtn = document.createElement('button');
-      voiceBtn.className = 'theater-control-btn voice-boost-btn';
-      setIcon(voiceBtn, VOICE_BOOST_ICON);
-      voiceBtn.addEventListener('click', event => {
-        event.stopPropagation();
-        executeCommand({ type: 'CYCLE_VOICE_BOOST' });
+      const audioRows = AUDIO_SETTING_NAMES.map((name) => {
+        const button = document.createElement('button');
+        button.className = `theater-control-btn audio-${name}-btn`;
+        setIcon(button, AUDIO_SETTING_ICONS[name].menu);
+        button.addEventListener('click', event => {
+          event.stopPropagation();
+          executeCommand({ type: 'CYCLE_AUDIO', setting: name });
+        });
+        return { name, button, row: settings.addRow(button, t(AUDIO_LABEL_KEYS[name]), 'audio') };
       });
-      const voiceRow = settings.addRow(voiceBtn, t('voiceBoostLabel'));
-      const updateVoiceRow = () => {
-        const available = ctx.actions.voiceBoostAvailable(native);
-        voiceBtn.setAttribute('aria-disabled', String(!available));
-        voiceRow.update('', t(available ? voiceBoostLabelKey(ui().voiceBoost) : 'voiceBoostUnavailable'));
+      const updateAudioRows = () => {
+        const available = ctx.actions.audioAvailable(native);
+        for (const { name, button, row } of audioRows) {
+          button.setAttribute('aria-disabled', String(!available));
+          row.update('', t(available ? audioLevelLabelKey(ui().audio, name) : 'audioUnavailable'));
+        }
       };
-      updateVoiceRow();
-      controlsScope.add(ctx.uiStore.subscribe(updateVoiceRow));
+      updateAudioRows();
+      controlsScope.add(ctx.uiStore.subscribe(updateAudioRows));
       // DRM and a refused CORS reload only become visible once the media loads.
-      controlsScope.listen(native, 'encrypted', updateVoiceRow);
-      controlsScope.listen(native, 'loadedmetadata', updateVoiceRow);
+      controlsScope.listen(native, 'encrypted', updateAudioRows);
+      controlsScope.listen(native, 'loadedmetadata', updateAudioRows);
     }
-    ctx.actions.syncVoiceBoost();
+    ctx.actions.syncAudioSettings();
 
     // Switch Video Button (Only if there are multiple real video players on the page)
     const videosOnPage = native ? selectSwitchableVideos(findAllVideosDeep(document), native) : [];
@@ -1080,7 +1084,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         // The player can render where the extension runtime is unavailable.
       }
     });
-    settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'));
+    settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'), 'footer');
 
     rightSec.appendChild(closeBtn);
 

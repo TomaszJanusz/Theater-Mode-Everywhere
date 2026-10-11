@@ -109,14 +109,54 @@
   "voiceBoostStrong": {
     "message": "강하게"
   },
-  "voiceBoostUnavailable": {
+  "audioUnavailable": {
     "message": "사용 불가"
   },
-  "voiceBoostUnavailableHud": {
-    "message": "이 동영상에서는 음성 강조를 사용할 수 없습니다"
+  "audioUnavailableHud": {
+    "message": "이 동영상에서는 오디오 설정을 사용할 수 없습니다"
   },
   "voiceBoostHud": {
     "message": "음성 강조: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "음량 평준화"
+  },
+  "volumeLevelingOff": {
+    "message": "끔"
+  },
+  "volumeLevelingLight": {
+    "message": "약하게"
+  },
+  "volumeLevelingStrong": {
+    "message": "강하게"
+  },
+  "volumeLevelingHud": {
+    "message": "음량 평준화: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "저음"
+  },
+  "bassLess": {
+    "message": "적게"
+  },
+  "bassOriginal": {
+    "message": "원본"
+  },
+  "bassMore": {
+    "message": "많이"
+  },
+  "bassHud": {
+    "message": "저음: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -651,6 +691,9 @@
   },
   "settingsSectionChat": {
     "message": "채팅"
+  },
+  "settingsSectionAudio": {
+    "message": "오디오"
   },
   "settingsSectionPlayer": {
     "message": "플레이어"

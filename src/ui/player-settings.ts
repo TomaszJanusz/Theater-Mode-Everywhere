@@ -39,14 +39,29 @@ export function createPlayerSettings(
   const chatBody = document.createElement('div');
   chatBody.className = 'theater-settings-section-body';
   chatSection.append(chatHeading, chatBody);
-  const separator = document.createElement('div');
-  separator.className = 'theater-settings-separator';
-  separator.hidden = true;
-  separator.setAttribute('role', 'separator');
+  const createSeparator = () => {
+    const separator = document.createElement('div');
+    separator.className = 'theater-settings-separator';
+    separator.hidden = true;
+    separator.setAttribute('role', 'separator');
+    return separator;
+  };
+  // Audio appears only for media that Web Audio can process.
+  const audioSection = document.createElement('div');
+  audioSection.className = 'theater-settings-section';
+  audioSection.dataset.settingsSection = 'audio';
+  audioSection.hidden = true;
+  const audioHeading = document.createElement('div');
+  audioHeading.className = 'theater-settings-heading';
+  audioHeading.textContent = ctx.t('settingsSectionAudio');
+  const audioBody = document.createElement('div');
+  audioBody.className = 'theater-settings-section-body';
+  audioSection.append(audioHeading, audioBody);
+  const audioSeparator = createSeparator();
   const playerHeading = document.createElement('div');
   playerHeading.className = 'theater-settings-heading';
   playerHeading.textContent = ctx.t('settingsSectionPlayer');
-  body.append(chatSection, separator, playerHeading);
+  body.append(chatSection, createSeparator(), playerHeading, audioSeparator, audioSection);
   panel.append(body);
   ctx.paintOverlay(panel);
 
@@ -65,7 +80,8 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  function addRow(row: HTMLButtonElement, label: string) {
+  /** Player rows precede the audio section; footer rows close the panel after it. */
+  function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' = 'player') {
     row.type = 'button';
     row.classList.add('theater-settings-row');
     row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
@@ -81,7 +97,15 @@ export function createPlayerSettings(
     const detail = document.createElement('span');
     detail.className = 'theater-settings-detail';
     row.append(main, detail);
-    body.append(row);
+    if (section === 'audio') {
+      audioBody.append(row);
+      audioSection.hidden = false;
+      audioSeparator.hidden = false;
+    } else if (section === 'footer') {
+      body.append(row);
+    } else {
+      body.insertBefore(row, audioSeparator);
+    }
     return {
       update(shortcut: string, value?: string) {
         keys.replaceChildren();
