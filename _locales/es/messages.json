@@ -124,19 +124,19 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Nivelación de volumen"
+    "message": "Reducir sonidos fuertes"
   },
   "volumeLevelingOff": {
-    "message": "Desactivada"
+    "message": "Desactivado"
   },
   "volumeLevelingLight": {
-    "message": "Ligera"
+    "message": "Leve"
   },
   "volumeLevelingStrong": {
     "message": "Fuerte"
   },
   "volumeLevelingHud": {
-    "message": "Nivelación de volumen: $1",
+    "message": "Reducir sonidos fuertes: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Graves: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Amplificación de volumen"
+  },
+  "volumeBoostOff": {
+    "message": "Desactivada"
+  },
+  "volumeBoostOn": {
+    "message": "Activada"
+  },
+  "volumeBoostHud": {
+    "message": "Amplificación de volumen: $1",
     "placeholders": {
       "level": {
         "content": "$1"

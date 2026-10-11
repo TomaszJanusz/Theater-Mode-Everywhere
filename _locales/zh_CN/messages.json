@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "音量均衡"
+    "message": "降低响亮声音"
   },
   "volumeLevelingOff": {
     "message": "关"
@@ -136,7 +136,7 @@
     "message": "强力"
   },
   "volumeLevelingHud": {
-    "message": "音量均衡：$1",
+    "message": "降低响亮声音：$1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "低音：$1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "音量增强"
+  },
+  "volumeBoostOff": {
+    "message": "关"
+  },
+  "volumeBoostOn": {
+    "message": "开"
+  },
+  "volumeBoostHud": {
+    "message": "音量增强：$1",
     "placeholders": {
       "level": {
         "content": "$1"

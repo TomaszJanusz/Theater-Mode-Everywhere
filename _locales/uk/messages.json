@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Вирівнювання гучності"
+    "message": "Приглушення гучних звуків"
   },
   "volumeLevelingOff": {
     "message": "Вимк."
@@ -136,7 +136,7 @@
     "message": "Сильне"
   },
   "volumeLevelingHud": {
-    "message": "Вирівнювання гучності: $1",
+    "message": "Приглушення гучних звуків: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Баси: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Посилення звуку"
+  },
+  "volumeBoostOff": {
+    "message": "Вимк."
+  },
+  "volumeBoostOn": {
+    "message": "Увімк."
+  },
+  "volumeBoostHud": {
+    "message": "Посилення звуку: $1",
     "placeholders": {
       "level": {
         "content": "$1"

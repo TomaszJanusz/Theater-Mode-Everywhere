@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Lautstärkeausgleich"
+    "message": "Laute Töne reduzieren"
   },
   "volumeLevelingOff": {
     "message": "Aus"
@@ -136,7 +136,7 @@
     "message": "Stark"
   },
   "volumeLevelingHud": {
-    "message": "Lautstärkeausgleich: $1",
+    "message": "Laute Töne reduzieren: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Bass: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Lautstärkeverstärkung"
+  },
+  "volumeBoostOff": {
+    "message": "Aus"
+  },
+  "volumeBoostOn": {
+    "message": "Ein"
+  },
+  "volumeBoostHud": {
+    "message": "Lautstärkeverstärkung: $1",
     "placeholders": {
       "level": {
         "content": "$1"

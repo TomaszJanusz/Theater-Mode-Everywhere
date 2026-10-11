@@ -124,19 +124,19 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "موازنة مستوى الصوت"
+    "message": "خفض الأصوات العالية"
   },
   "volumeLevelingOff": {
     "message": "إيقاف"
   },
   "volumeLevelingLight": {
-    "message": "خفيفة"
+    "message": "خفيف"
   },
   "volumeLevelingStrong": {
-    "message": "قوية"
+    "message": "قوي"
   },
   "volumeLevelingHud": {
-    "message": "موازنة مستوى الصوت: $1",
+    "message": "خفض الأصوات العالية: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "الجهير: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "تضخيم الصوت"
+  },
+  "volumeBoostOff": {
+    "message": "إيقاف"
+  },
+  "volumeBoostOn": {
+    "message": "تشغيل"
+  },
+  "volumeBoostHud": {
+    "message": "تضخيم الصوت: $1",
     "placeholders": {
       "level": {
         "content": "$1"

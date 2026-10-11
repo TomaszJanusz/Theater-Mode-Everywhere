@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "음량 평준화"
+    "message": "큰 소리 줄이기"
   },
   "volumeLevelingOff": {
     "message": "끔"
@@ -136,7 +136,7 @@
     "message": "강하게"
   },
   "volumeLevelingHud": {
-    "message": "음량 평준화: $1",
+    "message": "큰 소리 줄이기: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "저음: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "음량 부스트"
+  },
+  "volumeBoostOff": {
+    "message": "끔"
+  },
+  "volumeBoostOn": {
+    "message": "켬"
+  },
+  "volumeBoostHud": {
+    "message": "음량 부스트: $1",
     "placeholders": {
       "level": {
         "content": "$1"

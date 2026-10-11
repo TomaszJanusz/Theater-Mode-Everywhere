@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Nivelamento de volume"
+    "message": "Reduzir sons altos"
   },
   "volumeLevelingOff": {
     "message": "Desativado"
@@ -136,7 +136,7 @@
     "message": "Forte"
   },
   "volumeLevelingHud": {
-    "message": "Nivelamento de volume: $1",
+    "message": "Reduzir sons altos: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Graves: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Amplificação de volume"
+  },
+  "volumeBoostOff": {
+    "message": "Desativada"
+  },
+  "volumeBoostOn": {
+    "message": "Ativada"
+  },
+  "volumeBoostHud": {
+    "message": "Amplificação de volume: $1",
     "placeholders": {
       "level": {
         "content": "$1"

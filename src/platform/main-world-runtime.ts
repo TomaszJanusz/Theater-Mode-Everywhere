@@ -4,9 +4,7 @@ import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isA
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
-import { mediaAudioAccess } from './media-audio-access';
-import { createAudioChain, type AudioChain } from './audio-graph';
-import { AUDIO_SETTINGS_EVENT, isNeutralAudio, readAudioDataset } from '../audio-settings';
+import { installMediaAudioRuntime } from './media-audio-runtime';
 import { queryPlayerUi } from '../ui/root';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
@@ -223,80 +221,7 @@ export function installMainWorldRuntime(): void {
     installCrunchyrollMain();
   }
 
-  let pendingVideo: HTMLVideoElement | null = null;
-  let pendingMultiplier: number = 1.0;
-  const failedVideos = new WeakSet<HTMLVideoElement>();
-
-  function setupAudioGraph(video: HTMLVideoElement): boolean {
-    const boosted = video as any;
-    if (boosted._theaterGainNode) {
-      video.dataset.theaterBoostReady = 'true';
-      return true;
-    }
-    if (failedVideos.has(video)) return false;
-    if (mediaAudioAccess(video, window.location.origin) !== 'open') return false;
-
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return false;
-
-      const ctx = new AudioCtx();
-      const source = ctx.createMediaElementSource(video);
-      const chain = createAudioChain(ctx);
-      const gain = ctx.createGain();
-
-      source.connect(chain.input);
-      chain.output.connect(gain);
-      gain.connect(ctx.destination);
-      chain.apply(readAudioDataset(video.dataset));
-
-      boosted._theaterAudioCtx = ctx;
-      boosted._theaterGainNode = gain;
-      boosted._theaterAudioChain = chain;
-      video.dataset.theaterBoostReady = 'true';
-      window.dispatchEvent(new CustomEvent('theater-everywhere-boost-ready'));
-
-      if (pendingVideo === video) {
-        gain.gain.value = pendingMultiplier;
-        pendingVideo = null;
-      }
-
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(console.error);
-      }
-
-      return true;
-    } catch (err) {
-      console.error('[Theater Everywhere Main World] Web Audio setup failed:', err);
-      failedVideos.add(video);
-      return false;
-    }
-  }
-
-  function applyPendingBoost(): void {
-    if (!pendingVideo) return;
-    setupAudioGraph(pendingVideo);
-  }
-
-  function resumeIfSuspended(): void {
-    if (!document.documentElement.classList.contains('theater-everywhere-html-active')) return;
-    const video = findActiveVideo(document);
-    if (!video) return;
-
-    const ctx = (video as any)._theaterAudioCtx;
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(console.error);
-    }
-  }
-
-  const onUserGesture = () => {
-    applyPendingBoost();
-    resumeIfSuspended();
-  };
-
-  window.addEventListener('click', onUserGesture, { capture: true, passive: true });
-  window.addEventListener('keydown', onUserGesture, { capture: true, passive: true });
-  window.addEventListener('pointerdown', onUserGesture, { capture: true, passive: true });
+  installMediaAudioRuntime();
 
   function isEditableKeyboardTarget(target: EventTarget | null): boolean {
     const el = target instanceof HTMLElement ? target : document.activeElement as HTMLElement | null;
@@ -449,14 +374,6 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('keyup', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);
 
-  window.addEventListener('input', (e) => {
-    const target = e.target as HTMLElement | null;
-    if (target && target.classList?.contains('theater-volume-slider')) {
-      applyPendingBoost();
-      resumeIfSuspended();
-    }
-  }, { capture: true, passive: true });
-
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = (event as CustomEvent<{ requestId?: number }>).detail?.requestId;
     let youtube: Record<string, unknown> | null = null;
@@ -597,50 +514,4 @@ export function installMainWorldRuntime(): void {
     }
   });
 
-  window.addEventListener('theater-everywhere-boost-event', () => {
-    const video = findActiveVideo(document);
-    if (!video) return;
-
-    const multiplier = parseFloat(video.dataset.theaterBoost || '1.0');
-    const boosted = video as any;
-
-    if (boosted._theaterGainNode) {
-      boosted._theaterGainNode.gain.value = multiplier;
-      video.dataset.theaterBoostReady = 'true';
-
-      if (boosted._theaterAudioCtx && boosted._theaterAudioCtx.state === 'suspended') {
-        boosted._theaterAudioCtx.resume().catch(() => {});
-      }
-    } else if (multiplier > 1.0 && !failedVideos.has(video)) {
-      pendingVideo = video;
-      pendingMultiplier = multiplier;
-    }
-  });
-
-  window.addEventListener(AUDIO_SETTINGS_EVENT, (event: Event) => {
-    const video = event.composedPath()[0];
-    if (!(video instanceof HTMLVideoElement)) return;
-    const settings = readAudioDataset(video.dataset);
-    const chain = (video as HTMLVideoElement & { _theaterAudioChain?: AudioChain })._theaterAudioChain;
-    if (chain) {
-      chain.apply(settings);
-      return;
-    }
-    const multiplier = parseFloat(video.dataset.theaterBoost || '1.0');
-    if (isNeutralAudio(settings)) {
-      if (pendingVideo === video && !(multiplier > 1)) pendingVideo = null;
-      return;
-    }
-    if (failedVideos.has(video)) return;
-    pendingVideo = video;
-    pendingMultiplier = multiplier;
-    // An AudioContext created outside a gesture starts suspended and would
-    // mute the routed element; otherwise the next click or key applies it.
-    const setupWhileActive = () => {
-      if (pendingVideo === video && navigator.userActivation?.isActive) setupAudioGraph(video);
-    };
-    setupWhileActive();
-    // A CORS reload started for these settings is usable once metadata arrives.
-    if (pendingVideo === video) video.addEventListener('loadedmetadata', setupWhileActive, { once: true });
-  }, true);
 }

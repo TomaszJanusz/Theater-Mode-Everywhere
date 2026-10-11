@@ -1,4 +1,5 @@
-import { defaultShortcuts, shortcutDisplayParts } from './shortcuts';
+import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
+import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
@@ -112,6 +113,13 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
           { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
           { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
+        ]
+      },
+      {
+        title: ctx.t('settingsSectionAudio'),
+        items: [
+          { label: ctx.t('volumeBoostLabel'), key: shortcuts.toggleVolumeBoost },
+          ...AUDIO_SETTING_NAMES.map((name) => ({ label: ctx.t(AUDIO_LABEL_KEYS[name]), key: shortcuts[AUDIO_SHORTCUTS[name]] }))
         ]
       }
     ];

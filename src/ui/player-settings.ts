@@ -61,7 +61,8 @@ export function createPlayerSettings(
   const playerHeading = document.createElement('div');
   playerHeading.className = 'theater-settings-heading';
   playerHeading.textContent = ctx.t('settingsSectionPlayer');
-  body.append(chatSection, createSeparator(), playerHeading, audioSeparator, audioSection);
+  body.append(chatSection, createSeparator(), audioSection, audioSeparator, playerHeading);
+  let footerStart: HTMLElement | null = null;
   panel.append(body);
   ctx.paintOverlay(panel);
 
@@ -80,7 +81,7 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  /** Player rows precede the audio section; footer rows close the panel after it. */
+  /** Audio rows precede the player rows; footer rows close the panel. */
   function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' = 'player') {
     row.type = 'button';
     row.classList.add('theater-settings-row');
@@ -103,8 +104,9 @@ export function createPlayerSettings(
       audioSeparator.hidden = false;
     } else if (section === 'footer') {
       body.append(row);
+      footerStart ??= row;
     } else {
-      body.insertBefore(row, audioSeparator);
+      body.insertBefore(row, footerStart);
     }
     return {
       update(shortcut: string, value?: string) {

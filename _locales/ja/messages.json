@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "音量の均一化"
+    "message": "大きな音を抑える"
   },
   "volumeLevelingOff": {
     "message": "オフ"
@@ -136,7 +136,7 @@
     "message": "強"
   },
   "volumeLevelingHud": {
-    "message": "音量の均一化: $1",
+    "message": "大きな音を抑える: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "低音: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "音量ブースト"
+  },
+  "volumeBoostOff": {
+    "message": "オフ"
+  },
+  "volumeBoostOn": {
+    "message": "オン"
+  },
+  "volumeBoostHud": {
+    "message": "音量ブースト: $1",
     "placeholders": {
       "level": {
         "content": "$1"

@@ -124,19 +124,19 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Égalisation du volume"
+    "message": "Réduire les sons forts"
   },
   "volumeLevelingOff": {
-    "message": "Désactivée"
+    "message": "Désactivé"
   },
   "volumeLevelingLight": {
-    "message": "Légère"
+    "message": "Léger"
   },
   "volumeLevelingStrong": {
-    "message": "Forte"
+    "message": "Fort"
   },
   "volumeLevelingHud": {
-    "message": "Égalisation du volume : $1",
+    "message": "Réduire les sons forts : $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Basses : $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Amplificateur de volume"
+  },
+  "volumeBoostOff": {
+    "message": "Désactivé"
+  },
+  "volumeBoostOn": {
+    "message": "Activé"
+  },
+  "volumeBoostHud": {
+    "message": "Amplificateur de volume : $1",
     "placeholders": {
       "level": {
         "content": "$1"

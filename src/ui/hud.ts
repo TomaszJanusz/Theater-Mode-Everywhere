@@ -49,6 +49,12 @@ export const AUDIO_SETTING_ICONS: Record<AudioSettingName, { menu: string; hud: 
   leveling: audioIcons('leveling'),
   bass: audioIcons('bass')
 };
+// A speaker with a plus.
+const VOLUME_BOOST_SHAPE = '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M19 9v6"/><path d="M16 12h6"/>';
+export const VOLUME_BOOST_ICONS = {
+  menu: strokeIcon(VOLUME_BOOST_SHAPE, 16),
+  hud: strokeIcon(VOLUME_BOOST_SHAPE, 28)
+};
 
 export type CaptionHudView =
   | { kind: 'dismiss' }

@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Volume leveling"
+    "message": "Reduce loud sounds"
   },
   "volumeLevelingOff": {
     "message": "Off"
@@ -136,7 +136,7 @@
     "message": "Strong"
   },
   "volumeLevelingHud": {
-    "message": "Volume leveling: $1",
+    "message": "Reduce loud sounds: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Bass: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Volume boost"
+  },
+  "volumeBoostOff": {
+    "message": "Off"
+  },
+  "volumeBoostOn": {
+    "message": "On"
+  },
+  "volumeBoostHud": {
+    "message": "Volume boost: $1",
     "placeholders": {
       "level": {
         "content": "$1"

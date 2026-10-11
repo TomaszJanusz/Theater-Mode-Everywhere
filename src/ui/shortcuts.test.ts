@@ -102,6 +102,16 @@ describe('shortcut ownership', () => {
     const explicit = withShortcutDefaults({ showHelp: 'Shift+L', cycleLayout: 'Shift+L' });
     assert.equal(explicit.cycleLayout, 'Shift+L'); // Existing explicit duplicates remain visible for user resolution.
   });
+  it('introduces audio shortcuts only where the keys are still free', () => {
+    const migrated = withShortcutDefaults({ toggleMute: 'B', showHelp: 'Shift+V' });
+    assert.equal(migrated.toggleMute, 'B');
+    assert.equal(migrated.cycleBass, '');
+    assert.equal(migrated.cycleVoice, 'V');
+    assert.equal(migrated.cycleLeveling, 'R');
+    assert.equal(migrated.toggleVolumeBoost, 'Shift+B');
+    const defaults = Object.values(defaultShortcuts).filter(Boolean);
+    assert.equal(defaults.every((left, index) => defaults.every((right, other) => other === index || !shortcutsConflict(left, right))), true);
+  });
   it('detects runtime aliases and implicit Shift without merging distinct modifiers', () => {
     for (const [a, b] of [['f', 'F'], ['F', 'KeyF'], ['+', '='], ['+', 'Shift+='], ['Ctrl++', 'Ctrl+Equal'], ['<', 'Shift+Comma'], ['Space', 'Spacebar']]) {
       assert.equal(shortcutsConflict(a, b), true, `${a} / ${b}`);

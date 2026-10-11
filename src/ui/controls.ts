@@ -24,7 +24,8 @@ import {
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
-import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON } from './hud';
+import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
+import { AUDIO_SHORTCUTS } from './shortcuts';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
@@ -166,7 +167,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
   function createCustomControls(media: HTMLVideoElement | PlaybackSurface): void {
     const video = coercePlaybackSurface(media);
     const native = nativeVideoOf(video);
-    const volumeMax = volumeCeiling(video, refs.volumeBoostEnabled);
+    let volumeMax = volumeCeiling(video, ui().volumeBoost);
     destroyCustomControls();
 
     const controlsScope = new DisposableScope();
@@ -354,7 +355,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     volumeSlider.type = 'range';
     volumeSlider.className = 'theater-volume-slider theater-vertical-slider';
     volumeSlider.min = '0';
-    volumeSlider.max = volumeMax.toFixed(1);
     volumeSlider.step = '0.05';
   
     if (video.volume > 0) rememberAudibleVolume(video, video.volume);
@@ -365,9 +365,11 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
 
     const volumeTick100 = document.createElement('div');
     volumeTick100.className = 'volume-tick-100-vertical';
-    if (volumeMax <= 1) {
-      volumeTick100.style.display = 'none';
-    }
+    const applyVolumeMax = () => {
+      volumeSlider.max = volumeMax.toFixed(1);
+      volumeTick100.style.display = volumeMax <= 1 ? 'none' : '';
+    };
+    applyVolumeMax();
 
     volumeSliderWrapper.appendChild(volumeSlider);
     volumeSliderWrapper.appendChild(volumeTick100);
@@ -447,6 +449,13 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       updateVolumeTooltip();
     };
     window.addEventListener('theater-everywhere-boost-ready', onBoostReady);
+    controlsScope.add(ctx.uiStore.subscribe(() => {
+      const next = volumeCeiling(video, ui().volumeBoost);
+      if (next === volumeMax) return;
+      volumeMax = next;
+      applyVolumeMax();
+      updateVolumeSliderFill();
+    }));
 
     volumeBtn.addEventListener('click', (event) => {
       ctx.actions.toggleVideoMute(video);
@@ -963,21 +972,34 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     if (native && video.capabilities.nativeMedia) {
-      const audioRows = AUDIO_SETTING_NAMES.map((name) => {
+      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand) => {
         const button = document.createElement('button');
-        button.className = `theater-control-btn audio-${name}-btn`;
-        setIcon(button, AUDIO_SETTING_ICONS[name].menu);
+        button.className = `theater-control-btn ${className}`;
+        setIcon(button, icon);
         button.addEventListener('click', event => {
           event.stopPropagation();
-          executeCommand({ type: 'CYCLE_AUDIO', setting: name });
+          executeCommand(command);
         });
-        return { name, button, row: settings.addRow(button, t(AUDIO_LABEL_KEYS[name]), 'audio') };
-      });
+        return { button, row: settings.addRow(button, t(label), 'audio') };
+      };
+      const boost = video.capabilities.volumeBoost
+        ? audioRow('volume-boost-btn', VOLUME_BOOST_ICONS.menu, 'volumeBoostLabel', { type: 'TOGGLE_VOLUME_BOOST' })
+        : null;
+      const audioRows = AUDIO_SETTING_NAMES.map((name) => ({
+        name,
+        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
+      }));
       const updateAudioRows = () => {
         const available = ctx.actions.audioAvailable(native);
+        const shortcuts = ui().shortcuts;
+        const detail = (key: string) => t(available ? key : 'audioUnavailable');
+        if (boost) {
+          boost.button.setAttribute('aria-disabled', String(!available));
+          boost.row.update(shortcuts.toggleVolumeBoost, detail(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
+        }
         for (const { name, button, row } of audioRows) {
           button.setAttribute('aria-disabled', String(!available));
-          row.update('', t(available ? audioLevelLabelKey(ui().audio, name) : 'audioUnavailable'));
+          row.update(shortcuts[AUDIO_SHORTCUTS[name]], detail(audioLevelLabelKey(ui().audio, name)));
         }
       };
       updateAudioRows();

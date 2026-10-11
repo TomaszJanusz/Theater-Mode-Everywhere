@@ -99,7 +99,20 @@ function startFixtureServer(): Promise<{ origin: string; close: () => Promise<vo
 }
 
 async function waitForPlayer(page: Page): Promise<void> {
-  await page.waitForSelector('video#player', { timeout: 15_000 });
+  await page.waitForSelector('video#player', { timeout: 15_000 }).catch(async error => {
+    console.error('Player fixture readiness:', await page.evaluate(() => {
+      const video = document.querySelector('video#player');
+      const rect = video?.getBoundingClientRect();
+      const style = video ? getComputedStyle(video) : null;
+      return { url: location.href, ready: document.readyState, title: document.title,
+        videoCount: document.querySelectorAll('video').length,
+        rect: rect?.toJSON(), display: style?.display, visibility: style?.visibility };
+    }));
+    if (process.env.THEATER_SMOKE_SCREENSHOT) {
+      await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-player-missing.png') });
+    }
+    throw error;
+  });
   await page.waitForFunction(() => {
     const video = document.querySelector('video#player') as HTMLVideoElement | null;
     if (!video) return false;
@@ -557,7 +570,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     fail('Escape did not dismiss settings and return focus without leaving theater mode.');
   }
   await gear.press('Enter');
-  if (!await menu.locator('.video-fit-btn').evaluate(button => button.matches(':focus'))) {
+  if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
     fail('Keyboard opening did not focus the first settings action.');
   }
   await page.keyboard.press('Shift+Tab');
@@ -565,19 +578,21 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     fail('Shift+Tab from settings did not return to the neighboring trigger.');
   }
   await page.keyboard.press('Tab');
-  if (!await menu.locator('.video-fit-btn').evaluate(button => button.matches(':focus'))) {
+  if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab from the trigger skipped open settings.');
   }
+  for (const name of ['voice', 'leveling', 'bass']) {
+    await page.keyboard.press('Tab');
+    if (!await menu.locator(`.audio-${name}-btn`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
+  }
+  await page.keyboard.press('Tab');
+  if (!await menu.locator('.video-fit-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
-  for (const name of ['voice', 'leveling', 'bass']) {
-    await page.keyboard.press('Tab');
-    if (!await menu.locator(`.audio-${name}-btn`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
-  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.extension-settings-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab skipped extension settings.');
@@ -1169,6 +1184,12 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
 
 async function assertAudioSettings(page: Page, context?: BrowserContext): Promise<void> {
   const video = page.locator('video#player');
+  // The fixture is same-origin: all audio controls must retain its decoded
+  // frames, including gain enabled before any other effect and reentry.
+  await video.evaluate((video: HTMLVideoElement) => {
+    video.dataset.smokeAudioEmptied = '0';
+    video.addEventListener('emptied', () => { video.dataset.smokeAudioEmptied = '1'; }, { once: true });
+  });
   const gear = page.locator('.player-settings-btn');
   const hud = page.locator('.theater-everywhere-volume-overlay.status-hud');
   const shapes = (locator: Locator) => locator.locator('svg').first().evaluate(svg => svg.innerHTML);
@@ -1189,42 +1210,129 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   await section.waitFor();
   if (await section.locator('.theater-settings-heading').textContent() !== 'Audio') fail('Audio section heading is missing.');
   const details = await section.locator('.theater-settings-detail').allInnerTexts();
-  if (details.join('|') !== 'Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
-  if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== null) fail('Audio rows advertise shortcuts they do not have.');
+  if (details.join('|') !== 'Off|Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
+  if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
+  const slider = page.locator('.theater-volume-slider');
+  const boost = page.locator('.volume-boost-btn');
+  await boost.click();
+  await hud.filter({ hasText: 'Volume boost: On' }).waitFor();
+  if (await shapes(hud) !== await shapes(boost)) fail('Volume boost HUD icon differs from its settings row.');
+  if (await slider.getAttribute('max') !== '1.5') fail('Volume boost did not raise the volume ceiling.');
+  await slider.evaluate((input: HTMLInputElement) => {
+    input.value = '1.5';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.keyboard.press('Shift+B');
+  await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
+  if (await slider.getAttribute('max') !== '1.0' || await slider.inputValue() !== '1') {
+    fail(`Turning volume boost off kept boosted volume: ${await slider.getAttribute('max')} / ${await slider.inputValue()}`);
+  }
+  if (await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') fail('Volume boost kept amplifying after it was turned off.');
+  await page.keyboard.press('Shift+B');
+  await slider.evaluate((input: HTMLInputElement) => {
+    for (const value of ['1.5', '0']) {
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  await page.keyboard.press('Shift+B');
+  await page.keyboard.press('m');
+  if (await slider.inputValue() !== '1' || await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') {
+    fail('Unmute restored a boosted level after volume boost was turned off at zero volume.');
+  }
   await cycleTo('voice', 'Voice boost', 'Light');
   // The click is the user activation the MAIN world needs to start Web Audio.
   await page.waitForFunction(() => {
     const player = document.querySelector<HTMLVideoElement>('video#player');
     return player?.dataset.theaterVoice === 'light' && player.dataset.theaterBoostReady === 'true';
   });
-  await cycleTo('leveling', 'Volume leveling', 'Light');
-  await cycleTo('leveling', 'Volume leveling', 'Strong');
+  await cycleTo('leveling', 'Reduce loud sounds', 'Light');
+  await cycleTo('leveling', 'Reduce loud sounds', 'Strong');
   await cycleTo('bass', 'Bass', 'More');
+  await page.keyboard.press('b');
+  await hud.filter({ hasText: 'Bass: Less' }).waitFor();
+  await page.keyboard.press('b');
+  await hud.filter({ hasText: 'Bass: Original' }).waitFor();
+  await page.keyboard.press('b');
+  await hud.filter({ hasText: 'Bass: More' }).waitFor();
+  for (const [key, name, label] of [['v', 'voice', 'Voice boost'], ['r', 'leveling', 'Reduce loud sounds']] as const) {
+    const initial = (await media())[name];
+    for (let step = 0; step < 3; step++) {
+      const before = (await media())[name];
+      await page.keyboard.press(key);
+      await page.waitForFunction(([name, before]) => document.querySelector<HTMLVideoElement>('video#player')
+        ?.dataset[name === 'voice' ? 'theaterVoice' : 'theaterLeveling'] !== before, [name, before]);
+      const detail = await page.locator(`.audio-${name}-btn .theater-settings-detail`).innerText();
+      if (await hud.innerText() !== `${label}: ${detail}`) fail(`${label} shortcut did not confirm its new level.`);
+    }
+    if ((await media())[name] !== initial) fail(`${label} shortcut did not cycle through all levels.`);
+  }
+  const beforeGuardedKeys = await media();
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.id = 'audio-shortcut-draft';
+    document.body.append(input);
+    input.focus();
+  });
+  await page.keyboard.type('vrbB');
+  await page.evaluate(() => document.getElementById('audio-shortcut-draft')?.remove());
+  await page.keyboard.press('h');
+  await page.locator('.theater-help-overlay').waitFor();
+  for (const key of ['v', 'r', 'b', 'Shift+B']) await page.keyboard.press(key);
+  await page.locator('.theater-help-close-btn').press('Enter');
+  await page.locator('.theater-help-overlay').waitFor({ state: 'detached' });
+  await page.evaluate(() => {
+    for (const [key, code, shiftKey] of [['v', 'KeyV', false], ['r', 'KeyR', false], ['b', 'KeyB', false], ['B', 'KeyB', true]] as const) {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key, code, shiftKey, repeat: true, bubbles: true, cancelable: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { key, code, shiftKey, bubbles: true, cancelable: true }));
+    }
+  });
+  if (JSON.stringify(await media()) !== JSON.stringify(beforeGuardedKeys) || await slider.getAttribute('max') !== '1.0') {
+    fail('Audio shortcuts fired in an editable field, behind help, or on key repeat.');
+  }
   if (JSON.stringify(await media()) !== JSON.stringify({ voice: 'light', leveling: 'strong', bass: 'more' })) {
     fail(`Audio settings did not reach the media element: ${JSON.stringify(await media())}`);
   }
   if (context) {
     const worker = await extensionWorker(context);
-    const saved = await worker.evaluate(() => chrome.storage.sync.get(['voiceBoost', 'volumeLeveling', 'bassLevel']));
-    if (saved.voiceBoost !== 'light' || saved.volumeLeveling !== 'strong' || saved.bassLevel !== 'more') {
+    const saved = await worker.evaluate(() => chrome.storage.sync.get(['voiceBoost', 'volumeLeveling', 'bassLevel', 'volumeBoostEnabled']));
+    if (saved.voiceBoost !== 'light' || saved.volumeLeveling !== 'strong' || saved.bassLevel !== 'more' || saved.volumeBoostEnabled !== false) {
       fail(`Audio settings were not saved: ${JSON.stringify(saved)}`);
     }
   }
 
   const layout = page.locator('.picture-layout-btn');
+  // Opening help closes the settings popover; restore it for the next action.
+  if (!await layout.isVisible()) await gear.click();
   await layout.click();
   await hud.filter({ hasText: 'Raised' }).waitFor();
   if (await shapes(hud) !== await shapes(layout)) fail('Layout HUD icon differs from its settings row.');
   await layout.click();
   await hud.filter({ hasText: 'Centered' }).waitFor();
 
+  // Session cleanup must bypass gain as well as the three effects, then
+  // restore the remembered boosted level without rebuilding/reloading.
+  await boost.click();
+  await hud.filter({ hasText: 'Volume boost: On' }).waitFor();
+  await slider.evaluate((input: HTMLInputElement) => {
+    input.value = '1.5';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await page.keyboard.press('Escape'); // Close settings.
   await exitTheater(page);
   if (JSON.stringify(await media()) !== JSON.stringify({ voice: 'off', leveling: 'off', bass: 'original' })) {
     fail('Audio settings kept processing the host player after theater exit.');
   }
+  if (await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') fail('Volume boost kept amplifying the host player after theater exit.');
   await enterTheaterFromPicture(page);
-  await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterLeveling === 'strong');
+  await page.waitForFunction(() => {
+    const video = document.querySelector<HTMLVideoElement>('video#player');
+    return video?.dataset.theaterLeveling === 'strong' && video.dataset.theaterBoost === '3.0000';
+  });
+  await gear.click();
+  await boost.click();
+  await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
+  await page.keyboard.press('Escape'); // Close settings before restoring effects.
   if (context) {
     const worker = await extensionWorker(context);
     await worker.evaluate(() => chrome.storage.sync.remove(['voiceBoost', 'volumeLeveling', 'bassLevel']));
@@ -1236,12 +1344,13 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
     await gear.click();
     await cycleTo('voice', 'Voice boost', 'Strong');
     await cycleTo('voice', 'Voice boost', 'Off');
-    await cycleTo('leveling', 'Volume leveling', 'Off');
+    await cycleTo('leveling', 'Reduce loud sounds', 'Off');
     await cycleTo('bass', 'Bass', 'Less');
     await cycleTo('bass', 'Bass', 'Original');
     await page.keyboard.press('Escape');
   }
-  console.log('smoke audio: section, three settings, HUD icons, MAIN-world graph, saved levels and exit restore passed');
+  if (await video.getAttribute('data-smoke-audio-emptied') !== '0') fail('An audio setting unnecessarily reloaded the same-origin video.');
+  console.log('smoke audio: no media reload, section, volume boost, three settings, shortcuts, HUD icons, MAIN-world graph, saved levels and exit restore passed');
 }
 
 async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: BrowserContext): Promise<void> {
@@ -1271,18 +1380,18 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
   await page.keyboard.press('Shift+L');
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
-  if (wide.columns !== 2 || wide.rows !== 23 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  if (wide.columns !== 2 || wide.rows !== 27 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });
   const narrow = await inspect();
-  if (narrow.columns !== 1 || narrow.rows !== 23 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  if (narrow.columns !== 1 || narrow.rows !== 27 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-close-btn').press('Enter');
   await help.waitFor({ state: 'detached' });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.keyboard.press('Escape');
   await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
-  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 23 shortcuts in responsive two/one-column help passed');
+  console.log('smoke fullscreen/help: TME document fullscreen, host interception, all 27 shortcuts in responsive two/one-column help passed');
 }
 
 async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<void> {

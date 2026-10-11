@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { reloadForVolumeBoost } from './volume-boost-reload';
+import { reloadForWebAudio } from './web-audio-reload';
 import { resolveVolumeBoostEnabled } from '../ui/volume-boost-settings';
 
 class Video extends EventTarget {
   attrs = new Map<string, string>([['src', 'https://example.com/clip.mp4']]);
   currentSrc = 'https://example.com/clip.mp4';
   srcObject = null;
+  mediaKeys = null;
+  readyState = 4;
   currentTime = 17;
   paused = false;
   loads = 0;
@@ -25,13 +27,36 @@ class Video extends EventTarget {
 
 function start(video: Video, overrides: Partial<{ isCurrent(): boolean; canResume(): boolean }> = {}) {
   const abort = new AbortController();
-  const cancel = reloadForVolumeBoost(video as unknown as HTMLVideoElement, {
-    signal: abort.signal, isCurrent: () => true, canResume: () => true, ...overrides
+  const cancel = reloadForWebAudio(video as unknown as HTMLVideoElement, {
+    pageOrigin: 'https://watch.example', signal: abort.signal, isCurrent: () => true, canResume: () => true, ...overrides
   });
   return { abort, cancel };
 }
 
-describe('Volume Boost CORS reload ownership', () => {
+describe('Web Audio CORS reload ownership', () => {
+  it('leaves open and protected sources playing without a reload or CORS mutation', () => {
+    for (const src of ['https://watch.example/clip.mp4', 'blob:https://watch.example/1234', 'data:video/webm;base64,AA==']) {
+      const video = new Video();
+      video.setAttribute('src', src);
+      video.currentSrc = src;
+      start(video).cancel();
+      assert.equal(video.loads, 0, src);
+      assert.equal(video.crossOrigin, null, src);
+      assert.equal(video.currentTime, 17, src);
+      assert.equal(video.paused, false, src);
+    }
+    const encrypted = new Video();
+    Object.assign(encrypted, { mediaKeys: {} });
+    start(encrypted).cancel();
+    assert.equal(encrypted.loads, 0);
+    assert.equal(encrypted.crossOrigin, null);
+    const stream = new Video();
+    Object.assign(stream, { srcObject: {} });
+    start(stream).cancel();
+    assert.equal(stream.loads, 0);
+    assert.equal(stream.crossOrigin, null);
+  });
+
   it('removes both terminal listeners after success and preserves source selection', () => {
     const video = new Video();
     start(video);

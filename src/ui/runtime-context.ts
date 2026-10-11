@@ -20,7 +20,6 @@ import {
   requestVideoPlay
 } from '../host-play';
 import type { PlaylistDirection, PlaylistNavState } from '../playlist-nav';
-import { DEFAULT_VOLUME_BOOST_ENABLED } from './volume-boost-settings';
 import type { PlaybackSurface } from '../playback-surface';
 
 export interface BoostedVideoElement extends HTMLVideoElement {
@@ -42,7 +41,6 @@ export type ChromeRefs = {
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
   subtitlesOn: boolean;
-  volumeBoostEnabled: boolean;
   playbackDecisionRevision: number;
   providerFlags: MediaProviderFlags;
   helpOverlay: HTMLElement | null;
@@ -139,7 +137,6 @@ export function createChromeRefs(): ChromeRefs {
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},
     subtitlesOn: false,
-    volumeBoostEnabled: DEFAULT_VOLUME_BOOST_ENABLED,
     playbackDecisionRevision: 0,
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,

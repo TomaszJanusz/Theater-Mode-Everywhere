@@ -124,7 +124,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "Выравнивание громкости"
+    "message": "Приглушение громких звуков"
   },
   "volumeLevelingOff": {
     "message": "Выкл."
@@ -136,7 +136,7 @@
     "message": "Сильное"
   },
   "volumeLevelingHud": {
-    "message": "Выравнивание громкости: $1",
+    "message": "Приглушение громких звуков: $1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -157,6 +157,23 @@
   },
   "bassHud": {
     "message": "Басы: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Усиление звука"
+  },
+  "volumeBoostOff": {
+    "message": "Выкл."
+  },
+  "volumeBoostOn": {
+    "message": "Вкл."
+  },
+  "volumeBoostHud": {
+    "message": "Усиление звука: $1",
     "placeholders": {
       "level": {
         "content": "$1"

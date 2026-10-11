@@ -1,3 +1,5 @@
+import type { AudioSettingName } from '../audio-settings';
+
 export interface Shortcuts {
   toggle: string;
   exit: string;
@@ -22,7 +24,17 @@ export interface Shortcuts {
   toggleCaptions: string;
   increaseCaptionSize: string;
   decreaseCaptionSize: string;
+  toggleVolumeBoost: string;
+  cycleVoice: string;
+  cycleLeveling: string;
+  cycleBass: string;
 }
+
+export const AUDIO_SHORTCUTS = {
+  voice: 'cycleVoice',
+  leveling: 'cycleLeveling',
+  bass: 'cycleBass'
+} as const satisfies Record<AudioSettingName, keyof Shortcuts>;
 
 export const defaultShortcuts: Shortcuts = {
   toggle: 'T',
@@ -47,8 +59,15 @@ export const defaultShortcuts: Shortcuts = {
   toggleChat: 'Alt+R',
   toggleCaptions: 'C',
   increaseCaptionSize: '+',
-  decreaseCaptionSize: '-'
+  decreaseCaptionSize: '-',
+  toggleVolumeBoost: 'Shift+B',
+  cycleVoice: 'V',
+  cycleLeveling: 'R',
+  cycleBass: 'B'
 };
+
+// Defaults added after release must not steal keys from existing custom actions.
+const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass'];
 
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
   const next = { ...defaultShortcuts };
@@ -58,12 +77,8 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
     // An explicit empty value disables a shortcut; absent values still migrate to defaults.
     if (typeof value === 'string') next[key] = value;
   });
-  // Introducing Layout must not steal Shift+L from an existing custom action.
-  if (typeof saved.cycleLayout !== 'string' && shortcutConflicts(next, 'cycleLayout', next.cycleLayout).length) {
-    next.cycleLayout = '';
-  }
-  if (typeof saved.toggleChat !== 'string' && shortcutConflicts(next, 'toggleChat', next.toggleChat).length) {
-    next.toggleChat = '';
+  for (const key of INTRODUCED_SHORTCUTS) {
+    if (typeof saved[key] !== 'string' && shortcutConflicts(next, key, next[key]).length) next[key] = '';
   }
   return next;
 }

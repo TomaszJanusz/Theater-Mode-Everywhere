@@ -1299,7 +1299,9 @@ describe('native chat browser session', () => {
           return Math.abs(label.getBoundingClientRect().top - control.getBoundingClientRect().top) < 12;
         };
         return {
-          order: [...(body?.children ?? [])].slice(0, 3).map(node => node.className),
+          order: [...(body?.children ?? [])].slice(0, 5).map(node =>
+            node instanceof HTMLElement && node.dataset.settingsSection
+              ? node.dataset.settingsSection : node.className),
           chatHeading: chat?.querySelector('.theater-settings-heading')?.textContent ?? null,
           playerHeading: body?.querySelector(':scope > .theater-settings-heading')?.textContent ?? null,
           widthLabel: width?.querySelector('.theater-settings-label')?.textContent ?? null,
@@ -1318,7 +1320,9 @@ describe('native chat browser session', () => {
         };
       });
       assert.deepEqual(menu.order, [
-        'theater-settings-section',
+        'chat',
+        'theater-settings-separator',
+        'audio',
         'theater-settings-separator',
         'theater-settings-heading'
       ], JSON.stringify(menu));

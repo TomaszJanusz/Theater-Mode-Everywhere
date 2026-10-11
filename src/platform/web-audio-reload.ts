@@ -1,11 +1,13 @@
 import { DisposableScope } from '../core/disposable-scope';
+import { mediaAudioAccess } from './media-audio-access';
 
 /** CORS stays after success for Web Audio. Cancelling an in-flight CORS load reloads without it. */
-export function reloadForVolumeBoost(
+export function reloadForWebAudio(
   video: HTMLVideoElement,
-  options: { signal: AbortSignal; isCurrent(): boolean; canResume(): boolean }
+  options: { pageOrigin: string; signal: AbortSignal; isCurrent(): boolean; canResume(): boolean }
 ): () => void {
-  if (video.crossOrigin || video.srcObject || !(video.currentSrc || video.src) || options.signal.aborted) return () => {};
+  if (mediaAudioAccess(video, options.pageOrigin) !== 'needs-cors'
+    || video.crossOrigin || !(video.currentSrc || video.src) || options.signal.aborted) return () => {};
   const scope = new DisposableScope();
   const savedTime = video.currentTime;
   const wasPlaying = !video.paused;

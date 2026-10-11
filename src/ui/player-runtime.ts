@@ -2,7 +2,7 @@ import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisi
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
-import { reloadForVolumeBoost } from '../platform/volume-boost-reload';
+import { reloadForWebAudio } from '../platform/web-audio-reload';
 import {
   CAPTION_STYLE_STORAGE_KEY,
   resolveCaptionStyle,
@@ -100,7 +100,7 @@ import {
   type VideoFitMode
 } from './appearance';
 import { applyUiDirection, t } from './messages';
-import { defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { AUDIO_SHORTCUTS, defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
@@ -112,10 +112,12 @@ import {
   STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
-  AUDIO_SETTING_ICONS
+  AUDIO_SETTING_ICONS,
+  VOLUME_BOOST_ICONS
 } from './hud';
 import {
   AUDIO_HUD_KEYS,
+  AUDIO_SETTING_NAMES,
   AUDIO_SETTINGS_EVENT,
   AUDIO_STORAGE_KEYS,
   audioLevelLabelKey,
@@ -198,7 +200,7 @@ const {
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
 
-let cancelBoostReload: (() => void) | null = null;
+let cancelAudioReload: (() => void) | null = null;
 
 let providerPlayback: ProviderPlaybackSession | null = null;
 let removeWasmCatcher: (() => void) | null = null;
@@ -219,20 +221,21 @@ const webAudioCorsTried = new WeakSet<HTMLVideoElement>();
 
 /** Reload once with CORS so Web Audio can hear cross-origin media. */
 function prepareWebAudio(video: HTMLVideoElement): void {
+  if (webAudioCorsTried.has(video) || mediaAudioAccess(video, window.location.origin) !== 'needs-cors') return;
   webAudioCorsTried.add(video);
-  cancelBoostReload?.();
+  cancelAudioReload?.();
   const epoch = session.currentEpoch;
   const revision = refs.playbackDecisionRevision;
-  cancelBoostReload = reloadForVolumeBoost(video, {
+  cancelAudioReload = reloadForWebAudio(video, {
+    pageOrigin: window.location.origin,
     signal: session.signal,
     isCurrent: () => sessionNativeVideo() === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle,
     canResume: () => refs.playbackDecisionRevision === revision
   });
 }
 
-function audioNeedsCors(video: HTMLVideoElement): boolean {
-  return !isNeutralAudio(ui().audio) && !webAudioCorsTried.has(video)
-    && mediaAudioAccess(video, window.location.origin) === 'needs-cors';
+function audioProcessingRequested(): boolean {
+  return ui().volumeBoost || !isNeutralAudio(ui().audio);
 }
 
 function audioAvailable(video: HTMLVideoElement): boolean {
@@ -249,18 +252,32 @@ function pushAudioSettings(video: HTMLVideoElement, settings: AudioSettings): vo
   video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));
 }
 
+function resetMediaAudio(video: HTMLVideoElement): void {
+  video.dataset.theaterBoost = '1.0';
+  delete video.dataset.theaterBoostActive;
+  writeAudioDataset(video.dataset, DEFAULT_AUDIO_SETTINGS);
+  // Gain also belongs to the session, even when the effects were neutral.
+  video.dispatchEvent(new CustomEvent(AUDIO_SETTINGS_EVENT, { bubbles: true, composed: true }));
+}
+
 /** Settings follow the theater video; any other element returns to its own sound. */
 function syncAudioSettings(): void {
   const video = sessionNativeVideo();
-  if (audioVideo && audioVideo !== video) pushAudioSettings(audioVideo, DEFAULT_AUDIO_SETTINGS);
+  if (audioVideo && audioVideo !== video) resetMediaAudio(audioVideo);
   audioVideo = video;
   if (!video) return;
-  if (audioNeedsCors(video)) prepareWebAudio(video);
+  if (audioProcessingRequested()) prepareWebAudio(video);
   pushAudioSettings(video, ui().audio);
+  const surface = sessionSurface();
+  if (surface && ((surface.logicalVolume ?? 0) > 1 || video.dataset.theaterBoostActive === 'true')) {
+    const value = Math.min(volumeCeiling(surface, ui().volumeBoost), surface.logicalVolume ?? surface.volume);
+    surface.logicalVolume = value;
+    applyVolumeAndBoost(surface, value);
+  }
 }
 
 function releaseAudioSettings(): void {
-  if (audioVideo) pushAudioSettings(audioVideo, DEFAULT_AUDIO_SETTINGS);
+  if (audioVideo) resetMediaAudio(audioVideo);
   audioVideo = null;
 }
 
@@ -291,6 +308,41 @@ function cycleAudioSettingCommand(name: AudioSettingName): void {
   }
 }
 
+function applyVolumeBoost(enabled: boolean): void {
+  if (ui().volumeBoost === enabled) return;
+  uiStore.dispatch({ type: 'SET_VOLUME_BOOST', value: enabled });
+  const surface = sessionSurface();
+  if (!surface) return;
+  if (!enabled && (surface.logicalVolume ?? 0) > 1) {
+    surface.logicalVolume = 1;
+    rememberAudibleVolume(surface, 1);
+    applyVolumeAndBoost(surface, 1);
+    refs.onVolumeAdjustedCallback?.();
+  }
+  syncAudioSettings();
+}
+
+function toggleVolumeBoostCommand(): void {
+  const surface = sessionSurface();
+  const video = sessionNativeVideo();
+  if (!surface?.capabilities.volumeBoost || !video || !audioAvailable(video)) {
+    triggerStatusIndicator(t('audioUnavailableHud'), VOLUME_BOOST_ICONS.hud);
+    return;
+  }
+  const next = !ui().volumeBoost;
+  applyVolumeBoost(next);
+  triggerStatusIndicator(t('volumeBoostHud', t(next ? 'volumeBoostOn' : 'volumeBoostOff')), VOLUME_BOOST_ICONS.hud);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [VOLUME_BOOST_STORAGE_KEY]: next }).catch(error => {
+        console.error('[Theater Everywhere] Could not save volume boost:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save volume boost:', error);
+  }
+}
+
 function rememberAudibleVolume(video: PlaybackSurface, volume: number): void {
   if (volume > 0) video.lastAudibleVolume = volume;
 }
@@ -312,7 +364,7 @@ function isVideoSilent(video: PlaybackSurface): boolean {
 
 function toggleVideoMute(video: PlaybackSurface): void {
   if (isVideoSilent(video)) {
-    const restore = restoreAudibleVolume(video);
+    const restore = Math.min(volumeCeiling(video, ui().volumeBoost), restoreAudibleVolume(video));
     video.logicalVolume = restore;
     rememberAudibleVolume(video, restore);
     video.muted = false;
@@ -332,7 +384,7 @@ function applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void 
   if (!video.element.hasAttribute(THEATER_VIDEO_ATTR)) {
     video.element.setAttribute(THEATER_VIDEO_ATTR, '');
   }
-  const ceiling = volumeCeiling(video, refs.volumeBoostEnabled);
+  const ceiling = volumeCeiling(video, ui().volumeBoost);
   const value = Math.min(ceiling, Math.max(0, sliderValue));
   const native = video.nativeMedia instanceof HTMLVideoElement ? video.nativeMedia : null;
   if (!video.capabilities.volumeBoost || value <= 1) {
@@ -407,6 +459,9 @@ function executeCommand(command: PlayerCommand): void {
       break;
     case 'CYCLE_AUDIO':
       cycleAudioSettingCommand(command.setting);
+      break;
+    case 'TOGGLE_VOLUME_BOOST':
+      toggleVolumeBoostCommand();
       break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
@@ -998,7 +1053,6 @@ async function checkBlacklistAndInit(): Promise<void> {
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
-    refs.volumeBoostEnabled = resolveVolumeBoostEnabled(data[VOLUME_BOOST_STORAGE_KEY]);
     applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
     uiStore.dispatch({
       type: 'HYDRATE',
@@ -1007,6 +1061,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
         audio: resolveStoredAudioSettings(data),
+        volumeBoost: resolveVolumeBoostEnabled(data[VOLUME_BOOST_STORAGE_KEY]),
         raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
@@ -1120,7 +1175,7 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     if (video.logicalVolume === undefined) {
       video.logicalVolume = video.muted ? 0 : video.volume;
     }
-    const maxVol = volumeCeiling(video, refs.volumeBoostEnabled);
+    const maxVol = volumeCeiling(video, ui().volumeBoost);
     video.logicalVolume = Math.min(maxVol, video.logicalVolume + 0.05);
     if (video.muted) {
       video.muted = false;
@@ -1291,6 +1346,18 @@ function initialize(): void {
       event.stopPropagation();
       event.stopImmediatePropagation();
       executeCommand({ type: 'CYCLE_FIT' });
+      return true;
+    }
+
+    const audioSetting = AUDIO_SETTING_NAMES.find((name) => matchesShortcut(event, shortcuts[AUDIO_SHORTCUTS[name]]));
+    const volumeBoostKey = matchesShortcut(event, shortcuts.toggleVolumeBoost);
+    if (session.element && (audioSetting || volumeBoostKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (!ui().helpOpen && !event.repeat) {
+        executeCommand(audioSetting ? { type: 'CYCLE_AUDIO', setting: audioSetting } : { type: 'TOGGLE_VOLUME_BOOST' });
+      }
       return true;
     }
 
@@ -1985,12 +2052,11 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
       video.load();
     }
 
-    // Preemptively enable CORS on the video so Web Audio (Volume Boost) can
-    // access decoded audio later without a visible reload at boost time.
-    // The theater mode visual transition masks any brief re-fetch.
-    cancelBoostReload?.();
-    cancelBoostReload = null;
-    if (refs.volumeBoostEnabled || audioNeedsCors(video)) prepareWebAudio(video);
+    // Prepare only cross-origin files that need CORS. Open sources keep
+    // their decoded frame; saved audio settings share the same entry path.
+    cancelAudioReload?.();
+    cancelAudioReload = null;
+    if (audioProcessingRequested()) prepareWebAudio(video);
 
     // Isolate pointer and mouse events to block double-toggles in custom players
     const eventTypes = ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'];
@@ -2028,8 +2094,8 @@ function exitTheaterMode(
 ): void {
   if (!session.dispatch({ type: 'EXIT', origin, sessionId, from })) return;
   const closedSessionId = session.id;
-  cancelBoostReload?.();
-  cancelBoostReload = null;
+  cancelAudioReload?.();
+  cancelAudioReload = null;
   try {
   hideHelpOverlay();
   stopNativeChatSession();
@@ -2165,7 +2231,7 @@ export function bootstrapPlayerRuntime(): void {
       if (areaName !== 'sync') return;
 
       if (changes[VOLUME_BOOST_STORAGE_KEY]) {
-        refs.volumeBoostEnabled = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
+        applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));
       }
 
       if (changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY]
