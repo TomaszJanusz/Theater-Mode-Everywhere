@@ -814,33 +814,42 @@ button.theater-time-end:hover {
 
 .theater-time-glyph.is-entering {
   z-index: 1 !important;
-  animation: theater-time-blur-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  animation: theater-time-blur-in 320ms linear both !important;
 }
 
 .theater-time-glyph.is-leaving {
   z-index: 0 !important;
-  animation: theater-time-blur-out 180ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  animation: theater-time-blur-out 320ms linear both !important;
 }
 
+/* The midpoint stays soft. A timing curve that finishes early only flickers. */
 @keyframes theater-time-blur-in {
-  from {
+  0% {
     opacity: 0;
-    filter: blur(6px);
+    filter: blur(12px);
   }
-  to {
+  50% {
+    opacity: 0.55;
+    filter: blur(8px);
+  }
+  100% {
     opacity: 1;
     filter: blur(0);
   }
 }
 
 @keyframes theater-time-blur-out {
-  from {
+  0% {
     opacity: 1;
     filter: blur(0);
   }
-  to {
+  50% {
+    opacity: 0.45;
+    filter: blur(8px);
+  }
+  100% {
     opacity: 0;
-    filter: blur(6px);
+    filter: blur(12px);
   }
 }
 
