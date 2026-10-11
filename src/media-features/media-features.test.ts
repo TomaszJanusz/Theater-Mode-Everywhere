@@ -21,7 +21,7 @@ import {
   richTheaterExperienceEnabled
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
-import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
+import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
 import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
@@ -709,6 +709,12 @@ describe('youtube caption URL auth', () => {
     assert.equal(merged.searchParams.get('fmt'), 'json3');
     assert.equal(merged.searchParams.get('lang'), 'en');
     assert.equal(signYoutubeCaptionUrl(unsigned, [previous]), unsigned);
+    const english = 'https://www.youtube.com/api/timedtext?v=abc&lang=en&fmt=json3';
+    const polishPot = 'https://www.youtube.com/api/timedtext?v=abc&lang=pl&pot=PL&potc=1';
+    const englishPot = 'https://www.youtube.com/api/timedtext?v=abc&lang=en&pot=EN&potc=1';
+    assert.equal(new URL(signYoutubeCaptionUrl(english, [polishPot, englishPot])).searchParams.get('pot'), 'EN');
+    assert.equal(new URL(signYoutubeCaptionUrl(english, [polishPot])).searchParams.get('pot'), 'PL');
+    assert.equal(new URL(signYoutubeCaptionUrl(english, [polishPot])).searchParams.get('lang'), 'en');
     assert.deepEqual(
       readPublishedYoutubeCaptionAuthUrls({
         querySelector: () => ({ textContent: JSON.stringify([previous, signed]) })
@@ -717,7 +723,7 @@ describe('youtube caption URL auth', () => {
     );
   });
 
-  it('reuses a same-video timedtext body when lang/kind/fmt differ', () => {
+  it('reuses a player timedtext body whose UI language matches the requested track', () => {
     const cached = createTimedtextCacheRecord(
       'https://www.youtube.com/api/timedtext?v=abc&caps=asr&hl=en-GB&fmt=json3',
       '{"events":[]}'
@@ -732,6 +738,52 @@ describe('youtube caption URL auth', () => {
       'https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr&fmt=json3'
     );
     assert.equal(body, '{"events":[]}');
+  });
+
+  it('does not reuse another language or translation from the same video', () => {
+    const polish = createTimedtextCacheRecord(
+      'https://www.youtube.com/api/timedtext?v=abc&lang=pl&kind=asr&fmt=json3',
+      '{"events":[{"segs":[{"utf8":"polski tekst napisów"}]}]}'
+    );
+    const translated = createTimedtextCacheRecord(
+      'https://www.youtube.com/api/timedtext?v=abc&lang=en&tlang=pl&kind=asr&fmt=json3',
+      '{"events":[{"segs":[{"utf8":"tłumaczenie"}]}]}'
+    );
+    const english = createTimedtextCacheRecord(
+      'https://www.youtube.com/api/timedtext?v=abc&lang=en-US&kind=asr&fmt=json3',
+      '{"events":[{"segs":[{"utf8":"English"}]}]}'
+    );
+    const records = [polish, translated, english].filter((item): item is NonNullable<typeof item> => Boolean(item));
+    assert.equal(
+      findCachedTimedtextBody(records, 'https://www.youtube.com/api/timedtext?v=abc&lang=en&kind=asr&fmt=json3'),
+      '{"events":[{"segs":[{"utf8":"English"}]}]}'
+    );
+    assert.equal(
+      findCachedTimedtextBody(records, 'https://www.youtube.com/api/timedtext?v=abc&lang=en&tlang=pl&kind=asr&fmt=json3'),
+      '{"events":[{"segs":[{"utf8":"tłumaczenie"}]}]}'
+    );
+    assert.equal(
+      findCachedTimedtextBody(records, 'https://www.youtube.com/api/timedtext?v=abc&lang=ar&kind=asr&fmt=json3'),
+      null
+    );
+  });
+
+  it('selects the requested caption track without keeping another translation', () => {
+    const polishTranslation = {
+      languageCode: 'en',
+      kind: 'asr',
+      translationLanguage: { languageCode: 'pl', languageName: 'Polish' }
+    };
+    const american = { languageCode: 'en-US', kind: 'asr', vss_id: 'a.en' };
+    assert.equal(selectCaptionTrackOption([polishTranslation], null, 'asr', null), null);
+    const selected = selectCaptionTrackOption([polishTranslation, american], 'en', 'asr', null);
+    assert.equal(selected, american);
+    const stripped = selectCaptionTrackOption([polishTranslation], 'en', 'asr', null);
+    assert.equal(stripped?.languageCode, 'en');
+    assert.equal('translationLanguage' in (stripped || {}), false);
+    assert.equal(polishTranslation.translationLanguage.languageCode, 'pl');
+    const translated = selectCaptionTrackOption([polishTranslation, american], 'en', 'asr', 'pl');
+    assert.equal(translated, polishTranslation);
   });
 });
 
