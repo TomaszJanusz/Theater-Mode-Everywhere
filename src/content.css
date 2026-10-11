@@ -763,11 +763,14 @@ button.theater-time-end:hover {
 .theater-time-display {
   display: inline-flex !important;
   align-items: center !important;
+}
+
+.theater-time-display[data-mode="clock"] {
   direction: ltr !important;
   unicode-bidi: isolate !important;
 }
 
-.theater-time-elapsed.is-absent {
+.theater-time-display.is-absent {
   display: none !important;
 }
 

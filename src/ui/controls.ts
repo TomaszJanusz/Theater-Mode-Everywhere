@@ -506,14 +506,16 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     };
 
     let showTotalTime = false;
+    elapsedReadout.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const playback = playbackForChrome();
+      if (!playback?.live || !playback.seekable || !native) return;
+      seekToLive(native);
+    });
     endReadout.addEventListener('click', (e) => {
       e.stopPropagation();
       const playback = playbackForChrome();
-      if (!playback) return;
-      if (playback.live) {
-        if (playback.seekable && native) seekToLive(native);
-        return;
-      }
+      if (!playback || playback.live) return;
       showTotalTime = !showTotalTime;
       updateTimeDisplay(true);
     });
@@ -524,10 +526,10 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
-      endReadout.classList.toggle('theater-time-live', playback.live);
-      endReadout.classList.toggle('theater-time-live-behind', behindLive);
-      endReadout.classList.toggle('theater-time-live-jump', behindLive);
-      endReadout.style.cursor = playback.live && !canJumpToLive ? 'default' : 'pointer';
+      elapsedReadout.classList.toggle('theater-time-live', playback.live);
+      elapsedReadout.classList.toggle('theater-time-live-behind', behindLive);
+      elapsedReadout.classList.toggle('theater-time-live-jump', behindLive);
+      elapsedReadout.style.cursor = playback.live && canJumpToLive ? 'pointer' : '';
       scrubberContainer.classList.toggle('theater-scrubber-live', playback.live);
       scrubberContainer.classList.toggle('theater-scrubber-live-locked', locked);
       scrubberContainer.setAttribute('aria-disabled', locked ? 'true' : 'false');
@@ -536,11 +538,15 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         tooltip.classList.remove('visible');
         mediaFeatures.setHeatmapHover(null);
       }
-      return { live: playback.live, behindLive };
+      return { live: playback.live, behindLive, canJumpToLive };
     };
 
     const paintClocks = (cur: number, end: number, animate: boolean) => {
-      elapsedReadout.classList.remove('is-absent');
+      elapsedReadout.classList.remove('is-absent', 'theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
+      elapsedReadout.dir = 'ltr';
+      elapsedReadout.title = '';
+      elapsedReadout.removeAttribute('aria-label');
+      endReadout.classList.remove('is-absent', 'theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
       const labels = clockLabels(cur, end, showTotalTime);
       renderTimeReadout(elapsedReadout, labels.elapsed, animate);
       renderTimeReadout(endReadout, labels.edge, animate);
@@ -549,12 +555,18 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       endReadout.setAttribute('aria-label', action);
     };
 
-    const paintLive = (behindLive: boolean) => {
-      elapsedReadout.classList.add('is-absent');
-      renderLiveBadge(endReadout, t('liveBadge'));
-      const action = behindLive ? t('jumpToLive') : t('liveBadge');
-      endReadout.title = behindLive ? t('jumpToLive') : '';
-      endReadout.setAttribute('aria-label', action);
+    const paintLive = (behindLive: boolean, canJumpToLive: boolean) => {
+      endReadout.classList.add('is-absent');
+      endReadout.classList.remove('theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
+      elapsedReadout.classList.remove('is-absent');
+      elapsedReadout.removeAttribute('dir');
+      elapsedReadout.classList.add('theater-time-live');
+      elapsedReadout.classList.toggle('theater-time-live-behind', behindLive);
+      elapsedReadout.classList.toggle('theater-time-live-jump', behindLive);
+      elapsedReadout.style.cursor = canJumpToLive ? 'pointer' : '';
+      renderLiveBadge(elapsedReadout, t('liveBadge'));
+      elapsedReadout.title = behindLive ? t('jumpToLive') : '';
+      elapsedReadout.setAttribute('aria-label', behindLive ? t('jumpToLive') : t('liveBadge'));
     };
 
     const updateTimeDisplay = (animate = true) => {
@@ -564,7 +576,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       const chrome = syncLiveChrome();
       if (!chrome) return;
       if (playback.live) {
-        paintLive(chrome.behindLive);
+        paintLive(chrome.behindLive, chrome.canJumpToLive);
         return;
       }
       paintClocks(cur, playback.end, animate);
@@ -1202,10 +1214,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     
       const targetTime = ratioToTime(pos, window);
       if (window.live) {
-        const behind = window.seekable && !isAtLiveEdge(targetTime, window);
-        endReadout.classList.toggle('theater-time-live-behind', behind);
-        endReadout.classList.toggle('theater-time-live-jump', behind);
-        paintLive(behind);
+        paintLive(window.seekable && !isAtLiveEdge(targetTime, window), window.seekable);
       } else {
         paintClocks(targetTime, window.end, false);
       }
