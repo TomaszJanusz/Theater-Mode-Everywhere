@@ -813,50 +813,26 @@ button.theater-time-end:hover {
 }
 
 .theater-time-glyph.is-entering {
-  z-index: 1 !important;
   animation: theater-time-blur-in 320ms linear both !important;
 }
 
-.theater-time-glyph.is-leaving {
-  z-index: 0 !important;
-  animation: theater-time-blur-out 320ms linear both !important;
-}
-
-/* The midpoint stays soft. A timing curve that finishes early only flickers. */
+/* filter: blur() is clipped away inside the transformed bar, so the glyph
+   vanishes. A text-shadow of the same radius stays a readable soft digit. */
 @keyframes theater-time-blur-in {
-  0% {
-    opacity: 0;
-    filter: blur(12px);
-  }
-  50% {
-    opacity: 0.55;
-    filter: blur(8px);
+  0%, 55% {
+    color: transparent;
+    text-shadow: 0 0 1.5px #f4f4f5;
   }
   100% {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-
-@keyframes theater-time-blur-out {
-  0% {
-    opacity: 1;
-    filter: blur(0);
-  }
-  50% {
-    opacity: 0.45;
-    filter: blur(8px);
-  }
-  100% {
-    opacity: 0;
-    filter: blur(12px);
+    text-shadow: 0 0 0 transparent;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theater-time-glyph.is-entering,
-  .theater-time-glyph.is-leaving {
+  .theater-time-glyph.is-entering {
     animation: none !important;
+    color: currentColor !important;
+    text-shadow: none !important;
     filter: none !important;
     opacity: 1 !important;
   }
