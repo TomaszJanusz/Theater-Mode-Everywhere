@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "ライブに戻る"
   },
+  "showTotalTime": {
+    "message": "全体の時間を表示"
+  },
+  "showRemainingTime": {
+    "message": "残り時間を表示"
+  },
   "websiteExclusionsTitle": {
     "message": "ウェブサイトの除外"
   },

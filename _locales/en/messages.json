@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "Go to live"
   },
+  "showTotalTime": {
+    "message": "Show duration"
+  },
+  "showRemainingTime": {
+    "message": "Show time remaining"
+  },
   "websiteExclusionsTitle": {
     "message": "Website Exclusions"
   },

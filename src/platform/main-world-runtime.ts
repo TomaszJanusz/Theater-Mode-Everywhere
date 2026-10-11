@@ -394,9 +394,9 @@ export function installMainWorldRuntime(): void {
       event.stopImmediatePropagation();
       return;
     }
-    // Menu buttons own native Space activation, including through the UI's shadow root.
+    // Menu buttons and the duration toggle own native Space activation.
     if (event.composedPath().some(node => node instanceof Element
-        && node.matches('.theater-menu'))) return;
+        && node.matches('.theater-menu, .theater-time-end'))) return;
 
     if (isTencentWasmPlayerElement(marked)) {
       if (!mainWorldOwnsWasmPlayPause(event, publishedShortcut('playPause'))) return;

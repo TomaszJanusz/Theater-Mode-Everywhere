@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "回到直播"
   },
+  "showTotalTime": {
+    "message": "显示总时长"
+  },
+  "showRemainingTime": {
+    "message": "显示剩余时间"
+  },
   "websiteExclusionsTitle": {
     "message": "网站排除项"
   },

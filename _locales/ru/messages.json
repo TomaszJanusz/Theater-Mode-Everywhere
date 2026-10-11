@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "К прямой трансляции"
   },
+  "showTotalTime": {
+    "message": "Показать общую длительность"
+  },
+  "showRemainingTime": {
+    "message": "Показать оставшееся время"
+  },
   "websiteExclusionsTitle": {
     "message": "Исключения сайтов"
   },
