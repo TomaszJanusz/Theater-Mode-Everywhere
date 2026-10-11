@@ -86,6 +86,8 @@ export type PlayerChromeActions = {
   exitTheaterMode(origin?: ExitOrigin, sessionId?: string, from?: ExitFrom): void;
   enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void;
   focusTheaterPage(): void;
+  syncVoiceBoost(): void;
+  voiceBoostAvailable(video: HTMLVideoElement): boolean;
   refreshHostPlayerLayout(): void;
   setIcon(element: HTMLElement, svg: string): void;
   setTooltipContent(element: HTMLElement, rawText: string): void;

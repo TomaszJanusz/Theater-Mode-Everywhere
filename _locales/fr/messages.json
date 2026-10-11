@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Avec les sous-titres, l'image est en haut. Sans sous-titres, elle reste centrée."
   },
+  "voiceBoostLabel": {
+    "message": "Amplification des voix"
+  },
+  "voiceBoostOff": {
+    "message": "Désactivée"
+  },
+  "voiceBoostLight": {
+    "message": "Légère"
+  },
+  "voiceBoostStrong": {
+    "message": "Forte"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Indisponible"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "L’amplification des voix est indisponible pour cette vidéo"
+  },
+  "voiceBoostHud": {
+    "message": "Amplification des voix : $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Couleur d'accentuation"
   },

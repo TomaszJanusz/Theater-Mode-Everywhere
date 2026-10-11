@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Con i sottotitoli l'immagine sta in alto, senza sottotitoli resta centrata."
   },
+  "voiceBoostLabel": {
+    "message": "Potenziamento voce"
+  },
+  "voiceBoostOff": {
+    "message": "Disattivato"
+  },
+  "voiceBoostLight": {
+    "message": "Leggero"
+  },
+  "voiceBoostStrong": {
+    "message": "Forte"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Non disponibile"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Il potenziamento voce non è disponibile per questo video"
+  },
+  "voiceBoostHud": {
+    "message": "Potenziamento voce: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Colore di accento"
   },

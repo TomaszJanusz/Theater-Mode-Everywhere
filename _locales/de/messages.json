@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Mit Untertiteln liegt das Bild oben, ohne Untertitel bleibt es zentriert."
   },
+  "voiceBoostLabel": {
+    "message": "Sprachverstärkung"
+  },
+  "voiceBoostOff": {
+    "message": "Aus"
+  },
+  "voiceBoostLight": {
+    "message": "Leicht"
+  },
+  "voiceBoostStrong": {
+    "message": "Stark"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Nicht verfügbar"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Sprachverstärkung ist für dieses Video nicht verfügbar"
+  },
+  "voiceBoostHud": {
+    "message": "Sprachverstärkung: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Akzentfarbe"
   },

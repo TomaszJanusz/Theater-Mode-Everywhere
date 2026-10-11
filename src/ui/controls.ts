@@ -24,6 +24,8 @@ import {
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
+import { PICTURE_LAYOUT_ICON, VOICE_BOOST_ICON } from './hud';
+import { voiceBoostLabelKey } from './voice-boost-settings';
 import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
@@ -949,7 +951,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
 
     const layoutBtn = document.createElement('button');
     layoutBtn.className = 'theater-control-btn picture-layout-btn';
-    setIcon(layoutBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="7" rx="1"/><path d="M8 17h8"/></svg>`);
+    setIcon(layoutBtn, PICTURE_LAYOUT_ICON);
     layoutBtn.addEventListener('click', event => {
       event.stopPropagation();
       executeCommand({ type: 'CYCLE_LAYOUT' });
@@ -959,6 +961,28 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'));
     updateLayoutRow();
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
+
+    if (native && video.capabilities.nativeMedia) {
+      const voiceBtn = document.createElement('button');
+      voiceBtn.className = 'theater-control-btn voice-boost-btn';
+      setIcon(voiceBtn, VOICE_BOOST_ICON);
+      voiceBtn.addEventListener('click', event => {
+        event.stopPropagation();
+        executeCommand({ type: 'CYCLE_VOICE_BOOST' });
+      });
+      const voiceRow = settings.addRow(voiceBtn, t('voiceBoostLabel'));
+      const updateVoiceRow = () => {
+        const available = ctx.actions.voiceBoostAvailable(native);
+        voiceBtn.setAttribute('aria-disabled', String(!available));
+        voiceRow.update('', t(available ? voiceBoostLabelKey(ui().voiceBoost) : 'voiceBoostUnavailable'));
+      };
+      updateVoiceRow();
+      controlsScope.add(ctx.uiStore.subscribe(updateVoiceRow));
+      // DRM and a refused CORS reload only become visible once the media loads.
+      controlsScope.listen(native, 'encrypted', updateVoiceRow);
+      controlsScope.listen(native, 'loadedmetadata', updateVoiceRow);
+    }
+    ctx.actions.syncVoiceBoost();
 
     // Switch Video Button (Only if there are multiple real video players on the page)
     const videosOnPage = native ? selectSwitchableVideos(findAllVideosDeep(document), native) : [];

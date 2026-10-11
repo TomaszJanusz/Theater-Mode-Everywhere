@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "مع الترجمة تكون الصورة للأعلى، وبدونها تبقى في الوسط."
   },
+  "voiceBoostLabel": {
+    "message": "تعزيز الحوار"
+  },
+  "voiceBoostOff": {
+    "message": "إيقاف"
+  },
+  "voiceBoostLight": {
+    "message": "خفيف"
+  },
+  "voiceBoostStrong": {
+    "message": "قوي"
+  },
+  "voiceBoostUnavailable": {
+    "message": "غير متاح"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "تعزيز الحوار غير متاح لهذا الفيديو"
+  },
+  "voiceBoostHud": {
+    "message": "تعزيز الحوار: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "لون الإبراز"
   },

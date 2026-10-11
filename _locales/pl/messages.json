@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Z włączonymi napisami obraz jest u góry, a z wyłączonymi na środku."
   },
+  "voiceBoostLabel": {
+    "message": "Wzmocnienie głosu"
+  },
+  "voiceBoostOff": {
+    "message": "Wył."
+  },
+  "voiceBoostLight": {
+    "message": "Lekkie"
+  },
+  "voiceBoostStrong": {
+    "message": "Mocne"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Niedostępne"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Wzmocnienie głosu jest niedostępne dla tego wideo"
+  },
+  "voiceBoostHud": {
+    "message": "Wzmocnienie głosu: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Kolor akcentu"
   },

@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Із субтитрами зображення зверху, без субтитрів — по центру."
   },
+  "voiceBoostLabel": {
+    "message": "Посилення голосу"
+  },
+  "voiceBoostOff": {
+    "message": "Вимк."
+  },
+  "voiceBoostLight": {
+    "message": "Слабке"
+  },
+  "voiceBoostStrong": {
+    "message": "Сильне"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Недоступно"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Посилення голосу недоступне для цього відео"
+  },
+  "voiceBoostHud": {
+    "message": "Посилення голосу: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Акцентний колір"
   },

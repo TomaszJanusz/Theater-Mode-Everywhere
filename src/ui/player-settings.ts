@@ -93,7 +93,8 @@ export function createPlayerSettings(
         });
         detail.replaceChildren();
         if (value) detail.textContent = value;
-        row.setAttribute('aria-keyshortcuts', shortcut);
+        if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
+        else row.removeAttribute('aria-keyshortcuts');
       }
     };
   }

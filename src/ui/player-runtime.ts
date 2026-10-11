@@ -107,9 +107,21 @@ import { createHelp } from './help';
 import {
   createHud,
   STATUS_HUD_FIT_ICON,
+  STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
-  STATUS_HUD_UNMUTE_ICON
+  STATUS_HUD_UNMUTE_ICON,
+  STATUS_HUD_VOICE_BOOST_ICON
 } from './hud';
+import {
+  DEFAULT_VOICE_BOOST,
+  nextVoiceBoost,
+  resolveVoiceBoost,
+  VOICE_BOOST_EVENT,
+  VOICE_BOOST_STORAGE_KEY,
+  voiceBoostLabelKey,
+  type VoiceBoostLevel
+} from './voice-boost-settings';
+import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
   createChromeRefs,
@@ -187,6 +199,88 @@ function sessionSurface(): PlaybackSurface | null {
   if (providerPlayback && session.element === providerPlayback.surface.element) return providerPlayback.surface;
   if (session.element instanceof HTMLVideoElement) return nativePlaybackSurface(session.element);
   return null;
+}
+
+function sessionNativeVideo(): HTMLVideoElement | null {
+  const surface = sessionSurface();
+  if (!surface?.capabilities.nativeMedia) return null;
+  return surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null;
+}
+
+const webAudioCorsTried = new WeakSet<HTMLVideoElement>();
+
+/** Reload once with CORS so Web Audio can hear cross-origin media. */
+function prepareWebAudio(video: HTMLVideoElement): void {
+  webAudioCorsTried.add(video);
+  cancelBoostReload?.();
+  const epoch = session.currentEpoch;
+  const revision = refs.playbackDecisionRevision;
+  cancelBoostReload = reloadForVolumeBoost(video, {
+    signal: session.signal,
+    isCurrent: () => sessionNativeVideo() === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle,
+    canResume: () => refs.playbackDecisionRevision === revision
+  });
+}
+
+function voiceBoostNeedsCors(video: HTMLVideoElement): boolean {
+  return ui().voiceBoost !== 'off' && !webAudioCorsTried.has(video)
+    && mediaAudioAccess(video, window.location.origin) === 'needs-cors';
+}
+
+function voiceBoostAvailable(video: HTMLVideoElement): boolean {
+  const access = mediaAudioAccess(video, window.location.origin);
+  if (access === 'protected') return false;
+  // Loaded again without CORS: the server refused it.
+  return !(access === 'needs-cors' && webAudioCorsTried.has(video) && video.readyState >= 1);
+}
+
+let voiceBoostVideo: HTMLVideoElement | null = null;
+
+function pushVoiceBoost(video: HTMLVideoElement, level: VoiceBoostLevel): void {
+  if ((video.dataset.theaterVoice ?? DEFAULT_VOICE_BOOST) === level) return;
+  video.dataset.theaterVoice = level;
+  video.dispatchEvent(new CustomEvent(VOICE_BOOST_EVENT, { bubbles: true, composed: true }));
+}
+
+/** The level follows the theater video; any other element returns to its own sound. */
+function syncVoiceBoost(): void {
+  const video = sessionNativeVideo();
+  if (voiceBoostVideo && voiceBoostVideo !== video) pushVoiceBoost(voiceBoostVideo, 'off');
+  voiceBoostVideo = video;
+  if (!video) return;
+  if (voiceBoostNeedsCors(video)) prepareWebAudio(video);
+  pushVoiceBoost(video, ui().voiceBoost);
+}
+
+function releaseVoiceBoost(): void {
+  if (voiceBoostVideo) pushVoiceBoost(voiceBoostVideo, 'off');
+  voiceBoostVideo = null;
+}
+
+function applyVoiceBoost(level: VoiceBoostLevel): void {
+  if (level === ui().voiceBoost) return;
+  uiStore.dispatch({ type: 'SET_VOICE_BOOST', value: level });
+  syncVoiceBoost();
+}
+
+function cycleVoiceBoost(): void {
+  const video = sessionNativeVideo();
+  if (!video || !voiceBoostAvailable(video)) {
+    triggerStatusIndicator(t('voiceBoostUnavailableHud'), STATUS_HUD_VOICE_BOOST_ICON);
+    return;
+  }
+  const next = nextVoiceBoost(ui().voiceBoost);
+  applyVoiceBoost(next);
+  triggerStatusIndicator(t('voiceBoostHud', t(voiceBoostLabelKey(next))), STATUS_HUD_VOICE_BOOST_ICON);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
+      void chrome.storage.sync.set({ [VOICE_BOOST_STORAGE_KEY]: next }).catch(error => {
+        console.error('[Theater Everywhere] Could not save voice boost:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Theater Everywhere] Could not save voice boost:', error);
+  }
 }
 
 function rememberAudibleVolume(video: PlaybackSurface, volume: number): void {
@@ -303,6 +397,9 @@ function executeCommand(command: PlayerCommand): void {
     case 'TOGGLE_CONTROLS_PIN':
       toggleControlsPin();
       break;
+    case 'CYCLE_VOICE_BOOST':
+      cycleVoiceBoost();
+      break;
     case 'TOGGLE_HELP':
       toggleHelpOverlay();
       break;
@@ -415,6 +512,8 @@ function bindChromeActions(): void {
     exitTheaterMode,
     enterTheaterMode,
     focusTheaterPage,
+    syncVoiceBoost,
+    voiceBoostAvailable,
     refreshHostPlayerLayout,
     setIcon: toolbar.setIcon,
     setTooltipContent: toolbar.setTooltipContent,
@@ -686,7 +785,7 @@ function toggleControlsPin(): void {
 function cyclePictureLayout(): void {
   const next: PictureAlign = ui().pictureAlign === 'center' ? 'top' : 'center';
   applyPictureAlign(next);
-  triggerStatusIndicator(t(next === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_FIT_ICON);
+  triggerStatusIndicator(t(next === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'), STATUS_HUD_LAYOUT_ICON);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
       void chrome.storage.sync.set({ [PICTURE_ALIGN_STORAGE_KEY]: next }).catch(error => {
@@ -848,6 +947,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       ACCENT_COLOR_STORAGE_KEY,
       VIDEO_FIT_STORAGE_KEY,
       PICTURE_ALIGN_STORAGE_KEY,
+      VOICE_BOOST_STORAGE_KEY,
       RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
@@ -863,6 +963,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
+        voiceBoost: resolveVoiceBoost(data[VOICE_BOOST_STORAGE_KEY]),
         raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
         captionStyle: resolveCaptionStyle(data[CAPTION_STYLE_STORAGE_KEY])
@@ -1838,15 +1939,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     // The theater mode visual transition masks any brief re-fetch.
     cancelBoostReload?.();
     cancelBoostReload = null;
-    if (refs.volumeBoostEnabled) {
-      const epoch = session.currentEpoch;
-      const revision = refs.playbackDecisionRevision;
-      cancelBoostReload = reloadForVolumeBoost(video, {
-        signal: session.signal,
-        isCurrent: () => session.element === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle,
-        canResume: () => refs.playbackDecisionRevision === revision
-      });
-    }
+    if (refs.volumeBoostEnabled || voiceBoostNeedsCors(video)) prepareWebAudio(video);
 
     // Isolate pointer and mouse events to block double-toggles in custom players
     const eventTypes = ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'];
@@ -1914,6 +2007,7 @@ function exitTheaterMode(
     video.classList.remove('controls-visible');
   }
 
+  releaseVoiceBoost();
   if (session.element && (session.element.tagName === 'VIDEO' || providerPlayback)) {
     destroyCustomControls();
   }
@@ -2044,6 +2138,9 @@ export function bootstrapPlayerRuntime(): void {
       }
       if (changes[PICTURE_ALIGN_STORAGE_KEY]) {
         applyPictureAlign(resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue));
+      }
+      if (changes[VOICE_BOOST_STORAGE_KEY]) {
+        applyVoiceBoost(resolveVoiceBoost(changes[VOICE_BOOST_STORAGE_KEY].newValue));
       }
       if (changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]) {
         applyRaiseOnlyWithSubtitles(changes[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY].newValue);

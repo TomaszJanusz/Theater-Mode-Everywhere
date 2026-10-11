@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "字幕打开时画面靠上，关闭时画面居中。"
   },
+  "voiceBoostLabel": {
+    "message": "人声增强"
+  },
+  "voiceBoostOff": {
+    "message": "关"
+  },
+  "voiceBoostLight": {
+    "message": "轻度"
+  },
+  "voiceBoostStrong": {
+    "message": "强力"
+  },
+  "voiceBoostUnavailable": {
+    "message": "不可用"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "此视频不支持人声增强"
+  },
+  "voiceBoostHud": {
+    "message": "人声增强：$1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "强调色"
   },

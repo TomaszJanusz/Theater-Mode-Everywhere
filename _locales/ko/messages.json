@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "자막이 켜지면 위로, 꺼지면 가운데로 둡니다."
   },
+  "voiceBoostLabel": {
+    "message": "음성 강조"
+  },
+  "voiceBoostOff": {
+    "message": "끔"
+  },
+  "voiceBoostLight": {
+    "message": "약하게"
+  },
+  "voiceBoostStrong": {
+    "message": "강하게"
+  },
+  "voiceBoostUnavailable": {
+    "message": "사용 불가"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "이 동영상에서는 음성 강조를 사용할 수 없습니다"
+  },
+  "voiceBoostHud": {
+    "message": "음성 강조: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "강조 색상"
   },

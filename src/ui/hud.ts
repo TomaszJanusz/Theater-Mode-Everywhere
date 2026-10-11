@@ -22,6 +22,19 @@ export const STATUS_HUD_FIT_ICON = `
   </svg>
 `;
 
+/** Settings rows and their confirmation HUD draw one shape set at two sizes. */
+function strokeIcon(shapes: string, size: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
+}
+
+const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="7" rx="1"/><path d="M8 17h8"/>';
+export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
+export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
+
+const VOICE_BOOST_SHAPES = '<path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.16-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.66 3.05 1 4.55a5.77 5.77 0 0 1 .03 2.76L2 20"/><path d="M19.8 17.8a7.5 7.5 0 0 0 0-10.6"/><path d="M17 15a3.5 3.5 0 0 0 0-5"/>';
+export const VOICE_BOOST_ICON = strokeIcon(VOICE_BOOST_SHAPES, 16);
+export const STATUS_HUD_VOICE_BOOST_ICON = strokeIcon(VOICE_BOOST_SHAPES, 28);
+
 export type CaptionHudView =
   | { kind: 'dismiss' }
   | { kind: 'loading'; title: string }

@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Use Raised when subtitles are on and Centered when they are off."
   },
+  "voiceBoostLabel": {
+    "message": "Voice boost"
+  },
+  "voiceBoostOff": {
+    "message": "Off"
+  },
+  "voiceBoostLight": {
+    "message": "Light"
+  },
+  "voiceBoostStrong": {
+    "message": "Strong"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Unavailable"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Voice boost is unavailable for this video"
+  },
+  "voiceBoostHud": {
+    "message": "Voice boost: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Accent color"
   },

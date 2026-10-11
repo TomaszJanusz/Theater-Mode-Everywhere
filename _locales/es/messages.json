@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Con subtítulos la imagen queda arriba, y sin ellos queda centrada."
   },
+  "voiceBoostLabel": {
+    "message": "Realce de voz"
+  },
+  "voiceBoostOff": {
+    "message": "Desactivado"
+  },
+  "voiceBoostLight": {
+    "message": "Ligero"
+  },
+  "voiceBoostStrong": {
+    "message": "Fuerte"
+  },
+  "voiceBoostUnavailable": {
+    "message": "No disponible"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "El realce de voz no está disponible para este vídeo"
+  },
+  "voiceBoostHud": {
+    "message": "Realce de voz: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Color de acento"
   },

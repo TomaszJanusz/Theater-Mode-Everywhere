@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "字幕がオンのときは上寄せ、オフのときは中央にします。"
   },
+  "voiceBoostLabel": {
+    "message": "音声強調"
+  },
+  "voiceBoostOff": {
+    "message": "オフ"
+  },
+  "voiceBoostLight": {
+    "message": "弱"
+  },
+  "voiceBoostStrong": {
+    "message": "強"
+  },
+  "voiceBoostUnavailable": {
+    "message": "利用不可"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "この動画では音声強調を使用できません"
+  },
+  "voiceBoostHud": {
+    "message": "音声強調: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "アクセントカラー"
   },

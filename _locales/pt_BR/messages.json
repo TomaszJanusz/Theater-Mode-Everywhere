@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "Com legendas a imagem fica no topo, e sem legendas fica centralizada."
   },
+  "voiceBoostLabel": {
+    "message": "Realce de voz"
+  },
+  "voiceBoostOff": {
+    "message": "Desativado"
+  },
+  "voiceBoostLight": {
+    "message": "Leve"
+  },
+  "voiceBoostStrong": {
+    "message": "Forte"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Indisponível"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "O realce de voz está indisponível para este vídeo"
+  },
+  "voiceBoostHud": {
+    "message": "Realce de voz: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Cor de destaque"
   },

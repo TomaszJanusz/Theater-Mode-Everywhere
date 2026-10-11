@@ -3,6 +3,9 @@ import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isA
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
+import { mediaAudioAccess } from './media-audio-access';
+import { createVoiceBoostChain, type VoiceBoostChain } from './voice-boost-graph';
+import { resolveVoiceBoost, VOICE_BOOST_EVENT } from '../ui/voice-boost-settings';
 import { queryPlayerUi } from '../ui/root';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
@@ -229,6 +232,7 @@ export function installMainWorldRuntime(): void {
       return true;
     }
     if (failedVideos.has(video)) return false;
+    if (mediaAudioAccess(video, window.location.origin) !== 'open') return false;
 
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -236,13 +240,17 @@ export function installMainWorldRuntime(): void {
 
       const ctx = new AudioCtx();
       const source = ctx.createMediaElementSource(video);
+      const voice = createVoiceBoostChain(ctx);
       const gain = ctx.createGain();
 
-      source.connect(gain);
+      source.connect(voice.input);
+      voice.output.connect(gain);
       gain.connect(ctx.destination);
+      voice.setLevel(resolveVoiceBoost(video.dataset.theaterVoice));
 
       boosted._theaterAudioCtx = ctx;
       boosted._theaterGainNode = gain;
+      boosted._theaterVoiceChain = voice;
       video.dataset.theaterBoostReady = 'true';
       window.dispatchEvent(new CustomEvent('theater-everywhere-boost-ready'));
 
@@ -606,4 +614,31 @@ export function installMainWorldRuntime(): void {
       pendingMultiplier = multiplier;
     }
   });
+
+  window.addEventListener(VOICE_BOOST_EVENT, (event: Event) => {
+    const video = event.composedPath()[0];
+    if (!(video instanceof HTMLVideoElement)) return;
+    const level = resolveVoiceBoost(video.dataset.theaterVoice);
+    const chain = (video as HTMLVideoElement & { _theaterVoiceChain?: VoiceBoostChain })._theaterVoiceChain;
+    if (chain) {
+      chain.setLevel(level);
+      return;
+    }
+    const multiplier = parseFloat(video.dataset.theaterBoost || '1.0');
+    if (level === 'off') {
+      if (pendingVideo === video && !(multiplier > 1)) pendingVideo = null;
+      return;
+    }
+    if (failedVideos.has(video)) return;
+    pendingVideo = video;
+    pendingMultiplier = multiplier;
+    // An AudioContext created outside a gesture starts suspended and would
+    // mute the routed element; otherwise the next click or key applies it.
+    const setupWhileActive = () => {
+      if (pendingVideo === video && navigator.userActivation?.isActive) setupAudioGraph(video);
+    };
+    setupWhileActive();
+    // A CORS reload started for this level is usable once metadata arrives.
+    if (pendingVideo === video) video.addEventListener('loadedmetadata', setupWhileActive, { once: true });
+  }, true);
 }

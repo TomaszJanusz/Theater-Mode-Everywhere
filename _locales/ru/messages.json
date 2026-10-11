@@ -97,6 +97,32 @@
   "pictureAlignSubtitlesOnlyDescription": {
     "message": "С субтитрами изображение сверху, без субтитров — по центру."
   },
+  "voiceBoostLabel": {
+    "message": "Усиление голоса"
+  },
+  "voiceBoostOff": {
+    "message": "Выкл."
+  },
+  "voiceBoostLight": {
+    "message": "Слабое"
+  },
+  "voiceBoostStrong": {
+    "message": "Сильное"
+  },
+  "voiceBoostUnavailable": {
+    "message": "Недоступно"
+  },
+  "voiceBoostUnavailableHud": {
+    "message": "Усиление голоса недоступно для этого видео"
+  },
+  "voiceBoostHud": {
+    "message": "Усиление голоса: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
   "accentColorLabel": {
     "message": "Цвет акцента"
   },

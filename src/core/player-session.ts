@@ -23,6 +23,7 @@ export type PlayerCommand =
   | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
   | { type: 'CYCLE_FIT' }
   | { type: 'CYCLE_LAYOUT' }
+  | { type: 'CYCLE_VOICE_BOOST' }
   | { type: 'TOGGLE_HELP' }
   | { type: 'TOGGLE_CONTROLS_PIN' };
 

@@ -571,6 +571,8 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Tab');
   if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');
+  if (!await menu.locator('.voice-boost-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the voice boost setting.');
+  await page.keyboard.press('Tab');
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
@@ -1163,6 +1165,65 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
   console.log('smoke layout: settings row, repeat/input/help guards, Fit/Fill/Stretch, saved preference and live shortcut updates passed');
 }
 
+async function assertVoiceBoost(page: Page, context?: BrowserContext): Promise<void> {
+  const video = page.locator('video#player');
+  const gear = page.locator('.player-settings-btn');
+  const row = page.locator('.voice-boost-btn');
+  const hud = page.locator('.theater-everywhere-volume-overlay.status-hud');
+  const shapes = (locator: typeof row) => locator.locator('svg').first().evaluate(svg => svg.innerHTML);
+  const voiceState = () => video.evaluate((video: HTMLVideoElement) => ({
+    level: video.dataset.theaterVoice, graph: video.dataset.theaterBoostReady === 'true'
+  }));
+  const cycleTo = async (detail: string) => {
+    await row.click();
+    await page.waitForFunction(detail => document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.voice-boost-btn .theater-settings-detail')?.textContent === detail, detail);
+    if (await hud.innerText() !== `Voice boost: ${detail}`) fail(`Voice boost HUD did not confirm ${detail}.`);
+    if (await shapes(hud) !== await shapes(row)) fail('Voice boost HUD icon differs from its settings row.');
+  };
+
+  if (!await row.isVisible()) await gear.click();
+  await row.waitFor();
+  if (await row.locator('.theater-settings-detail').innerText() !== 'Off') fail('Voice boost should default to Off.');
+  if (await row.getAttribute('aria-keyshortcuts') !== null) fail('Voice boost row advertises a shortcut it does not have.');
+  await cycleTo('Light');
+  // The click is the user activation the MAIN world needs to start Web Audio.
+  await page.waitForFunction(() => {
+    const player = document.querySelector<HTMLVideoElement>('video#player');
+    return player?.dataset.theaterVoice === 'light' && player.dataset.theaterBoostReady === 'true';
+  });
+  await cycleTo('Strong');
+  if ((await voiceState()).level !== 'strong') fail('Strong voice boost did not reach the media element.');
+  if (context) {
+    const worker = await extensionWorker(context);
+    const saved = await worker.evaluate(() => chrome.storage.sync.get('voiceBoost'));
+    if (saved.voiceBoost !== 'strong') fail(`Voice boost was not saved: ${JSON.stringify(saved)}`);
+  }
+
+  const layout = page.locator('.picture-layout-btn');
+  await layout.click();
+  await hud.filter({ hasText: 'Raised' }).waitFor();
+  if (await shapes(hud) !== await shapes(layout)) fail('Layout HUD icon differs from its settings row.');
+  await layout.click();
+  await hud.filter({ hasText: 'Centered' }).waitFor();
+
+  await page.keyboard.press('Escape'); // Close settings.
+  await exitTheater(page);
+  if ((await voiceState()).level !== 'off') fail('Voice boost kept processing the host player after theater exit.');
+  await enterTheaterFromPicture(page);
+  await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterVoice === 'strong');
+  if (context) {
+    const worker = await extensionWorker(context);
+    await worker.evaluate(() => chrome.storage.sync.set({ voiceBoost: 'off' }));
+    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')?.dataset.theaterVoice === 'off');
+  } else {
+    await gear.click();
+    await cycleTo('Off');
+    await page.keyboard.press('Escape');
+  }
+  console.log('smoke voice boost: settings cycle, HUD icons, MAIN-world graph, saved level and exit restore passed');
+}
+
 async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: BrowserContext): Promise<void> {
   await page.bringToFront();
   await page.locator('video#player').evaluate(async (video: HTMLVideoElement) => {
@@ -1177,6 +1238,7 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
   await page.keyboard.press('f');
   await page.waitForFunction(() => !document.fullscreenElement);
   await assertPictureLayout(page, context);
+  await assertVoiceBoost(page, context);
   await page.keyboard.press('h');
   const help = page.locator('.theater-help-overlay');
   await help.waitFor();
