@@ -28,6 +28,7 @@ import { bindMenuPopover } from './menu-popover';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { mountNativeChatControls, nativeChatState } from './chat';
+import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 
@@ -469,11 +470,18 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     volumeContainer.appendChild(volumeBtn);
     volumeContainer.appendChild(volumePanel);
 
-    // Time label display
-    const timeDisplay = document.createElement('span');
-    timeDisplay.className = 'theater-time-display';
-    timeDisplay.style.cursor = 'pointer';
-    timeDisplay.textContent = '0:00 / 0:00';
+    // Elapsed sits left of the scrubber. The trailing clock sits on its right
+    // and toggles between time remaining and duration.
+    const elapsedReadout = document.createElement('span');
+    elapsedReadout.className = 'theater-time-display theater-time-elapsed';
+    elapsedReadout.dir = 'ltr';
+
+    const endReadout = document.createElement('button');
+    endReadout.type = 'button';
+    endReadout.className = 'theater-time-display theater-time-end';
+    endReadout.dir = 'ltr';
+    renderTimeReadout(elapsedReadout, '0:00', false);
+    renderTimeReadout(endReadout, '-0:00', false);
 
     let stableWindow: ReturnType<typeof playbackWindow> | null = null;
     const playbackForChrome = (): ReturnType<typeof playbackWindow> | null => {
@@ -497,63 +505,76 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       return `${m}:${sStr}`;
     };
 
-    let showRemainingTime = false;
-    timeDisplay.addEventListener('click', (e) => {
+    let showTotalTime = false;
+    endReadout.addEventListener('click', (e) => {
       e.stopPropagation();
-      const window = playbackForChrome();
-      if (!window) return;
-      if (window.live) {
-        if (window.seekable && native) seekToLive(native);
+      const playback = playbackForChrome();
+      if (!playback) return;
+      if (playback.live) {
+        if (playback.seekable && native) seekToLive(native);
         return;
       }
-      showRemainingTime = !showRemainingTime;
-      updateTimeDisplay();
+      showTotalTime = !showTotalTime;
+      updateTimeDisplay(true);
     });
 
     const syncLiveChrome = () => {
-      const window = playbackForChrome();
-      if (!window) return;
-      const locked = window.live && !window.seekable;
-      const canJumpToLive = window.live && window.seekable;
-      const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, window);
-      timeDisplay.classList.toggle('theater-time-live', window.live);
-      timeDisplay.classList.toggle('theater-time-live-behind', behindLive);
-      timeDisplay.classList.toggle('theater-time-live-jump', behindLive);
-      timeDisplay.style.cursor = window.live && !canJumpToLive ? 'default' : 'pointer';
-      timeDisplay.title = behindLive ? t('jumpToLive') : '';
-      scrubberContainer.classList.toggle('theater-scrubber-live', window.live);
+      const playback = playbackForChrome();
+      if (!playback) return null;
+      const locked = playback.live && !playback.seekable;
+      const canJumpToLive = playback.live && playback.seekable;
+      const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
+      endReadout.classList.toggle('theater-time-live', playback.live);
+      endReadout.classList.toggle('theater-time-live-behind', behindLive);
+      endReadout.classList.toggle('theater-time-live-jump', behindLive);
+      endReadout.style.cursor = playback.live && !canJumpToLive ? 'default' : 'pointer';
+      scrubberContainer.classList.toggle('theater-scrubber-live', playback.live);
       scrubberContainer.classList.toggle('theater-scrubber-live-locked', locked);
       scrubberContainer.setAttribute('aria-disabled', locked ? 'true' : 'false');
-      speedContainer.hidden = window.live;
+      speedContainer.hidden = playback.live;
       if (locked) {
         tooltip.classList.remove('visible');
         mediaFeatures.setHeatmapHover(null);
       }
+      return { live: playback.live, behindLive };
     };
 
-    const updateTimeDisplay = () => {
-      const window = playbackForChrome();
-      if (!window) return;
+    const paintClocks = (cur: number, end: number, animate: boolean) => {
+      elapsedReadout.classList.remove('is-absent');
+      const labels = clockLabels(cur, end, showTotalTime);
+      renderTimeReadout(elapsedReadout, labels.elapsed, animate);
+      renderTimeReadout(endReadout, labels.edge, animate);
+      const action = showTotalTime ? t('showRemainingTime') : t('showTotalTime');
+      endReadout.title = action;
+      endReadout.setAttribute('aria-label', action);
+    };
+
+    const paintLive = (behindLive: boolean) => {
+      elapsedReadout.classList.add('is-absent');
+      renderLiveBadge(endReadout, t('liveBadge'));
+      const action = behindLive ? t('jumpToLive') : t('liveBadge');
+      endReadout.title = behindLive ? t('jumpToLive') : '';
+      endReadout.setAttribute('aria-label', action);
+    };
+
+    const updateTimeDisplay = (animate = true) => {
+      const playback = playbackForChrome();
+      if (!playback) return;
       const cur = displayMediaTime(video);
-      syncLiveChrome();
-      if (window.live) {
-        timeDisplay.textContent = t('liveBadge');
+      const chrome = syncLiveChrome();
+      if (!chrome) return;
+      if (playback.live) {
+        paintLive(chrome.behindLive);
         return;
       }
-      const dur = window.end;
-      if (showRemainingTime) {
-        const remaining = Math.max(0, dur - cur);
-        timeDisplay.textContent = `-${formatTime(remaining)} / ${formatTime(dur)}`;
-      } else {
-        timeDisplay.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
-      }
+      paintClocks(cur, playback.end, animate);
     };
 
     leftSec.appendChild(playPauseBtn);
     leftSec.appendChild(previousBtn);
     leftSec.appendChild(nextBtn);
     leftSec.appendChild(volumeContainer);
-    leftSec.appendChild(timeDisplay);
+    leftSec.appendChild(elapsedReadout);
 
     // Right Controls Section
     const rightSec = document.createElement('div');
@@ -883,9 +904,10 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     };
     window.addEventListener('blur', onWindowBlur);
 
+    rightSec.appendChild(endReadout);
     rightSec.appendChild(ccHost);
     rightSec.appendChild(speedContainer);
-    updateTimeDisplay();
+    updateTimeDisplay(false);
 
     const fitBtn = document.createElement('button');
     fitBtn.className = 'theater-control-btn video-fit-btn';
@@ -1180,16 +1202,12 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     
       const targetTime = ratioToTime(pos, window);
       if (window.live) {
-        timeDisplay.textContent = t('liveBadge');
-        timeDisplay.classList.toggle(
-          'theater-time-live-behind',
-          window.seekable && !isAtLiveEdge(targetTime, window)
-        );
-      } else if (showRemainingTime) {
-        const remaining = Math.max(0, window.end - targetTime);
-        timeDisplay.textContent = `-${formatTime(remaining)} / ${formatTime(window.end)}`;
+        const behind = window.seekable && !isAtLiveEdge(targetTime, window);
+        endReadout.classList.toggle('theater-time-live-behind', behind);
+        endReadout.classList.toggle('theater-time-live-jump', behind);
+        paintLive(behind);
       } else {
-        timeDisplay.textContent = `${formatTime(targetTime)} / ${formatTime(window.end)}`;
+        paintClocks(targetTime, window.end, false);
       }
     
       if (isDragging) {

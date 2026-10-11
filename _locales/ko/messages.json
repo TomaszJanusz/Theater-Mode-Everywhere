@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "실시간으로 이동"
   },
+  "showTotalTime": {
+    "message": "총 시간 표시"
+  },
+  "showRemainingTime": {
+    "message": "남은 시간 표시"
+  },
   "websiteExclusionsTitle": {
     "message": "웹사이트 예외"
   },

@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "الانتقال إلى البث المباشر"
   },
+  "showTotalTime": {
+    "message": "عرض المدة الكلية"
+  },
+  "showRemainingTime": {
+    "message": "عرض الوقت المتبقي"
+  },
   "websiteExclusionsTitle": {
     "message": "استثناءات المواقع"
   },

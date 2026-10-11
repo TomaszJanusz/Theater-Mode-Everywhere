@@ -715,7 +715,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
 
 /* Removed old tooltips (migrated to vertical panel content) */
 
-/* Time display label */
+/* Time display label. Digit slots are a fixed width so ticks never shove the scrubber. */
 .theater-time-display {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 12px !important;
@@ -723,11 +723,131 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   font-variant-numeric: tabular-nums lining-nums !important;
   font-feature-settings: "tnum" 1, "lnum" 1 !important;
   font-variant-ligatures: none !important;
+  font-kerning: none !important;
   color: var(--text-secondary, #a1a1aa) !important;
   user-select: none !important;
-  margin-inline-start: 6px !important;
   white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  flex: 0 0 auto !important;
+  line-height: 1 !important;
+}
+
+.theater-time-elapsed {
+  margin-inline-start: 6px !important;
+}
+
+button.theater-time-end {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+  margin: 0 !important;
+  padding: 6px 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+button.theater-time-end:hover {
+  color: var(--text-primary, #f8fafc) !important;
+}
+
+.theater-time-readout,
+.theater-time-display {
+  display: inline-flex !important;
+  align-items: center !important;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+.theater-time-elapsed.is-absent {
+  display: none !important;
+}
+
+.theater-time-slot {
+  position: relative !important;
+  display: inline-block !important;
+  width: 1ch !important;
+  height: 1em !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  vertical-align: middle !important;
+}
+
+.theater-time-slot.is-sep {
+  width: auto !important;
+  min-width: 0.35em !important;
+}
+
+.theater-time-slot.is-sign {
+  width: 0.8ch !important;
+}
+
+.theater-time-slot.is-sign .theater-time-glyph {
+  justify-content: flex-end !important;
+}
+
+.theater-time-glyph {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  white-space: pre !important;
+}
+
+.theater-time-slot.is-sep .theater-time-glyph {
+  position: relative !important;
+  inset: auto !important;
+}
+
+.theater-time-glyph.is-entering {
+  z-index: 1 !important;
+  animation: theater-time-blur-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+.theater-time-glyph.is-leaving {
+  z-index: 0 !important;
+  animation: theater-time-blur-out 180ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@keyframes theater-time-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes theater-time-blur-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-time-glyph.is-entering,
+  .theater-time-glyph.is-leaving {
+    animation: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
 }
 
 .theater-time-display.theater-time-live {

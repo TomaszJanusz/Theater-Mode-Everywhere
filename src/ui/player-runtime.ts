@@ -1086,8 +1086,8 @@ function initialize(): void {
       }
     }
 
-    // Let native menu buttons activate with Space/Enter instead of toggling playback.
-    if (!ui().helpOpen && activeEl?.closest('.theater-menu, .theater-service-action-host')
+    // Let native menu buttons and the duration toggle activate with Space/Enter.
+    if (!ui().helpOpen && activeEl?.closest('.theater-menu, .theater-service-action-host, .theater-time-end')
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();

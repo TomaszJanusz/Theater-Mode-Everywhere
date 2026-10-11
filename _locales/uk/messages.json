@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "Перейти до ефіру"
   },
+  "showTotalTime": {
+    "message": "Показати загальну тривалість"
+  },
+  "showRemainingTime": {
+    "message": "Показати час до кінця"
+  },
   "websiteExclusionsTitle": {
     "message": "Винятки для вебсайтів"
   },

@@ -219,6 +219,12 @@
   "jumpToLive": {
     "message": "Wróć do transmisji na żywo"
   },
+  "showTotalTime": {
+    "message": "Pokaż czas całkowity"
+  },
+  "showRemainingTime": {
+    "message": "Pokaż czas do końca"
+  },
   "websiteExclusionsTitle": {
     "message": "Wykluczenia stron"
   },
