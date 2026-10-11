@@ -130,7 +130,8 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    const isBoosted = !muted && logicalVolume > 1.0 && ctx.refs.activeVideo?.dataset.theaterBoostReady === 'true';
+    // Hover discovery may point elsewhere; boost belongs to the theater player.
+    const isBoosted = !muted && logicalVolume > 1.0 && ctx.session.element.dataset.theaterBoostReady === 'true';
     overlay.className = 'theater-everywhere-volume-overlay' + (isBoosted ? ' boosted' : '');
     ctx.paintOverlay(overlay);
 
@@ -157,7 +158,7 @@ export function createHud(ctx: PlayerChromeContext) {
 
     overlay.innerHTML = `
     <div class="volume-hud-content">
-      <div class="volume-hud-icon" style="${isBoosted ? 'color: #f59e0b;' : ''}">${icon}</div>
+      <div class="volume-hud-icon">${icon}</div>
       <span class="volume-hud-text ${action === 'up' ? 'zoom-in' : 'zoom-out'}">${pct}%</span>
     </div>
   `;

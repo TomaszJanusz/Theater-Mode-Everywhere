@@ -14,7 +14,8 @@ const BUNDLE = esbuild.buildSync({
   stdin: {
     contents: [
       "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';"
+      "export { setPlayerUiCss } from './ui/root';",
+      "export { installMainWorldRuntime } from './platform/main-world-runtime';"
     ].join('\n'),
     resolveDir: SRC, loader: 'ts'
   },
@@ -41,16 +42,17 @@ const FIXTURE = `<!doctype html><html><head><title>Playback HUD fixture</title>
  * @param page Browser page containing the local video fixture.
  * @returns When the theater controls have mounted and playback has started.
  */
-async function boot(page: Page): Promise<void> {
+async function boot(page: Page, settings: Record<string, unknown> = {}): Promise<void> {
   await page.evaluate(`window.chrome = { storage: {
     sync: {
-      get: async () => ({ keepControlsVisible: true, shortcuts: { playPause: 'k' } }),
+      get: async () => ({ keepControlsVisible: true, shortcuts: { playPause: 'k' }, ...${JSON.stringify(settings)} }),
       set: async () => {}
     },
     onChanged: { addListener() {} }
   } };`);
   await page.addStyleTag({ content: CSS });
   await page.addScriptTag({ content: BUNDLE });
+  if (settings.volumeBoostEnabled) await page.evaluate('PlaybackHudTest.installMainWorldRuntime();');
   await page.evaluate(`PlaybackHudTest.setPlayerUiCss(${JSON.stringify(CSS)}); PlaybackHudTest.bootstrapPlayerRuntime();`);
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
@@ -78,6 +80,60 @@ async function waitForHud(page: Page, text: string): Promise<void> {
 }
 
 describe('playback HUD browser regressions', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`keeps boosted HUD and toolbar speakers orange over a green accent in ${engine}`, { timeout: 60_000 }, async () => {
+      const browserType = (await import('playwright'))[engine];
+      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+      const browser = await browserType.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
+        await page.goto('http://playback-hud.test/');
+        await boot(page, { volumeBoostEnabled: true, accentColor: 'green' });
+        const slider = page.locator('.theater-volume-slider');
+        const speaker = page.locator('.volume-btn');
+        const setVolume = (value: string) => slider.evaluate((input: HTMLInputElement, value) => {
+          input.value = value;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, value);
+        await setVolume('1.25');
+        // The trusted key can create the first Web Audio graph in either engine.
+        await page.keyboard.press('ArrowUp');
+        await waitForHud(page, '220%');
+        await speaker.hover();
+        const colors = () => page.evaluate(() => {
+          const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+          return {
+            speaker: getComputedStyle(root.querySelector('.volume-btn svg')!).color,
+            hud: getComputedStyle(root.querySelector('.volume-hud-icon svg')!).color,
+            text: getComputedStyle(root.querySelector('.volume-hud-text')!).color
+          };
+        });
+        assert.deepEqual(await colors(), { speaker: 'rgb(245, 158, 11)', hud: 'rgb(245, 158, 11)', text: 'rgb(245, 158, 11)' });
+        await speaker.focus();
+        await page.mouse.move(80, 80);
+        assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'focus must not replace the boost color');
+        if (process.env.THEATER_ICON_SCREENSHOTS) {
+          await page.screenshot({ path: path.join(process.env.THEATER_ICON_SCREENSHOTS, `${engine}-boosted.png`) });
+        }
+        await page.keyboard.press('m');
+        await page.locator('.volume-btn:not(.boosted)').waitFor();
+        assert.equal((await colors()).speaker, 'rgb(81, 205, 0)', 'mute must clear orange even with remembered boost');
+        await page.keyboard.press('m');
+        await page.locator('.volume-btn.boosted').waitFor();
+        assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'unmute must restore orange');
+        await setVolume('1');
+        assert.equal(await speaker.evaluate(button => button.classList.contains('boosted')), false, 'returning to 100% must clear boost without another media event');
+        await page.keyboard.press('ArrowDown');
+        await waitForHud(page, '95%');
+        assert.equal((await colors()).hud, 'rgb(81, 205, 0)', 'normal-volume HUD must use the saved accent');
+        assert.equal((await colors()).speaker, 'rgb(81, 205, 0)');
+      } finally {
+        await browser.close();
+      }
+    });
+  }
+
   it('shows the play/pause HUD for the control, the video surface, and the shortcut', async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }

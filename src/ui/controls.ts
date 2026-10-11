@@ -398,19 +398,13 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
 
     const updateVolumeIcon = () => {
       const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
+      volumeBtn.classList.toggle('boosted', logicalVol > 1.0 && native?.dataset.theaterBoostReady === 'true');
       if (video.muted || logicalVol === 0) {
         setIcon(volumeBtn, volMutedIcon);
-        volumeBtn.style.color = '';
       } else if (logicalVol < 0.5) {
         setIcon(volumeBtn, volLowIcon);
-        volumeBtn.style.color = '';
       } else {
         setIcon(volumeBtn, volHighIcon);
-        if (logicalVol > 1.0 && native?.dataset.theaterBoostReady === 'true') {
-          volumeBtn.style.color = '#f59e0b';
-        } else {
-          volumeBtn.style.color = '';
-        }
       }
     };
     updateVolumeIcon();
@@ -419,7 +413,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
       const fillPct = (logicalVol / volumeMax) * 100;
       const isBoosted = logicalVol > 1.0;
-      const activeColor = isBoosted ? '#f59e0b' : 'var(--accent-color, #6366f1)';
+      const activeColor = isBoosted ? 'var(--theater-volume-boost-color)' : 'var(--accent-color, #6366f1)';
       const grad = `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${fillPct}%, rgba(255, 255, 255, 0.2) ${fillPct}%, rgba(255, 255, 255, 0.2) 100%)`;
       volumeSlider.style.setProperty('background', grad, 'important');
       if (isBoosted) {
@@ -438,7 +432,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       } else {
         const pct = Math.round(100 + (logicalVol - 1.0) * 400);
         volumeTooltip.textContent = `${pct}%`;
-        volumeTooltip.style.color = '#f59e0b';
+        volumeTooltip.style.color = 'var(--theater-volume-boost-color)';
       }
     };
     updateVolumeTooltip();
@@ -474,6 +468,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         video.muted = false;
       }
       applyVolumeAndBoost(video, val);
+      updateVolumeIcon();
       updateVolumeSliderFill();
       updateVolumeTooltip();
     });
@@ -859,7 +854,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       return t('subtitlesTooltip', ui().shortcuts.toggleCaptions);
     });
 
-    setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0M14 10a2 2 0 0 1 4 0v4a2 2 0 0 1-4 0"></path></svg>`);
+    setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"></path><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2" transform="translate(8 0)"></path></svg>`);
 
     const handleTrackChange = () => {
       void mediaFeatures.refresh();

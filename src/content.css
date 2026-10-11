@@ -13,6 +13,7 @@
 
 #theater-everywhere-ui,
 :host {
+  --theater-volume-boost-color: #f59e0b;
   all: initial !important;
   position: fixed !important;
   inset: 0 !important;
@@ -706,11 +707,11 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
 }
 
 .theater-volume-slider.boosted::-webkit-slider-thumb {
-  background: #f59e0b !important;
+  background: var(--theater-volume-boost-color) !important;
 }
 
 .theater-volume-slider.boosted::-moz-range-thumb {
-  background: #f59e0b !important;
+  background: var(--theater-volume-boost-color) !important;
 }
 
 /* Removed old tooltips (migrated to vertical panel content) */
@@ -1201,6 +1202,11 @@ html.theater-using-overlay-captions .mejs-captions-layer {
 .theater-control-btn.auto-theater-btn.active,
 .theater-control-btn.theater-chat-toggle.active {
   color: var(--accent-color, #6366f1) !important;
+}
+
+/* Boost remains visible when the volume popover's hover/focus accent is active. */
+.theater-control-btn.volume-btn.boosted {
+  color: var(--theater-volume-boost-color) !important;
 }
 
 /* Animate the icon, whose currentColor stroke follows the shared load state. */
@@ -2278,11 +2284,11 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 }
 
 .theater-everywhere-volume-overlay.boosted {
-  outline-color: rgba(245, 158, 11, 0.4) !important;
+  outline-color: color-mix(in srgb, var(--theater-volume-boost-color) 40%, transparent) !important;
 }
 
-.theater-everywhere-volume-overlay.boosted .volume-hud-text {
-  color: #f59e0b !important;
+.theater-everywhere-volume-overlay.boosted :is(.volume-hud-text, .volume-hud-icon) {
+  color: var(--theater-volume-boost-color) !important;
 }
 
 .theater-everywhere-volume-overlay.fade-out {
