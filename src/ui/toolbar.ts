@@ -14,6 +14,7 @@ import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
+import { consumePictureDismiss } from './picture-dismiss';
 import { closePlayerSettings } from './player-settings';
 import type { PlayerChromeContext } from './runtime-context';
 import type { HostCaptionLayout } from '../media-features/types';
@@ -378,7 +379,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // otherwise leave shortcuts typing into a page field, chat or iframe.
     if (e.type === 'pointerdown') ctx.actions.focusTheaterPage();
 
-    if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO') {
+    if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO' && !consumePictureDismiss()) {
       ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
     }
   }
@@ -395,6 +396,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       event.preventDefault();
       event.stopPropagation();
       clearClick();
+      if (consumePictureDismiss()) return;
       clickTimer = window.setTimeout(() => {
         clickTimer = null;
         ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });

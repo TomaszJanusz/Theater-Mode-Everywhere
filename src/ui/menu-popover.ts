@@ -1,4 +1,5 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import { armPictureDismissOnLeave } from './picture-dismiss';
 
 const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
@@ -95,7 +96,9 @@ export function bindMenuPopover(options: {
     }
     show(false, false);
   });
-  scope.listen(host, 'pointerleave', () => {
+  scope.listen(host, 'pointerleave', (event: PointerEvent) => {
+    // The following picture click only closes this menu.
+    armPictureDismissOnLeave(event, host);
     if (!panel.classList.contains(PINNED_CLASS)) {
       host.classList.remove(OPEN_CLASS);
       releaseMenuPosition(panel);

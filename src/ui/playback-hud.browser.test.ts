@@ -165,4 +165,57 @@ describe('playback HUD browser regressions', () => {
       await browser.close();
     }
   });
+
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`dismisses settings, speed, and volume on a video click without pausing in ${engine}`, async () => {
+      const browserType = (await import('playwright'))[engine];
+      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+      const browser = await browserType.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const errors: string[] = [];
+        page.on('pageerror', error => errors.push(error.message));
+        await page.route('http://playback-hud.test/**', route => route.fulfill({
+          contentType: 'text/html',
+          body: FIXTURE
+        }));
+        await page.goto('http://playback-hud.test/');
+        await boot(page);
+        const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
+        const clickPicture = () => page.locator('video').click({ position: { x: 120, y: 80 } });
+        const panelShown = (selector: string) => page.waitForFunction((panelSelector) => {
+          const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
+          return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '1';
+        }, selector);
+        const panelHidden = (selector: string) => page.waitForFunction((panelSelector) => {
+          const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
+          return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '0';
+        }, selector);
+
+        await page.locator('.player-settings-btn').click();
+        await page.locator('.theater-settings-menu.visible').waitFor();
+        await clickPicture();
+        await page.locator('.theater-settings-menu.visible').waitFor({ state: 'hidden' });
+        assert.equal(await paused(), false, 'settings dismiss must leave playback running');
+
+        await page.locator('.volume-btn').hover();
+        await panelShown('.theater-volume-panel');
+        await clickPicture();
+        await panelHidden('.theater-volume-panel');
+        assert.equal(await paused(), false, 'volume dismiss must leave playback running');
+
+        // This fixture is a live capture, so the speed control stays hidden.
+        // Leaving that control uses the same dismiss latch as the volume panel.
+        await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
+        await clickPicture();
+        assert.equal(await paused(), false, 'speed dismiss must leave playback running');
+
+        await clickPicture();
+        assert.equal(await paused(), true, 'a later video click still pauses');
+        assert.deepEqual(errors, []);
+      } finally {
+        await browser.close();
+      }
+    });
+  }
 });
