@@ -13,7 +13,8 @@
     "smoke:chromium": "tsx scripts/smoke.ts chromium",
     "smoke:firefox": "tsx scripts/smoke.ts firefox",
     "store:cws:screenshots": "tsx scripts/render-cws-screenshots.ts",
-    "store:amo:update": "tsx scripts/update-amo-listings.ts"
+    "store:amo:update": "tsx scripts/update-amo-listings.ts",
+    "cpu:suite": "node tools/cpu-suite/suite.mjs"
   },
   "author": "Tomasz Janusz",
   "license": "ISC",
