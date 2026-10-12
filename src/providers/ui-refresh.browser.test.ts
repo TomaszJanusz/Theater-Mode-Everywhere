@@ -12,13 +12,14 @@ const bundle = esbuild.buildSync({ stdin: { resolveDir: new URL('../', import.me
     "export { subscribePlaylistNavigation } from './providers/navigation/watch';",
     "export { CaptionRenderer } from './media-features/caption-renderer';",
     "export { mountServiceActionCta } from './ui/service-actions';",
+    "export { observeChromeVisibility } from './ui/chrome-visibility';",
     "export { createNetflixServiceActions } from './providers/netflix/service-actions';",
     "export { DisposableScope } from './core/disposable-scope';"
   ].join('\n') }, bundle: true, write: false, format: 'iife', globalName: 'RefreshTest',
   platform: 'browser', target: 'es2022', logLevel: 'silent' }).outputFiles[0].text;
 type Api = typeof import('./dom-watch') & typeof import('./navigation/watch')
   & typeof import('../media-features/caption-renderer') & typeof import('../ui/service-actions')
-  & typeof import('../core/disposable-scope') & typeof import('./netflix/service-actions');
+  & typeof import('../core/disposable-scope') & typeof import('./netflix/service-actions') & typeof import('../ui/chrome-visibility');
 
 for (const engine of ['chromium', 'firefox'] as const) describe(`${engine} UI refresh ownership`, () => {
   it('coalesces scoped changes, stops hidden polling, rebinds shadow players and disposes in documents and iframes', async t => {
@@ -222,7 +223,8 @@ for (const engine of ['chromium', 'firefox'] as const) describe(`${engine} UI re
         window.cancelAnimationFrame = id => { frames.delete(id); };
         let reads = 0, progressReads = 0, layouts = 0, placements = 0, menu = false, hidden = false;
         let value: number | null = 0.1, live = true;
-        let changed = () => {}, visibility = () => {};
+        let changed = () => {};
+        const menuFace = document.createElement('div'); menuFace.className = 'theater-cc-menu'; document.body.append(menuFace);
         Object.defineProperty(document, 'hidden', { get: () => hidden });
         const scope = new api.DisposableScope();
         api.mountServiceActionCta(scope, {
@@ -230,15 +232,15 @@ for (const engine of ['chromium', 'firefox'] as const) describe(`${engine} UI re
             readProgress: () => { progressReads++; return value; }, activate: () => true,
             subscribe: fn => { changed = fn; return () => { changed = () => {}; }; } },
           mount: el => document.body.append(el), toolbarVisible: () => true, controlsLift: () => { placements++; return 96; },
-          subscribeToolbar: () => () => {}, subscribeVisibility: fn => { visibility = fn; return () => {}; },
+          subscribeToolbar: () => () => {}, subscribeVisibility: fn => api.observeChromeVisibility(document, fn),
           menuOpen: () => menu, onLayout: () => { layouts++; }
         });
         const advance = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(0)); };
         const initial = { reads, layouts, placements };
         for (let i = 0; i < 100; i++) { value = i / 200; advance(); }
         const animated = { reads, layouts, placements, progressReads };
-        menu = true; visibility(); const menuStopped = frames.size === 0;
-        menu = false; value = 0.7; visibility();
+        menu = true; menuFace.classList.add('visible'); await Promise.resolve(); const menuStopped = frames.size === 0;
+        menu = false; value = 0.7; menuFace.classList.remove('visible'); await Promise.resolve();
         const resumed = document.querySelector<HTMLElement>('.theater-service-action-progress')!.style.transform;
         hidden = true; document.dispatchEvent(new Event('visibilitychange')); const hiddenStopped = frames.size === 0;
         hidden = false; value = 0.8; document.dispatchEvent(new Event('visibilitychange'));

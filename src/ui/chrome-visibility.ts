@@ -1,6 +1,7 @@
 /** Menu classes and hover/focus change visibility without changing the UI store. */
 export function observeChromeVisibility(root: Document | ShadowRoot, changed: () => void): () => void {
-  const selector = '.theater-menu, .theater-volume-container, .theater-speed-container, .theater-controls-wrapper';
+  const selector = '.theater-menu, .theater-cc-menu, .theater-settings-menu, '
+    + '.theater-volume-container, .theater-speed-container, .theater-controls-wrapper';
   const observer = new MutationObserver(records => {
     if (records.some(record => record.target instanceof Element && record.target.matches(selector))) changed();
   });
