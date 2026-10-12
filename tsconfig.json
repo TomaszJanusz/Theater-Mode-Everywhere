@@ -20,5 +20,5 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "popup", "options", "scripts"]
+  "include": ["src", "popup", "options", "scripts", "tools/cpu-suite"]
 }

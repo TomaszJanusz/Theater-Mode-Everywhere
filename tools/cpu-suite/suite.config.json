@@ -1,0 +1,11 @@
+{
+  "videoUrl": "https://www.youtube.com/watch?v=IGk17XQ7IrQ",
+  "videoId": "IGk17XQ7IrQ",
+  "extension": { "name": "checkout", "path": "dist/chrome-unpacked" },
+  "warmupMs": 6000,
+  "windowMs": 20000,
+  "rounds": 3,
+  "scatterPp": 5,
+  "scatterExtra": 2,
+  "attempts": 3
+}
