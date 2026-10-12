@@ -1,3 +1,4 @@
+import { observeProviderDom } from '../dom-watch';
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
@@ -42,6 +43,8 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
   const href = hooks.href ?? (() => window.location.href);
   const doc = hooks.document ?? document;
 
+  const progressTargets = new Map<string, { element: HTMLElement; root: HTMLElement; fill: HTMLElement; path: string; videoId: string }>();
+
   const live = (): Array<NetflixServiceAction & { element?: HTMLElement }> => {
     if (!allowed(enabled, host)) return [];
     const root = watchPlayer(doc);
@@ -58,11 +61,14 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
       if (!element) continue;
       const label = nativeLabel(element);
       if (!label) continue;
+      const id = actionId(action.kind, root, href(), element);
+      const fill = action.uia === 'next-episode-seamless-button-draining' ? element.querySelector<HTMLElement>('.inner') : null;
+      if (fill) progressTargets.set(id, { element, root, fill, path, videoId });
       found.push({
-        id: actionId(action.kind, root, href(), element),
+        id,
         label,
         element,
-        ...(action.uia === 'next-episode-seamless-button-draining' ? { progress: nativeCountdownProgress(element) } : {})
+        ...(action.uia === 'next-episode-seamless-button-draining' ? { progress: nativeCountdownProgress(fill) } : {})
       });
     }
     return found;
@@ -70,7 +76,19 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
 
   return {
     read() {
+      progressTargets.clear();
       return live().map(({ element: _element, ...action }) => action);
+    },
+    subscribe: changed => observeProviderDom({ root: doc, selector: '.watch-video [data-uia="player"]',
+      relevant: record => !(record.target instanceof Element) || !record.target.matches('video, .inner'),
+      changed, enabled: () => allowed(enabled, host), events: ['theater-everywhere-netflix-harvest'] }),
+    readProgress(id) {
+      const target = progressTargets.get(id);
+      if (!target || !allowed(enabled, host) || watchPath(href()) !== target.path || !target.root.isConnected
+        || target.root.getAttribute('data-videoid') !== target.videoId || !target.element.isConnected
+        || target.element.hidden || disabled(target.element)
+        || !target.root.contains(target.element) || !target.fill.isConnected) return null;
+      return nativeCountdownProgress(target.fill);
     },
     activate(id: string): boolean {
       const action = live().find(action => action.id === id);
@@ -83,8 +101,7 @@ export function createNetflixServiceActions(hooks: NetflixServiceActionHooks = {
   };
 }
 
-function nativeCountdownProgress(element: HTMLElement): number | undefined {
-  const fill = element.querySelector<HTMLElement>('.inner');
+function nativeCountdownProgress(fill: HTMLElement | null): number | undefined {
   if (!fill) return undefined;
   // The observed draining button uses a five-second native CSS transform
   // transition. Read its actual timing, including pauses/seeks; no RTE clock.

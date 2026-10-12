@@ -1,4 +1,5 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import { createVisibleRefresh } from '../core/visible-refresh';
 
 import type { ServiceAction, ServiceActionSource } from '../core/service-actions';
 
@@ -9,6 +10,7 @@ export type ServiceActionCtaOptions = {
   /** Bar or header chrome is showing, so the CTA sits above the playback bar. */
   toolbarVisible: () => boolean;
   subscribeToolbar: (listener: () => void) => () => void;
+  subscribeVisibility?: (listener: () => void) => () => void;
   /** Pixels to clear above the 24px screen edge while the bar is visible. */
   controlsLift: () => number;
   menuOpen?: () => boolean;
@@ -23,7 +25,7 @@ const SERVICE_ACTION_HOST_CLASS = 'theater-service-action-host';
 const TOOLBAR_VISIBLE_CLASS = 'toolbar-visible';
 const LIFT_VAR = '--theater-service-action-lift';
 const LIFT_FALLBACK_PX = 96;
-const DEFAULT_POLL_MS = 200;
+const DEFAULT_POLL_MS = 1000;
 
 /**
  * Bottom-right glass CTA. It stays up for as long as the provider reports a
@@ -64,9 +66,10 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   });
 
   const place = () => {
-    host.hidden = options.menuOpen?.() === true;
+    const hidden = options.menuOpen?.() === true;
+    if (host.hidden !== hidden) host.hidden = hidden;
     const visible = toolbarOpen();
-    host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
+    if (host.classList.contains(TOOLBAR_VISIBLE_CLASS) !== visible) host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
     if (!visible) return;
     let px = LIFT_FALLBACK_PX;
     try {
@@ -75,7 +78,7 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     } catch {
       px = LIFT_FALLBACK_PX;
     }
-    host.style.setProperty(LIFT_VAR, `${px}px`);
+    if (host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
   };
 
   const toolbarOpen = (): boolean => {
@@ -87,10 +90,17 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   };
 
   const buttons = new Map<string, HTMLButtonElement>();
+  const progressNodes = new Map<string, HTMLElement>();
+  const progressing = new Set<string>();
+  const paintProgress = (id: string, value: number) => {
+    const node = progressNodes.get(id);
+    const transform = `scaleX(${Math.max(0, Math.min(1, value))})`;
+    if (node && node.style.transform !== transform) node.style.transform = transform;
+  };
   const render = (actions: ServiceAction[]) => {
     const ids = new Set(actions.map(action => action.id));
     for (const [id, button] of buttons) {
-      if (!ids.has(id)) { button.remove(); buttons.delete(id); }
+      if (!ids.has(id)) { button.remove(); buttons.delete(id); progressNodes.delete(id); }
     }
     actions.forEach((action, index) => {
       let button = buttons.get(action.id);
@@ -106,18 +116,43 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
         progress.setAttribute('aria-hidden', 'true');
         button.append(progress, label);
         buttons.set(action.id, button);
+        progressNodes.set(action.id, progress);
       }
       const label = button.querySelector('.theater-service-action-label')!;
       if (label.textContent !== action.label) label.textContent = action.label;
       const progress = button.querySelector<HTMLElement>('.theater-service-action-progress')!;
       progress.hidden = action.progress === undefined;
-      if (action.progress !== undefined) progress.style.transform = `scaleX(${action.progress})`;
+      if (action.progress !== undefined) paintProgress(action.id, action.progress);
       // Reordering only when needed preserves focus and the host countdown.
       if (host.children[index] !== button) host.insertBefore(button, host.children[index] || null);
     });
   };
 
   let animationFrame = 0;
+  let currentActions: ServiceAction[] = [];
+  const animate = () => {
+    animationFrame = 0;
+    if (scope.isDisposed || document.hidden || host.hidden || !options.source.readProgress) return;
+    for (const id of progressing) {
+      let value: number | null | undefined;
+      try { value = options.source.readProgress(id); } catch { value = null; }
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        paintProgress(id, value);
+        if (value >= 1) progressing.delete(id);
+      } else {
+        progressing.delete(id);
+        if (value === null) refresh.request();
+      }
+    }
+    if (progressing.size) animationFrame = window.requestAnimationFrame(animate);
+  };
+  const syncAnimation = () => {
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    progressing.clear();
+    for (const action of currentActions) if (action.progress !== undefined && action.progress < 1) progressing.add(action.id);
+    if (!scope.isDisposed && !document.hidden && !host.hidden && progressing.size && options.source.readProgress) animate();
+  };
   let layoutKey = '';
   const notifyLayout = (actions: ServiceAction[]) => {
     const key = `${host.hidden ? 1 : 0}:${actions.map(action => action.id).join('\n')}`;
@@ -134,36 +169,46 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     try {
       place();
       const actions = readActions(options.source);
+      currentActions = actions;
       render(actions);
       notifyLayout(actions);
-      if (actions.some(action => action.progress !== undefined && action.progress < 1) && !animationFrame) {
-        animationFrame = window.requestAnimationFrame(() => { animationFrame = 0; sync(); });
-      }
+      syncAnimation();
     } catch {
+      currentActions = [];
       render([]);
       notifyLayout([]);
+      syncAnimation();
     }
   };
 
-  let unsubscribe = () => {};
-  let timer = 0;
+  // Subscribed providers own their bounded fallback as well as DOM events.
+  const refresh = createVisibleRefresh(document, sync, {
+    active: () => !options.source.subscribe, pollMs: options.pollMs ?? DEFAULT_POLL_MS
+  });
   scope.add(() => {
-    window.clearInterval(timer);
+    refresh.dispose();
     window.cancelAnimationFrame(animationFrame);
-    unsubscribe();
     const occupied = buttons.size > 0;
     host.remove();
     buttons.clear();
+    progressNodes.clear();
+    progressing.clear();
     if (occupied) notifyLayout([]);
   });
   options.paint?.(host);
   options.mount(host);
-  unsubscribe = options.subscribeToolbar(() => {
+  scope.add(options.subscribeToolbar(() => {
     options.paint?.(host);
-    sync();
-  });
-  timer = window.setInterval(sync, options.pollMs ?? DEFAULT_POLL_MS);
-  sync();
+    place();
+    notifyLayout(currentActions);
+    syncAnimation();
+  }));
+  if (options.subscribeVisibility) scope.add(options.subscribeVisibility(() => {
+    place(); notifyLayout(currentActions); syncAnimation();
+  }));
+  if (options.source.subscribe) scope.add(options.source.subscribe(refresh.request));
+  scope.listen(document, 'visibilitychange', syncAnimation);
+  refresh.refresh();
 }
 
 function readActions(source: ServiceActionSource): ServiceAction[] {

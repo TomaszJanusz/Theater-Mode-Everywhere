@@ -1,3 +1,4 @@
+import { observeProviderDom } from '../dom-watch';
 import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from '../../media-features/parsers/netflix-preview';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import {
@@ -387,13 +388,16 @@ export function installNetflixMain(): void {
       detail: netflixCaptionAckDetail({ requestId: request.requestId, ok })
     }));
   });
-  const observer = new MutationObserver((records) => {
-    if (netflixMutationIsOwnSnapshot(records)) return;
-    syncHarvest();
+  const stop = observeProviderDom({ root: document,
+    selector: '.watch-video [data-uia="player"], .nf-player-container, [data-uia="player"]',
+    enabled: netflixIntegrationEnabled,
+    changed: syncHarvest,
+    relevant: record => record.type !== 'attributes' || !(record.target instanceof Element)
+      || !record.target.matches('video, .inner'),
+    ignore: record => netflixMutationIsOwnSnapshot([record])
   });
-  observer.observe(document, { childList: true, subtree: true });
-  window.setInterval(syncHarvest, 1500);
-  syncHarvest();
+  window.addEventListener('pagehide', event => { if (!event.persisted) stop(); }, { once: true });
+
 }
 
 /** Host-controlled DRM playback uses the Netflix clock in milliseconds. */

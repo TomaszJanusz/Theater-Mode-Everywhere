@@ -1,3 +1,5 @@
+import { observeChromeVisibility } from './chrome-visibility';
+import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
 import { observeProviderClock, readProviderClock } from '../providers/timeline';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
@@ -281,13 +283,14 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     previousBtn.className = 'theater-control-btn playlist-prev-btn';
     previousBtn.hidden = true;
     setIcon(previousBtn, previousIcon);
+    let playlistState: PlaylistNavState = emptyPlaylistNav();
     const playlistPreview = (direction: 'previous' | 'next') => {
-      const available = ctx.actions.playlistNavigationAvailable();
+      const available = playlistState;
       if (direction === 'previous' && available.previousRestarts) return null;
       return direction === 'previous' ? available.previousPreview : available.nextPreview;
     };
     const playlistActionName = (direction: 'previous' | 'next') => {
-      if (direction === 'previous' && ctx.actions.playlistNavigationAvailable().previousRestarts) {
+      if (direction === 'previous' && playlistState.previousRestarts) {
         return t('backToStart');
       }
       return t(direction === 'previous' ? 'previousVideo' : 'nextVideo');
@@ -317,21 +320,22 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       ctx.actions.activatePlaylistStep('next');
     });
 
-    const syncPlaylistButtons = () => {
-      const available = ctx.actions.playlistNavigationAvailable();
-      previousBtn.hidden = !available.previous;
-      nextBtn.hidden = !available.next;
-      previousBtn.setAttribute('aria-label', playlistLabel('previous'));
-      nextBtn.setAttribute('aria-label', playlistLabel('next'));
+    const syncPlaylistButtons = (available: PlaylistNavState) => {
+      playlistState = available;
+      if (previousBtn.hidden === available.previous) previousBtn.hidden = !available.previous;
+      if (nextBtn.hidden === available.next) nextBtn.hidden = !available.next;
+      for (const [button, direction] of [[previousBtn, 'previous'], [nextBtn, 'next']] as const) {
+        const label = playlistLabel(direction);
+        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
+      }
+      ctx.actions.requestParentPlaylistNav(available);
     };
-    syncPlaylistButtons();
-    ctx.actions.requestParentPlaylistNav();
-    const playlistNavTimer = window.setInterval(() => {
-      ctx.actions.requestParentPlaylistNav();
-      syncPlaylistButtons();
-    }, 400);
-    controlsScope.add(() => window.clearInterval(playlistNavTimer));
-    controlsScope.listen(window, 'theater-everywhere-playlist-nav', syncPlaylistButtons);
+    controlsScope.add(ctx.actions.subscribePlaylistNavigation(syncPlaylistButtons));
+    let barWasVisible = ui().toolbarVisible;
+    controlsScope.add(ctx.uiStore.subscribe(state => {
+      if (state.toolbarVisible && !barWasVisible) syncPlaylistButtons(ctx.actions.playlistNavigationAvailable());
+      barWasVisible = state.toolbarVisible;
+    }));
 
     // Volume Container
     const volumeContainer = document.createElement('div');
@@ -526,12 +530,16 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       updateTimeDisplay(true);
     });
 
+    let liveChromeKey = '';
     const syncLiveChrome = () => {
       const playback = playbackForChrome();
       if (!playback) return null;
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
+      const key = `${playback.live}:${locked}:${behindLive}:${canJumpToLive}`;
+      if (key === liveChromeKey) return { live: playback.live, behindLive, canJumpToLive };
+      liveChromeKey = key;
       elapsedReadout.classList.toggle('theater-time-live', playback.live);
       elapsedReadout.classList.toggle('theater-time-live-behind', behindLive);
       elapsedReadout.classList.toggle('theater-time-live-jump', behindLive);
@@ -547,21 +555,28 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       return { live: playback.live, behindLive, canJumpToLive };
     };
 
+    let clockPaintKey = '';
     const paintClocks = (cur: number, end: number, animate: boolean) => {
+      const labels = clockLabels(cur, end, showTotalTime);
+      const action = showTotalTime ? t('showRemainingTime') : t('showTotalTime');
+      const key = `${labels.elapsed}\0${labels.edge}\0${action}`;
+      if (key === clockPaintKey) return;
+      clockPaintKey = key;
       elapsedReadout.classList.remove('is-absent', 'theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
       elapsedReadout.dir = 'ltr';
       elapsedReadout.title = '';
       elapsedReadout.removeAttribute('aria-label');
       endReadout.classList.remove('is-absent', 'theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
-      const labels = clockLabels(cur, end, showTotalTime);
       renderTimeReadout(elapsedReadout, labels.elapsed, animate);
       renderTimeReadout(endReadout, labels.edge, animate);
-      const action = showTotalTime ? t('showRemainingTime') : t('showTotalTime');
       endReadout.title = action;
       endReadout.setAttribute('aria-label', action);
     };
 
     const paintLive = (behindLive: boolean, canJumpToLive: boolean) => {
+      const key = `live:${behindLive}:${canJumpToLive}:${t('liveBadge')}`;
+      if (key === clockPaintKey) return;
+      clockPaintKey = key;
       endReadout.classList.add('is-absent');
       endReadout.classList.remove('theater-time-live', 'theater-time-live-behind', 'theater-time-live-jump');
       elapsedReadout.classList.remove('is-absent');
@@ -1419,7 +1434,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       updateScrubber();
       updateTimeDisplay();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
-      updateCaptionDock();
       if (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
         setBuffering(false);
       }
@@ -1437,7 +1451,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       updateScrubber(); 
       updateTimeDisplay();
       mediaFeatures.updateTime(displayMediaTime(video));
-      updateCaptionDock();
       if (!video.paused && !video.seeking && video.readyState >= 3) {
         setBuffering(false);
       }
@@ -1633,6 +1646,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
             || Number.parseFloat(getComputedStyle(bar).opacity) > 0.01));
         },
         subscribeToolbar: (listener) => ctx.uiStore.subscribe(listener),
+        subscribeVisibility: listener => observeChromeVisibility(wrapper.getRootNode() as Document | ShadowRoot, listener),
         menuOpen: () => queryPlayerUi(`.theater-menu.is-open, .theater-cc-menu.visible, .theater-settings-menu.visible,
           .theater-volume-container:hover .theater-volume-panel, .theater-speed-container:hover .theater-speed-panel,
           .theater-volume-container:focus-within .theater-volume-panel, .theater-speed-container:focus-within .theater-speed-panel`) !== null,

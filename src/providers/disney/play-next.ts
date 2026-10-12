@@ -1,3 +1,4 @@
+import { observeProviderDom } from '../dom-watch';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isDisneyHost } from '../hosts';
 
@@ -18,6 +19,22 @@ type PlayNextHost = HTMLElement & { primaryAction?: () => void };
 
 let installed = false;
 let remembered: { playId: string; host: PlayNextHost } | null = null;
+const hostCache = new WeakMap<Document, PlayNextHost[]>();
+const hostCacheOwners = new WeakMap<Document, number>();
+
+export function invalidateDisneyPlayNextHosts(doc: Document): void { hostCache.delete(doc); }
+
+/** Caching is valid only while a provider observation owns invalidation. */
+export function retainDisneyPlayNextHosts(doc: Document): () => void {
+  hostCacheOwners.set(doc, (hostCacheOwners.get(doc) ?? 0) + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    hostCacheOwners.set(doc, (hostCacheOwners.get(doc) ?? 1) - 1);
+    invalidateDisneyPlayNextHosts(doc);
+  };
+}
 
 /**
  * Disney mounts the bar's next episode only while its own controls are up,
@@ -29,8 +46,13 @@ export function installDisneyPlayNext(): void {
   if (!installed) {
     installed = true;
     window.addEventListener(DISNEY_PLAY_NEXT_EVENT, onDisneyPlayNextRequest);
-    window.setInterval(syncDisneyPlayNext, 500);
+    const releaseHosts = retainDisneyPlayNextHosts(document);
+    const stop = observeProviderDom({ root: document, selector: CONTROL_ROOTS.join(','),
+      enabled: () => disneyPlayNextEnabled() && Boolean(currentPlayId()),
+      structureChanged: () => invalidateDisneyPlayNextHosts(document), changed: syncDisneyPlayNext });
+    window.addEventListener('pagehide', event => { if (!event.persisted) { stop(); releaseHosts(); } });
   }
+  invalidateDisneyPlayNextHosts(document);
   syncDisneyPlayNext();
 }
 
@@ -53,7 +75,8 @@ export function disneyPlayNextPublished(doc: Document, playId: string): boolean 
   return doc.documentElement.getAttribute(DISNEY_PLAY_NEXT_ATTR)?.toLowerCase() === playId;
 }
 
-export function findDisneyPlayNextButton(doc: Document): HTMLButtonElement | null {
+export function findDisneyPlayNextButton(doc: Document, refresh = true): HTMLButtonElement | null {
+  if (refresh) invalidateDisneyPlayNextHosts(doc);
   const host = findDisneyPlayNextHost(doc);
   return host ? livePlayNextButton(host) : null;
 }
@@ -85,23 +108,32 @@ function syncDisneyPlayNext(): void {
   const playId = currentPlayId();
   if (!disneyPlayNextEnabled() || !playId) {
     remembered = null;
-    doc.documentElement.removeAttribute(DISNEY_PLAY_NEXT_ATTR);
+    invalidateDisneyPlayNextHosts(doc);
+    publishPlayNext(null);
     return;
   }
   const hosts = playNextHosts(doc);
   const available = offeredPlayNextHosts(hosts);
   if (available.length) {
     remembered = { playId, host: preferLaidOut(available) };
-    doc.documentElement.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
+    publishPlayNext(playId);
     return;
   }
   // The narrow copy stays mounted with display:none after the wide bar leaves.
   if (hosts.some((host) => !collapsedLayout(host)) || remembered?.playId !== playId) {
     remembered = null;
-    doc.documentElement.removeAttribute(DISNEY_PLAY_NEXT_ATTR);
+    publishPlayNext(null);
     return;
   }
-  doc.documentElement.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
+  publishPlayNext(playId);
+}
+
+function publishPlayNext(playId: string | null): void {
+  const root = document.documentElement;
+  if (!root || root.getAttribute(DISNEY_PLAY_NEXT_ATTR) === playId) return;
+  if (playId) root.setAttribute(DISNEY_PLAY_NEXT_ATTR, playId);
+  else root.removeAttribute(DISNEY_PLAY_NEXT_ATTR);
+  window.dispatchEvent(new Event('theater-everywhere-disney-play-next-changed'));
 }
 
 function findDisneyPlayNextHost(doc: Document): PlayNextHost | null {
@@ -135,6 +167,8 @@ function collapsedLayout(host: HTMLElement): boolean {
 }
 
 function playNextHosts(doc: Document): PlayNextHost[] {
+  const cached = hostCache.get(doc);
+  if (hostCacheOwners.get(doc) && cached && cached.every(host => host.isConnected)) return cached;
   const found: PlayNextHost[] = [];
   const visit = (node: ParentNode, depth: number) => {
     if (depth > 8) return;
@@ -149,6 +183,7 @@ function playNextHosts(doc: Document): PlayNextHost[] {
       if (root instanceof HTMLElement && root.shadowRoot) visit(root.shadowRoot, 1);
     }
   }
+  if (hostCacheOwners.get(doc)) hostCache.set(doc, found);
   return found;
 }
 

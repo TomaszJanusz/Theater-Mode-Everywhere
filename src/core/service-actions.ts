@@ -8,6 +8,10 @@ export type ServiceAction = {
 
 export interface ServiceActionSource {
   read(): ServiceAction[];
+  /** Availability changes, including a visible-document fallback <=1 Hz; owned cleanup. */
+  subscribe?(onChange: () => void): () => void;
+  /** Cheap live native progress. Null invalidates the saved action; undefined has no progress. */
+  readProgress?(id: string): number | null | undefined;
   /** Revalidate availability and identity before performing the interaction. */
   activate(id: string): boolean;
 }
