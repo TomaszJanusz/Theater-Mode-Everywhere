@@ -28,7 +28,7 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       : null;
 
     const overlay = document.createElement('div');
-    overlay.className = 'te-dialog-overlay';
+    overlay.className = 'te-dialog-overlay theater-backdrop-dialog';
 
     const dialog = document.createElement('div');
     dialog.className = 'te-dialog';

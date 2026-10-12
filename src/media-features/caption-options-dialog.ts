@@ -27,7 +27,7 @@ export async function openCaptionOptionsDialog(options: {
   const current = { ...options.style };
 
   const overlay = document.createElement('div');
-  overlay.className = 'te-dialog-overlay';
+  overlay.className = 'te-dialog-overlay theater-backdrop-dialog';
 
   const dialog = document.createElement('div');
   dialog.className = 'te-dialog theater-caption-options-dialog';

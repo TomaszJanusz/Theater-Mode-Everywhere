@@ -107,7 +107,7 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
       if (!button) {
         button = document.createElement('button');
         button.type = 'button';
-        button.className = SERVICE_ACTION_CLASS;
+        button.className = `${SERVICE_ACTION_CLASS} theater-backdrop-plate`;
         button.dataset.serviceActionId = action.id;
         const label = document.createElement('span');
         label.className = 'theater-service-action-label';

@@ -93,7 +93,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       if (button.closest('.theater-menu')) return;
       if (!tooltipState.element) {
         tooltipState.element = document.createElement('div');
-        tooltipState.element.className = 'theater-button-tooltip';
+        tooltipState.element.className = 'theater-button-tooltip theater-backdrop-plate';
         paintOverlay(tooltipState.element);
         mountPlayerUi(tooltipState.element);
       }
@@ -229,7 +229,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     scrubberContainer.appendChild(scrubberTrack);
 
     const tooltip = document.createElement('div');
-    tooltip.className = 'theater-scrubber-tooltip';
+    tooltip.className = 'theater-scrubber-tooltip theater-backdrop-hint';
 
     // 2. Control Row
     const controlsRow = document.createElement('div');
