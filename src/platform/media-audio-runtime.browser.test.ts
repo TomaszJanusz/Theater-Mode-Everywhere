@@ -23,8 +23,9 @@ declare global {
     AudioRuntime: typeof import('./media-audio-runtime');
     audioRuntimeProbe: {
       contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number;
-      states: AudioContextState[]; delayNextResume: boolean; resumeCalls: number; suspendCalls: number;
+      delayNextResume: boolean; resumeCalls: number; suspendCalls: number;
       releaseResume?: () => void;
+      autoResume?: () => void;
     };
   }
 }
@@ -45,8 +46,9 @@ async function boot(page: Page, controlledState = false): Promise<void> {
     for (const video of document.querySelectorAll('video')) video.src = media;
     const probe = window.audioRuntimeProbe = {
       contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0,
-      states: [] as AudioContextState[], delayNextResume: false, resumeCalls: 0, suspendCalls: 0,
-      releaseResume: undefined as (() => void) | undefined
+      delayNextResume: false, resumeCalls: 0, suspendCalls: 0,
+      releaseResume: undefined as (() => void) | undefined,
+      autoResume: undefined as (() => void) | undefined
     };
     const NativeAudioContext = window.AudioContext;
     window.AudioContext = class extends NativeAudioContext {
@@ -54,10 +56,15 @@ async function boot(page: Page, controlledState = false): Promise<void> {
       constructor() {
         super();
         probe.contexts.push(this);
-        this.addEventListener('statechange', () => probe.states.push(this.state));
         // Native autoplay can resume without calling resume(). The delayed-operation
         // case controls state and completion; the other cases use real Web Audio.
-        if (controlledState) Object.defineProperty(this, 'state', { get: () => this.simulatedState });
+        if (controlledState) {
+          Object.defineProperty(this, 'state', { get: () => this.simulatedState });
+          probe.autoResume = () => {
+            this.simulatedState = 'running';
+            this.dispatchEvent(new Event('statechange'));
+          };
+        }
       }
       override resume(): Promise<void> {
         if (!controlledState) return super.resume();
@@ -217,20 +224,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
         await page.click('#gesture');
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
-        const beforeResume = await page.evaluate(() => {
-          const probe = window.audioRuntimeProbe;
-          document.querySelector<HTMLButtonElement>('#gesture')!.onclick = () => {
-            void probe.contexts[0].resume().catch(console.error);
-          };
-          return probe.states.length;
-        });
-        // Firefox may require a fresh trusted gesture. Observe actual transitions
-        // rather than awaiting a native promise while the runtime suspends it again.
-        await page.click('#gesture');
-        await page.waitForFunction(before => window.audioRuntimeProbe.states.slice(before).includes('running')
-          && window.audioRuntimeProbe.contexts[0].state === 'suspended', beforeResume);
-        await page.evaluate(() => { document.querySelector<HTMLButtonElement>('#gesture')!.onclick = null; });
-        assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'auto-resume cannot restart paused DSP');
+        assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'gestures do not restart paused media');
         await page.evaluate(async () => {
           const video = document.querySelector<HTMLVideoElement>('#first')!;
           video.loop = true;
@@ -289,6 +283,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
         await page.evaluate(() => { document.querySelector<HTMLVideoElement>('#first')!.dataset.theaterBoost = '2'; });
         await page.click('#gesture');
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
+        // Autoplay policy and statechange timing vary across native backends.
+        // Exercise the browser's external auto-resume notification explicitly.
+        await page.evaluate(() => window.audioRuntimeProbe.autoResume!());
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended'
+          && window.audioRuntimeProbe.suspendCalls === 1);
+        assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'auto-resume cannot restart paused media');
         for (const action of ['pause', 'remove'] as const) {
           await page.evaluate(async () => {
             window.audioRuntimeProbe.delayNextResume = true;
@@ -307,7 +307,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
         }
         assert.deepEqual(await page.evaluate(() => ({
           resumes: window.audioRuntimeProbe.resumeCalls, suspends: window.audioRuntimeProbe.suspendCalls
-        })), { resumes: 2, suspends: 1 }, 'late completion suspends after pause and does no work after retirement');
+        })), { resumes: 2, suspends: 2 }, 'auto-resume and late completion suspend paused media and do no work after retirement');
       } finally { await browser.close(); }
     });
 

@@ -28,8 +28,10 @@ The audio lifecycle cases exercise real Web Audio. The delayed-operation case
 controls the context's state and promise completion: native Firefox autoplay
 can resume without invoking the overridden `resume()` method. That controlled
 case checks reconciliation after pause and retirement independently of native
-autoplay policy; the separate native case observes actual state transitions
-after a trusted resume gesture.
+autoplay policy. It also forces an external auto-resume notification and checks
+that paused media suspends again; native autoplay policy and statechange timing
+vary across platforms. The separate native case checks real
+playback, pause, reload, replacement, reparenting and removal.
 
 The registered suite limits test-file concurrency to two. CI caps the test step
 at ten minutes and the job at fifteen, and cancels superseded runs for the same
