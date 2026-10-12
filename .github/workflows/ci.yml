@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -51,6 +56,7 @@ jobs:
         run: pnpm verify:bundles
 
       - name: Test
+        timeout-minutes: 10
         run: pnpm test
 
       - name: Smoke Chromium

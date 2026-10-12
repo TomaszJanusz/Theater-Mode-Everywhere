@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
+import { ownTestBrowser } from '../test-utils/test-browser';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const require = createRequire(import.meta.url);
@@ -20,11 +21,15 @@ const MEDIA = `data:video/webm;base64,${readFileSync(path.join(ROOT, 'test/fixtu
 declare global {
   interface Window {
     AudioRuntime: typeof import('./media-audio-runtime');
-    audioRuntimeProbe: { contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number; releaseResume?: () => void };
+    audioRuntimeProbe: {
+      contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number;
+      states: AudioContextState[]; delayNextResume: boolean; resumeCalls: number; suspendCalls: number;
+      releaseResume?: () => void;
+    };
   }
 }
 
-async function boot(page: Page): Promise<void> {
+async function boot(page: Page, controlledState = false): Promise<void> {
   await page.addInitScript('window.__name = target => target;');
   page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
   page.on('pageerror', error => console.error(error.message));
@@ -33,15 +38,51 @@ async function boot(page: Page): Promise<void> {
     body: '<html class="theater-everywhere-html-active"><button id="gesture">Apply</button><video id="first" class="theater-everywhere-video-active"></video><video id="second"></video>'
   }));
   await page.goto('https://watch.example/');
-  await page.evaluate(media => {
+  await page.evaluate(({ media, controlledState }) => {
     // Playwright evaluation itself can grant transient activation. Force
     // the deferred branch; trusted pointer/key events still activate it.
     Object.defineProperty(navigator, 'userActivation', { value: { isActive: false }, configurable: true });
     for (const video of document.querySelectorAll('video')) video.src = media;
-    const probe = window.audioRuntimeProbe = { contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0 };
+    const probe = window.audioRuntimeProbe = {
+      contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0,
+      states: [] as AudioContextState[], delayNextResume: false, resumeCalls: 0, suspendCalls: 0,
+      releaseResume: undefined as (() => void) | undefined
+    };
     const NativeAudioContext = window.AudioContext;
     window.AudioContext = class extends NativeAudioContext {
-      constructor() { super(); probe.contexts.push(this); }
+      private simulatedState: AudioContextState = 'suspended';
+      constructor() {
+        super();
+        probe.contexts.push(this);
+        this.addEventListener('statechange', () => probe.states.push(this.state));
+        // Native autoplay can resume without calling resume(). The delayed-operation
+        // case controls state and completion; the other cases use real Web Audio.
+        if (controlledState) Object.defineProperty(this, 'state', { get: () => this.simulatedState });
+      }
+      override resume(): Promise<void> {
+        if (!controlledState) return super.resume();
+        probe.resumeCalls++;
+        return new Promise(resolve => {
+          const complete = () => {
+            if (this.simulatedState !== 'closed') this.simulatedState = 'running';
+            resolve();
+          };
+          if (probe.delayNextResume) {
+            probe.delayNextResume = false;
+            probe.releaseResume = () => { delete probe.releaseResume; complete(); };
+          } else complete();
+        });
+      }
+      override suspend(): Promise<void> {
+        if (!controlledState) return super.suspend();
+        probe.suspendCalls++;
+        this.simulatedState = 'suspended';
+        return Promise.resolve();
+      }
+      override close(): Promise<void> {
+        if (controlledState) this.simulatedState = 'closed';
+        return super.close();
+      }
       override createMediaElementSource(media: HTMLMediaElement): MediaElementAudioSourceNode {
         probe.sources.push(media.id);
         return super.createMediaElementSource(media);
@@ -53,7 +94,7 @@ async function boot(page: Page): Promise<void> {
       }
     };
     window.addEventListener('theater-everywhere-boost-ready', () => probe.ready++);
-  }, MEDIA);
+  }, { media: MEDIA, controlledState });
   await page.waitForFunction(() => Array.from(document.querySelectorAll('video')).every(video => video.readyState >= 1));
   await page.addScriptTag({ content: BUNDLE });
   await page.evaluate(() => window.AudioRuntime.installMediaAudioRuntime());
@@ -65,6 +106,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
@@ -113,6 +155,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
@@ -165,6 +208,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
@@ -173,8 +217,19 @@ for (const engine of ['chromium', 'firefox'] as const) {
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
         await page.click('#gesture');
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
-        await page.evaluate(async () => { await window.audioRuntimeProbe.contexts[0].resume(); });
-        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
+        const beforeResume = await page.evaluate(() => {
+          const probe = window.audioRuntimeProbe;
+          document.querySelector<HTMLButtonElement>('#gesture')!.onclick = () => {
+            void probe.contexts[0].resume().catch(console.error);
+          };
+          return probe.states.length;
+        });
+        // Firefox may require a fresh trusted gesture. Observe actual transitions
+        // rather than awaiting a native promise while the runtime suspends it again.
+        await page.click('#gesture');
+        await page.waitForFunction(before => window.audioRuntimeProbe.states.slice(before).includes('running')
+          && window.audioRuntimeProbe.contexts[0].state === 'suspended', beforeResume);
+        await page.evaluate(() => { document.querySelector<HTMLButtonElement>('#gesture')!.onclick = null; });
         assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'auto-resume cannot restart paused DSP');
         await page.evaluate(async () => {
           const video = document.querySelector<HTMLVideoElement>('#first')!;
@@ -227,26 +282,16 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
-        await boot(page);
+        await boot(page, true);
         await page.evaluate(() => { document.querySelector<HTMLVideoElement>('#first')!.dataset.theaterBoost = '2'; });
         await page.click('#gesture');
         await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
         for (const action of ['pause', 'remove'] as const) {
           await page.evaluate(async () => {
-            const context = window.audioRuntimeProbe.contexts[0];
-            const resume = context.resume.bind(context);
-            context.resume = async () => {
-              await resume();
-              await new Promise<void>(resolve => {
-                window.audioRuntimeProbe.releaseResume = () => {
-                  context.resume = resume;
-                  delete window.audioRuntimeProbe.releaseResume;
-                  resolve();
-                };
-              });
-            };
+            window.audioRuntimeProbe.delayNextResume = true;
             const video = document.querySelector<HTMLVideoElement>('#first')!;
             video.loop = true;
             await video.play();
@@ -260,6 +305,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
           await page.evaluate(() => window.audioRuntimeProbe.releaseResume!());
           await page.waitForFunction(state => window.audioRuntimeProbe.contexts[0].state === state, action === 'pause' ? 'suspended' : 'closed');
         }
+        assert.deepEqual(await page.evaluate(() => ({
+          resumes: window.audioRuntimeProbe.resumeCalls, suspends: window.audioRuntimeProbe.suspendCalls
+        })), { resumes: 2, suspends: 1 }, 'late completion suspends after pause and does no work after retirement');
       } finally { await browser.close(); }
     });
 
@@ -267,6 +315,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
@@ -301,6 +350,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
