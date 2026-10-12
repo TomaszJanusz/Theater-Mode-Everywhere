@@ -1,3 +1,4 @@
+import { NETFLIX_HARVEST_EVENT } from '../../media-features/parsers/netflix-page';
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { netflixVideoId } from '../../media-features/parsers/netflix-page';
 import { NETFLIX_ACTION_SNAPSHOT_ID } from './action-bridge';
@@ -5,6 +6,7 @@ import { netflixWatchId, readNetflixPlayerAppApi, seekNetflixSession, selectNetf
 
 let labeledVideoId: string | null = null;
 let introLabel = '';
+let publishedKey = '';
 
 /** Netflix unmounts its chrome on idle. Keep only an observed native intro
  * label, with availability and activation checked against the active clock. */
@@ -40,6 +42,11 @@ function liveIntro(root: HTMLElement | null) {
 export function syncNetflixTimedAction(root: HTMLElement | null): void {
   const action = liveIntro(root);
   publishHiddenJson(NETFLIX_ACTION_SNAPSHOT_ID, action ? { id: action.id, label: action.label, updatedAt: Date.now() } : null);
+  const key = action ? `${action.id}\0${action.label}` : '';
+  if (key !== publishedKey) {
+    publishedKey = key;
+    window.dispatchEvent(new Event(NETFLIX_HARVEST_EVENT));
+  }
 }
 
 export function activateNetflixTimedAction(root: HTMLElement | null, id: string): boolean {

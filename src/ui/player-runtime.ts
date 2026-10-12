@@ -1,3 +1,4 @@
+import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisit } from './auto-theater';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
@@ -498,12 +499,12 @@ function playlistNavigationAvailable(): PlaylistNavState {
   };
 }
 
-function requestParentPlaylistNav(): void {
+function requestParentPlaylistNav(snapshot?: PlaylistNavState): void {
   if (window.parent === window || !session.id) return;
   // The existing controls refresh also reports child availability to its parent.
   const available = session.element?.tagName === 'IFRAME'
     ? refs.childPlaylistNav
-    : playlistNavigationAvailable();
+    : snapshot ?? playlistNavigationAvailable();
   frames.postToParent('PLAYLIST_NAV_QUERY', session.id, available);
 }
 
@@ -590,6 +591,11 @@ function bindChromeActions(): void {
     triggerPlaybackIndicator,
     seekHostTime: seekToMediaTime,
     playlistNavigationAvailable,
+    subscribePlaylistNavigation(listener: (state: PlaylistNavState) => void) {
+      const element = session.element;
+      const root = element?.getRootNode();
+      return subscribeNavigation(root instanceof ShadowRoot ? root : document, playlistNavigationAvailable, listener);
+    },
     requestParentPlaylistNav,
     activatePlaylistStep
   });
@@ -1701,8 +1707,11 @@ function initialize(): void {
         );
       }
     } else if (envelope.type === 'PLAYLIST_NAV_STATE' && fromParent) {
-      refs.parentPlaylistNav = playlistNavFromPayload(envelope.payload);
-      window.dispatchEvent(new CustomEvent('theater-everywhere-playlist-nav'));
+      const next = playlistNavFromPayload(envelope.payload);
+      if (JSON.stringify(next) !== JSON.stringify(refs.parentPlaylistNav)) {
+        refs.parentPlaylistNav = next;
+        window.dispatchEvent(new CustomEvent('theater-everywhere-playlist-nav'));
+      }
     } else if (envelope.type === 'PLAYLIST_NAV_GO' && fromChild) {
       const direction = envelope.payload.direction;
       if (direction === 'previous' || direction === 'next') {

@@ -1,3 +1,4 @@
+import { observeProviderDom } from '../dom-watch';
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isDisneyHost } from '../hosts';
@@ -31,6 +32,7 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
   const href = hooks.href ?? (() => window.location.href);
   const doc = hooks.document ?? document;
 
+  const progressTargets = new Map<string, { element: HTMLElement; circle: HTMLElement; playId: string }>();
   const live = (): LiveAction[] => {
     if (!allowed(enabled, host)) return [];
     const playId = disneyPlayId(href());
@@ -53,9 +55,12 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
       const tile = end.root.querySelector('button.end-card-overlay__content-tile');
       const tileLabel = endLabel(end.root);
       if (tile instanceof HTMLElement && tileLabel && usable(tile)) {
-        const progress = ringProgress(end.root);
+        const circle = end.root.querySelector<HTMLElement>('.progress-ring__circle');
+        const progress = ringProgress(circle);
+        const id = `disney:end|${playId}|${elementToken(tile)}`;
+        if (circle) progressTargets.set(id, { element: tile, circle, playId });
         found.push({
-          id: `disney:end|${playId}|${elementToken(tile)}`,
+          id,
           label: tileLabel,
           element: tile,
           ...(progress === undefined ? {} : { progress })
@@ -73,7 +78,19 @@ export function createDisneyServiceActions(hooks: DisneyServiceActionHooks = {})
   };
 
   return {
-    read: () => live().map(({ element: _element, ...action }) => action),
+    read: () => { progressTargets.clear(); return live().map(({ element: _element, ...action }) => action); },
+    subscribe: changed => observeProviderDom({ root: doc,
+      selector: 'disney-web-player, skip-overlay, up-next-lite-v1, end-card-overlay', changed,
+      relevant: record => !(record.target instanceof Element) || !record.target.matches('video, .progress-ring__circle'),
+      enabled: () => allowed(enabled, host), events: ['theater-everywhere-disney-harvest'] }),
+    readProgress(id) {
+      const target = progressTargets.get(id);
+      if (!target || !allowed(enabled, host) || disneyPlayId(href()) !== target.playId
+        || !target.element.isConnected || !target.circle.isConnected) return null;
+      const root = target.element.getRootNode();
+      if (target.element.hidden || disabled(target.element) || (root instanceof ShadowRoot && root.host.hasAttribute('hidden'))) return null;
+      return ringProgress(target.circle);
+    },
     activate(id: string): boolean {
       const action = live().find(action => action.id === id);
       if (!action || !usable(action.element)) return false;
@@ -108,8 +125,7 @@ function upNextButton(doc: Document): HTMLElement | null {
   return button instanceof HTMLElement ? button : null;
 }
 
-function ringProgress(root: ParentNode): number | undefined {
-  const circle = root.querySelector<HTMLElement>('.progress-ring__circle');
+function ringProgress(circle: HTMLElement | null): number | undefined {
   if (!circle) return undefined;
   const animation = circle.getAnimations().find(item =>
     item instanceof CSSAnimation || item instanceof CSSTransition);

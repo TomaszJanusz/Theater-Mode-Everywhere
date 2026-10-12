@@ -288,10 +288,11 @@ describe('service action CTA', () => {
         const animation = fill?.getAnimations()[0];
         return animation && (animation.effect?.getComputedTiming().progress ?? 0) > 0.1;
       });
-      const paused = await page.evaluate(`(() => {
+      const paused = await page.evaluate(`(async () => {
         const fill = document.querySelector('[data-uia="next-episode-seamless-button-draining"] .inner');
         const animation = fill.getAnimations()[0];
         animation.pause();
+        await animation.ready;
         window.__nativeCountdown = animation;
         const root = document.getElementById('theater-everywhere-ui').shadowRoot;
         window.__originalPostplayButton = root.querySelector('.theater-service-action');
@@ -307,7 +308,7 @@ describe('service action CTA', () => {
         const progress = new DOMMatrixReadOnly(getComputedStyle(button.querySelector('.theater-service-action-progress')).transform).m11;
         return {progress, same:button===window.__originalPostplayButton, native:window.__nativeCountdown.effect.getComputedTiming().progress, clicks:window.__postplayClicks};
       })()`) as { progress: number; same: boolean; native: number; clicks: string[] };
-      assert.ok(Math.abs(mirrored.progress - paused) < 0.03);
+      assert.ok(Math.abs(mirrored.progress - paused) < 0.03, JSON.stringify({ mirrored, paused }));
       assert.ok(Math.abs(mirrored.progress - mirrored.native) < 0.01);
       assert.equal(mirrored.same, true, 'polls/menu changes retain the same button');
       assert.deepEqual(mirrored.clicks, [], 'RTE never advances the episode itself');

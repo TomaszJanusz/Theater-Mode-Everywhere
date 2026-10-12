@@ -21,17 +21,17 @@ import type { HostCaptionLayout } from '../media-features/types';
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
 export const CURSOR_HIDDEN_CLASS = 'theater-everywhere-cursor-hidden';
 
+type DockMotionState = { mode: ReturnType<typeof captionDockMotion>; transition: string };
+
 function applyCaptionDockMotion(
   el: HTMLElement | null,
   motion: ReturnType<typeof captionDockMotion>,
-  modes: WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>
+  modes: WeakMap<HTMLElement, DockMotionState>
 ): void {
   if (!el) return;
   // A host renderer can rewrite its inline styles during cue replacement.
-  const transition = motion === 'moving'
-    ? 'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s'
-    : motion === 'lifted' ? 'none' : 'opacity 0.15s';
-  if (modes.get(el) === motion && el.style.getPropertyValue('transition') === transition
+  const held = modes.get(el);
+  if (held?.mode === motion && el.style.getPropertyValue('transition') === held.transition
     && el.style.getPropertyPriority('transition') === 'important') return;
   if (motion === 'moving') {
     el.style.setProperty(
@@ -42,7 +42,7 @@ function applyCaptionDockMotion(
   } else if (motion === 'lifted') el.style.setProperty('transition', 'none', 'important');
   else el.style.setProperty('transition', 'opacity 0.15s ease', 'important');
   void el.offsetWidth;
-  modes.set(el, motion);
+  modes.set(el, { mode: motion, transition: el.style.getPropertyValue('transition') });
 }
 
 export function createToolbar(ctx: PlayerChromeContext) {
@@ -100,6 +100,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
   let candidatesDirty = true;
   let dockObserver: MutationObserver | null = null;
   let dockResizeObserver: ResizeObserver | null = null;
+  let dockNativeObserver: MutationObserver | null = null;
+  let nativeMotionTarget: HTMLElement | null = null;
+  let pictureState = '';
 
   function resetCaptionDock(): void {
     if (dockFrame !== null) window.cancelAnimationFrame(dockFrame);
@@ -108,6 +111,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
     dockResizeObserver?.disconnect();
     dockObserver = null;
     dockResizeObserver = null;
+    dockNativeObserver?.disconnect();
+    dockNativeObserver = null;
+    nativeMotionTarget = null;
     controlsCache = null;
     dockOverlayCache = null;
     overlayTextCache = null;
@@ -124,19 +130,34 @@ export function createToolbar(ctx: PlayerChromeContext) {
       if (!controlsCache) return;
       candidatesDirty = true;
       const root = controlsCache.getRootNode();
+      pictureState = pictureKey();
       dockObserver = new MutationObserver(records => {
-        // Visibility changes reuse the cached nodes; only changed structure
-        // requires discovery. Text and style changes still update geometry.
-        if (records.some(record => record.type === 'childList'
-          && [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === Node.ELEMENT_NODE))) {
-          candidatesDirty = true;
+        let relevant = false;
+        for (const record of records) {
+          const element = record.target instanceof Element ? record.target : record.target.parentElement;
+          if (element === document.documentElement && record.attributeName === 'class') {
+            const next = pictureKey();
+            if (next !== pictureState) { pictureState = next; relevant = true; }
+          }
+          // Word colour, clock glyphs and scrubber fill never change dock geometry.
+          if (record.type === 'attributes' && element?.closest('.theater-time-slot, .theater-caption-word, .theater-scrubber-track, .theater-service-action-progress')) continue;
+          if (record.type === 'childList' && [...record.addedNodes, ...record.removedNodes].some(node =>
+            node instanceof Element && (node.matches(candidateSelector + ', .theater-caption-overlay')
+              || node.querySelector(candidateSelector + ', .theater-caption-overlay')))) {
+            candidatesDirty = true;
+            relevant = true;
+          }
+          if (element?.matches('.theater-menu, .theater-volume-container, .theater-speed-container')) relevant = true;
+          if (element === controlsCache || element?.closest(candidateSelector + ', .theater-caption-overlay')
+            || element === dockOverlayCache || element === overlayTextCache) relevant = true;
         }
-        updateCaptionDock();
+        if (relevant) updateCaptionDock();
       });
       dockObserver.observe(root, {
         childList: true, subtree: true, characterData: true,
         attributes: true, attributeFilter: ['class', 'style']
       });
+      if (root !== document) dockObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       dockResizeObserver = typeof ResizeObserver === 'undefined'
         ? null : new ResizeObserver(() => updateCaptionDock());
     }
@@ -149,6 +170,11 @@ export function createToolbar(ctx: PlayerChromeContext) {
     for (const element of [controlsCache, dockOverlayCache, ...candidates]) {
       if (element) dockResizeObserver?.observe(element);
     }
+  }
+
+  function pictureKey(): string {
+    const classes = document.documentElement.classList;
+    return `${classes.contains('theater-everywhere-picture-top')}:${classes.contains('theater-everywhere-picture-moving')}`;
   }
 
   function updateCaptionDock(immediate = false): void {
@@ -175,7 +201,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   let captionDockLifted = false;
-  const captionDockMotionMode = new WeakMap<HTMLElement, ReturnType<typeof captionDockMotion>>();
+  const captionDockMotionMode = new WeakMap<HTMLElement, DockMotionState>();
 
   function measureCurrentCaptionDock(element: HTMLElement): void {
     // Updating the line cap can synchronously redraw overlay captions and call
@@ -202,6 +228,13 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const overlayText = overlay ? overlayTextCache : null;
     const features = controlsCache;
     const hostCaption = features?._mediaFeatures?.readHostCaptionLayout() ?? null;
+    const motionTarget = hostCaption?.motionTarget ?? null;
+    if (motionTarget !== nativeMotionTarget) {
+      dockNativeObserver?.disconnect();
+      nativeMotionTarget = motionTarget;
+      dockNativeObserver = motionTarget ? new MutationObserver(() => updateCaptionDock()) : null;
+      if (motionTarget) dockNativeObserver?.observe(motionTarget, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
     const overlayLineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
     const lineHeight = overlayLineHeight > 0 ? overlayLineHeight : (hostCaption?.lineHeight ?? 0);
     const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;

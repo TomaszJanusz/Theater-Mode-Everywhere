@@ -22,7 +22,7 @@ export function findDisneyPlaylistActions(root: ParentNode, href: () => string):
   const playId = disneyPlayId(href());
   if (!doc || !playId) return [];
   const published = disneyPlayNextPublished(doc, playId);
-  if (!findDisneyPlayNextButton(doc) && !published) return [];
+  if (!published && !findDisneyPlayNextButton(doc, false)) return [];
   return [{
     direction: 'next',
     preview: null,

@@ -23,8 +23,11 @@ describe('caption dock frame and cached geometry lifecycle', () => {
       const page = await browser.newPage({ viewport: { width: 900, height: 600 } });
       await page.setContent(`<video style="width:900px;height:600px"></video>
         <div class="theater-controls-wrapper" style="width:800px;height:60px"></div>
+        <div class="theater-time-slot"><span>0</span></div>
+        <div class="theater-scrubber-track"><span></span></div>
+        <div class="theater-service-action-host"><span class="theater-service-action-progress"></span></div>
         <div class="theater-caption-overlay visible" style="width:500px;height:40px">
-          <span class="theater-caption-overlay-text" style="line-height:20px">Caption</span>
+          <span class="theater-caption-overlay-text" style="line-height:20px"><span class="theater-caption-word is-current">Caption</span></span>
         </div>`);
       await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
       await page.addScriptTag({ content: bundle });
@@ -80,6 +83,16 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         await flush();
         const stable = { layouts: layouts - beforeBurst.layouts, mediaReads: mediaReads - beforeBurst.mediaReads,
           scans: scans - beforeBurst.scans, queued: frames.size };
+        const beforeTicks = layouts;
+        for (let i = 0; i < 50; i++) {
+          document.querySelector('.theater-time-slot span')!.textContent = String(i);
+          const fill = document.querySelector('.theater-scrubber-track span') as HTMLElement;
+          fill.style.width = `${i}%`;
+          (document.querySelector('.theater-service-action-progress') as HTMLElement).style.transform = `scaleX(${i / 50})`;
+          document.querySelector('.theater-caption-word')!.className = `theater-caption-word is-${i % 2 ? 'past' : 'current'}`;
+          await flush();
+        }
+        const tickMeasurements = layouts - beforeTicks;
         const baseBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
         const obstacle = document.createElement('div');
         obstacle.className = 'theater-button-tooltip visible';
@@ -140,7 +153,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         await flush();
         obstacle.remove();
         await flush();
-        return { queued, initial, stable, baseBottom, obstacleBottom, hiddenBottom, visibilityScans,
+        return { queued, initial, stable, tickMeasurements, baseBottom, obstacleBottom, hiddenBottom, visibilityScans,
           raisedBottom, multilineBottom, lineLimit, restTransition, movingTransition, rowChangeScans,
           beforeNativeFrame, nativeBeforePaint, afterNativeFrame,
           afterExit: layouts - beforeExit, queuedAfterExit: frames.size };
@@ -148,6 +161,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
       assert.equal(report.queued, 1);
       assert.deepEqual(report.initial, { layouts: 1, mediaReads: 1, scans: 1 });
       assert.deepEqual(report.stable, { layouts: 1, mediaReads: 1, scans: 0, queued: 0 });
+      assert.equal(report.tickMeasurements, 0);
       assert.ok(Number.parseFloat(report.obstacleBottom) > Number.parseFloat(report.baseBottom), JSON.stringify(report));
       assert.equal(report.hiddenBottom, report.baseBottom);
       assert.equal(report.visibilityScans, 0);
