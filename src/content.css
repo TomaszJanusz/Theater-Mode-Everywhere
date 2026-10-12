@@ -139,6 +139,36 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   cursor: none !important;
 }
 
+/* Filter recipes. A component adds the class and does not repeat the function. */
+.theater-backdrop-plate {
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+.theater-backdrop-hint {
+  backdrop-filter: blur(8px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
+}
+
+.theater-backdrop-shade {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.theater-backdrop-dialog {
+  backdrop-filter: blur(10px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+}
+
+.theater-filter-glow {
+  filter: blur(8px) !important;
+}
+
+/* Strokes ignore text-shadow; match the title glyph shadow. */
+.theater-filter-glyph {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)) !important;
+}
+
 /* Custom player controls container card */
 .theater-controls-wrapper {
   --theater-bar-pad: 10px;
@@ -179,7 +209,7 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   text-transform: none !important;
 }
 
-/* Glass on a pseudo so backdrop-filter cannot clip the heatmap above the bar. */
+/* Plate on a pseudo so the bar's stacking does not clip the heatmap above it. */
 .theater-controls-wrapper::before {
   content: "" !important;
   position: absolute !important;
@@ -189,8 +219,6 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   border-radius: 12px !important;
   background-color: rgba(9, 9, 11, 0.85) !important;
   background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
 }
@@ -309,7 +337,6 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
 
 .theater-scrubber-heatmap-glow-layer {
   overflow: visible !important;
-  filter: blur(8px) !important;
 }
 
 .theater-scrubber-heatmap-glow {
@@ -931,8 +958,6 @@ button.theater-time-end:hover {
   align-items: center !important;
   justify-content: center !important;
   background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -1075,8 +1100,6 @@ button.theater-time-end:hover {
   bottom: 100% !important;
   transform: translateX(-50%) translateY(-8px) !important;
   background: rgba(20, 20, 20, 0.8) !important;
-  backdrop-filter: blur(8px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
   color: #ffffff !important;
   padding: 6px 8px !important;
   border-radius: 8px !important;
@@ -1743,8 +1766,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   position: fixed !important;
   transform: translate(-50%, -100%) !important;
   background: rgba(15, 15, 15, 0.9) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   color: #f8fafc !important;
   padding: 5px 10px !important;
@@ -1856,8 +1877,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   width: 100vw !important;
   height: 100vh !important;
   background-color: rgba(0, 0, 0, 0.75) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -2030,8 +2049,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   left: 50% !important;
   transform: translate(-50%, 0) scale(1) !important;
   background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -2062,9 +2079,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   right: 24px !important;
   left: auto !important;
   transform: none !important;
-  background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -2074,7 +2089,7 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   flex-direction: row !important;
   align-items: center !important;
   gap: 10px !important;
-  color: #ffffff !important;
+  color: var(--theater-caption-color, #ffffff) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 15px !important;
   font-weight: 700 !important;
@@ -2128,8 +2143,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   min-height: 54.6px !important;
   box-sizing: border-box !important;
   background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -2175,8 +2188,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   display: block !important;
   width: 24px !important;
   height: 24px !important;
-  /* Strokes ignore text-shadow; match the title glyph shadow. */
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)) !important;
 }
 
 .theater-everywhere-title-hud {
@@ -2186,8 +2197,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   width: max-content !important;
   max-width: min(720px, calc(var(--theater-video-width, 100vw) - 114px)) !important;
   background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -2423,8 +2432,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   justify-content: center !important;
   padding: 24px 16px !important;
   background: rgba(9, 9, 11, 0.62) !important;
-  backdrop-filter: blur(10px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
   pointer-events: auto !important;
 }
 
@@ -2855,8 +2862,6 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   outline-offset: 1px !important;
   border-radius: 12px !important;
   background: rgba(15, 15, 15, 0.5) !important;
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   color: #ffffff !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;

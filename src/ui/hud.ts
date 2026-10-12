@@ -86,7 +86,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = `theater-everywhere-seek-overlay ${direction} animate`;
+    overlay.className = `theater-everywhere-seek-overlay theater-backdrop-plate ${direction} animate`;
     ctx.paintOverlay(overlay);
 
     const iconWrapper = document.createElement('div');
@@ -132,7 +132,7 @@ export function createHud(ctx: PlayerChromeContext) {
     const overlay = document.createElement('div');
     // Hover discovery may point elsewhere; boost belongs to the theater player.
     const isBoosted = !muted && logicalVolume > 1.0 && ctx.session.element.dataset.theaterBoostReady === 'true';
-    overlay.className = 'theater-everywhere-volume-overlay' + (isBoosted ? ' boosted' : '');
+    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate' + (isBoosted ? ' boosted' : '');
     ctx.paintOverlay(overlay);
 
     const pct = muted ? 0 : (logicalVolume <= 1.0 ? Math.round(logicalVolume * 100) : Math.round(100 + (logicalVolume - 1.0) * 400));
@@ -182,7 +182,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-everywhere-volume-overlay status-hud';
+    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate status-hud';
     ctx.paintOverlay(overlay);
 
     const content = document.createElement('div');
@@ -215,7 +215,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-everywhere-volume-overlay';
+    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate';
     ctx.paintOverlay(overlay);
 
     let icon = '';
@@ -335,12 +335,12 @@ export function createHud(ctx: PlayerChromeContext) {
       const homeUrl = serviceHomeUrl(discoverParentOrigin() || window.location.href);
       if (homeUrl) {
         const home = document.createElement('a');
-        home.className = 'theater-home-pill';
+        home.className = 'theater-home-pill theater-backdrop-plate';
         home.href = homeUrl;
         home.target = '_top';
         home.title = ctx.t('homepage');
         home.setAttribute('aria-label', ctx.t('homepage'));
-        home.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>';
+        home.innerHTML = '<svg class="theater-filter-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>';
         home.addEventListener('click', (event) => event.stopPropagation());
         home.addEventListener('dblclick', (event) => event.stopPropagation());
         header.appendChild(home);
@@ -366,7 +366,7 @@ export function createHud(ctx: PlayerChromeContext) {
     let overlay = existing;
     if (!overlay) {
       overlay = document.createElement('div');
-      overlay.className = TITLE_HUD_CLASS;
+      overlay.className = `${TITLE_HUD_CLASS} theater-backdrop-plate`;
       overlay.setAttribute('aria-hidden', 'true');
       ctx.paintOverlay(overlay);
       const viewport = document.createElement('div');

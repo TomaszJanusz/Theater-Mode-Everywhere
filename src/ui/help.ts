@@ -33,7 +33,7 @@ export function createHelp(ctx: PlayerChromeContext) {
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-help-overlay';
+    overlay.className = 'theater-help-overlay theater-backdrop-shade';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', ctx.t('keyboardShortcutsTitle'));

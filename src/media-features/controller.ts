@@ -503,7 +503,7 @@ export class MediaFeaturesController {
     const glowGroup = svgEl('g');
     glowGroup.setAttribute('mask', 'url(#theater-heatmap-glow-mask)');
     const glowBlur = svgEl('g');
-    glowBlur.setAttribute('class', 'theater-scrubber-heatmap-glow-layer');
+    glowBlur.setAttribute('class', 'theater-scrubber-heatmap-glow-layer theater-filter-glow');
     const glowPad = svgEl('rect');
     glowPad.setAttribute('x', '-200');
     glowPad.setAttribute('y', '-50');
