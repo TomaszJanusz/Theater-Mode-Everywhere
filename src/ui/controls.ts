@@ -30,6 +30,7 @@ import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
+import { armPictureDismiss, armPictureDismissOnLeave, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { mountNativeChatControls, nativeChatState } from './chat';
@@ -341,7 +342,10 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     const volumeContainer = document.createElement('div');
     volumeContainer.className = 'theater-volume-container theater-popover';
     volumeContainer.addEventListener('pointerenter', updateCaptionDock);
-    volumeContainer.addEventListener('pointerleave', updateCaptionDock);
+    volumeContainer.addEventListener('pointerleave', (event) => {
+      armPictureDismissOnLeave(event, volumeContainer);
+      updateCaptionDock();
+    });
 
     const volumeBtn = document.createElement('button');
     volumeBtn.className = 'theater-control-btn volume-btn';
@@ -621,7 +625,10 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     const speedContainer = document.createElement('div');
     speedContainer.className = 'theater-speed-container theater-popover';
     speedContainer.addEventListener('pointerenter', updateCaptionDock);
-    speedContainer.addEventListener('pointerleave', updateCaptionDock);
+    speedContainer.addEventListener('pointerleave', (event) => {
+      armPictureDismissOnLeave(event, speedContainer);
+      updateCaptionDock();
+    });
 
     const speedBtn = document.createElement('button');
     speedBtn.className = 'theater-control-btn speed-btn';
@@ -912,6 +919,15 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     };
 
     const dismissPopoversIfOutside = (e: Event) => {
+      const primary = !('button' in e) || (e as MouseEvent).button === 0;
+      const onPicture = eventPathIncludes(e, session.element) || eventPathMatches(e, '.theater-wasm-catcher');
+      if (primary && (e.type === 'pointerdown' || e.type === 'mousedown')) {
+        if (onPicture) {
+          if (playerChromeExpanded(wrapper)) armPictureDismiss();
+        } else {
+          clearPictureDismiss();
+        }
+      }
       const inCc = eventPathIncludes(e, ccHost);
       const inVolume = eventPathMatches(e, '.theater-volume-container');
       const inSpeed = eventPathMatches(e, '.theater-speed-container');
@@ -928,8 +944,10 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       }
       updateCaptionDock();
     };
+    const clearDismissOnKey = () => clearPictureDismiss();
     window.addEventListener('pointerdown', dismissPopoversIfOutside, true);
     window.addEventListener('click', dismissPopoversIfOutside, true);
+    window.addEventListener('keydown', clearDismissOnKey, true);
 
     const onWindowBlur = () => {
       closeTheaterPopovers();
@@ -1618,6 +1636,8 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       wrapper._mediaFeatures = undefined;
       window.removeEventListener('pointerdown', dismissPopoversIfOutside, true);
       window.removeEventListener('click', dismissPopoversIfOutside, true);
+      window.removeEventListener('keydown', clearDismissOnKey, true);
+      clearPictureDismiss();
       window.removeEventListener('blur', onWindowBlur);
       loadingIndicator.remove();
     };
