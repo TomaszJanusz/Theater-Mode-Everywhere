@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -39,6 +44,15 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
 
+      - name: Start virtual audio device
+        # Firefox needs an audio backend to run a native AudioContext on Linux.
+        run: |
+          sudo apt-get install --no-install-recommends -y pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=theater_tests rate=48000
+          pactl set-default-sink theater_tests
+          pactl list short sinks
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -51,6 +65,7 @@ jobs:
         run: pnpm verify:bundles
 
       - name: Test
+        timeout-minutes: 10
         run: pnpm test
 
       - name: Smoke Chromium

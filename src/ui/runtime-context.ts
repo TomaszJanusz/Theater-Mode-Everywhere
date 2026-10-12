@@ -96,7 +96,8 @@ export type PlayerChromeActions = {
   triggerPlaybackIndicator(action: 'play' | 'pause'): void;
   seekHostTime(video: PlaybackSurface, time: number): void;
   playlistNavigationAvailable(): PlaylistNavState;
-  requestParentPlaylistNav(): void;
+  subscribePlaylistNavigation(listener: (state: PlaylistNavState) => void): () => void;
+  requestParentPlaylistNav(snapshot?: PlaylistNavState): void;
   activatePlaylistStep(direction: PlaylistDirection): void;
 };
 

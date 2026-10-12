@@ -9,7 +9,8 @@ export class CaptionRenderer {
   private text: HTMLDivElement;
   private cues: CaptionCue[] = [];
   private lastLineKey: string | null = '';
-  private lastWordKey = '';
+  private activeCues: CaptionCue[] = [];
+  private wordNodes: { cue: CaptionCue; index: number; span: HTMLSpanElement; state: string }[] = [];
   private maxLines = 2;
   private style: CaptionStyle = { ...DEFAULT_CAPTION_STYLE };
 
@@ -27,6 +28,7 @@ export class CaptionRenderer {
 
   setStyle(style: CaptionStyle): void {
     this.style = style;
+    this.lastLineKey = null;
     applyCaptionStyle(this.root, style);
     applyCaptionStyle(document.documentElement, style);
   }
@@ -37,14 +39,16 @@ export class CaptionRenderer {
     if (next === this.maxLines) return false;
     this.maxLines = next;
     this.lastLineKey = null;
-    this.lastWordKey = '';
+    this.wordNodes = [];
+    this.activeCues = [];
     return true;
   }
 
   setCues(cues: CaptionCue[] | null): void {
     this.cues = cues || [];
     this.lastLineKey = '';
-    this.lastWordKey = '';
+    this.wordNodes = [];
+    this.activeCues = [];
     if (this.cues.length === 0) {
       this.text.textContent = '';
       this.root.classList.remove('visible');
@@ -58,16 +62,19 @@ export class CaptionRenderer {
         this.text.textContent = '';
         this.root.classList.remove('visible');
         this.lastLineKey = '';
-        this.lastWordKey = '';
+        this.wordNodes = [];
+        this.activeCues = [];
         this.onChange?.();
       }
       return;
     }
     const active = visibleCaptionLines(this.cues, time, this.maxLines);
     const lineKey = active.map((cue) => cue.text).join('\n');
-    if (lineKey !== this.lastLineKey) {
+    if (lineKey !== this.lastLineKey || active.length !== this.activeCues.length
+      || active.some((cue, index) => cue !== this.activeCues[index])) {
       this.lastLineKey = lineKey;
-      this.lastWordKey = '';
+      this.wordNodes = [];
+      this.activeCues = active;
       this.text.replaceChildren();
       for (let i = 0; i < active.length; i++) {
         if (i > 0) this.text.appendChild(document.createElement('br'));
@@ -82,6 +89,8 @@ export class CaptionRenderer {
 
   dispose(): void {
     this.cues = [];
+    this.wordNodes = [];
+    this.activeCues = [];
     this.root.remove();
     const root = document.documentElement.style;
     root.removeProperty('--theater-caption-color');
@@ -99,29 +108,20 @@ export class CaptionRenderer {
     }
     cue.words.forEach((word, index) => {
       const span = document.createElement('span');
-      span.className = `theater-caption-word is-${classifyCaptionWord(cue.words!, index, time)}`;
+      const state = classifyCaptionWord(cue.words!, index, time);
+      span.className = `theater-caption-word is-${state}`;
+      this.wordNodes.push({ cue, index, span, state });
       span.textContent = index === 0 ? word.text : ` ${word.text}`;
       this.text.appendChild(span);
     });
   }
 
   private updateWordStates(time: number): void {
-    const words = [...this.text.querySelectorAll('.theater-caption-word')];
-    if (words.length === 0) return;
-    const states: string[] = [];
-    let cursor = 0;
-    for (const cue of visibleCaptionLines(this.cues, time, this.maxLines)) {
-      if (!cueHasWordTimings(cue) || !cue.words) continue;
-      for (let i = 0; i < cue.words.length; i++) {
-        const span = words[cursor++];
-        if (!span) return;
-        const state = classifyCaptionWord(cue.words, i, time);
-        states.push(state);
-        span.className = `theater-caption-word is-${state}`;
-      }
+    for (const word of this.wordNodes) {
+      const state = classifyCaptionWord(word.cue.words!, word.index, time);
+      if (state === word.state) continue;
+      word.state = state;
+      word.span.className = `theater-caption-word is-${state}`;
     }
-    const wordKey = states.join(',');
-    if (wordKey === this.lastWordKey) return;
-    this.lastWordKey = wordKey;
   }
 }
