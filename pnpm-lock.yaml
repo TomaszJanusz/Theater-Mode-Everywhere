@@ -24,6 +24,9 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      esbuild:
+        specifier: ^0.21.5
+        version: 0.21.5
       playwright:
         specifier: ^1.63.0
         version: 1.63.0

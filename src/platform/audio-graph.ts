@@ -1,4 +1,5 @@
 import { isNeutralAudio, type AudioSettings } from '../audio-settings';
+import { AUDIO_FADE_SECONDS, createAudioCrossfade } from './audio-crossfade';
 
 type VoicePreset = {
   /** Dialogue band added on top of the centre (mid) signal. */
@@ -30,15 +31,12 @@ const LEVELING_PRESETS: Record<Exclude<AudioSettings['leveling'], 'off'>, Leveli
 
 const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6 };
 
-const FADE_SECONDS = 0.03;
-
 export type AudioChain = {
   readonly input: AudioNode;
   readonly output: AudioNode;
   apply(settings: AudioSettings): void;
+  dispose(): void;
 };
-
-type Stage = { input: AudioNode; output: AudioNode };
 
 function gainNode(ctx: BaseAudioContext, value: number): GainNode {
   const node = ctx.createGain();
@@ -48,26 +46,7 @@ function gainNode(ctx: BaseAudioContext, value: number): GainNode {
 
 function glide(ctx: BaseAudioContext, param: AudioParam, value: number): void {
   param.cancelScheduledValues(ctx.currentTime);
-  param.setTargetAtTime(value, ctx.currentTime, FADE_SECONDS);
-}
-
-/** Crossfades between the untouched signal and an effect so switching never clicks. */
-function crossfade(ctx: BaseAudioContext, effect: Stage) {
-  const input = gainNode(ctx, 1);
-  const output = gainNode(ctx, 1);
-  const dry = gainNode(ctx, 1);
-  const wet = gainNode(ctx, 0);
-  input.connect(dry).connect(output);
-  input.connect(effect.input);
-  effect.output.connect(wet).connect(output);
-  return {
-    input,
-    output,
-    setActive(active: boolean) {
-      glide(ctx, dry.gain, active ? 0 : 1);
-      glide(ctx, wet.gain, active ? 1 : 0);
-    }
-  };
+  param.setTargetAtTime(value, ctx.currentTime, AUDIO_FADE_SECONDS);
 }
 
 /**
@@ -123,10 +102,11 @@ function voiceStage(ctx: BaseAudioContext) {
   const trim = gainNode(ctx, 1);
   merge.connect(compressor).connect(trim);
 
-  const fade = crossfade(ctx, { input: stereo, output: trim });
+  const fade = createAudioCrossfade(ctx, { input: stereo, output: trim });
   return {
     input: fade.input,
     output: fade.output,
+    dispose: fade.dispose,
     set(level: AudioSettings['voice']) {
       if (level === 'off') return fade.setActive(false);
       const preset = VOICE_PRESETS[level];
@@ -141,16 +121,19 @@ function voiceStage(ctx: BaseAudioContext) {
 }
 
 function bassStage(ctx: BaseAudioContext) {
-  // A 0 dB shelf passes the signal through unchanged.
+  // A neutral shelf is disconnected rather than processing a 0 dB filter.
   const shelf = ctx.createBiquadFilter();
   shelf.type = 'lowshelf';
   shelf.frequency.value = 150;
   shelf.gain.value = 0;
+  const fade = createAudioCrossfade(ctx, { input: shelf, output: shelf });
   return {
-    input: shelf,
-    output: shelf,
+    input: fade.input,
+    output: fade.output,
+    dispose: fade.dispose,
     set(level: AudioSettings['bass']) {
-      glide(ctx, shelf.gain, BASS_SHELF_DB[level]);
+      if (level !== 'original') glide(ctx, shelf.gain, BASS_SHELF_DB[level]);
+      fade.setActive(level !== 'original');
     }
   };
 }
@@ -159,10 +142,11 @@ function levelingStage(ctx: BaseAudioContext) {
   const compressor = ctx.createDynamicsCompressor();
   const trim = gainNode(ctx, 1);
   compressor.connect(trim);
-  const fade = crossfade(ctx, { input: compressor, output: trim });
+  const fade = createAudioCrossfade(ctx, { input: compressor, output: trim });
   return {
     input: fade.input,
     output: fade.output,
+    dispose: fade.dispose,
     set(level: AudioSettings['leveling']) {
       if (level === 'off') return fade.setActive(false);
       const preset = LEVELING_PRESETS[level];
@@ -195,7 +179,7 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
   const makeupDb = 0.6 * (-threshold - -threshold / ratio);
   const unmakeup = gainNode(ctx, 10 ** (-makeupDb / 20));
   limiter.connect(unmakeup);
-  const guard = crossfade(ctx, { input: limiter, output: unmakeup });
+  const guard = createAudioCrossfade(ctx, { input: limiter, output: unmakeup });
   voice.output.connect(bass.input);
   bass.output.connect(leveling.input);
   leveling.output.connect(guard.input);
@@ -208,6 +192,12 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
       bass.set(settings.bass);
       leveling.set(settings.leveling);
       guard.setActive(!isNeutralAudio(settings));
+    },
+    dispose() {
+      voice.dispose();
+      bass.dispose();
+      leveling.dispose();
+      guard.dispose();
     }
   };
 }

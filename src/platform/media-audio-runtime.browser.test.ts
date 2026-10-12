@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
+import { ownTestBrowser } from '../test-utils/test-browser';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const require = createRequire(import.meta.url);
@@ -20,27 +21,75 @@ const MEDIA = `data:video/webm;base64,${readFileSync(path.join(ROOT, 'test/fixtu
 declare global {
   interface Window {
     AudioRuntime: typeof import('./media-audio-runtime');
-    audioRuntimeProbe: { contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number };
+    audioRuntimeProbe: {
+      contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number;
+      delayNextResume: boolean; resumeCalls: number; suspendCalls: number;
+      releaseResume?: () => void;
+      autoResume?: () => void;
+    };
   }
 }
 
-async function boot(page: Page): Promise<void> {
+async function boot(page: Page, controlledState = false): Promise<void> {
+  await page.addInitScript('window.__name = target => target;');
   page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
   page.on('pageerror', error => console.error(error.message));
   await page.route('https://watch.example/', route => route.fulfill({
     contentType: 'text/html',
-    body: '<button id="gesture">Apply</button><video id="first" class="theater-everywhere-video-active"></video><video id="second"></video>'
+    body: '<html class="theater-everywhere-html-active"><button id="gesture">Apply</button><video id="first" class="theater-everywhere-video-active"></video><video id="second"></video>'
   }));
   await page.goto('https://watch.example/');
-  await page.evaluate(media => {
+  await page.evaluate(({ media, controlledState }) => {
     // Playwright evaluation itself can grant transient activation. Force
     // the deferred branch; trusted pointer/key events still activate it.
     Object.defineProperty(navigator, 'userActivation', { value: { isActive: false }, configurable: true });
     for (const video of document.querySelectorAll('video')) video.src = media;
-    const probe = window.audioRuntimeProbe = { contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0 };
+    const probe = window.audioRuntimeProbe = {
+      contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0,
+      delayNextResume: false, resumeCalls: 0, suspendCalls: 0,
+      releaseResume: undefined as (() => void) | undefined,
+      autoResume: undefined as (() => void) | undefined
+    };
     const NativeAudioContext = window.AudioContext;
     window.AudioContext = class extends NativeAudioContext {
-      constructor() { super(); probe.contexts.push(this); }
+      private simulatedState: AudioContextState = 'suspended';
+      constructor() {
+        super();
+        probe.contexts.push(this);
+        // Native autoplay can resume without calling resume(). The delayed-operation
+        // case controls state and completion; the other cases use real Web Audio.
+        if (controlledState) {
+          Object.defineProperty(this, 'state', { get: () => this.simulatedState });
+          probe.autoResume = () => {
+            this.simulatedState = 'running';
+            this.dispatchEvent(new Event('statechange'));
+          };
+        }
+      }
+      override resume(): Promise<void> {
+        if (!controlledState) return super.resume();
+        probe.resumeCalls++;
+        return new Promise(resolve => {
+          const complete = () => {
+            if (this.simulatedState !== 'closed') this.simulatedState = 'running';
+            resolve();
+          };
+          if (probe.delayNextResume) {
+            probe.delayNextResume = false;
+            probe.releaseResume = () => { delete probe.releaseResume; complete(); };
+          } else complete();
+        });
+      }
+      override suspend(): Promise<void> {
+        if (!controlledState) return super.suspend();
+        probe.suspendCalls++;
+        this.simulatedState = 'suspended';
+        return Promise.resolve();
+      }
+      override close(): Promise<void> {
+        if (controlledState) this.simulatedState = 'closed';
+        return super.close();
+      }
       override createMediaElementSource(media: HTMLMediaElement): MediaElementAudioSourceNode {
         probe.sources.push(media.id);
         return super.createMediaElementSource(media);
@@ -52,7 +101,7 @@ async function boot(page: Page): Promise<void> {
       }
     };
     window.addEventListener('theater-everywhere-boost-ready', () => probe.ready++);
-  }, MEDIA);
+  }, { media: MEDIA, controlledState });
   await page.waitForFunction(() => Array.from(document.querySelectorAll('video')).every(video => video.readyState >= 1));
   await page.addScriptTag({ content: BUNDLE });
   await page.evaluate(() => window.AudioRuntime.installMediaAudioRuntime());
@@ -64,6 +113,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);
@@ -87,10 +137,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
             video.dispatchEvent(new CustomEvent('theater-everywhere-audio', { bubbles: true, composed: true }));
           }
           video.classList.remove('theater-everywhere-video-active');
+          document.documentElement.classList.remove('theater-everywhere-html-active');
           Object.assign(video.dataset, { theaterVoice: 'off', theaterBass: 'original', theaterLeveling: 'off', theaterBoost: '1' });
           video.dispatchEvent(new CustomEvent('theater-everywhere-audio', { bubbles: true, composed: true }));
           const released = window.audioRuntimeProbe.gains.at(-1)!.gain.value;
           video.classList.add('theater-everywhere-video-active');
+          document.documentElement.classList.add('theater-everywhere-html-active');
           video.dataset.theaterBoost = '2';
           window.dispatchEvent(new CustomEvent('theater-everywhere-boost-event'));
           return released;
@@ -106,10 +158,199 @@ for (const engine of ['chromium', 'firefox'] as const) {
       } finally { await browser.close(); }
     });
 
+    it('does not scan shadow trees outside theater and caches the active video', { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await boot(page);
+        const counts = await page.evaluate(() => {
+          const video = document.querySelector<HTMLVideoElement>('#first')!;
+          const host = document.createElement('div');
+          document.body.append(host);
+          host.attachShadow({ mode: 'open' }).append(video);
+          let scans = 0;
+          const originalDocument = Document.prototype.querySelectorAll;
+          const originalShadow = ShadowRoot.prototype.querySelectorAll;
+          Document.prototype.querySelectorAll = function<T extends Element>(selector: string) {
+            if (selector === '*') scans++;
+            return originalDocument.call(this, selector) as NodeListOf<T>;
+          };
+          ShadowRoot.prototype.querySelectorAll = function<T extends Element>(selector: string) {
+            if (selector === '*') scans++;
+            return originalShadow.call(this, selector) as NodeListOf<T>;
+          };
+          const input = () => { for (let i = 0; i < 20; i++) for (const type of ['click', 'keydown', 'pointerdown']) {
+            document.body.dispatchEvent(new Event(type, { bubbles: true }));
+          } };
+          document.documentElement.classList.remove('theater-everywhere-html-active');
+          input();
+          const outside = scans;
+          document.documentElement.classList.add('theater-everywhere-html-active');
+          input();
+          const entered = scans;
+          input();
+          const cached = scans;
+          document.documentElement.classList.remove('theater-everywhere-html-active');
+          input();
+          return { outside, entered, cached, exited: scans };
+        });
+        assert.equal(counts.outside, 0);
+        assert.ok(counts.entered > 0, 'the first lookup discovers a shadow video');
+        assert.equal(counts.cached, counts.entered);
+        assert.equal(counts.exited, counts.entered);
+        await page.evaluate(() => {
+          document.documentElement.classList.add('theater-everywhere-html-active');
+          const video = document.querySelector('div')!.shadowRoot!.querySelector<HTMLVideoElement>('video')!;
+          video.dataset.theaterBoost = '2';
+        });
+        await page.click('#gesture');
+        assert.deepEqual(await page.evaluate(() => window.audioRuntimeProbe.sources), ['first']);
+      } finally { await browser.close(); }
+    });
+
+    it('suspends paused media, resumes playback, and retires only detached players', { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await boot(page);
+        await page.evaluate(() => { document.querySelector<HTMLVideoElement>('#first')!.dataset.theaterBoost = '2'; });
+        await page.click('#gesture');
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
+        await page.click('#gesture');
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
+        assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'gestures do not restart paused media');
+        await page.evaluate(async () => {
+          const video = document.querySelector<HTMLVideoElement>('#first')!;
+          video.loop = true;
+          await video.play();
+        });
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'running');
+        await page.evaluate(() => document.querySelector<HTMLVideoElement>('#first')!.load());
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
+        await page.evaluate(async () => { await document.querySelector<HTMLVideoElement>('#first')!.play(); });
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'running');
+        await page.evaluate(() => {
+          const video = document.querySelector<HTMLVideoElement>('#first')!;
+          video.pause();
+          // Resume immediately to exercise asynchronous suspend/resume reconciliation.
+          void video.play();
+        });
+        await page.waitForFunction(() => !document.querySelector<HTMLVideoElement>('#first')!.paused && window.audioRuntimeProbe.contexts[0].state === 'running');
+        await page.evaluate(() => document.querySelector<HTMLVideoElement>('#first')!.pause());
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended');
+        await page.evaluate(() => {
+          const video = document.querySelector<HTMLVideoElement>('#first')!;
+          const host = document.createElement('div');
+          document.body.append(host);
+          host.attachShadow({ mode: 'open' }).append(video);
+        });
+        await page.evaluate(() => Promise.resolve());
+        assert.equal(await page.evaluate(() => window.audioRuntimeProbe.contexts[0].state), 'suspended', 'moving a player preserves its source');
+        await page.evaluate(async () => {
+          const video = document.querySelector('div')!.shadowRoot!.querySelector<HTMLVideoElement>('video')!;
+          await video.play();
+        });
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'running');
+        await page.evaluate(() => {
+          const video = document.querySelector('div')!.shadowRoot!.querySelector<HTMLVideoElement>('video')!;
+          video.remove(); // Removal inside the shadow tree must be observed too.
+          const second = document.querySelector<HTMLVideoElement>('#second')!;
+          second.classList.add('theater-everywhere-video-active');
+          second.dataset.theaterBoost = '1.5';
+        });
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'closed');
+        await page.click('#gesture');
+        assert.deepEqual(await page.evaluate(() => window.audioRuntimeProbe.sources), ['first', 'second']);
+        await page.evaluate(async () => { await document.querySelector<HTMLVideoElement>('#second')!.play(); });
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[1].state === 'running');
+      } finally { await browser.close(); }
+    });
+
+    it('reconciles pause and retirement after an asynchronous resume', { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await boot(page, true);
+        await page.evaluate(() => { document.querySelector<HTMLVideoElement>('#first')!.dataset.theaterBoost = '2'; });
+        await page.click('#gesture');
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0]?.state === 'suspended');
+        // Autoplay policy and statechange timing vary across native backends.
+        // Exercise the browser's external auto-resume notification explicitly.
+        await page.evaluate(() => window.audioRuntimeProbe.autoResume!());
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'suspended'
+          && window.audioRuntimeProbe.suspendCalls === 1);
+        assert.equal(await page.locator('#first').evaluate(video => (video as HTMLVideoElement).paused), true, 'auto-resume cannot restart paused media');
+        for (const action of ['pause', 'remove'] as const) {
+          await page.evaluate(async () => {
+            window.audioRuntimeProbe.delayNextResume = true;
+            const video = document.querySelector<HTMLVideoElement>('#first')!;
+            video.loop = true;
+            await video.play();
+          });
+          await page.waitForFunction(() => !!window.audioRuntimeProbe.releaseResume);
+          await page.evaluate(action => {
+            const video = document.querySelector<HTMLVideoElement>('#first')!;
+            if (action === 'pause') video.pause(); else video.remove();
+          }, action);
+          if (action === 'remove') await page.waitForFunction(() => window.audioRuntimeProbe.contexts[0].state === 'closed');
+          await page.evaluate(() => window.audioRuntimeProbe.releaseResume!());
+          await page.waitForFunction(state => window.audioRuntimeProbe.contexts[0].state === state, action === 'pause' ? 'suspended' : 'closed');
+        }
+        assert.deepEqual(await page.evaluate(() => ({
+          resumes: window.audioRuntimeProbe.resumeCalls, suspends: window.audioRuntimeProbe.suspendCalls
+        })), { resumes: 2, suspends: 2 }, 'auto-resume and late completion suspend paused media and do no work after retirement');
+      } finally { await browser.close(); }
+    });
+
+    it('uses the iframe session marker independently of its parent', { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await boot(page);
+        await page.route('https://frame.example/', route => route.fulfill({ contentType: 'text/html', body: '<button id="gesture">Apply</button><video class="theater-everywhere-video-active"></video>' }));
+        await page.evaluate(() => {
+          document.documentElement.classList.remove('theater-everywhere-html-active');
+          const iframe = document.createElement('iframe');
+          iframe.src = 'https://frame.example/';
+          document.body.append(iframe);
+        });
+        const iframe = await page.waitForSelector('iframe');
+        const frame = (await iframe.contentFrame())!;
+        await frame.waitForSelector('video');
+        await frame.evaluate(media => {
+          const video = document.querySelector('video')!;
+          video.src = media;
+          video.dataset.theaterBoost = '2';
+          Object.defineProperty(navigator, 'userActivation', { value: { isActive: false }, configurable: true });
+        }, MEDIA);
+        await frame.waitForFunction(() => document.querySelector('video')!.readyState >= 1);
+        await frame.addScriptTag({ content: BUNDLE });
+        await frame.evaluate(() => window.AudioRuntime.installMediaAudioRuntime());
+        await frame.click('#gesture');
+        assert.equal(await frame.locator('video').getAttribute('data-theater-boost-ready'), null);
+        await frame.evaluate(() => document.documentElement.classList.add('theater-everywhere-html-active'));
+        await frame.click('#gesture');
+        assert.equal(await frame.locator('video').getAttribute('data-theater-boost-ready'), 'true');
+      } finally { await browser.close(); }
+    });
+
     it('discards metadata activation from a replaced player and leaves neutral media alone', { timeout: 60_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
       try {
         const page = await browser.newPage();
         await boot(page);

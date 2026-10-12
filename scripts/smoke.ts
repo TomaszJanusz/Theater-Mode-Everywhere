@@ -960,10 +960,14 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       await page.keyboard.press('Shift+H');
       await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
       await waitForChrome(true, true, false);
+      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
       await options.locator('#shortcut-controls-pin').press('Shift+U');
       await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleControlsPin === 'Shift+U');
+      // A storage write can finish before the editor accepts the next recording.
+      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
       await options.locator('#shortcut-toggle-mute').press('Control+M');
       await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'Ctrl+M');
+      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
       await options.waitForFunction(() => (document.getElementById('shortcut-controls-pin') as HTMLInputElement)?.value === 'Shift+U');
       const shortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
       if (shortcuts.toggleControlsPin !== 'Shift+U' || shortcuts.toggleMute !== 'Ctrl+M') {
