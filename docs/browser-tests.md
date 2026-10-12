@@ -37,6 +37,14 @@ The registered suite limits test-file concurrency to two. CI caps the test step
 at ten minutes and the job at fifteen, and cancels superseded runs for the same
 ref. These limits fail stalled checks; they do not turn them into passing tests.
 
+On headless Linux, native Firefox Web Audio also needs an audio server and an
+output device. CI starts PulseAudio with a null sink for the job; the browser
+still executes native DSP without requiring speakers. Playwright's system
+dependencies provide libraries, but do not start that server. On a local Linux
+machine, use its existing audio server or an isolated null sink before running
+the native lifecycle cases. A context that stays suspended during playback is
+an environment failure, not a passing lifecycle check.
+
 ## Firefox on macOS 27
 
 Playwright 1.63.0's Firefox 155 (revision 1543) can exit at launch with
