@@ -1,23 +1,7 @@
 {
   "videoUrl": "https://www.youtube.com/watch?v=IGk17XQ7IrQ",
   "videoId": "IGk17XQ7IrQ",
-  "extension": {
-    "name": "checkout",
-    "path": "dist/chrome-unpacked"
-  },
-  "states": [
-    "reference",
-    "neutral",
-    "native-cinematic",
-    "boost-focused",
-    "native-voice",
-    "boost-hidden",
-    "native-stable",
-    "active",
-    "native-all",
-    "paused",
-    "disabled"
-  ],
+  "extension": { "name": "checkout", "path": "dist/chrome-unpacked" },
   "warmupMs": 6000,
   "windowMs": 20000,
   "rounds": 3,
