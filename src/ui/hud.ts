@@ -6,6 +6,7 @@ import type { AudioSettingName } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
+export const HUD_PLATE_CLASS = 'theater-hud-plate';
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -86,7 +87,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = `theater-everywhere-seek-overlay theater-backdrop-plate ${direction} animate`;
+    overlay.className = `theater-everywhere-seek-overlay ${HUD_PLATE_CLASS} ${direction} animate`;
     ctx.paintOverlay(overlay);
 
     const iconWrapper = document.createElement('div');
@@ -132,7 +133,7 @@ export function createHud(ctx: PlayerChromeContext) {
     const overlay = document.createElement('div');
     // Hover discovery may point elsewhere; boost belongs to the theater player.
     const isBoosted = !muted && logicalVolume > 1.0 && ctx.session.element.dataset.theaterBoostReady === 'true';
-    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate' + (isBoosted ? ' boosted' : '');
+    overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}` + (isBoosted ? ' boosted' : '');
     ctx.paintOverlay(overlay);
 
     const pct = muted ? 0 : (logicalVolume <= 1.0 ? Math.round(logicalVolume * 100) : Math.round(100 + (logicalVolume - 1.0) * 400));
@@ -182,7 +183,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate status-hud';
+    overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS} status-hud`;
     ctx.paintOverlay(overlay);
 
     const content = document.createElement('div');
@@ -215,7 +216,7 @@ export function createHud(ctx: PlayerChromeContext) {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-everywhere-volume-overlay theater-backdrop-plate';
+    overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}`;
     ctx.paintOverlay(overlay);
 
     let icon = '';
@@ -279,7 +280,7 @@ export function createHud(ctx: PlayerChromeContext) {
     removeCaptionHud();
 
     const overlay = document.createElement('div');
-    overlay.className = 'theater-everywhere-caption-hud status-hud' + (view.kind === 'loading' ? ' loading' : '');
+    overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
     ctx.paintOverlay(overlay);
 
     const content = document.createElement('div');
@@ -335,7 +336,7 @@ export function createHud(ctx: PlayerChromeContext) {
       const homeUrl = serviceHomeUrl(discoverParentOrigin() || window.location.href);
       if (homeUrl) {
         const home = document.createElement('a');
-        home.className = 'theater-home-pill theater-backdrop-plate';
+        home.className = `theater-home-pill ${HUD_PLATE_CLASS}`;
         home.href = homeUrl;
         home.target = '_top';
         home.title = ctx.t('homepage');
@@ -366,7 +367,7 @@ export function createHud(ctx: PlayerChromeContext) {
     let overlay = existing;
     if (!overlay) {
       overlay = document.createElement('div');
-      overlay.className = `${TITLE_HUD_CLASS} theater-backdrop-plate`;
+      overlay.className = `${TITLE_HUD_CLASS} ${HUD_PLATE_CLASS}`;
       overlay.setAttribute('aria-hidden', 'true');
       ctx.paintOverlay(overlay);
       const viewport = document.createElement('div');
