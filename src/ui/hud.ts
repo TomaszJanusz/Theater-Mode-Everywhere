@@ -368,7 +368,11 @@ export function createHud(ctx: PlayerChromeContext) {
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = `${TITLE_HUD_CLASS} ${HUD_PLATE_CLASS}`;
-      overlay.setAttribute('aria-hidden', 'true');
+      const keepPointerOnTitle = (event: Event) => event.stopPropagation();
+      overlay.addEventListener('pointerdown', keepPointerOnTitle);
+      overlay.addEventListener('mousedown', keepPointerOnTitle);
+      overlay.addEventListener('click', keepPointerOnTitle);
+      overlay.addEventListener('dblclick', keepPointerOnTitle);
       ctx.paintOverlay(overlay);
       const viewport = document.createElement('div');
       viewport.className = 'theater-title-hud-viewport';

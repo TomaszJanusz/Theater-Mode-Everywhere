@@ -2233,7 +2233,13 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   z-index: 2147483647 !important;
   pointer-events: none !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-  user-select: none !important;
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.theater-everywhere-header-hud.visible .theater-everywhere-title-hud {
+  pointer-events: auto !important;
 }
 
 .theater-everywhere-title-hud.marquee {
@@ -2280,6 +2286,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
 
 .theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee .theater-title-hud-track {
   animation-play-state: running !important;
+}
+
+.theater-everywhere-header-hud.visible .theater-everywhere-title-hud.marquee:hover .theater-title-hud-track {
+  animation-play-state: paused !important;
 }
 
 .theater-title-hud-text {
