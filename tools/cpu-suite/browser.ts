@@ -16,6 +16,8 @@ interface YoutubePlayer extends HTMLElement {
   setPlaybackQuality?(quality: string): void; seekTo?(time: number, allowSeekAhead: boolean): void;
   playVideo?(): void; unMute?(): void; setVolume?(volume: number): void;
   getVolume?(): unknown; getDrcUserPreference?(): unknown; getVoiceBoostUserPreference?(): unknown;
+  loadModule?(name: string): void; getOption?(module: string, option: string): unknown;
+  setOption?(module: string, option: string, value: unknown): void;
 }
 interface YoutubeApp extends HTMLElement { getCurrentTheme?(): unknown; handleSignalActionToggleDarkThemeOn?(): void }
 interface YoutubeFlexy extends HTMLElement { cinematicsActive?: unknown }
@@ -97,6 +99,7 @@ export async function readPlayer(page: Page): Promise<PlayerSnapshot> {
       barVisible: Boolean(root?.querySelector('.theater-controls-wrapper')?.classList.contains('visible')),
       sliderFocused: Boolean(slider && root?.activeElement === slider), sliderFocusVisible: Boolean(slider?.matches(':focus-visible')),
       ad: Boolean(document.querySelector('.ad-showing, .ytp-ad-player-overlay')),
+      captionsVisible: Boolean(root?.querySelector('.theater-caption-overlay.visible .theater-caption-overlay-text')?.textContent?.trim()),
       nativeVolume: typeof movie?.getVolume?.() === 'number' ? Number(movie.getVolume()) : null,
       quality: text(movie?.getPlaybackQuality?.()), fmt: text(stats.fmt), afmt: text(stats.afmt), streamFps: fps,
       native: { stable: menu(['stable volume', 'stabilna głośność']) ?? boolean(movie?.getDrcUserPreference?.()),
@@ -352,7 +355,57 @@ export async function prepareScenario(session: Session, scenario: Scenario): Pro
     await session.page.mouse.move(720, 280);
   }
   await seekFragment(session.page, scenario.target, state.paused);
+  if (state.captions) await showCaptions(session.page);
   await waitForScenario(session.page, scenario);
+}
+
+async function captionProbe(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+    const pots = performance.getEntriesByType('resource').filter(entry => {
+      try { return /timedtext/i.test(entry.name) && new URL(entry.name).searchParams.has('pot'); } catch { return false; }
+    }).length;
+    const button = root?.querySelector('.cc-btn');
+    return JSON.stringify({
+      pots,
+      cc: button ? `${button.className} ${button.getAttribute('aria-pressed')}` : null,
+      hud: root?.querySelector('.theater-everywhere-caption-hud')?.textContent?.trim() || null,
+      cue: root?.querySelector('.theater-caption-overlay-text')?.textContent?.trim() || null
+    });
+  });
+}
+export async function showCaptions(page: Page): Promise<void> {
+  // The extension signs timedtext with a pot YouTube has already minted. Ask the
+  // player for a track first, then use the shared caption shortcut for the overlay.
+  try {
+    await waitFor(async () => page.evaluate(() => {
+      const player = document.querySelector<YoutubePlayer>('#movie_player');
+      if (!player?.getOption || !player.setOption) return false;
+      try { player.loadModule?.('captions'); } catch { /* already loaded */ }
+      const list = player.getOption('captions', 'tracklist');
+      if (!Array.isArray(list) || list.length === 0) return false;
+      const track = list.find(item => item && typeof item === 'object' && 'languageCode' in item && item.languageCode === 'en') ?? list[0];
+      player.setOption('captions', 'track', track);
+      return performance.getEntriesByType('resource').some(entry => {
+        try { return /timedtext/i.test(entry.name) && new URL(entry.name).searchParams.has('pot'); } catch { return false; }
+      });
+    }), 20000);
+  } catch {
+    throw new Error(`captions-unavailable: player did not mint caption auth (${await captionProbe(page)})`);
+  }
+  await page.keyboard.press('c');
+  try {
+    await waitFor(async () => page.evaluate(() => Boolean(document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.theater-caption-overlay.visible .theater-caption-overlay-text')?.textContent?.trim())), 20000);
+  } catch {
+    throw new Error(`captions-unavailable: overlay cue did not appear (${await captionProbe(page)})`);
+  }
+  try {
+    await waitFor(async () => page.evaluate(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.theater-everywhere-caption-hud')), 8000);
+  } catch {
+    throw new Error(`captions-unavailable: status chip stayed over the cue (${await captionProbe(page)})`);
+  }
 }
 
 async function waitForScenario(page: Page, scenario: Scenario): Promise<void> {

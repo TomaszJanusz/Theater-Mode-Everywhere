@@ -5,32 +5,35 @@ export type Transition = 'none' | 'neutralize' | 'exit' | 'navigate';
 export type State = {
   extension: boolean; theater: boolean; rte: boolean; audio: AudioSettings; boost: number;
   paused: boolean; bar: 'any' | 'focused' | 'hidden'; native: NativeSettings;
-  transition: Transition; allowStableForcedOff?: boolean;
+  transition: Transition; allowStableForcedOff?: boolean; captions: boolean;
 };
 const nativeOff: NativeSettings = { stable: false, voice: false, cinematic: false };
-const base: State = { extension: false, theater: false, rte: false, audio: DEFAULT_AUDIO_SETTINGS,
+const base: Omit<State, 'captions'> = { extension: false, theater: false, rte: false, audio: DEFAULT_AUDIO_SETTINGS,
   boost: 1, paused: false, bar: 'any', native: nativeOff, transition: 'none' };
-const neutral: State = { ...base, extension: true, theater: true, rte: true };
+// captions stays last so a saved state that predates the field still matches after the default is appended.
+const state = (value: Omit<State, 'captions'>, captions = false): State => ({ ...value, captions });
+const neutral: Omit<State, 'captions'> = { ...base, extension: true, theater: true, rte: true };
 export const activeAudio: AudioSettings = { voice: 'strong', leveling: 'strong', bass: 'more' };
 export const STATES = {
-  reference: base,
-  neutral,
-  'native-cinematic': { ...base, native: { ...nativeOff, cinematic: true } },
-  'native-voice': { ...base, native: { ...nativeOff, voice: true } },
-  'native-stable': { ...base, native: { ...nativeOff, stable: true } },
-  'native-all': { ...base, native: { stable: true, voice: true, cinematic: true }, allowStableForcedOff: true },
-  'boost-focused': { ...neutral, boost: 3, bar: 'focused' },
-  'boost-hidden': { ...neutral, boost: 3, bar: 'hidden' },
-  active: { ...neutral, audio: activeAudio },
-  paused: { ...neutral, audio: activeAudio, paused: true },
-  'effects-disabled': { ...neutral, transition: 'neutralize' },
-  'extension-loaded': { ...base, extension: true },
-  'rte-off': { ...neutral, rte: false },
-  'voice-only': { ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, voice: 'strong' } },
-  'leveling-only': { ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, leveling: 'strong' } },
-  'bass-only': { ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, bass: 'more' } },
-  'after-exit': { ...base, extension: true, rte: true, transition: 'exit' },
-  'after-navigation': { ...neutral, audio: activeAudio, transition: 'navigate' }
+  reference: state(base),
+  neutral: state(neutral),
+  'native-cinematic': state({ ...base, native: { ...nativeOff, cinematic: true } }),
+  'native-voice': state({ ...base, native: { ...nativeOff, voice: true } }),
+  'native-stable': state({ ...base, native: { ...nativeOff, stable: true } }),
+  'native-all': state({ ...base, native: { stable: true, voice: true, cinematic: true }, allowStableForcedOff: true }),
+  'boost-focused': state({ ...neutral, boost: 3, bar: 'focused' }),
+  'boost-hidden': state({ ...neutral, boost: 3, bar: 'hidden' }),
+  active: state({ ...neutral, audio: activeAudio }),
+  paused: state({ ...neutral, audio: activeAudio, paused: true }),
+  'effects-disabled': state({ ...neutral, transition: 'neutralize' }),
+  'extension-loaded': state({ ...base, extension: true }),
+  'rte-off': state({ ...neutral, rte: false }),
+  'voice-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, voice: 'strong' } }),
+  'leveling-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, leveling: 'strong' } }),
+  'bass-only': state({ ...neutral, audio: { ...DEFAULT_AUDIO_SETTINGS, bass: 'more' } }),
+  captions: state(neutral, true),
+  'after-exit': state({ ...base, extension: true, rte: true, transition: 'exit' }),
+  'after-navigation': state({ ...neutral, audio: activeAudio, transition: 'navigate' })
 } satisfies Record<string, State>;
 export type StateName = keyof typeof STATES;
 export const DEFAULT_STATES: StateName[] = ['reference', 'neutral', 'native-cinematic', 'boost-focused',
@@ -54,7 +57,7 @@ export type AudioGraphSnapshot = { state: AudioContextState; gain: number | null
 export type PlayerSnapshot = {
   href: string; videoId: string | null; videoToken: number | null; theater: boolean; integrationOff: boolean;
   rteSignal: boolean; focus: boolean; inner: [number, number]; dpr: number;
-  barVisible: boolean; sliderFocused: boolean; sliderFocusVisible: boolean; ad: boolean;
+  barVisible: boolean; sliderFocused: boolean; sliderFocusVisible: boolean; ad: boolean; captionsVisible: boolean;
   nativeVolume: number | null; quality: string | null; fmt: string | null; afmt: string | null; streamFps: number | null;
   native: NativeSnapshot;
   video: { paused: boolean; muted: boolean; volume: number; readyState: number; currentTime: number;

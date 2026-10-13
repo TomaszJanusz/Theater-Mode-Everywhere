@@ -19,7 +19,7 @@ function config(): Config { return parseConfig(raw, '/repo'); }
 function snapshot(): PlayerSnapshot {
   return { href: raw.videoUrl, videoId: raw.videoId, videoToken: 1, theater: true, integrationOff: false, rteSignal: true,
     focus: true, inner: [1440, 900], dpr: 1, barVisible: false, sliderFocused: false, sliderFocusVisible: false,
-    ad: false, nativeVolume: 100, quality: 'medium', fmt: '134', afmt: '140', streamFps: 30,
+    ad: false, captionsVisible: false, nativeVolume: 100, quality: 'medium', fmt: '134', afmt: '140', streamFps: 30,
     native: { stable: false, voice: false, cinematic: false, cinematicChildren: 0, theme: 'USER_INTERFACE_THEME_DARK' },
     video: { paused: false, muted: false, volume: 1, readyState: 4, currentTime: 20, rate: 1, error: null,
       width: 640, height: 360, boost: 1, audio: { ...DEFAULT_AUDIO_SETTINGS }, graphReady: false, graph: null, dropped: 1, frames: 100 } };
@@ -63,6 +63,10 @@ describe('configuration and command boundaries', () => {
       navigationVideo: { url: 'https://www.youtube.com/watch?v=abcdefghijk', id: 'abcdefghijk' } }, '/repo');
     assert.equal(scenarios(cfg).length, 2);
     assert.equal(scenarios(cfg)[1].target.fps, 60);
+    assert.equal(parseConfig(raw, '/repo').states.includes('captions'), false);
+    const captions = parseConfig(raw, '/repo', parseCli(['compare', '--build-a', 'a', '--build-b', 'b', '--states', 'captions']));
+    assert.deepEqual(captions.states, ['captions']);
+    assert.equal(STATES.captions.captions, true);
   });
 });
 describe('sample validity', () => {
@@ -109,6 +113,11 @@ describe('sample validity', () => {
     assert.equal(checkState(STATES['effects-disabled'], p)?.code, 'audio-settings');
     p.video!.audio!.leveling = 'off';
     assert.equal(checkState(STATES['effects-disabled'], p), null, 'running neutral graph is intentionally retained');
+    assert.equal(checkState(STATES.captions, p)?.code, 'captions-hidden');
+    p.captionsVisible = true;
+    assert.equal(checkState(STATES.captions, p), null);
+    assert.equal(checkState(STATES.neutral, p)?.code, 'captions-visible');
+    p.captionsVisible = false;
     const m = manifest(), data = measurement(); data.post.video!.audio!.bass = 'more';
     assert.equal(validateMeasurement(m.scenarios[0], data, 40, 20000)?.code, 'audio-settings');
   });
@@ -132,6 +141,15 @@ describe('experiment persistence and reporting', () => {
       assert.deepEqual(readManifest(a), m); assert.equal(readSamples(a, m).length, 1);
       assert.throws(() => readSamples(a, { ...m, id: 'another' }));
       assert.throws(() => readManifest(b), /legacy/);
+      const legacy = structuredClone(m);
+      for (const scenario of legacy.scenarios) delete (scenario.expected as { captions?: boolean }).captions;
+      const legacySample = sample(m);
+      delete (legacySample.measurement!.pre as { captionsVisible?: boolean }).captionsVisible;
+      delete (legacySample.measurement!.post as { captionsVisible?: boolean }).captionsVisible;
+      saveManifest(b, legacy);
+      writeFileSync(path.join(b, 'samples.jsonl'), JSON.stringify(legacySample) + '\n');
+      assert.equal(readManifest(b).scenarios[0].expected.captions, false);
+      assert.equal(readSamples(b, readManifest(b))[0].measurement?.pre.captionsVisible, false);
       const buildDir = path.join(parent, 'build'); mkdirSync(buildDir);
       writeFileSync(path.join(buildDir, 'manifest.json'), JSON.stringify({ version: '1', manifest_version: 3 }));
       for (const file of ['content.js', 'background.js', 'mainWorld.js']) writeFileSync(path.join(buildDir, file), '//build');

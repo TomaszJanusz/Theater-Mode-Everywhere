@@ -31,6 +31,7 @@ export function checkState(state: State, player: PlayerSnapshot): Reason | null 
   }
   if (state.bar === 'focused' && (!player.barVisible || !player.sliderFocused || !player.sliderFocusVisible)) return reason('slider-focus');
   if (state.bar === 'hidden' && (player.barVisible || player.sliderFocused)) return reason('bar-not-hidden');
+  if (player.captionsVisible !== state.captions) return reason(state.captions ? 'captions-hidden' : 'captions-visible');
   for (const key of ['stable', 'voice', 'cinematic'] as const) {
     const actual = player.native[key];
     if (actual == null) return reason('native-unavailable', key);

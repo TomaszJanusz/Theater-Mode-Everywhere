@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { validateMeasurement } from './validation';
 import { object, parseConfig } from './config';
-import { STATES, scenarios, type Build, type Environment, type Manifest, type Sample } from './model';
+import { STATES, scenarios, type Build, type Environment, type Manifest, type Sample, type State } from './model';
 
 export function identifyBuild(id: string, directory: string, sourceSha?: string): Build {
   const root = path.resolve(directory), hash = createHash('sha256');
@@ -39,7 +39,7 @@ export function saveManifest(dir: string, manifest: Manifest): void {
 
 // Validate persisted data before using it as typed input. Numbers may be null only
 // where measurement failure genuinely makes the metric unavailable.
-type Schema = 'string' | 'number' | 'boolean' | 'unknown' | { nullable: Schema } | { array: Schema } | { [key: string]: Schema };
+type Schema = 'string' | 'number' | 'boolean' | 'unknown' | { nullable: Schema } | { array: Schema } | { optional: Schema } | { [key: string]: Schema };
 const nullable = (schema: Schema): Schema => ({ nullable: schema });
 const array = (schema: Schema): Schema => ({ array: schema });
 function matches(value: unknown, schema: Schema): boolean {
@@ -47,17 +47,21 @@ function matches(value: unknown, schema: Schema): boolean {
   if (typeof schema === 'string') return typeof value === schema && (schema !== 'number' || Number.isFinite(value));
   if ('nullable' in schema) return value === null || matches(value, schema.nullable);
   if ('array' in schema) return Array.isArray(value) && value.every(v => matches(v, schema.array));
+  if ('optional' in schema) return value === undefined || matches(value, schema.optional);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
-  return Object.entries(schema).every(([key, child]) => Object.hasOwn(record, key) && matches(record[key], child));
+  return Object.entries(schema).every(([key, child]) => {
+    const optional = typeof child === 'object' && child !== null && 'optional' in child && !('nullable' in child) && !('array' in child);
+    return (optional ? !Object.hasOwn(record, key) || matches(record[key], child.optional) : Object.hasOwn(record, key) && matches(record[key], child));
+  });
 }
 const audio: Schema = { voice: 'string', leveling: 'string', bass: 'string' };
 const video: Schema = { url: 'string', id: 'string', quality: 'string', width: 'number', height: 'number', fps: nullable('number'), startSec: 'number' };
 const state: Schema = { extension: 'boolean', theater: 'boolean', rte: 'boolean', audio, boost: 'number', paused: 'boolean', bar: 'string',
-  native: { stable: 'boolean', voice: 'boolean', cinematic: 'boolean' }, transition: 'string' };
+  native: { stable: 'boolean', voice: 'boolean', cinematic: 'boolean' }, transition: 'string', captions: { optional: 'boolean' } };
 const player: Schema = { href: 'string', videoId: nullable('string'), videoToken: nullable('number'), theater: 'boolean', integrationOff: 'boolean',
   rteSignal: 'boolean', focus: 'boolean', inner: array('number'), dpr: 'number', barVisible: 'boolean', sliderFocused: 'boolean',
-  sliderFocusVisible: 'boolean', ad: 'boolean', nativeVolume: nullable('number'), quality: nullable('string'), fmt: nullable('string'), afmt: nullable('string'), streamFps: nullable('number'),
+  sliderFocusVisible: 'boolean', ad: 'boolean', captionsVisible: { optional: 'boolean' }, nativeVolume: nullable('number'), quality: nullable('string'), fmt: nullable('string'), afmt: nullable('string'), streamFps: nullable('number'),
   native: { stable: nullable('boolean'), voice: nullable('boolean'), cinematic: nullable('boolean'), cinematicChildren: 'number', theme: nullable('string') },
   video: nullable({ paused: 'boolean', muted: 'boolean', volume: 'number', readyState: 'number', currentTime: 'number', rate: 'number', error: nullable('string'),
     width: 'number', height: 'number', boost: nullable('number'), audio: nullable(audio), graphReady: 'boolean', graph: nullable({ state: 'string', gain: nullable('number') }),
@@ -75,9 +79,21 @@ const sampleSchema: Schema = { experimentId: 'string', scenarioId: 'string', sta
   measurement: nullable({ wallSec: 'number', rendererPct: nullable('number'), threadPct: nullable('number'), familyPct: nullable('number'), gpuPct: nullable('number'),
     nonChromePct: nullable('number'), counterError: nullable('string'), processSetChanged: 'boolean', pre: player, post: player }),
   warmup: nullable({ pre: player, post: player, wallSec: 'number' }) };
+function fillManifest(m: Manifest): void {
+  for (const scenario of m.scenarios) {
+    const expected = scenario.expected as State & { captions?: boolean };
+    if (expected.captions === undefined) expected.captions = false;
+  }
+}
+function fillSample(row: Sample): void {
+  for (const shot of [row.measurement?.pre, row.measurement?.post, row.warmup?.pre, row.warmup?.post]) {
+    if (shot && !Object.hasOwn(shot, 'captionsVisible')) shot.captionsVisible = false;
+  }
+}
 function assertManifest(value: unknown): asserts value is Manifest {
   if (!matches(value, manifestSchema)) throw new Error('Invalid experiment manifest');
   const m = value as Manifest;
+  fillManifest(m);
   if (m.formatVersion !== 1 || !['run', 'compare', 'probe'].includes(m.mode) || !['default', 'extended'].includes(m.config.profile)
       || m.config.states.some(s => !Object.hasOwn(STATES, s)) || !m.scenarios.length
       || m.scenarios.some(s => !Object.hasOwn(STATES, s.state) || JSON.stringify(s.expected) !== JSON.stringify(STATES[s.state]))
@@ -103,6 +119,7 @@ export function readManifest(dir: string): Manifest {
 function assertSample(value: unknown): asserts value is Sample {
   if (!matches(value, sampleSchema)) throw new Error('Invalid sample record');
   const row = value as Sample;
+  fillSample(row);
   if (!Object.hasOwn(STATES, row.state) || row.round < 1 || row.attempt < 1 || !Number.isInteger(row.round) || !Number.isInteger(row.attempt)
       || (row.accepted && (!row.measurement || row.reason || row.measurement.counterError || row.measurement.processSetChanged
         || (['rendererPct', 'familyPct', 'gpuPct', 'threadPct', 'nonChromePct'] as const).some(key => {
