@@ -35,6 +35,7 @@ import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { mountNativeChatControls, nativeChatState } from './chat';
 import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
+import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 
@@ -43,11 +44,11 @@ export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _mediaFeatures?: MediaFeaturesController;
 }
 
-interface TooltipState {
-  element: HTMLDivElement | null;
-}
-
-export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void) {
+export function createControls(
+  ctx: PlayerChromeContext,
+  bindCustomTooltip: ButtonTooltipBinder,
+  onDestroy?: () => void
+) {
   const session = ctx.session;
   const refs = ctx.refs;
   const ui = ctx.ui;
@@ -63,7 +64,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
   const closeTheaterPopovers = () => ctx.actions.closeTheaterPopovers();
   const blurMouseToggle = (event: MouseEvent, button: HTMLElement) => ctx.actions.blurMouseToggle(event, button);
   const setIcon = (el: HTMLElement, svg: string) => ctx.actions.setIcon(el, svg);
-  const setTooltipContent = (el: HTMLElement, raw: string) => ctx.actions.setTooltipContent(el, raw);
   const escapeHtml = (s: string) => ctx.actions.escapeHtml(s);
   const applyVolumeAndBoost = (video: PlaybackSurface, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
   const rememberAudibleVolume = (video: PlaybackSurface, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
@@ -81,91 +81,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
   const findAllVideosDeep = (root?: Document | ShadowRoot) => ctx.actions.findAllVideosDeep(root);
   const seekHostTime = (video: PlaybackSurface, time: number) => ctx.actions.seekHostTime(video, time);
-  const tooltipState: TooltipState = { element: null };
-
-  function bindCustomTooltip(
-    button: HTMLButtonElement,
-    getTooltipText: () => string,
-    getPreview?: () => { title: string; imageUrl: string } | null
-  ): void {
-    button.removeAttribute('title');
-
-    const show = () => {
-      if (button.closest('.theater-menu')) return;
-      if (!tooltipState.element) {
-        tooltipState.element = document.createElement('div');
-        tooltipState.element.className = 'theater-button-tooltip theater-backdrop-plate';
-        paintOverlay(tooltipState.element);
-        mountPlayerUi(tooltipState.element);
-      }
-
-      const preview = getPreview?.() ?? null;
-      tooltipState.element.classList.toggle('theater-playlist-preview', Boolean(preview));
-      if (preview) {
-        tooltipState.element.replaceChildren();
-        const image = document.createElement('img');
-        image.className = 'theater-playlist-preview-image';
-        image.alt = '';
-        image.referrerPolicy = 'no-referrer';
-        image.src = preview.imageUrl;
-        image.addEventListener('error', () => image.remove(), { once: true });
-        const title = document.createElement('div');
-        title.className = 'theater-playlist-preview-title';
-        title.textContent = preview.title;
-        const action = document.createElement('div');
-        action.className = 'theater-playlist-preview-action';
-        const actionLabel = document.createElement('span');
-        actionLabel.className = 'theater-playlist-preview-action-label';
-        const actionKeys = document.createElement('span');
-        actionKeys.className = 'theater-playlist-preview-keys';
-        actionKeys.dir = 'ltr';
-        const shortcutText = getTooltipText();
-        const shortcutKeysAt = shortcutText.indexOf('<kbd>');
-        actionLabel.textContent = (shortcutKeysAt === -1 ? shortcutText : shortcutText.slice(0, shortcutKeysAt)).trim();
-        if (shortcutKeysAt !== -1) setTooltipContent(actionKeys, shortcutText.slice(shortcutKeysAt));
-        action.append(actionLabel, actionKeys);
-        tooltipState.element.append(image, title, action);
-      } else {
-        setTooltipContent(tooltipState.element, getTooltipText());
-      }
-      tooltipState.element.classList.add('visible');
-    
-      // Position
-      const rect = button.getBoundingClientRect();
-      const tooltipWidth = tooltipState.element.offsetWidth;
-      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-    
-      let tooltipX = rect.left + rect.width / 2;
-      const padding = 12;
-      const minX = tooltipWidth / 2 + padding;
-      const maxX = viewportWidth - (tooltipWidth / 2 + padding);
-    
-      // Clamp horizontal position to viewport bounds to prevent overflow
-      if (tooltipX < minX) {
-        tooltipX = minX;
-      } else if (tooltipX > maxX) {
-        tooltipX = maxX;
-      }
-    
-      const tooltipY = rect.top - 8;
-    
-      tooltipState.element.style.left = `${tooltipX}px`;
-      tooltipState.element.style.top = `${tooltipY}px`;
-      updateCaptionDock();
-    };
-
-    const hide = () => {
-      if (tooltipState.element) {
-        tooltipState.element.classList.remove('visible');
-        updateCaptionDock();
-      }
-    };
-
-    button.addEventListener('mouseenter', show);
-    button.addEventListener('mouseleave', hide);
-    button.addEventListener('click', hide);
-  }
-
   // Creates unified bottom player controls
   function createCustomControls(media: HTMLVideoElement | PlaybackSurface): void {
     const video = coercePlaybackSurface(media);
@@ -1688,8 +1603,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     if (wrapper?._videoListenersCleanup) {
       wrapper._videoListenersCleanup();
     }
-
-    tooltipState.element = null;
 
     document.removeEventListener('pointermove', showToolbar);
     document.removeEventListener('pointerdown', showToolbar);

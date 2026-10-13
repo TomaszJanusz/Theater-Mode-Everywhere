@@ -104,6 +104,7 @@ import { applyUiDirection, t } from './messages';
 import { AUDIO_SHORTCUTS, defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
+import { createButtonTooltip } from './button-tooltip';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
@@ -169,11 +170,12 @@ const ctx = createPlayerChromeContext({
   ...bindRootHelpers()
 });
 
-const hud = createHud(ctx);
+const buttonTooltip = createButtonTooltip(ctx);
+const hud = createHud(ctx, buttonTooltip.bind);
 const toolbar = createToolbar(ctx);
 const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
-const controls = createControls(ctx, toolbar.resetCaptionDock);
+const controls = createControls(ctx, buttonTooltip.bind, toolbar.resetCaptionDock);
 
 const {
   triggerSeekIndicator,

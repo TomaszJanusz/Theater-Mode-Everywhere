@@ -1,6 +1,7 @@
 import { sanitizeContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
+import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
 import type { AudioSettingName } from '../audio-settings';
 
@@ -77,7 +78,7 @@ export const STATUS_HUD_UNMUTE_ICON = `
   </svg>
 `;
 
-export function createHud(ctx: PlayerChromeContext) {
+export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBinder) {
   function triggerSeekIndicator(direction: 'left' | 'right'): void {
     if (!ctx.session.element) return;
 
@@ -339,8 +340,8 @@ export function createHud(ctx: PlayerChromeContext) {
         home.className = `theater-home-pill ${HUD_PLATE_CLASS}`;
         home.href = homeUrl;
         home.target = '_top';
-        home.title = ctx.t('homepage');
         home.setAttribute('aria-label', ctx.t('homepage'));
+        bindTooltip(home, () => ctx.t('homepage'), undefined, 'below');
         home.innerHTML = '<svg class="theater-filter-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>';
         home.addEventListener('click', (event) => event.stopPropagation());
         home.addEventListener('dblclick', (event) => event.stopPropagation());

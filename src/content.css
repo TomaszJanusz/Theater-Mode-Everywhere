@@ -1818,6 +1818,10 @@ html.theater-using-overlay-captions video::-webkit-media-text-track-display {
   opacity: 1 !important;
 }
 
+.theater-button-tooltip.is-below {
+  transform: translate(-50%, 0) !important;
+}
+
 .theater-button-tooltip.theater-playlist-preview {
   flex-direction: column !important;
   align-items: center !important;
