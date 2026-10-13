@@ -139,25 +139,31 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   cursor: none !important;
 }
 
-/* Filter recipes. A component adds the class and does not repeat the function. */
-.theater-backdrop-plate {
-  backdrop-filter: blur(16px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-}
-
-.theater-backdrop-hint {
-  backdrop-filter: blur(8px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
-}
-
-.theater-backdrop-shade {
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
-
+/* Static grain over each plate's own fill. It does not resample the frame, and it
+   does not replace the plate color. The player bar and caption plates opt out. */
+.theater-backdrop-plate,
+.theater-backdrop-hint,
+.theater-backdrop-shade,
 .theater-backdrop-dialog {
-  backdrop-filter: blur(10px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+  --theater-frost: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.28 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  position: relative !important;
+  isolation: isolate !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.theater-backdrop-plate::before,
+.theater-backdrop-hint::before,
+.theater-backdrop-shade::before,
+.theater-backdrop-dialog::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  background-image: var(--theater-frost) !important;
+  background-size: 140px 140px !important;
 }
 
 .theater-filter-glow {
