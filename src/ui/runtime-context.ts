@@ -129,8 +129,18 @@ export function createPlayerChromeContext(
 }
 
 export function createChromeRefs(): ChromeRefs {
+  // Discovery is a hint, not an owner of a player removed by the host.
+  let activeVideo: WeakRef<HTMLVideoElement> | null = null;
   return {
-    activeVideo: null,
+    get activeVideo() {
+      const video = activeVideo?.deref();
+      if (video?.isConnected) return video;
+      activeVideo = null;
+      return null;
+    },
+    set activeVideo(video: HTMLVideoElement | null) {
+      activeVideo = video ? new WeakRef(video) : null;
+    },
     ancestorsList: [],
     isInitialized: false,
     isTransitioning: false,
