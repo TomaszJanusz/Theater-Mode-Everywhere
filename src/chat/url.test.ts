@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { isChatDocument, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
+import { isChatDocument, isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
 describe('chat document urls', () => {
   it('recognizes Twitch and YouTube chat, popout, and replay documents', () => {
@@ -54,6 +54,19 @@ describe('watch page selection', () => {
     assert.equal(parseChatLocation('https://www.youtube.com/watch?v=short'), null);
     assert.equal(parseChatLocation('https://www.youtube.com/live_chat?v=AbCdEfGhIjK')?.role, 'chat-document');
     assert.equal(parseChatLocation('https://music.youtube.com/playlist?list=1'), null);
+  });
+
+  it('treats watch and embed hosts as chat hosts and leaves other subdomains alone', () => {
+    assert.equal(isNativeChatHost('https://www.twitch.tv/directory/all'), true);
+    assert.equal(isNativeChatHost('https://m.twitch.tv/videos/55'), true);
+    assert.equal(isNativeChatHost('https://www.youtube.com/'), true);
+    assert.equal(isNativeChatHost('https://www.youtube-nocookie.com/embed/AbCdEfGhIjK'), true);
+    assert.equal(isNativeChatHost('https://m.youtube.com/watch?v=AbCdEfGhIjK'), true);
+    assert.equal(isNativeChatHost('https://player.twitch.tv/?channel=SomeChannel'), false);
+    assert.equal(isNativeChatHost('https://clips.twitch.tv/SomeClip'), false);
+    assert.equal(isNativeChatHost('https://youtu.be/AbCdEfGhIjK'), false);
+    assert.equal(isNativeChatHost('https://example.com/watch?v=AbCdEfGhIjK'), false);
+    assert.equal(isNativeChatHost('not a url'), false);
   });
 });
 
