@@ -28,6 +28,23 @@ import type {
 } from './types';
 
 const cueCache = new Map<string, CaptionCue[]>();
+/** Parsed cues for the active track plus a short return window. Not the raw timedtext string. */
+const PARSED_CUE_TRACKS = 4;
+
+function rememberParsedCues(keys: string[], cues: CaptionCue[]): void {
+  for (const key of keys) cueCache.delete(key);
+  for (const key of keys) cueCache.set(key, cues);
+  const seen = new Set<CaptionCue[]>();
+  for (const value of cueCache.values()) seen.add(value);
+  while (seen.size > PARSED_CUE_TRACKS) {
+    const oldest = cueCache.values().next().value;
+    if (!oldest) break;
+    for (const [key, value] of [...cueCache]) {
+      if (value === oldest) cueCache.delete(key);
+    }
+    seen.delete(oldest);
+  }
+}
 
 // Duplicated from youtube-caption-url.ts so content.js does not share that
 // module with MAIN-world (Vite would emit an ESM chunk MV3 cannot import).
@@ -321,6 +338,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     const fetchUrl = signYoutubeCaptionUrl(track.baseUrl, readPublishedYoutubeCaptionAuthUrls());
     const cached = cueCache.get(track.baseUrl) || cueCache.get(fetchUrl);
     if (cached && cached.length > 0 && this.snapshotMatchesPage()) {
+      rememberParsedCues([track.baseUrl, fetchUrl], cached);
       await requestYoutubePlayerCaptions({ enabled: false });
       return { status: 'active', delivery: 'overlay', cues: cached };
     }
@@ -330,8 +348,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
       if (!body) continue;
       const cues = parseCaptionPayload(body);
       if (cues.length > 0 && activationMediaId === this.mediaId() && this.snapshotMatchesPage()) {
-        cueCache.set(track.baseUrl, cues);
-        cueCache.set(fetchUrl, cues);
+        rememberParsedCues([track.baseUrl, fetchUrl], cues);
         await requestYoutubePlayerCaptions({ enabled: false });
         return { status: 'active', delivery: 'overlay', cues };
       }

@@ -4,7 +4,6 @@ import { qualifiesYoutubeHeatmap } from '../network-harvest';
 import { fetchWithoutHarvest } from '../../platform/harvest-ownership';
 import {
   createTimedtextCacheRecord,
-  findCachedTimedtextBody,
   selectCaptionTrackOption,
   signYoutubeCaptionUrl,
   timedtextHasPot,
@@ -27,12 +26,17 @@ import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/p
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isYouTubeHost } from '../hosts';
 import { installYouTubeQueueNavigation } from './queue-main';
+import {
+  createTimedtextBodyCache,
+  MAX_TIMEDTEXT_STRING_LENGTH,
+  TIMEDTEXT_CACHE_STRING_BUDGET
+} from './timedtext-cache';
 
 export function youtubeIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('youtube');
 }
 
-const timedtextBodies: CachedTimedtext[] = [];
+const timedtextCache = createTimedtextBodyCache();
 const timedtextAuthUrls: string[] = [];
 const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
 const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
@@ -178,7 +182,7 @@ function youtubeCaptionAuthSources(videoId: string | null): string[] {
   const want = videoId || pageId;
   const urls = [
     ...timedtextUrlsFromPerformance(),
-    ...timedtextBodies.map((item) => item.url),
+    ...timedtextCache.records().map((item) => item.url),
     ...timedtextAuthUrls
   ];
   const out: string[] = [];
@@ -233,15 +237,16 @@ export function harvestTimedtextJson(url: string, data: unknown): void {
 }
 
 export function cacheTimedtextBody(url: string, body: string): void {
-  if (!url || !body || body.length > MAX_CAPTION_BYTES || !/timedtext/i.test(url)) return;
+  // String.length is UTF-16 code units. The network read is capped separately
+  // by MAX_CAPTION_BYTES (UTF-8 bytes) before decode.
+  if (!url || !body || body.length > MAX_TIMEDTEXT_STRING_LENGTH || !/timedtext/i.test(url)) return;
   const record = createTimedtextCacheRecord(url, body);
   if (!record) return;
-  const last = timedtextBodies[timedtextBodies.length - 1];
-  if (last && last.url === record.url && last.body === record.body) return;
-  timedtextBodies.push(record);
-  if (timedtextBodies.length > 20) timedtextBodies.shift();
-  publishYoutubeCaptionAuth();
-  postTimedtextToTop(record);
+  const stored = timedtextCache.put(record);
+  if (stored === 'unchanged') return;
+  if (timedtextHasPot(record.url)) rememberTimedtextAuthUrl(record.url);
+  else if (stored === 'stored') publishYoutubeCaptionAuth();
+  if (stored === 'stored') postTimedtextToTop(record);
 }
 
 function postTimedtextToTop(record: CachedTimedtext): void {
@@ -257,7 +262,19 @@ function postTimedtextToTop(record: CachedTimedtext): void {
 }
 
 function findCachedBody(url: string): string | null {
-  return findCachedTimedtextBody(timedtextBodies, url);
+  return timedtextCache.find(url);
+}
+
+export function readCachedTimedtextBody(url: string): string | null {
+  return findCachedBody(url);
+}
+
+export function readTimedtextCacheUsage(): { retainedStringLength: number; stringBudget: number; tracks: number } {
+  return {
+    retainedStringLength: timedtextCache.retainedStringLength(),
+    stringBudget: TIMEDTEXT_CACHE_STRING_BUDGET,
+    tracks: timedtextCache.trackCount()
+  };
 }
 
 /** Consume the single qualified clone supplied by MAIN. */
@@ -275,6 +292,7 @@ let captionOperation = 0;
 
 function invalidateYoutubeCaptions(): void {
   captionOperation += 1;
+  timedtextCache.notePageVideo(youtubePageVideoId(window.location.href));
 }
 
 function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
@@ -696,6 +714,7 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
 
 export function installYoutubeMain(): void {
   installYouTubeQueueNavigation();
+  timedtextCache.notePageVideo(youtubePageVideoId(window.location.href));
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;
     try {
@@ -706,12 +725,14 @@ export function installYoutubeMain(): void {
     const data = youtubeRecord(event.data);
     const record = youtubeRecord(data?.record);
     if (data?.type === 'theater-everywhere-timedtext-body' && typeof record?.body === 'string') {
-      if (typeof record.url !== 'string' || !isAllowedTimedtextUrl(record.url) || record.body.length > MAX_CAPTION_BYTES) return;
+      if (typeof record.url !== 'string' || !isAllowedTimedtextUrl(record.url) || record.body.length > MAX_TIMEDTEXT_STRING_LENGTH) return;
       const cached = createTimedtextCacheRecord(record.url, record.body);
       if (!cached) return;
       if (!cached.body) { rememberTimedtextAuthUrl(cached.url); return; }
-      timedtextBodies.push(cached);
-      if (timedtextBodies.length > 20) timedtextBodies.shift();
+      const stored = timedtextCache.put(cached);
+      if (stored === 'unchanged') return;
+      if (timedtextHasPot(cached.url)) rememberTimedtextAuthUrl(cached.url);
+      else if (stored === 'stored') publishYoutubeCaptionAuth();
     }
   });
 
