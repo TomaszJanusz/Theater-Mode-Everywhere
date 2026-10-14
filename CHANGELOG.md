@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Keyboard Shortcuts stays the last action in Player settings, below every other action and above Extension settings.
+
 - Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.
 
 - Group video fit, player switching, controls visibility and keyboard help in a labeled player settings panel. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Controls visibility uses a player-with-bottom-bar symbol.
