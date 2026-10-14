@@ -55,6 +55,8 @@ export function bindMenuPopover(options: {
   scope: DisposableScope;
   onBeforeOpen?: () => void;
   prepare?: () => void;
+  /** Overrides the first button, for panels whose leading rows can be hidden. */
+  firstFocus?: () => HTMLElement | undefined;
   onKeyboardOpen?: () => void;
   onChange?: () => void;
 }): { close: (restoreFocus?: boolean) => boolean } {
@@ -82,8 +84,7 @@ export function bindMenuPopover(options: {
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
     syncExpanded();
-    // Skip rows inside hidden sections, which cannot take focus.
-    if (focusFirst) [...panel.querySelectorAll('button')].find(item => !item.closest('[hidden]'))?.focus();
+    if (focusFirst) (options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button'))?.focus();
     options.onChange?.();
   };
 

@@ -82,6 +82,8 @@ export function createPlayerSettings(
     panel,
     scope,
     onBeforeOpen: () => options?.onBeforeOpen?.(),
+    // A blocked audio section hides its rows, which cannot take focus.
+    firstFocus: () => [...panel.querySelectorAll('button')].find(row => !row.closest('[hidden]')),
     onKeyboardOpen: () => ctx.actions.showToolbar(),
     onChange: () => ctx.actions.updateCaptionDock()
   });
