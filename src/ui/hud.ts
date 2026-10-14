@@ -6,6 +6,7 @@ import type { AudioSettingName } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
+const CAPTION_LOADING_HUD_DELAY_MS = 400;
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -251,8 +252,13 @@ export function createHud(ctx: PlayerChromeContext) {
 
   let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
   let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+  let captionHudShowTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearCaptionHudTimers(): void {
+    if (captionHudShowTimer !== null) {
+      clearTimeout(captionHudShowTimer);
+      captionHudShowTimer = null;
+    }
     if (captionHudHideTimer) {
       clearTimeout(captionHudHideTimer);
       captionHudHideTimer = null;
@@ -269,15 +275,28 @@ export function createHud(ctx: PlayerChromeContext) {
   }
 
   function triggerCaptionHud(view: CaptionHudView): void {
+    removeCaptionHud();
     if (view.kind === 'dismiss') {
-      removeCaptionHud();
       return;
     }
 
     if (!ctx.session.element) return;
 
-    removeCaptionHud();
+    if (view.kind === 'loading') {
+      // Fast background downloads should not interrupt watching with a flash.
+      const epoch = ctx.session.currentEpoch;
+      const element = ctx.session.element;
+      captionHudShowTimer = setTimeout(() => {
+        captionHudShowTimer = null;
+        if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element) return;
+        renderCaptionHud(view);
+      }, CAPTION_LOADING_HUD_DELAY_MS);
+      return;
+    }
+    renderCaptionHud(view);
+  }
 
+  function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>): void {
     const overlay = document.createElement('div');
     overlay.className = 'theater-everywhere-caption-hud status-hud' + (view.kind === 'loading' ? ' loading' : '');
     ctx.paintOverlay(overlay);

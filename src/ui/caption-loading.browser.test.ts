@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
+import { ownTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
@@ -14,6 +15,7 @@ const BUNDLE = esbuild.buildSync({
   stdin: {
     contents: [
       "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+      "export { createHud } from './ui/hud';",
       "export { setPlayerUiCss } from './ui/root';",
       "export { DisneyAdapter } from './media-features/disney-adapter';",
       "export { CompositeMediaAdapter } from './media-features/composite-adapter';"
@@ -95,6 +97,53 @@ async function screenshot(page: Page, filename: string): Promise<void> {
 }
 
 describe('caption loading browser regressions', () => {
+  it('delays the spinner and cancels pending feedback on completion, dismissal and session replacement', async t => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const browser = await chromium.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await page.clock.install();
+      await page.clock.pauseAt(new Date());
+      await page.setContent('<div id="player"></div>');
+      await page.addScriptTag({ content: BUNDLE });
+      await page.evaluate(`
+        window.session = { element: document.querySelector('#player'), currentEpoch: 1 };
+        window.hud = CaptionTest.createHud({ session,
+          queryPlayerUi: selector => document.querySelector(selector),
+          paintOverlay() {}, mountPlayerUi: overlay => document.body.appendChild(overlay)
+        });
+      `);
+      const spinner = page.locator('.caption-hud-spinner');
+      const loading = () => page.evaluate('hud.triggerCaptionHud({ kind: "loading", title: "Loading" })');
+      await loading();
+      await page.clock.runFor(399);
+      assert.equal(await spinner.count(), 0);
+      await page.evaluate('hud.triggerCaptionHud({ kind: "dismiss" })');
+      await page.clock.runFor(1000);
+      assert.equal(await spinner.count(), 0, 'a quick refresh never shows its spinner');
+
+      await loading();
+      await page.clock.runFor(400);
+      assert.equal(await spinner.count(), 1, 'a slow request shows feedback');
+      await page.evaluate('hud.triggerCaptionHud({ kind: "dismiss" })');
+      assert.equal(await spinner.count(), 0);
+
+      await loading();
+      await page.clock.runFor(100);
+      await page.evaluate('hud.triggerCaptionHud({ kind: "status", title: "Failed" })');
+      await page.clock.runFor(400);
+      assert.equal(await spinner.count(), 0);
+      assert.equal(await page.locator('.theater-everywhere-caption-hud').innerText(), 'Failed');
+
+      await loading();
+      await page.evaluate('session.currentEpoch += 1');
+      await page.clock.runFor(400);
+      assert.equal(await spinner.count(), 0, 'an old session cannot publish delayed feedback');
+    } finally { await browser.close(); }
+  });
+
   it('shows saved-caption loading in the real player, pulses both colors, handles reduced motion and failures', async t => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
