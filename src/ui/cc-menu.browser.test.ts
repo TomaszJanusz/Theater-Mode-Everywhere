@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 
 describe('caption language menu', () => {
   it('keeps scrolled language rows below the title bar', async (t) => {
@@ -23,7 +23,7 @@ describe('caption language menu', () => {
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
       await page.setContent('<div class="theater-controls-wrapper" style="position:fixed;left:700px;bottom:24px"><div class="theater-cc-menu-host theater-menu-anchored is-open"><div class="theater-cc-menu visible"><div class="theater-cc-menu-header"><span class="theater-cc-menu-title">Napisy</span><button type="button" class="theater-cc-menu-options">Opcje</button></div><div class="theater-cc-menu-list"></div></div></div></div>');
-      await page.addStyleTag({ content: CSS });
+      await page.addStyleTag({ content: UI_CSS });
       const report = await page.evaluate(`(() => {
         const list = document.querySelector('.theater-cc-menu-list');
         for (let i = 0; i < 40; i += 1) {

@@ -44,7 +44,7 @@ describe('clock labels', () => {
   it('settles well inside the one-second tick', () => {
     assert.ok(TIME_DIGIT_TRANSITION_MS <= 400);
     assert.ok(TIME_DIGIT_TRANSITION_MS >= 280);
-    const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../content.css'), 'utf8');
+    const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), './shadow.css'), 'utf8');
     for (const name of ['roll-in', 'sharpen', 'roll-out', 'soften']) {
       assert.match(css, new RegExp(`theater-time-${name} ${TIME_DIGIT_TRANSITION_MS}ms`));
       const keyframes = css.match(new RegExp(`@keyframes theater-time-${name} \\{[\\s\\S]*?\\n\\}`))?.[0] ?? '';
