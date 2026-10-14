@@ -48,12 +48,15 @@ export function stripDisneySiteTitle(value: unknown): string | null {
   return cleaned;
 }
 
-export type DisneyTitleSource = 'chrome' | 'playback' | 'page';
+export type DisneyChromeTitleSource = 'chrome-heading' | 'chrome' | 'chrome-title-bug';
+export type DisneyTitleSource = DisneyChromeTitleSource | 'playback' | 'page';
 
 const DISNEY_TITLE_RANK: Record<DisneyTitleSource, number> = {
   page: 1,
   playback: 2,
-  chrome: 3
+  'chrome-heading': 3,
+  chrome: 4,
+  'chrome-title-bug': 5
 };
 
 /**
@@ -67,6 +70,7 @@ export function resolveDisneyTitle(input: {
   title: string | null;
   source: DisneyTitleSource | null;
   playerChrome: unknown;
+  playerChromeSource?: DisneyChromeTitleSource;
   playbackTitle: unknown;
   documentTitle: unknown;
   openGraphTitle: unknown;
@@ -78,11 +82,12 @@ export function resolveDisneyTitle(input: {
     if (!cleaned) return;
     const currentRank = source ? DISNEY_TITLE_RANK[source] : 0;
     if (DISNEY_TITLE_RANK[nextSource] < currentRank) return;
-    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title) return;
+    // Only equally strong live chrome can update a retained episode label.
+    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title && !nextSource.startsWith('chrome')) return;
     title = cleaned;
     source = nextSource;
   };
-  consider(input.playerChrome, 'chrome');
+  consider(input.playerChrome, input.playerChromeSource || 'chrome');
   consider(input.playbackTitle, 'playback');
   consider(input.documentTitle, 'page');
   consider(input.openGraphTitle, 'page');

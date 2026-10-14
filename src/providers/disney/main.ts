@@ -3,6 +3,7 @@ import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from 
 import {
   findDisneyContentTitle,
   resolveDisneyTitle,
+  sanitizeContentTitle,
   stripDisneySiteTitle,
   type DisneyTitleSource
 } from '../../media-features/content-title';
@@ -193,6 +194,7 @@ function considerDisneyChromeTitle(
   return best;
 }
 
+/** Exact title-bug fields outrank generic title hooks and headings across open shadow roots. */
 function visitDisneyChromeRoot(
   root: ParentNode,
   depth: number,
@@ -204,32 +206,48 @@ function visitDisneyChromeRoot(
     next = considerDisneyChromeTitle(el, next);
   }
   for (const el of root.querySelectorAll('*')) {
+    if (el.tagName === 'TITLE-BUG') {
+      const header = el.shadowRoot || el;
+      const titleField = header.querySelector('[data-qa="title-bug.title"]');
+      const title = stripDisneySiteTitle(titleField?.textContent);
+      const rect = titleField?.getBoundingClientRect();
+      if (title && rect && rect.width >= 8 && rect.height >= 8) {
+        // Keep the host's entire label; episode notation and nested markup vary by locale.
+        const subtitle = sanitizeContentTitle(header.querySelector('[data-qa="title-bug.subtitle"]')?.textContent);
+        const text = subtitle ? `${title} — ${subtitle}` : title;
+        if (!next || next.rank < 3 || rect.top < next.top - 8) {
+          next = { text, rank: 3, top: rect.top };
+        }
+      }
+    }
     if (el.shadowRoot) next = visitDisneyChromeRoot(el.shadowRoot, depth + 1, next);
   }
   return next;
 }
 
 /** Title Disney draws in the player header, not the browse page behind it. */
-function readDisneyPlayerChromeTitle(): string | null {
-  const hosts = document.querySelectorAll('disney-web-player, .DxcOverlay');
+function readDisneyPlayerChromeTitle(): { text: string; rank: number; top: number } | null {
+  const hosts = document.querySelectorAll('disney-web-player, disney-web-player-ui, .DxcOverlay');
   let best: { text: string; rank: number; top: number } | null = null;
   for (const host of hosts) {
     if (host.shadowRoot) best = visitDisneyChromeRoot(host.shadowRoot, 0, best);
     best = visitDisneyChromeRoot(host, 0, best);
   }
-  return best?.text || null;
+  return best;
 }
 
 function syncDisneyDisplayedTitle(): boolean {
   const playId = disneyPageMediaId();
   const previousPlayId = disneyTitlePlayId;
   if (playId !== previousPlayId) disneyPlaybackTitle = null;
+  const chrome = readDisneyPlayerChromeTitle();
   const resolved = resolveDisneyTitle({
     playId,
     previousPlayId,
     title: disneyHarvest.title || null,
     source: disneyTitleSource,
-    playerChrome: readDisneyPlayerChromeTitle(),
+    playerChrome: chrome?.text,
+    playerChromeSource: chrome?.rank === 3 ? 'chrome-title-bug' : chrome?.rank === 1 ? 'chrome-heading' : 'chrome',
     playbackTitle: disneyPlaybackTitle,
     documentTitle: document.title,
     openGraphTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')

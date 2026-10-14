@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { ownTestBrowser } from '../../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const SRC = path.dirname(fileURLToPath(import.meta.url));
@@ -24,7 +25,7 @@ const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild'
 
 const compiled = esbuild.buildSync({
   stdin: {
-    contents: "import { handleDisneyMediaSeek, installDisneyMain } from './main'; export { handleDisneyMediaSeek, installDisneyMain };",
+    contents: "import { handleDisneyMediaSeek, installDisneyMain, readDisneySnapshot } from './main'; import { DisneyAdapter } from '../../media-features/disney-adapter'; export { handleDisneyMediaSeek, installDisneyMain, readDisneySnapshot, DisneyAdapter };",
     resolveDir: SRC,
     sourcefile: 'disney-clock-browser-entry.ts',
     loader: 'ts'
@@ -52,6 +53,84 @@ type ClockReport = {
 
 for (const engine of ['chromium', 'firefox'] as const) {
   describe(`${engine} Disney playback clock`, () => {
+    it('publishes the complete title-bug label through nested shadow roots and refreshes it', async (t) => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<!doctype html><title>Disney+</title><body></body>'
+      }));
+      await page.goto(`https://www.disneyplus.com/pl-pl/play/${PLAY_ID}`);
+      await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+      const report = await page.evaluate(() => {
+        const api = (window as unknown as { DisneyMain: typeof import('./main') & {
+          DisneyAdapter: typeof import('../../media-features/disney-adapter').DisneyAdapter;
+        } }).DisneyMain;
+        const adapter = new api.DisneyAdapter();
+        const player = document.createElement('disney-web-player');
+        const playerUi = document.createElement('disney-web-player-ui');
+        document.body.append(player, playerUi);
+        const overlay = document.createElement('title-overlay');
+        playerUi.append(overlay);
+        const bug = document.createElement('title-bug');
+        overlay.attachShadow({ mode: 'open' }).append(bug);
+        const header = bug.attachShadow({ mode: 'open' });
+        header.innerHTML = `<button aria-label="WSTECZ">WSTECZ</button>
+          <button class="title-btn" data-qa="title-bug.titleButton">
+            <div class="title-field" data-qa="title-bug.title"><span>VisionQuest</span></div>
+          </button>
+          <div class="subtitle-renderer">Spoken captions</div>`;
+        const read = () => { api.readDisneySnapshot(); return adapter.getTitle(); };
+        const initial = read();
+        const subtitle = document.createElement('div');
+        subtitle.className = 'subtitle-field';
+        subtitle.dataset.qa = 'title-bug.subtitle';
+        subtitle.innerHTML = '<span>S1:O1 Wyzwolenie</span>';
+        header.querySelector('.title-btn')!.append(subtitle);
+        const episode = read();
+        // No episode parsing or leaf-only restriction: all descendant text is metadata.
+        subtitle.innerHTML = '<div>Bonus: <strong>Za kulisami</strong></div><span> • Część A / B</span>';
+        const arbitrary = read();
+        subtitle.remove();
+        const noSubtitle = read();
+        subtitle.textContent = 'S1:O2 Nowy odcinek';
+        header.querySelector('.title-btn')!.append(subtitle);
+        history.pushState({}, '', '/pl-pl/play/180356b5-0596-4333-891f-e48c526a0803');
+        const nextEpisode = read();
+        bug.remove();
+        // The host can leave a generic title behind when the richer header decays.
+        const genericTitle = document.createElement('div');
+        genericTitle.className = 'player-title';
+        genericTitle.textContent = 'VisionQuest';
+        player.append(genericTitle);
+        const decayed = read();
+        document.documentElement.setAttribute('data-te-disney-integration-off', '');
+        const disabled = read();
+        document.documentElement.removeAttribute('data-te-disney-integration-off');
+        const enabled = read();
+        history.pushState({}, '', '/pl-pl/play/6f5b1fff-75da-44f6-9553-412699bf4065');
+        const replaced = read();
+        genericTitle.remove();
+        history.pushState({}, '', '/pl-pl/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6');
+        const empty = read();
+        return { initial, episode, arbitrary, noSubtitle, nextEpisode, decayed, replaced, disabled, enabled, empty };
+      });
+      assert.deepEqual(report, {
+        initial: 'VisionQuest',
+        episode: 'VisionQuest — S1:O1 Wyzwolenie',
+        arbitrary: 'VisionQuest — Bonus: Za kulisami • Część A / B',
+        noSubtitle: 'VisionQuest',
+        nextEpisode: 'VisionQuest — S1:O2 Nowy odcinek',
+        decayed: 'VisionQuest — S1:O2 Nowy odcinek',
+        replaced: 'VisionQuest',
+        disabled: null,
+        enabled: 'VisionQuest — S1:O2 Nowy odcinek',
+        empty: null
+      });
+    });
+
     it('keeps timers off the catalog and arms the fallback only while native time is missing', async (t) => {
       const browserType = (await import('playwright'))[engine];
       let executable = '';
