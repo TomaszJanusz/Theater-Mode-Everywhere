@@ -3,10 +3,10 @@ import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { PROVIDER_DEFINITIONS } from './registry';
 
-/** Opt-in provider contract: positive watch identity and the live content video. */
+/** URL qualification first, then provider-specific confirmation of the watch player. */
 export type WatchPlayback = {
   pageIdentity(url: URL): string | null;
-  /** Called only in MAIN; must reject stale content, auxiliary players and ads. */
+  /** Called only in MAIN; reject auxiliary players and validate available host identity. */
   mainVideo(doc: Document, identity: string): HTMLVideoElement | null;
   observe?(video: HTMLVideoElement, onChange: () => void): () => void;
 };
