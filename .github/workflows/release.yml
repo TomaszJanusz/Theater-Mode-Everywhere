@@ -182,7 +182,9 @@ jobs:
 
       - name: Create source archive for AMO review
         if: vars.AMO_PUBLISH_ENABLED == 'true'
-        run: git archive --format=zip --output dist/theater-everywhere-source.zip HEAD
+        run: |
+          test -f docs/building.md
+          git archive --format=zip --output dist/theater-everywhere-source.zip HEAD
 
       - name: Publish to Mozilla Add-ons
         if: vars.AMO_PUBLISH_ENABLED == 'true'

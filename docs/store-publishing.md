@@ -38,7 +38,7 @@ Publishing is opt-in per store through repository variables. Keep a store disabl
 
 ## Notes
 
-- AMO publishing uses `web-ext sign --channel=listed` against `dist/firefox-unpacked` and uploads a source archive generated from `HEAD`.
+- AMO publishing uses `web-ext sign --channel=listed` against `dist/firefox-unpacked` and uploads a source archive generated from `HEAD`. That archive includes [building.md](building.md), which is the reproduction path for the minified packages.
 - Chrome Web Store publishing uses the official v2 API: refresh OAuth token, upload package, then publish the item for review.
 - Microsoft Edge Add-ons publishing uses the v1.1 API: upload package, poll upload status, publish draft submission, then poll publish status.
 - Chrome and Edge listing metadata still has to be maintained manually in their dashboards; their package update APIs do not update store descriptions.
