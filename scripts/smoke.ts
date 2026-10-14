@@ -592,17 +592,19 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Tab');
   if (!await pin.evaluate(button => button.matches(':focus'))) fail('Tab skipped the controls visibility setting.');
   await page.keyboard.press('Tab');
-  if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped keyboard help.');
-  await page.keyboard.press('Tab');
   const autoTheater = menu.locator('.auto-theater-btn');
-  if (!await autoTheater.evaluate(button => button.matches(':focus')
-      && button.nextElementSibling?.classList.contains('extension-settings-btn'))) fail('Auto theater must immediately precede extension settings.');
+  if (!await autoTheater.evaluate(button => button.matches(':focus'))) fail('Tab skipped automatic theater entry.');
   const autoBefore = await autoTheater.getAttribute('aria-pressed');
   await page.keyboard.press('Space');
   if (await autoTheater.getAttribute('aria-pressed') === autoBefore) fail('Space did not toggle automatic theater entry.');
   await page.keyboard.press('Enter');
   if (await autoTheater.getAttribute('aria-pressed') !== autoBefore
       || await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) fail('Auto theater keyboard activation changed playback or failed to restore the preference.');
+  await page.keyboard.press('Tab');
+  if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus')
+      && button.nextElementSibling?.classList.contains('extension-settings-btn'))) {
+    fail('Keyboard shortcuts must be the last action above extension settings.');
+  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.extension-settings-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab skipped extension settings.');

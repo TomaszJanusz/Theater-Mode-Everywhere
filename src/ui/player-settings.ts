@@ -63,6 +63,8 @@ export function createPlayerSettings(
   playerHeading.textContent = ctx.t('settingsSectionPlayer');
   body.append(chatSection, createSeparator(), audioSection, audioSeparator, playerHeading);
   let footerStart: HTMLElement | null = null;
+  // Later player actions insert above this row, so shortcuts stay last.
+  let shortcutsAnchor: HTMLElement | null = null;
   panel.append(body);
   ctx.paintOverlay(panel);
 
@@ -81,8 +83,8 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  /** Audio rows precede the player rows; footer rows close the panel. */
-  function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' = 'player') {
+  /** Audio rows precede player actions. Shortcuts stay the last action; footer rows close the panel. */
+  function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' | 'shortcuts' = 'player') {
     row.type = 'button';
     row.classList.add('theater-settings-row');
     row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
@@ -105,8 +107,11 @@ export function createPlayerSettings(
     } else if (section === 'footer') {
       body.append(row);
       footerStart ??= row;
-    } else {
+    } else if (section === 'shortcuts') {
       body.insertBefore(row, footerStart);
+      shortcutsAnchor = row;
+    } else {
+      body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
     return {
       update(shortcut: string, value?: string) {

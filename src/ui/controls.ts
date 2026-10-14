@@ -1037,7 +1037,7 @@ export function createControls(
       e.stopPropagation();
       showHelpOverlay();
     });
-    const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'));
+    const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'), 'shortcuts');
     const updateHelpRow = () => helpRow.update(ui().shortcuts.showHelp);
     updateHelpRow();
     controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
@@ -1050,7 +1050,7 @@ export function createControls(
       event.stopPropagation();
       executeCommand({ type: 'TOGGLE_AUTO_THEATER' });
     });
-    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'), 'footer');
+    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'));
     const updateAutoTheaterRow = () => {
       autoTheaterBtn.classList.toggle('active', ui().autoEnterTheater);
       autoTheaterBtn.setAttribute('aria-pressed', String(ui().autoEnterTheater));
