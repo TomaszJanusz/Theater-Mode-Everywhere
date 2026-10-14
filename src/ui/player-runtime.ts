@@ -196,12 +196,40 @@ const {
 const { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay } = help;
 const {
   findAllVideosDeep,
-  findBestVideo,
+  findBestVideo: discoverBestVideo,
   switchTheaterVideo,
   cycleTheaterVideo,
   injectStylesIntoShadowRoot
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
+
+let pendingVideoPointer: { path: WeakRef<Node>[]; href: string } | null = null;
+
+function refreshPointerVideo(): void {
+  const pointer = pendingVideoPointer;
+  pendingVideoPointer = null;
+  // Reject the whole path if its origin disappeared; surviving body/html
+  // ancestors must not turn an old overlay into a new player selection.
+  if (!pointer || pointer.href !== window.location.href) return;
+  const origin = pointer.path[0]?.deref();
+  if (!origin?.isConnected || origin.ownerDocument !== document) return;
+  for (const ref of pointer.path) {
+    const target = ref.deref();
+    if (!(target instanceof HTMLElement) || !target.isConnected) continue;
+    const video = target instanceof HTMLVideoElement ? target
+      : target.shadowRoot?.querySelector('video') || target.querySelector('video');
+    if (video) {
+      refs.activeVideo = video;
+      return;
+    }
+  }
+  // A miss preserves the last video selected by playback or discovery.
+}
+
+function findBestVideo(): HTMLVideoElement | null {
+  refreshPointerVideo();
+  return discoverBestVideo();
+}
 
 let cancelAudioReload: (() => void) | null = null;
 
@@ -1267,6 +1295,8 @@ function initialize(): void {
   session.runtimeScope.add(() => {
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
+    pendingVideoPointer = null;
+    refs.activeVideo = null;
   });
 
   const publishEntryShortcuts = () => {
@@ -1588,40 +1618,13 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'keyup', listeners.keyup!, true);
   session.runtimeScope.listen(window, 'keypress', listeners.keyup!, true);
 
-  // 2. Mouse Move Listener (Track video under cursor using composedPath)
+  // 2. Remember the composed path without scanning DOM or retaining the event.
   listeners.mousemove = (event: MouseEvent) => {
-    try {
-      const path = event.composedPath();
-      for (const target of path) {
-        if (!(target instanceof HTMLElement || target instanceof ShadowRoot)) continue;
-        
-        // If the element itself is a video
-        if (target instanceof HTMLElement && target.tagName === 'VIDEO') {
-          refs.activeVideo = target as HTMLVideoElement;
-          return;
-        }
-        
-        // If it's a shadow host containing a video
-        if (target instanceof HTMLElement && target.shadowRoot) {
-          const video = target.shadowRoot.querySelector('video');
-          if (video) {
-            refs.activeVideo = video;
-            return;
-          }
-        }
-        
-        // If it's a container in light DOM containing a video
-        if (target instanceof HTMLElement) {
-          const video = target.querySelector('video');
-          if (video) {
-            refs.activeVideo = video;
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore errors
-    }
+    pendingVideoPointer = {
+      path: event.composedPath().filter((target): target is Node => target instanceof Node)
+        .map(target => new WeakRef(target)),
+      href: window.location.href
+    };
   };
   session.runtimeScope.listen(document, 'mousemove', listeners.mousemove!, { passive: true });
 
@@ -1630,6 +1633,8 @@ function initialize(): void {
     const path = event.composedPath();
     const video = path[0];
     if (video && video instanceof HTMLVideoElement) {
+      // A later playback event wins over an unresolved earlier mousemove.
+      pendingVideoPointer = null;
       refs.activeVideo = video;
     }
   };
@@ -1730,6 +1735,7 @@ function initialize(): void {
       exitTheaterMode();
     }
     refs.activeVideo = null;
+    pendingVideoPointer = null;
   };
   session.runtimeScope.listen(window, 'popstate', listeners.navigate!);
 
@@ -1830,6 +1836,7 @@ function rebindProviderPlayback(next: HTMLElement): void {
 }
 
 function fullscreenTheaterTarget(): HTMLElement | null {
+  refreshPointerVideo();
   return providerFullscreenTarget(refs.activeVideo, findTheaterTarget);
 }
 
