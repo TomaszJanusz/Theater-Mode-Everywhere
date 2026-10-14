@@ -1,4 +1,5 @@
 import { OwnedDom } from '../owned-dom';
+import { TWITCH_CHAT_PORTAL_SELECTOR } from '../selectors';
 import type { ChatSurface } from '../types';
 import { THEATER_STAGE_BACKGROUND } from './stage';
 import type { ChatThemeAdapter, ForcedTheme } from './types';
@@ -11,7 +12,15 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
   private canvas: HTMLStyleElement | null = null;
   private bridge: HTMLStyleElement | null = null;
   constructor(private readonly surface: ChatSurface) {}
+  /** Records still held after terminally detached portals have been released. */
+  retainedRecordCount(): number {
+    return this.owned.retainedRecordCount();
+  }
+
   apply(theme: ForcedTheme): boolean {
+    // Portals closed since the last apply are no longer in the document.
+    // A portal removed and reinserted in one batch is connected again and keeps its classes.
+    this.owned.releaseDetached();
     const surface = this.surface;
     const doc = surface.root.ownerDocument;
     let paletteClass = twitchPaletteClass(doc, theme);
@@ -26,7 +35,7 @@ export class TwitchChatThemeAdapter implements ChatThemeAdapter {
       paletteClass = `theater-chat-theme-${theme}`;
     }
     const otherPalette = twitchPaletteClass(doc, theme === 'dark' ? 'light' : 'dark');
-    const portalRoots = [...doc.querySelectorAll<HTMLElement>('.ReactModalPortal, .ReactModal__Overlay, .tw-dialog-layer')];
+    const portalRoots = [...doc.querySelectorAll<HTMLElement>(TWITCH_CHAT_PORTAL_SELECTOR)];
     const themedRoots = new Set<HTMLElement>([surface.root, ...portalRoots]);
     for (const root of [...themedRoots]) {
       for (const nested of root.querySelectorAll<HTMLElement>('.tw-root--theme-light, .tw-root--theme-dark')) themedRoots.add(nested);

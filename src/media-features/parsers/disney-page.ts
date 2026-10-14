@@ -128,6 +128,7 @@ export type DisneyBifSet = {
 export type DisneyPlaybackAssets = {
   mediaId?: string;
   title?: string;
+  subtitle?: string;
   duration?: number;
   masterUrl?: string;
   captions: DisneyPageCaption[];
@@ -589,10 +590,12 @@ export function readPublishedDisneySnapshot(
       : (storyboardUrl ? { width: 480, height: 270, intervalMs: 10_000, bifUrl: storyboardUrl } : undefined);
     const mediaId = typeof data.mediaId === 'string' && UUID_RE.test(data.mediaId) ? data.mediaId.toLowerCase() : undefined;
     const title = sanitizeContentTitle(data.title) || undefined;
+    const subtitle = title ? sanitizeContentTitle(data.subtitle) || undefined : undefined;
     if (!mediaId && !masterUrl && !storyboardUrl && !bifBlobUrl && !(Number.isFinite(duration) && duration > 0) && !title) return null;
     return {
       mediaId,
       title,
+      subtitle,
       duration: Number.isFinite(duration) && duration > 0 ? duration : undefined,
       masterUrl,
       captions: [],

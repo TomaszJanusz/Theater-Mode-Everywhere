@@ -1,9 +1,12 @@
+import { isTwitchGqlUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import {
   parseTwitchGraphqlBody,
+  parseTwitchGraphqlData,
+  type TwitchPageAssets,
   TWITCH_CAPTIONS_ACK_EVENT,
   TWITCH_CAPTIONS_EVENT,
   TWITCH_HOST_CAPTION_ID
@@ -236,12 +239,15 @@ export function harvestTwitchGqlBody(body: string): void {
   if (!body || body.length > MAX_CAPTION_BYTES) return;
   if (!/"seekPreviewsURL"|"positionMilliseconds"|"lengthSeconds"|"moments"|captions\.twitch\.tv/.test(body.slice(0, 200000))) return;
   const videoId = twitchPageVideoId(window.location.href);
+  mergeTwitchGqlData(parseTwitchGraphqlBody(body, videoId), videoId);
+}
+
+function mergeTwitchGqlData(parsed: Partial<TwitchPageAssets>, videoId: string | null): void {
   if (videoId && twitchHarvest.videoId && twitchHarvest.videoId !== videoId) {
     twitchHarvest = { videoId, moments: [], captions: [] };
   }
   if (videoId) twitchHarvest.videoId = videoId;
   let changed = false;
-  const parsed = parseTwitchGraphqlBody(body, videoId);
   if (parsed.seekPreviewsURL) {
     const before = twitchHarvest.seekPreviewsURL;
     rememberTwitchStoryboardUrl(parsed.seekPreviewsURL);
@@ -272,28 +278,16 @@ export function harvestTwitchGqlBody(body: string): void {
   postTwitchHarvestSnapshotToTop();
 }
 
-export function captureTwitchNetworkResponse(url: string, response: Response): void {
-  if (!twitchIntegrationEnabled()) return;
-  const finalUrl = (response && response.url) || url;
-  if (response && response.ok && isAllowedTwitchStoryboardUrl(finalUrl)) {
-    rememberTwitchStoryboardUrl(finalUrl);
-  }
-  if (!response || !response.ok) return;
-  if (!/gql\.twitch\.tv/i.test(finalUrl) && !/gql\.twitch\.tv/i.test(url)) return;
-  response.clone().text().then((text) => harvestTwitchGqlBody(text)).catch(() => {});
-}
-
 export function harvestTwitchResponseJson(url: string, data: unknown): void {
-  if (!twitchIntegrationEnabled() || !/gql\.twitch\.tv/i.test(url)) return;
-  harvestTwitchGqlBody(JSON.stringify(data));
+  if (!twitchIntegrationEnabled() || !isTwitchHost() || (url && !isTwitchGqlUrl(url))) return;
+  const videoId = twitchPageVideoId(window.location.href);
+  mergeTwitchGqlData(parseTwitchGraphqlData(data, videoId), videoId);
 }
 
 export function harvestTwitchResponseText(url: string, text: string): void {
-  if (!twitchIntegrationEnabled()) return;
-  if (!(/gql\.twitch\.tv/i.test(url) || /"positionMilliseconds"|"seekPreviewsURL"/.test(text.slice(0, 4000)))) return;
-  if (isTwitchHost(window.location.hostname) || /gql\.twitch\.tv/i.test(url)) {
-    harvestTwitchGqlBody(text);
-  }
+  if (!twitchIntegrationEnabled() || !isTwitchHost() || (url && !isTwitchGqlUrl(url))) return;
+  if (!(isTwitchGqlUrl(url) || /"positionMilliseconds"|"seekPreviewsURL"/.test(text.slice(0, 4000)))) return;
+  harvestTwitchGqlBody(text);
 }
 
 export function harvestTwitchXhr(url: string, body: string | null, xhr: XMLHttpRequest): void {

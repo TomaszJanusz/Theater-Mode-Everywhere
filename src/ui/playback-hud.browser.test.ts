@@ -8,7 +8,8 @@ import { readStylesheet } from '../test-utils/styles';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
@@ -50,10 +51,10 @@ async function boot(page: Page, settings: Record<string, unknown> = {}): Promise
     },
     onChanged: { addListener() {} }
   } };`);
-  await page.addStyleTag({ content: CSS });
+  await page.addStyleTag({ content: PAGE_CSS });
   await page.addScriptTag({ content: BUNDLE });
   if (settings.volumeBoostEnabled) await page.evaluate('PlaybackHudTest.installMainWorldRuntime();');
-  await page.evaluate(`PlaybackHudTest.setPlayerUiCss(${JSON.stringify(CSS)}); PlaybackHudTest.bootstrapPlayerRuntime();`);
+  await page.evaluate(`PlaybackHudTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); PlaybackHudTest.bootstrapPlayerRuntime();`);
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return Boolean(video && video.readyState >= 2 && !video.paused);

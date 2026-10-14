@@ -32,6 +32,12 @@ export function netflixWatchId(pathname: string): string | null {
   return netflixVideoId(pathname.match(/^\/watch\/(\d+)(?:\/|$)/)?.[1]);
 }
 
+export function findNetflixPlayerRoot(doc: Document): HTMLElement | null {
+  const player = doc.querySelector('.watch-video [data-uia="player"]')
+    || doc.querySelector('.nf-player-container, [data-uia="player"]');
+  return player instanceof HTMLElement ? player : null;
+}
+
 /** Select the session attached to this player, never a background/seamless episode. */
 export function selectNetflixSession(api: NetflixPlayerAppApi | null, root: HTMLElement | null, watchId: string | null): NetflixSessionPlayer | null {
   if (!api?.videoPlayer || !root) return null;

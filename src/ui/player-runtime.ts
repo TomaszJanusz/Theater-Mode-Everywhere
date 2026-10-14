@@ -104,6 +104,7 @@ import { applyUiDirection, t } from './messages';
 import { AUDIO_SHORTCUTS, defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
+import { createButtonTooltip } from './button-tooltip';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
@@ -169,11 +170,12 @@ const ctx = createPlayerChromeContext({
   ...bindRootHelpers()
 });
 
-const hud = createHud(ctx);
+const buttonTooltip = createButtonTooltip(ctx);
+const hud = createHud(ctx, buttonTooltip.bind);
 const toolbar = createToolbar(ctx);
 const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
-const controls = createControls(ctx, toolbar.resetCaptionDock);
+const controls = createControls(ctx, buttonTooltip.bind, toolbar.resetCaptionDock);
 
 const {
   triggerSeekIndicator,
@@ -194,12 +196,40 @@ const {
 const { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay } = help;
 const {
   findAllVideosDeep,
-  findBestVideo,
+  findBestVideo: discoverBestVideo,
   switchTheaterVideo,
   cycleTheaterVideo,
   injectStylesIntoShadowRoot
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
+
+let pendingVideoPointer: { path: WeakRef<Node>[]; href: string } | null = null;
+
+function refreshPointerVideo(): void {
+  const pointer = pendingVideoPointer;
+  pendingVideoPointer = null;
+  // Reject the whole path if its origin disappeared; surviving body/html
+  // ancestors must not turn an old overlay into a new player selection.
+  if (!pointer || pointer.href !== window.location.href) return;
+  const origin = pointer.path[0]?.deref();
+  if (!origin?.isConnected || origin.ownerDocument !== document) return;
+  for (const ref of pointer.path) {
+    const target = ref.deref();
+    if (!(target instanceof HTMLElement) || !target.isConnected) continue;
+    const video = target instanceof HTMLVideoElement ? target
+      : target.shadowRoot?.querySelector('video') || target.querySelector('video');
+    if (video) {
+      refs.activeVideo = video;
+      return;
+    }
+  }
+  // A miss preserves the last video selected by playback or discovery.
+}
+
+function findBestVideo(): HTMLVideoElement | null {
+  refreshPointerVideo();
+  return discoverBestVideo();
+}
 
 let cancelAudioReload: (() => void) | null = null;
 
@@ -551,6 +581,7 @@ function bindChromeActions(): void {
     createCustomControls,
     destroyCustomControls,
     showToolbar,
+    suppressToolbarActivity: toolbar.suppressToolbarActivity,
     hideToolbar,
     scheduleToolbarHide: toolbar.scheduleToolbarHide,
     updateCaptionDock,
@@ -1264,6 +1295,8 @@ function initialize(): void {
   session.runtimeScope.add(() => {
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
+    pendingVideoPointer = null;
+    refs.activeVideo = null;
   });
 
   const publishEntryShortcuts = () => {
@@ -1585,40 +1618,13 @@ function initialize(): void {
   session.runtimeScope.listen(window, 'keyup', listeners.keyup!, true);
   session.runtimeScope.listen(window, 'keypress', listeners.keyup!, true);
 
-  // 2. Mouse Move Listener (Track video under cursor using composedPath)
+  // 2. Remember the composed path without scanning DOM or retaining the event.
   listeners.mousemove = (event: MouseEvent) => {
-    try {
-      const path = event.composedPath();
-      for (const target of path) {
-        if (!(target instanceof HTMLElement || target instanceof ShadowRoot)) continue;
-        
-        // If the element itself is a video
-        if (target instanceof HTMLElement && target.tagName === 'VIDEO') {
-          refs.activeVideo = target as HTMLVideoElement;
-          return;
-        }
-        
-        // If it's a shadow host containing a video
-        if (target instanceof HTMLElement && target.shadowRoot) {
-          const video = target.shadowRoot.querySelector('video');
-          if (video) {
-            refs.activeVideo = video;
-            return;
-          }
-        }
-        
-        // If it's a container in light DOM containing a video
-        if (target instanceof HTMLElement) {
-          const video = target.querySelector('video');
-          if (video) {
-            refs.activeVideo = video;
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore errors
-    }
+    pendingVideoPointer = {
+      path: event.composedPath().filter((target): target is Node => target instanceof Node)
+        .map(target => new WeakRef(target)),
+      href: window.location.href
+    };
   };
   session.runtimeScope.listen(document, 'mousemove', listeners.mousemove!, { passive: true });
 
@@ -1627,6 +1633,8 @@ function initialize(): void {
     const path = event.composedPath();
     const video = path[0];
     if (video && video instanceof HTMLVideoElement) {
+      // A later playback event wins over an unresolved earlier mousemove.
+      pendingVideoPointer = null;
       refs.activeVideo = video;
     }
   };
@@ -1727,6 +1735,7 @@ function initialize(): void {
       exitTheaterMode();
     }
     refs.activeVideo = null;
+    pendingVideoPointer = null;
   };
   session.runtimeScope.listen(window, 'popstate', listeners.navigate!);
 
@@ -1827,6 +1836,7 @@ function rebindProviderPlayback(next: HTMLElement): void {
 }
 
 function fullscreenTheaterTarget(): HTMLElement | null {
+  refreshPointerVideo();
   return providerFullscreenTarget(refs.activeVideo, findTheaterTarget);
 }
 
@@ -2260,8 +2270,10 @@ export function bootstrapPlayerRuntime(): void {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));
       }
 
-      if (changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY]
-          || mediaProviderFlagStorageKeys().some((key) => changes[key])) {
+      const providerFlagsChanged = mediaProviderFlagStorageKeys().some((key) => changes[key]);
+      // Auto-entry eligibility reads only domain policy, opt-in and provider flags.
+      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || providerFlagsChanged;
+      if (autoTheaterSettingsChanged) {
         void checkBlacklistAndInit();
       }
 
@@ -2303,7 +2315,7 @@ export function bootstrapPlayerRuntime(): void {
       if (changes[CAPTION_PREF_STORAGE_KEY]) {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
       }
-      if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
+      if (providerFlagsChanged) {
         const merged: Record<string, unknown> = {
           ...mediaProviderFlagStorageUpdate(refs.providerFlags)
         };
@@ -2314,7 +2326,7 @@ export function bootstrapPlayerRuntime(): void {
         }
         applyProviderFlags(resolveMediaProviderFlags(merged));
       }
-      syncAutoTheaterRuntime();
+      if (autoTheaterSettingsChanged) syncAutoTheaterRuntime();
     });
   }
 }

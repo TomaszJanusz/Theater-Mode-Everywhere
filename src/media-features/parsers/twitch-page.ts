@@ -342,6 +342,29 @@ export function extractTwitchPayloadFromJson(raw: unknown, videoId?: string | nu
   };
 }
 
+/** XHR/Response JSON is already parsed; inspect it without serializing the body. */
+export function parseTwitchGraphqlData(data: unknown, videoId?: string | null): Partial<TwitchPageAssets> {
+  const parsed = extractTwitchPayloadFromJson(data, videoId);
+  const captions: TwitchPageCaption[] = [];
+  const seen = new Set<string>();
+  let budget = 4000;
+  const walk = (value: unknown, depth: number): void => {
+    if (budget-- <= 0 || depth > 12 || captions.length >= 20) return;
+    if (typeof value === 'string') {
+      if (value.length > 2000 || !value.includes('captions.twitch.tv')) return;
+      for (const caption of parseTwitchCaptionTracks(value, videoId)) {
+        if (seen.has(caption.url)) continue;
+        seen.add(caption.url);
+        captions.push(caption);
+      }
+    } else if (value && typeof value === 'object') {
+      for (const item of Object.values(value)) walk(item, depth + 1);
+    }
+  };
+  walk(data, 0);
+  return { ...parsed, captions };
+}
+
 export function parseTwitchGraphqlBody(body: string, videoId?: string | null): Partial<TwitchPageAssets> {
   const trimmed = body.trim();
   if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) {

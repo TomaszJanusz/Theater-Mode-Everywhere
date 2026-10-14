@@ -10,50 +10,20 @@ export function setPlayerUiCss(css: string): void {
   if (shadow && hostEl?.isConnected) ensureShadowStyles(shadow);
 }
 
-function collectInjectedTheaterCss(): string {
-  const chunks: string[] = [];
-  for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      const text = Array.from(sheet.cssRules, (rule) => rule.cssText).join('\n');
-      if (text.includes('.theater-controls-wrapper')) chunks.push(text);
-    } catch {
-      // Cross-origin page stylesheets are opaque; skip them.
-    }
-  }
-  return chunks.join('\n');
-}
-
 function ensureShadowStyles(root: ShadowRoot): void {
-  const css = playerUiCss || collectInjectedTheaterCss();
+  if (!playerUiCss) return;
   const existing = root.getElementById(STYLE_ID);
   if (existing) {
-    if (css && existing.tagName === 'STYLE' && existing.textContent !== css) {
-      existing.textContent = css;
-    }
+    if (existing.textContent !== playerUiCss) existing.textContent = playerUiCss;
     return;
   }
 
-  // Inline the skin before chrome is mounted. A <link rel="stylesheet"> to
-  // content.css paints the shadow tree as raw HTML until the sheet loads.
-  if (css) {
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = css;
-    root.appendChild(style);
-    return;
-  }
-
-  try {
-    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-      const link = document.createElement('link');
-      link.id = STYLE_ID;
-      link.rel = 'stylesheet';
-      link.href = chrome.runtime.getURL('content.css');
-      root.appendChild(link);
-    }
-  } catch {
-    // Local test pages have no extension runtime.
-  }
+  // Inline the skin before chrome is mounted. A <link rel="stylesheet"> would
+  // paint the shadow tree as raw HTML until the sheet loads.
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = playerUiCss;
+  root.appendChild(style);
 }
 
 export function getPlayerUiRoot(): ShadowRoot {

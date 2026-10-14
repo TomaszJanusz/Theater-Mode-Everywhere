@@ -9,7 +9,8 @@ import { ownTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
@@ -75,9 +76,9 @@ async function boot(page: Page, host: string, saved = true): Promise<void> {
     },
     onChanged: { addListener() {} }
   } };`);
-  await page.addStyleTag({ content: CSS });
+  await page.addStyleTag({ content: PAGE_CSS });
   await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`CaptionTest.setPlayerUiCss(${JSON.stringify(CSS)}); CaptionTest.bootstrapPlayerRuntime();`);
+  await page.evaluate(`CaptionTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); CaptionTest.bootstrapPlayerRuntime();`);
   await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
   await page.keyboard.press('t');
   await page.locator('.theater-controls-wrapper').waitFor();

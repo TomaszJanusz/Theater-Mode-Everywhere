@@ -1,13 +1,27 @@
+import { readPageResponseBytes } from '../../platform/page-body';
+import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 import {
   findDisneyContentTitle,
+  readDisneyPlayerHeader,
   resolveDisneyTitle,
   stripDisneySiteTitle,
+  type DisneyPlayerHeader,
   type DisneyTitleSource
 } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { findActiveVideo } from '../../platform/active-video';
 import { publishHiddenJson } from '../../platform/hidden-json';
+import {
+  DISNEY_CLOCK_MOUNT_MS,
+  createDisneyClockScheduler,
+  disneyPlayheadChanged,
+  disneySeekSettlement,
+  shouldRefreshDisneyTitle,
+  type DisneyClockSample,
+  type DisneyClockScheduler,
+  type DisneyClockTick
+} from './clock-policy';
 import { installDisneyPlayNext } from './play-next';
 import { isDisneyHost } from '../hosts';
 
@@ -20,6 +34,7 @@ export function disneyIntegrationEnabled(): boolean {
 type DisneyHarvest = {
   mediaId?: string;
   title?: string;
+  subtitle?: string;
   duration?: number;
   masterUrl?: string;
   storyboardUrl?: string;
@@ -50,10 +65,21 @@ let disneyHarvestNotifyTimer = 0;
 let disneyTitlePlayId: string | null = null;
 let disneyTitleSource: DisneyTitleSource | null = null;
 let disneyPlaybackTitle: string | null = null;
+let disneyPlayerHeader: DisneyPlayerHeader | null = null;
 let cachedDisneyPlayer: DisneyHivePlayer | null = null;
 let cachedDisneyPlayerHost: Element | null = null;
 const disneyClockBoundPlayers = new WeakSet<object>();
-let disneyClockTimer = 0;
+let clockPlayerGeneration = 0;
+let disneyClockTargets: HTMLVideoElement[] = [];
+let disneyClockVideo: HTMLVideoElement | null = null;
+let unwatchDisneyClockVideo: (() => void) | null = null;
+let disneyClockScheduler: DisneyClockScheduler | null = null;
+let disneyClockInstalled = false;
+let lastDispatchedDisneyPlayhead: number | null = null;
+let lastDispatchedPlayId: string | null = null;
+let disneyClockSeekPlayId: string | null = null;
+let disneyMountPlayId: string | null = null;
+let disneyMountStartedAt = 0;
 let pauseDisneyAfterSeek = false;
 let resumeDisneyPlaybackAfterSeek = false;
 let pendingDisneySeekTarget: number | null = null;
@@ -72,14 +98,6 @@ function disneyPageMediaId(href = window.location.href): string | null {
 function isDssottHostName(hostname: string): boolean {
   const host = hostname.replace(/^www\./i, '').toLowerCase();
   return host === 'dssott.com' || host.endsWith('.dssott.com');
-}
-
-function shouldHarvestDisneyUrl(url: string): boolean {
-  if (!url) return false;
-  if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|gif|vtt|bif|js|css|woff2?)(\?|$)/i.test(url)) return false;
-  if (/bamgrid\.com|disney-plus\.net/i.test(url)) return true;
-  if (/dssott\.com/i.test(url) && /\.json(\?|$)/i.test(url)) return true;
-  return /disneyplus\.com/i.test(url) && /\/(playback|session|explore|api)\//i.test(url);
 }
 
 function disneyDurationSeconds(value: number): number | null {
@@ -102,16 +120,7 @@ function isAllowedDisneyMasterUrl(url: string): boolean {
   }
 }
 
-export function isAllowedDisneyBifUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:' || !isDssottHostName(parsed.hostname)) return false;
-    if (/DUB_CARD/i.test(url)) return false;
-    return /\.bif$/i.test(parsed.pathname) && /thumbnails?\//i.test(url);
-  } catch {
-    return false;
-  }
-}
+export { isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 
 function disneyBifFrameCount(buffer: ArrayBuffer): number {
   if (buffer.byteLength < 80) return 0;
@@ -218,26 +227,39 @@ function readDisneyPlayerChromeTitle(): string | null {
 function syncDisneyDisplayedTitle(): boolean {
   const playId = disneyPageMediaId();
   const previousPlayId = disneyTitlePlayId;
-  if (playId !== previousPlayId) disneyPlaybackTitle = null;
+  if (playId !== previousPlayId) {
+    disneyPlaybackTitle = null;
+    disneyPlayerHeader = null;
+  }
   const resolved = resolveDisneyTitle({
     playId,
     previousPlayId,
     title: disneyHarvest.title || null,
     source: disneyTitleSource,
+    playerHeader: disneyPlayerHeader?.title,
     playerChrome: readDisneyPlayerChromeTitle(),
     playbackTitle: disneyPlaybackTitle,
     documentTitle: document.title,
     openGraphTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')
   });
   disneyTitlePlayId = playId;
+  return applyDisneyTitle(resolved);
+}
+
+/** The episode label belongs to the player header, so another title source never inherits it. */
+function applyDisneyTitle(resolved: { title: string | null; source: DisneyTitleSource | null }): boolean {
+  const title = resolved.title || undefined;
+  const subtitle = title && resolved.source === 'player' ? disneyPlayerHeader?.subtitle || undefined : undefined;
+  const changed = title !== disneyHarvest.title || subtitle !== disneyHarvest.subtitle;
+  disneyHarvest.title = title;
+  disneyHarvest.subtitle = subtitle;
   disneyTitleSource = resolved.source;
-  if (!resolved.changed) return false;
-  disneyHarvest.title = resolved.title || undefined;
-  return true;
+  return changed;
 }
 
 function extractDisneyHarvest(raw: unknown): {
   title?: string;
+  header?: DisneyPlayerHeader;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -282,9 +304,11 @@ function extractDisneyHarvest(raw: unknown): {
   walk(raw, 0);
   const storyboardUrl = thumbnail?.bifUrl || storyboards[0];
   const title = findDisneyContentTitle(raw, disneyPageMediaId()) || undefined;
-  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title) return null;
+  const header = readDisneyPlayerHeader(raw) || undefined;
+  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title && !header) return null;
   return {
     title,
+    header,
     duration: namedDurations.length > 0 ? Math.max(...namedDurations) : undefined,
     masterUrl,
     captions,
@@ -303,6 +327,7 @@ function resetDisneyHarvest(mediaId?: string): void {
   }
   disneyHarvest = { mediaId, captions: [] };
   disneyPlaybackTitle = null;
+  disneyPlayerHeader = null;
   disneyTitleSource = null;
   disneyTitlePlayId = mediaId || null;
 }
@@ -334,7 +359,9 @@ export function harvestDisneyBifFromXhr(xhr: XMLHttpRequest): void {
       return;
     }
     if (xhr.response instanceof Blob) {
-      xhr.response.arrayBuffer().then((buffer) => rememberDisneyBif(buffer, url)).catch(() => {});
+      if (xhr.response.size > MAX_BIF_BYTES) return;
+      readPageResponseBytes({ body: xhr.response.stream() }, MAX_BIF_BYTES, undefined, disneyIntegrationEnabled)
+        .then((buffer) => { if (buffer) rememberDisneyBif(buffer, url); }).catch(() => {});
     }
   } catch {
     // Ignore binary harvest failures from host XHR.
@@ -354,6 +381,7 @@ function publishDisneyHarvest(): void {
   publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, {
     mediaId,
     title: disneyHarvest.title,
+    subtitle: disneyHarvest.subtitle,
     duration: disneyHarvest.duration,
     masterUrl: disneyHarvest.masterUrl,
     storyboardUrl: disneyHarvest.storyboardUrl,
@@ -374,6 +402,7 @@ function notifyDisneyHarvest(): void {
 
 function mergeDisneyHarvest(next: {
   title?: string;
+  header?: DisneyPlayerHeader;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -386,24 +415,22 @@ function mergeDisneyHarvest(next: {
   }
   if (mediaId) disneyHarvest.mediaId = mediaId;
   let changed = false;
-  if (next.title) {
-    disneyPlaybackTitle = next.title;
+  if (next.title || next.header) {
+    if (next.title) disneyPlaybackTitle = next.title;
+    if (next.header) disneyPlayerHeader = next.header;
     const resolved = resolveDisneyTitle({
       playId: mediaId,
       previousPlayId: mediaId,
       title: disneyHarvest.title || null,
       source: disneyTitleSource,
+      playerHeader: next.header?.title,
       playerChrome: null,
       playbackTitle: next.title,
       documentTitle: null,
       openGraphTitle: null
     });
-    if (resolved.changed || resolved.source !== disneyTitleSource) {
-      disneyHarvest.title = resolved.title || undefined;
-      disneyTitleSource = resolved.source;
-      disneyTitlePlayId = mediaId;
-      changed = true;
-    }
+    disneyTitlePlayId = mediaId;
+    if (applyDisneyTitle(resolved)) changed = true;
   }
   if (next.duration && next.duration !== disneyHarvest.duration) {
     disneyHarvest.duration = next.duration;
@@ -432,19 +459,18 @@ function mergeDisneyHarvest(next: {
 
 export function harvestDisneyData(url: string, data: unknown): void {
   if (!disneyIntegrationEnabled()) return;
-  if (!isDisneyHost(window.location.hostname) && !shouldHarvestDisneyUrl(url)) return;
+  if (!isDisneyHost(window.location.hostname) || (url && !shouldHarvestDisneyUrl(url))) return;
   const extracted = extractDisneyHarvest(data);
   if (extracted) mergeDisneyHarvest(extracted);
 }
 
 export function harvestDisneyBody(url: string, body: string): void {
-  if (!disneyIntegrationEnabled() || !body) return;
+  if (!disneyIntegrationEnabled() || !isDisneyHost(window.location.hostname) || (url && !shouldHarvestDisneyUrl(url)) || !body) return;
   if (body.length > MAX_CAPTION_BYTES) return;
   const trimmed = body.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
-  if (!shouldHarvestDisneyUrl(url) && !isDisneyHost(window.location.hostname)) return;
   if (!/runtimeMillis|runtimeMs|"timedText"|timedTextTracks|trickPlay|subtitle|caption|"bifs"|una-ctr-all|"complete"/i.test(trimmed.slice(0, 8000))
-    && !shouldHarvestDisneyUrl(url)) return;
+    && !url) return;
   try {
     harvestDisneyData(url, JSON.parse(trimmed));
   } catch {
@@ -452,17 +478,20 @@ export function harvestDisneyBody(url: string, body: string): void {
   }
 }
 
+/** Consume the single qualified clone supplied by MAIN. */
 export function captureDisneyNetworkResponse(url: string, response: Response): void {
   if (!disneyIntegrationEnabled()) return;
   const finalUrl = (response && response.url) || url;
   if (!response || !response.ok) return;
   if (isAllowedDisneyBifUrl(url) || isAllowedDisneyBifUrl(finalUrl)) {
-    response.clone().arrayBuffer().then((buffer) => rememberDisneyBif(buffer, finalUrl || url)).catch(() => {});
+    readPageResponseBytes(response, MAX_BIF_BYTES, undefined, disneyIntegrationEnabled)
+      .then((buffer) => { if (buffer) rememberDisneyBif(buffer, finalUrl || url); }).catch(() => {});
     return;
   }
   if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|vtt|bif)(\?|$)/i.test(finalUrl)) return;
   if (!shouldHarvestDisneyUrl(url) && !shouldHarvestDisneyUrl(finalUrl)) return;
-  response.clone().text().then((text) => harvestDisneyBody(finalUrl, text)).catch(() => {});
+  readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, disneyIntegrationEnabled)
+    .then((buffer) => { if (buffer) harvestDisneyBody(finalUrl, new TextDecoder().decode(buffer)); }).catch(() => {});
 }
 
 export function readDisneySnapshot(): Record<string, unknown> | null {
@@ -480,7 +509,7 @@ export function readDisneySnapshot(): Record<string, unknown> | null {
     }
     return {
       mediaId,
-      ...(disneyHarvest.title ? { title: disneyHarvest.title } : {}),
+      ...(disneyHarvest.title ? { title: disneyHarvest.title, subtitle: disneyHarvest.subtitle } : {}),
       duration: disneyHarvest.duration,
       masterUrl: disneyHarvest.masterUrl,
       storyboardUrl: disneyHarvest.storyboardUrl,
@@ -621,7 +650,16 @@ function applyDisneyHostSeek(
   }
 }
 
+function invalidateDisneyPlayerCache(): void {
+  if (!cachedDisneyPlayer && !cachedDisneyPlayerHost) return;
+  cachedDisneyPlayer = null;
+  cachedDisneyPlayerHost = null;
+  disneyClockTargets = [];
+  clockPlayerGeneration += 1;
+}
+
 function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHivePlayer {
+  if (cachedDisneyPlayer !== player) clockPlayerGeneration += 1;
   cachedDisneyPlayer = player;
   cachedDisneyPlayerHost = host;
   return player;
@@ -722,8 +760,7 @@ function findDisneyHivePlayer(video?: HTMLVideoElement | null, refresh = false):
       host = host.parentElement;
     }
   }
-  cachedDisneyPlayer = null;
-  cachedDisneyPlayerHost = null;
+  invalidateDisneyPlayerCache();
   return null;
 }
 
@@ -733,44 +770,228 @@ function disneyPlayheadSeconds(player: DisneyHivePlayer | null): number | null {
 }
 
 function disneyHiveSeekReached(player: DisneyHivePlayer | null, targetSeconds: number): boolean {
-  const playhead = disneyPlayheadSeconds(player);
-  return playhead != null && Math.abs(playhead - targetSeconds) <= 2.5;
+  return disneySeekSettlement({
+    pendingTarget: targetSeconds,
+    playhead: disneyPlayheadSeconds(player),
+    pauseAfterSeek: false
+  }) !== 'wait';
+}
+
+function rememberDisneyClockVideo(video: HTMLVideoElement | null): void {
+  disneyClockTargets = disneyClockTargets.filter((node) => node.isConnected && node !== video);
+  if (video) disneyClockTargets.unshift(video);
+  disneyClockTargets = disneyClockTargets.slice(0, 4);
+  const current = video && video.isConnected ? video : disneyClockTargets.find((node) => node.isConnected) ?? null;
+  watchDisneyClockVideo(current);
+}
+
+function watchDisneyClockVideo(video: HTMLVideoElement | null): void {
+  if (video === disneyClockVideo) return;
+  unwatchDisneyClockVideo?.();
+  unwatchDisneyClockVideo = null;
+  disneyClockVideo = video;
+  if (!video) return;
+  const onPlayback = () => ensureDisneyClock();
+  video.addEventListener('play', onPlayback);
+  video.addEventListener('pause', onPlayback);
+  unwatchDisneyClockVideo = () => {
+    video.removeEventListener('play', onPlayback);
+    video.removeEventListener('pause', onPlayback);
+  };
+}
+
+function readDisneyClockSample(): DisneyClockSample {
+  const host = isDisneyHost(window.location.hostname);
+  const playId = host ? disneyPageMediaId() : null;
+  const player = disneyPlayerCacheValid() ? cachedDisneyPlayer : null;
+  const video = disneyClockVideo && disneyClockVideo.isConnected ? disneyClockVideo : null;
+  const enabled = host && disneyIntegrationEnabled();
+  const mounting = Boolean(
+    enabled
+    && playId
+    && !player
+    && disneyMountPlayId === playId
+    && performance.now() - disneyMountStartedAt < DISNEY_CLOCK_MOUNT_MS
+  );
+  return {
+    enabled,
+    hidden: document.hidden,
+    playId,
+    playerBound: player != null,
+    nativeBound: Boolean(player && disneyClockBoundPlayers.has(player)),
+    // Without a video element, keep reading a bound player until play/pause is known.
+    paused: video ? video.paused : !player,
+    pendingSeek: pendingDisneySeekTarget != null,
+    playerGeneration: clockPlayerGeneration,
+    playerMounting: mounting
+  };
+}
+
+/** One bounded look after a wake signal. Later signals start a new window; they do not extend this one. */
+function openDisneyMountWindow(playId: string): void {
+  if (disneyMountPlayId === playId && performance.now() - disneyMountStartedAt < DISNEY_CLOCK_MOUNT_MS) return;
+  disneyMountPlayId = playId;
+  disneyMountStartedAt = performance.now();
+}
+
+function disneyClock(): DisneyClockScheduler {
+  if (!disneyClockScheduler) {
+    disneyClockScheduler = createDisneyClockScheduler({
+      now: () => performance.now(),
+      setInterval: (callback, ms) => window.setInterval(callback, ms),
+      clearInterval: (id) => window.clearInterval(id),
+      setTimeout: (callback, ms) => window.setTimeout(callback, ms),
+      clearTimeout: (id) => window.clearTimeout(id)
+    }, {
+      sample: readDisneyClockSample,
+      perform: performDisneyClockWork
+    });
+  }
+  return disneyClockScheduler;
+}
+
+function discoverDisneyClockPlayer(): void {
+  if (document.hidden || !disneyIntegrationEnabled() || !isDisneyHost(window.location.hostname)) return;
+  if (!disneyPageMediaId()) return;
+  // No shell yet: the mount window retries this query. Skip the fiber walk.
+  if (!document.querySelector('disney-web-player, video')) return;
+  const video = disneyActiveMediaVideo();
+  rememberDisneyClockVideo(video);
+  const player = findDisneyHivePlayer(video);
+  bindDisneyPlayerClock(player);
+}
+
+function performDisneyClockWork(kind: DisneyClockTick): void {
+  if (kind === 'discover') {
+    discoverDisneyClockPlayer();
+    return;
+  }
+  const player = disneyPlayerCacheValid() ? cachedDisneyPlayer : null;
+  if (kind === 'playhead') {
+    publishDisneyPlayhead(disneyClockVideo, player);
+    return;
+  }
+  if (player) settleDisneySeek(player);
+}
+
+function maybeRefreshDisneyTitle(requested: boolean): void {
+  if (document.hidden || !isDisneyHost(window.location.hostname)) return;
+  const playId = disneyPageMediaId();
+  if (!shouldRefreshDisneyTitle({
+    enabled: disneyIntegrationEnabled(),
+    playId,
+    previousPlayId: disneyTitlePlayId,
+    requested
+  })) return;
+  if (syncDisneyDisplayedTitle()) notifyDisneyHarvest();
+}
+
+function ensureDisneyClock(refreshTitle = false): void {
+  if (!isDisneyHost(window.location.hostname)) {
+    retireDisneySeekIfSessionEnded();
+    disneyClock().suspend();
+    return;
+  }
+  retireDisneySeekIfSessionEnded();
+  const playId = disneyIntegrationEnabled() && !document.hidden ? disneyPageMediaId() : null;
+  if (playId && !disneyPlayerCacheValid()) openDisneyMountWindow(playId);
+  maybeRefreshDisneyTitle(refreshTitle);
+  disneyClock().sync();
 }
 
 function publishDisneyPlayhead(video: HTMLVideoElement | null, player: DisneyHivePlayer | null): number | null {
   const seconds = disneyPlayheadSeconds(player);
-  if (seconds == null) return seconds;
-  const videos = new Set<HTMLVideoElement>(disneyMediaVideos(video));
-  if (video && isUsableDisneyMediaVideo(video)) videos.add(video);
-  for (const node of videos) {
+  if (seconds == null) return null;
+  const playId = disneyPageMediaId();
+  if (playId !== lastDispatchedPlayId) {
+    lastDispatchedDisneyPlayhead = null;
+    lastDispatchedPlayId = playId;
+  }
+  if (disneyClockTargets.some((node) => !node.isConnected)) {
+    disneyClockTargets = disneyClockTargets.filter((node) => node.isConnected);
+  }
+  const text = String(seconds);
+  let wrote = false;
+  const targets = new Set<HTMLVideoElement>(disneyClockTargets);
+  if (video && video.isConnected) targets.add(video);
+  for (const node of targets) {
+    let current: string | null = null;
     try {
-      node.dataset.teDisneyPlayhead = String(seconds);
+      current = node.dataset.teDisneyPlayhead ?? null;
+    } catch {
+      continue;
+    }
+    if (!disneyPlayheadChanged(current, seconds)) continue;
+    try {
+      node.dataset.teDisneyPlayhead = text;
+      wrote = true;
     } catch {
       // Dataset may be missing on unexpected hosts.
     }
   }
+  if (!wrote && lastDispatchedDisneyPlayhead === seconds) return seconds;
+  lastDispatchedDisneyPlayhead = seconds;
   window.dispatchEvent(new CustomEvent(DISNEY_CLOCK_EVENT, {
-    detail: { time: seconds, mediaId: disneyPageMediaId() }
+    detail: { time: seconds, mediaId: playId }
   }));
   return seconds;
+}
+
+function settleDisneySeek(player: DisneyHivePlayer): void {
+  const action = disneySeekSettlement({
+    pendingTarget: pendingDisneySeekTarget,
+    playhead: disneyPlayheadSeconds(player),
+    pauseAfterSeek: pauseDisneyAfterSeek
+  });
+  if (action === 'wait') return;
+  // Drop the pending seek before pausing. Hive pause can emit a video pause
+  // event, and that event syncs the clock; completing first keeps it from
+  // entering this check again.
+  const pause = action === 'complete-and-pause';
+  pauseDisneyAfterSeek = false;
+  resumeDisneyPlaybackAfterSeek = false;
+  pendingDisneySeekTarget = null;
+  if (!pause) return;
+  try {
+    player.pause?.();
+  } catch {
+    // Ignore pause races after seek.
+  }
+}
+
+function retireDisneySeekIfSessionEnded(): void {
+  const playId = isDisneyHost(window.location.hostname) && disneyIntegrationEnabled()
+    ? disneyPageMediaId()
+    : null;
+  const previous = disneyClockSeekPlayId;
+  if (playId === previous) return;
+  disneyClockSeekPlayId = playId;
+  if (previous == null) return;
+  if (pendingDisneySeekTarget == null && !pauseDisneyAfterSeek && !resumeDisneyPlaybackAfterSeek) return;
+  pendingDisneySeekTarget = null;
+  pauseDisneyAfterSeek = false;
+  resumeDisneyPlaybackAfterSeek = false;
+  disneySeekGeneration += 1;
+  cancelDisneyResumeAttempts();
 }
 
 function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
   if (!player || typeof player.on !== 'function') return;
   if (disneyClockBoundPlayers.has(player)) return;
   const publish = () => {
-    publishDisneyPlayhead(disneyActiveMediaVideo(), player);
-    if (pendingDisneySeekTarget == null || !disneyHiveSeekReached(player, pendingDisneySeekTarget)) return;
-    if (pauseDisneyAfterSeek) {
-      try {
-        player.pause?.();
-      } catch {
-        // Ignore pause races after seek.
-      }
+    if (cachedDisneyPlayer !== player) return;
+    if (
+      document.hidden
+      || !disneyIntegrationEnabled()
+      || !isDisneyHost(window.location.hostname)
+      || !disneyPageMediaId()
+    ) {
+      disneyClock().suspend();
+      return;
     }
-    pauseDisneyAfterSeek = false;
-    resumeDisneyPlaybackAfterSeek = false;
-    pendingDisneySeekTarget = null;
+    publishDisneyPlayhead(disneyClockVideo, player);
+    settleDisneySeek(player);
+    disneyClock().noteNative();
   };
   try {
     player.on('@EVENT/PLAYER/TIMECODE', publish);
@@ -784,23 +1005,6 @@ function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
   }
 }
 
-function ensureDisneyClock(): void {
-  if (!isDisneyHost(window.location.hostname) || !disneyIntegrationEnabled()) return;
-  const video = disneyActiveMediaVideo();
-  const player = findDisneyHivePlayer(video);
-  bindDisneyPlayerClock(player);
-  publishDisneyPlayhead(video, player);
-  if (disneyClockTimer) return;
-  disneyClockTimer = window.setInterval(() => {
-    if (!disneyIntegrationEnabled()) return;
-    const active = disneyActiveMediaVideo();
-    const next = findDisneyHivePlayer(active);
-    bindDisneyPlayerClock(next);
-    publishDisneyPlayhead(active, next);
-    if (syncDisneyDisplayedTitle()) notifyDisneyHarvest();
-  }, 250);
-}
-
 export function handleDisneyMediaSeek(
   detail: { live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean },
   video: Element | null
@@ -810,6 +1014,7 @@ export function handleDisneyMediaSeek(
     resumeDisneyPlaybackAfterSeek = false;
     cancelDisneyResumeAttempts();
     disneySeekGeneration += 1;
+    if (isDisneyHost(window.location.hostname) && disneyIntegrationEnabled()) ensureDisneyClock();
     return isDisneyHost(window.location.hostname) && disneyIntegrationEnabled();
   }
   if (
@@ -853,16 +1058,37 @@ export function handleDisneyMediaSeek(
         // Retry can fail if the session dropped.
       }
     }, DISNEY_SEEK_RETRY_MS);
+    rememberDisneyClockVideo(mediaVideo);
   }
+  // A paused scrub still has to publish the landed playhead and settle the
+  // seek. That check is the cheap interval; it does not scan for a player.
+  ensureDisneyClock();
   return true;
+}
+
+function installDisneyClockLifecycle(): void {
+  if (disneyClockInstalled) return;
+  disneyClockInstalled = true;
+  document.addEventListener('visibilitychange', () => ensureDisneyClock(!document.hidden));
+  window.addEventListener('popstate', () => ensureDisneyClock());
+  window.addEventListener('pagehide', () => disneyClock().suspend());
+  window.addEventListener('pageshow', () => ensureDisneyClock(true));
+  // Disable is a dataset flag, not a DOM rebuild. Attribute-only observation stays cheap.
+  if (document.documentElement) {
+    new MutationObserver(() => ensureDisneyClock(true)).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-te-disney-integration-off']
+    });
+  }
 }
 
 export function installDisneyMain(): void {
   window.addEventListener('theater-everywhere-disney-harvest', () => {
-    ensureDisneyClock();
+    ensureDisneyClock(true);
   });
   if (isDisneyHost(window.location.hostname)) {
-    ensureDisneyClock();
+    installDisneyClockLifecycle();
+    ensureDisneyClock(true);
   }
   installDisneyPlayNext();
 }

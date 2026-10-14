@@ -1,5 +1,7 @@
 import { youtubeWatchPlayback } from './youtube/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
+import { disneyWatchPlayback } from './disney/watch-playback';
+import { netflixWatchPlayback } from './netflix/watch-playback';
 import type { WatchPlayback } from './watch-playback';
 import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
@@ -21,8 +23,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
-  { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname) },
-  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname) },
+  { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
+  { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
   { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname) },
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname) },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },

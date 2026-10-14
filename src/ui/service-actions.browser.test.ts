@@ -8,7 +8,8 @@ import { describe, it } from 'node:test';
 
 const require = createRequire(import.meta.url);
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 
 type Esbuild = {
   buildSync: (options: {
@@ -146,7 +147,8 @@ describe('service action CTA', () => {
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
       await page.setContent('<div class="watch-video"><div data-uia="player"><div data-uia="video-canvas"><video></video><div class="player-timedtext"></div></div></div></div>');
-      await page.addStyleTag({ content: CSS });
+      // The fixture keeps toolbar chrome in the light DOM, so it needs both sheets.
+      await page.addStyleTag({ content: `${PAGE_CSS}\n${UI_CSS}` });
       await page.addScriptTag({ content: uiBundle });
       const report = await page.evaluate(`(async () => {
         document.documentElement.className = 'theater-everywhere-netflix-stage theater-everywhere-picture-top';
@@ -281,7 +283,7 @@ describe('service action CTA', () => {
         const fill = native.querySelector('.inner');
         void fill.offsetWidth;
         fill.style.transform = 'translateX(0)';
-      })(${JSON.stringify(CSS)})`);
+      })(${JSON.stringify(UI_CSS)})`);
       assert.deepEqual(await page.locator('.theater-service-action').allTextContents(), ['Następny odcinek', 'Wyświetl napisy końcowe']);
       await page.waitForFunction(() => {
         const fill = document.querySelector('[data-uia="next-episode-seamless-button-draining"] .inner');
@@ -667,7 +669,7 @@ describe('service action CTA', () => {
             tick();
           });
         }
-      })(${JSON.stringify(CSS)})`) as {
+      })(${JSON.stringify(UI_CSS)})`) as {
         live: string | null;
         atomic: string | null;
         restingBottom: string;

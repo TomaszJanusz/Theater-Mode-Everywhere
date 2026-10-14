@@ -31,6 +31,19 @@ function bundle(): string {
   }).outputFiles[0].text;
 }
 
+function bundleEntry(file: string, globalName: string): string {
+  return require('esbuild').buildSync({
+    entryPoints: [new URL(file, import.meta.url).pathname],
+    bundle: true,
+    write: false,
+    format: 'iife',
+    globalName,
+    platform: 'browser',
+    target: 'es2022',
+    logLevel: 'silent'
+  }).outputFiles[0].text;
+}
+
 const TWITCH = `<div id="layout" style="width:1000px">
   <div class="persistent-player" id="player"></div>
   <div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:360px;color:rgb(1, 2, 3)">
@@ -1054,6 +1067,325 @@ describe('native chat controller', () => {
       assert.deepEqual(report.restored, {dark:true,bridge:false,mismatches:[]});
       assert.ok(report.events.includes('unavailable'));
     } finally { await page.close(); }
+  });
+
+  it('limits discovery and theme work to visible watch routes', async t => {
+    if (!browser || !code) { t.skip('Chromium is not installed'); return; }
+    const engines = ['chromium', 'firefox'] as const;
+    for (const engine of engines) {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const engineBrowser: Browser = engine === 'chromium' ? browser : await browserType.launch({ headless: true });
+      const page: Page = await engineBrowser.newPage({ viewport: { width: 1280, height: 800 } });
+      try {
+        await page.setContent('<!doctype html><html><body><div id="layout"></div></body></html>', { waitUntil: 'domcontentloaded' });
+        const start = new Date('2026-01-01T00:00:00Z');
+        await page.clock.install({ time: start });
+        await page.clock.pauseAt(new Date(start.getTime() + 1000));
+        await page.addScriptTag({ content: code });
+        const hidden = await page.evaluate(`(() => {
+          let hidden = true;
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+          window.__setHidden = (value) => { hidden = value; document.dispatchEvent(new Event('visibilitychange')); };
+          let refreshes = 0, documentQueries = 0, elementQueries = 0, allQueries = 0;
+          const query = Document.prototype.querySelector;
+          Document.prototype.querySelector = function(selector) { documentQueries += 1; return query.call(this, selector); };
+          const elementQuery = Element.prototype.querySelector;
+          Element.prototype.querySelector = function(selector) { elementQueries += 1; return elementQuery.call(this, selector); };
+          const queryAll = Document.prototype.querySelectorAll;
+          Document.prototype.querySelectorAll = function(selector) { allQueries += 1; return queryAll.call(this, selector); };
+          const raw = NativeChat.ChatController.prototype.refresh;
+          NativeChat.ChatController.prototype.refresh = function() { refreshes += 1; return raw.call(this); };
+          window.__counts = () => ({ refreshes, documentQueries, elementQueries, allQueries });
+          window.__zero = () => { refreshes = documentQueries = elementQueries = allQueries = 0; };
+          window.__href = 'https://www.twitch.tv/videos/55';
+          const controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__controller = controller;
+          window.__zero();
+          return { available: controller.state.available, surface: controller.state.surface };
+        })()`) as { available: boolean; surface: null };
+        assert.deepEqual(hidden, { available: false, surface: null }, engine);
+        await page.clock.runFor(10_000);
+        assert.deepEqual(await page.evaluate('window.__counts()'), { refreshes: 0, documentQueries: 0, elementQueries: 0, allQueries: 0 }, engine);
+        await page.evaluate(`(() => {
+          document.getElementById('layout').insertAdjacentHTML('beforeend', '<div class="right-column" id="column"><div class="video-chat"></div></div>');
+          for (let i = 0; i < 100; i += 1) document.body.append(document.createElement('div'));
+        })()`);
+        assert.equal((await page.evaluate('window.__counts()') as { elementQueries: number }).elementQueries, 0, engine);
+        await page.evaluate('window.__setHidden(false)');
+        const shown = await page.evaluate(`(() => {
+          const controller = window.__controller;
+          return { available: controller.state.available, kind: controller.state.surface && controller.state.surface.kind, marked: document.getElementById('column').hasAttribute('data-theater-chat') };
+        })()`) as { available: boolean; kind: string; marked: boolean };
+        assert.deepEqual(shown, { available: true, kind: 'replay', marked: true }, engine);
+
+        await page.evaluate(`(() => {
+          window.__href = 'https://example.com/watch';
+          window.__controller.dispose();
+          document.body.innerHTML = '<div id="layout"></div>';
+          window.__setHidden(false);
+          window.__zero();
+          let layouts = 0;
+          const controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() { layouts += 1; } });
+          window.__controller = controller;
+          layouts = 0;
+          window.__layouts = () => layouts;
+          window.__zero();
+          const layout = document.getElementById('layout');
+          for (let i = 0; i < 100; i += 1) layout.append(document.createElement('div'));
+          const ui = document.createElement('div');
+          ui.id = 'theater-everywhere-ui';
+          for (let i = 0; i < 20; i += 1) ui.append(document.createElement('div'));
+          document.body.append(ui);
+        })()`);
+        await page.evaluate('Promise.resolve()');
+        const generic = await page.evaluate(`(() => ({ ...window.__counts(), available: window.__controller.state.available, layouts: window.__layouts() }))()`) as { elementQueries: number; documentQueries: number; available: boolean; layouts: number };
+        assert.equal(generic.elementQueries, 0, engine);
+        assert.equal(generic.documentQueries, 0, engine);
+        assert.equal(generic.available, false, engine);
+        assert.equal(generic.layouts, 0, engine);
+        await page.clock.runFor(10_000);
+        assert.equal((await page.evaluate('window.__counts()') as { documentQueries: number }).documentQueries, 0, engine);
+
+        await page.evaluate(`(() => {
+          window.__controller.dispose();
+          document.body.innerHTML = '<div id="layout"></div><div id="lines"></div>';
+          window.__href = 'https://www.twitch.tv/SomeChannel';
+          document.getElementById('layout').insertAdjacentHTML('beforeend', '<div class="right-column" data-a-target="right-column-chat-bar" id="column"><section class="chat-room" data-test-selector="chat-room-component-layout"><div id="lines"></div></section></div>');
+          let layouts = 0;
+          const controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() { layouts += 1; } });
+          window.__controller = controller;
+          layouts = 0;
+          window.__layouts = () => layouts;
+          const lines = document.querySelector('#column #lines');
+          window.__zero();
+          for (let i = 0; i < 30; i += 1) {
+            const line = document.createElement('div');
+            line.className = 'chat-line__message';
+            line.textContent = 'hello ' + i;
+            lines.append(line);
+          }
+        })()`);
+        await page.clock.runFor(10_000);
+        const messages = await page.evaluate(`(() => ({ ...window.__counts(), layouts: window.__layouts(), visible: window.__controller.state.visible }))()`) as { elementQueries: number; documentQueries: number; layouts: number; visible: boolean };
+        assert.equal(messages.elementQueries, 0, engine);
+        assert.equal(messages.documentQueries, 0, engine);
+        assert.equal(messages.layouts, 0, engine);
+        assert.equal(messages.visible, true, engine);
+
+        const idleTheme = await page.evaluate(`(() => {
+          const style = document.createElement('style');
+          style.textContent = '.NativeDark.NativeDark{--color-background-base:var(--color-hinted-grey-2);--color-background-input:#18181b;--color-text-base:#efeff1;--color-hinted-grey-2:#18181b;--color-white:#fff}';
+          document.head.append(style);
+          document.getElementById('column').classList.add('NativeDark', 'tw-root--theme-dark');
+          window.__controller.setTheme('dark');
+          window.__zero();
+          return window.__controller.state.themeStatus;
+        })()`);
+        assert.equal(idleTheme, 'applied', engine);
+        await page.clock.runFor(7_000);
+        const visibleTicks = await page.evaluate('window.__counts().allQueries') as number;
+        assert.ok(visibleTicks <= 2, `${engine} themed ${visibleTicks} times while idle`);
+        await page.evaluate('window.__zero(); window.__setHidden(true)');
+        await page.clock.runFor(10_000);
+        const hiddenCounts = await page.evaluate('window.__counts()') as { allQueries: number; refreshes: number };
+        assert.equal(hiddenCounts.allQueries, 0, engine);
+        assert.equal(hiddenCounts.refreshes, 0, engine);
+        await page.evaluate('window.__setHidden(false)');
+        const restored = await page.evaluate(`(() => ({
+          status: window.__controller.state.themeStatus,
+          dark: document.getElementById('column').classList.contains('tw-root--theme-dark')
+        }))()`) as { status: string; dark: boolean };
+        assert.deepEqual(restored, { status: 'applied', dark: true }, engine);
+
+        await page.evaluate(`(() => {
+          window.__controller.dispose();
+          window.__zero();
+        })()`);
+        await page.clock.runFor(10_000);
+        assert.deepEqual(await page.evaluate('window.__counts()'), { refreshes: 0, documentQueries: 0, elementQueries: 0, allQueries: 0 }, engine);
+
+        await page.evaluate(`(() => {
+          document.body.innerHTML = '<div id="layout"></div>';
+          window.__setHidden(false);
+          window.__href = 'https://www.twitch.tv/videos/55';
+          window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__zero();
+        })()`);
+        await page.clock.runFor(10_000);
+        const lateMount = await page.evaluate('window.__counts()') as { refreshes: number; documentQueries: number };
+        assert.ok(lateMount.refreshes >= 1 && lateMount.refreshes <= 6, `${engine} late refresh ${lateMount.refreshes}`);
+        assert.ok(lateMount.documentQueries > 0 && lateMount.documentQueries < 80, `${engine} late queries ${lateMount.documentQueries}`);
+
+        const routes = await page.evaluate(`(() => {
+          window.__controller.dispose();
+          document.body.replaceChildren();
+          document.body.insertAdjacentHTML('beforeend', '<div class="right-column"><div class="video-chat"></div></div>');
+          window.__href = 'https://m.twitch.tv/videos/55';
+          const mobile = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          const mobileState = { available: mobile.state.available, kind: mobile.state.surface && mobile.state.surface.kind };
+          mobile.dispose();
+          document.body.replaceChildren();
+          window.__href = 'https://player.twitch.tv/?channel=SomeChannel';
+          window.__zero();
+          const player = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          for (let i = 0; i < 100; i += 1) document.body.append(document.createElement('div'));
+          const playerState = { available: player.state.available, queries: window.__counts().elementQueries };
+          player.dispose();
+          document.body.replaceChildren();
+          document.body.insertAdjacentHTML('beforeend', ${JSON.stringify(YOUTUBE)});
+          window.__href = 'https://www.youtube.com/';
+          window.__zero();
+          const home = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__controller = home;
+          for (let i = 0; i < 100; i += 1) document.body.append(document.createElement('div'));
+          const homeState = { available: home.state.available, queries: window.__counts().elementQueries };
+          window.__href = 'https://www.youtube-nocookie.com/embed/AbCdEfGhIjK';
+          return { mobileState, playerState, homeState };
+        })()`) as {
+          mobileState: { available: boolean; kind: string };
+          playerState: { available: boolean; queries: number };
+          homeState: { available: boolean; queries: number };
+        };
+        assert.deepEqual(routes.mobileState, { available: true, kind: 'replay' }, engine);
+        assert.deepEqual(routes.playerState, { available: false, queries: 0 }, engine);
+        assert.deepEqual(routes.homeState, { available: false, queries: 0 }, engine);
+        await page.clock.runFor(500);
+        const embed = await page.evaluate(`(() => {
+          const state = window.__controller.state;
+          window.__controller.dispose();
+          return { available: state.available, key: state.surface && state.surface.contentKey };
+        })()`) as { available: boolean; key: string };
+        assert.deepEqual(embed, { available: true, key: 'AbCdEfGhIjK' }, engine);
+      } finally {
+        await page.close();
+        if (engine !== 'chromium') await engineBrowser.close();
+      }
+    }
+  });
+
+  it('keeps the stage size variables following the viewport on pages without chat', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith('<div id="layout"></div>');
+    try {
+      await page.evaluate(`(() => {
+        window.__layouts = 0;
+        window.__controller = new NativeChat.ChatController({
+          document, href: () => 'https://example.com/watch', onChange() {}, onLayoutChange() { window.__layouts += 1; }
+        });
+      })()`);
+      const width = () => page.evaluate(`document.documentElement.style.getPropertyValue('--theater-video-width')`);
+      const before = await width();
+      // Registered after the controller's own listener, so it fires once the frame is scheduled.
+      await page.evaluate(`window.__resized = false; window.addEventListener('resize', () => { window.__resized = true; })`);
+      await page.setViewportSize({ width: 640, height: 720 });
+      await page.waitForFunction('window.__resized');
+      await page.clock.runFor(50);
+      assert.notEqual(await width(), before, 'a resize on a generic page must republish the video width');
+      assert.ok(Number(await page.evaluate('window.__layouts')) > 0, 'a resize must notify the layout owner');
+    } finally {
+      await page.close();
+    }
+  });
+
+  it('releases detached Twitch portal records without dropping a same-batch reparent', async t => {
+    if (!browser) { t.skip('Chromium is not installed'); return; }
+    const ownedCode = bundleEntry('./owned-dom.ts', 'OwnedDomMod');
+    const twitchCode = bundleEntry('./adapters/twitch.ts', 'TwitchTheme');
+    const engines = ['chromium', 'firefox'] as const;
+    for (const engine of engines) {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const engineBrowser: Browser = engine === 'chromium' ? browser : await browserType.launch({ headless: true });
+      const page: Page = await engineBrowser.newPage();
+      try {
+        await page.setContent(`<!doctype html><html><head></head><body>
+          <div class="right-column NativeDark tw-root--theme-dark" id="column">
+            <section class="chat-room" data-test-selector="chat-room-component-layout"></section>
+          </div></body></html>`);
+        await page.addScriptTag({ content: ownedCode + '\n' + twitchCode });
+        const report = await page.evaluate(`(() => {
+          const column = document.getElementById('column');
+          const style = document.createElement('style');
+          style.textContent = '.NativeDark.NativeDark{--color-background-base:var(--color-hinted-grey-2);--color-background-input:#18181b;--color-text-base:#efeff1;--color-hinted-grey-2:#18181b;--color-white:#fff}';
+          document.head.append(style);
+          const surface = { provider: 'twitch', contentKey: 'example', kind: 'live', root: column, contentRoot: column.querySelector('section'), revealAncestors: [], initiallyVisible: true };
+          const adapter = new TwitchTheme.TwitchChatThemeAdapter(surface);
+          adapter.apply('dark');
+          const baseline = adapter.retainedRecordCount();
+          const cycle = () => {
+            const portal = document.createElement('div');
+            portal.className = 'ReactModalPortal';
+            document.body.append(portal);
+            adapter.apply('dark');
+            portal.remove();
+            adapter.apply('dark');
+          };
+          cycle();
+          const afterOne = adapter.retainedRecordCount();
+          for (let i = 0; i < 99; i += 1) cycle();
+          const afterHundred = adapter.retainedRecordCount();
+          const portal = document.createElement('div');
+          portal.className = 'ReactModalPortal';
+          document.body.append(portal);
+          adapter.apply('dark');
+          const held = adapter.retainedRecordCount();
+          portal.remove();
+          document.body.append(portal);
+          adapter.apply('dark');
+          const reparented = { themed: portal.classList.contains('tw-root--theme-dark'), records: adapter.retainedRecordCount(), held };
+          const owned = new OwnedDomMod.OwnedDom();
+          const token = document.createElement('div');
+          document.body.append(token);
+          owned.setClass(token, 'tw-root--theme-dark', true);
+          token.remove();
+          document.body.append(token);
+          owned.releaseDetached();
+          const sameBatch = { themed: token.classList.contains('tw-root--theme-dark'), records: owned.retainedRecordCount() };
+          token.remove();
+          owned.releaseDetached();
+          const terminal = { themed: token.classList.contains('tw-root--theme-dark'), records: owned.retainedRecordCount() };
+          document.body.append(token);
+          owned.setClass(token, 'kept', true);
+          token.classList.remove('kept');
+          token.classList.add('host');
+          owned.restoreAll();
+          const overwritten = { kept: token.classList.contains('kept'), host: token.classList.contains('host'), records: owned.retainedRecordCount() };
+          owned.setClass(token, 'kept', true);
+          token.classList.remove('kept');
+          token.classList.add('host');
+          token.remove();
+          owned.releaseDetached();
+          document.body.append(token);
+          const detachedOverwrite = { kept: token.classList.contains('kept'), host: token.classList.contains('host'), records: owned.retainedRecordCount() };
+          adapter.restore();
+          return { baseline, afterOne, afterHundred, reparented, sameBatch, terminal, overwritten, detachedOverwrite, restored: adapter.retainedRecordCount() };
+        })()`) as {
+          baseline: number;
+          afterOne: number;
+          afterHundred: number;
+          reparented: { themed: boolean; records: number; held: number };
+          sameBatch: { themed: boolean; records: number };
+          terminal: { themed: boolean; records: number };
+          overwritten: { kept: boolean; host: boolean; records: number };
+          detachedOverwrite: { kept: boolean; host: boolean; records: number };
+          restored: number;
+        };
+        assert.ok(report.baseline > 0, engine);
+        assert.equal(report.afterOne, report.baseline, engine);
+        assert.equal(report.afterHundred, report.baseline, engine);
+        assert.equal(report.reparented.themed, true, engine);
+        assert.equal(report.reparented.records, report.reparented.held, engine);
+        assert.deepEqual(report.sameBatch, { themed: true, records: 1 }, engine);
+        assert.deepEqual(report.terminal, { themed: false, records: 0 }, engine);
+        assert.deepEqual(report.overwritten, { kept: false, host: true, records: 0 }, engine);
+        assert.deepEqual(report.detachedOverwrite, { kept: false, host: true, records: 0 }, engine);
+        assert.equal(report.restored, 0, engine);
+      } finally {
+        await page.close();
+        if (engine !== 'chromium') await engineBrowser.close();
+      }
+    }
   });
 
 });

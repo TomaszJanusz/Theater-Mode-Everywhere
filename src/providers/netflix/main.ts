@@ -25,7 +25,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { isNetflixHost } from '../hosts';
 import { relayNetflixShadowClick } from './shadow-click';
-import { netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
+import { findNetflixPlayerRoot, netflixSessionTitle, netflixWatchId, playNetflixNextEpisode, readNetflixPlayerAppApi, selectNetflixSession, seekNetflixSession } from './session';
 import { NETFLIX_ACTION_ACK_EVENT, NETFLIX_ACTION_EVENT, NETFLIX_ACTION_SNAPSHOT_ID, validNetflixTimedActionId } from './action-bridge';
 import { NETFLIX_NEXT_ACK_EVENT, NETFLIX_NEXT_EVENT } from './next-episode';
 import { NETFLIX_NEXT_PREVIEW_ID, syncNetflixNextPreview } from './next-preview';
@@ -49,9 +49,7 @@ let previousVideoId: string | null = null;
 let notifyTimer = 0;
 
 function playerRoot(): HTMLElement | null {
-  const player = document.querySelector('.watch-video [data-uia="player"]')
-    || document.querySelector('.nf-player-container, [data-uia="player"]');
-  return player instanceof HTMLElement ? player : null;
+  return findNetflixPlayerRoot(document);
 }
 
 function numericAncestorId(start: Element | null): string | null {

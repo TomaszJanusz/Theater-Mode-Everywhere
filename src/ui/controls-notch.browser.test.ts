@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 
 describe('player bar notch', () => {
   it('drops the open trigger onto the bar’s bottom border without moving the icon', async (t) => {
@@ -32,7 +32,7 @@ describe('player bar notch', () => {
           </div>
         </div>
       </div>`);
-      await page.addStyleTag({ content: CSS });
+      await page.addStyleTag({ content: UI_CSS });
       const report = await page.evaluate(`(() => {
         const bar = document.querySelector('.theater-controls-wrapper').getBoundingClientRect();
         const open = document.querySelector('#open').getBoundingClientRect();

@@ -23,10 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Keyboard Shortcuts stays the last action in Player settings, below every other action and above Extension settings.
+
 - Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.
 
 - Group video fit, player switching, controls visibility and keyboard help in a labeled player settings panel. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Controls visibility uses a player-with-bottom-bar symbol.
 - Settings Appearance is now a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
+
+- Lower background CPU and memory use. Plain mouse movement no longer scans the page for video, chat watching and timers run only on Twitch and YouTube watch pages and pause in hidden tabs, the Disney clock follows native player events instead of a constant poll, and unrelated network responses are no longer cloned or decoded. Captions caches and body reads are size-bounded, and release packages are minified with a readable diagnostic build available through `TME_BUILD=diagnostic`.
 
 ### Fixed
 

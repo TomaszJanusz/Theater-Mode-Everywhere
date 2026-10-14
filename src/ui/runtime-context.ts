@@ -1,6 +1,7 @@
 import type { CaptionLanguagePreference } from '../media-features/caption-preference';
 import type { CaptionStyle } from '../media-features/caption-style';
 import type { CaptionHudPayload } from '../media-features/controller';
+import type { ContentTitle } from '../media-features/content-title';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
 import type { FrameCoordinator } from '../core/frame-coordinator';
 import type { ExitFrom, ExitOrigin, PlayerCommand, PlayerSession } from '../core/player-session';
@@ -37,6 +38,7 @@ export type ChromeRefs = {
   isTransitioning: boolean;
   toolbarTimer: ReturnType<typeof setTimeout> | null;
   toolbarKeyboardInteractionActive: boolean;
+  toolbarActivityBlockedUntil: number;
   currentToggleFullscreen: (() => void) | null;
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
@@ -56,6 +58,7 @@ export type PlayerChromeActions = {
   createCustomControls(video: HTMLVideoElement | PlaybackSurface): void;
   destroyCustomControls(): void;
   showToolbar(event?: Event): void;
+  suppressToolbarActivity(): void;
   hideToolbar(): void;
   scheduleToolbarHide(): void;
   updateCaptionDock(immediate?: boolean): void;
@@ -75,7 +78,7 @@ export type PlayerChromeActions = {
   applyTheaterVideoFit(mode?: VideoFitMode): void;
   applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
-  syncContentTitle(title: string | null): void;
+  syncContentTitle(title: ContentTitle | null): void;
   createPlayerHeader(): HTMLElement;
   executeCommand(command: PlayerCommand): void;
   findBestVideo(): HTMLVideoElement | null;
@@ -127,13 +130,24 @@ export function createPlayerChromeContext(
 }
 
 export function createChromeRefs(): ChromeRefs {
+  // Discovery is a hint, not an owner of a player removed by the host.
+  let activeVideo: WeakRef<HTMLVideoElement> | null = null;
   return {
-    activeVideo: null,
+    get activeVideo() {
+      const video = activeVideo?.deref();
+      if (video?.isConnected) return video;
+      activeVideo = null;
+      return null;
+    },
+    set activeVideo(video: HTMLVideoElement | null) {
+      activeVideo = video ? new WeakRef(video) : null;
+    },
     ancestorsList: [],
     isInitialized: false,
     isTransitioning: false,
     toolbarTimer: null,
     toolbarKeyboardInteractionActive: false,
+    toolbarActivityBlockedUntil: 0,
     currentToggleFullscreen: null,
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},

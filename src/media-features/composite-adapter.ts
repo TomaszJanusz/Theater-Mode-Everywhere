@@ -203,16 +203,30 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
    * provider currently reporting this playback.
    */
   getTitle(): string | null {
-    let title: string | null = null;
+    return this.titled()?.title || null;
+  }
+
+  /** The subtitle comes from the adapter that supplied the title. */
+  getSubtitle(): string | null {
+    const titled = this.titled();
+    try {
+      return titled?.adapter.getSubtitle?.() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private titled(): { adapter: MediaFeaturesAdapter; title: string } | null {
+    let titled: { adapter: MediaFeaturesAdapter; title: string } | null = null;
     for (const adapter of this.adapters) {
       try {
-        const next = adapter.getTitle?.()?.trim();
-        if (next) title = next;
+        const title = adapter.getTitle?.()?.trim();
+        if (title) titled = { adapter, title };
       } catch {
         // A provider that cannot name the video must not hide another provider's title.
       }
     }
-    return title;
+    return titled;
   }
 
   /** Reloads every adapter without rejecting when an individual reload fails. */

@@ -88,6 +88,16 @@ export function watchIdentity(href: string): string {
   return `${page.provider}:${page.contentKey}`;
 }
 
+/**
+ * Hosts that can show a watch-page chat, including mobile and embed hosts.
+ * Player, clips, and other non-watch subdomains stay out; route checks are separate.
+ */
+export function isNativeChatHost(href: string): boolean {
+  const url = parseUrl(href);
+  if (!url) return false;
+  return isTwitchWatchHost(url.hostname) || isYouTubeWatchHost(url.hostname);
+}
+
 function parseYouTubeLocation(url: URL): ParsedChatLocation | null {
   if (!isYouTubeWatchHost(url.hostname)) return null;
   const path = stripSlash(url.pathname);

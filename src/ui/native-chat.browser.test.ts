@@ -15,7 +15,8 @@ declare global {
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const VOD = readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url));
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
@@ -429,9 +430,9 @@ async function installStorage(page: Page, seed: Record<string, unknown> = {}, na
 }
 
 async function boot(page: Page): Promise<void> {
-  await page.addStyleTag({ content: CSS });
+  await page.addStyleTag({ content: PAGE_CSS });
   await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`NativeChatTest.installMainWorldRuntime(); NativeChatTest.setPlayerUiCss(${JSON.stringify(CSS)}); NativeChatTest.bootstrapPlayerRuntime();`);
+  await page.evaluate(`NativeChatTest.installMainWorldRuntime(); NativeChatTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); NativeChatTest.bootstrapPlayerRuntime();`);
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return video instanceof HTMLVideoElement && video.readyState >= 1 && video.videoWidth > 0;
@@ -501,7 +502,7 @@ async function installFrameRuntime(page: Page): Promise<Frame> {
   const frame = page.frames().find(candidate => candidate.url().includes('/live_chat'));
   assert.ok(frame, 'live chat frame did not load from the fixture route');
   await frame.addScriptTag({ content: BUNDLE });
-  await frame.evaluate(`NativeChatTest.installMainWorldRuntime(); NativeChatTest.setPlayerUiCss(${JSON.stringify(CSS)}); NativeChatTest.bootstrapPlayerRuntime();`);
+  await frame.evaluate(`NativeChatTest.installMainWorldRuntime(); NativeChatTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); NativeChatTest.bootstrapPlayerRuntime();`);
   await frame.evaluate(() => {
     const probe = window as Window & { __chatKeyLog?: Array<{ key: string; defaultPrevented: boolean }> };
     probe.__chatKeyLog = [];
@@ -729,6 +730,23 @@ describe('native chat browser session', () => {
         });
         await page.waitForFunction(() => document.querySelector('#late-popup')?.classList.contains('theater-chat-theme-light'));
         assert.deepEqual((await verify('#late-popup')).mismatches, []);
+        const detachedPortal = await page.evaluate(async () => {
+          const popup = document.getElementById('late-popup');
+          const portal = popup?.parentElement;
+          if (!popup || !portal) return 'missing';
+          portal.remove();
+          await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+          return popup.className;
+        });
+        assert.notEqual(detachedPortal, 'missing');
+        assert.equal(String(detachedPortal).includes('theater-chat-theme-'), false, engine);
+        await page.evaluate(() => {
+          const portal = document.createElement('div');
+          portal.className = 'ReactModalPortal';
+          portal.innerHTML = '<div id="next-popup" class="NativeDark tw-root--theme-dark">Next</div>';
+          document.body.append(portal);
+        });
+        await page.waitForFunction(() => document.querySelector('#next-popup')?.classList.contains('theater-chat-theme-light'));
         await expectSavedTheme(read, 'twitch', { visible: true, width: 360, theme: 'light' });
         await chooseChatTheme(page, 'dark');
         await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');

@@ -157,3 +157,14 @@ Fixtures do not establish real YouTube availability or installed-extension
 behavior. For that, build first, run `probe`, then a real A/B experiment, and
 separately check extended quality and transition scenarios. An unavailable host
 or native feature is a verification gap, never a passed measurement.
+
+## Generic, chat, Disney and transport mechanisms
+
+Use the separate [resource fixture audit](resource-audit.md) for portable
+Chromium/Firefox query/layout/observer/timer counters, portal retention evidence,
+Disney Hive-clock states and routed YouTube clone/caption-body diagnostics. It
+accepts arbitrary prebuilt unpacked A/B directories and records its injection
+status explicitly. These fixtures complement the headed CPU suite; they do not
+add real-host CPU coverage or establish installed-extension behavior. The guide
+also describes separate peak-allocation/retention and authenticated Disney
+measurement procedures.

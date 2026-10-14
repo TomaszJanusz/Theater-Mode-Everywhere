@@ -1,3 +1,7 @@
+import { abandonBody } from './bounded-body';
+import { readPageResponseBytes } from './page-body';
+import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
+import { fetchWithoutHarvest, isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { installXhrHarvest } from './xhr-harvest';
 import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
@@ -19,6 +23,7 @@ import {
   fetchTimedtextWithPot,
   handleYoutubeMediaSeek,
   harvestYoutubeHeatmapJson,
+  harvestTimedtextJson,
   harvestYoutubeHeatmapText,
   installYoutubeMain,
   isAllowedTimedtextUrl,
@@ -29,16 +34,14 @@ import {
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
 import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
-import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, isTencentMetadataUrl, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
-import { captureCrunchyrollNetworkResponse, consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, isCrunchyrollBifUrl, noteCrunchyrollManifest, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
+import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
+import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import {
-  captureTwitchNetworkResponse,
   harvestTwitchResponseJson,
   harvestTwitchResponseText,
   harvestTwitchXhr,
   installTwitchMain,
-  isAllowedTwitchStoryboardUrl,
   readTwitchSnapshot,
   twitchIntegrationEnabled
 } from '../providers/twitch/main';
@@ -64,6 +67,9 @@ import {
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
+  // A replacement transport may return a URL-less Response. Keep its known
+  // request URL so only genuinely URL-less host metadata uses the fallback.
+  const responseUrls = new WeakMap<Response, string>();
 
   function requestUrl(input: RequestInfo | URL): string {
     if (typeof input === 'string') return input;
@@ -72,20 +78,39 @@ export function installMainWorldRuntime(): void {
     return '';
   }
 
-  function foreignProviderHarvestUrl(url: string): boolean {
-    if (!url) return false;
-    if (/timedtext/i.test(url)) return true;
-    if (/gql\.twitch\.tv/i.test(url)) return true;
-    try {
-      if (isAllowedTwitchStoryboardUrl(url) || isAllowedDisneyBifUrl(url)) return true;
-    } catch {
-      // URL checks must not break fetch.
+  function harvestTarget(url: string): NetworkHarvestTarget | null {
+    if (isCrunchyrollOwnedRequest(url)) return null;
+    return qualifyNetworkHarvest({
+      hostname: window.location.hostname,
+      pageUrl: window.location.href,
+      flags: {
+        youtube: youtubeIntegrationEnabled(), disney: disneyIntegrationEnabled(),
+        twitch: twitchIntegrationEnabled(), tencent: tencentIntegrationEnabled(),
+        crunchyroll: crunchyrollIntegrationEnabled()
+      }
+    }, url);
+  }
+
+  function harvestJson(target: NetworkHarvestTarget | null, url: string, data: unknown): void {
+    switch (target) {
+      case 'timedtext': harvestTimedtextJson(url, data); break;
+      case 'heatmap': harvestYoutubeHeatmapJson(url, data); break;
+      case 'disney': harvestDisneyData(url, data); break;
+      case 'tencent': harvestTencentData(url, data); break;
+      case 'crunchyroll': harvestCrunchyrollData(url, data); break;
+      case 'twitch': harvestTwitchResponseJson(url, data); break;
     }
-    if (isTencentMetadataUrl(url)) return true;
-    if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|gif|vtt|bif|js|css|woff2?)(\?|$)/i.test(url)) return false;
-    if (/bamgrid\.com|disney-plus\.net/i.test(url)) return true;
-    if (/dssott\.com/i.test(url) && /\.json(\?|$)/i.test(url)) return true;
-    return /disneyplus\.com/i.test(url) && /\/(playback|session|explore|api)\//i.test(url);
+  }
+
+  function harvestText(target: NetworkHarvestTarget | null, url: string, text: string): void {
+    switch (target) {
+      case 'timedtext': cacheTimedtextBody(url, text); break;
+      case 'heatmap': harvestYoutubeHeatmapText(url, text); break;
+      case 'disney': harvestDisneyBody(url, text); break;
+      case 'tencent': harvestTencentBody(url, text); break;
+      case 'crunchyroll': harvestCrunchyrollBody(url, text); break;
+      case 'twitch': harvestTwitchResponseText(url, text); break;
+    }
   }
 
   function wrapFetch(fn: typeof fetch): typeof fetch {
@@ -95,13 +120,26 @@ export function installMainWorldRuntime(): void {
       const url = requestUrl(input);
       return Promise.resolve(fn.apply(this, arguments as unknown as [RequestInfo | URL, RequestInit?])).then((response) => {
         try {
-          if (consumeCrunchyrollWrappedFetch(url, response, foreignProviderHarvestUrl) === 'foreign') {
-            const clone = response.clone();
-            captureTimedtextResponse(url, clone);
-            captureTwitchNetworkResponse(url, clone);
-            captureDisneyNetworkResponse(url, clone);
-            captureTencentNetworkResponse(url, clone);
-            captureCrunchyrollNetworkResponse(url, clone);
+          responseUrls.set(response, response.url || url);
+          if (isOwnedHarvestInput(input)) {
+            markOwnedHarvestResponse(response);
+            return response;
+          }
+          if (!response.ok) return response;
+          if (consumeCrunchyrollWrappedFetch(url, response, () => false) === 'foreign') {
+            const finalUrl = response.url || url;
+            const target = finalUrl ? harvestTarget(finalUrl) : null;
+            const length = Number(response.headers.get('content-length'));
+            const cap = target === 'disney-bif' ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
+            if (!harvestFetchFormatMatches(target, response.headers.get('content-type') || '') || length > cap) return response;
+            // Each selected consumer owns this single clone. Its text/json read
+            // bypasses the host Response observers to avoid a second harvest.
+            switch (target) {
+              case 'timedtext': captureTimedtextResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
+              case 'disney':
+              case 'disney-bif': captureDisneyNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
+              case 'tencent': captureTencentNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
+            }
           }
         } catch {
           // Harvest must not break the page's fetch.
@@ -121,12 +159,9 @@ export function installMainWorldRuntime(): void {
       if (result && typeof (result as Promise<unknown>).then === 'function') {
         (result as Promise<unknown>).then((data) => {
           try {
-            const url = this.url || '';
-            harvestTwitchResponseJson(url, data);
-            harvestDisneyData(url, data);
-            harvestTencentData(url, data);
-            harvestCrunchyrollData(url, data);
-            harvestYoutubeHeatmapJson(url, data);
+            if (!this.ok || isOwnedHarvestResponse(this)) return;
+            const url = this.url || responseUrls.get(this) || '';
+            harvestJson(harvestTarget(url), url, data);
           } catch {
             // Ignore harvest failures from host JSON parsing.
           }
@@ -141,13 +176,9 @@ export function installMainWorldRuntime(): void {
       if (result && typeof (result as Promise<string>).then === 'function') {
         (result as Promise<string>).then((text) => {
           try {
-            if (!text) return;
-            const url = this.url || '';
-            harvestTwitchResponseText(url, text);
-            harvestDisneyBody(url, text);
-            harvestTencentBody(url, text);
-            harvestCrunchyrollBody(url, text);
-            harvestYoutubeHeatmapText(url, text);
+            if (!text || !this.ok || isOwnedHarvestResponse(this)) return;
+            const url = this.url || responseUrls.get(this) || '';
+            harvestText(harvestTarget(url), url, text);
           } catch {
             // Ignore harvest failures from host text parsing.
           }
@@ -178,37 +209,27 @@ export function installMainWorldRuntime(): void {
     }
 
     installXhrHarvest(XMLHttpRequest.prototype, (xhr, url) => {
-      if (disneyIntegrationEnabled() && isAllowedDisneyBifUrl(url)) harvestDisneyBifFromXhr(xhr);
-      const body = isAllowedDisneyBifUrl(url) ? null : xhrResponseText(xhr);
-      if (body) cacheTimedtextBody(url, body);
-      harvestTwitchXhr(url, body, xhr);
-      if (body) harvestDisneyBody(url, body);
-      noteCrunchyrollManifest(url);
-      if (body) harvestTencentBody(url, body);
-      if (body) harvestCrunchyrollBody(url, body);
-      if (xhr.responseType === 'json') harvestTencentData(url, xhr.response);
-      if (xhr.responseType === 'json') harvestCrunchyrollData(url, xhr.response);
-      if (xhr.response instanceof ArrayBuffer && isCrunchyrollBifUrl(url)) rememberCrunchyrollBif(xhr.response, url);
-      if (body) harvestYoutubeHeatmapText(url, body);
-    });
-
-    function xhrResponseText(xhr: XMLHttpRequest): string | null {
-      try {
-        if (xhr.responseType === '' || xhr.responseType === 'text') {
-          return typeof xhr.responseText === 'string' && xhr.responseText ? xhr.responseText : null;
-        }
-        if (xhr.responseType === 'json') {
-          if (typeof xhr.response === 'string') return xhr.response || null;
-          if (xhr.response && typeof xhr.response === 'object') return JSON.stringify(xhr.response);
-        }
-        if (xhr.responseType === 'arraybuffer' && xhr.response instanceof ArrayBuffer) {
-          return new TextDecoder().decode(xhr.response);
-        }
-      } catch {
-        return null;
+      const target = harvestTarget(url);
+      if (!target) return;
+      if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
+      if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
+      const format = harvestBodyFormat(target, xhr.responseType);
+      if (format === 'binary') {
+        if (target === 'disney-bif') harvestDisneyBifFromXhr(xhr);
+        else if (xhr.response instanceof ArrayBuffer) rememberCrunchyrollBif(xhr.response, url);
+      } else if (format === 'json') {
+        harvestJson(target, url, xhr.response);
+      } else if (format === 'blob-text') {
+        harvestTwitchXhr(url, null, xhr);
+      } else if (format === 'text') {
+        // Only qualified textual endpoints decode an ArrayBuffer. BIF and
+        // responseType=json never pass through this materialization boundary.
+        const body = xhr.responseType === 'arraybuffer'
+          ? xhr.response instanceof ArrayBuffer ? new TextDecoder().decode(xhr.response) : null
+          : xhr.responseText;
+        if (body) harvestText(target, url, body);
       }
-      return null;
-    }
+    });
   }
 
   if (harvestHost) {
@@ -469,24 +490,32 @@ export function installMainWorldRuntime(): void {
         respond(false);
         return;
       }
+      const href = window.location.href;
       const load = isAllowedTimedtextUrl(url)
         ? fetchTimedtextWithPot(url)
-        : fetch(url, { credentials: 'omit' }).then(async (response) => {
-            if (!response.ok) return null;
+        : (async () => {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15_000);
+          try {
+            const response = await fetchWithoutHarvest(url, { credentials: 'omit', signal: controller.signal });
+            if (!response.ok) { abandonBody(response.body); return null; }
             const request = classifyMediaFetchUrl(url, window.location.href);
-            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            const buffer = await response.arrayBuffer();
+            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            if (buffer.byteLength === 0 || buffer.byteLength > maxBytes) return null;
+            const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, () => window.location.href === href && pageFetchAllowed(url));
+            if (!buffer) return null;
             if (isBif) return URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
             return new TextDecoder().decode(buffer);
-          });
+          } finally {
+            clearTimeout(timeout);
+          }
+        })();
       load
-        .then((text) => respond(Boolean(text), text || undefined))
+        .then((text) => respond(window.location.href === href && Boolean(text), window.location.href === href ? text || undefined : undefined))
         .catch(() => respond(false));
     } catch {
       respond(false);

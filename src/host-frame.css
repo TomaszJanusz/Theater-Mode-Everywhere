@@ -1,0 +1,25 @@
+/*
+ * Frame of the player UI host. The page-side rule is the shield against page
+ * CSS until the shadow root exists; :host carries the same layout inside the
+ * shadow sheet so the overlay needs no inline !important on the host element.
+ * Both sheets import this file so the two copies cannot drift.
+ */
+
+#theater-everywhere-ui,
+:host {
+  --theater-volume-boost-color: #f59e0b;
+  all: initial !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: var(--theater-video-width, 100%) !important;
+  height: var(--theater-video-height, 100%) !important;
+  contain: layout !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: var(--theater-chrome-z, 2147483647) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  line-height: 1.4 !important;
+  color: #f8fafc !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

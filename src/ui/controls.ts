@@ -35,19 +35,22 @@ import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { mountNativeChatControls, nativeChatState } from './chat';
 import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
+import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
 import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurface } from '../playback-surface';
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _videoListenersCleanup?: () => void;
+  /** Called as the bar becomes visible, to present the current playback state. */
+  _syncPlaybackChrome?: () => void;
   _mediaFeatures?: MediaFeaturesController;
 }
 
-interface TooltipState {
-  element: HTMLDivElement | null;
-}
-
-export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void) {
+export function createControls(
+  ctx: PlayerChromeContext,
+  bindCustomTooltip: ButtonTooltipBinder,
+  onDestroy?: () => void
+) {
   const session = ctx.session;
   const refs = ctx.refs;
   const ui = ctx.ui;
@@ -63,7 +66,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
   const closeTheaterPopovers = () => ctx.actions.closeTheaterPopovers();
   const blurMouseToggle = (event: MouseEvent, button: HTMLElement) => ctx.actions.blurMouseToggle(event, button);
   const setIcon = (el: HTMLElement, svg: string) => ctx.actions.setIcon(el, svg);
-  const setTooltipContent = (el: HTMLElement, raw: string) => ctx.actions.setTooltipContent(el, raw);
   const escapeHtml = (s: string) => ctx.actions.escapeHtml(s);
   const applyVolumeAndBoost = (video: PlaybackSurface, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
   const rememberAudibleVolume = (video: PlaybackSurface, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
@@ -75,97 +77,12 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     ctx.actions.persistCaptionStyle(style);
   };
   const showCaptionHud = (payload: Parameters<typeof ctx.actions.showCaptionHud>[0]) => ctx.actions.showCaptionHud(payload);
-  const syncContentTitle = (title: string | null) => ctx.actions.syncContentTitle(title);
+  const syncContentTitle = (title: Parameters<typeof ctx.actions.syncContentTitle>[0]) => ctx.actions.syncContentTitle(title);
   const executeCommand = (command: PlayerCommand) => ctx.actions.executeCommand(command);
   const exitTheaterMode = () => ctx.actions.exitTheaterMode();
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
   const findAllVideosDeep = (root?: Document | ShadowRoot) => ctx.actions.findAllVideosDeep(root);
   const seekHostTime = (video: PlaybackSurface, time: number) => ctx.actions.seekHostTime(video, time);
-  const tooltipState: TooltipState = { element: null };
-
-  function bindCustomTooltip(
-    button: HTMLButtonElement,
-    getTooltipText: () => string,
-    getPreview?: () => { title: string; imageUrl: string } | null
-  ): void {
-    button.removeAttribute('title');
-
-    const show = () => {
-      if (button.closest('.theater-menu')) return;
-      if (!tooltipState.element) {
-        tooltipState.element = document.createElement('div');
-        tooltipState.element.className = 'theater-button-tooltip theater-backdrop-plate';
-        paintOverlay(tooltipState.element);
-        mountPlayerUi(tooltipState.element);
-      }
-
-      const preview = getPreview?.() ?? null;
-      tooltipState.element.classList.toggle('theater-playlist-preview', Boolean(preview));
-      if (preview) {
-        tooltipState.element.replaceChildren();
-        const image = document.createElement('img');
-        image.className = 'theater-playlist-preview-image';
-        image.alt = '';
-        image.referrerPolicy = 'no-referrer';
-        image.src = preview.imageUrl;
-        image.addEventListener('error', () => image.remove(), { once: true });
-        const title = document.createElement('div');
-        title.className = 'theater-playlist-preview-title';
-        title.textContent = preview.title;
-        const action = document.createElement('div');
-        action.className = 'theater-playlist-preview-action';
-        const actionLabel = document.createElement('span');
-        actionLabel.className = 'theater-playlist-preview-action-label';
-        const actionKeys = document.createElement('span');
-        actionKeys.className = 'theater-playlist-preview-keys';
-        actionKeys.dir = 'ltr';
-        const shortcutText = getTooltipText();
-        const shortcutKeysAt = shortcutText.indexOf('<kbd>');
-        actionLabel.textContent = (shortcutKeysAt === -1 ? shortcutText : shortcutText.slice(0, shortcutKeysAt)).trim();
-        if (shortcutKeysAt !== -1) setTooltipContent(actionKeys, shortcutText.slice(shortcutKeysAt));
-        action.append(actionLabel, actionKeys);
-        tooltipState.element.append(image, title, action);
-      } else {
-        setTooltipContent(tooltipState.element, getTooltipText());
-      }
-      tooltipState.element.classList.add('visible');
-    
-      // Position
-      const rect = button.getBoundingClientRect();
-      const tooltipWidth = tooltipState.element.offsetWidth;
-      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-    
-      let tooltipX = rect.left + rect.width / 2;
-      const padding = 12;
-      const minX = tooltipWidth / 2 + padding;
-      const maxX = viewportWidth - (tooltipWidth / 2 + padding);
-    
-      // Clamp horizontal position to viewport bounds to prevent overflow
-      if (tooltipX < minX) {
-        tooltipX = minX;
-      } else if (tooltipX > maxX) {
-        tooltipX = maxX;
-      }
-    
-      const tooltipY = rect.top - 8;
-    
-      tooltipState.element.style.left = `${tooltipX}px`;
-      tooltipState.element.style.top = `${tooltipY}px`;
-      updateCaptionDock();
-    };
-
-    const hide = () => {
-      if (tooltipState.element) {
-        tooltipState.element.classList.remove('visible');
-        updateCaptionDock();
-      }
-    };
-
-    button.addEventListener('mouseenter', show);
-    button.addEventListener('mouseleave', hide);
-    button.addEventListener('click', hide);
-  }
-
   // Creates unified bottom player controls
   function createCustomControls(media: HTMLVideoElement | PlaybackSurface): void {
     const video = coercePlaybackSurface(media);
@@ -231,6 +148,27 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
 
     const tooltip = document.createElement('div');
     tooltip.className = 'theater-scrubber-tooltip theater-backdrop-hint';
+
+    const preview = document.createElement('div');
+    preview.className = 'theater-scrubber-preview';
+    preview.hidden = true;
+    preview.style.width = `${PREVIEW_DISPLAY_WIDTH}px`;
+    preview.style.backgroundRepeat = 'no-repeat';
+    const chapterTitle = document.createElement('div');
+    chapterTitle.className = 'theater-scrubber-chapter-title';
+    chapterTitle.hidden = true;
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'theater-scrubber-time';
+    tooltip.append(preview, chapterTitle, timeLabel);
+
+    // Compare requested values: CSSOM can normalize URLs and fractional pixels.
+    const previewStyles = { height: '', backgroundImage: '', backgroundPosition: '', backgroundSize: '' };
+    const setPreviewStyle = (property: keyof typeof previewStyles, value: string) => {
+      if (previewStyles[property] === value) return;
+      previewStyles[property] = value;
+      preview.style[property] = value;
+    };
+    let tooltipLeft = '';
 
     // 2. Control Row
     const controlsRow = document.createElement('div');
@@ -497,8 +435,9 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     renderTimeReadout(elapsedReadout, '0:00', false);
     renderTimeReadout(endReadout, '-0:00', false);
 
-    let stableWindow: ReturnType<typeof playbackWindow> | null = null;
-    const playbackForChrome = (): ReturnType<typeof playbackWindow> | null => {
+    type ChromePlayback = ReturnType<typeof playbackWindow>;
+    let stableWindow: ChromePlayback | null = null;
+    const playbackForChrome = (): ChromePlayback | null => {
       const next = playbackWindow(video);
       const presented = presentPlaybackWindow(stableWindow, next);
       if (presented.live || presented.seekable) stableWindow = presented;
@@ -531,13 +470,11 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       const playback = playbackForChrome();
       if (!playback || playback.live) return;
       showTotalTime = !showTotalTime;
-      updateTimeDisplay(true);
+      updatePlaybackChrome(true);
     });
 
     let liveChromeKey = '';
-    const syncLiveChrome = () => {
-      const playback = playbackForChrome();
-      if (!playback) return null;
+    const syncLiveChrome = (playback: ChromePlayback) => {
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
@@ -594,12 +531,12 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       elapsedReadout.setAttribute('aria-label', behindLive ? t('jumpToLive') : t('liveBadge'));
     };
 
-    const updateTimeDisplay = (animate = true) => {
-      const playback = playbackForChrome();
-      if (!playback) return;
+    const paintTimeDisplay = (
+      playback: ChromePlayback,
+      chrome: ReturnType<typeof syncLiveChrome>,
+      animate: boolean
+    ) => {
       const cur = displayMediaTime(video);
-      const chrome = syncLiveChrome();
-      if (!chrome) return;
       if (playback.live) {
         paintLive(chrome.behindLive, chrome.canJumpToLive);
         return;
@@ -775,6 +712,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     const toggleFullscreen = () => {
       const operation = fullscreenRecovery.begin();
       if (!operation.isCurrent()) return;
+      ctx.actions.suppressToolbarActivity();
       const resume = () => operation.schedule();
       const fail = (error: unknown) => {
         operation.cancel();
@@ -811,7 +749,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
 
     const onFullscreenChange = () => {
       syncFullscreenButton();
-      showToolbar();
+      ctx.actions.suppressToolbarActivity();
       fullscreenRecovery.onFullscreenChange();
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -958,7 +896,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     rightSec.appendChild(endReadout);
     rightSec.appendChild(ccHost);
     rightSec.appendChild(speedContainer);
-    updateTimeDisplay(false);
 
     const fitBtn = document.createElement('button');
     fitBtn.className = 'theater-control-btn video-fit-btn';
@@ -1100,7 +1037,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       e.stopPropagation();
       showHelpOverlay();
     });
-    const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'));
+    const helpRow = settings.addRow(helpBtn, t('keyboardShortcutsTitle'), 'shortcuts');
     const updateHelpRow = () => helpRow.update(ui().shortcuts.showHelp);
     updateHelpRow();
     controlsScope.add(ctx.uiStore.subscribe(updateHelpRow));
@@ -1113,7 +1050,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       event.stopPropagation();
       executeCommand({ type: 'TOGGLE_AUTO_THEATER' });
     });
-    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'), 'footer');
+    const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'));
     const updateAutoTheaterRow = () => {
       autoTheaterBtn.classList.toggle('active', ui().autoEnterTheater);
       autoTheaterBtn.setAttribute('aria-pressed', String(ui().autoEnterTheater));
@@ -1194,11 +1131,8 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       }
     };
 
-    const updateScrubber = () => {
-      const window = playbackForChrome();
-      if (!window) return;
+    const paintScrubber = (window: ChromePlayback) => {
       const cur = video.currentTime || 0;
-      syncLiveChrome();
 
       if (window.seekable && video.buffered && video.buffered.length > 0) {
         let bufferedEnd = cur;
@@ -1219,13 +1153,31 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       const pct = timeToRatio(displayMediaTime(video), window) * 100;
       scrubberFill.style.width = `${pct}%`;
     };
-    updateScrubber();
+
+    // One playback snapshot feeds the live chrome, scrubber and clock, so a
+    // single update reads the host window once. A hidden bar skips these
+    // cosmetic writes; `_syncPlaybackChrome` catches it up as it is shown.
+    // Captions and seeks read live state themselves and never wait on it.
+    const paintPlaybackChrome = (animate: boolean) => {
+      const playback = playbackForChrome();
+      if (!playback) return;
+      const chrome = syncLiveChrome(playback);
+      paintScrubber(playback);
+      paintTimeDisplay(playback, chrome, animate);
+    };
+    const updatePlaybackChrome = (animate = true) => {
+      if (wrapper.classList.contains('visible')) paintPlaybackChrome(animate);
+    };
+    wrapper._syncPlaybackChrome = () => paintPlaybackChrome(false);
+    paintPlaybackChrome(false);
 
     const updateTooltip = (clientX: number) => {
       const window = playbackForChrome() ?? playbackWindow(video);
       if (!window.seekable) return;
       const rect = scrubberContainer.getBoundingClientRect();
       if (rect.width === 0) return;
+      // Read both anchors before handle, heatmap or tooltip mutations can dirty layout.
+      const rowRect = controlsRow.getBoundingClientRect();
     
       const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       const time = ratioToTime(pos, window);
@@ -1233,46 +1185,40 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       scrubberHandle.style.left = `${pos * 100}%`;
       mediaFeatures.setHeatmapHover(pos);
 
-      tooltip.replaceChildren();
+      const previewHidden = !extras.preview;
+      if (preview.hidden !== previewHidden) preview.hidden = previewHidden;
       if (extras.preview) {
-        const preview = document.createElement('div');
-        preview.className = 'theater-scrubber-preview';
         const image = extras.preview.image;
-        const displayWidth = PREVIEW_DISPLAY_WIDTH;
-        const scale = displayWidth / image.tileWidth;
-        preview.style.width = `${displayWidth}px`;
-        preview.style.height = `${Math.round(image.tileHeight * scale)}px`;
-        preview.style.backgroundImage = `url(${JSON.stringify(image.url)})`;
-        preview.style.backgroundRepeat = 'no-repeat';
-        preview.style.backgroundPosition = `-${Math.round(image.x * scale)}px -${Math.round(image.y * scale)}px`;
-        preview.style.backgroundSize = `${Math.round(image.sheetWidth * scale)}px ${Math.round(image.sheetHeight * scale)}px`;
-        tooltip.appendChild(preview);
+        const scale = PREVIEW_DISPLAY_WIDTH / image.tileWidth;
+        setPreviewStyle('height', `${Math.round(image.tileHeight * scale)}px`);
+        setPreviewStyle('backgroundImage', `url(${JSON.stringify(image.url)})`);
+        setPreviewStyle('backgroundPosition', `-${Math.round(image.x * scale)}px -${Math.round(image.y * scale)}px`);
+        setPreviewStyle('backgroundSize', `${Math.round(image.sheetWidth * scale)}px ${Math.round(image.sheetHeight * scale)}px`);
       }
-      if (extras.chapterTitle) {
-        const chapterTitle = document.createElement('div');
-        chapterTitle.className = 'theater-scrubber-chapter-title';
-        chapterTitle.textContent = extras.chapterTitle;
-        tooltip.appendChild(chapterTitle);
-      }
-      const timeLabel = document.createElement('div');
-      timeLabel.className = 'theater-scrubber-time';
-      timeLabel.textContent = window.live
+      const chapterHidden = !extras.chapterTitle;
+      if (chapterTitle.hidden !== chapterHidden) chapterTitle.hidden = chapterHidden;
+      const chapterText = extras.chapterTitle ?? '';
+      if (chapterTitle.textContent !== chapterText) chapterTitle.textContent = chapterText;
+      const timeText = window.live
         ? (isAtLiveEdge(time, window) || (window.end - time) > MAX_LIVE_DVR_SECONDS ? t('liveBadge') : `-${formatTime(Math.max(0, window.end - time))}`)
         : formatTime(time);
-      tooltip.appendChild(timeLabel);
+      if (timeLabel.textContent !== timeText) timeLabel.textContent = timeText;
 
-      const rowRect = controlsRow.getBoundingClientRect();
-      const leftPx = (rect.left - rowRect.left) + pos * rect.width;
-      tooltip.style.left = `${leftPx}px`;
-      tooltip.classList.add('visible');
+      const left = `${(rect.left - rowRect.left) + pos * rect.width}px`;
+      if (tooltipLeft !== left) {
+        tooltipLeft = left;
+        tooltip.style.left = left;
+      }
+      if (!tooltip.classList.contains('visible')) tooltip.classList.add('visible');
       updateCaptionDock();
     };
 
     let tooltipFrame = 0;
-    controlsScope.add(() => {
+    const cancelTooltipFrame = () => {
       if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
       tooltipFrame = 0;
-    });
+    };
+    controlsScope.add(cancelTooltipFrame);
     let pendingTooltipX = 0;
     const onScrubberMouseMove = (e: MouseEvent) => {
       if (isDragging || !playbackWindow(video).seekable) return;
@@ -1285,8 +1231,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     };
 
     const onScrubberMouseLeave = () => {
-      if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
-      tooltipFrame = 0;
+      cancelTooltipFrame();
       if (!isDragging) {
         tooltip.classList.remove('visible');
         mediaFeatures.setHeatmapHover(null);
@@ -1449,8 +1394,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     let lastProviderPlayhead = Number.NaN;
     const onProviderClock = (published: number | null) => {
       const playhead = published ?? readProviderClock(native) ?? Number.NaN;
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
       if (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
         setBuffering(false);
@@ -1466,8 +1410,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
     const onPause = () => { setIcon(playPauseBtn, playIcon); };
     let lastMediaHref = window.location.href;
     const onTimeUpdate = () => { 
-      updateScrubber(); 
-      updateTimeDisplay();
+      updatePlaybackChrome();
       mediaFeatures.updateTime(displayMediaTime(video));
       if (!video.paused && !video.seeking && video.readyState >= 3) {
         setBuffering(false);
@@ -1481,13 +1424,13 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         void mediaFeatures.refresh();
       }
     };
-    const onProgress = () => { updateScrubber(); };
+    const onProgress = () => { updatePlaybackChrome(); };
     const onDurationChange = () => {
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
+      cancelTooltipFrame();
       fullscreenRecovery.invalidate();
       gestureScope?.dispose();
       gestureScope = null;
@@ -1505,10 +1448,12 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         }
       }
       tooltip.classList.remove('visible');
-      tooltip.replaceChildren();
+      preview.hidden = true;
+      chapterTitle.hidden = true;
+      chapterTitle.textContent = '';
+      timeLabel.textContent = '';
       mediaFeatures.setHeatmapHover(null);
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       updateCaptionDock();
       setBuffering(true, true);
     };
@@ -1558,8 +1503,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
         clearTimeout(bufferingFailsafe);
         bufferingFailsafe = null;
       }
-      updateScrubber(); 
-      updateTimeDisplay(); 
+      updatePlaybackChrome();
       setBuffering(false); 
     };
     const onCanPlay = () => { setBuffering(false); };
@@ -1634,6 +1578,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       });
       mediaFeatures.dispose();
       wrapper._mediaFeatures = undefined;
+      wrapper._syncPlaybackChrome = undefined;
       window.removeEventListener('pointerdown', dismissPopoversIfOutside, true);
       window.removeEventListener('click', dismissPopoversIfOutside, true);
       window.removeEventListener('keydown', clearDismissOnKey, true);
@@ -1689,8 +1634,6 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       wrapper._videoListenersCleanup();
     }
 
-    tooltipState.element = null;
-
     document.removeEventListener('pointermove', showToolbar);
     document.removeEventListener('pointerdown', showToolbar);
     if (refs.toolbarTimer) {
@@ -1698,6 +1641,7 @@ export function createControls(ctx: PlayerChromeContext, onDestroy?: () => void)
       refs.toolbarTimer = null;
     }
     refs.toolbarKeyboardInteractionActive = false;
+    refs.toolbarActivityBlockedUntil = 0;
     document.documentElement.classList.remove(CURSOR_HIDDEN_CLASS);
     destroyPlayerUi();
     refs.currentToggleFullscreen = null;

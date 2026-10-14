@@ -33,9 +33,9 @@ function publishedDisneyClock(video: HTMLVideoElement | null, time: unknown): nu
 
 function disneyVodDuration(): number | null {
   if (typeof document === 'undefined' || !onDisneyHost()) return null;
-  const harvested = readPublishedDisneySnapshot(document)?.duration;
-  const chrome = readDisneyChromeDuration(document);
-  return harvested ?? chrome ?? null;
+  // The chrome fallback scans the overlay's text; only pay for it when the
+  // published metadata has no duration.
+  return readPublishedDisneySnapshot(document)?.duration ?? readDisneyChromeDuration(document);
 }
 
 function disneyMediaSeek(_video: HTMLVideoElement, input: HostSeekInput): HostSeekDispatch | null {

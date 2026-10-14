@@ -1,3 +1,4 @@
+import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
@@ -22,7 +23,7 @@ import {
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
-import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './content-title';
+import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
@@ -552,6 +553,42 @@ describe('disney playing title', () => {
     assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
     assert.equal(resolved.source, 'chrome');
     assert.equal(resolved.changed, false);
+  });
+
+  it('reads the player header and keeps the localized episode label opaque', () => {
+    assert.deepEqual(readDisneyPlayerHeader({
+      data: { playerExperience: { title: 'VisionQuest', subtitle: ' S1:O1  Wyzwolenie ', internalTitle: 'VisionQuest - s1e1' } }
+    }), { title: 'VisionQuest', subtitle: 'S1:O1 Wyzwolenie' });
+    assert.deepEqual(readDisneyPlayerHeader({ data: { playerExperience: { title: 'Venom', subtitle: '' } } }), { title: 'Venom', subtitle: null });
+    assert.equal(readDisneyPlayerHeader({ data: { playerExperience: { subtitle: 'S1:O1 Wyzwolenie' } } }), null);
+    assert.equal(readDisneyPlayerHeader({ data: { page: { title: 'VisionQuest' } } }), null);
+  });
+
+  it('lets the player header outrank chrome and replace an older header for the same play', () => {
+    const fromChrome = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'X-Men',
+      source: 'chrome',
+      playerHeader: 'X-Men: Mroczna Phoenix',
+      playerChrome: 'X-Men',
+      playbackTitle: null,
+      documentTitle: null,
+      openGraphTitle: null
+    });
+    assert.deepEqual(fromChrome, { title: 'X-Men: Mroczna Phoenix', source: 'player', changed: true });
+    const newer = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'X-Men: Mroczna Phoenix',
+      source: 'player',
+      playerHeader: 'Dark Phoenix',
+      playerChrome: 'X-Men',
+      playbackTitle: null,
+      documentTitle: null,
+      openGraphTitle: null
+    });
+    assert.deepEqual(newer, { title: 'Dark Phoenix', source: 'player', changed: true });
   });
 });
 
@@ -1724,6 +1761,54 @@ describe('native text track overlay', () => {
     tracks.dispatchChange();
     assert.equal(track.mode, 'showing');
   });
+
+  it('cancels a native caption stream as soon as it exceeds the byte cap', async () => {
+    const originalFetch = globalThis.fetch;
+    let cancelled = 0;
+    let pulls = 0;
+    globalThis.fetch = async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) { pulls++; controller.enqueue(new Uint8Array(MAX_CAPTION_BYTES + 1)); },
+      cancel() { cancelled++; }
+    }, { highWaterMark: 0 }), { headers: { 'content-length': '1' } });
+    const { adapter } = createAdapter(new FakeTrack(), {
+      kind: 'subtitles', srclang: 'es', src: 'https://example.com/captions.vtt', readyState: 2
+    });
+    try {
+      assert.equal((await adapter.activateCaptionTrack('native:0')).status, 'failed');
+      assert.equal(cancelled, 1);
+      assert.equal(pulls, 1);
+    } finally { adapter.dispose(); globalThis.fetch = originalFetch; }
+  });
+
+  for (const action of ['invalidate', 'dispose', 'off'] as const) {
+    it(`cancels a stalled native read on ${action} and rejects its stale result`, async () => {
+      const originalFetch = globalThis.fetch;
+      let started!: () => void;
+      const reading = new Promise<void>(resolve => { started = resolve; });
+      let cancelled = 0;
+      let signal: AbortSignal | null | undefined;
+      globalThis.fetch = async (_url, init) => {
+        signal = init?.signal;
+        return new Response(new ReadableStream<Uint8Array>({
+          pull() { started(); }, cancel() { cancelled++; }
+        }, { highWaterMark: 0 }));
+      };
+      const { adapter } = createAdapter(new FakeTrack(), {
+        kind: 'subtitles', srclang: 'es', src: 'https://example.com/captions.vtt', readyState: 2
+      });
+      try {
+        const pending = adapter.activateCaptionTrack('native:0');
+        await reading;
+        if (action === 'off') await adapter.activateCaptionTrack(null);
+        else adapter[action]();
+        const result = await pending;
+        assert.equal(result.status, 'failed');
+        assert.deepEqual(result.cues, []);
+        assert.equal(cancelled, 1);
+        assert.equal(signal?.aborted, true);
+      } finally { adapter.dispose(); globalThis.fetch = originalFetch; }
+    });
+  }
 
   it('fetches a same-origin track file when in-memory cues are empty', async () => {
     const track = new FakeTrack();
