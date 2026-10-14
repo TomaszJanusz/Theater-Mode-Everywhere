@@ -2270,8 +2270,10 @@ export function bootstrapPlayerRuntime(): void {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));
       }
 
-      if (changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY]
-          || mediaProviderFlagStorageKeys().some((key) => changes[key])) {
+      const providerFlagsChanged = mediaProviderFlagStorageKeys().some((key) => changes[key]);
+      // Auto-entry eligibility reads only domain policy, opt-in and provider flags.
+      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || providerFlagsChanged;
+      if (autoTheaterSettingsChanged) {
         void checkBlacklistAndInit();
       }
 
@@ -2313,7 +2315,7 @@ export function bootstrapPlayerRuntime(): void {
       if (changes[CAPTION_PREF_STORAGE_KEY]) {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
       }
-      if (mediaProviderFlagStorageKeys().some((key) => changes[key])) {
+      if (providerFlagsChanged) {
         const merged: Record<string, unknown> = {
           ...mediaProviderFlagStorageUpdate(refs.providerFlags)
         };
@@ -2324,7 +2326,7 @@ export function bootstrapPlayerRuntime(): void {
         }
         applyProviderFlags(resolveMediaProviderFlags(merged));
       }
-      syncAutoTheaterRuntime();
+      if (autoTheaterSettingsChanged) syncAutoTheaterRuntime();
     });
   }
 }
