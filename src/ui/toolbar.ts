@@ -16,6 +16,7 @@ import { resolveChromeVisibility } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
 import { consumePictureDismiss } from './picture-dismiss';
 import { closePlayerSettings } from './player-settings';
+import type { ExtendedHTMLDivElement } from './controls';
 import type { PlayerChromeContext } from './runtime-context';
 import type { HostCaptionLayout } from '../media-features/types';
 
@@ -323,7 +324,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
       closeTheaterPopovers();
       ctx.queryPlayerUi('.theater-button-tooltip')?.classList.remove('visible');
     }
+    const wasVisible = controls.classList.contains('visible');
     controls.classList.toggle('visible', visibility.controlsVisible);
+    if (visibility.controlsVisible && !wasVisible) (controls as ExtendedHTMLDivElement)._syncPlaybackChrome?.();
     if (header) {
       header.classList.toggle('visible', visibility.headerVisible);
       header.inert = !visibility.headerVisible;
