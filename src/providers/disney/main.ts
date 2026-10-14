@@ -36,6 +36,8 @@ type DisneyHarvest = {
   title?: string;
   subtitle?: string;
   duration?: number;
+  /** Hive reported the program length. Harvested runtimes no longer replace it. */
+  durationFromPlayer?: boolean;
   masterUrl?: string;
   storyboardUrl?: string;
   bifBlobUrl?: string;
@@ -50,7 +52,7 @@ type DisneyHivePlayer = {
   pause?: () => unknown;
   scrub?: (ms: number) => unknown;
   on?: (name: string, handler: () => void) => unknown;
-  timeline?: { info?: { playheadPositionMs?: number } };
+  timeline?: { info?: { playheadPositionMs?: number; programDurationMs?: number } };
 };
 
 const DISNEY_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-disney-snapshot';
@@ -432,7 +434,7 @@ function mergeDisneyHarvest(next: {
     disneyTitlePlayId = mediaId;
     if (applyDisneyTitle(resolved)) changed = true;
   }
-  if (next.duration && next.duration !== disneyHarvest.duration) {
+  if (next.duration && !disneyHarvest.durationFromPlayer && next.duration !== disneyHarvest.duration) {
     disneyHarvest.duration = next.duration;
     changed = true;
   }
@@ -769,6 +771,26 @@ function disneyPlayheadSeconds(player: DisneyHivePlayer | null): number | null {
   return typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? ms / 1000 : null;
 }
 
+function disneyProgramDurationSeconds(player: DisneyHivePlayer | null): number | null {
+  const ms = player?.timeline?.info?.programDurationMs;
+  return typeof ms === 'number' && Number.isFinite(ms) && ms > 0 ? ms / 1000 : null;
+}
+
+/**
+ * API runtimes can omit part of the playable timeline. Use the same program
+ * length as Hive's content clock so the scrubber does not end early.
+ */
+function rememberDisneyProgramDuration(player: DisneyHivePlayer | null, playId: string | null): void {
+  const seconds = disneyProgramDurationSeconds(player);
+  if (seconds == null || !playId) return;
+  if (disneyHarvest.mediaId && disneyHarvest.mediaId !== playId) resetDisneyHarvest(playId);
+  disneyHarvest.mediaId = playId;
+  if (disneyHarvest.durationFromPlayer && disneyHarvest.duration === seconds) return;
+  disneyHarvest.duration = seconds;
+  disneyHarvest.durationFromPlayer = true;
+  notifyDisneyHarvest();
+}
+
 function disneyHiveSeekReached(player: DisneyHivePlayer | null, targetSeconds: number): boolean {
   return disneySeekSettlement({
     pendingTarget: targetSeconds,
@@ -903,6 +925,7 @@ function publishDisneyPlayhead(video: HTMLVideoElement | null, player: DisneyHiv
   const seconds = disneyPlayheadSeconds(player);
   if (seconds == null) return null;
   const playId = disneyPageMediaId();
+  rememberDisneyProgramDuration(player, playId);
   if (playId !== lastDispatchedPlayId) {
     lastDispatchedDisneyPlayhead = null;
     lastDispatchedPlayId = playId;
@@ -979,7 +1002,7 @@ function bindDisneyPlayerClock(player: DisneyHivePlayer | null): void {
   if (!player || typeof player.on !== 'function') return;
   if (disneyClockBoundPlayers.has(player)) return;
   const publish = () => {
-    if (cachedDisneyPlayer !== player) return;
+    if (cachedDisneyPlayer !== player || !disneyPlayerCacheValid()) return;
     if (
       document.hidden
       || !disneyIntegrationEnabled()

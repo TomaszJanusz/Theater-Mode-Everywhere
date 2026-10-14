@@ -112,6 +112,64 @@ for (const engine of ['chromium', 'firefox'] as const) {
       });
     });
 
+    it('uses Hive program duration over API runtimes and retires it with the episode', { timeout: 30_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<disney-web-player><video class="hive-video" style="width:640px;height:360px"></video></disney-web-player>'
+      }));
+      await page.goto(`https://www.disneyplus.com/play/${PLAY_ID}`);
+      await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+      await page.evaluate(() => {
+        const api = (window as unknown as { DisneyMain: typeof import('./main') }).DisneyMain;
+        const video = document.querySelector('video')!;
+        const listeners: Record<string, () => void> = {};
+        const player = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 2_849_000, programDurationMs: Number.NaN } },
+          on(name: string, listener: () => void) { listeners[name] = listener; }
+        };
+        Object.assign(video, { mediaPlayer: player });
+        Object.assign(window, { durationProbe: { api, player, listeners } });
+        api.installDisneyMain();
+        api.harvestDisneyData('https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/test', { runtimeMs: 2_844_000 });
+      });
+      await page.waitForFunction(() => Boolean((window as unknown as {
+        durationProbe: { listeners: Record<string, () => void> }
+      }).durationProbe.listeners['@EVENT/PLAYER/TIMECODE']));
+      const report = await page.evaluate(() => {
+        const { api, player, listeners } = (window as unknown as { durationProbe: {
+          api: typeof import('./main');
+          player: { timeline: { info: { playheadPositionMs: number; programDurationMs: number } } };
+          listeners: Record<string, () => void>;
+        } }).durationProbe;
+        const read = () => JSON.parse(document.getElementById('theater-everywhere-disney-snapshot')!.textContent!).duration as number;
+        const harvest = () => api.harvestDisneyData('https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/test', { runtimeMs: 2_844_000 });
+        const emit = () => listeners['@EVENT/PLAYER/TIMECODE']();
+        const fallback = read();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        const native = read();
+        harvest();
+        const afterApi = read();
+        player.timeline.info.programDurationMs = 0;
+        emit();
+        const afterInvalid = read();
+        document.querySelector('disney-web-player')!.remove();
+        history.pushState({}, '', '/play/180356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        const nextEpisode = read();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        return { fallback, native, afterApi, afterInvalid, nextEpisode, afterStalePlayer: read() };
+      });
+      assert.deepEqual(report, {
+        fallback: 2844, native: 3343.5, afterApi: 3343.5, afterInvalid: 3343.5,
+        nextEpisode: 2844, afterStalePlayer: 2844
+      });
+    });
+
     it('keeps timers off the catalog and arms the fallback only while native time is missing', async (t) => {
       const browserType = (await import('playwright'))[engine];
       let executable = '';

@@ -21,6 +21,7 @@ import {
   seekToLive,
   timeToRatio,
   displayMediaTime,
+  observeMediaSeekRequests,
   clearPendingMediaSeek
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
@@ -1360,6 +1361,8 @@ export function createControls(
 
     // Buffering / Loading State Helper
     let bufferingTimeout: number | null = null;
+    let bufferingFailsafe: number | null = null;
+    let requestedSeek: number | null = null;
 
     const setBuffering = (isBuffering: boolean, immediate = false) => {
       if (isBuffering) {
@@ -1379,6 +1382,15 @@ export function createControls(
           bufferingTimeout = null;
         }, 1000);
       } else {
+        // Hosts can keep publishing the old clock before starting the native
+        // seek. Those timeupdate/play events must not dismiss the new request.
+        if (requestedSeek !== null) {
+          const time = readProviderClock(native) ?? video.currentTime;
+          if (Math.abs(time - requestedSeek) > 2.5 || video.seeking || video.readyState < 2) return;
+          requestedSeek = null;
+        }
+        if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
+        bufferingFailsafe = null;
         if (bufferingTimeout) {
           clearTimeout(bufferingTimeout);
           bufferingTimeout = null;
@@ -1393,7 +1405,7 @@ export function createControls(
       const playhead = published ?? readProviderClock(native) ?? Number.NaN;
       updatePlaybackChrome();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
-      if (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
+      if (requestedSeek !== null || (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04)) {
         setBuffering(false);
       }
       if (Number.isFinite(playhead)) lastProviderPlayhead = playhead;
@@ -1427,6 +1439,7 @@ export function createControls(
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
+      requestedSeek = null;
       cancelTooltipFrame();
       fullscreenRecovery.invalidate();
       gestureScope?.dispose();
@@ -1483,23 +1496,19 @@ export function createControls(
       updateSpeedTooltip();
     };
   
-    let bufferingFailsafe: number | null = null;
     const armBufferingFailsafe = () => {
       if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
       bufferingFailsafe = window.setTimeout(() => {
         bufferingFailsafe = null;
-        if (!video.paused || readProviderClock(native) !== null) {
+        if (requestedSeek !== null || !video.paused || readProviderClock(native) !== null) {
+          requestedSeek = null;
           setBuffering(false);
         }
-      }, 4000);
+      }, requestedSeek !== null ? 10_000 : 4000);
     };
     const onWaiting = () => { setBuffering(true); armBufferingFailsafe(); };
-    const onSeeking = () => { setBuffering(true); armBufferingFailsafe(); };
+    const onSeeking = () => { setBuffering(true, true); armBufferingFailsafe(); };
     const onSeeked = () => { 
-      if (bufferingFailsafe) {
-        clearTimeout(bufferingFailsafe);
-        bufferingFailsafe = null;
-      }
       updatePlaybackChrome();
       setBuffering(false); 
     };
@@ -1510,6 +1519,12 @@ export function createControls(
         setBuffering(true);
       }
     };
+
+    controlsScope.add(observeMediaSeekRequests(video, target => {
+      requestedSeek = target;
+      setBuffering(true, true);
+      armBufferingFailsafe();
+    }));
 
     video.addEventListener('play', onPlay);
     video.addEventListener('pause', onPause);

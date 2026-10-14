@@ -50,6 +50,63 @@ async function selected(frame: Page | Frame): Promise<string> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  it(`${engine}: Disney episode replacement waits past the hidden standby and restores on exit`, { timeout: 30_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+      contentType: 'text/html',
+      body: '<style>disney-web-player { display:block; width:640px; height:360px } video { width:640px; height:360px }</style><disney-web-player><video id="first" class="hive-video"></video></disney-web-player>'
+    }));
+    await page.goto('https://www.disneyplus.com/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6');
+    await boot(page);
+    await page.keyboard.press('t');
+    assert.equal(await selected(page), 'first');
+    await page.evaluate(() => {
+      document.querySelector('disney-web-player')!.remove();
+      history.pushState({}, '', '/play/180356b5-0596-4333-891f-e48c526a0803');
+      const shell = document.createElement('disney-web-player');
+      shell.innerHTML = '<video id="standby" class="btm-media-client-element" style="display:none"></video>';
+      document.body.append(shell);
+    });
+    // Flush the structural observer and its animation-frame rebind, without
+    // mounting the real player yet: discovery must reject its empty fallback.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator('#standby[data-theater-everywhere]').count(), 0);
+    await page.evaluate(media => {
+      const video = document.createElement('video');
+      video.id = 'episode';
+      video.className = 'hive-video';
+      video.style.cssText = 'width:100%;height:100%';
+      video.muted = true;
+      video.loop = true;
+      video.src = media;
+      document.querySelector('disney-web-player')!.append(video);
+    }, MEDIA);
+    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('#episode')!.readyState >= 2);
+    await page.waitForFunction(() => document.querySelector('video[data-theater-everywhere]')?.id === 'episode');
+    assert.equal(await page.locator('#episode').evaluate(video => getComputedStyle(video).display !== 'none'), true);
+    // Also cover a host switching away from a still-connected media node.
+    await page.evaluate(media => {
+      const current = document.querySelector<HTMLVideoElement>('#episode')!;
+      const replacement = current.cloneNode() as HTMLVideoElement;
+      replacement.id = 'connected-replacement';
+      replacement.removeAttribute('data-theater-everywhere');
+      replacement.className = 'hive-video';
+      replacement.style.cssText = 'width:100%;height:100%';
+      replacement.src = media;
+      current.after(replacement);
+      current.style.display = 'none';
+    }, MEDIA);
+    await page.waitForFunction(() => document.querySelector('video[data-theater-everywhere]')?.id === 'connected-replacement');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('video[data-theater-everywhere]'));
+    assert.equal(await page.locator('#standby').getAttribute('style'), 'display:none');
+    assert.equal(await page.locator('#connected-replacement').evaluate(video => video.style.position), '');
+    await page.locator('#episode').dispatchEvent('loadedmetadata');
+    assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);
+  });
+
   it(`${engine}: 100 mousemoves on a large page do no discovery or geometry reads`, { timeout: 30_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
