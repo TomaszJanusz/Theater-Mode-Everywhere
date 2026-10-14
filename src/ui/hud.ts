@@ -7,6 +7,7 @@ import type { AudioSettingName } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
+const CAPTION_LOADING_HUD_DELAY_MS = 400;
 export const HUD_PLATE_CLASS = 'theater-hud-plate';
 
 export const STATUS_HUD_SWITCH_ICON = `
@@ -253,8 +254,13 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
   let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
   let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+  let captionHudShowTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearCaptionHudTimers(): void {
+    if (captionHudShowTimer !== null) {
+      clearTimeout(captionHudShowTimer);
+      captionHudShowTimer = null;
+    }
     if (captionHudHideTimer) {
       clearTimeout(captionHudHideTimer);
       captionHudHideTimer = null;
@@ -271,15 +277,28 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
   }
 
   function triggerCaptionHud(view: CaptionHudView): void {
+    removeCaptionHud();
     if (view.kind === 'dismiss') {
-      removeCaptionHud();
       return;
     }
 
     if (!ctx.session.element) return;
 
-    removeCaptionHud();
+    if (view.kind === 'loading') {
+      // Fast background downloads should not interrupt watching with a flash.
+      const epoch = ctx.session.currentEpoch;
+      const element = ctx.session.element;
+      captionHudShowTimer = setTimeout(() => {
+        captionHudShowTimer = null;
+        if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element) return;
+        renderCaptionHud(view);
+      }, CAPTION_LOADING_HUD_DELAY_MS);
+      return;
+    }
+    renderCaptionHud(view);
+  }
 
+  function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>): void {
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
     ctx.paintOverlay(overlay);
