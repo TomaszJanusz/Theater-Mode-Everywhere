@@ -194,6 +194,7 @@ function considerDisneyChromeTitle(
   return best;
 }
 
+/** Exact title-bug fields outrank generic title hooks and headings across open shadow roots. */
 function visitDisneyChromeRoot(
   root: ParentNode,
   depth: number,
@@ -225,26 +226,28 @@ function visitDisneyChromeRoot(
 }
 
 /** Title Disney draws in the player header, not the browse page behind it. */
-function readDisneyPlayerChromeTitle(): string | null {
+function readDisneyPlayerChromeTitle(): { text: string; rank: number; top: number } | null {
   const hosts = document.querySelectorAll('disney-web-player, disney-web-player-ui, .DxcOverlay');
   let best: { text: string; rank: number; top: number } | null = null;
   for (const host of hosts) {
     if (host.shadowRoot) best = visitDisneyChromeRoot(host.shadowRoot, 0, best);
     best = visitDisneyChromeRoot(host, 0, best);
   }
-  return best?.text || null;
+  return best;
 }
 
 function syncDisneyDisplayedTitle(): boolean {
   const playId = disneyPageMediaId();
   const previousPlayId = disneyTitlePlayId;
   if (playId !== previousPlayId) disneyPlaybackTitle = null;
+  const chrome = readDisneyPlayerChromeTitle();
   const resolved = resolveDisneyTitle({
     playId,
     previousPlayId,
     title: disneyHarvest.title || null,
     source: disneyTitleSource,
-    playerChrome: readDisneyPlayerChromeTitle(),
+    playerChrome: chrome?.text,
+    playerChromeSource: chrome?.rank === 3 ? 'chrome-title-bug' : chrome?.rank === 1 ? 'chrome-heading' : 'chrome',
     playbackTitle: disneyPlaybackTitle,
     documentTitle: document.title,
     openGraphTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')

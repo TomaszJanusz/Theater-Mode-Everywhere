@@ -100,12 +100,22 @@ for (const engine of ['chromium', 'firefox'] as const) {
         history.pushState({}, '', '/pl-pl/play/180356b5-0596-4333-891f-e48c526a0803');
         const nextEpisode = read();
         bug.remove();
+        // The host can leave a generic title behind when the richer header decays.
+        const genericTitle = document.createElement('div');
+        genericTitle.className = 'player-title';
+        genericTitle.textContent = 'VisionQuest';
+        player.append(genericTitle);
         const decayed = read();
-        history.pushState({}, '', '/pl-pl/play/6f5b1fff-75da-44f6-9553-412699bf4065');
-        const replaced = read();
         document.documentElement.setAttribute('data-te-disney-integration-off', '');
         const disabled = read();
-        return { initial, episode, arbitrary, noSubtitle, nextEpisode, decayed, replaced, disabled };
+        document.documentElement.removeAttribute('data-te-disney-integration-off');
+        const enabled = read();
+        history.pushState({}, '', '/pl-pl/play/6f5b1fff-75da-44f6-9553-412699bf4065');
+        const replaced = read();
+        genericTitle.remove();
+        history.pushState({}, '', '/pl-pl/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6');
+        const empty = read();
+        return { initial, episode, arbitrary, noSubtitle, nextEpisode, decayed, replaced, disabled, enabled, empty };
       });
       assert.deepEqual(report, {
         initial: 'VisionQuest',
@@ -114,8 +124,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
         noSubtitle: 'VisionQuest',
         nextEpisode: 'VisionQuest — S1:O2 Nowy odcinek',
         decayed: 'VisionQuest — S1:O2 Nowy odcinek',
-        replaced: null,
-        disabled: null
+        replaced: 'VisionQuest',
+        disabled: null,
+        enabled: 'VisionQuest — S1:O2 Nowy odcinek',
+        empty: null
       });
     });
 
