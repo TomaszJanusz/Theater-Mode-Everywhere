@@ -11,13 +11,23 @@ import {
 import { OwnedDom } from './owned-dom';
 import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
-import { parseChatLocation, readLiveChatSource, watchIdentity } from './url';
+import { isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
-/** Fallback discovery for SPA navigations and chats mounted after theater starts. */
+/** Cheap route check. DOM discovery does not run on every tick. */
 const DISCOVERY_POLL_MS = 500;
+
+/**
+ * Late shells usually arrive as mutations. This only covers a mount or model
+ * change that does not touch the DOM, and it never runs while the document is hidden.
+ */
+const LATE_MOUNT_MS = 2000;
 
 /** Coalesce structural mutations. Message appends never reach this timer. */
 const STRUCTURE_REFRESH_MS = 80;
+
+const ACTIVATION_SELECTOR = `${TWITCH_CHAT_TOGGLE_SELECTOR}, ${YOUTUBE_CHAT_CARD_SELECTOR}, #show-hide-button`;
+
+const SHELL_SELECTOR = '[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame';
 
 export interface ChatControllerOptions {
   document: Document;
@@ -72,6 +82,11 @@ export class ChatController {
   private boundFrameSrc = '';
   private structureTimer: ReturnType<typeof setTimeout> | null = null;
   private viewportFrame = 0;
+  private shellObserver: MutationObserver | null = null;
+  private shellArmed = false;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private listenersBound = false;
+  private lastLateRefresh = 0;
   private activation: ChatActivation | null = null;
   private attemptedActivation: (ChatActivation & { at: number }) | null = null;
 
@@ -80,11 +95,10 @@ export class ChatController {
     this.start();
   }
 
-  /** Begins route polling, structural observation, and the first detection. */
+  /** Begins observation only for a visible chat host, then detects once. */
   start(): void {
     if (this.disposed || this.started) return;
     this.started = true;
-    this.observe();
     this.refresh();
   }
 
@@ -94,8 +108,11 @@ export class ChatController {
 
   refresh(): void {
     if (this.disposed) return;
+    this.syncActivity();
+    if (this.options.document.hidden) return;
     const href = this.safeHref();
     this.lastIdentity = watchIdentity(href);
+    this.lastLateRefresh = Date.now();
     const surface = detectChatSurface(this.options.document, href);
     this.activation = detectChatActivation(this.options.document, href, surface);
     // Closing chat through the service's own UI is also a viewer choice.
@@ -158,6 +175,8 @@ export class ChatController {
     if (this.disposed) return;
     this.disposed = true;
     this.scope.dispose();
+    this.disarmShell();
+    this.clearPoll();
     this.clearStructureTimer();
     this.clearViewportFrame();
     this.themeSession.dispose();
@@ -170,40 +189,136 @@ export class ChatController {
     this.options.onLayoutChange();
   }
 
-  private observe(): void {
+  /**
+   * Generic pages and non-watch hosts get no observer and no timer.
+   * A chat host on a non-watch route only compares the URL until a watch route appears.
+   */
+  private syncActivity(): void {
+    if (this.disposed) return;
+    const doc = this.options.document;
+    const href = this.safeHref();
+    // Geometry follows the viewport on every page: the controller also publishes
+    // the stage size variables when there is no chat.
+    this.bindListeners();
+    const host = isNativeChatHost(href);
+    if (!host) {
+      this.disarmShell();
+      this.clearPoll();
+      return;
+    }
+    if (doc.hidden) {
+      this.disarmShell();
+      this.clearPoll();
+      return;
+    }
+    this.ensurePoll();
+    if (parseChatLocation(href)?.role === 'watch') this.armShell();
+    else this.disarmShell();
+  }
+
+  private bindListeners(): void {
+    if (this.listenersBound) return;
+    this.listenersBound = true;
+    const doc = this.options.document;
+    const view = doc.defaultView;
+    this.scope.listen(doc, 'visibilitychange', () => this.onVisibility());
+    if (!view) return;
+    this.scope.listen(view, 'popstate', () => { if (!doc.hidden && isNativeChatHost(this.safeHref())) this.refresh(); });
+    this.scope.listen(view, 'resize', () => this.onViewport());
+    if (view.visualViewport) this.scope.listen(view.visualViewport, 'resize', () => this.onViewport());
+  }
+
+  private onVisibility(): void {
+    if (this.disposed) return;
+    if (this.options.document.hidden) {
+      this.disarmShell();
+      this.clearPoll();
+      this.clearStructureTimer();
+      return;
+    }
+    if (isNativeChatHost(this.safeHref())) this.refresh();
+    else this.scheduleViewport();
+  }
+
+  private onViewport(): void {
+    if (this.options.document.hidden) return;
+    this.scheduleViewport();
+  }
+
+  private ensurePoll(): void {
+    if (this.pollTimer !== null) return;
+    const poll = setInterval(() => this.poll(), DISCOVERY_POLL_MS);
+    this.pollTimer = poll;
+    this.scope.add(() => {
+      clearInterval(poll);
+      if (this.pollTimer === poll) this.pollTimer = null;
+    });
+  }
+
+  private clearPoll(): void {
+    if (this.pollTimer === null) return;
+    clearInterval(this.pollTimer);
+    this.pollTimer = null;
+  }
+
+  private armShell(): void {
+    if (this.shellArmed) return;
     const root = this.options.document.documentElement;
     if (!root) return;
-    const observer = new MutationObserver((records) => {
-      if (this.structureChanged(records)) this.scheduleStructureRefresh();
-    });
-    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'video-id', 'collapsed', 'aria-label', 'aria-expanded', 'disabled', 'aria-disabled', 'hidden'] });
-    this.scope.add(() => observer.disconnect());
-
-    const view = this.options.document.defaultView;
-    if (view) {
-      this.scope.listen(view, 'resize', () => this.scheduleViewport());
-      this.scope.listen(view, 'popstate', () => this.refresh());
-      if (view.visualViewport) {
-        this.scope.listen(view.visualViewport, 'resize', () => this.scheduleViewport());
-      }
+    if (!this.shellObserver) {
+      this.shellObserver = new MutationObserver((records) => {
+        if (this.disposed || this.options.document.hidden) return;
+        if (this.structureChanged(records)) this.scheduleStructureRefresh();
+      });
+      this.scope.add(() => {
+        this.shellObserver?.disconnect();
+        this.shellObserver = null;
+        this.shellArmed = false;
+      });
     }
-    const poll = setInterval(() => this.poll(), DISCOVERY_POLL_MS);
-    this.scope.add(() => clearInterval(poll));
+    this.shellObserver.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['src', 'video-id', 'collapsed', 'aria-label', 'aria-expanded', 'disabled', 'aria-disabled', 'hidden']
+    });
+    this.shellArmed = true;
+  }
+
+  private disarmShell(): void {
+    if (!this.shellArmed) return;
+    this.shellObserver?.disconnect();
+    this.shellArmed = false;
   }
 
   private poll(): void {
-    if (this.disposed) return;
-    const identity = watchIdentity(this.safeHref());
-    const surface = this.current.surface;
-    if (!identity) {
-      if (identity !== this.lastIdentity || surface) this.refresh();
+    if (this.disposed || this.options.document.hidden) return;
+    const href = this.safeHref();
+    if (!isNativeChatHost(href)) {
+      this.disarmShell();
+      this.clearPoll();
       return;
     }
+    const identity = watchIdentity(href);
+    if (identity) this.armShell();
+    else this.disarmShell();
+    if (identity !== this.lastIdentity) {
+      this.refresh();
+      return;
+    }
+    if (!identity) return;
+    const surface = this.current.surface;
     const frameDetached = Boolean(surface?.iframe && !surface.iframe.isConnected);
     const frameRetargeted = Boolean(surface?.iframe) && (surface?.iframe?.getAttribute('src') || '') !== this.boundFrameSrc;
     const rootDetached = Boolean(surface && !surface.root.isConnected);
     const componentDetached = Boolean(surface?.contentRoot && !surface.contentRoot.isConnected);
-    if (!surface || this.activation || identity !== this.lastIdentity || frameDetached || frameRetargeted || rootDetached || componentDetached) this.refresh();
+    if (frameDetached || frameRetargeted || rootDetached || componentDetached) {
+      this.refresh();
+      return;
+    }
+    if (surface && !this.activation) return;
+    if (Date.now() - this.lastLateRefresh < LATE_MOUNT_MS) return;
+    this.refresh();
   }
 
   /**
@@ -215,7 +330,7 @@ export class ChatController {
     for (const record of records) {
       if (record.type === 'attributes') {
         const target = record.target;
-        if (target instanceof Element && (target.matches(TWITCH_CHAT_TOGGLE_SELECTOR + ', ' + YOUTUBE_CHAT_CARD_SELECTOR + ', ytd-live-chat-frame, #show-hide-button')
+        if (target instanceof Element && (target.matches(ACTIVATION_SELECTOR + ', ytd-live-chat-frame')
           || target.closest(YOUTUBE_CHAT_CARD_SELECTOR + ', #show-hide-button'))) return true;
         if (target instanceof Element && target.matches('ytd-watch-flexy') && record.attributeName === 'video-id') return true;
         if (!(target instanceof HTMLIFrameElement)) continue;
@@ -250,23 +365,30 @@ export class ChatController {
 
   private additionMayMountChat(node: Node, surface: ChatSurface | null): boolean {
     if (!(node instanceof Element)) return false;
-    const activationSelector = TWITCH_CHAT_TOGGLE_SELECTOR + ', ' + YOUTUBE_CHAT_CARD_SELECTOR + ', #show-hide-button';
-    if (node.matches(activationSelector) || node.querySelector(activationSelector)) return true;
-    if (node.matches('[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame')) {
-      return true;
-    }
-    if (surface?.root.contains(node) && !(node instanceof HTMLIFrameElement)) return false;
+    if (this.ignoredBeforeScan(node, surface)) return false;
+    if (node.matches(ACTIVATION_SELECTOR) || node.matches(SHELL_SELECTOR)) return true;
     const tag = node.tagName;
     if (tag === 'YTD-LIVE-CHAT-FRAME' || tag === 'YTD-WATCH-FLEXY' || tag === 'YTD-APP') return true;
     if (tag === 'IFRAME') {
       return node.getAttribute('id') === 'chatframe' || readLiveChatSource(node.getAttribute('src') || '') !== null;
     }
     const id = node.getAttribute('id');
-    return id === 'columns' || id === 'page-manager' || id === 'chat-container';
+    if (id === 'columns' || id === 'page-manager' || id === 'chat-container') return true;
+    // An empty node cannot contain a shell. Wrappers are the only subtree scan.
+    if (node.childElementCount === 0) return false;
+    return Boolean(node.querySelector(ACTIVATION_SELECTOR) || node.querySelector(SHELL_SELECTOR));
+  }
+
+  /** Chat transcripts and our controls are not shells. Skip them before any selector scan. */
+  private ignoredBeforeScan(node: Element, surface: ChatSurface | null): boolean {
+    if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) return true;
+    if (node.matches('[data-theater-chat-palette], [data-theater-chat-canvas], .chat-line__message, .chat-line, yt-live-chat-text-message-renderer')) return true;
+    if (surface?.root.contains(node) && !(node instanceof HTMLIFrameElement) && !node.matches(SHELL_SELECTOR)) return true;
+    return false;
   }
 
   private scheduleStructureRefresh(): void {
-    if (this.disposed || this.structureTimer !== null) return;
+    if (this.disposed || this.options.document.hidden || this.structureTimer !== null) return;
     this.structureTimer = setTimeout(() => {
       this.structureTimer = null;
       this.refresh();

@@ -729,6 +729,23 @@ describe('native chat browser session', () => {
         });
         await page.waitForFunction(() => document.querySelector('#late-popup')?.classList.contains('theater-chat-theme-light'));
         assert.deepEqual((await verify('#late-popup')).mismatches, []);
+        const detachedPortal = await page.evaluate(async () => {
+          const popup = document.getElementById('late-popup');
+          const portal = popup?.parentElement;
+          if (!popup || !portal) return 'missing';
+          portal.remove();
+          await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+          return popup.className;
+        });
+        assert.notEqual(detachedPortal, 'missing');
+        assert.equal(String(detachedPortal).includes('theater-chat-theme-'), false, engine);
+        await page.evaluate(() => {
+          const portal = document.createElement('div');
+          portal.className = 'ReactModalPortal';
+          portal.innerHTML = '<div id="next-popup" class="NativeDark tw-root--theme-dark">Next</div>';
+          document.body.append(portal);
+        });
+        await page.waitForFunction(() => document.querySelector('#next-popup')?.classList.contains('theater-chat-theme-light'));
         await expectSavedTheme(read, 'twitch', { visible: true, width: 360, theme: 'light' });
         await chooseChatTheme(page, 'dark');
         await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');

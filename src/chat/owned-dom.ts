@@ -24,11 +24,19 @@ interface ClassRecord {
  * Remembers individual class tokens, attributes, and CSS properties TME sets.
  * Restore writes those entries back only when the current value is still the one
  * we applied, so a later service edit to the same name — or any other inline style — stays.
+ * Records stay in arrays so cleanup can enumerate them. A WeakMap cannot do that pass.
+ * Detached elements are released only after their mutation batch has settled: a node
+ * removed and reinserted in that same batch is connected again and keeps its record.
  */
 export class OwnedDom {
   private attributes: AttributeRecord[] = [];
   private styles: StyleRecord[] = [];
   private classes: ClassRecord[] = [];
+
+  /** Attribute, style, and class records still strongly retained. */
+  retainedRecordCount(): number {
+    return this.attributes.length + this.styles.length + this.classes.length;
+  }
 
   setClass(element: Element, name: string, enabled: boolean): void {
     let record = this.classes.find(entry => entry.element === element && entry.name === name);
@@ -64,28 +72,53 @@ export class OwnedDom {
     const index = this.attributes.findIndex(record => record.element === element && record.name === name);
     if (index < 0) return;
     const [record] = this.attributes.splice(index, 1);
-    if (element.getAttribute(name) !== record.applied) return;
-    if (record.previous === null) element.removeAttribute(name);
-    else element.setAttribute(name, record.previous);
+    this.restoreAttribute(record);
+  }
+
+  /**
+   * Restores and drops records whose elements are no longer in a document.
+   * Call after the current mutation batch, not between a remove and its reinsert.
+   */
+  releaseDetached(): void {
+    this.classes = this.classes.filter(record => {
+      if (record.element.isConnected) return true;
+      this.restoreClass(record);
+      return false;
+    });
+    this.styles = this.styles.filter(record => {
+      if (record.element.isConnected) return true;
+      this.restoreStyle(record);
+      return false;
+    });
+    this.attributes = this.attributes.filter(record => {
+      if (record.element.isConnected) return true;
+      this.restoreAttribute(record);
+      return false;
+    });
   }
 
   restoreAll(): void {
-    for (const record of this.classes.splice(0)) {
-      if (record.element.classList.contains(record.name) === record.applied) {
-        record.element.classList.toggle(record.name, record.previous);
-      }
-    }
-    for (const record of this.styles.splice(0)) {
-      if (record.element.style.getPropertyValue(record.name) !== record.applied || record.element.style.getPropertyPriority(record.name)) continue;
-      if (record.previous) record.element.style.setProperty(record.name, record.previous, record.priority);
-      else record.element.style.removeProperty(record.name);
-    }
-    for (const record of this.attributes.splice(0)) {
-      const current = record.element.hasAttribute(record.name) ? record.element.getAttribute(record.name) : null;
-      if (current !== record.applied) continue;
-      if (record.previous === null) record.element.removeAttribute(record.name);
-      else record.element.setAttribute(record.name, record.previous);
-    }
+    for (const record of this.classes.splice(0)) this.restoreClass(record);
+    for (const record of this.styles.splice(0)) this.restoreStyle(record);
+    for (const record of this.attributes.splice(0)) this.restoreAttribute(record);
+  }
+
+  private restoreClass(record: ClassRecord): void {
+    if (record.element.classList.contains(record.name) !== record.applied) return;
+    record.element.classList.toggle(record.name, record.previous);
+  }
+
+  private restoreStyle(record: StyleRecord): void {
+    if (record.element.style.getPropertyValue(record.name) !== record.applied || record.element.style.getPropertyPriority(record.name)) return;
+    if (record.previous) record.element.style.setProperty(record.name, record.previous, record.priority);
+    else record.element.style.removeProperty(record.name);
+  }
+
+  private restoreAttribute(record: AttributeRecord): void {
+    const current = record.element.hasAttribute(record.name) ? record.element.getAttribute(record.name) : null;
+    if (current !== record.applied) return;
+    if (record.previous === null) record.element.removeAttribute(record.name);
+    else record.element.setAttribute(record.name, record.previous);
   }
 
   private attribute(element: Element, name: string): AttributeRecord {

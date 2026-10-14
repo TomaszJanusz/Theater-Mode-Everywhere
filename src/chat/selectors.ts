@@ -16,6 +16,9 @@ export const YOUTUBE_CHAT_ROOT_SELECTOR = '#chat, ytd-live-chat-frame';
  */
 export const CHAT_REVEAL_SELECTOR = '#secondary, #chat, .right-column, [data-a-target="right-column-chat-bar"]';
 
+/** Twitch mounts menus and emote pickers in these portals, outside the chat column. */
+export const TWITCH_CHAT_PORTAL_SELECTOR = '.ReactModalPortal, .ReactModal__Overlay, .tw-dialog-layer';
+
 /** Portals and in-page controls whose keyboard events belong to the service chat, not TME. */
 export const TWITCH_CHAT_EVENT_SELECTOR = [
   TWITCH_CHAT_SECTION_SELECTOR,
@@ -31,9 +34,7 @@ export const TWITCH_CHAT_EVENT_SELECTOR = [
   '[data-a-target="chat-settings"]',
   '[data-a-target="viewer-card"]',
   '[data-test-selector="emote-picker"]',
-  '.ReactModalPortal',
-  '.ReactModal__Overlay',
-  '.tw-dialog-layer'
+  TWITCH_CHAT_PORTAL_SELECTOR
 ].join(',');
 
 export const YOUTUBE_CHAT_EVENT_SELECTOR = [
