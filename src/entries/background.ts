@@ -1,3 +1,4 @@
+import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { resolveDomainPolicy } from '../platform/domain-policy';
 import { createShortcutUpdateQueue, readShortcutUpdate } from '../ui/shortcut-updates';
 import { withShortcutDefaults } from '../ui/shortcuts';
@@ -81,11 +82,15 @@ async function fetchAllowlistedCaption(url: string): Promise<{ ok: boolean; body
       signal: controller.signal
     });
     if (!isAllowedBrokerFetchUrl(response.url)) {
+      abandonBody(response.body);
       return { ok: false, error: 'redirect-blocked' };
     }
-    if (!response.ok) return { ok: false, error: `http-${response.status}` };
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > MAX_CAPTION_BYTES) {
+    if (!response.ok) {
+      abandonBody(response.body);
+      return { ok: false, error: `http-${response.status}` };
+    }
+    const buffer = await readBoundedBytes(response, MAX_CAPTION_BYTES, controller.signal);
+    if (!buffer) {
       return { ok: false, error: 'too-large' };
     }
     const contentType = response.headers.get('content-type') || '';

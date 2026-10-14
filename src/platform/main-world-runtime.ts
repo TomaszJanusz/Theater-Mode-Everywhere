@@ -1,3 +1,5 @@
+import { abandonBody } from './bounded-body';
+import { readPageResponseBytes } from './page-body';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
 import { fetchWithoutHarvest, isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
@@ -488,24 +490,32 @@ export function installMainWorldRuntime(): void {
         respond(false);
         return;
       }
+      const href = window.location.href;
       const load = isAllowedTimedtextUrl(url)
         ? fetchTimedtextWithPot(url)
-        : fetchWithoutHarvest(url, { credentials: 'omit' }).then(async (response) => {
-            if (!response.ok) return null;
+        : (async () => {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15_000);
+          try {
+            const response = await fetchWithoutHarvest(url, { credentials: 'omit', signal: controller.signal });
+            if (!response.ok) { abandonBody(response.body); return null; }
             const request = classifyMediaFetchUrl(url, window.location.href);
-            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) return null;
-            const buffer = await response.arrayBuffer();
+            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            if (buffer.byteLength === 0 || buffer.byteLength > maxBytes) return null;
+            const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, () => window.location.href === href && pageFetchAllowed(url));
+            if (!buffer) return null;
             if (isBif) return URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
             return new TextDecoder().decode(buffer);
-          });
+          } finally {
+            clearTimeout(timeout);
+          }
+        })();
       load
-        .then((text) => respond(Boolean(text), text || undefined))
+        .then((text) => respond(window.location.href === href && Boolean(text), window.location.href === href ? text || undefined : undefined))
         .catch(() => respond(false));
     } catch {
       respond(false);

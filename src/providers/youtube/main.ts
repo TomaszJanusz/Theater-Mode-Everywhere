@@ -1,3 +1,5 @@
+import { abandonBody } from '../../platform/bounded-body';
+import { readPageResponseBytes } from '../../platform/page-body';
 import { qualifiesYoutubeHeatmap } from '../network-harvest';
 import { fetchWithoutHarvest } from '../../platform/harvest-ownership';
 import {
@@ -262,8 +264,10 @@ function findCachedBody(url: string): string | null {
 export function captureTimedtextResponse(url: string, response: Response): void {
   const finalUrl = (response && response.url) || url;
   if (!finalUrl || !/timedtext/i.test(finalUrl) || !response || !response.ok) return;
-  response.text().then((text) => {
-    if (text) cacheTimedtextBody(finalUrl, text);
+  const generation = captionOperation;
+  readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined,
+    () => generation === captionOperation && youtubeIntegrationEnabled()).then((buffer) => {
+    if (buffer) cacheTimedtextBody(finalUrl, new TextDecoder().decode(buffer));
   }).catch(() => {});
 }
 
@@ -417,6 +421,9 @@ export function isAllowedTimedtextUrl(url: string): boolean {
 }
 
 async function fetchTimedtextDirect(url: string): Promise<string | null> {
+  const href = window.location.href;
+  const generation = captionOperation;
+  const current = () => window.location.href === href && generation === captionOperation && youtubeIntegrationEnabled();
   const candidates: string[] = [];
   const add = (value: string) => {
     if (value && !candidates.includes(value) && isAllowedTimedtextUrl(value)) candidates.push(value);
@@ -434,13 +441,15 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
   }
   if (!timedtextHasPot(signed)) return null;
   for (const candidate of candidates.slice(0, 4)) {
+    if (!current()) return null;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 4000);
     try {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 4000);
       const response = await fetchWithoutHarvest(candidate, { credentials: 'include', signal: controller.signal });
-      window.clearTimeout(timer);
-      if (!response.ok) continue;
-      const text = await response.text();
+      if (!response.ok) { abandonBody(response.body); continue; }
+      const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, current);
+      if (!buffer) continue;
+      const text = new TextDecoder().decode(buffer);
       if (!text || text.trim().length < 20) continue;
       const start = text.trim().slice(0, 80).toLowerCase();
       if (start.startsWith('<!doctype') || start.startsWith('<html')) continue;
@@ -448,6 +457,8 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
       return text;
     } catch {
       // Try the next signed caption URL.
+    } finally {
+      window.clearTimeout(timer);
     }
   }
   return null;

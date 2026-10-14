@@ -1,3 +1,4 @@
+import { MAX_CAPTION_BYTES } from './media-url-policy';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -17,7 +18,8 @@ const bundle = esbuild.buildSync({
     export { readTencentSnapshot } from './providers/tencent/main';
     export { readTwitchSnapshot } from './providers/twitch/main';
     export { readCrunchyrollSnapshot } from './providers/crunchyroll/main';
-    export { fetchWithoutHarvest } from './platform/harvest-ownership';`,
+    export { fetchWithoutHarvest } from './platform/harvest-ownership';
+    export { createWorldMessage } from './protocol/world-messages';`,
     resolveDir: path.resolve(new URL('..', import.meta.url).pathname), loader: 'ts' },
   bundle: true, write: false, format: 'iife', globalName: 'HarvestTest', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
@@ -292,6 +294,97 @@ for (const browserType of [chromium, firefox]) {
       assert.equal((await counts(page)).decode, 0);
       await page.close();
     }
+    await browser.close();
+  });
+
+  it(`${browserType.name()}: qualified consumers stop their clone at the text/BIF cap while host playback bytes survive`, { timeout: 60_000 }, async t => {
+    if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
+    const samples = [
+      { page: 'https://www.youtube.com/watch?v=abc', endpoint: 'https://www.youtube.com/api/timedtext?v=abc&lang=en', cap: MAX_CAPTION_BYTES },
+      { page: 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', endpoint: 'https://disney.api.edge.bamgrid.com/playback', cap: MAX_CAPTION_BYTES },
+      { page: 'https://wetv.vip/en/play/cover/h0045v8ky1m-EP1', endpoint: 'https://play.wetv.vip/getvinfo', cap: MAX_CAPTION_BYTES },
+      { page: 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', endpoint: 'https://cdn.dssott.com/thumbnails/movie.bif', cap: 16 * 1024 * 1024 }
+    ];
+    for (const sample of samples) {
+      const page = await browser.newPage(); await setup(page, sample.page);
+      await page.evaluate(({ endpoint, cap }) => window.eval(`(() => {
+        window.cancelledClones = 0; window.cloneBytes = 0;
+        const originalClone = Response.prototype.clone;
+        Response.prototype.clone = function() {
+          const clone = originalClone.call(this), getReader = clone.body.getReader.bind(clone.body);
+          clone.body.getReader = function() {
+            const reader = getReader(), read = reader.read.bind(reader), cancel = reader.cancel.bind(reader);
+            reader.read = () => read().then(result => { window.cloneBytes += result.value?.byteLength || 0; return result; });
+            reader.cancel = () => { window.cancelledClones++; return cancel(); };
+            return reader;
+          };
+          return clone;
+        };
+        const chunk = 256 * 1024, total = ${cap} + chunk; let produced = 0;
+        const response = new Response(new ReadableStream({pull(c) {
+          if (produced === total) { c.close(); return; }
+          produced += chunk; c.enqueue(new Uint8Array(chunk).fill(65));
+        }}, {highWaterMark:0}), {headers:{'content-length':'1','content-type':'application/octet-stream'}});
+        Object.defineProperty(response, 'url', {value:${JSON.stringify(endpoint)}});
+        window.fetch = () => Promise.resolve(response);
+        window.hostResponse = fetch(${JSON.stringify(endpoint)});
+      })()`), sample);
+      await page.waitForFunction('window.cancelledClones === 1');
+      assert.equal(await page.evaluate('window.cloneBytes'), sample.cap + 256 * 1024);
+      assert.deepEqual(await page.evaluate(`(async () => {
+        const original = await (await window.hostResponse).arrayBuffer();
+        return {length:original.byteLength, valid:new Uint8Array(original).every(byte => byte === 65)};
+      })()`), { length: sample.cap + 256 * 1024, valid: true });
+      assert.equal((await counts(page)).clone, 1);
+      await page.close();
+    }
+    await browser.close();
+  });
+
+  it(`${browserType.name()}: MAIN page fetch bounds owned bodies, preserves BIF budget, and rejects navigation before headers`, { timeout: 30_000 }, async t => {
+    if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await setup(page, 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    const results = await page.evaluate(`(async () => {
+      let sequence = 0, cancelled = 0;
+      const request = url => new Promise(resolve => {
+        const message = HarvestTest.createWorldMessage('PAGE_FETCH', {url}, 'bounded-' + ++sequence);
+        const onMessage = event => {
+          if (event.data?.type !== 'PAGE_FETCH_RESULT' || event.data?.requestId !== message.requestId) return;
+          window.removeEventListener('message', onMessage); resolve(event.data.payload);
+        };
+        window.addEventListener('message', onMessage);
+        window.dispatchEvent(new MessageEvent('message', {data:message, origin:location.origin, source:window}));
+      });
+      const caption = 'https://cdn.dssott.com/captions/en.vtt';
+      const bif = 'https://cdn.dssott.com/thumbnails/movie.bif';
+      const text = ${JSON.stringify('WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello')};
+      window.fetch = () => Promise.resolve(new Response(text));
+      const valid = await request(caption);
+      window.fetch = () => Promise.resolve(new Response(new ReadableStream({
+        pull(c) { c.enqueue(new Uint8Array(${MAX_CAPTION_BYTES} + 1)); }, cancel() {cancelled++;}
+      }, {highWaterMark:0}), {headers:{'content-length':'1'}}));
+      const oversized = await request(caption);
+      const bifSize = ${MAX_CAPTION_BYTES} + 1;
+      window.fetch = () => Promise.resolve(new Response(new Uint8Array(bifSize)));
+      const binary = await request(bif);
+      const binarySize = (await (await window.nativeFetch(binary.body)).arrayBuffer()).byteLength;
+      URL.revokeObjectURL(binary.body);
+      let headers;
+      window.fetch = () => new Promise(resolve => {headers = resolve;});
+      const stale = request(caption);
+      history.pushState(null, '', '/play/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+      headers(new Response(new ReadableStream({cancel() {cancelled++;}})));
+      return {valid, oversized, binaryOk:binary.ok, binarySize, stale:await stale, cancelled};
+    })()`);
+    assert.deepEqual(results, {
+      valid: { ok: true, body: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello' },
+      oversized: { ok: false, body: undefined }, binaryOk: true, binarySize: MAX_CAPTION_BYTES + 1,
+      stale: { ok: false, body: undefined }, cancelled: 2
+    });
+    assert.equal((await counts(page)).clone, 0, 'extension-owned reads do not reenter host harvest');
     await browser.close();
   });
 

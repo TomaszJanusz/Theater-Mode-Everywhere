@@ -1,3 +1,4 @@
+import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { sanitizeContentTitle } from './content-title';
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
@@ -84,22 +85,29 @@ function isSafeTrackUrl(url: URL): boolean {
   return url.protocol === 'http:' || url.protocol === 'https:';
 }
 
-async function fetchTrackSource(src: string, baseHref: string): Promise<string | null> {
+async function fetchTrackSource(src: string, baseHref: string, signal: AbortSignal, isCurrent: () => boolean): Promise<string | null> {
   let url: URL;
   try {
     url = new URL(src, baseHref);
   } catch {
     return null;
   }
-  if (!isSafeTrackUrl(url)) return null;
+  if (!isSafeTrackUrl(url) || signal.aborted || !isCurrent()) return null;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener('abort', abort, { once: true });
+  const timeout = setTimeout(abort, 15_000);
   try {
-    const response = await fetch(url.href, { credentials: 'same-origin' });
-    if (!response.ok) return null;
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength === 0 || buffer.byteLength > MAX_CAPTION_BYTES) return null;
+    const response = await fetch(url.href, { credentials: 'same-origin', signal: controller.signal });
+    if (!response.ok) { abandonBody(response.body); return null; }
+    const buffer = await readBoundedBytes(response, MAX_CAPTION_BYTES, controller.signal, undefined, isCurrent);
+    if (!buffer) return null;
     return new TextDecoder().decode(buffer);
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener('abort', abort);
   }
 }
 
@@ -139,6 +147,7 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   private restoredModes = new Map<TextTrack, TextTrackMode>();
   private overlayTrack: TextTrack | null = null;
   private watching = false;
+  private captionLoad: AbortController | null = null;
   private boundOnTracksChange = (): void => {
     this.enforceOverlayTrackMode();
   };
@@ -173,6 +182,12 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   }
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
+    this.captionLoad?.abort();
+    const controller = new AbortController();
+    this.captionLoad = controller;
+    const source = this.video.currentSrc;
+    const srcObject = this.video.srcObject;
+    const current = () => !controller.signal.aborted && this.video.currentSrc === source && this.video.srcObject === srcObject;
     const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
     if (id === null) {
       this.stopWatching();
@@ -202,15 +217,17 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
         cues = await waitForTrackCues(selected, trackEl ? TRACK_WAIT_MS : TRACK_WAIT_MS_NO_ELEMENT);
       }
     }
-    if (cues.length === 0) {
-      cues = await this.fetchCuesFromTrackElement(selected, index);
+    if (current() && cues.length === 0) {
+      cues = await this.fetchCuesFromTrackElement(selected, index, controller.signal, current);
     }
-    return cues.length > 0
+    return current() && cues.length > 0
       ? { status: 'active', delivery: 'overlay', cues }
       : { status: 'failed', delivery: 'none', cues: [] };
   }
 
   invalidate(): void {
+    this.captionLoad?.abort();
+    this.captionLoad = null;
     this.stopWatching();
     const tracks = Array.from(this.video.textTracks || []).filter(trackUsable);
     for (const track of tracks) this.setTrackMode(track, 'disabled');
@@ -240,6 +257,8 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
   }
 
   dispose(): void {
+    this.captionLoad?.abort();
+    this.captionLoad = null;
     this.stopWatching();
     this.restoredModes.forEach((mode, track) => {
       this.setTrackMode(track, mode);
@@ -247,14 +266,14 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     this.restoredModes.clear();
   }
 
-  private async fetchCuesFromTrackElement(track: TextTrack, index: number): Promise<CaptionCue[]> {
+  private async fetchCuesFromTrackElement(track: TextTrack, index: number, signal: AbortSignal, isCurrent: () => boolean): Promise<CaptionCue[]> {
     const trackEl = matchingTrackElement(this.video, track, index);
     const src = trackEl?.src;
     if (!src) return [];
     const baseHref = typeof document !== 'undefined' && document.baseURI
       ? document.baseURI
       : 'https://localhost/';
-    const body = await fetchTrackSource(src, baseHref);
+    const body = await fetchTrackSource(src, baseHref, signal, () => isCurrent() && trackEl.src === src);
     if (!body) return [];
     return parseNativeTrackPayload(body);
   }

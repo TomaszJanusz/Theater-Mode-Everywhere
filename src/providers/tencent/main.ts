@@ -1,3 +1,4 @@
+import { readPageResponseBytes } from '../../platform/page-body';
 import { isTencentMetadataUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
@@ -64,9 +65,8 @@ export function harvestTencentBody(url: string, body: string): void {
 /** Consume the single qualified clone supplied by MAIN. */
 export function captureTencentNetworkResponse(url: string, response: Response): void {
   if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url) || !response.ok) return;
-  const length = Number(response.headers.get('content-length'));
-  if (length > MAX_CAPTION_BYTES) return;
-  void response.text().then((body) => harvestTencentBody(url, body)).catch(() => {});
+  void readPageResponseBytes(response, MAX_CAPTION_BYTES, undefined, tencentIntegrationEnabled)
+    .then((buffer) => { if (buffer) harvestTencentBody(url, new TextDecoder().decode(buffer)); }).catch(() => {});
 }
 
 export function captureTencentJsonpScript(url: string): void {
