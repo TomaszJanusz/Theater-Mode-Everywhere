@@ -16,6 +16,7 @@ interface VideoMetrics {
   visibleRatio: number;
   visibleArea: number;
   distanceToCenter: number;
+  offsetArea?: number;
 }
 
 export function isElementInDOMDeep(el: Node | null): boolean {
@@ -145,10 +146,12 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     };
   }
 
-  function compareVideos(a: HTMLVideoElement, b: HTMLVideoElement): number {
-    const aMetrics = getVideoMetrics(a);
-    const bMetrics = getVideoMetrics(b);
-
+  function compareVideos(
+    a: HTMLVideoElement,
+    b: HTMLVideoElement,
+    aMetrics: VideoMetrics,
+    bMetrics: VideoMetrics
+  ): number {
     if (aMetrics.inViewport !== bMetrics.inViewport) {
       return aMetrics.inViewport ? -1 : 1;
     }
@@ -175,8 +178,8 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     if (aMetrics.isHovered !== bMetrics.isHovered) {
       return aMetrics.isHovered ? -1 : 1;
     }
-    const aArea = a.offsetWidth * a.offsetHeight;
-    const bArea = b.offsetWidth * b.offsetHeight;
+    const aArea = aMetrics.offsetArea ??= a.offsetWidth * a.offsetHeight;
+    const bArea = bMetrics.offsetArea ??= b.offsetWidth * b.offsetHeight;
     return bArea - aArea;
   }
 
@@ -191,7 +194,17 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     const providerPick = providerRankedVideo(ranked);
     if (providerPick) return providerPick;
 
-    ranked.sort(compareVideos);
+    // Geometry and playback hints are valid only for this synchronous sort.
+    const metrics = new Map<HTMLVideoElement, VideoMetrics>();
+    function metricsFor(video: HTMLVideoElement): VideoMetrics {
+      let snapshot = metrics.get(video);
+      if (!snapshot) {
+        snapshot = getVideoMetrics(video);
+        metrics.set(video, snapshot);
+      }
+      return snapshot;
+    }
+    ranked.sort((a, b) => compareVideos(a, b, metricsFor(a), metricsFor(b)));
     return ranked[0];
   }
 
