@@ -28,7 +28,7 @@ import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
-import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
 import { armPictureDismiss, armPictureDismissOnLeave, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -955,16 +955,13 @@ export function createControls(
         ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
       }));
       const updateAudioRows = () => {
-        const available = ctx.actions.audioAvailable(native);
+        const block = ctx.actions.audioBlock(native);
         const shortcuts = ui().shortcuts;
-        const detail = (key: string) => t(available ? key : 'audioUnavailable');
-        if (boost) {
-          boost.button.setAttribute('aria-disabled', String(!available));
-          boost.row.update(shortcuts.toggleVolumeBoost, detail(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
-        }
-        for (const { name, button, row } of audioRows) {
-          button.setAttribute('aria-disabled', String(!available));
-          row.update(shortcuts[AUDIO_SHORTCUTS[name]], detail(audioLevelLabelKey(ui().audio, name)));
+        settings.setAudioNote(block && t(AUDIO_BLOCK_KEYS[block]));
+        if (block) return;
+        if (boost) boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
+        for (const { name, row } of audioRows) {
+          row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)));
         }
       };
       updateAudioRows();

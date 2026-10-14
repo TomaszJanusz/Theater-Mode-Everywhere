@@ -82,7 +82,8 @@ export function bindMenuPopover(options: {
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
     syncExpanded();
-    if (focusFirst) panel.querySelector<HTMLButtonElement>('button')?.focus();
+    // Skip rows inside hidden sections, which cannot take focus.
+    if (focusFirst) [...panel.querySelectorAll('button')].find(item => !item.closest('[hidden]'))?.focus();
     options.onChange?.();
   };
 

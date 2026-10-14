@@ -109,8 +109,11 @@
   "voiceBoostStrong": {
     "message": "Mocne"
   },
-  "audioUnavailable": {
-    "message": "Niedostępne"
+  "audioProtected": {
+    "message": "Ustawienia dźwięku niedostępne: ten film jest chroniony przez DRM."
+  },
+  "audioRefused": {
+    "message": "Ustawienia dźwięku niedostępne: serwer wideo na to nie pozwala."
   },
   "audioUnavailableHud": {
     "message": "Ustawienia dźwięku są niedostępne dla tego wideo"

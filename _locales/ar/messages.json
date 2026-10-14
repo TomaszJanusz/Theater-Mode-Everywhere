@@ -109,8 +109,11 @@
   "voiceBoostStrong": {
     "message": "قوي"
   },
-  "audioUnavailable": {
-    "message": "غير متاح"
+  "audioProtected": {
+    "message": "إعدادات الصوت غير متاحة: هذا الفيديو محمي بتقنية DRM."
+  },
+  "audioRefused": {
+    "message": "إعدادات الصوت غير متاحة: خادم الفيديو لا يسمح بذلك."
   },
   "audioUnavailableHud": {
     "message": "إعدادات الصوت غير متاحة لهذا الفيديو"

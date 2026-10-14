@@ -118,6 +118,7 @@ import {
   VOLUME_BOOST_ICONS
 } from './hud';
 import {
+  AUDIO_BLOCK_KEYS,
   AUDIO_HUD_KEYS,
   AUDIO_SETTING_NAMES,
   AUDIO_SETTINGS_EVENT,
@@ -130,6 +131,7 @@ import {
   resolveStoredAudioSettings,
   sameAudioSettings,
   writeAudioDataset,
+  type AudioBlock,
   type AudioSettingName,
   type AudioSettings
 } from '../audio-settings';
@@ -269,11 +271,17 @@ function audioProcessingRequested(): boolean {
   return ui().volumeBoost || !isNeutralAudio(ui().audio);
 }
 
-function audioAvailable(video: HTMLVideoElement): boolean {
+/** Why Web Audio cannot process this video, or null when it can. */
+function audioBlock(video: HTMLVideoElement): AudioBlock | null {
   const access = mediaAudioAccess(video, window.location.origin);
-  if (access === 'protected') return false;
+  if (access === 'protected') return 'protected';
   // Loaded again without CORS: the server refused it.
-  return !(access === 'needs-cors' && webAudioCorsTried.has(video) && video.readyState >= 1);
+  return access === 'needs-cors' && webAudioCorsTried.has(video) && video.readyState >= 1 ? 'refused' : null;
+}
+
+function audioBlockedMessage(video: HTMLVideoElement | null): string {
+  const block = video && audioBlock(video);
+  return block ? t(AUDIO_BLOCK_KEYS[block]) : t('audioUnavailableHud');
 }
 
 let audioVideo: HTMLVideoElement | null = null;
@@ -321,8 +329,8 @@ function applyAudioSettings(settings: AudioSettings): void {
 function cycleAudioSettingCommand(name: AudioSettingName): void {
   const video = sessionNativeVideo();
   const icon = AUDIO_SETTING_ICONS[name].hud;
-  if (!video || !audioAvailable(video)) {
-    triggerStatusIndicator(t('audioUnavailableHud'), icon);
+  if (!video || audioBlock(video)) {
+    triggerStatusIndicator(audioBlockedMessage(video), icon);
     return;
   }
   const next = cycleAudioSetting(ui().audio, name);
@@ -356,8 +364,8 @@ function applyVolumeBoost(enabled: boolean): void {
 function toggleVolumeBoostCommand(): void {
   const surface = sessionSurface();
   const video = sessionNativeVideo();
-  if (!surface?.capabilities.volumeBoost || !video || !audioAvailable(video)) {
-    triggerStatusIndicator(t('audioUnavailableHud'), VOLUME_BOOST_ICONS.hud);
+  if (!surface?.capabilities.volumeBoost || !video || audioBlock(video)) {
+    triggerStatusIndicator(audioBlockedMessage(video), VOLUME_BOOST_ICONS.hud);
     return;
   }
   const next = !ui().volumeBoost;
@@ -611,7 +619,7 @@ function bindChromeActions(): void {
     enterTheaterMode,
     focusTheaterPage,
     syncAudioSettings,
-    audioAvailable,
+    audioBlock,
     refreshHostPlayerLayout,
     setIcon: toolbar.setIcon,
     setTooltipContent: toolbar.setTooltipContent,
