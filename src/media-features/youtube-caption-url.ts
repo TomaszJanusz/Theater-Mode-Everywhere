@@ -174,7 +174,7 @@ function timedtextCacheCompatible(query: CachedTimedtext, item: CachedTimedtext)
   return true;
 }
 
-export function findCachedTimedtextBody(records: CachedTimedtext[], url: string): string | null {
+export function findCachedTimedtextRecord(records: CachedTimedtext[], url: string): CachedTimedtext | null {
   const query = createTimedtextCacheRecord(url, '');
   if (!query) return null;
   const matches = records.filter((item) => item.body && timedtextCacheCompatible(query, item));
@@ -186,7 +186,11 @@ export function findCachedTimedtextBody(records: CachedTimedtext[], url: string)
     return { item, score };
   });
   ranked.sort((a, b) => b.score - a.score);
-  return ranked[0]?.item.body || null;
+  return ranked[0]?.item || null;
+}
+
+export function findCachedTimedtextBody(records: CachedTimedtext[], url: string): string | null {
+  return findCachedTimedtextRecord(records, url)?.body || null;
 }
 
 function trackTranslationCode(track: Record<string, unknown>): string {
