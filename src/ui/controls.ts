@@ -149,6 +149,27 @@ export function createControls(
     const tooltip = document.createElement('div');
     tooltip.className = 'theater-scrubber-tooltip theater-backdrop-hint';
 
+    const preview = document.createElement('div');
+    preview.className = 'theater-scrubber-preview';
+    preview.hidden = true;
+    preview.style.width = `${PREVIEW_DISPLAY_WIDTH}px`;
+    preview.style.backgroundRepeat = 'no-repeat';
+    const chapterTitle = document.createElement('div');
+    chapterTitle.className = 'theater-scrubber-chapter-title';
+    chapterTitle.hidden = true;
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'theater-scrubber-time';
+    tooltip.append(preview, chapterTitle, timeLabel);
+
+    // Compare requested values: CSSOM can normalize URLs and fractional pixels.
+    const previewStyles = { height: '', backgroundImage: '', backgroundPosition: '', backgroundSize: '' };
+    const setPreviewStyle = (property: keyof typeof previewStyles, value: string) => {
+      if (previewStyles[property] === value) return;
+      previewStyles[property] = value;
+      preview.style[property] = value;
+    };
+    let tooltipLeft = '';
+
     // 2. Control Row
     const controlsRow = document.createElement('div');
     controlsRow.className = 'theater-controls-row';
@@ -1155,6 +1176,8 @@ export function createControls(
       if (!window.seekable) return;
       const rect = scrubberContainer.getBoundingClientRect();
       if (rect.width === 0) return;
+      // Read both anchors before handle, heatmap or tooltip mutations can dirty layout.
+      const rowRect = controlsRow.getBoundingClientRect();
     
       const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       const time = ratioToTime(pos, window);
@@ -1162,46 +1185,40 @@ export function createControls(
       scrubberHandle.style.left = `${pos * 100}%`;
       mediaFeatures.setHeatmapHover(pos);
 
-      tooltip.replaceChildren();
+      const previewHidden = !extras.preview;
+      if (preview.hidden !== previewHidden) preview.hidden = previewHidden;
       if (extras.preview) {
-        const preview = document.createElement('div');
-        preview.className = 'theater-scrubber-preview';
         const image = extras.preview.image;
-        const displayWidth = PREVIEW_DISPLAY_WIDTH;
-        const scale = displayWidth / image.tileWidth;
-        preview.style.width = `${displayWidth}px`;
-        preview.style.height = `${Math.round(image.tileHeight * scale)}px`;
-        preview.style.backgroundImage = `url(${JSON.stringify(image.url)})`;
-        preview.style.backgroundRepeat = 'no-repeat';
-        preview.style.backgroundPosition = `-${Math.round(image.x * scale)}px -${Math.round(image.y * scale)}px`;
-        preview.style.backgroundSize = `${Math.round(image.sheetWidth * scale)}px ${Math.round(image.sheetHeight * scale)}px`;
-        tooltip.appendChild(preview);
+        const scale = PREVIEW_DISPLAY_WIDTH / image.tileWidth;
+        setPreviewStyle('height', `${Math.round(image.tileHeight * scale)}px`);
+        setPreviewStyle('backgroundImage', `url(${JSON.stringify(image.url)})`);
+        setPreviewStyle('backgroundPosition', `-${Math.round(image.x * scale)}px -${Math.round(image.y * scale)}px`);
+        setPreviewStyle('backgroundSize', `${Math.round(image.sheetWidth * scale)}px ${Math.round(image.sheetHeight * scale)}px`);
       }
-      if (extras.chapterTitle) {
-        const chapterTitle = document.createElement('div');
-        chapterTitle.className = 'theater-scrubber-chapter-title';
-        chapterTitle.textContent = extras.chapterTitle;
-        tooltip.appendChild(chapterTitle);
-      }
-      const timeLabel = document.createElement('div');
-      timeLabel.className = 'theater-scrubber-time';
-      timeLabel.textContent = window.live
+      const chapterHidden = !extras.chapterTitle;
+      if (chapterTitle.hidden !== chapterHidden) chapterTitle.hidden = chapterHidden;
+      const chapterText = extras.chapterTitle ?? '';
+      if (chapterTitle.textContent !== chapterText) chapterTitle.textContent = chapterText;
+      const timeText = window.live
         ? (isAtLiveEdge(time, window) || (window.end - time) > MAX_LIVE_DVR_SECONDS ? t('liveBadge') : `-${formatTime(Math.max(0, window.end - time))}`)
         : formatTime(time);
-      tooltip.appendChild(timeLabel);
+      if (timeLabel.textContent !== timeText) timeLabel.textContent = timeText;
 
-      const rowRect = controlsRow.getBoundingClientRect();
-      const leftPx = (rect.left - rowRect.left) + pos * rect.width;
-      tooltip.style.left = `${leftPx}px`;
-      tooltip.classList.add('visible');
+      const left = `${(rect.left - rowRect.left) + pos * rect.width}px`;
+      if (tooltipLeft !== left) {
+        tooltipLeft = left;
+        tooltip.style.left = left;
+      }
+      if (!tooltip.classList.contains('visible')) tooltip.classList.add('visible');
       updateCaptionDock();
     };
 
     let tooltipFrame = 0;
-    controlsScope.add(() => {
+    const cancelTooltipFrame = () => {
       if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
       tooltipFrame = 0;
-    });
+    };
+    controlsScope.add(cancelTooltipFrame);
     let pendingTooltipX = 0;
     const onScrubberMouseMove = (e: MouseEvent) => {
       if (isDragging || !playbackWindow(video).seekable) return;
@@ -1214,8 +1231,7 @@ export function createControls(
     };
 
     const onScrubberMouseLeave = () => {
-      if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
-      tooltipFrame = 0;
+      cancelTooltipFrame();
       if (!isDragging) {
         tooltip.classList.remove('visible');
         mediaFeatures.setHeatmapHover(null);
@@ -1414,6 +1430,7 @@ export function createControls(
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
+      cancelTooltipFrame();
       fullscreenRecovery.invalidate();
       gestureScope?.dispose();
       gestureScope = null;
@@ -1431,7 +1448,10 @@ export function createControls(
         }
       }
       tooltip.classList.remove('visible');
-      tooltip.replaceChildren();
+      preview.hidden = true;
+      chapterTitle.hidden = true;
+      chapterTitle.textContent = '';
+      timeLabel.textContent = '';
       mediaFeatures.setHeatmapHover(null);
       updatePlaybackChrome();
       updateCaptionDock();

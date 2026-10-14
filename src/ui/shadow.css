@@ -1050,6 +1050,11 @@ button.theater-time-end:hover {
   -webkit-box-orient: vertical !important;
 }
 
+/* Hidden extras must not occupy a flex item or gap, including the chapter's display rule. */
+.theater-scrubber-tooltip > [hidden] {
+  display: none !important;
+}
+
 .theater-scrubber-time {
   font-variant-numeric: tabular-nums !important;
   white-space: nowrap !important;
