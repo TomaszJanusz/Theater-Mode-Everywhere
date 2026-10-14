@@ -1,3 +1,4 @@
+import type { AudioBlock } from '../audio-settings';
 import type { CaptionLanguagePreference } from '../media-features/caption-preference';
 import type { CaptionStyle } from '../media-features/caption-style';
 import type { CaptionHudPayload } from '../media-features/controller';
@@ -88,7 +89,7 @@ export type PlayerChromeActions = {
   enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void;
   focusTheaterPage(): void;
   syncAudioSettings(): void;
-  audioAvailable(video: HTMLVideoElement): boolean;
+  audioBlock(video: HTMLVideoElement): AudioBlock | null;
   refreshHostPlayerLayout(): void;
   setIcon(element: HTMLElement, svg: string): void;
   setTooltipContent(element: HTMLElement, rawText: string): void;

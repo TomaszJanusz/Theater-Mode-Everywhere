@@ -1336,6 +1336,15 @@ button.theater-time-end:hover {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
+.theater-settings-note {
+  margin: 0 !important;
+  padding: 4px 8px 8px !important;
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.theater-settings-note[hidden],
 .theater-settings-section[hidden],
 .theater-settings-separator[hidden] {
   display: none !important;

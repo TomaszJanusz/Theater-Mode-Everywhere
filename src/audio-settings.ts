@@ -31,6 +31,12 @@ const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], stri
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
   bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore' }
 };
+/** Why audio settings cannot apply to a video, with the message that explains it. */
+export type AudioBlock = 'protected' | 'refused';
+export const AUDIO_BLOCK_KEYS: Record<AudioBlock, string> = {
+  protected: 'audioProtected',
+  refused: 'audioRefused'
+};
 export const AUDIO_LABEL_KEYS: Record<AudioSettingName, string> = {
   voice: 'voiceBoostLabel',
   leveling: 'volumeLevelingLabel',

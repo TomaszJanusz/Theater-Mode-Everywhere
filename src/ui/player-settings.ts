@@ -46,7 +46,7 @@ export function createPlayerSettings(
     separator.setAttribute('role', 'separator');
     return separator;
   };
-  // Audio appears only for media that Web Audio can process.
+  // Hidden until a provider adds audio rows; DRM or CORS-refused media shows a note instead.
   const audioSection = document.createElement('div');
   audioSection.className = 'theater-settings-section';
   audioSection.dataset.settingsSection = 'audio';
@@ -56,7 +56,11 @@ export function createPlayerSettings(
   audioHeading.textContent = ctx.t('settingsSectionAudio');
   const audioBody = document.createElement('div');
   audioBody.className = 'theater-settings-section-body';
-  audioSection.append(audioHeading, audioBody);
+  // Replaces the audio rows when the video's audio cannot be processed, so the reason is stated once.
+  const audioNote = document.createElement('p');
+  audioNote.className = 'theater-settings-note';
+  audioNote.hidden = true;
+  audioSection.append(audioHeading, audioBody, audioNote);
   const audioSeparator = createSeparator();
   const playerHeading = document.createElement('div');
   playerHeading.className = 'theater-settings-heading';
@@ -78,6 +82,8 @@ export function createPlayerSettings(
     panel,
     scope,
     onBeforeOpen: () => options?.onBeforeOpen?.(),
+    // A blocked audio section hides its rows, which cannot take focus.
+    firstFocus: () => [...panel.querySelectorAll('button')].find(row => !row.closest('[hidden]')),
     onKeyboardOpen: () => ctx.actions.showToolbar(),
     onChange: () => ctx.actions.updateCaptionDock()
   });
@@ -129,5 +135,11 @@ export function createPlayerSettings(
       }
     };
   }
-  return { button, panel, container, close, addRow };
+  /** Show why audio rows are unavailable, or restore them when `reason` is null. */
+  function setAudioNote(reason: string | null) {
+    audioBody.hidden = reason !== null;
+    audioNote.hidden = reason === null;
+    audioNote.textContent = reason;
+  }
+  return { button, panel, container, close, addRow, setAudioNote };
 }

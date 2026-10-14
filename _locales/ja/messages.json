@@ -109,8 +109,11 @@
   "voiceBoostStrong": {
     "message": "強"
   },
-  "audioUnavailable": {
-    "message": "利用不可"
+  "audioProtected": {
+    "message": "オーディオ設定は使用できません。この動画は DRM で保護されています。"
+  },
+  "audioRefused": {
+    "message": "オーディオ設定は使用できません。動画のサーバーが許可していません。"
   },
   "audioUnavailableHud": {
     "message": "この動画ではオーディオ設定を使用できません"

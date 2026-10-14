@@ -109,8 +109,11 @@
   "voiceBoostStrong": {
     "message": "강하게"
   },
-  "audioUnavailable": {
-    "message": "사용 불가"
+  "audioProtected": {
+    "message": "오디오 설정을 사용할 수 없습니다. 이 동영상은 DRM으로 보호되어 있습니다."
+  },
+  "audioRefused": {
+    "message": "오디오 설정을 사용할 수 없습니다. 동영상 서버에서 허용하지 않습니다."
   },
   "audioUnavailableHud": {
     "message": "이 동영상에서는 오디오 설정을 사용할 수 없습니다"

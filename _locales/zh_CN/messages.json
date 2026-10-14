@@ -109,8 +109,11 @@
   "voiceBoostStrong": {
     "message": "强力"
   },
-  "audioUnavailable": {
-    "message": "不可用"
+  "audioProtected": {
+    "message": "音频设置不可用：此视频受 DRM 保护。"
+  },
+  "audioRefused": {
+    "message": "音频设置不可用：视频服务器不允许。"
   },
   "audioUnavailableHud": {
     "message": "此视频不支持音频设置"
