@@ -1,3 +1,4 @@
+import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 import {
   findDisneyContentTitle,
   resolveDisneyTitle,
@@ -74,14 +75,6 @@ function isDssottHostName(hostname: string): boolean {
   return host === 'dssott.com' || host.endsWith('.dssott.com');
 }
 
-function shouldHarvestDisneyUrl(url: string): boolean {
-  if (!url) return false;
-  if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|gif|vtt|bif|js|css|woff2?)(\?|$)/i.test(url)) return false;
-  if (/bamgrid\.com|disney-plus\.net/i.test(url)) return true;
-  if (/dssott\.com/i.test(url) && /\.json(\?|$)/i.test(url)) return true;
-  return /disneyplus\.com/i.test(url) && /\/(playback|session|explore|api)\//i.test(url);
-}
-
 function disneyDurationSeconds(value: number): number | null {
   if (!Number.isFinite(value) || value <= 0) return null;
   if (value > 12 * 3600 && value <= 12 * 3600 * 1000) {
@@ -102,16 +95,7 @@ function isAllowedDisneyMasterUrl(url: string): boolean {
   }
 }
 
-export function isAllowedDisneyBifUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:' || !isDssottHostName(parsed.hostname)) return false;
-    if (/DUB_CARD/i.test(url)) return false;
-    return /\.bif$/i.test(parsed.pathname) && /thumbnails?\//i.test(url);
-  } catch {
-    return false;
-  }
-}
+export { isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 
 function disneyBifFrameCount(buffer: ArrayBuffer): number {
   if (buffer.byteLength < 80) return 0;
@@ -432,19 +416,18 @@ function mergeDisneyHarvest(next: {
 
 export function harvestDisneyData(url: string, data: unknown): void {
   if (!disneyIntegrationEnabled()) return;
-  if (!isDisneyHost(window.location.hostname) && !shouldHarvestDisneyUrl(url)) return;
+  if (!isDisneyHost(window.location.hostname) || (url && !shouldHarvestDisneyUrl(url))) return;
   const extracted = extractDisneyHarvest(data);
   if (extracted) mergeDisneyHarvest(extracted);
 }
 
 export function harvestDisneyBody(url: string, body: string): void {
-  if (!disneyIntegrationEnabled() || !body) return;
+  if (!disneyIntegrationEnabled() || !isDisneyHost(window.location.hostname) || (url && !shouldHarvestDisneyUrl(url)) || !body) return;
   if (body.length > MAX_CAPTION_BYTES) return;
   const trimmed = body.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
-  if (!shouldHarvestDisneyUrl(url) && !isDisneyHost(window.location.hostname)) return;
   if (!/runtimeMillis|runtimeMs|"timedText"|timedTextTracks|trickPlay|subtitle|caption|"bifs"|una-ctr-all|"complete"/i.test(trimmed.slice(0, 8000))
-    && !shouldHarvestDisneyUrl(url)) return;
+    && !url) return;
   try {
     harvestDisneyData(url, JSON.parse(trimmed));
   } catch {
@@ -452,17 +435,18 @@ export function harvestDisneyBody(url: string, body: string): void {
   }
 }
 
+/** Consume the single qualified clone supplied by MAIN. */
 export function captureDisneyNetworkResponse(url: string, response: Response): void {
   if (!disneyIntegrationEnabled()) return;
   const finalUrl = (response && response.url) || url;
   if (!response || !response.ok) return;
   if (isAllowedDisneyBifUrl(url) || isAllowedDisneyBifUrl(finalUrl)) {
-    response.clone().arrayBuffer().then((buffer) => rememberDisneyBif(buffer, finalUrl || url)).catch(() => {});
+    response.arrayBuffer().then((buffer) => rememberDisneyBif(buffer, finalUrl || url)).catch(() => {});
     return;
   }
   if (/\.(m3u8|mp4|m4s|ts|cmfa|cmfv|m4t|jpe?g|png|webp|vtt|bif)(\?|$)/i.test(finalUrl)) return;
   if (!shouldHarvestDisneyUrl(url) && !shouldHarvestDisneyUrl(finalUrl)) return;
-  response.clone().text().then((text) => harvestDisneyBody(finalUrl, text)).catch(() => {});
+  response.text().then((text) => harvestDisneyBody(finalUrl, text)).catch(() => {});
 }
 
 export function readDisneySnapshot(): Record<string, unknown> | null {
