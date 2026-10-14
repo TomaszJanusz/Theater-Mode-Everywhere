@@ -30,15 +30,21 @@ Provider presentation code owns host containers, discovery preferences, native r
 
 ## Automatic theater entry
 
-`ProviderDefinition.watchPlayback` is an optional positive declaration: `pageIdentity`
-returns a stable watch-video identity, and `mainVideo` confirms the current content
-video in MAIN, rejecting ads, auxiliary players and stale route/player identities.
+`ProviderDefinition.watchPlayback` separates two steps: `pageIdentity` qualifies a
+provider's watch URL and returns a stable identity without tracking parameters;
+`mainVideo` confirms the primary watch player in MAIN, excluding auxiliary players
+and validating host content identity where available. Providers own further
+filters: YouTube rejects ads and stale player identities; Netflix also checks its
+native session identity when the API is available. Netflix and Disney+ treat ads
+inside the primary watch player as part of the selected watch session, so missing
+ad-plan discrimination does not block automatic entry on those services.
+
 YouTube's player API can still report buffering at the native `playing` event;
 playback readiness therefore comes from the video, while the provider confirms
 content identity and excludes ads. Providers without this declaration never enter
 automatically. The synchronous string bridge in `providers/watch-playback.ts`
-confirms the exact element; the
-runtime also applies the existing switchable-video filters and discovery ranking.
+confirms the exact element; the runtime also applies the existing switchable-video
+filters and discovery ranking.
 
 `ui/auto-theater-runtime.ts` listens for playback and existing provider navigation
 publications, and calls the regular theater entry path. YouTube observes only the
@@ -48,10 +54,14 @@ changing preferences cannot reenter the same content. New content identities res
 that record. Automatic entry requires an enabled provider, an allowed domain, a
 top-level document, active playback, no fullscreen and no focused editable field.
 
-YouTube `/watch` and ordinary Vimeo clip pages declare this capability. Vimeo pages
-whose video lives in an iframe remain ineligible. Patreon posts mix inline media;
-Twitch uses stitched ads; Disney+ and Netflix need ad-plan discrimination; Bilibili
-and Bilibili.tv need qualified main-player/content identity and ad guards; Tencent
+YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>` and
+Disney+ `/play/<uuid>` (with an optional locale prefix) declare this capability.
+Netflix requires its watch-page player; Disney+ requires the primary Hive video
+inside `disney-web-player` and excludes the auxiliary BTM media client. Catalog
+pages stay ineligible, even when previews are playing. Vimeo pages whose video
+lives in an iframe remain ineligible. Patreon posts mix inline media; Twitch uses
+stitched ads; Bilibili and Bilibili.tv need qualified main-player/content identity
+and ad guards; Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Vimeo showcases, live events and OTT pages are also excluded.

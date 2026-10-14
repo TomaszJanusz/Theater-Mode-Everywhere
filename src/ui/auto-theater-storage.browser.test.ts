@@ -48,11 +48,11 @@ declare global {
   }
 }
 
-async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: boolean; url?: string; iframe?: boolean } = {}): Promise<{ page: Page; target: Page | Frame }> {
+async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: boolean; url?: string; iframe?: boolean; body?: string } = {}): Promise<{ page: Page; target: Page | Frame }> {
   const page = await browser.newPage();
   await page.addInitScript('window.__name = target => target;');
   await page.route('**/*', route => route.request().isNavigationRequest()
-    ? route.fulfill({ contentType: 'text/html', body: '<!doctype html><ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>' })
+    ? route.fulfill({ contentType: 'text/html', body: options.body ?? '<!doctype html><ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>' })
     : route.abort());
   await page.goto(options.iframe ? 'https://fixture.test/' : options.url ?? WATCH);
   let target: Page | Frame = page;
@@ -98,7 +98,8 @@ async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: 
       },
       onChanged: { addListener: (listener: typeof listeners[number]) => listeners.push(listener) }
     } } });
-    Object.assign(document.getElementById('movie_player')!, {
+    const youtubePlayer = document.getElementById('movie_player');
+    if (youtubePlayer) Object.assign(youtubePlayer, {
       getVideoData: () => ({ video_id: new URL(location.href).searchParams.get('v') }),
       getPlayerState: () => 3
     });
@@ -128,6 +129,51 @@ async function active(target: Page | Frame): Promise<boolean> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  for (const provider of [
+    {
+      id: 'netflix', url: 'https://www.netflix.com/watch/70248299', next: '/watch/70248300',
+      body: '<!doctype html><div class="watch-video"><div data-uia="player" data-videoid="70248299"><video muted loop style="width:640px;height:360px"></video></div></div>'
+    },
+    {
+      id: 'disney', url: 'https://www.disneyplus.com/pl-pl/play/560861a0-55c9-4552-a181-64c498e01b62', next: '/pl-pl/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6',
+      body: '<!doctype html><disney-web-player><video class="hive-video" muted loop style="width:640px;height:360px"></video></disney-web-player>'
+    }
+  ] as const) {
+    it(`${provider.id} auto-theater in ${engine} enters through the full player runtime and honors live provider settings`, { timeout: 60_000 }, async t => {
+      const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const { page } = await fixture(browser, provider);
+        assert.equal(await active(page), false, 'loading a paused watch page must not enter');
+        await page.evaluate(() => {
+          window.autoStorageProbe.playing = true;
+          document.querySelector('video')!.dispatchEvent(new Event('playing'));
+        });
+        await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
+        assert.equal(await page.locator('video').getAttribute('data-theater-everywhere'), '');
+        await page.keyboard.press('Escape');
+        assert.equal(await active(page), false);
+        await page.evaluate(async id => {
+          await window.autoStorageProbe.change({ autoEnterTheater: false });
+          await window.autoStorageProbe.change({ autoEnterTheater: true });
+          document.querySelector('video')!.dispatchEvent(new Event('playing'));
+          await window.autoStorageProbe.change({ [`${id}IntegrationEnabled`]: false });
+        }, provider.id);
+        assert.equal(await active(page), false, 'manual exit must survive preference changes');
+        await page.evaluate(({ next, id }) => {
+          history.pushState({}, '', next);
+          document.querySelector('[data-uia="player"]')?.setAttribute('data-videoid', next.split('/').pop()!);
+          window.dispatchEvent(new Event(`theater-everywhere-${id}-harvest`));
+        }, provider);
+        assert.equal(await active(page), false, 'disabled provider must block the next watch URL');
+        await page.evaluate(async id => {
+          await window.autoStorageProbe.change({ [`${id}IntegrationEnabled`]: true });
+        }, provider.id);
+        await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
+      } finally { await browser.close(); }
+    });
+  }
+
   it(`auto-theater storage in ${engine} skips unrelated discovery and still publishes shortcuts to MAIN`, { timeout: 60_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
