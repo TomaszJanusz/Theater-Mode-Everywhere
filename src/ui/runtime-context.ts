@@ -1,6 +1,7 @@
 import type { CaptionLanguagePreference } from '../media-features/caption-preference';
 import type { CaptionStyle } from '../media-features/caption-style';
 import type { CaptionHudPayload } from '../media-features/controller';
+import type { ContentTitle } from '../media-features/content-title';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
 import type { FrameCoordinator } from '../core/frame-coordinator';
 import type { ExitFrom, ExitOrigin, PlayerCommand, PlayerSession } from '../core/player-session';
@@ -77,7 +78,7 @@ export type PlayerChromeActions = {
   applyTheaterVideoFit(mode?: VideoFitMode): void;
   applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
-  syncContentTitle(title: string | null): void;
+  syncContentTitle(title: ContentTitle | null): void;
   createPlayerHeader(): HTMLElement;
   executeCommand(command: PlayerCommand): void;
   findBestVideo(): HTMLVideoElement | null;

@@ -17,7 +17,7 @@ import {
   type DisneyVttSegment
 } from './parsers/disney-page';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
-import { sanitizeContentTitle } from './content-title';
+import { contentTitle, sanitizeContentTitle, type ContentTitle } from './content-title';
 import { requestMediaProbe, requestPageFetch } from './probe';
 import type {
   CaptionActivationResult,
@@ -180,6 +180,7 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   private snapshot: {
     mediaId?: string;
     title?: string;
+    subtitle?: string;
     duration?: number;
     masterUrl?: string;
     storyboardUrl?: string;
@@ -221,9 +222,13 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
       this.captionLoadGeneration += 1;
     }
     const sameMedia = Boolean(this.snapshot?.mediaId && nextId && this.snapshot.mediaId === nextId);
+    // The subtitle travels with the title it was published beside.
+    const retained = sameMedia ? this.snapshot : null;
+    const harvestedTitle = sanitizeContentTitle(harvested?.title);
     this.snapshot = {
       mediaId: nextId || undefined,
-      title: sanitizeContentTitle(harvested?.title) || (sameMedia ? this.snapshot?.title : undefined),
+      title: harvestedTitle || retained?.title,
+      subtitle: harvestedTitle ? harvested?.subtitle : retained?.subtitle,
       duration: harvested?.duration || this.snapshot?.duration,
       masterUrl,
       storyboardUrl: bifUrl,
@@ -449,14 +454,22 @@ export class DisneyAdapter implements MediaFeaturesAdapter {
   }
 
   getTitle(): string | null {
+    return this.currentTitle()?.title || null;
+  }
+
+  getSubtitle(): string | null {
+    return this.currentTitle()?.subtitle || null;
+  }
+
+  private currentTitle(): ContentTitle | null {
     const pageId = disneyPlayId(window.location.href);
     const harvested = readPublishedDisneySnapshot();
     if (!pageId || !harvested?.mediaId || harvested.mediaId === pageId) {
-      const title = sanitizeContentTitle(harvested?.title);
+      const title = contentTitle(harvested?.title, harvested?.subtitle);
       if (title) return title;
     }
     if (pageId && this.snapshot?.mediaId && this.snapshot.mediaId !== pageId) return null;
-    return sanitizeContentTitle(this.snapshot?.title);
+    return contentTitle(this.snapshot?.title, this.snapshot?.subtitle);
   }
 
   async reload(): Promise<void> {

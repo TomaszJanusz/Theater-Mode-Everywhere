@@ -8,6 +8,14 @@ export function sanitizeContentTitle(value: unknown): string | null {
   return cleaned.length > CONTENT_TITLE_MAX ? cleaned.slice(0, CONTENT_TITLE_MAX).trim() : cleaned;
 }
 
+/** Title HUD content. The subtitle is a separate host label, such as an episode. */
+export type ContentTitle = { title: string; subtitle: string | null };
+
+export function contentTitle(title: unknown, subtitle?: unknown): ContentTitle | null {
+  const cleaned = sanitizeContentTitle(title);
+  return cleaned ? { title: cleaned, subtitle: sanitizeContentTitle(subtitle) } : null;
+}
+
 function nestedText(value: unknown): string | null {
   const direct = sanitizeContentTitle(value);
   if (direct) return direct;
@@ -48,29 +56,42 @@ export function stripDisneySiteTitle(value: unknown): string | null {
   return cleaned;
 }
 
-export type DisneyChromeTitleSource = 'chrome-heading' | 'chrome' | 'chrome-title-bug';
-export type DisneyTitleSource = DisneyChromeTitleSource | 'playback' | 'page';
+export type DisneyTitleSource = 'player' | 'chrome' | 'playback' | 'page';
 
 const DISNEY_TITLE_RANK: Record<DisneyTitleSource, number> = {
   page: 1,
   playback: 2,
-  'chrome-heading': 3,
-  chrome: 4,
-  'chrome-title-bug': 5
+  chrome: 3,
+  player: 4
 };
+
+export type DisneyPlayerHeader = { title: string; subtitle: string | null };
+
+/**
+ * Header the Disney+ player draws from `playerExperience`. The episode label
+ * stays opaque host text: its season/episode notation is localized.
+ */
+export function readDisneyPlayerHeader(raw: unknown): DisneyPlayerHeader | null {
+  const data = raw && typeof raw === 'object' ? (raw as { data?: unknown }).data : null;
+  const experience = data && typeof data === 'object' ? (data as { playerExperience?: unknown }).playerExperience : null;
+  if (!experience || typeof experience !== 'object') return null;
+  const record = experience as { title?: unknown; subtitle?: unknown };
+  const title = stripDisneySiteTitle(record.title);
+  return title ? { title, subtitle: sanitizeContentTitle(record.subtitle) } : null;
+}
 
 /**
  * Title for the film that is actually playing.
  * Disney+ keeps the browse page's Open Graph title after a client-side
- * navigation, so the player chrome and the playback id outrank it.
+ * navigation, so the player header, chrome and the playback id outrank it.
  */
 export function resolveDisneyTitle(input: {
   playId: string | null;
   previousPlayId: string | null;
   title: string | null;
   source: DisneyTitleSource | null;
+  playerHeader?: unknown;
   playerChrome: unknown;
-  playerChromeSource?: DisneyChromeTitleSource;
   playbackTitle: unknown;
   documentTitle: unknown;
   openGraphTitle: unknown;
@@ -82,12 +103,13 @@ export function resolveDisneyTitle(input: {
     if (!cleaned) return;
     const currentRank = source ? DISNEY_TITLE_RANK[source] : 0;
     if (DISNEY_TITLE_RANK[nextSource] < currentRank) return;
-    // Only equally strong live chrome can update a retained episode label.
-    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title && !nextSource.startsWith('chrome')) return;
+    // The newest player header replaces an older one; weaker equals keep the first title.
+    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title && nextSource !== 'player') return;
     title = cleaned;
     source = nextSource;
   };
-  consider(input.playerChrome, input.playerChromeSource || 'chrome');
+  consider(input.playerHeader, 'player');
+  consider(input.playerChrome, 'chrome');
   consider(input.playbackTitle, 'playback');
   consider(input.documentTitle, 'page');
   consider(input.openGraphTitle, 'page');

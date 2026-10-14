@@ -2,9 +2,10 @@ import { readPageResponseBytes } from '../../platform/page-body';
 import { shouldHarvestDisneyUrl, isDisneyBifUrl as isAllowedDisneyBifUrl } from '../network-harvest';
 import {
   findDisneyContentTitle,
+  readDisneyPlayerHeader,
   resolveDisneyTitle,
-  sanitizeContentTitle,
   stripDisneySiteTitle,
+  type DisneyPlayerHeader,
   type DisneyTitleSource
 } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
@@ -33,6 +34,7 @@ export function disneyIntegrationEnabled(): boolean {
 type DisneyHarvest = {
   mediaId?: string;
   title?: string;
+  subtitle?: string;
   duration?: number;
   masterUrl?: string;
   storyboardUrl?: string;
@@ -63,6 +65,7 @@ let disneyHarvestNotifyTimer = 0;
 let disneyTitlePlayId: string | null = null;
 let disneyTitleSource: DisneyTitleSource | null = null;
 let disneyPlaybackTitle: string | null = null;
+let disneyPlayerHeader: DisneyPlayerHeader | null = null;
 let cachedDisneyPlayer: DisneyHivePlayer | null = null;
 let cachedDisneyPlayerHost: Element | null = null;
 const disneyClockBoundPlayers = new WeakSet<object>();
@@ -194,7 +197,6 @@ function considerDisneyChromeTitle(
   return best;
 }
 
-/** Exact title-bug fields outrank generic title hooks and headings across open shadow roots. */
 function visitDisneyChromeRoot(
   root: ParentNode,
   depth: number,
@@ -206,61 +208,58 @@ function visitDisneyChromeRoot(
     next = considerDisneyChromeTitle(el, next);
   }
   for (const el of root.querySelectorAll('*')) {
-    if (el.tagName === 'TITLE-BUG') {
-      const header = el.shadowRoot || el;
-      const titleField = header.querySelector('[data-qa="title-bug.title"]');
-      const title = stripDisneySiteTitle(titleField?.textContent);
-      const rect = titleField?.getBoundingClientRect();
-      if (title && rect && rect.width >= 8 && rect.height >= 8) {
-        // Keep the host's entire label; episode notation and nested markup vary by locale.
-        const subtitle = sanitizeContentTitle(header.querySelector('[data-qa="title-bug.subtitle"]')?.textContent);
-        const text = subtitle ? `${title} — ${subtitle}` : title;
-        if (!next || next.rank < 3 || rect.top < next.top - 8) {
-          next = { text, rank: 3, top: rect.top };
-        }
-      }
-    }
     if (el.shadowRoot) next = visitDisneyChromeRoot(el.shadowRoot, depth + 1, next);
   }
   return next;
 }
 
 /** Title Disney draws in the player header, not the browse page behind it. */
-function readDisneyPlayerChromeTitle(): { text: string; rank: number; top: number } | null {
-  const hosts = document.querySelectorAll('disney-web-player, disney-web-player-ui, .DxcOverlay');
+function readDisneyPlayerChromeTitle(): string | null {
+  const hosts = document.querySelectorAll('disney-web-player, .DxcOverlay');
   let best: { text: string; rank: number; top: number } | null = null;
   for (const host of hosts) {
     if (host.shadowRoot) best = visitDisneyChromeRoot(host.shadowRoot, 0, best);
     best = visitDisneyChromeRoot(host, 0, best);
   }
-  return best;
+  return best?.text || null;
 }
 
 function syncDisneyDisplayedTitle(): boolean {
   const playId = disneyPageMediaId();
   const previousPlayId = disneyTitlePlayId;
-  if (playId !== previousPlayId) disneyPlaybackTitle = null;
-  const chrome = readDisneyPlayerChromeTitle();
+  if (playId !== previousPlayId) {
+    disneyPlaybackTitle = null;
+    disneyPlayerHeader = null;
+  }
   const resolved = resolveDisneyTitle({
     playId,
     previousPlayId,
     title: disneyHarvest.title || null,
     source: disneyTitleSource,
-    playerChrome: chrome?.text,
-    playerChromeSource: chrome?.rank === 3 ? 'chrome-title-bug' : chrome?.rank === 1 ? 'chrome-heading' : 'chrome',
+    playerHeader: disneyPlayerHeader?.title,
+    playerChrome: readDisneyPlayerChromeTitle(),
     playbackTitle: disneyPlaybackTitle,
     documentTitle: document.title,
     openGraphTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content')
   });
   disneyTitlePlayId = playId;
+  return applyDisneyTitle(resolved);
+}
+
+/** The episode label belongs to the player header, so another title source never inherits it. */
+function applyDisneyTitle(resolved: { title: string | null; source: DisneyTitleSource | null }): boolean {
+  const title = resolved.title || undefined;
+  const subtitle = title && resolved.source === 'player' ? disneyPlayerHeader?.subtitle || undefined : undefined;
+  const changed = title !== disneyHarvest.title || subtitle !== disneyHarvest.subtitle;
+  disneyHarvest.title = title;
+  disneyHarvest.subtitle = subtitle;
   disneyTitleSource = resolved.source;
-  if (!resolved.changed) return false;
-  disneyHarvest.title = resolved.title || undefined;
-  return true;
+  return changed;
 }
 
 function extractDisneyHarvest(raw: unknown): {
   title?: string;
+  header?: DisneyPlayerHeader;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -305,9 +304,11 @@ function extractDisneyHarvest(raw: unknown): {
   walk(raw, 0);
   const storyboardUrl = thumbnail?.bifUrl || storyboards[0];
   const title = findDisneyContentTitle(raw, disneyPageMediaId()) || undefined;
-  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title) return null;
+  const header = readDisneyPlayerHeader(raw) || undefined;
+  if (namedDurations.length === 0 && !masterUrl && !storyboardUrl && !title && !header) return null;
   return {
     title,
+    header,
     duration: namedDurations.length > 0 ? Math.max(...namedDurations) : undefined,
     masterUrl,
     captions,
@@ -326,6 +327,7 @@ function resetDisneyHarvest(mediaId?: string): void {
   }
   disneyHarvest = { mediaId, captions: [] };
   disneyPlaybackTitle = null;
+  disneyPlayerHeader = null;
   disneyTitleSource = null;
   disneyTitlePlayId = mediaId || null;
 }
@@ -379,6 +381,7 @@ function publishDisneyHarvest(): void {
   publishHiddenJson(DISNEY_SNAPSHOT_SCRIPT_ID, {
     mediaId,
     title: disneyHarvest.title,
+    subtitle: disneyHarvest.subtitle,
     duration: disneyHarvest.duration,
     masterUrl: disneyHarvest.masterUrl,
     storyboardUrl: disneyHarvest.storyboardUrl,
@@ -399,6 +402,7 @@ function notifyDisneyHarvest(): void {
 
 function mergeDisneyHarvest(next: {
   title?: string;
+  header?: DisneyPlayerHeader;
   duration?: number;
   masterUrl?: string;
   captions: Array<{ id: string; language: string; label: string; url: string }>;
@@ -411,24 +415,22 @@ function mergeDisneyHarvest(next: {
   }
   if (mediaId) disneyHarvest.mediaId = mediaId;
   let changed = false;
-  if (next.title) {
-    disneyPlaybackTitle = next.title;
+  if (next.title || next.header) {
+    if (next.title) disneyPlaybackTitle = next.title;
+    if (next.header) disneyPlayerHeader = next.header;
     const resolved = resolveDisneyTitle({
       playId: mediaId,
       previousPlayId: mediaId,
       title: disneyHarvest.title || null,
       source: disneyTitleSource,
+      playerHeader: next.header?.title,
       playerChrome: null,
       playbackTitle: next.title,
       documentTitle: null,
       openGraphTitle: null
     });
-    if (resolved.changed || resolved.source !== disneyTitleSource) {
-      disneyHarvest.title = resolved.title || undefined;
-      disneyTitleSource = resolved.source;
-      disneyTitlePlayId = mediaId;
-      changed = true;
-    }
+    disneyTitlePlayId = mediaId;
+    if (applyDisneyTitle(resolved)) changed = true;
   }
   if (next.duration && next.duration !== disneyHarvest.duration) {
     disneyHarvest.duration = next.duration;
@@ -507,7 +509,7 @@ export function readDisneySnapshot(): Record<string, unknown> | null {
     }
     return {
       mediaId,
-      ...(disneyHarvest.title ? { title: disneyHarvest.title } : {}),
+      ...(disneyHarvest.title ? { title: disneyHarvest.title, subtitle: disneyHarvest.subtitle } : {}),
       duration: disneyHarvest.duration,
       masterUrl: disneyHarvest.masterUrl,
       storyboardUrl: disneyHarvest.storyboardUrl,

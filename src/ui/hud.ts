@@ -1,4 +1,4 @@
-import { sanitizeContentTitle } from '../media-features/content-title';
+import { contentTitle, type ContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
 import type { ButtonTooltipBinder } from './button-tooltip';
@@ -356,9 +356,9 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     return header;
   }
 
-  function syncContentTitle(title: string | null): void {
+  function syncContentTitle(title: ContentTitle | null): void {
     const header = createPlayerHeader();
-    const cleaned = sanitizeContentTitle(title);
+    const cleaned = contentTitle(title?.title, title?.subtitle);
     const existing = ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`) as HTMLElement | null;
     if (!cleaned) {
       existing?.remove();
@@ -388,8 +388,29 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     }
 
     const text = overlay.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)');
-    if (text && text.textContent !== cleaned) text.textContent = cleaned;
+    const subtitle = text?.querySelector('.theater-title-hud-subtitle');
+    if (text && (text.firstChild?.textContent !== cleaned.title || (subtitle?.textContent ?? null) !== cleaned.subtitle)) {
+      renderTitleText(text, cleaned);
+    }
     layoutTitleMarquee(overlay);
+  }
+
+  function renderTitleText(text: Element, content: ContentTitle): void {
+    if (!content.subtitle) {
+      text.replaceChildren(content.title);
+      return;
+    }
+    const title = document.createElement('span');
+    title.className = 'theater-title-hud-title';
+    title.textContent = content.title;
+    // Real spaces keep the copied and spoken title readable.
+    const separator = document.createElement('span');
+    separator.className = 'theater-title-hud-separator';
+    separator.textContent = ' • ';
+    const subtitle = document.createElement('span');
+    subtitle.className = 'theater-title-hud-subtitle';
+    subtitle.textContent = content.subtitle;
+    text.replaceChildren(title, separator, subtitle);
   }
 
   function layoutTitleMarquee(overlay: HTMLElement): void {

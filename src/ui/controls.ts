@@ -77,7 +77,7 @@ export function createControls(
     ctx.actions.persistCaptionStyle(style);
   };
   const showCaptionHud = (payload: Parameters<typeof ctx.actions.showCaptionHud>[0]) => ctx.actions.showCaptionHud(payload);
-  const syncContentTitle = (title: string | null) => ctx.actions.syncContentTitle(title);
+  const syncContentTitle = (title: Parameters<typeof ctx.actions.syncContentTitle>[0]) => ctx.actions.syncContentTitle(title);
   const executeCommand = (command: PlayerCommand) => ctx.actions.executeCommand(command);
   const exitTheaterMode = () => ctx.actions.exitTheaterMode();
   const showHelpOverlay = () => ctx.actions.showHelpOverlay();
