@@ -1,3 +1,4 @@
+import { isTencentMetadataUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../media-features/fetch-allowlist';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
@@ -5,6 +6,7 @@ import { normalizeTencentMetadata, tencentRecord, type TencentSnapshot } from '.
 import { isTencentHost } from '../hosts';
 import { installTencentWasmBridge } from './wasm-bridge';
 
+export { isTencentMetadataUrl } from '../network-harvest';
 export type { TencentSnapshot } from '../../media-features/parsers/tencent';
 let harvested: TencentSnapshot | null = null;
 let metadataObserver: MutationObserver | null = null;
@@ -42,15 +44,6 @@ export function tencentPageVideoId(): string | null {
   return typeof value === 'string' && /^[a-z0-9]{11}$/i.test(value) ? value : null;
 }
 
-export function isTencentMetadataUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && !url.username && !url.password && !url.port
-      && ['h5vv.video.qq.com', 'h5vv6.video.qq.com', 'play.wetv.vip'].includes(url.hostname)
-      && url.pathname === '/getvinfo';
-  } catch { return false; }
-}
-
 export function harvestTencentData(url: string, data: unknown): void {
   if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url)) return;
   const id = tencentPageVideoId();
@@ -68,11 +61,12 @@ export function harvestTencentBody(url: string, body: string): void {
   } catch { /* Metadata parsing must not affect playback. */ }
 }
 
+/** Consume the single qualified clone supplied by MAIN. */
 export function captureTencentNetworkResponse(url: string, response: Response): void {
   if (!tencentIntegrationEnabled() || !isTencentMetadataUrl(url) || !response.ok) return;
   const length = Number(response.headers.get('content-length'));
   if (length > MAX_CAPTION_BYTES) return;
-  void response.clone().text().then((body) => harvestTencentBody(url, body)).catch(() => {});
+  void response.text().then((body) => harvestTencentBody(url, body)).catch(() => {});
 }
 
 export function captureTencentJsonpScript(url: string): void {

@@ -61,3 +61,28 @@ it('preserves Twitch transport replacements and decorated promises while harvest
     assert.deepEqual(report, { unchanged: true, writable: true, sameReplacement: true, decorated: true, duration: 1200 });
   } finally { await browser.close(); }
 });
+
+it('parses native JSON metadata and caption URLs without serializing or reparsing the body', async () => {
+  const { parseTwitchGraphqlData } = await import('../../media-features/parsers/twitch-page');
+  const data = { data: { video: {
+    id: '123', lengthSeconds: 1200, title: 'Fixture title',
+    moments: [{ positionMilliseconds: 1000, title: 'Chapter' }],
+    captions: { url: 'https://captions.twitch.tv/123/en/caption.vtt' }
+  } } };
+  const originalStringify = JSON.stringify;
+  const originalParse = JSON.parse;
+  let parsed: ReturnType<typeof parseTwitchGraphqlData>;
+  try {
+    JSON.stringify = () => { throw new Error('Unexpected body serialization'); };
+    JSON.parse = () => { throw new Error('Unexpected body parse'); };
+    parsed = parseTwitchGraphqlData(data, '123');
+  } finally {
+    JSON.stringify = originalStringify;
+    JSON.parse = originalParse;
+  }
+  assert.equal(parsed.duration, 1200);
+  assert.equal(parsed.title, 'Fixture title');
+  assert.deepEqual(parsed.moments, [{ start: 1, end: undefined, title: 'Chapter' }]);
+  assert.equal(parsed.captions?.[0].url, data.data.video.captions.url);
+  assert.equal(parseTwitchGraphqlData(data, '456').duration, undefined);
+});

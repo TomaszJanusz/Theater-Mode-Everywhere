@@ -1,3 +1,5 @@
+import { qualifiesYoutubeHeatmap } from '../network-harvest';
+import { fetchWithoutHarvest } from '../../platform/harvest-ownership';
 import {
   createTimedtextCacheRecord,
   findCachedTimedtextBody,
@@ -11,7 +13,6 @@ import {
 import { findYoutubeChapterMarkers } from '../../media-features/parsers/youtube-chapters';
 import {
   findYoutubeHeatmap,
-  isYoutubeWatchJsonUrl,
   youtubeHeatmapHarvestMatchesPage,
   youtubeWatchJsonVideoId,
   type YoutubeHeatmap
@@ -30,6 +31,7 @@ export function youtubeIntegrationEnabled(): boolean {
 }
 
 const timedtextBodies: CachedTimedtext[] = [];
+const timedtextAuthUrls: string[] = [];
 const YOUTUBE_SNAPSHOT_SCRIPT_ID = 'theater-everywhere-youtube-snapshot';
 const YOUTUBE_CAPTION_AUTH_ID = 'theater-everywhere-youtube-caption-auth';
 let captionMintInFlight: Promise<string | null> | null = null;
@@ -103,9 +105,7 @@ function heatmapForCurrentPage(playerRaw: unknown): YoutubeHeatmap | undefined {
 }
 
 export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
-  if (!youtubeIntegrationEnabled()) return;
-  if (!isYouTubeHost(window.location.hostname)) return;
-  if (url && !isYoutubeWatchJsonUrl(url, window.location.href)) return;
+  if (!qualifiesYoutubeHeatmap(window.location.hostname, youtubeIntegrationEnabled(), url, window.location.href)) return;
   const found = findYoutubeHeatmap(data, youtubePageVideoId(window.location.href));
   if (!found?.segments) return;
   const pageId = youtubePageVideoId(window.location.href);
@@ -118,7 +118,8 @@ export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
 }
 
 export function harvestYoutubeHeatmapText(url: string, text: string): void {
-  if (!text || text.length > 8_000_000) return;
+  if (!qualifiesYoutubeHeatmap(window.location.hostname, youtubeIntegrationEnabled(), url, window.location.href)) return;
+  if (!text || text.length > 8_000_000 || !/^\s*[\[{]/.test(text)) return;
   if (
     !text.includes('MARKER_TYPE_HEATMAP')
     && !text.includes('HEATSEEKER')
@@ -175,7 +176,8 @@ function youtubeCaptionAuthSources(videoId: string | null): string[] {
   const want = videoId || pageId;
   const urls = [
     ...timedtextUrlsFromPerformance(),
-    ...timedtextBodies.map((item) => item.url)
+    ...timedtextBodies.map((item) => item.url),
+    ...timedtextAuthUrls
   ];
   const out: string[] = [];
   for (const url of urls.reverse()) {
@@ -210,6 +212,24 @@ export function publishCurrentYoutubeSnapshot(): void {
   }
 }
 
+function rememberTimedtextAuthUrl(url: string): void {
+  const index = timedtextAuthUrls.indexOf(url);
+  if (index >= 0) timedtextAuthUrls.splice(index, 1);
+  timedtextAuthUrls.push(url);
+  if (timedtextAuthUrls.length > 8) timedtextAuthUrls.shift();
+  publishYoutubeCaptionAuth();
+}
+
+export function harvestTimedtextJson(url: string, data: unknown): void {
+  if (!youtubeIntegrationEnabled() || !isYouTubeHost() || !isAllowedTimedtextUrl(url)) return;
+  if (!Array.isArray(youtubeRecord(data)?.events)) return;
+  // Native JSON3 is already parsed. Preserve the signed URL without turning
+  // the object back into a string just to populate the textual body cache.
+  rememberTimedtextAuthUrl(url);
+  const record = createTimedtextCacheRecord(url, '');
+  if (record) postTimedtextToTop(record);
+}
+
 export function cacheTimedtextBody(url: string, body: string): void {
   if (!url || !body || body.length > MAX_CAPTION_BYTES || !/timedtext/i.test(url)) return;
   const record = createTimedtextCacheRecord(url, body);
@@ -238,10 +258,11 @@ function findCachedBody(url: string): string | null {
   return findCachedTimedtextBody(timedtextBodies, url);
 }
 
+/** Consume the single qualified clone supplied by MAIN. */
 export function captureTimedtextResponse(url: string, response: Response): void {
   const finalUrl = (response && response.url) || url;
   if (!finalUrl || !/timedtext/i.test(finalUrl) || !response || !response.ok) return;
-  response.clone().text().then((text) => {
+  response.text().then((text) => {
     if (text) cacheTimedtextBody(finalUrl, text);
   }).catch(() => {});
 }
@@ -416,7 +437,7 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
     try {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 4000);
-      const response = await fetch(candidate, { credentials: 'include', signal: controller.signal });
+      const response = await fetchWithoutHarvest(candidate, { credentials: 'include', signal: controller.signal });
       window.clearTimeout(timer);
       if (!response.ok) continue;
       const text = await response.text();
@@ -677,6 +698,7 @@ export function installYoutubeMain(): void {
       if (typeof record.url !== 'string' || !isAllowedTimedtextUrl(record.url) || record.body.length > MAX_CAPTION_BYTES) return;
       const cached = createTimedtextCacheRecord(record.url, record.body);
       if (!cached) return;
+      if (!cached.body) { rememberTimedtextAuthUrl(cached.url); return; }
       timedtextBodies.push(cached);
       if (timedtextBodies.length > 20) timedtextBodies.shift();
     }
