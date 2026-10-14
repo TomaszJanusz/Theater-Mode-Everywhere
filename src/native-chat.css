@@ -136,10 +136,3 @@ html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-paper-dialog
 html.theater-everywhere-html-active[data-theater-chat-active] tp-yt-iron-overlay-backdrop {
   z-index: 2147483646 !important;
 }
-
-.theater-chat-width-row[hidden],
-.theater-chat-theme-row[hidden],
-.theater-chat-theme-hint[hidden],
-.theater-chat-toggle[hidden] {
-  display: none !important;
-}

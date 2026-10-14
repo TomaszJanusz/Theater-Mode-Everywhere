@@ -9,7 +9,7 @@ import type { Page } from 'playwright';
 import { clockLabels } from './time-readout';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
   buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
@@ -19,7 +19,7 @@ const BUNDLE = esbuild.buildSync({
   bundle: true, write: false, format: 'iife', globalName: 'TimeReadout', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
-/** The player bar inside a shadow root carrying content.css, as the extension mounts it. */
+/** The player bar inside a shadow root carrying the player UI sheet, as the extension mounts it. */
 async function mountBar(page: Page): Promise<void> {
   await page.setContent('<div id="theater-everywhere-ui"></div>');
   await page.addScriptTag({ content: `${BUNDLE}\nwindow.TimeReadout = TimeReadout;` });
@@ -50,7 +50,7 @@ async function mountBar(page: Page): Promise<void> {
       const rect = shadow.querySelector(id).getBoundingClientRect();
       return { x: Math.round(rect.x * 100) / 100, w: Math.round(rect.width * 100) / 100 };
     };
-  })(${JSON.stringify(CSS)})`);
+  })(${JSON.stringify(UI_CSS)})`);
 }
 
 describe('split time readout', () => {
