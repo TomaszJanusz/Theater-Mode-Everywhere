@@ -41,6 +41,8 @@ import { coercePlaybackSurface, nativeVideoOf, volumeCeiling, type PlaybackSurfa
 
 export interface ExtendedHTMLDivElement extends HTMLDivElement {
   _videoListenersCleanup?: () => void;
+  /** Called as the bar becomes visible, to present the current playback state. */
+  _syncPlaybackChrome?: () => void;
   _mediaFeatures?: MediaFeaturesController;
 }
 
@@ -412,8 +414,9 @@ export function createControls(
     renderTimeReadout(elapsedReadout, '0:00', false);
     renderTimeReadout(endReadout, '-0:00', false);
 
-    let stableWindow: ReturnType<typeof playbackWindow> | null = null;
-    const playbackForChrome = (): ReturnType<typeof playbackWindow> | null => {
+    type ChromePlayback = ReturnType<typeof playbackWindow>;
+    let stableWindow: ChromePlayback | null = null;
+    const playbackForChrome = (): ChromePlayback | null => {
       const next = playbackWindow(video);
       const presented = presentPlaybackWindow(stableWindow, next);
       if (presented.live || presented.seekable) stableWindow = presented;
@@ -446,13 +449,11 @@ export function createControls(
       const playback = playbackForChrome();
       if (!playback || playback.live) return;
       showTotalTime = !showTotalTime;
-      updateTimeDisplay(true);
+      updatePlaybackChrome(true);
     });
 
     let liveChromeKey = '';
-    const syncLiveChrome = () => {
-      const playback = playbackForChrome();
-      if (!playback) return null;
+    const syncLiveChrome = (playback: ChromePlayback) => {
       const locked = playback.live && !playback.seekable;
       const canJumpToLive = playback.live && playback.seekable;
       const behindLive = canJumpToLive && !isVideoAtLiveEdge(video, playback);
@@ -509,12 +510,12 @@ export function createControls(
       elapsedReadout.setAttribute('aria-label', behindLive ? t('jumpToLive') : t('liveBadge'));
     };
 
-    const updateTimeDisplay = (animate = true) => {
-      const playback = playbackForChrome();
-      if (!playback) return;
+    const paintTimeDisplay = (
+      playback: ChromePlayback,
+      chrome: ReturnType<typeof syncLiveChrome>,
+      animate: boolean
+    ) => {
       const cur = displayMediaTime(video);
-      const chrome = syncLiveChrome();
-      if (!chrome) return;
       if (playback.live) {
         paintLive(chrome.behindLive, chrome.canJumpToLive);
         return;
@@ -874,7 +875,6 @@ export function createControls(
     rightSec.appendChild(endReadout);
     rightSec.appendChild(ccHost);
     rightSec.appendChild(speedContainer);
-    updateTimeDisplay(false);
 
     const fitBtn = document.createElement('button');
     fitBtn.className = 'theater-control-btn video-fit-btn';
@@ -1110,11 +1110,8 @@ export function createControls(
       }
     };
 
-    const updateScrubber = () => {
-      const window = playbackForChrome();
-      if (!window) return;
+    const paintScrubber = (window: ChromePlayback) => {
       const cur = video.currentTime || 0;
-      syncLiveChrome();
 
       if (window.seekable && video.buffered && video.buffered.length > 0) {
         let bufferedEnd = cur;
@@ -1135,7 +1132,23 @@ export function createControls(
       const pct = timeToRatio(displayMediaTime(video), window) * 100;
       scrubberFill.style.width = `${pct}%`;
     };
-    updateScrubber();
+
+    // One playback snapshot feeds the live chrome, scrubber and clock, so a
+    // single update reads the host window once. A hidden bar skips these
+    // cosmetic writes; `_syncPlaybackChrome` catches it up as it is shown.
+    // Captions and seeks read live state themselves and never wait on it.
+    const paintPlaybackChrome = (animate: boolean) => {
+      const playback = playbackForChrome();
+      if (!playback) return;
+      const chrome = syncLiveChrome(playback);
+      paintScrubber(playback);
+      paintTimeDisplay(playback, chrome, animate);
+    };
+    const updatePlaybackChrome = (animate = true) => {
+      if (wrapper.classList.contains('visible')) paintPlaybackChrome(animate);
+    };
+    wrapper._syncPlaybackChrome = () => paintPlaybackChrome(false);
+    paintPlaybackChrome(false);
 
     const updateTooltip = (clientX: number) => {
       const window = playbackForChrome() ?? playbackWindow(video);
@@ -1365,8 +1378,7 @@ export function createControls(
     let lastProviderPlayhead = Number.NaN;
     const onProviderClock = (published: number | null) => {
       const playhead = published ?? readProviderClock(native) ?? Number.NaN;
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       mediaFeatures.updateTime(published ?? displayMediaTime(video));
       if (Number.isFinite(playhead) && Number.isFinite(lastProviderPlayhead) && Math.abs(playhead - lastProviderPlayhead) > 0.04) {
         setBuffering(false);
@@ -1382,8 +1394,7 @@ export function createControls(
     const onPause = () => { setIcon(playPauseBtn, playIcon); };
     let lastMediaHref = window.location.href;
     const onTimeUpdate = () => { 
-      updateScrubber(); 
-      updateTimeDisplay();
+      updatePlaybackChrome();
       mediaFeatures.updateTime(displayMediaTime(video));
       if (!video.paused && !video.seeking && video.readyState >= 3) {
         setBuffering(false);
@@ -1397,10 +1408,9 @@ export function createControls(
         void mediaFeatures.refresh();
       }
     };
-    const onProgress = () => { updateScrubber(); };
+    const onProgress = () => { updatePlaybackChrome(); };
     const onDurationChange = () => {
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       if (Number.isFinite(video.duration)) void mediaFeatures.refresh();
     };
     const onMediaReset = () => {
@@ -1423,8 +1433,7 @@ export function createControls(
       tooltip.classList.remove('visible');
       tooltip.replaceChildren();
       mediaFeatures.setHeatmapHover(null);
-      updateScrubber();
-      updateTimeDisplay();
+      updatePlaybackChrome();
       updateCaptionDock();
       setBuffering(true, true);
     };
@@ -1474,8 +1483,7 @@ export function createControls(
         clearTimeout(bufferingFailsafe);
         bufferingFailsafe = null;
       }
-      updateScrubber(); 
-      updateTimeDisplay(); 
+      updatePlaybackChrome();
       setBuffering(false); 
     };
     const onCanPlay = () => { setBuffering(false); };
@@ -1550,6 +1558,7 @@ export function createControls(
       });
       mediaFeatures.dispose();
       wrapper._mediaFeatures = undefined;
+      wrapper._syncPlaybackChrome = undefined;
       window.removeEventListener('pointerdown', dismissPopoversIfOutside, true);
       window.removeEventListener('click', dismissPopoversIfOutside, true);
       window.removeEventListener('keydown', clearDismissOnKey, true);
