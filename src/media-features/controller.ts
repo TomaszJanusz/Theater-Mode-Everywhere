@@ -1,5 +1,5 @@
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
-import { sanitizeContentTitle } from './content-title';
+import { contentTitle, type ContentTitle } from './content-title';
 import { CaptionRenderer } from './caption-renderer';
 import { closeMenuPopover } from '../ui/menu-popover';
 import { openCaptionOptionsDialog } from './caption-options-dialog';
@@ -46,7 +46,7 @@ export type MediaFeaturesBindings = {
   adapter?: MediaFeaturesAdapter;
   renderer?: CaptionOverlayRenderer;
   onSnapshot?: (snapshot: MediaSnapshot) => void;
-  onTitle?: (title: string | null) => void;
+  onTitle?: (title: ContentTitle | null) => void;
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -93,8 +93,8 @@ export class MediaFeaturesController {
   private decorateCaptionDialog?: (overlay: HTMLElement) => void;
   private providerFlags: MediaProviderFlags = defaultMediaProviderFlags();
   private onSnapshot?: (snapshot: MediaSnapshot) => void;
-  private onTitle?: (title: string | null) => void;
-  private publishedTitle: string | null | undefined;
+  private onTitle?: (title: ContentTitle | null) => void;
+  private publishedTitleKey: string | null | undefined;
   private opChain: Promise<void> = Promise.resolve();
   private activateGeneration = 0;
   private sessionEpoch = 0;
@@ -246,7 +246,7 @@ export class MediaFeaturesController {
     this.renderCcMenu();
     this.publishSubtitleLayout();
     this.onCaptionChange?.();
-    this.publishedTitle = null;
+    this.publishedTitleKey = null;
     this.onTitle?.(null);
   }
 
@@ -287,14 +287,15 @@ export class MediaFeaturesController {
 
   private publishTitle(epoch: number, adapter: MediaFeaturesAdapter): void {
     if (!this.isCurrent(epoch, adapter)) return;
-    let title: string | null = null;
+    let title: ContentTitle | null = null;
     try {
-      title = sanitizeContentTitle(adapter.getTitle?.());
+      title = contentTitle(adapter.getTitle?.(), adapter.getSubtitle?.());
     } catch {
       // Title metadata is optional and must not interrupt caption loading.
     }
-    if (title === this.publishedTitle) return;
-    this.publishedTitle = title;
+    const key = title ? `${title.title}\n${title.subtitle ?? ''}` : null;
+    if (key === this.publishedTitleKey) return;
+    this.publishedTitleKey = key;
     this.onTitle?.(title);
   }
 

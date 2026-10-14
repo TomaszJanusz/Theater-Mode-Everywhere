@@ -25,7 +25,7 @@ const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild'
 
 const compiled = esbuild.buildSync({
   stdin: {
-    contents: "import { handleDisneyMediaSeek, installDisneyMain, readDisneySnapshot } from './main'; import { DisneyAdapter } from '../../media-features/disney-adapter'; export { handleDisneyMediaSeek, installDisneyMain, readDisneySnapshot, DisneyAdapter };",
+    contents: "import { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain } from './main'; import { DisneyAdapter } from '../../media-features/disney-adapter'; export { handleDisneyMediaSeek, harvestDisneyData, installDisneyMain, DisneyAdapter };",
     resolveDir: SRC,
     sourcefile: 'disney-clock-browser-entry.ts',
     loader: 'ts'
@@ -53,7 +53,7 @@ type ClockReport = {
 
 for (const engine of ['chromium', 'firefox'] as const) {
   describe(`${engine} Disney playback clock`, () => {
-    it('publishes the complete title-bug label through nested shadow roots and refreshes it', async (t) => {
+    it('publishes the playerExperience episode label beside its title for the current play only', async (t) => {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const browser = await browserType.launch({ headless: true });
@@ -64,70 +64,51 @@ for (const engine of ['chromium', 'firefox'] as const) {
       }));
       await page.goto(`https://www.disneyplus.com/pl-pl/play/${PLAY_ID}`);
       await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
-      const report = await page.evaluate(() => {
+      const report = await page.evaluate(async () => {
         const api = (window as unknown as { DisneyMain: typeof import('./main') & {
           DisneyAdapter: typeof import('../../media-features/disney-adapter').DisneyAdapter;
         } }).DisneyMain;
+        let notified = 0;
+        window.addEventListener('theater-everywhere-disney-harvest', () => { notified += 1; });
+        const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
         const adapter = new api.DisneyAdapter();
+        const read = () => ({ title: adapter.getTitle(), subtitle: adapter.getSubtitle() });
+        const header = (title: string, subtitle: string) => ({
+          data: { playerExperience: { availId: '7ff61f45-eded-42d3-9323-d9681c3eac81', title, subtitle, timeline: { runtimeMs: 3344000 } } }
+        });
+        const url = 'https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/7ff61f45-eded-42d3-9323-d9681c3eac81';
+        api.installDisneyMain();
+        // Generic chrome can name the series before the player header arrives.
         const player = document.createElement('disney-web-player');
-        const playerUi = document.createElement('disney-web-player-ui');
-        document.body.append(player, playerUi);
-        const overlay = document.createElement('title-overlay');
-        playerUi.append(overlay);
-        const bug = document.createElement('title-bug');
-        overlay.attachShadow({ mode: 'open' }).append(bug);
-        const header = bug.attachShadow({ mode: 'open' });
-        header.innerHTML = `<button aria-label="WSTECZ">WSTECZ</button>
-          <button class="title-btn" data-qa="title-bug.titleButton">
-            <div class="title-field" data-qa="title-bug.title"><span>VisionQuest</span></div>
-          </button>
-          <div class="subtitle-renderer">Spoken captions</div>`;
-        const read = () => { api.readDisneySnapshot(); return adapter.getTitle(); };
-        const initial = read();
-        const subtitle = document.createElement('div');
-        subtitle.className = 'subtitle-field';
-        subtitle.dataset.qa = 'title-bug.subtitle';
-        subtitle.innerHTML = '<span>S1:O1 Wyzwolenie</span>';
-        header.querySelector('.title-btn')!.append(subtitle);
-        const episode = read();
-        // No episode parsing or leaf-only restriction: all descendant text is metadata.
-        subtitle.innerHTML = '<div>Bonus: <strong>Za kulisami</strong></div><span> • Część A / B</span>';
-        const arbitrary = read();
-        subtitle.remove();
-        const noSubtitle = read();
-        subtitle.textContent = 'S1:O2 Nowy odcinek';
-        header.querySelector('.title-btn')!.append(subtitle);
+        const chrome = document.createElement('div');
+        chrome.className = 'player-title';
+        chrome.textContent = 'VisionQuest';
+        player.append(chrome);
+        document.body.append(player);
+        window.dispatchEvent(new CustomEvent('theater-everywhere-disney-harvest'));
+        await settle();
+        const chromeOnly = read();
+        notified = 0;
+        api.harvestDisneyData(url, header('VisionQuest', 'S1:O1 Wyzwolenie'));
+        await settle();
+        const episode = { ...read(), notified: notified > 0 };
         history.pushState({}, '', '/pl-pl/play/180356b5-0596-4333-891f-e48c526a0803');
+        const navigated = read();
+        window.dispatchEvent(new CustomEvent('theater-everywhere-disney-harvest'));
+        await settle();
+        // Chrome can still name the series, but the previous episode label must not follow it.
+        const labelAfterNavigation = read().subtitle;
+        api.harvestDisneyData(url, header('VisionQuest', 'S1:O2 Nowy odcinek'));
+        await settle();
         const nextEpisode = read();
-        bug.remove();
-        // The host can leave a generic title behind when the richer header decays.
-        const genericTitle = document.createElement('div');
-        genericTitle.className = 'player-title';
-        genericTitle.textContent = 'VisionQuest';
-        player.append(genericTitle);
-        const decayed = read();
-        document.documentElement.setAttribute('data-te-disney-integration-off', '');
-        const disabled = read();
-        document.documentElement.removeAttribute('data-te-disney-integration-off');
-        const enabled = read();
-        history.pushState({}, '', '/pl-pl/play/6f5b1fff-75da-44f6-9553-412699bf4065');
-        const replaced = read();
-        genericTitle.remove();
-        history.pushState({}, '', '/pl-pl/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6');
-        const empty = read();
-        return { initial, episode, arbitrary, noSubtitle, nextEpisode, decayed, replaced, disabled, enabled, empty };
+        return { chromeOnly, episode, navigated, labelAfterNavigation, nextEpisode };
       });
       assert.deepEqual(report, {
-        initial: 'VisionQuest',
-        episode: 'VisionQuest — S1:O1 Wyzwolenie',
-        arbitrary: 'VisionQuest — Bonus: Za kulisami • Część A / B',
-        noSubtitle: 'VisionQuest',
-        nextEpisode: 'VisionQuest — S1:O2 Nowy odcinek',
-        decayed: 'VisionQuest — S1:O2 Nowy odcinek',
-        replaced: 'VisionQuest',
-        disabled: null,
-        enabled: 'VisionQuest — S1:O2 Nowy odcinek',
-        empty: null
+        chromeOnly: { title: 'VisionQuest', subtitle: null },
+        episode: { title: 'VisionQuest', subtitle: 'S1:O1 Wyzwolenie', notified: true },
+        navigated: { title: null, subtitle: null },
+        labelAfterNavigation: null,
+        nextEpisode: { title: 'VisionQuest', subtitle: 'S1:O2 Nowy odcinek' }
       });
     });
 

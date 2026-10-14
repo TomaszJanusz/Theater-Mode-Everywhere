@@ -23,7 +23,7 @@ import {
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
 import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
-import { findDisneyContentTitle, resolveDisneyTitle, vimeoPageTitle } from './content-title';
+import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { normalizeYoutubePlayerResponse } from './probe';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
 import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
@@ -553,6 +553,42 @@ describe('disney playing title', () => {
     assert.equal(resolved.title, 'X-Men: Mroczna Phoenix');
     assert.equal(resolved.source, 'chrome');
     assert.equal(resolved.changed, false);
+  });
+
+  it('reads the player header and keeps the localized episode label opaque', () => {
+    assert.deepEqual(readDisneyPlayerHeader({
+      data: { playerExperience: { title: 'VisionQuest', subtitle: ' S1:O1  Wyzwolenie ', internalTitle: 'VisionQuest - s1e1' } }
+    }), { title: 'VisionQuest', subtitle: 'S1:O1 Wyzwolenie' });
+    assert.deepEqual(readDisneyPlayerHeader({ data: { playerExperience: { title: 'Venom', subtitle: '' } } }), { title: 'Venom', subtitle: null });
+    assert.equal(readDisneyPlayerHeader({ data: { playerExperience: { subtitle: 'S1:O1 Wyzwolenie' } } }), null);
+    assert.equal(readDisneyPlayerHeader({ data: { page: { title: 'VisionQuest' } } }), null);
+  });
+
+  it('lets the player header outrank chrome and replace an older header for the same play', () => {
+    const fromChrome = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'X-Men',
+      source: 'chrome',
+      playerHeader: 'X-Men: Mroczna Phoenix',
+      playerChrome: 'X-Men',
+      playbackTitle: null,
+      documentTitle: null,
+      openGraphTitle: null
+    });
+    assert.deepEqual(fromChrome, { title: 'X-Men: Mroczna Phoenix', source: 'player', changed: true });
+    const newer = resolveDisneyTitle({
+      playId: phoenixId,
+      previousPlayId: phoenixId,
+      title: 'X-Men: Mroczna Phoenix',
+      source: 'player',
+      playerHeader: 'Dark Phoenix',
+      playerChrome: 'X-Men',
+      playbackTitle: null,
+      documentTitle: null,
+      openGraphTitle: null
+    });
+    assert.deepEqual(newer, { title: 'Dark Phoenix', source: 'player', changed: true });
   });
 });
 
