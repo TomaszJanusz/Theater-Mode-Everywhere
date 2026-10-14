@@ -78,7 +78,8 @@ export function resolveDisneyTitle(input: {
     if (!cleaned) return;
     const currentRank = source ? DISNEY_TITLE_RANK[source] : 0;
     if (DISNEY_TITLE_RANK[nextSource] < currentRank) return;
-    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title) return;
+    // Live chrome can gain its episode label after the initial title publication.
+    if (DISNEY_TITLE_RANK[nextSource] === currentRank && title && nextSource !== 'chrome') return;
     title = cleaned;
     source = nextSource;
   };
