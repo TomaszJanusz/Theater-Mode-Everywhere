@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
 import { assertSelfContainedBundles } from './bundle-integrity';
+import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
@@ -64,7 +65,11 @@ function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
   });
 }
 
-async function buildClassicScript(entryName: 'content' | 'mainWorld', entryFile: string): Promise<void> {
+async function buildClassicScript(
+  entryName: 'content' | 'mainWorld',
+  entryFile: string,
+  mode: ReturnType<typeof resolveBundleBuildMode>
+): Promise<void> {
   const root = path.resolve(__dirname, '..');
   await build({
     configFile: false,
@@ -73,7 +78,12 @@ async function buildClassicScript(entryName: 'content' | 'mainWorld', entryFile:
     build: {
       emptyOutDir: false,
       outDir: path.join(root, 'dist'),
-      minify: false,
+      // esbuild shortens syntax, whitespace, and local names. Property names
+      // stay intact. keepNames is off: preserving function names raised page
+      // heap by about 2.6MB versus mangled output on a parent plus 12 frames.
+      // These files must stay one classic script, so the 500kB split hint does not apply.
+      chunkSizeWarningLimit: 1024,
+      minify: bundleMinify(mode),
       cssCodeSplit: false,
       rollupOptions: {
         input: path.join(root, entryFile),
@@ -95,14 +105,15 @@ async function buildClassicScript(entryName: 'content' | 'mainWorld', entryFile:
 
 async function run() {
   try {
-    console.log('=== Starting TypeScript + Vite Bundle & Build ===');
+    const mode = resolveBundleBuildMode();
+    console.log(`=== Starting TypeScript + Vite Bundle & Build (${mode}) ===`);
     
     // 1. Run Vite build
     console.log('Compiling TypeScript and HTML via Vite...');
     await build();
     console.log('Bundling isolated MV3 classic scripts...');
-    await buildClassicScript('content', 'src/entries/content.ts');
-    await buildClassicScript('mainWorld', 'src/entries/main-world.ts');
+    await buildClassicScript('content', 'src/entries/content.ts', mode);
+    await buildClassicScript('mainWorld', 'src/entries/main-world.ts', mode);
 
     const distDir = path.resolve(__dirname, '../dist');
     assertSelfContainedBundles(distDir);

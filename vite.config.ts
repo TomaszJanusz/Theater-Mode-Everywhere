@@ -1,32 +1,36 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { bundleMinify, resolveBundleBuildMode } from './scripts/build-mode';
 
-export default defineConfig({
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    minify: false,
-    rollupOptions: {
-      input: {
-        popup: resolve(__dirname, 'popup/popup.html'),
-        options: resolve(__dirname, 'options/options.html'),
-        background: resolve(__dirname, 'src/entries/background.ts'),
-      },
-        output: {
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'background') {
-            return 'background.js';
-          }
-          return 'assets/[name]-[hash].js';
+export default defineConfig(() => {
+  const mode = resolveBundleBuildMode();
+  return {
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      minify: bundleMinify(mode),
+      rollupOptions: {
+        input: {
+          popup: resolve(__dirname, 'popup/popup.html'),
+          options: resolve(__dirname, 'options/options.html'),
+          background: resolve(__dirname, 'src/entries/background.ts'),
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'content.css') {
-            return 'content.css';
+        output: {
+          entryFileNames: (chunkInfo) => {
+            if (chunkInfo.name === 'background') {
+              return 'background.js';
+            }
+            return 'assets/[name]-[hash].js';
+          },
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name === 'content.css') {
+              return 'content.css';
+            }
+            return 'assets/[name]-[hash].[ext]';
           }
-          return 'assets/[name]-[hash].[ext]';
         }
       }
     }
-  }
+  };
 });
