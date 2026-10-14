@@ -553,6 +553,7 @@ function bindChromeActions(): void {
     createCustomControls,
     destroyCustomControls,
     showToolbar,
+    suppressToolbarActivity: toolbar.suppressToolbarActivity,
     hideToolbar,
     scheduleToolbarHide: toolbar.scheduleToolbarHide,
     updateCaptionDock,

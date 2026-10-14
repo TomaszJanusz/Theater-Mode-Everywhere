@@ -37,6 +37,7 @@ export type ChromeRefs = {
   isTransitioning: boolean;
   toolbarTimer: ReturnType<typeof setTimeout> | null;
   toolbarKeyboardInteractionActive: boolean;
+  toolbarActivityBlockedUntil: number;
   currentToggleFullscreen: (() => void) | null;
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
@@ -56,6 +57,7 @@ export type PlayerChromeActions = {
   createCustomControls(video: HTMLVideoElement | PlaybackSurface): void;
   destroyCustomControls(): void;
   showToolbar(event?: Event): void;
+  suppressToolbarActivity(): void;
   hideToolbar(): void;
   scheduleToolbarHide(): void;
   updateCaptionDock(immediate?: boolean): void;
@@ -134,6 +136,7 @@ export function createChromeRefs(): ChromeRefs {
     isTransitioning: false,
     toolbarTimer: null,
     toolbarKeyboardInteractionActive: false,
+    toolbarActivityBlockedUntil: 0,
     currentToggleFullscreen: null,
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},

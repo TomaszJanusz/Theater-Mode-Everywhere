@@ -690,6 +690,7 @@ export function createControls(
     const toggleFullscreen = () => {
       const operation = fullscreenRecovery.begin();
       if (!operation.isCurrent()) return;
+      ctx.actions.suppressToolbarActivity();
       const resume = () => operation.schedule();
       const fail = (error: unknown) => {
         operation.cancel();
@@ -726,7 +727,7 @@ export function createControls(
 
     const onFullscreenChange = () => {
       syncFullscreenButton();
-      showToolbar();
+      ctx.actions.suppressToolbarActivity();
       fullscreenRecovery.onFullscreenChange();
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -1611,6 +1612,7 @@ export function createControls(
       refs.toolbarTimer = null;
     }
     refs.toolbarKeyboardInteractionActive = false;
+    refs.toolbarActivityBlockedUntil = 0;
     document.documentElement.classList.remove(CURSOR_HIDDEN_CLASS);
     destroyPlayerUi();
     refs.currentToggleFullscreen = null;

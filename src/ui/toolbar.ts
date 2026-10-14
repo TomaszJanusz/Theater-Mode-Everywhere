@@ -20,6 +20,7 @@ import type { PlayerChromeContext } from './runtime-context';
 import type { HostCaptionLayout } from '../media-features/types';
 
 export const TOOLBAR_AUTO_HIDE_DELAY_MS = 2500;
+export const FULLSCREEN_ACTIVITY_SUPPRESSION_MS = 500;
 export const CURSOR_HIDDEN_CLASS = 'theater-everywhere-cursor-hidden';
 
 type DockMotionState = { mode: ReturnType<typeof captionDockMotion>; transition: string };
@@ -347,12 +348,18 @@ export function createToolbar(ctx: PlayerChromeContext) {
   }
 
   function showToolbar(event?: Event): void {
+    if (event && performance.now() < ctx.refs.toolbarActivityBlockedUntil) return;
     if (event?.type === 'pointermove' || event?.type === 'pointerdown') {
       ctx.refs.toolbarKeyboardInteractionActive = false;
     } else if (event?.type === 'focusin') {
       ctx.refs.toolbarKeyboardInteractionActive = ctx.eventPathMatches(event, ':focus-visible');
     }
     applyVisibility(true);
+  }
+
+  function suppressToolbarActivity(): void {
+    // Fullscreen transitions can synthesize pointer/focus activity without user input.
+    ctx.refs.toolbarActivityBlockedUntil = performance.now() + FULLSCREEN_ACTIVITY_SUPPRESSION_MS;
   }
 
   function isPrimaryPointerEvent(event: Event): boolean {
@@ -457,6 +464,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     scheduleToolbarHide,
     refreshToolbarVisibility,
     showToolbar,
+    suppressToolbarActivity,
     hideToolbar,
     updateCaptionDock,
     resetCaptionDock,
