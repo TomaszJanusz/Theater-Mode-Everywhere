@@ -1,6 +1,7 @@
 # Appearance modes
 
-Settings → Appearance offers independent High contrast and Reduce transparency choices:
+Settings → Appearance offers independent High contrast and Reduce transparency dropdowns
+in the same labeled Settings rows as Language:
 Auto follows the corresponding system media query; On and Off override it. Missing or
 invalid storage and unsupported queries resolve to Auto/off. See the shared
 [preferences](../src/appearance-preferences.ts), [observer](../src/appearance-runtime.ts)
@@ -16,9 +17,9 @@ Forced colors retains browser ownership: appearance overrides apply only when it
 
 | Surface | Treatment and reason |
 | --- | --- |
-| Settings: all five tabs, Language combobox/listbox, appearance choices, Highlight new features, SponsorBlock row, exclusions, shortcuts and About | Shared text, panel, border, selected and focus tokens; solid hover/tint surfaces in either accessibility mode. Disabled content is readable; high contrast uses a dashed boundary. |
+| Settings: all five tabs, Language and appearance comboboxes/listboxes, Highlight new features, SponsorBlock row, exclusions, shortcuts and About | Shared text, panel, border, selected and focus tokens; solid hover/tint surfaces in either accessibility mode. Disabled content is readable; high contrast uses a dashed boundary. |
 | RTE tiles, switches, capability/filter badges and expanded details | Both modes remove the single `te-animated-border::before` layer, including its orbit, boost and gradient interior. Resting tiles and switches retain their meaning. Current main uses `--te-*`; there are no remaining `--rte-*` decoration layers. Capability badge fills become solid. |
-| New pill/dot, Settings gear marker | Pill uses shared solid tint and high-contrast text/border; dot keeps the checked accent and separating ring. A selected choice is underlined and outlined; focus has a separate 3px ring. |
+| New pill/dot, Settings gear marker | Pill uses shared solid tint and high-contrast text/border; dot keeps the checked accent and separating ring. Dropdown selection has a checkmark. High contrast underlines selected options/tiles and outlines tiles; focus has a separate 3px ring. |
 | Settings dialogs, including Update highlights and shortcut conflicts | Opaque panels/backdrop without blur in both modes; high-contrast text, buttons and boundaries. |
 | Popup status, website control, buttons, shortcut tip and credits | Live document tokens, opaque cards/tints, readable high-contrast status text and boundaries. |
 | Shadow player toolbar, notched menus, settings/audio/chat rows, subtitle list/options, tooltips, preview labels, HUDs, help/dialogs, home/title pills and service actions | Shared solid surface, hover, ink, border and marker tokens. Frost/noise and backdrop blur disappear. High contrast also strengthens track/focus boundaries, accent indicators and countdown progress. |

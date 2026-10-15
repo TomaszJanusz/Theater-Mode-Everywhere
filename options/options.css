@@ -1326,6 +1326,22 @@ section h2 {
   gap: 16px;
 }
 
+.feature-row > .choice-combobox {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .feature-row:has(> .choice-combobox) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .feature-row > .choice-combobox {
+    align-self: flex-start;
+  }
+}
+
 @media (max-width: 860px) {
   .privacy-thing-card {
     flex-direction: column;
@@ -1813,5 +1829,3 @@ body.te-dialog-open {
   .te-animated-border::before, .te-animated-border:is(:hover, :has(:focus-visible))::before { animation: none; transition: none; }
   .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
 }
-
-.appearance-section .appearance-mode-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -1896,8 +1896,8 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await popup.goto(new URL('popup/popup.html', worker.url()).href);
     await popup.locator('#domain-name').filter({ hasText: 'System page' }).waitFor();
     await options.waitForFunction(() => document.querySelectorAll('#language-combobox-listbox [role=option]').length === 14);
-    const combo = options.getByRole('combobox');
-    const list = options.getByRole('listbox');
+    const combo = options.locator('#language-combobox');
+    const list = options.locator('#language-combobox-listbox');
     // Diagnostic captures only; they follow the same THEATER_SMOKE_SCREENSHOT gate as the other smoke screenshots.
     const languageScreenshot = async (name: string) => {
       if (process.env.THEATER_SMOKE_SCREENSHOT) {
@@ -2137,7 +2137,7 @@ async function assertAppearanceModes(context: BrowserContext, origin: string): P
     for (const page of [options, second]) {
       await page.setViewportSize({ width: 1440, height: 1100 });
       await page.goto(new URL('options/options.html#appearance', worker.url()).href);
-      await page.locator('#highContrast-grid [aria-checked="true"]').waitFor();
+      await page.locator('#highContrast-combobox-listbox [aria-selected="true"]').waitFor({ state: 'attached' });
     }
     await popup.setViewportSize({ width: 300, height: 300 });
     await popup.goto(new URL('popup/popup.html', worker.url()).href);
@@ -2152,18 +2152,23 @@ async function assertAppearanceModes(context: BrowserContext, origin: string): P
     await player.locator('.player-settings-btn').press('Enter');
     await player.locator('.theater-settings-menu').waitFor({ state: 'visible' });
     await capture(player, 'player-normal');
-    await options.locator('#highContrast-grid [data-choice="on"]').click();
+    await options.locator('#highContrast-combobox').click();
+    await options.locator('#highContrast-combobox-listbox [data-value="on"]').click();
     await waitModes('high', 'normal');
-    if (await second.locator('#highContrast-grid [data-choice="on"]').getAttribute('aria-checked') !== 'true') fail('Appearance choice did not sync between Settings pages.');
+    if (await second.locator('#highContrast-combobox-listbox [data-value="on"]').getAttribute('aria-selected') !== 'true') fail('Appearance choice did not sync between Settings pages.');
     await capture(options, 'settings-contrast', true);
     if (captureDir) {
-      const first = await options.locator('#highContrast-grid').locator('..').boundingBox();
-      const last = await options.locator('#reduceTransparency-grid').locator('..').boundingBox();
+      const first = await options.locator('#highContrast-combobox').locator('..').boundingBox();
+      const last = await options.locator('#highlight-new-features-toggle').locator('..').locator('..').boundingBox();
       if (!first || !last) throw new Error('Appearance blocks have no layout');
       await options.screenshot({ path: path.join(captureDir, 'tme48a-appearance-blocks.png'), clip: {
         x: first.x, y: first.y, width: first.width, height: last.y + last.height - first.y
       } });
     }
+    await options.locator('#highContrast-combobox').click();
+    await options.locator('#highContrast-combobox-listbox').waitFor();
+    await capture(options, 'appearance-dropdown');
+    await options.locator('#highContrast-combobox').press('Escape');
     await capture(player, 'player-contrast');
     await capture(popup, 'popup-contrast');
     await options.locator('#tab-features').click();
@@ -2180,13 +2185,16 @@ async function assertAppearanceModes(context: BrowserContext, origin: string): P
     await options.locator('.te-dialog-btn-primary').click();
     await options.locator('.te-dialog').waitFor({ state: 'detached' });
     await options.locator('#tab-appearance').click();
-    await options.locator('#highContrast-grid [data-choice="off"]').click();
-    await options.locator('#reduceTransparency-grid [data-choice="on"]').click();
+    await options.locator('#highContrast-combobox').click();
+    await options.locator('#highContrast-combobox-listbox [data-value="off"]').click();
+    await options.locator('#reduceTransparency-combobox').click();
+    await options.locator('#reduceTransparency-combobox-listbox [data-value="on"]').click();
     await waitModes('normal', 'reduced');
     const fill = await player.locator('.theater-controls-wrapper').evaluate(el => getComputedStyle(el, '::before').backgroundColor);
     if (fill !== 'rgb(24, 24, 27)') fail(`Reduced transparency kept a translucent toolbar: ${fill}`);
     await capture(player, 'player-transparency');
-    await options.locator('#reduceTransparency-grid [data-choice="off"]').click();
+    await options.locator('#reduceTransparency-combobox').click();
+    await options.locator('#reduceTransparency-combobox-listbox [data-value="off"]').click();
     await waitModes('normal', 'normal');
     // Exit/reenter creates a fresh shadow owner and hydrates the saved preferences.
     await worker.evaluate(() => chrome.storage.sync.set({ highContrast: 'on', reduceTransparency: 'on' }));

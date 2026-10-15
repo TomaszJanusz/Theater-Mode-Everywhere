@@ -4,9 +4,9 @@ import {
 } from '../src/appearance-preferences';
 import { languageRuntime } from '../src/i18n-runtime';
 import { t } from '../src/i18n';
-import { createChoiceGrid } from './choice-grid';
+import { createCombobox } from './combobox';
 
-/** Settings owns persistence; the shared grid owns rendering and keyboard behavior. */
+/** Settings owns persistence; the shared combobox owns rendering and keyboard behavior. */
 export function setupAppearanceChoices(): () => void {
   let disposed = false;
   const bindings = [
@@ -14,7 +14,7 @@ export function setupAppearanceChoices(): () => void {
     { key: REDUCE_TRANSPARENCY_STORAGE_KEY, resolve: resolveReduceTransparency }
   ].map(binding => ({
     ...binding, value: binding.resolve(undefined), changed: false,
-    grid: createChoiceGrid(document.getElementById(`${binding.key}-grid`)!, APPEARANCE_CHOICES.map(value => ({
+    menu: createCombobox(document.querySelector<HTMLButtonElement>(`#${binding.key}-combobox`)!, APPEARANCE_CHOICES.map(value => ({
       value,
       label: () => t(value === 'auto' ? 'appearanceAuto' : value === 'on' ? 'controlsVisibilityOn' : 'controlsVisibilityOff')
     })), async value => {
@@ -26,7 +26,7 @@ export function setupAppearanceChoices(): () => void {
     })
   }));
   const render = () => {
-    if (!disposed) for (const binding of bindings) binding.grid.render(binding.value);
+    if (!disposed) for (const binding of bindings) binding.menu.render(binding.value);
   };
   const onStorage = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
     if (disposed || area !== 'sync') return;
@@ -34,7 +34,7 @@ export function setupAppearanceChoices(): () => void {
       if (binding.key in changes) {
         binding.changed = true;
         binding.value = binding.resolve(changes[binding.key].newValue);
-        binding.grid.render(binding.value);
+        binding.menu.render(binding.value);
       }
     }
   };
@@ -51,5 +51,6 @@ export function setupAppearanceChoices(): () => void {
     disposed = true;
     chrome.storage.onChanged.removeListener(onStorage);
     stopLanguage();
+    for (const binding of bindings) binding.menu.destroy();
   };
 }

@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { it } from 'node:test';
 import { ACCENT_COLOR_OPTIONS } from './accentTheme';
 import { contrastRatio } from './contrast';
-import { chromium, firefox } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from './test-utils/test-browser';
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as typeof import('esbuild');
@@ -24,7 +24,7 @@ const bundle = esbuild.buildSync({ stdin: { contents: `
   };
   window.start = async (css) => {
     window.stopAppearance = observeAppearance(document.documentElement);
-    window.stopChoices = document.getElementById('highContrast-grid') ? setupAppearanceChoices() : () => {};
+    window.stopChoices = document.getElementById('highContrast-combobox') ? setupAppearanceChoices() : () => {};
     setPlayerUiCss(css);
     const root = getPlayerUiRoot();
     root.innerHTML += '<div class="theater-controls-wrapper visible"><button>Play</button><div class="theater-settings-menu"><span class="theater-settings-label">Player settings</span></div></div>';
@@ -42,6 +42,11 @@ const shadowCss = stylesheet('src/ui/shadow.css');
 const popupCss = stylesheet('popup/popup.css');
 const popupHtml = readFileSync('popup/popup.html', 'utf8').replace(/<script[\s\S]*?<\/script>/g, '').replace(/<link[^>]+>/g, '');
 const optionsHtml = readFileSync('options/options.html', 'utf8').replace(/<script[\s\S]*?<\/script>/g, '').replace(/<link[^>]+>/g, '');
+
+async function choose(page: Page, key: 'highContrast' | 'reduceTransparency', value: 'auto' | 'on' | 'off'): Promise<void> {
+  await page.locator(`#${key}-combobox`).click();
+  await page.locator(`#${key}-combobox-listbox [data-value=${value}]`).click();
+}
 
 function hexColor(css: string): string {
   const values = css.match(/[\d.]+/g)?.map(Number);
@@ -89,17 +94,24 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
       await page.evaluate(css => (window as unknown as { start(css: string): void }).start(css), shadowCss);
     }
     const [settings, secondSettings, popup] = pages;
-    assert.equal(await settings.locator('#highContrast-grid [aria-checked=true]').textContent(), 'Auto');
+    assert.equal(await settings.locator('#highContrast-combobox').textContent(), 'Auto');
     await settings.emulateMedia({ contrast: 'more' });
     const contrastEmulated = await settings.evaluate(() => matchMedia('(prefers-contrast: more)').matches);
-    if (!contrastEmulated) await settings.locator('#highContrast-grid [data-choice=on]').click();
+    if (!contrastEmulated) await choose(settings, 'highContrast', 'on');
     await settings.waitForFunction(() => document.documentElement.dataset.contrast === 'high');
     assert.equal(await settings.locator('#theater-everywhere-ui').getAttribute('data-contrast'), 'high');
-    await settings.locator('#highContrast-grid [data-choice=off]').click();
+    const contrastMenu = settings.locator('#highContrast-combobox');
+    await contrastMenu.press('Enter');
+    await contrastMenu.press('End');
+    assert.equal(await contrastMenu.textContent(), contrastEmulated ? 'Auto' : 'On', 'browsing does not save');
+    await contrastMenu.press('Escape');
+    await contrastMenu.press('Enter');
+    await contrastMenu.press('End');
+    await contrastMenu.press('Enter'); // Commit Off through the same persistence path as pointer selection.
     for (const page of pages) await page.waitForFunction(() => document.documentElement.dataset.contrast === 'normal');
-    await settings.locator('#highContrast-grid [data-choice=on]').click();
+    await choose(settings, 'highContrast', 'on');
     for (const page of pages) await page.waitForFunction(() => document.documentElement.dataset.contrast === 'high');
-    assert.equal(await secondSettings.locator('#highContrast-grid [data-choice=on]').getAttribute('aria-checked'), 'true');
+    assert.equal(await secondSettings.locator('#highContrast-combobox-listbox [data-value=on]').getAttribute('aria-selected'), 'true');
     assert.equal(await popup.locator('.status-card').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(24, 24, 27)');
     assert.equal(await popup.locator('body').evaluate(el => getComputedStyle(el).color), 'rgb(255, 255, 255)');
     assert.equal(await settings.locator('body').evaluate(el => getComputedStyle(el).color), 'rgb(255, 255, 255)');
@@ -112,16 +124,16 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
         { name: 'prefers-reduced-transparency', value: 'reduce' }
       ] });
       await settings.waitForFunction(() => document.documentElement.dataset.transparency === 'reduced');
-      await settings.locator('#reduceTransparency-grid [data-choice=off]').click();
+      await choose(settings, 'reduceTransparency', 'off');
       await settings.waitForFunction(() => document.documentElement.dataset.transparency === 'normal');
-      await settings.locator('#reduceTransparency-grid [data-choice=auto]').click();
+      await choose(settings, 'reduceTransparency', 'auto');
       await settings.waitForFunction(() => document.documentElement.dataset.transparency === 'reduced');
     }
     // The explicit override covers engines without media-feature emulation.
-    await settings.locator('#reduceTransparency-grid [data-choice=on]').click();
+    await choose(settings, 'reduceTransparency', 'on');
     for (const page of pages) await page.waitForFunction(() => document.documentElement.dataset.transparency === 'reduced');
     assert.equal(await settings.locator('.theater-settings-menu').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(24, 24, 27)');
-    await settings.locator('#highContrast-grid [data-choice=off]').click();
+    await choose(settings, 'highContrast', 'off');
     assert.equal(await settings.locator('.theater-controls-wrapper').evaluate(el => getComputedStyle(el, '::before').backgroundColor), 'rgb(24, 24, 27)');
     assert.equal(await settings.locator('.theater-caption-overlay-text').evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(1, 2, 3, 0.4)');
     assert.equal(await settings.locator('.theater-caption-overlay-text').evaluate(el => getComputedStyle(el).color), 'rgb(250, 217, 0)');
@@ -143,8 +155,8 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
           const colors = {
             text: style('body').color, background: style('body').backgroundColor,
             panel: style('.main-card').backgroundColor, secondary: style('.section-desc').color,
-            selectedText: style('#highContrast-grid .selected').color,
-            selected: style('#highContrast-grid .selected').backgroundColor,
+            selectedText: style('#highContrast-combobox-listbox [aria-selected=true]').color,
+            selected: style('#highContrast-combobox-listbox [aria-selected=true]').backgroundColor,
             accent: tokenColor('--accent-color'), foreground: tokenColor('--accent-text'), hover: tokenColor('--accent-hover'),
             border: tokenColor('--border-color'),
             badgeText: style('.te-new-badge').color, badge: style('.te-new-badge').backgroundColor,
@@ -184,17 +196,41 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
       }
     }
     if (engine === chromium && process.env.THEATER_APPEARANCE_RATIOS) writeFileSync(process.env.THEATER_APPEARANCE_RATIOS, JSON.stringify(ratios, null, 2));
-    await settings.locator('#highContrast-grid [data-choice=on]').click();
-    const selectedChoice = settings.locator('#highContrast-grid [data-choice=on]');
+    await choose(settings, 'highContrast', 'on');
+    const selectedChoice = settings.locator('#highContrast-combobox');
     await selectedChoice.focus();
     await selectedChoice.press('Tab');
     await settings.keyboard.press('Shift+Tab');
     assert.equal(await selectedChoice.evaluate(el => getComputedStyle(el).outlineWidth), '3px', 'focus remains distinct on a selected choice');
-    assert.equal(await selectedChoice.locator('.choice-label').evaluate(el => getComputedStyle(el).textDecorationLine), 'underline', 'selection is visible beyond its color');
+    await selectedChoice.press('Enter');
+    assert.equal(await settings.locator('#highContrast-combobox-listbox [aria-selected=true]').evaluate(el => getComputedStyle(el).textDecorationLine), 'underline', 'selection is visible beyond its color');
+    await selectedChoice.press('Escape');
+    await settings.setViewportSize({ width: 390, height: 844 });
+    for (const dir of ['ltr', 'rtl']) {
+      await settings.locator('html').evaluate((el, dir) => el.setAttribute('dir', dir), dir);
+      for (const key of ['highContrast', 'reduceTransparency']) {
+        const menu = settings.locator(`#${key}-combobox`);
+        await menu.scrollIntoViewIfNeeded();
+        const bounds = await menu.evaluate(el => {
+          const row = el.parentElement!.getBoundingClientRect(), control = el.getBoundingClientRect();
+          const info = el.parentElement!.querySelector('.feature-info')!.getBoundingClientRect();
+          return { contained: control.left >= row.left && control.right <= row.right, below: control.top >= info.bottom };
+        });
+        assert.deepEqual(bounds, { contained: true, below: true }, `${key}: narrow ${dir} row keeps the dropdown below its description`);
+        await menu.click();
+        const popupBounds = await settings.locator(`#${key}-combobox-listbox`).evaluate(el => {
+          const rect = el.getBoundingClientRect();
+          return rect.left >= 0 && rect.right <= innerWidth;
+        });
+        assert.equal(popupBounds, true, `${key}: narrow ${dir} dropdown stays in viewport`);
+        await menu.press('Escape');
+      }
+    }
     await settings.emulateMedia({ forcedColors: 'active' });
     assert.equal(await settings.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--appearance-ink')), '', 'forced colors retains browser ownership');
     await settings.emulateMedia({ forcedColors: 'none' });
-    await settings.evaluate(`window.stopRte(); window.stopChoices(); window.stopAppearance(); window.destroyPlayer(); window.destroyPlayer();`);
+    await settings.evaluate(`window.stopRte(); window.stopChoices(); window.stopChoices(); window.stopAppearance(); window.destroyPlayer(); window.destroyPlayer();`);
+    assert.equal(await settings.locator('#highContrast-combobox-listbox, #reduceTransparency-combobox-listbox').count(), 0, 'cleanup removes dropdown portals');
     assert.equal(await settings.evaluate('window.listenerCount()'), 0);
     await settings.emulateMedia({ contrast: 'no-preference' });
     assert.equal(await settings.locator('html').getAttribute('data-contrast'), null);
