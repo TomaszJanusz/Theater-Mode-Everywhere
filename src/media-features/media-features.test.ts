@@ -8,6 +8,7 @@ import {
   CAPTION_DOCK_RAISED_EDGE,
   CAPTION_DOCK_REST_BOTTOM,
   captionDockMotion,
+  raisedCaptionBandMin,
   raisedCaptionLineLimit,
   raisedCaptionRestBottom,
   raisedCaptionRowCount
@@ -1533,12 +1534,28 @@ describe('caption dock', () => {
     }), 800 - 700 + 12);
   });
 
+  it('raises for one line without reducing the caption line limit', () => {
+    assert.equal(raisedCaptionBandMin(), 57.8);
+    assert.equal(raisedCaptionBandMin(40), 60);
+    assert.equal(raisedCaptionBandMin(40, 10, 16), 66);
+    assert.equal(raisedCaptionBandMin(0), 20);
+    assert.equal(raisedCaptionLineLimit(60, 40), 2);
+    assert.equal(raisedCaptionLineLimit(0, 40), 2);
+    assert.equal(raisedCaptionLineLimit(60, 0), 2);
+    // A one-line band uses the existing edge clamp, including oversized cues.
+    for (const height of [52, 92, 132]) {
+      assert.equal(raisedCaptionRestBottom(60, height, 1000, 8, 48, raisedCaptionRowCount(height, 40)), 8);
+    }
+  });
+
   it('allows a third caption line only when the letterbox can hold it', () => {
     assert.equal(raisedCaptionLineLimit(100, 40), 2);
     assert.equal(raisedCaptionLineLimit(180, 40), 3);
     assert.equal(raisedCaptionLineLimit(50, 40), 2);
     assert.equal(raisedCaptionLineLimit(125, 37.8), 2);
     assert.equal(raisedCaptionLineLimit(140, 40), 3);
+    assert.equal(raisedCaptionLineLimit(139.9, 40), 2);
+    assert.equal(raisedCaptionLineLimit(140.1, 40), 3);
   });
 });
 

@@ -24,14 +24,14 @@ export const CAPTION_LINE_LIMIT_MAX = 3;
 /** Default `.theater-caption-overlay-text` line box: 28px font at 1.35 line-height. */
 export const CAPTION_DEFAULT_LINE_HEIGHT = 37.8;
 
-/** Smallest letterbox that holds the minimum caption block clear of the picture. */
+/** Smallest letterbox that holds one caption row clear of the picture, independent of the renderer's line limit. */
 export function raisedCaptionBandMin(
   lineHeight = CAPTION_DEFAULT_LINE_HEIGHT,
   edge = CAPTION_DOCK_RAISED_EDGE,
   paddingY = CAPTION_BLOCK_PADDING_Y
 ): number {
   if (!(lineHeight > 0)) return edge + paddingY;
-  return CAPTION_LINE_LIMIT_MIN * lineHeight + paddingY + edge;
+  return lineHeight + paddingY + edge;
 }
 
 /** Visual rows in a caption block, from its border-box height and the text line height. */

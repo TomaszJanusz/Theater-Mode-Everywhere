@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
+import { ownTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
@@ -19,6 +20,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
     const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium not installed'); return; }
     const browser = await chromium.launch({ headless: true });
+    ownTestBrowser(t, browser);
     try {
       const page = await browser.newPage({ viewport: { width: 900, height: 600 } });
       await page.setContent(`<video style="width:900px;height:600px"></video>
@@ -107,12 +109,36 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         await flush();
         const hiddenBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
         const visibilityScans = scans - afterInsertion;
-        Object.defineProperties(video, { videoWidth: { value: 1920 }, videoHeight: { value: 720 } });
+        // This band fits one default-sized row, but not the two-row minimum
+        // that previously gated Raised. Row limits and collision lifting stay intact.
+        const overlay = document.querySelector('.theater-caption-overlay') as HTMLElement;
+        const text = overlay.querySelector('span')!;
+        Object.defineProperties(video, {
+          videoWidth: { value: 900, configurable: true }, videoHeight: { value: 542, configurable: true }
+        });
+        overlay.style.height = '50px';
+        text.style.lineHeight = '38px';
+        controls.style.opacity = '0';
         document.documentElement.classList.add('theater-everywhere-picture-top');
         await flush();
         await flush();
+        const narrowBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
+        const narrowLineLimit = lineLimit;
+        obstacle.style.top = '540px';
+        obstacle.classList.add('visible');
+        await flush();
+        const narrowLiftedBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
+        obstacle.classList.remove('visible');
+        overlay.style.height = '126px';
+        await flush();
+        const narrowMultilineBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
+        overlay.style.height = '40px';
+        text.style.lineHeight = '20px';
+        controls.style.removeProperty('opacity');
+        Object.defineProperties(video, { videoWidth: { value: 1920 }, videoHeight: { value: 720 } });
+        await flush();
+        await flush();
         const raisedBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
-        const overlay = document.querySelector('.theater-caption-overlay') as HTMLElement;
         const beforeRows = scans;
         overlay.style.height = '80px';
         overlay.querySelector('span')!.textContent = 'Caption with more lines';
@@ -156,6 +182,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         obstacle.remove();
         await flush();
         return { queued, initial, stable, tickMeasurements, baseBottom, obstacleBottom, hiddenBottom, visibilityScans,
+          narrowBottom, narrowLineLimit, narrowLiftedBottom, narrowMultilineBottom,
           raisedBottom, multilineBottom, lineLimit, liftedTransition, restTransition, movingTransition, rowChangeScans,
           beforeNativeFrame, nativeBeforePaint, afterNativeFrame,
           afterExit: layouts - beforeExit, queuedAfterExit: frames.size };
@@ -167,6 +194,10 @@ describe('caption dock frame and cached geometry lifecycle', () => {
       assert.ok(Number.parseFloat(report.obstacleBottom) > Number.parseFloat(report.baseBottom), JSON.stringify(report));
       assert.equal(report.hiddenBottom, report.baseBottom);
       assert.equal(report.visibilityScans, 0);
+      assert.equal(report.narrowBottom, '8px');
+      assert.equal(report.narrowLineLimit, 2);
+      assert.equal(report.narrowLiftedBottom, '72px');
+      assert.equal(report.narrowMultilineBottom, '8px');
       assert.notEqual(report.multilineBottom, report.raisedBottom);
       assert.equal(report.lineLimit, 3);
       assert.equal(report.rowChangeScans, 0);
