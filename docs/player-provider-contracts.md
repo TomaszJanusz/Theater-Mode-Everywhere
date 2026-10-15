@@ -22,6 +22,10 @@ Providers that load captions in windows implement `prepareCaptionCueRefresh(id, 
 
 Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, and Crunchyroll native caption measurement lives in `providers/crunchyroll/host-surface.ts`. Native presentation remains available when a provider's data integration is disabled; the integration flag still controls its data adapter and host interactions.
 
+## Titles
+
+Adapters supply `getTitle()` and optional `observeTitle(onChange)`; `MediaFeaturesController` publishes the title chip for the current epoch and adapter, and drops notifications from a replaced adapter. A service adapter's title outranks the native adapter's. Without a service integration, the native adapter also falls back to page metadata: selection lives in `media-features/page-title.ts`, DOM reading and observation in `providers/native/page-title.ts`. A VideoObject must match the playing media, and a heading must be tied to it. A client-side navigation can change the URL before `<title>`, meta tags or the heading, so page values left over from the previous URL are rejected; scoped observers on those elements report the replacement during theater mode only.
+
 ## Playback and presentation
 
 `playback-surface.ts` defines the player's playback surface and capabilities. `playback-window.ts` handles shared timeline geometry, seek clamping, and pending-seek state. Host clocks and seek dispatch policies live in `providers/timeline/`. Controls consume the generic clock reader and observer rather than reading service-specific datasets or events.
