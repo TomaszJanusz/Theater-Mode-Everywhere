@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "更新亮点"
   },
-  "whatsNewLead": {
-    "message": "影院模式更舒适：新增控制功能，并支持更多视频服务。"
-  },
-  "whatsNewItemChat": {
-    "message": "将 YouTube 和 Twitch 聊天显示在视频旁边或下方，并可在播放器中显示或隐藏。"
-  },
-  "whatsNewItemLayout": {
-    "message": "选择居中或上移画面；上移后字幕可显示在视频下方的黑色区域。"
-  },
-  "whatsNewItemControls": {
-    "message": "让控制栏始终可见，在可用时切换上一个或下一个视频，并在播放器中查看标题。"
-  },
-  "whatsNewItemAudio": {
-    "message": "支持音频处理时，可在播放器设置中调整人声、响亮声音、低音和音量。"
-  },
-  "whatsNewItemServices": {
-    "message": "Rich Theater Experience 新增 Bilibili、Bilibili.tv、腾讯视频 / WeTV、Crunchyroll 和 Netflix 集成，并在支持的服务中提供跳过按钮。"
-  },
-  "whatsNewThanks": {
-    "message": "感谢 @liango2 提议始终显示控制栏，也感谢 Denis Tyscenko 提议自动开启影院模式。"
-  },
   "dialogAcknowledge": {
     "message": "知道了"
   },

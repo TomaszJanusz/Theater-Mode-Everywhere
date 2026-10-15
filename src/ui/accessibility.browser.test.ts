@@ -27,7 +27,7 @@ const OPTIONS = build({
 
 async function mockStorage(page: Page): Promise<void> {
   await page.addInitScript({ content: `
-    localStorage.setItem('whatsNewAcknowledgedId', 'player-layout-and-integrations');
+    localStorage.setItem('whatsNewAcknowledgedId', '1.6');
     const saved = { keepControlsVisible: true, blacklist: ['example.com', 'second.com'] };
     const changed = [];
     const storage = {

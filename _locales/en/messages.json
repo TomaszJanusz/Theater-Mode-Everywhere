@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "Update highlights"
   },
-  "whatsNewLead": {
-    "message": "A more comfortable theater mode, with new controls and more supported services."
-  },
-  "whatsNewItemChat": {
-    "message": "Keep YouTube and Twitch chat beside or below the video, and show or hide it from the player."
-  },
-  "whatsNewItemLayout": {
-    "message": "Choose a centered or raised picture; raised captions use the black space below widescreen video."
-  },
-  "whatsNewItemControls": {
-    "message": "Keep controls visible, switch to the previous or next video when available, and see the title in the player."
-  },
-  "whatsNewItemAudio": {
-    "message": "Adjust dialogue, loud sounds, bass and volume from Player settings when audio processing is available."
-  },
-  "whatsNewItemServices": {
-    "message": "New Rich Theater Experience support for Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix, plus service skip buttons where available."
-  },
-  "whatsNewThanks": {
-    "message": "Thanks to @liango2 for suggesting always-visible controls, and Denis Tyscenko for suggesting automatic theater mode."
-  },
   "dialogAcknowledge": {
     "message": "Got it"
   },

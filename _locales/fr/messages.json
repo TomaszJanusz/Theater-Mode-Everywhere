@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "Les points forts de la mise à jour"
   },
-  "whatsNewLead": {
-    "message": "Un mode cinéma plus confortable, avec de nouvelles commandes et davantage de services pris en charge."
-  },
-  "whatsNewItemChat": {
-    "message": "Gardez le chat YouTube et Twitch à côté ou sous la vidéo, et affichez-le ou masquez-le depuis le lecteur."
-  },
-  "whatsNewItemLayout": {
-    "message": "Choisissez une image centrée ou relevée ; les sous-titres relevés utilisent la bande noire sous la vidéo."
-  },
-  "whatsNewItemControls": {
-    "message": "Gardez les commandes visibles, passez à la vidéo précédente ou suivante et voyez le titre dans le lecteur."
-  },
-  "whatsNewItemAudio": {
-    "message": "Réglez les voix, les sons forts, les basses et le volume dans les paramètres du lecteur lorsque le traitement audio est disponible."
-  },
-  "whatsNewItemServices": {
-    "message": "Nouvelles intégrations Rich Theater Experience pour Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll et Netflix, avec des boutons pour passer les séquences lorsque le service le permet."
-  },
-  "whatsNewThanks": {
-    "message": "Merci à @liango2 pour l'idée des commandes toujours visibles et à Denis Tyscenko pour celle du mode cinéma automatique."
-  },
   "dialogAcknowledge": {
     "message": "Compris"
   },
