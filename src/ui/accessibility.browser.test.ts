@@ -184,6 +184,43 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
       });
     });
 
+    it('lets a second Escape leave theater after the slider panel has been closed with Escape', { timeout: 30_000 }, async t => {
+      await testPage(t, async page => {
+        await playerPage(page);
+        await page.locator('.volume-btn').focus();
+        await page.locator('.theater-volume-slider').focus();
+        await page.keyboard.press('Escape');
+        assert.equal(await focused(page, '.volume-btn'), true);
+        assert.equal(await page.locator('.theater-volume-panel').evaluate((el: HTMLElement) => el.inert), true);
+        assert.equal(await page.locator('#theater-everywhere-ui').count(), 1, 'the first Escape only closes the panel');
+        await page.keyboard.press('Escape');
+        await page.locator('#theater-everywhere-ui').waitFor({ state: 'detached' });
+      });
+    });
+
+    it('announces a repeated identical status message again by clearing the region first', { timeout: 30_000 }, async t => {
+      await testPage(t, async page => {
+        await playerPage(page);
+        const text = () => page.evaluate(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent ?? '');
+        await page.locator('.play-pause-btn').focus();
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => (document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent ?? '') !== '');
+        const first = await text();
+        const sequence = await page.evaluate(async () => {
+          const status = document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!;
+          const seen: string[] = [];
+          const observer = new MutationObserver(() => seen.push(status.textContent ?? ''));
+          observer.observe(status, { childList: true, subtree: true, characterData: true });
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }));
+          await new Promise(resolve => setTimeout(resolve, 200));
+          observer.disconnect();
+          return seen;
+        });
+        assert.equal(sequence[0], '', 'the region is cleared before the repeated message');
+        assert.equal(sequence.at(-1), first, 'the latest message is restored afterwards');
+      });
+    });
+
     it('uses named caption/settings dialogs, traps modal focus, restores triggers, and limits announcements to feedback', { timeout: 30_000 }, async t => {
       await testPage(t, async page => {
         await playerPage(page);
@@ -232,6 +269,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.locator('.play-pause-btn').focus();
         await page.keyboard.press('Shift+L');
         const status = page.locator('#theater-announcements');
+        await page.waitForFunction(() => /Raised/.test(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent ?? ''));
         assert.match(await status.ariaSnapshot(), /status: Raised/);
         const announcement = await status.textContent();
         await page.locator('video').evaluate((video: HTMLVideoElement) => { video.currentTime = 0.5; video.dispatchEvent(new Event('timeupdate')); });

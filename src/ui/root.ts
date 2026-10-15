@@ -78,6 +78,7 @@ export function queryPlayerUiAll<T extends Element>(selector: string): T[] {
 }
 
 export function destroyPlayerUi(): void {
+  cancelPendingAnnouncement();
   hostEl?.remove();
   hostEl = null;
   shadow = null;
@@ -92,8 +93,26 @@ export function eventPathMatches(event: Event, selector: string): boolean {
   return event.composedPath().some((entry) => entry instanceof Element && entry.matches(selector));
 }
 
-/** User feedback only; playback ticks never write to the live region. */
+let pendingAnnouncement: number | undefined;
+
+function cancelPendingAnnouncement(): void {
+  if (pendingAnnouncement === undefined) return;
+  clearTimeout(pendingAnnouncement);
+  pendingAnnouncement = undefined;
+}
+
+/**
+ * User feedback only; playback ticks never write to the live region. The region is
+ * cleared first and the latest text restored in a later task, because a screen reader
+ * may ignore a repeated identical message (two quick seeks) as "no change".
+ */
 export function announcePlayerStatus(message: string): void {
   const status = peekPlayerUiRoot()?.getElementById('theater-announcements');
-  status?.replaceChildren(document.createTextNode(message));
+  if (!status) return;
+  cancelPendingAnnouncement();
+  status.replaceChildren();
+  pendingAnnouncement = window.setTimeout(() => {
+    pendingAnnouncement = undefined;
+    status.replaceChildren(document.createTextNode(message));
+  }, 50);
 }

@@ -209,7 +209,8 @@ export function bindSliderPopover(host: HTMLElement, panel: HTMLElement, scope: 
   scope.listen(host, 'pointerleave', () => { hovered = false; sync(); });
   scope.listen(host, 'focusin', sync);
   scope.listen(host, 'keydown', (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') return;
+    // Only an open panel owns Escape; once it is closed with focus left on the button, Escape exits theater again.
+    if (event.key !== 'Escape' || panel.inert) return;
     event.preventDefault();
     event.stopPropagation();
     host.querySelector('button')?.focus();

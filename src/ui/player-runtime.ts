@@ -1354,7 +1354,12 @@ function initialize(): void {
     if (isEditable) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
-    if (activeEl?.closest('.theater-volume-container, .theater-speed-container') && event.key === 'Escape') return false;
+    if (event.key === 'Escape') {
+      // The slider panel consumes Escape only while it is open (see bindSliderPopover).
+      const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')
+        ?.querySelector<HTMLElement>('.theater-volume-panel, .theater-speed-panel');
+      if (sliderPanel && !sliderPanel.inert) return false;
+    }
     if (activeEl?.matches('.theater-scrubber-container')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
     if (theaterDialogOpen()) return false;
