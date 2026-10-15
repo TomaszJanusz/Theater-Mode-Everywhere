@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Mostrar a etiqueta “Novidade” nos recursos adicionados recentemente. Desativar esta opção marca a atualização atual como vista."
+  },
+  "highContrastTitle": {
+    "message": "Alto contraste"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Reduzir transparência"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto segue a configuração do sistema."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

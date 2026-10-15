@@ -1,6 +1,11 @@
 import { translateMessage } from './i18n-runtime';
 
 export const FALLBACK_MESSAGES: Record<string, string> = {
+  highContrastTitle: "High contrast",
+  reduceTransparencyTitle: "Reduce transparency",
+  appearanceAutoDescription: "Auto follows your system setting.",
+  appearanceAuto: "Auto",
+
   "sponsorBlockMarkersTitle": "SponsorBlock support",
   "sponsorBlockMarkersDescription": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors.",
   "sponsorBlockCategory_sponsor": "Sponsor",

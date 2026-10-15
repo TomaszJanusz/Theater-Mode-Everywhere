@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Mostra l’etichetta «Novità» per le funzionalità aggiunte di recente. Disattivando questa opzione, l’aggiornamento attuale viene segnato come visto."
+  },
+  "highContrastTitle": {
+    "message": "Contrasto elevato"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Riduci trasparenza"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto segue le impostazioni di sistema."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

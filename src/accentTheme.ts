@@ -1,3 +1,4 @@
+import { accentForeground, contrastSafeAccent } from './contrast';
 export const ACCENT_COLOR_STORAGE_KEY = 'accentColor';
 
 export const ACCENT_COLOR_PRESETS = [
@@ -19,22 +20,21 @@ export type AccentColorOption = {
   preset: AccentColorPreset;
   label: string;
   swatch: string;
-  foreground: string;
 };
 
 export const DEFAULT_ACCENT_COLOR: AccentColorPreset = 'system';
 
 export const ACCENT_COLOR_OPTIONS: AccentColorOption[] = [
-  { preset: 'system', label: 'System', swatch: 'AccentColor', foreground: 'AccentColorText' },
-  { preset: 'teal', label: 'Teal', swatch: '#00b894', foreground: '#ffffff' },
-  { preset: 'blue', label: 'Blue', swatch: '#37adff', foreground: '#0b1020' },
-  { preset: 'green', label: 'Green', swatch: '#51cd00', foreground: '#0b1020' },
-  { preset: 'yellow', label: 'Yellow', swatch: '#ffcb00', foreground: '#18181b' },
-  { preset: 'orange', label: 'Orange', swatch: '#ff9f00', foreground: '#18181b' },
-  { preset: 'red', label: 'Red', swatch: '#ff613d', foreground: '#ffffff' },
-  { preset: 'pink', label: 'Pink', swatch: '#ff4ad8', foreground: '#ffffff' },
-  { preset: 'purple', label: 'Purple', swatch: '#af51f5', foreground: '#ffffff' },
-  { preset: 'gray', label: 'Gray', swatch: '#7c7c7d', foreground: '#ffffff' },
+  { preset: 'system', label: 'System', swatch: 'AccentColor' },
+  { preset: 'teal', label: 'Teal', swatch: '#00b894' },
+  { preset: 'blue', label: 'Blue', swatch: '#37adff' },
+  { preset: 'green', label: 'Green', swatch: '#51cd00' },
+  { preset: 'yellow', label: 'Yellow', swatch: '#ffcb00' },
+  { preset: 'orange', label: 'Orange', swatch: '#ff9f00' },
+  { preset: 'red', label: 'Red', swatch: '#ff613d' },
+  { preset: 'pink', label: 'Pink', swatch: '#ff4ad8' },
+  { preset: 'purple', label: 'Purple', swatch: '#af51f5' },
+  { preset: 'gray', label: 'Gray', swatch: '#7c7c7d' },
 ];
 
 export function isAccentColorPreset(value: unknown): value is AccentColorPreset {
@@ -51,6 +51,9 @@ export function getAccentColorOption(preset: AccentColorPreset): AccentColorOpti
 
 export function applyAccentColorPreset(target: HTMLElement, preset: AccentColorPreset): void {
   const option = getAccentColorOption(preset);
+  const safe = contrastSafeAccent((option.preset === 'system' ? getAccentColorOption('purple') : option).swatch);
+  target.style.setProperty('--contrast-accent', safe);
+  target.style.setProperty('--contrast-accent-text', accentForeground(safe));
   const supportsNativeAccent =
     typeof CSS !== 'undefined' &&
     typeof CSS.supports === 'function' &&
@@ -66,6 +69,8 @@ export function applyAccentColorPreset(target: HTMLElement, preset: AccentColorP
 
   const fallback = option.preset === 'system' ? getAccentColorOption('purple') : option;
   target.style.setProperty('--accent-color', fallback.swatch);
-  target.style.setProperty('--accent-text', fallback.foreground);
-  target.style.setProperty('--accent-hover', `color-mix(in srgb, ${fallback.swatch} 85%, black)`);
+  const foreground = accentForeground(fallback.swatch);
+  target.style.setProperty('--accent-text', foreground);
+  // Hover moves away from the foreground so filled controls retain text contrast.
+  target.style.setProperty('--accent-hover', `color-mix(in srgb, ${fallback.swatch} 85%, ${foreground === '#ffffff' ? 'black' : 'white'})`);
 }

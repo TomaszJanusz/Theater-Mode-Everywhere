@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "为最近添加的功能显示“新”标记。关闭此选项会将当前更新标记为已读。"
+  },
+  "highContrastTitle": {
+    "message": "高对比度"
+  },
+  "reduceTransparencyTitle": {
+    "message": "降低透明度"
+  },
+  "appearanceAutoDescription": {
+    "message": "自动模式遵循系统设置。"
+  },
+  "appearanceAuto": {
+    "message": "自动"
   }
 }

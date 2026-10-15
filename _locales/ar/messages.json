@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "إظهار شارة «جديد» للميزات المضافة مؤخرًا. يؤدي إيقاف هذا الخيار إلى وضع علامة على التحديث الحالي بأنه تمت مشاهدته."
+  },
+  "highContrastTitle": {
+    "message": "تباين عالٍ"
+  },
+  "reduceTransparencyTitle": {
+    "message": "تقليل الشفافية"
+  },
+  "appearanceAutoDescription": {
+    "message": "يتبع الوضع التلقائي إعداد النظام."
+  },
+  "appearanceAuto": {
+    "message": "تلقائي"
   }
 }

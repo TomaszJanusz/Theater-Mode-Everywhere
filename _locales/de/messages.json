@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Kürzlich hinzugefügte Funktionen mit „Neu“ kennzeichnen. Beim Ausschalten wird das aktuelle Update als gesehen markiert."
+  },
+  "highContrastTitle": {
+    "message": "Hoher Kontrast"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Transparenz reduzieren"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto folgt deiner Systemeinstellung."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

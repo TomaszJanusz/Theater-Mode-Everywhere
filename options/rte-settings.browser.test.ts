@@ -9,7 +9,7 @@ import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { LANGUAGES } from '../src/language';
 
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
-const css = readFileSync(new URL('./options.css', import.meta.url), 'utf8').replace("@import '../src/settings-brand.css';", readFileSync(new URL('../src/settings-brand.css', import.meta.url), 'utf8'));
+const css = buildSync({ entryPoints: [new URL('./options.css', import.meta.url).pathname], bundle: true, write: false }).outputFiles[0].text;
 const catalogs = Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))]));
 const bundle = (empty = false) => buildSync({
   stdin: { contents: `

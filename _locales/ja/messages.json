@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "最近追加された機能に「新機能」バッジを表示します。オフにすると、現在のアップデートは確認済みになります。"
+  },
+  "highContrastTitle": {
+    "message": "ハイコントラスト"
+  },
+  "reduceTransparencyTitle": {
+    "message": "透明度を下げる"
+  },
+  "appearanceAutoDescription": {
+    "message": "自動ではシステムの設定に従います。"
+  },
+  "appearanceAuto": {
+    "message": "自動"
   }
 }

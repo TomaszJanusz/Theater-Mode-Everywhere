@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
 
-const css = readFileSync(path.join(__dirname, 'options.css'), 'utf8').replace(/^@import.*$/m, '');
+const css = buildSync({ entryPoints: [path.join(__dirname, 'options.css')], bundle: true, write: false }).outputFiles[0].text;
 const bundle = buildSync({
   stdin: { contents: `import { createCombobox } from './combobox';
     import { LANGUAGES } from '../src/language';

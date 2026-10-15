@@ -1,3 +1,5 @@
+import { setupAppearanceChoices } from './appearance-choices';
+import { observeDocumentAppearance } from '../src/appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
 import { createCombobox } from './combobox';
 import { createChoiceGrid } from './choice-grid';
@@ -61,6 +63,7 @@ function configurePrivacyThingLogo(): void {
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
+observeDocumentAppearance();
 
 function safeGetStorage(keys: string | string[]): Promise<any> {
   return new Promise((resolve) => {
@@ -108,6 +111,8 @@ async function init() {
   const initialSettings = await initialSettingsPromise;
   await languageRuntime.set(initialSettings[LANGUAGE_STORAGE_KEY], languageRevision);
   localizeDocument();
+  const stopAppearanceChoices = setupAppearanceChoices();
+  window.addEventListener('unload', stopAppearanceChoices, { once: true });
   await highlights.ready;
   highlights.render();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
