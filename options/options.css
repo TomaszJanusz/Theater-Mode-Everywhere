@@ -1693,106 +1693,109 @@ body.te-dialog-open {
   .card-heading-inner { position: sticky; top: 16px; }
 }
 .rte-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* Brand color lives on the tile alone: the surface glows in from the rim in the
+   service's hues over a dark base, and its static ring carries the same hues.
+   rte-colors.ts derives every per-service property from the palette. */
 .rte-tile {
-  display: flex; flex-direction: column; gap: 12px;
-  border: 1px solid var(--border-color); border-radius: 10px;
-  background: #202023; min-width: 0; position: relative; isolation: isolate; overflow: clip;
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  border: 1px solid transparent; border-radius: 12px;
+  background: var(--rte-background);
+  box-shadow: var(--rte-rim);
+  transition: box-shadow 300ms ease-out;
 }
+.rte-tile:has(input:not(:checked)) {
+  background: var(--rte-background-off);
+  box-shadow: var(--rte-rim-off);
+}
+.rte-tile[hidden] { display: none; }
+.rte-tile > * { position: relative; z-index: 1; }
+.rte-tile:has(:focus-visible) { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 .rte-control {
   display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 10px;
   padding: 16px 16px 0; flex: 1; align-content: start; cursor: pointer;
 }
-.rte-tile:has(input:checked) {
-  border-color: transparent;
-  background: var(--rte-tint) padding-box, linear-gradient(#202023, #202023) padding-box, var(--rte-border) border-box;
+.rte-name { text-align: match-parent; font-size: 17px; font-weight: 650; line-height: 1.3; align-self: center; color: var(--text-primary); }
+/* The standard switch; a dark ring separates it from the colored surface. */
+.rte-tile .toggle-switch { align-self: center; border-radius: 11px; box-shadow: 0 0 0 2px var(--bg-color); }
+.rte-badges { display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
+/* Dark glass over the brand surface: the page black, translucent, never a grey pill. */
+.rte-badge {
+  font-size: 11px; padding: 3px 8px; border-radius: 20px; color: #e4e4e7;
+  background: color-mix(in srgb, var(--bg-color) 70%, transparent);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }
-.rte-gradient:has(input:checked) {
-  background-size: 200% 200%, 100% 100%, 100% 100%;
-  background-position: 0% 50%, center, center;
-  transition: background-position 700ms ease-out;
+.rte-badge.is-matching {
+  color: var(--text-primary); outline: 1px solid var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 30%, color-mix(in srgb, var(--bg-color) 70%, transparent));
 }
-.rte-gradient:has(input:checked):is(:hover, :focus-within) { background-position: 100% 50%, center, center; }
-.rte-tile:has(:focus-visible) { outline: 2px solid var(--service-color); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) {
-  .rte-gradient:has(input:checked) { transition: none; }
-  .rte-gradient:has(input:checked):is(:hover, :focus-within) { background-position: 0% 50%, center, center; }
-}
+.rte-note { grid-column: 1 / -1; color: #d4d4d8; font-size: 11px; line-height: 1.5; }
 .rte-details-toggle {
   align-self: flex-start; margin: 0 16px 16px; padding: 0; border: 0; background: transparent;
-  color: var(--text-secondary); font: inherit; font-size: 12px; text-decoration: underline;
+  color: #d4d4d8; font: inherit; font-size: 12px; text-decoration: underline;
   text-underline-offset: 3px; cursor: pointer;
 }
-.rte-details { margin: -4px 16px 16px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
-.rte-name { text-align: match-parent; font-size: 14px; font-weight: 600; align-self: center; }
-.rte-badges { display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
-.rte-badge { font-size: 11px; padding: 3px 7px; border-radius: 20px; background: #303035; color: #d4d4d8; }
-.rte-badge.is-matching { background: color-mix(in srgb, var(--accent-color) 22%, #303035); color: var(--text-primary); outline: 1px solid var(--accent-color); }
-.rte-note { grid-column: 1 / -1; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
-.rte-tile:has(input:not(:checked)) .rte-name,
-.rte-tile:has(input:not(:checked)) .rte-badge { color: var(--text-secondary); }
-.rte-tile:has(input:not(:checked)) .rte-badge { background: #27272a; }
-.rte-tile .toggle-switch input:checked + .toggle-slider { background: var(--service-color); border-color: var(--service-color); }
-.rte-tile .toggle-slider::before { background: #e4e4e7; }
+.rte-details { margin: -4px 16px 16px; color: #d4d4d8; font-size: 12px; line-height: 1.5; }
+.rte-details h3 { font-size: 12px; color: var(--text-primary); margin-bottom: 6px; }
+.rte-tile:has(input:not(:checked)) .rte-name { color: #d4d4d8; }
+.rte-tile:has(input:not(:checked)) :is(.rte-badge:not(.is-matching), .rte-note, .rte-details, .rte-details-toggle) { color: var(--text-secondary); }
 .rte-master-row, .rte-master { display: flex; align-items: center; gap: 10px; }
 .rte-master-row { justify-content: space-between; flex-wrap: wrap; }
 .rte-master { cursor: pointer; font-size: 14px; font-weight: 600; }
 .rte-master input { width: 18px; height: 18px; accent-color: var(--accent-color); }
 #rte-count, #rte-shown, #rte-empty { color: var(--text-secondary); font-size: 12px; }
 #rte-shown { margin: 0; }
-#rte-filter-label { font-size: 12px; font-weight: 600; margin: 10px 0; }
+.rte-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; margin: 10px 0; }
+#rte-filter-label { font-size: 12px; font-weight: 600; }
+/* A compact secondary button, distinct from the filter chips below it. */
+#rte-clear { height: 28px; padding: 0 10px; font-size: 12px; border-color: #52525b; border-radius: 6px; }
+#rte-clear[hidden] { display: none; }
 .rte-filter-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
-.rte-filter-buttons button, #rte-clear {
+.rte-filter-buttons button {
   font: inherit; font-size: 12px; color: var(--text-secondary); cursor: pointer;
   border: 1px solid #52525b; border-radius: 16px; padding: 5px 9px; background: #202023;
 }
 .rte-filter-buttons button[aria-pressed="true"] { border-color: var(--accent-color); color: var(--text-primary); background: color-mix(in srgb, var(--accent-color) 16%, #202023); }
-#rte-clear { margin-top: 10px; }
 .rte-filter-buttons button:focus-visible, #rte-clear:focus-visible, .rte-master:has(:focus-visible) { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 @media (max-width: 560px) { .rte-tiles { grid-template-columns: 1fr; } }
 
-.rte-tile[hidden] { display: none; }
-
-.rte-tile .toggle-slider { border-color: #85858f; }
-.rte-tile .toggle-switch input:checked + .toggle-slider::before { background: #18181b; }
-
-.rte-details h3 { font-size: 12px; color: var(--text-primary); margin-bottom: 6px; }
-
-/* Decoration stays below controls/text, clipped to the tile. Future contrast and
-   transparency modes can remove every decoration with .rte-tile::before. */
-.rte-tile > * { position: relative; z-index: 1; }
-.rte-tile .rte-note, .rte-tile .rte-details, .rte-tile .rte-details-toggle { color: #d4d4d8; }
-.rte-tile:has(input:not(:checked)) .rte-note,
-.rte-tile:has(input:not(:checked)) .rte-details,
-.rte-tile:has(input:not(:checked)) .rte-details-toggle { color: #a1a1aa; }
-.rte-tile[data-decoration]::before { content: ''; position: absolute; z-index: 0; pointer-events: none; }
-.rte-tile[data-decoration="stripes"]::before {
-  inset: 10% -12% -20% 35%; background: var(--rte-stripes);
-  mask-image: linear-gradient(135deg, transparent 25%, #000 100%);
-  transform: translateX(16px) scaleY(.7); transform-origin: bottom;
-  opacity: .04; transition: transform 750ms ease-out, opacity 750ms ease-out;
+/* Animated border, adapted from Privacy Thing's animated accent border: a
+   masked conic-gradient ring whose angle is a registered property, so the
+   orbit costs no layout and runs only while a tile is hovered or has keyboard
+   focus. The boost is an additive one-turn transition over the steady orbit:
+   it pushes the comets fast on entry and, after the dwell, leaves the calmer
+   steady orbit. On leave the frozen arc fades out first; only then does the
+   boost rewind a full turn (an identical angle), so nothing visibly jumps.
+   The ring stays on ::before alone, so the planned high-contrast and
+   reduced-transparency modes can drop the motion with one override. */
+@property --te-border-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --te-border-boost { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.te-animated-border {
+  --te-border-width: 2px;
+  --te-border-orbit-duration: 9s;
+  --te-border-boost-duration: 1.8s;
+  --te-border-boost-easing: cubic-bezier(0.18, 0.52, 0.3, 1);
+  --te-border-fade-duration: 450ms;
+  position: relative; isolation: isolate;
 }
-.rte-tile[data-decoration="stripes"]:has(input:checked):is(:hover, :focus-within)::before {
-  transform: translateX(-12px) scaleY(1); opacity: .22;
+.te-animated-border::before {
+  content: ''; position: absolute; inset: -1px; z-index: 0; pointer-events: none;
+  padding: var(--te-border-width); border-radius: inherit;
+  background: conic-gradient(from calc(var(--te-border-angle) + var(--te-border-boost)), var(--te-border-stops));
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  animation: te-border-orbit var(--te-border-orbit-duration) linear infinite paused;
+  transition: opacity var(--te-border-fade-duration) ease-out, --te-border-boost 0s var(--te-border-fade-duration);
 }
-.rte-tile[data-decoration="arc"]::before {
-  width: 230px; height: 160px; inset-inline-end: -30px; top: -45px;
-  border-radius: 50%; background: var(--rte-arc);
-  mask-image: radial-gradient(ellipse at center, transparent 65%, #000 66% 68%, transparent 69%);
-  transform: rotate(-85deg) translate(-12px, 12px); opacity: 0;
+.te-animated-border:is(:hover, :has(:focus-visible))::before {
+  --te-border-boost: 360deg;
+  opacity: 1;
+  animation-play-state: running;
+  transition: opacity 200ms ease-out, --te-border-boost var(--te-border-boost-duration) var(--te-border-boost-easing);
 }
-/* Assume a restrained 1.1s, one-shot intro-like sweep, with no glow or loop. */
-.rte-tile[data-decoration="arc"]:has(input:checked):is(:hover, :focus-within)::before {
-  animation: rte-arc-sweep 1100ms ease-out both;
-}
-@keyframes rte-arc-sweep {
-  0% { transform: rotate(-85deg) translate(-12px, 12px); opacity: 0; }
-  55% { opacity: .24; }
-  100% { transform: rotate(35deg) translate(0, 0); opacity: .08; }
-}
-.rte-tile:has(input:not(:checked))::before { opacity: 0; }
+.rte-tile:has(input:not(:checked)):is(:hover, :has(:focus-visible))::before { opacity: .6; }
+@keyframes te-border-orbit { to { --te-border-angle: 360deg; } }
 @media (prefers-reduced-motion: reduce) {
-  .rte-tile::before { display: none; animation: none !important; transition: none !important; }
-  .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
+  /* The static ring on the tile remains; no orbit and no fade. */
+  .te-animated-border::before { display: none; }
+  .rte-tile, .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
 }
-.rte-tile { border-color: #71717a; }
-.rte-tile .toggle-switch { border-radius: 11px; box-shadow: 0 0 0 2px #141414; }

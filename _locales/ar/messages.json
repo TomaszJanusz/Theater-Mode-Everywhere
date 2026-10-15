@@ -960,7 +960,7 @@
     "message": "لا توجد خدمة توفر كل الميزات المحددة."
   },
   "rteClear": {
-    "message": "مسح"
+    "message": "مسح عامل التصفية"
   },
   "rteShown": {
     "message": "عرض $count$ من $total$ خدمات",

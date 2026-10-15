@@ -35,12 +35,9 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     const tile = document.createElement('div');
     const label = document.createElement('label');
     label.className = 'rte-control';
-    tile.className = 'rte-tile';
+    tile.className = 'rte-tile te-animated-border';
     tile.dataset.provider = provider.id;
     for (const [key, value] of Object.entries(serviceColorProperties(provider))) tile.style.setProperty(key, value);
-    tile.classList.toggle('rte-gradient', Boolean(provider.brand.secondary || provider.brand.tile));
-    if (provider.brand.stripes) tile.dataset.decoration = 'stripes';
-    else if (provider.brand.decoration) tile.dataset.decoration = provider.brand.decoration;
     const name = document.createElement('bdi');
     name.className = 'rte-name';
     name.id = `rte-name-${provider.id}`;

@@ -278,7 +278,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteCapabilityThumbnails: "Thumbnails",
   rteCapabilityQuickActions: "Quick actions",
   rteEmpty: "No service has all the selected capabilities.",
-  rteClear: "Clear",
+  rteClear: "Clear filter",
   rteShown: "$1 of $2 services shown",
   rteNoteYoutube: "Depends on the video; ad skip and queue navigation when available.",
   rteNoteVimeo: "Chapters and previews when provided; next in showcases.",

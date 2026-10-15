@@ -960,7 +960,7 @@
     "message": "선택한 모든 기능을 제공하는 서비스가 없습니다."
   },
   "rteClear": {
-    "message": "초기화"
+    "message": "필터 초기화"
   },
   "rteShown": {
     "message": "$total$개 중 $count$개 서비스 표시",

@@ -8,6 +8,7 @@ import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
 import { VimeoAdapter } from '../media-features/vimeo-adapter';
 import { NetflixAdapter } from '../media-features/netflix-adapter';
+import { TILE_LEVELS, brandRoles, hexRgb, luminance, over, tileGlows } from '../../options/rte-colors';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
 const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
@@ -100,34 +101,40 @@ describe('provider capability declarations', () => {
     assert.deepEqual(await NetflixAdapter.prototype.getChapters(), []);
   });
 
-  it('keeps UI tracks and the specified tinted borders above 3:1 on the dark gradient', () => {
-    const rgb = (hex: string) => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
-    const mix = (a: number[], b: number[], fraction: number) => a.map((value, i) => fraction * value + (1 - fraction) * b[i]);
-    const luminance = (color: number[]) => color.reduce((sum, channel, i) => {
-      const c = channel / 255;
-      return sum + [0.2126, 0.7152, 0.0722][i] * (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-    }, 0);
-    const contrast = (a: number[], b: number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+  it('declares the specified brand palettes in order', () => {
+    const palettes: Record<string, string[]> = {
+      bilibili: ['#06AEEC', '#FFFFFF'],
+      bilibiliIntl: ['#06AEEC', '#FFFFFF'],
+      crunchyroll: ['#FF640C', '#272727'],
+      disney: ['#091C2A', '#2EB3BF', '#186A7C'],
+      netflix: ['#E50914', '#B20710', '#141414', '#1F1F1F'],
+      patreon: ['#F06352', '#F7F7F7', '#012B47'],
+      tencent: ['#FF8800', '#0098FF', '#43E702', '#FFFFFF'],
+      twitch: ['#A441F7', '#000000', '#F7F7F7'],
+      youtube: ['#F70000', '#EAEAEA'],
+      vimeo: ['#15D5FF', '#141A20'],
+    };
+    assert.deepEqual(Object.fromEntries(PROVIDER_CAPABILITIES.map(provider => [provider.id, [...provider.brandColors]])), palettes);
+  });
+
+  it('keeps tile text above 4.5:1 on every brand surface, on and off', () => {
+    const contrast = (a: readonly number[], b: readonly number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+    const pageBlack = hexRgb('#09090b');
+    // Title and note on; the dimmer title and secondary text off. Badges sit on dark glass.
+    const text = { on: ['#f4f4f5', '#d4d4d8'], off: ['#d4d4d8', '#a1a1aa'] };
     for (const provider of PROVIDER_CAPABILITIES) {
-      const { brand } = provider;
-      const colors = [brand.primary, ...(brand.secondary ? [brand.secondary] : []), ...(brand.extra ?? [])];
-      assert.equal(brand.uiBorder.length, colors.length);
-      for (const hex of [...colors, ...brand.uiBorder, brand.uiAccent, ...(brand.tile ?? []), ...(brand.stripes ?? [])]) assert.match(hex, /^#[0-9A-F]{6}$/);
-      const backgrounds = brand.tile?.map(rgb) ?? colors.map(color => mix(rgb(color), rgb('#202023'), color === '#FFFFFF' || color === '#FAFCFD' ? 0.08 : 0.14));
-      backgrounds.push(rgb('#202023'));
-      assert.ok(contrast(rgb(brand.uiAccent), rgb('#141414')) >= 3, `${provider.id}: track against its dark outline`);
-      for (const background of backgrounds) {
-        assert.ok(contrast(rgb('#d4d4d8'), background) >= 4.5, `${provider.id}: text`);
-        // Moving gradients can put any tint beside any border stop.
-        for (let i = 0; i < brand.uiBorder.length; i++) for (let step = 0; step <= 10; step++) {
-          const color = mix(rgb(brand.uiBorder[i]), rgb(brand.uiBorder[Math.min(i + 1, brand.uiBorder.length - 1)]), step / 10);
-          assert.ok(contrast(mix(color, rgb('#27272a'), 0.55), background) >= 3, `${provider.id}: border`);
+      const { base, accents } = brandRoles(provider.brandColors);
+      for (const state of ['on', 'off'] as const) {
+        const { glows, rim } = tileGlows(accents, base, TILE_LEVELS[state].peak);
+        const [first, second = first] = accents;
+        // The brightest places: each corner's glow under the shared rim, and the bare base.
+        const surfaces = [first, second].map((color, i) => over(hexRgb(first), rim, over(hexRgb(color), glows[i], hexRgb(base))));
+        for (const surface of [...surfaces, hexRgb(base)]) {
+          for (const color of text[state]) assert.ok(contrast(hexRgb(color), surface) >= 4.5, `${provider.id} ${state}: ${color}`);
+          const glass = over(pageBlack, 0.7, surface);
+          assert.ok(contrast(hexRgb(state === 'on' ? '#e4e4e7' : '#a1a1aa'), glass) >= 4.5, `${provider.id} ${state}: badge`);
         }
-        // A conservative stripe bound: even its brightest fully unmasked part.
-        for (const stripe of brand.stripes ?? []) assert.ok(contrast(rgb('#d4d4d8'), mix(rgb(stripe), background, 0.22)) >= 4.5, `${provider.id}: text over stripes`);
       }
-      assert.ok(contrast(rgb('#a1a1aa'), rgb('#202023')) >= 4.5, `${provider.id}: off text`);
-      assert.ok(contrast(rgb('#71717a'), rgb('#202023')) >= 3, `${provider.id}: off border`);
     }
   });
 });

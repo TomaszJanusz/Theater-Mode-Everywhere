@@ -960,7 +960,7 @@
     "message": "選択した機能をすべて備えたサービスはありません。"
   },
   "rteClear": {
-    "message": "クリア"
+    "message": "フィルターをクリア"
   },
   "rteShown": {
     "message": "$total$ 件中 $count$ 件のサービスを表示",

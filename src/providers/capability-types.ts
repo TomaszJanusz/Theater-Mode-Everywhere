@@ -8,16 +8,8 @@ export type CapabilitySupport = { status: 'yes' | 'no' } | { status: 'conditiona
 export interface ProviderCapabilities {
   id: MediaProviderId;
   name: string;
-  brand: {
-    primary: string;
-    secondary?: string;
-    extra?: readonly string[];
-    tile?: readonly string[];
-    stripes?: readonly string[];
-    decoration?: 'arc';
-    uiAccent: string;
-    uiBorder: readonly string[];
-  };
+  /** Brand palette in its listed order; the options page derives tile roles from it. */
+  brandColors: readonly string[];
   noteKey?: string;
   capabilities: Record<MediaCapability, CapabilitySupport>;
 }

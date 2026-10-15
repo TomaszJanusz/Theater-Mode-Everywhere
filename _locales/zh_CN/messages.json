@@ -960,7 +960,7 @@
     "message": "没有服务具备所有选定功能。"
   },
   "rteClear": {
-    "message": "清除"
+    "message": "清除筛选"
   },
   "rteShown": {
     "message": "显示 $count$ / $total$ 个服务",
