@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach. Wyłączenie oznacza bieżącą aktualizację jako obejrzaną."
+  },
+  "highContrastTitle": {
+    "message": "Wysoki kontrast"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Ogranicz przezroczystość"
+  },
+  "appearanceAutoDescription": {
+    "message": "Tryb Auto korzysta z ustawień systemu."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

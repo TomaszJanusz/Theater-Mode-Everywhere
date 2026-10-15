@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Mostrar la etiqueta «Novedad» en las funciones añadidas recientemente. Al desactivar esta opción, la actualización actual se marca como vista."
+  },
+  "highContrastTitle": {
+    "message": "Contraste alto"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Reducir transparencia"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto sigue la configuración del sistema."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

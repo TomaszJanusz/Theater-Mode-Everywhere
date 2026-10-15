@@ -67,8 +67,8 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'options', blacklist);
       assert.equal(await page.locator('[role=tab]').count(), 5);
-      const language = page.getByRole('combobox');
-      assert.equal(await page.getByRole('option', { includeHidden: true }).count(), LANGUAGES.length + 1);
+      const language = page.locator('#language-combobox');
+      assert.equal(await page.locator('#language-combobox-listbox [role=option]').count(), LANGUAGES.length + 1);
       for (const { locale } of LANGUAGES) {
         const option = page.locator(`#language-combobox-listbox [data-value="${locale}"]`);
         assert.equal(await option.getAttribute('lang'), locale.replace('_', '-'));
@@ -91,6 +91,13 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
         assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
         assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
+        for (const key of ['highContrast', 'reduceTransparency']) {
+          assert.equal(await page.locator(`#${key}-combobox`).textContent(), catalog.appearanceAuto.message);
+          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=auto]`).textContent(), catalog.appearanceAuto.message);
+          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=on]`).textContent(), catalog.controlsVisibilityOn.message);
+          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=off]`).textContent(), catalog.controlsVisibilityOff.message);
+          assert.equal(await page.locator(`#${key}-combobox-listbox [aria-selected=true]`).getAttribute('data-value'), 'auto');
+        }
         assert.equal(await accent.textContent(), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('title'), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('aria-label'), catalog.useAccentColor.message.replace(/\$color\$/i, catalog.accentColorTeal.message));

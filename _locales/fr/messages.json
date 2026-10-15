@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées. Désactiver cette option marque la mise à jour actuelle comme vue."
+  },
+  "highContrastTitle": {
+    "message": "Contraste élevé"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Réduire la transparence"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto suit les réglages de votre système."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

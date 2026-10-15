@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Show New badges for recently added features. Turning this off marks the current update as seen."
+  },
+  "highContrastTitle": {
+    "message": "High contrast"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Reduce transparency"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto follows your system setting."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
   }
 }

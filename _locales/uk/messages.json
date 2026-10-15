@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Показувати позначку «Новинка» біля нещодавно доданих функцій. Після вимкнення поточне оновлення позначається як переглянуте."
+  },
+  "highContrastTitle": {
+    "message": "Висока контрастність"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Зменшити прозорість"
+  },
+  "appearanceAutoDescription": {
+    "message": "Авто використовує налаштування системи."
+  },
+  "appearanceAuto": {
+    "message": "Авто"
   }
 }

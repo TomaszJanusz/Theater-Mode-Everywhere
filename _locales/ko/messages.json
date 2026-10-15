@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "최근 추가된 기능에 “신규” 배지를 표시합니다. 이 옵션을 끄면 현재 업데이트가 확인한 것으로 표시됩니다."
+  },
+  "highContrastTitle": {
+    "message": "고대비"
+  },
+  "reduceTransparencyTitle": {
+    "message": "투명도 줄이기"
+  },
+  "appearanceAutoDescription": {
+    "message": "자동은 시스템 설정을 따릅니다."
+  },
+  "appearanceAuto": {
+    "message": "자동"
   }
 }

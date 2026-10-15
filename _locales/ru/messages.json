@@ -997,5 +997,17 @@
   },
   "highlightNewFeaturesDescription": {
     "message": "Показывать метку «Новинка» у недавно добавленных функций. При отключении текущее обновление отмечается как просмотренное."
+  },
+  "highContrastTitle": {
+    "message": "Высокая контрастность"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Уменьшить прозрачность"
+  },
+  "appearanceAutoDescription": {
+    "message": "Авто следует настройкам системы."
+  },
+  "appearanceAuto": {
+    "message": "Авто"
   }
 }
