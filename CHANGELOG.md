@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Bilibili.tv as its own integration for episode and upload pages: titles, subtitles, timeline thumbnails, Intro/Outro markers, and next-episode navigation.
 - Add Crunchyroll: episode titles, intro and credits chapters, timeline previews and subtitle selection. Burned-in captions show no misleading Off option.
 - Add Netflix: theater rendering for trailers and previews, plus on watch pages the episode title, native subtitle selection and timeline previews. RTE has one switch per service; an existing RTE-off choice is kept.
-- Show contextual action buttons at the bottom right of the player where the service offers them: Netflix, Disney+, Crunchyroll and Bilibili skip intro, credits, recap or up next, and YouTube forwards its ad skip. They follow the host player's availability and countdown.
+- Show contextual action buttons at the bottom right of the picture where the service offers them: Netflix, Disney+, Crunchyroll and Bilibili skip intro, credits, recap or up next, and YouTube forwards its ad skip. They follow the host player's availability and countdown, stay inside letterboxed, Raised and chat-narrowed pictures with the same edge inset as the subtitle notification, keep a gap when several appear, and each plays a brief accent sweep as it appears (none with reduced motion).
 - Enter theater automatically on Netflix and Disney+ watch pages, like the other Rich Theater Experience services.
 
 ### Changed

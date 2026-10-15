@@ -75,6 +75,23 @@ export function horizontalLetterboxPx(frame: PictureFrame): number {
   return Math.max(0, viewportHeight - fittedHeight);
 }
 
+/** Distances from the right and bottom edges of the video box to the visible picture. */
+export type PictureEdgeInsets = { end: number; bottom: number };
+
+/**
+ * Where the fitted picture ends inside its video box, matching the box's `object-fit`
+ * and the vertical keyword of `object-position`. Fill, Stretch and unknown sizes
+ * reach the box edges, so the rect is the box.
+ */
+export function pictureEdgeInsets(frame: PictureFrame, fit: VideoFitMode, position: string): PictureEdgeInsets {
+  const { videoWidth, videoHeight, viewportWidth: width, viewportHeight: height } = frame;
+  if (fit !== 'contain' || !(videoWidth > 0 && videoHeight > 0 && width > 0 && height > 0)) return { end: 0, bottom: 0 };
+  const scale = Math.min(width / videoWidth, height / videoHeight);
+  const slackX = Math.max(0, width - videoWidth * scale);
+  const slackY = Math.max(0, height - videoHeight * scale);
+  return { end: slackX / 2, bottom: position.includes('top') ? slackY : slackY / 2 };
+}
+
 /**
  * A fitted picture leaves a usable bar when the viewport is taller than the video
  * by at least one minimum caption block. A sliver stays centered so captions do

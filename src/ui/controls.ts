@@ -25,6 +25,7 @@ import {
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
+import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
@@ -1616,6 +1617,8 @@ export function createControls(
           const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
           return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 12 : 96;
         },
+        pictureInsets: () => viewportPictureInsets(video.element),
+        subscribePicture: listener => observePicture(video.element, listener),
         onLayout: updateCaptionDock
       });
     }

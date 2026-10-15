@@ -14,6 +14,13 @@ export type ServiceActionCtaOptions = {
   /** Pixels to clear above the 24px screen edge while the bar is visible. */
   controlsLift: () => number;
   menuOpen?: () => boolean;
+  /**
+   * Gap between the viewport's right and bottom edges and the visible picture, so the
+   * CTA sits in the picture's corner rather than the screen's. Absent means the viewport.
+   */
+  pictureInsets?: () => { end: number; bottom: number } | null;
+  /** The picture moved or resized (layout, fit, chat, media size); the CTA re-reads `pictureInsets`. */
+  subscribePicture?: (listener: () => void) => () => void;
   pollMs?: number;
   /** Caption dock. Called when the host appears, changes buttons, or goes away. */
   onLayout?: () => void;
@@ -24,11 +31,16 @@ export const SERVICE_ACTION_CLASS = 'theater-service-action';
 const SERVICE_ACTION_HOST_CLASS = 'theater-service-action-host';
 const TOOLBAR_VISIBLE_CLASS = 'toolbar-visible';
 const LIFT_VAR = '--theater-service-action-lift';
+const PICTURE_END_VAR = '--theater-service-action-picture-end';
+const PICTURE_BOTTOM_VAR = '--theater-service-action-picture-bottom';
+/** Delay between sweeps of CTAs that appear together. */
+const SWEEP_STAGGER_MS = 160;
+const ENTERING_CLASS = 'is-entering';
 const LIFT_FALLBACK_PX = 96;
 const DEFAULT_POLL_MS = 1000;
 
 /**
- * Bottom-right glass CTA. It stays up for as long as the provider reports a
+ * Bottom-right glass CTA in the picture's corner. It stays up for as long as the provider reports a
  * live action, including after the playback bar auto-hides.
  * Cleanup of the poll, store listener, and node is the caller's scope.
  */
@@ -47,6 +59,9 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   scope.listen(host, 'mousedown', stopPlaybackToggle);
   scope.listen(host, 'pointerup', stopPlaybackToggle);
   scope.listen(host, 'mouseup', stopPlaybackToggle);
+  scope.listen(host, 'animationend', (event: AnimationEvent) => {
+    if (event.target instanceof Element) event.target.classList.remove(ENTERING_CLASS);
+  });
   scope.listen(host, 'dblclick', (event: Event) => {
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -81,6 +96,22 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     if (host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
   };
 
+  const placePicture = () => {
+    let end = 0;
+    let bottom = 0;
+    try {
+      const insets = options.pictureInsets?.();
+      if (insets && Number.isFinite(insets.end) && Number.isFinite(insets.bottom)) {
+        end = Math.max(0, Math.round(insets.end));
+        bottom = Math.max(0, Math.round(insets.bottom));
+      }
+    } catch {
+      // The viewport corner is a valid fallback.
+    }
+    if (host.style.getPropertyValue(PICTURE_END_VAR) !== `${end}px`) host.style.setProperty(PICTURE_END_VAR, `${end}px`);
+    if (host.style.getPropertyValue(PICTURE_BOTTOM_VAR) !== `${bottom}px`) host.style.setProperty(PICTURE_BOTTOM_VAR, `${bottom}px`);
+  };
+
   const toolbarOpen = (): boolean => {
     try {
       return options.toolbarVisible() === true;
@@ -99,6 +130,8 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   };
   const render = (actions: ServiceAction[]) => {
     const ids = new Set(actions.map(action => action.id));
+    // Only CTAs that appear in the same pass queue behind each other.
+    let entering = 0;
     for (const [id, button] of buttons) {
       if (!ids.has(id)) { button.remove(); buttons.delete(id); progressNodes.delete(id); }
     }
@@ -115,6 +148,10 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
         progress.className = 'theater-service-action-progress';
         progress.setAttribute('aria-hidden', 'true');
         button.append(progress, label);
+        // The sweep runs once. Dropping the class afterwards keeps a menu hiding and
+        // re-showing the host from replaying it, and leaves no animation on the node.
+        button.classList.add(ENTERING_CLASS);
+        button.style.setProperty('--theater-service-action-sweep-delay', `${entering++ * SWEEP_STAGGER_MS}ms`);
         buttons.set(action.id, button);
         progressNodes.set(action.id, progress);
       }
@@ -196,7 +233,9 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     if (occupied) notifyLayout([]);
   });
   options.paint?.(host);
+  placePicture();
   options.mount(host);
+  if (options.subscribePicture) scope.add(options.subscribePicture(placePicture));
   scope.add(options.subscribeToolbar(() => {
     options.paint?.(host);
     place();

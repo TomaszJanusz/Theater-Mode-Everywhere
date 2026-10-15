@@ -1949,10 +1949,16 @@ button.theater-time-end:hover {
   direction: rtl !important;
 }
 
+/* Corner inset shared by caption notifications and service actions. */
+.theater-everywhere-caption-hud,
+.theater-service-action-host {
+  --theater-hud-inset: 24px;
+}
+
 .theater-everywhere-caption-hud {
   position: fixed !important;
-  top: 24px !important;
-  right: 24px !important;
+  top: var(--theater-hud-inset) !important;
+  right: var(--theater-hud-inset) !important;
   left: auto !important;
   transform: none !important;
   border: 1px solid transparent !important;
@@ -1977,7 +1983,7 @@ button.theater-time-end:hover {
 
 .theater-everywhere-caption-hud[dir="rtl"] {
   right: auto !important;
-  left: 24px !important;
+  left: var(--theater-hud-inset) !important;
   direction: rtl !important;
 }
 
@@ -2699,18 +2705,19 @@ button.theater-time-end:hover {
 }
 
 /* Time-sensitive host action. Same glass as the home pill, with smaller type.
-   It stays clickable after the playback bar hides, and clears the bar while
-   the bar is on screen. */
+   It sits in the bottom-right corner of the visible picture (the controller
+   publishes the letterbox and chat offsets), stays clickable after the
+   playback bar hides, and clears the bar while the bar is on screen. */
 .theater-service-action-host {
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
-  gap: 8px !important;
+  gap: 12px !important;
   position: fixed !important;
   z-index: 2147483646 !important;
-  inset-inline-end: 24px !important;
-  bottom: 24px !important;
-  max-width: min(280px, calc(100vw - 48px)) !important;
+  right: calc(var(--theater-service-action-picture-end, 0px) + var(--theater-hud-inset)) !important;
+  bottom: calc(var(--theater-service-action-picture-bottom, 0px) + var(--theater-hud-inset)) !important;
+  max-width: min(280px, calc(100vw - 2 * var(--theater-hud-inset))) !important;
   pointer-events: none !important;
   transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
@@ -2734,7 +2741,10 @@ button.theater-time-end:hover {
 }
 
 .theater-service-action-host.toolbar-visible {
-  bottom: calc(24px + var(--theater-service-action-lift, 96px)) !important;
+  bottom: max(
+    calc(var(--theater-service-action-picture-bottom, 0px) + var(--theater-hud-inset)),
+    calc(var(--theater-hud-inset) + var(--theater-service-action-lift, 96px))
+  ) !important;
 }
 
 .theater-service-action {
@@ -2799,8 +2809,37 @@ button.theater-time-end:hover {
   outline-offset: 3px !important;
 }
 
+/* One accent sweep across the glass, under the label, when the action appears.
+   The class goes away on animationend so nothing keeps animating. */
+.theater-service-action.is-entering::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: linear-gradient(105deg, transparent 30%, rgba(99, 102, 241, 0.65) 50%, transparent 70%) !important;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--accent-color, #6366f1) 65%, transparent) 50%,
+    transparent 70%
+  ) !important;
+  /* Not !important: an important declaration would override the keyframes. */
+  transform: translateX(-100%);
+  animation: theater-service-action-sweep 1000ms cubic-bezier(0.45, 0, 0.25, 1) var(--theater-service-action-sweep-delay, 0ms) 1 both !important;
+}
+
+@keyframes theater-service-action-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .theater-service-action-host {
     transition: none !important;
+  }
+
+  .theater-service-action.is-entering::after {
+    content: none !important;
+    animation: none !important;
   }
 }
