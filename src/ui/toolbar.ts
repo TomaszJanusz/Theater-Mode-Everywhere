@@ -249,7 +249,10 @@ export function createToolbar(ctx: PlayerChromeContext) {
     const captionSize = overlayCaption ?? hostCaption;
 
     const obstacles: DockRect[] = [];
-    const controls = controlsCache?.classList.contains('visible') ? controlsCache : null;
+    // The bar still paints while fading out. Keep captions clear until its
+    // transition ends, just as contextual actions keep clear of the same bar.
+    const controls = controlsCache && (controlsCache.classList.contains('visible')
+      || Number.parseFloat(getComputedStyle(controlsCache).opacity) > 0.01) ? controlsCache : null;
     if (controls) {
       const rect = controls.getBoundingClientRect();
       if (rect.width > 1 && rect.height > 1) {
@@ -339,7 +342,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     }
     document.documentElement.classList.toggle(CURSOR_HIDDEN_CLASS, !visibility.cursorVisible);
     ctx.uiStore.dispatch({ type: 'SET_TOOLBAR_VISIBLE', value: visibility.headerVisible });
-    updateCaptionDock();
+    // Resolve the collision before the first frame of the controls' fade-in.
+    updateCaptionDock(visibility.controlsVisible && !wasVisible);
 
     // Poll held interactions with the same timer, even when the bottom bar is pinned.
     if (visibility.cursorVisible) scheduleToolbarHide();

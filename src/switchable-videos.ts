@@ -1,7 +1,7 @@
 import { mediaHasSource } from './host-play';
-import { isInactiveThumbPlayerVideo, isProviderAuxiliaryVideo } from './providers/video-candidates';
+import { isInactiveStandbyVideo, isProviderAuxiliaryVideo } from './providers/video-candidates';
 
-export { AUXILIARY_VIDEO_HOST_SELECTOR, isInactiveThumbPlayerVideo } from './providers/video-candidates';
+export { AUXILIARY_VIDEO_HOST_SELECTOR, isInactiveStandbyVideo } from './providers/video-candidates';
 
 const MIN_SWITCHABLE_EDGE = 80;
 
@@ -24,7 +24,7 @@ export function isAuxiliaryTheaterVideo(video: HTMLVideoElement): boolean {
 
 export function isSwitchableTheaterVideo(video: HTMLVideoElement): boolean {
   if (isAuxiliaryTheaterVideo(video)) return false;
-  if (isInactiveThumbPlayerVideo(video)) return false;
+  if (isInactiveStandbyVideo(video)) return false;
   if (video.closest('[hidden]')) return false;
   if (!mediaHasSource(video)) return false;
   if (!hasDecodedOrMetadata(video)) return false;

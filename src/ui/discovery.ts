@@ -1,4 +1,4 @@
-import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isInactiveStandbyVideo, selectSwitchableVideos } from '../switchable-videos';
 import { isProviderPlaybackFrameDocument } from '../providers/playback-session';
 import {
   prepareProviderShadowRoot,
@@ -185,7 +185,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
 
   function findBestVideo(): HTMLVideoElement | null {
     if (isProviderPlaybackFrameDocument()) return null;
-    const videos = findAllVideosDeep(document).filter((video) => !isInactiveThumbPlayerVideo(video));
+    const videos = findAllVideosDeep(document).filter((video) => !isInactiveStandbyVideo(video));
     if (videos.length === 0) return null;
     const pool = selectSwitchableVideos(videos);
     const ranked = pool.length > 0 ? pool : videos;

@@ -10,6 +10,7 @@ import { ownTestBrowser } from '../test-utils/test-browser';
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
 const CSS = readStylesheet(path.join(SRC, 'content.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const VOD = readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64');
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
@@ -17,7 +18,7 @@ const BUNDLE = esbuild.buildSync({
     contents: [
       "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
       "export { setPlayerUiCss } from './ui/root';",
-      "export { playbackWindow } from './playback-window';"
+      "export { playbackWindow, seekToMediaTime } from './playback-window';"
     ].join('\n'),
     resolveDir: SRC, loader: 'ts'
   },
@@ -43,7 +44,7 @@ async function boot(page: Page, keepControlsVisible: boolean): Promise<void> {
   await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
   await page.addStyleTag({ content: CSS });
   await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`PlaybackChromeTest.setPlayerUiCss(${JSON.stringify(CSS)}); PlaybackChromeTest.bootstrapPlayerRuntime();`);
+  await page.evaluate(`PlaybackChromeTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); PlaybackChromeTest.bootstrapPlayerRuntime();`);
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return Boolean(video && video.readyState >= 2 && Number.isFinite(video.duration));
@@ -101,6 +102,150 @@ async function snapshot(page: Page, name: string): Promise<void> {
 
 describe('playback chrome updates', () => {
   for (const engine of ['chromium', 'firefox'] as const) {
+    it(`shows seek loading before Disney starts moving and ignores stale clocks in ${engine}`, { timeout: 30_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const playId = '86e14fdb-3841-4282-ad38-07c8c4aab4b6';
+      await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+        contentType: 'text/html', body: FIXTURE
+      }));
+      await page.goto(`https://www.disneyplus.com/play/${playId}`);
+      await page.evaluate(playId => {
+        const snapshot = document.createElement('script');
+        snapshot.id = 'theater-everywhere-disney-snapshot';
+        snapshot.type = 'application/json';
+        snapshot.textContent = JSON.stringify({ mediaId: playId, duration: 3600, captions: [] });
+        document.body.append(snapshot);
+        document.querySelector('video')!.dataset.teDisneyPlayhead = '10';
+      }, playId);
+      await boot(page, false);
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        // Hive's content timeline is independent of the fixture clip duration.
+        Object.defineProperty(video, 'duration', { configurable: true, value: Infinity });
+        video.dispatchEvent(new Event('durationchange'));
+      });
+      await page.clock.install();
+      const loading = () => page.locator('.theater-loading-indicator').evaluate(e => e.classList.contains('visible'));
+      const scrub = async (time: number) => page.locator('.theater-scrubber-container').evaluate((e, time) => {
+        let target = time;
+        const capture = (event: Event) => { const time = (event as CustomEvent<{ time?: number }>).detail.time; if (typeof time === 'number') target = time; };
+        window.addEventListener('theater-everywhere-media-seek', capture);
+        const r = e.getBoundingClientRect();
+        const options = { bubbles: true, composed: true, button: 0, clientX: r.left + r.width * time / 3600, clientY: r.top + r.height / 2 };
+        e.dispatchEvent(new MouseEvent('mousedown', options));
+        document.dispatchEvent(new MouseEvent('mouseup', options));
+        window.removeEventListener('theater-everywhere-media-seek', capture);
+        return target;
+      }, time);
+      const clock = async (time: number, ready = 4) => page.evaluate(({ time, ready }) => {
+        const video = document.querySelector('video')!;
+        video.dataset.teDisneyPlayhead = String(time);
+        Object.defineProperty(video, 'readyState', { configurable: true, value: ready });
+        window.dispatchEvent(new CustomEvent('theater-everywhere-disney-clock', { detail: { time } }));
+      }, { time, ready });
+      const firstTarget = await scrub(900);
+      assert.equal(await loading(), true, 'click starts loading before any native seeking event');
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.dispatchEvent(new Event('play'));
+        video.dispatchEvent(new Event('timeupdate'));
+      });
+      await clock(11);
+      assert.equal(await loading(), true, 'old playback activity cannot settle a new seek');
+      const secondTarget = await scrub(1800);
+      await clock(firstTarget);
+      assert.equal(await loading(), true, 'the preceding seek cannot settle the latest request');
+      await clock(secondTarget, 1);
+      assert.equal(await loading(), true, 'the target clock alone does not establish loaded media');
+      await clock(secondTarget);
+      assert.equal(await loading(), false, 'a paused seek also settles when the target is ready');
+      const request = async (time: number) => page.evaluate(time => {
+        (window as unknown as { PlaybackChromeTest: {
+          seekToMediaTime(video: HTMLVideoElement, time: number): void;
+        } }).PlaybackChromeTest.seekToMediaTime(document.querySelector('video')!, time);
+      }, time);
+      const shortTarget = secondTarget + 1;
+      await request(shortTarget);
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        for (const name of ['play', 'timeupdate', 'canplay', 'seeked']) video.dispatchEvent(new Event(name));
+      });
+      await clock(secondTarget);
+      assert.equal(await loading(), true, 'old events cannot settle a seek within the arrival tolerance');
+      await clock(shortTarget);
+      assert.equal(await loading(), false, 'the new clock settles a short paused seek');
+      await request(shortTarget);
+      assert.equal(await loading(), false, 'a paused no-op seek does not wait for a host event that may never fire');
+      await request(shortTarget + 1);
+      await page.evaluate(() => { document.querySelector('video')!.dispatchEvent(new Event('seeking')); });
+      // A second request must not inherit the preceding request's seeking evidence.
+      await request(shortTarget + 2);
+      await clock(shortTarget);
+      assert.equal(await loading(), true, 'a newer short seek retires previous start evidence');
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.dispatchEvent(new Event('seeking'));
+        video.dispatchEvent(new Event('seeked'));
+      });
+      assert.equal(await loading(), false, 'native seek start and completion also acknowledge the latest request');
+      // Keyboard seeks use the same request lifecycle.
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await loading(), true);
+      await page.clock.runFor(10_001);
+      assert.equal(await loading(), false, 'a host that never acknowledges cannot leave loading stuck');
+      await scrub(2400);
+      assert.equal(await loading(), true);
+      await page.keyboard.press('Escape');
+      await page.clock.runFor(10_001);
+      await clock(2400);
+      assert.equal(await page.locator('.theater-loading-indicator').count(), 0, 'exit retires seek listeners and timers');
+    });
+
+    it(`sets caption clearance before controls paint, glides, and holds through their fade in ${engine}`, { timeout: 30_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      await page.route('http://playback-chrome.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
+      await page.goto('http://playback-chrome.test/');
+      await boot(page, false);
+      page.setDefaultTimeout(5000);
+      await page.evaluate(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        const overlay = root.querySelector('.theater-caption-overlay')!;
+        overlay.querySelector('.theater-caption-overlay-text')!.textContent = 'Caption that must clear the controls';
+        overlay.classList.add('visible');
+      });
+      await page.waitForFunction(() => {
+        const bar = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!;
+        return !bar.classList.contains('visible') && Number(getComputedStyle(bar).opacity) === 0;
+      });
+      const rest = await page.evaluate(() => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')));
+      const shown = await page.evaluate(() => {
+        document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        const caption = root.querySelector<HTMLElement>('.theater-caption-overlay')!;
+        const controls = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
+        const bottom = Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'));
+        return { bottom, targetBottom: innerHeight - bottom, transition: caption.style.transition,
+          controlsTop: innerHeight - Number.parseFloat(getComputedStyle(controls).bottom) - controls.offsetHeight };
+      });
+      assert.ok(shown.bottom > rest, JSON.stringify({ rest, shown }));
+      assert.ok(shown.targetBottom < shown.controlsTop, 'the clearance target is resolved before the next animation frame');
+      assert.ok(shown.transition.includes('bottom'), 'showing controls preserves the caption glide');
+      await page.waitForFunction(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
+          < root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
+      });
+      await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!.classList.contains('visible'));
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const fadingBottom = await page.evaluate(() => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')));
+      assert.equal(fadingBottom, shown.bottom, 'captions remain clear while the controls are still fading');
+      await page.waitForFunction(bottom => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')) === bottom, rest);
+    });
+
     it(`reads one playback snapshot per update and defers a hidden bar in ${engine}`, { timeout: 90_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

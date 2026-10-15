@@ -45,7 +45,7 @@ import {
   seekBy,
   seekToMediaTime
 } from '../playback-window';
-import { isInactiveThumbPlayerVideo } from '../switchable-videos';
+import { isInactiveStandbyVideo } from '../switchable-videos';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
 import { providerSharesPlaybackHost } from '../providers/discovery';
 import {
@@ -784,16 +784,21 @@ function applyTheaterPictureLayout(): void {
   const fit = ui().videoFit;
   const frame = currentPictureFrame();
   const position = objectPositionForPicture(fit, ui().pictureAlign, frame, picturePositionOptions());
+  const letterbox = horizontalLetterboxPx(frame);
   const root = document.documentElement;
   const previous = root.style.getPropertyValue('--theater-object-position');
   if (previous !== '' && previous !== position && !prefersReducedMotion()) beginPictureMove();
   root.classList.toggle(
     'theater-everywhere-picture-top',
-    raisedCaptionsUseBand(position, horizontalLetterboxPx(frame))
+    raisedCaptionsUseBand(position, letterbox)
   );
   document.documentElement.style.setProperty('--theater-object-fit', fit);
   document.documentElement.style.setProperty('--theater-object-position', position);
-  document.documentElement.style.setProperty('--theater-letterbox', `${Math.round(horizontalLetterboxPx(frame))}px`);
+  root.style.setProperty('--theater-letterbox', `${Math.round(letterbox)}px`);
+  // Raised playback puts the whole letterbox below the picture. Other fits
+  // and unavailable media dimensions use the playback viewport's center.
+  const pictureHeight = frame.viewportHeight - (position === 'center top' ? letterbox : 0);
+  root.style.setProperty('--theater-hud-center-y', `${pictureHeight / 2}px`);
   if (session.element) {
     session.element.style.setProperty('object-fit', fit, 'important');
     session.element.style.setProperty('--theater-object-fit', fit);
@@ -1892,14 +1897,15 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     const current = session.element;
     if (current?.tagName !== 'VIDEO') return;
     const connected = isElementInDOMDeep(current);
-    if (connected && !isInactiveThumbPlayerVideo(current as HTMLVideoElement)) return;
+    if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
+      && !isInactiveStandbyVideo(candidate)
       ? candidate
       : findBestVideo();
-    // ThumbPlayer swaps between connected video nodes while changing quality.
+    // Hosts can swap between connected video nodes while changing playback.
     // Wait for the visible replacement's metadata instead of loading its source ourselves.
-    if (connected && (!replacement || replacement.readyState < 1 || isInactiveThumbPlayerVideo(replacement)
+    if (connected && (!replacement || replacement.readyState < 1
       || !providerSharesPlaybackHost(current as HTMLVideoElement, replacement))) return;
     if (replacement && replacement !== current) {
       bindingScope.dispose();
@@ -2200,6 +2206,7 @@ function exitTheaterMode(
   unmountTheaterStage();
   unmountProviderStages();
   document.documentElement.style.removeProperty('--theater-letterbox');
+  document.documentElement.style.removeProperty('--theater-hud-center-y');
 
   refreshHostPlayerLayout();
 

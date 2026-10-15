@@ -112,6 +112,128 @@ for (const engine of ['chromium', 'firefox'] as const) {
       });
     });
 
+    it('uses Hive program duration over API runtimes and retires it with the episode', { timeout: 30_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.route('https://www.disneyplus.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<disney-web-player><video class="hive-video" style="width:640px;height:360px"></video></disney-web-player>'
+      }));
+      await page.goto(`https://www.disneyplus.com/play/${PLAY_ID}`);
+      await page.addScriptTag({ content: 'globalThis.__name = fn => fn;\n' + compiled });
+      await page.evaluate(() => {
+        const api = (window as unknown as { DisneyMain: typeof import('./main') }).DisneyMain;
+        const video = document.querySelector('video')!;
+        const listeners: Record<string, () => void> = {};
+        const player = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 2_849_000, programDurationMs: Number.NaN } },
+          on(name: string, listener: () => void) { listeners[name] = listener; }
+        };
+        Object.assign(video, { mediaPlayer: player });
+        Object.assign(window, { durationProbe: { api, player, listeners } });
+        api.installDisneyMain();
+        api.harvestDisneyData('https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/test', { runtimeMs: 2_844_000 });
+      });
+      await page.waitForFunction(() => Boolean((window as unknown as {
+        durationProbe: { listeners: Record<string, () => void> }
+      }).durationProbe.listeners['@EVENT/PLAYER/TIMECODE']));
+      const report = await page.evaluate(() => {
+        const { api, player, listeners } = (window as unknown as { durationProbe: {
+          api: typeof import('./main');
+          player: { timeline: { info: { playheadPositionMs: number; programDurationMs: number } } };
+          listeners: Record<string, () => void>;
+        } }).durationProbe;
+        const read = () => JSON.parse(document.getElementById('theater-everywhere-disney-snapshot')!.textContent!).duration as number;
+        const harvest = () => api.harvestDisneyData('https://disney.api.edge.bamgrid.com/explore/v1.21/playerExperience/test', { runtimeMs: 2_844_000 });
+        const emit = () => listeners['@EVENT/PLAYER/TIMECODE']();
+        const fallback = read();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        const native = read();
+        harvest();
+        const afterApi = read();
+        player.timeline.info.programDurationMs = 0;
+        emit();
+        const afterInvalid = read();
+        history.pushState({}, '', '/play/180356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        const connectedOldPlayer = read();
+        // A harvest wakes rediscovery; it must not relabel the same old object.
+        window.dispatchEvent(new CustomEvent('theater-everywhere-disney-harvest'));
+        emit();
+        const rediscoveredOldPlayer = read();
+        const video = document.querySelector('video')!;
+        video.dispatchEvent(new Event('loadstart'));
+        emit();
+        const duringReset = read();
+        // Disney may reuse Hive after the media element finishes mounting.
+        Object.defineProperty(video, 'readyState', { configurable: true, value: 4 });
+        player.timeline.info.programDurationMs = 3_600_000;
+        video.dispatchEvent(new Event('loadedmetadata'));
+        emit();
+        const reusedPlayer = read();
+        history.pushState({}, '', '/play/380356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        video.dispatchEvent(new Event('loadstart'));
+        const mountedListeners: Record<string, () => void> = {};
+        const mountedPlayer = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 1000, programDurationMs: 3_800_000 } },
+          on(name: string, listener: () => void) { mountedListeners[name] = listener; }
+        };
+        Object.assign(video, { mediaPlayer: mountedPlayer });
+        video.dispatchEvent(new Event('loadedmetadata'));
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacedOnSameVideo = read();
+        // The next reset belongs to the newly mounted player, even on the same video.
+        video.dispatchEvent(new Event('loadstart'));
+        mountedPlayer.timeline.info.programDurationMs = 9_000_000;
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementDuringReset = read();
+        mountedPlayer.timeline.info.programDurationMs = 3_900_000;
+        video.dispatchEvent(new Event('loadedmetadata'));
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementAfterReset = read();
+        document.querySelector('disney-web-player')!.remove();
+        history.pushState({}, '', '/play/280356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        const nextEpisode = read();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        const afterStalePlayer = read();
+        const shell = document.createElement('disney-web-player');
+        const replacement = document.createElement('video');
+        replacement.className = 'hive-video';
+        replacement.style.cssText = 'width:640px;height:360px';
+        const replacementListeners: Record<string, () => void> = {};
+        const nextPlayer = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 1000, programDurationMs: 4_000_000 } },
+          on(name: string, listener: () => void) { replacementListeners[name] = listener; }
+        };
+        // React may still expose the old object while the video owns the new one.
+        Object.assign(shell, { __reactFiber$test: { memoizedProps: { mediaPlayer: player } } });
+        Object.assign(replacement, { mediaPlayer: nextPlayer });
+        shell.append(replacement); document.body.append(shell);
+        api.handleDisneyMediaSeek({ time: 1 }, replacement);
+        replacementListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementDuration = read();
+        emit();
+        return { fallback, native, afterApi, afterInvalid, connectedOldPlayer, rediscoveredOldPlayer,
+          duringReset, reusedPlayer, replacedOnSameVideo, replacementDuringReset, replacementAfterReset,
+          nextEpisode, afterStalePlayer, replacementDuration, afterReplacementStale: read() };
+      });
+      assert.deepEqual(report, {
+        fallback: 2844, native: 3343.5, afterApi: 3343.5, afterInvalid: 3343.5,
+        connectedOldPlayer: 2844, rediscoveredOldPlayer: 2844, duringReset: 2844, reusedPlayer: 3600,
+        replacedOnSameVideo: 3800, replacementDuringReset: 3800, replacementAfterReset: 3900,
+        nextEpisode: 2844, afterStalePlayer: 2844, replacementDuration: 4000, afterReplacementStale: 4000
+      });
+    });
+
     it('keeps timers off the catalog and arms the fallback only while native time is missing', async (t) => {
       const browserType = (await import('playwright'))[engine];
       let executable = '';
