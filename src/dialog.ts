@@ -50,15 +50,20 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
 
     const body = document.createElement('div');
     body.id = `${titleId}-body`;
-    if (typeof options.content === 'string') dialog.setAttribute('aria-describedby', body.id);
     body.className = 'te-dialog-body';
-    if (typeof options.content === 'string') {
-      const paragraph = document.createElement('p');
-      paragraph.textContent = options.content;
-      body.appendChild(paragraph);
-    } else {
-      body.appendChild(options.content);
-    }
+    // Plain text is the dialog's description; a caller-built node owns its own semantics.
+    const setBodyContent = (content: string | Node): void => {
+      if (typeof content === 'string') {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = content;
+        body.replaceChildren(paragraph);
+        dialog.setAttribute('aria-describedby', body.id);
+      } else {
+        body.replaceChildren(content);
+        dialog.removeAttribute('aria-describedby');
+      }
+    };
+    setBodyContent(options.content);
 
     const footer = document.createElement('div');
     footer.className = 'te-dialog-footer';
@@ -128,11 +133,7 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
       if (typeof source !== 'function') { close(false, true); return; }
       const copy = source();
       title.textContent = copy.title;
-      if (typeof copy.content === 'string') {
-        body.firstElementChild!.textContent = copy.content;
-      } else {
-        body.replaceChildren(copy.content);
-      }
+      setBodyContent(copy.content);
       if (copy.actions.type === 'acknowledge') {
         buttons[0].textContent = copy.actions.label || t('dialogAcknowledge');
       } else {

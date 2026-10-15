@@ -1903,22 +1903,28 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await options.waitForFunction(() => document.querySelectorAll('#language-combobox-listbox [role=option]').length === 14);
     const combo = options.getByRole('combobox');
     const list = options.getByRole('listbox');
+    // Diagnostic captures only; they follow the same THEATER_SMOKE_SCREENSHOT gate as the other smoke screenshots.
+    const languageScreenshot = async (name: string) => {
+      if (process.env.THEATER_SMOKE_SCREENSHOT) {
+        await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, `-${name}.png`), fullPage: true, animations: 'disabled' });
+      }
+    };
     if (await options.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value') !== 'automatic') throw new Error('Language must default to Automatic');
     const before = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
-    await options.screenshot({ path: '/tmp/lang-dropdown-en.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-dropdown-en');
     await combo.click();
     await list.waitFor();
-    await options.screenshot({ path: '/tmp/lang-combobox-open.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-combobox-open');
     await options.keyboard.press('End');
     await options.keyboard.press('Escape');
     if (await combo.getAttribute('aria-expanded') !== 'false' || await combo.evaluate(el => el !== document.activeElement)) throw new Error('Escape must close and retain trigger focus');
     if (await options.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value') !== 'automatic') throw new Error('Escape committed a language');
     await combo.focus();
-    await options.screenshot({ path: '/tmp/lang-dropdown-hover.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-dropdown-hover');
     await options.locator('#accent-color-grid [data-choice=green]').click();
     await options.locator('#accent-color-grid [data-choice=green].selected').waitFor();
     await combo.focus();
-    await options.screenshot({ path: '/tmp/lang-dropdown-green.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-dropdown-green');
     await options.locator('#accent-color-grid [data-choice=system]').click();
     await options.locator('#accent-color-grid [data-choice=system].selected').waitFor();
     await combo.click();
@@ -1932,7 +1938,7 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await assertLocalized(otherOptions, 'pl');
     await assertLocalized(popup, 'pl');
     await assertLocalized(page, 'pl', '#theater-everywhere-ui');
-    await options.screenshot({ path: '/tmp/lang-dropdown-pl.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-dropdown-pl');
     await combo.focus();
     await options.keyboard.press('ArrowDown');
     await options.keyboard.press('End'); // Arabic is the last endonym.
@@ -1945,9 +1951,9 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await assertLocalized(options, 'ar');
     await assertLocalized(popup, 'ar');
     await assertLocalized(page, 'ar', '#theater-everywhere-ui');
-    await options.screenshot({ path: '/tmp/lang-dropdown-ar.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-dropdown-ar');
     await combo.click();
-    await options.screenshot({ path: '/tmp/lang-combobox-open-ar.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-combobox-open-ar');
     await options.keyboard.press('Escape');
     if (process.env.THEATER_SMOKE_SCREENSHOT) {
       await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-language-ar-options.png'), fullPage: true });
@@ -1978,7 +1984,7 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await popup.locator('#status-text').filter({ hasText: english.statusInactiveSystem.message }).waitFor();
     await frame.locator('body').press('Escape');
     await options.locator('#tab-about').click();
-    await options.screenshot({ path: '/tmp/lang-about.png', fullPage: true, animations: 'disabled' });
+    await languageScreenshot('lang-about');
     console.log('smoke:chromium language menu: two Settings pages, popup, player, keyboard selection, saved iframe override, RTL/Automatic restoration and playback preservation passed');
   } finally {
     await worker.evaluate(() => chrome.storage.sync.remove('language'));
