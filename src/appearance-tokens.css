@@ -1,0 +1,103 @@
+/* Palette values are exercised directly by appearance-preferences.test.ts. */
+:root, :host {
+  --appearance-normal-background: #09090b;
+  --appearance-normal-panel: #18181b;
+  --appearance-normal-text: #f4f4f5;
+  --appearance-normal-secondary: #a1a1aa;
+  --appearance-high-background: #09090b;
+  --appearance-high-panel: #18181b;
+  --appearance-high-text: #ffffff;
+  --appearance-high-secondary: #d4d4d8;
+  --appearance-high-border: #a1a1aa;
+}
+
+/* Forced colors retains browser ownership, including native form controls. */
+@media (forced-colors: none) {
+  /* Both modes replace glass surfaces and decorative layers with opaque tokens. */
+  :root:is([data-contrast="high"], [data-transparency="reduced"]),
+  :host(:is([data-contrast="high"], [data-transparency="reduced"])) {
+    --appearance-surface: var(--appearance-normal-panel);
+    --appearance-hover: #27272a;
+    --appearance-marker: #d4d4d8;
+    --appearance-tint: color-mix(in srgb, var(--accent-color, #6366f1) 12%, #18181b);
+    --appearance-image: none;
+    --appearance-blur: none;
+    --appearance-frost: none;
+    --appearance-decoration-opacity: 0;
+    --appearance-content-opacity: 1;
+  }
+  :root[data-contrast="high"], :host([data-contrast="high"]) {
+    --bg-color: var(--appearance-high-background) !important;
+    --card-bg: var(--appearance-high-panel) !important;
+    --text-primary: var(--appearance-high-text) !important;
+    --text-secondary: var(--appearance-high-secondary) !important;
+    --border-color: var(--appearance-high-border) !important;
+    --appearance-ink: var(--appearance-high-text);
+    --appearance-muted: var(--appearance-high-secondary);
+    --appearance-border: var(--appearance-high-border);
+    --appearance-marker: #ffffff;
+    --appearance-progress: #71717a;
+    --appearance-surface: var(--appearance-high-panel);
+    --appearance-tint: var(--appearance-high-panel);
+    --appearance-badge-text: var(--appearance-high-text);
+    --appearance-badge-border: var(--accent-color);
+  }
+  :root[data-contrast="high"], :root[data-contrast="high"] *,
+  :host([data-contrast="high"]), :host([data-contrast="high"]) * {
+    --accent-color: var(--contrast-accent, #db7dff) !important;
+    --accent-text: var(--contrast-accent-text, #09090b) !important;
+    --accent-hover: var(--accent-color) !important;
+  }
+  :root[data-contrast="high"] :is([aria-checked="true"], [aria-selected="true"], [aria-pressed="true"], .selected),
+  :host([data-contrast="high"]) :is([aria-checked="true"], [aria-selected="true"], [aria-pressed="true"], .selected) {
+    outline: 2px solid var(--accent-color) !important;
+    outline-offset: -2px !important;
+    font-weight: 750 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+  }
+  :root[data-contrast="high"] :is(button, input, select, [role="radio"]),
+  :host([data-contrast="high"]) :is(button, input, select, [role="radio"]) {
+    border-color: var(--appearance-high-border) !important;
+  }
+  :host([data-contrast="high"]) :is(.theater-scrubber-track, .theater-vertical-slider, .theater-caption-slider) {
+    outline: 1px solid var(--appearance-high-border) !important;
+  }
+  :root[data-contrast="high"] :is(.toggle-slider, .slider),
+  :host([data-contrast="high"]) .theater-caption-toggle-track {
+    border-color: var(--appearance-high-border) !important;
+  }
+  :root[data-contrast="high"] :is(.toggle-slider, .slider)::before,
+  :host([data-contrast="high"]) .theater-caption-toggle-track::before {
+    background: var(--appearance-high-secondary) !important;
+  }
+  :root[data-contrast="high"] input:checked + :is(.toggle-slider, .slider)::before,
+  :host([data-contrast="high"]) input:checked + .theater-caption-toggle-track::before {
+    background: var(--accent-text) !important;
+  }
+  :root[data-contrast="high"] input:focus-visible + :is(.toggle-slider, .slider),
+  :host([data-contrast="high"]) input:focus-visible + .theater-caption-toggle-track {
+    outline: 3px solid var(--appearance-high-text) !important;
+    outline-offset: 1px !important;
+  }
+  :root[data-contrast="high"] :disabled,
+  :host([data-contrast="high"]) :disabled {
+    color: var(--appearance-high-secondary) !important;
+    border-style: dashed !important;
+  }
+  :root[data-contrast="high"] :focus-visible,
+  :host([data-contrast="high"]) :focus-visible {
+    outline: 3px solid var(--appearance-high-text) !important;
+    outline-offset: 1px !important;
+  }
+}
+
+
+/* Ring and interior are the same decorative layer. Stop the work as well as hiding it. */
+@media (forced-colors: none) {
+  :root:is([data-contrast="high"], [data-transparency="reduced"]) .te-animated-border::before {
+    content: none;
+    animation: none;
+    transition: none;
+  }
+}

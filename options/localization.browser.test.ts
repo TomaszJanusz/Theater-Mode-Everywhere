@@ -91,6 +91,12 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
         assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
         assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
+        for (const key of ['highContrast', 'reduceTransparency']) {
+          assert.equal(await page.locator(`#${key}-grid [data-choice=auto]`).textContent(), catalog.appearanceAuto.message);
+          assert.equal(await page.locator(`#${key}-grid [data-choice=on]`).textContent(), catalog.controlsVisibilityOn.message);
+          assert.equal(await page.locator(`#${key}-grid [data-choice=off]`).textContent(), catalog.controlsVisibilityOff.message);
+          assert.equal(await page.locator(`#${key}-grid [aria-checked=true]`).getAttribute('data-choice'), 'auto');
+        }
         assert.equal(await accent.textContent(), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('title'), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('aria-label'), catalog.useAccentColor.message.replace(/\$color\$/i, catalog.accentColorTeal.message));

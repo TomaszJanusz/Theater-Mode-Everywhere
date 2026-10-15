@@ -1,3 +1,4 @@
+import { observeDocumentAppearance } from '../src/appearance-runtime';
 import { LANGUAGE_STORAGE_KEY } from '../src/language';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 /* Popup script for Theater Everywhere */
@@ -16,6 +17,7 @@ import { shouldPatchMainWorld } from '../src/providers/registry';
 
 // Apply browser theme colors immediately
 fetchAndApplyTheme();
+observeDocumentAppearance();
 
 document.addEventListener('DOMContentLoaded', async () => {
   const stopLanguageStorage = observeLanguageStorage();

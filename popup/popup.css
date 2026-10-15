@@ -1,13 +1,14 @@
+@import '../src/appearance-tokens.css';
 @import '../src/settings-brand.css';
 
 /* Popup styling for Theater Everywhere */
 
 :root {
-  --bg-color: #09090b;
-  --card-bg: #18181b;
+  --bg-color: var(--appearance-normal-background);
+  --card-bg: var(--appearance-normal-panel);
   --border-color: #27272a;
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
+  --text-primary: var(--appearance-normal-text);
+  --text-secondary: var(--appearance-normal-secondary);
   --accent-color: #6366f1;
   --accent-text: #ffffff;
   --accent-hover: #4f46e5;
@@ -33,7 +34,7 @@
 body {
   font-family: var(--font-stack);
   background-color: var(--bg-color);
-  color: var(--text-primary);
+  color: var(--appearance-ink, var(--text-primary));
   width: 300px;
   overflow: hidden;
   border-radius: 8px;
@@ -68,7 +69,7 @@ body {
 .icon-btn {
   background: none;
   border: 1px solid var(--border-color);
-  color: var(--text-secondary);
+  color: var(--appearance-muted, var(--text-secondary));
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
@@ -79,9 +80,9 @@ body {
 }
 
 .icon-btn:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--appearance-ink, var(--text-primary));
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--appearance-border, rgba(255, 255, 255, 0.1));
   transform: translateY(-1px);
 }
 
@@ -117,8 +118,8 @@ body {
 }
 
 .rte-copy { min-width: 0; flex: 1; }
-.rte-label { display: block; font-size: 12px; font-weight: 650; color: var(--text-primary); cursor: pointer; }
-.rte-copy p { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.35; }
+.rte-label { display: block; font-size: 12px; font-weight: 650; color: var(--appearance-ink, var(--text-primary)); cursor: pointer; }
+.rte-copy p { margin-top: 4px; color: var(--appearance-muted, var(--text-secondary)); font-size: 11px; line-height: 1.35; }
 
 .domain-info {
   display: flex;
@@ -130,7 +131,7 @@ body {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  color: var(--appearance-muted, var(--text-secondary));
   font-weight: 600;
 }
 
@@ -220,7 +221,7 @@ body {
 }
 
 input:checked + .slider {
-  background-color: color-mix(in srgb, var(--accent-color) 16%, transparent);
+  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color) 16%, transparent));
   border-color: var(--accent-color);
 }
 
@@ -250,9 +251,9 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-secondary);
+  color: var(--appearance-muted, var(--text-secondary));
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.02));
   padding: 8px;
   border-radius: 6px;
   border: 1px dashed var(--border-color);
@@ -263,7 +264,7 @@ input:checked + .slider:before {
   border: 1px solid #3f3f46;
   border-bottom: 2px solid #3f3f46;
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--appearance-ink, var(--text-primary));
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -279,8 +280,8 @@ input:checked + .slider:before {
   text-align: center;
   margin-top: 10px;
   font-size: 9px;
-  color: var(--text-secondary);
-  opacity: 0.65;
+  color: var(--appearance-muted, var(--text-secondary));
+  opacity: var(--appearance-content-opacity, 0.65);
   letter-spacing: 0.02em;
 }
 
@@ -292,7 +293,7 @@ input:checked + .slider:before {
 
 .creator-credits a:hover,
 .made-in-poland a:hover {
-  color: var(--text-primary);
+  color: var(--appearance-ink, var(--text-primary));
   text-decoration: underline;
 }
 

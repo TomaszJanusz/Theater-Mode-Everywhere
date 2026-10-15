@@ -9,9 +9,9 @@ export const NEW_BADGE_CSS = `
   vertical-align: middle; pointer-events: none;
   font: 800 9.5px/1 system-ui, sans-serif; letter-spacing: .07em;
   text-transform: uppercase; white-space: nowrap;
-  color: color-mix(in srgb, var(--accent-color) 55%, #fff);
-  background: color-mix(in srgb, var(--accent-color) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent-color) 55%, transparent);
+  color: var(--appearance-badge-text, color-mix(in srgb, var(--accent-color) 55%, #fff));
+  background: var(--appearance-tint, color-mix(in srgb, var(--accent-color) 18%, transparent));
+  border: 1px solid var(--appearance-badge-border, color-mix(in srgb, var(--accent-color) 55%, transparent));
   border-radius: 999px; padding: 3px 7px; margin-inline-start: 8px;
 }
 .te-new-badge[data-variant="dot"] {

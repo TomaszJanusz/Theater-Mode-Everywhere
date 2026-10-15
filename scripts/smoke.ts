@@ -2107,6 +2107,105 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
   }
 }
 
+/** Installed-extension proof: a Settings write reaches two pages, popup and shadow chrome. */
+async function assertAppearanceModes(context: BrowserContext, origin: string): Promise<void> {
+  const worker = await extensionWorker(context);
+  const keys = ['highContrast', 'reduceTransparency', 'accentColor', 'keepControlsVisible', 'language'];
+  const original = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);
+  const options = await context.newPage();
+  const second = await context.newPage();
+  const player = await context.newPage();
+  const popup = await context.newPage();
+  const captureDir = process.env.THEATER_APPEARANCE_SCREENSHOT_DIR;
+  const capture = async (page: Page, name: string, fullPage = false) => {
+    if (!captureDir) return;
+    mkdirSync(captureDir, { recursive: true });
+    await page.screenshot({ path: path.join(captureDir, `tme48a-${name}.png`), fullPage, animations: 'disabled' });
+  };
+  const waitModes = async (contrast: string, transparency: string) => {
+    for (const page of [options, second, popup]) await page.waitForFunction(({ contrast, transparency }) =>
+      document.documentElement.dataset.contrast === contrast && document.documentElement.dataset.transparency === transparency,
+    { contrast, transparency });
+    await player.waitForFunction(({ contrast, transparency }) => {
+      const host = document.getElementById('theater-everywhere-ui');
+      return host?.dataset.contrast === contrast && host.dataset.transparency === transparency;
+    }, { contrast, transparency });
+  };
+  try {
+    await worker.evaluate(({ key, id }) => chrome.storage.local.set({ [key]: id }), { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
+    await worker.evaluate(() => chrome.storage.sync.set({ highContrast: 'off', reduceTransparency: 'off', accentColor: 'purple', keepControlsVisible: true, language: 'en' }));
+    for (const page of [options, second]) {
+      await page.setViewportSize({ width: 1440, height: 1100 });
+      await page.goto(new URL('options/options.html#appearance', worker.url()).href);
+      await page.locator('#highContrast-grid [aria-checked="true"]').waitFor();
+    }
+    await popup.setViewportSize({ width: 300, height: 300 });
+    await popup.goto(new URL('popup/popup.html', worker.url()).href);
+    await player.setViewportSize({ width: 1440, height: 900 });
+    await player.goto(origin);
+    await waitForPlayer(player);
+    await player.keyboard.press('t');
+    await player.locator(`html.${THEATER_HTML_CLASS}`).waitFor({ state: 'attached' });
+    await waitModes('normal', 'normal');
+    await capture(options, 'settings-normal', true);
+    await player.locator('.player-settings-btn').focus();
+    await player.locator('.player-settings-btn').press('Enter');
+    await player.locator('.theater-settings-menu').waitFor({ state: 'visible' });
+    await capture(player, 'player-normal');
+    await options.locator('#highContrast-grid [data-choice="on"]').click();
+    await waitModes('high', 'normal');
+    if (await second.locator('#highContrast-grid [data-choice="on"]').getAttribute('aria-checked') !== 'true') fail('Appearance choice did not sync between Settings pages.');
+    await capture(options, 'settings-contrast', true);
+    if (captureDir) {
+      const first = await options.locator('#highContrast-grid').locator('..').boundingBox();
+      const last = await options.locator('#reduceTransparency-grid').locator('..').boundingBox();
+      if (!first || !last) throw new Error('Appearance blocks have no layout');
+      await options.screenshot({ path: path.join(captureDir, 'tme48a-appearance-blocks.png'), clip: {
+        x: first.x, y: first.y, width: first.width, height: last.y + last.height - first.y
+      } });
+    }
+    await capture(player, 'player-contrast');
+    await capture(popup, 'popup-contrast');
+    await options.locator('#tab-features').click();
+    await options.locator('[data-provider="netflix"]').hover();
+    const decoration = await options.locator('[data-provider="netflix"]').evaluate(tile => ({
+      content: getComputedStyle(tile, '::before').content,
+      animation: getComputedStyle(tile, '::before').animationName
+    }));
+    if (decoration.content !== 'none' || decoration.animation !== 'none') fail('High contrast did not flatten the RTE decoration.');
+    await capture(options, 'rte-contrast', true);
+    await options.locator('#whats-new-btn').click();
+    await options.locator('.te-dialog').waitFor();
+    await capture(options, 'update-highlights-contrast');
+    await options.locator('.te-dialog-btn-primary').click();
+    await options.locator('.te-dialog').waitFor({ state: 'detached' });
+    await options.locator('#tab-appearance').click();
+    await options.locator('#highContrast-grid [data-choice="off"]').click();
+    await options.locator('#reduceTransparency-grid [data-choice="on"]').click();
+    await waitModes('normal', 'reduced');
+    const fill = await player.locator('.theater-controls-wrapper').evaluate(el => getComputedStyle(el, '::before').backgroundColor);
+    if (fill !== 'rgb(24, 24, 27)') fail(`Reduced transparency kept a translucent toolbar: ${fill}`);
+    await capture(player, 'player-transparency');
+    await options.locator('#reduceTransparency-grid [data-choice="off"]').click();
+    await waitModes('normal', 'normal');
+    // Exit/reenter creates a fresh shadow owner and hydrates the saved preferences.
+    await worker.evaluate(() => chrome.storage.sync.set({ highContrast: 'on', reduceTransparency: 'on' }));
+    await waitModes('high', 'reduced');
+    await player.locator('.player-settings-btn').press('Escape'); // First dismiss the menu.
+    await player.keyboard.press('Escape');
+    await player.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+    await player.keyboard.press('t');
+    await waitModes('high', 'reduced');
+    console.log('smoke:chromium appearance: installed Settings, cross-tab storage, popup, shadow player, RTE, restoration and reentry passed');
+  } finally {
+    await worker.evaluate(async ({ keys, original }) => {
+      await chrome.storage.sync.remove(keys.filter(key => !(key in original)));
+      await chrome.storage.sync.set(original);
+    }, { keys, original });
+    await Promise.all([options, second, player, popup].map(page => page.close()));
+  }
+}
+
 async function smokeChromium(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
@@ -2133,6 +2232,10 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
     const page = context.pages()[0] || await context.newPage();
+    if (process.env.THEATER_SMOKE_APPEARANCE_ONLY === '1') {
+      await assertAppearanceModes(context, origin);
+      return;
+    }
     if (process.env.THEATER_SMOKE_LANGUAGE_ONLY === '1') {
       await assertLanguageMenu(page, origin, context);
       return;
@@ -2174,6 +2277,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     console.log('smoke:chromium parent-domain blacklist passed');
     await assertLanguageMenu(page, origin, context);
     await assertFeatureHighlights(page, origin, context);
+    await assertAppearanceModes(context, origin);
   } finally {
     await context?.close();
     rmSync(userDataDir, { recursive: true, force: true });

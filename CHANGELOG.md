@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Choose High contrast and Reduce transparency independently in Settings → Appearance with Auto / On / Off. Auto follows the system; open Settings, the popup and player controls update live. High contrast strengthens text, accents, boundaries, selection and focus; either mode uses solid surfaces and flattens decorative RTE tile borders while preserving your subtitle colors and background preferences.
+
 #### Chat, layout and player controls
 
 - Preserve existing Twitch and YouTube chat in theater mode, beside the picture or below it in narrow windows. Show/hide chat from the player toolbar or Alt+R (a chat the viewer collapsed is reopened natively), and choose its width and Light / Service settings / Dark theme from Player settings; preferences are remembered per service. Replay that the service does not offer shows no chat controls. [Usage, validation and remaining release qualification](docs/research/native-chat-validation.md).

@@ -1,3 +1,4 @@
+@import '../appearance-tokens.css';
 /*
  * Skin for the player UI, adopted only by #theater-everywhere-ui's shadow
  * root so page stylesheets cannot restyle it. Rules for elements of the host
@@ -45,9 +46,9 @@
 }
 
 .theater-hud-plate {
-  background: rgba(12, 12, 14, 0.8) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+  background: var(--appearance-surface, rgba(12, 12, 14, 0.8)) !important;
+  backdrop-filter: var(--appearance-blur, blur(4px)) !important;
+  -webkit-backdrop-filter: var(--appearance-blur, blur(4px)) !important;
 }
 
 .theater-backdrop-plate::before,
@@ -61,7 +62,7 @@
   inset: 0 !important;
   border-radius: inherit !important;
   pointer-events: none !important;
-  background-image: var(--theater-frost) !important;
+  background-image: var(--appearance-frost, var(--theater-frost)) !important;
   background-size: 140px 140px !important;
 }
 
@@ -123,7 +124,7 @@
   pointer-events: none !important;
   border-radius: 12px !important;
   background-color: rgba(9, 9, 11, 0.85) !important;
-  background-color: color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent) !important;
+  background-color: var(--appearance-surface, color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent)) !important;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
 }
@@ -153,7 +154,7 @@
 
 .theater-scrubber-track {
   height: 4px !important;
-  background-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.2)) !important;
   border-radius: 2px !important;
   position: relative !important;
   overflow: visible !important;
@@ -322,7 +323,7 @@
   top: 0 !important;
   width: 2px !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: var(--appearance-marker, rgba(255, 255, 255, 0.85)) !important;
   transform: translateX(-50%) !important;
 }
 
@@ -367,7 +368,7 @@
 .theater-control-btn {
   background: none !important;
   border: 1px solid transparent !important;
-  color: var(--text-primary, #f8fafc) !important;
+  color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
   cursor: pointer !important;
   width: 32px !important;
   height: 32px !important;
@@ -381,17 +382,17 @@
 }
 
 .theater-control-btn:hover {
-  background-color: rgba(99, 102, 241, 0.15) !important;
-  background-color: color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent) !important;
-  border-color: rgba(99, 102, 241, 0.3) !important;
-  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  background-color: var(--appearance-surface, rgba(99, 102, 241, 0.15)) !important;
+  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)) !important;
+  border-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
+  border-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-control-btn:active {
   transform: scale(0.92) !important;
-  background-color: rgba(99, 102, 241, 0.25) !important;
-  background-color: color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent) !important;
+  background-color: var(--appearance-surface, rgba(99, 102, 241, 0.25)) !important;
+  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)) !important;
 }
 
 /* Keep menu triggers still before opening and snap back when closing. */
@@ -439,8 +440,8 @@
   margin-bottom: calc(-1 * var(--theater-bar-pad)) !important;
   padding-top: calc(var(--theater-menu-notch-overlap) + 1px) !important;
   padding-bottom: var(--theater-bar-pad) !important;
-  background: rgb(20, 20, 20) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
+  border-color: var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   border-top-width: 0 !important;
   border-radius: 0 0 8px 8px !important;
   color: var(--accent-color, #ffffff) !important;
@@ -460,7 +461,7 @@
   top: 0 !important;
   width: 2px !important;
   height: calc(var(--theater-menu-notch-overlap) - 1px) !important;
-  background: rgba(20, 20, 20, 0.96) !important;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.96)) !important;
   pointer-events: none !important;
 }
 
@@ -470,7 +471,7 @@
 .theater-menu.is-open > .theater-control-btn:active,
 .theater-popover:is(:hover, :focus-within) > .theater-control-btn:active {
   transform: none !important;
-  background: rgb(20, 20, 20) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
 }
 
 .speed-btn {
@@ -498,8 +499,8 @@
   transform: translateX(-50%) !important;
   box-sizing: border-box !important;
   width: var(--theater-menu-notch) !important;
-  background: rgb(20, 20, 20) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   border-radius: 8px 8px 0 0 !important;
   border-bottom-width: 0 !important;
   padding: 8px 6px !important;
@@ -545,7 +546,7 @@
   box-shadow: none !important;
   width: 130px !important; /* vertical height of slider */
   height: 6px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.2)) !important;
   border-radius: 3px !important;
   outline: none !important;
   cursor: pointer !important;
@@ -557,7 +558,7 @@
 .theater-speed-tooltip-vertical {
   font-size: 10px !important;
   font-weight: 700 !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   min-width: 28px !important;
   text-align: center !important;
@@ -572,7 +573,7 @@
   width: 3px !important;
   height: 3px !important;
   border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: var(--appearance-marker, rgba(255, 255, 255, 0.6)) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
@@ -584,7 +585,7 @@
   transform: translate(-50%, 50%) !important;
   width: 4px !important;
   height: 2px !important;
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: var(--appearance-marker, rgba(255, 255, 255, 0.6)) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
@@ -657,7 +658,7 @@
   font-feature-settings: "tnum" 1, "lnum" 1 !important;
   font-variant-ligatures: none !important;
   font-kerning: none !important;
-  color: var(--text-secondary, #a1a1aa) !important;
+  color: var(--appearance-muted, var(--text-secondary, #a1a1aa)) !important;
   --theater-time-ink: var(--text-secondary, #a1a1aa);
   user-select: none !important;
   white-space: nowrap !important;
@@ -690,7 +691,7 @@ button.theater-time-end {
 }
 
 button.theater-time-end:hover {
-  color: var(--text-primary, #f8fafc) !important;
+  color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
   --theater-time-ink: var(--text-primary, #f8fafc);
 }
 
@@ -821,20 +822,20 @@ button.theater-time-end:hover {
 }
 
 .theater-time-display.theater-time-live {
-  color: #f87171 !important;
+  color: var(--appearance-ink, #f87171) !important;
   letter-spacing: 0.04em !important;
 }
 
 .theater-time-display.theater-time-live-behind {
-  color: var(--text-secondary, #a1a1aa) !important;
+  color: var(--appearance-muted, var(--text-secondary, #a1a1aa)) !important;
 }
 
 .theater-time-display.theater-time-live-jump:hover {
-  color: #fca5a5 !important;
+  color: var(--appearance-ink, #fca5a5) !important;
 }
 
 .theater-time-display.theater-time-live-behind.theater-time-live-jump:hover {
-  color: #f87171 !important;
+  color: var(--appearance-ink, #f87171) !important;
 }
 
 .theater-scrubber-container.theater-scrubber-live-locked {
@@ -863,7 +864,7 @@ button.theater-time-end:hover {
   align-items: center !important;
   justify-content: center !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 50% !important;
   width: 100px !important;
@@ -875,7 +876,7 @@ button.theater-time-end:hover {
   font-size: 11px !important;
   letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
-  color: #ffffff !important;
+  color: var(--appearance-ink, #ffffff) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -945,7 +946,7 @@ button.theater-time-end:hover {
 .seek-arrow.right-3 { animation: seekArrowRipple 0.5s infinite alternate 0.24s !important; }
 
 @keyframes seekArrowRipple {
-  0% { opacity: 0.25; }
+  0% { opacity: var(--appearance-content-opacity, 0.25); }
   100% { opacity: 1; }
 }
 
@@ -969,7 +970,7 @@ button.theater-time-end:hover {
   width: 48px !important;
   height: 48px !important;
   /* Neutral grey keeps the track readable over dark and bright frames alike. */
-  border: 4px solid rgba(150, 150, 150, 0.6) !important;
+  border: 4px solid var(--appearance-border, rgba(150, 150, 150, 0.6)) !important;
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
@@ -1003,8 +1004,8 @@ button.theater-time-end:hover {
   position: absolute !important;
   bottom: 100% !important;
   transform: translateX(-50%) translateY(-8px) !important;
-  background: rgba(20, 20, 20, 0.8) !important;
-  color: #ffffff !important;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.8)) !important;
+  color: var(--appearance-ink, #ffffff) !important;
   padding: 6px 8px !important;
   border-radius: 8px !important;
   font-size: 12px !important;
@@ -1135,7 +1136,7 @@ button.theater-time-end:hover {
 }
 
 @keyframes theater-caption-loading-pulse {
-  0%, 100% { color: #fff; }
+  0%, 100% { color: var(--appearance-ink, #fff); }
   50% { color: var(--accent-color, #6366f1); }
 }
 
@@ -1164,8 +1165,8 @@ button.theater-time-end:hover {
   max-height: calc(100vh - 110px) !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
-  background: rgba(20, 20, 20, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.96)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   border-radius: 10px !important;
   padding: 0 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
@@ -1215,8 +1216,8 @@ button.theater-time-end:hover {
   inset: 0 !important;
   z-index: 0 !important;
   border-radius: 10px !important;
-  background: rgb(20, 20, 20) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
   pointer-events: none !important;
   -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
@@ -1251,7 +1252,7 @@ button.theater-time-end:hover {
   padding: 8px !important;
   justify-content: flex-start !important;
   text-align: start !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-size: 12px !important;
   line-height: 1.35 !important;
 }
@@ -1272,7 +1273,7 @@ button.theater-time-end:hover {
   gap: 4px !important;
   direction: ltr !important;
   unicode-bidi: isolate !important;
-  color: #94a3b8 !important;
+  color: var(--appearance-muted, #94a3b8) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   white-space: nowrap !important;
@@ -1283,7 +1284,7 @@ button.theater-time-end:hover {
   border: 1px solid #3f3f46 !important;
   border-bottom: 2px solid #3f3f46 !important;
   border-radius: 4px !important;
-  color: #f4f4f5 !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
   font-size: 10px !important;
   font-weight: 700 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
@@ -1296,7 +1297,7 @@ button.theater-time-end:hover {
 .theater-settings-detail {
   flex: 0 0 auto !important;
   margin-inline-start: auto !important;
-  color: #cbd5e1 !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
   text-align: end !important;
   white-space: nowrap !important;
 }
@@ -1313,7 +1314,7 @@ button.theater-time-end:hover {
   inset-inline: -6px !important;
   top: -5px !important;
   height: 1px !important;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.15)) !important;
   pointer-events: none !important;
 }
 .theater-settings-row:focus-visible,
@@ -1327,7 +1328,7 @@ button.theater-time-end:hover {
 .theater-settings-heading {
   margin: 0 !important;
   padding: 6px 8px 2px !important;
-  color: #94a3b8 !important;
+  color: var(--appearance-muted, #94a3b8) !important;
   font-size: 11px !important;
   font-weight: 650 !important;
   line-height: 1.3 !important;
@@ -1339,7 +1340,7 @@ button.theater-time-end:hover {
 .theater-settings-note {
   margin: 0 !important;
   padding: 4px 8px 8px !important;
-  color: #cbd5e1 !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
   font-size: 12px !important;
   line-height: 1.4 !important;
 }
@@ -1353,7 +1354,7 @@ button.theater-time-end:hover {
 .theater-settings-separator {
   height: 1px !important;
   margin: 6px 2px !important;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.15)) !important;
 }
 
 .theater-settings-icon {
@@ -1369,7 +1370,7 @@ button.theater-time-end:hover {
   box-sizing: border-box !important;
   margin: 0 !important;
   cursor: default !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-size: 12px !important;
 }
 
@@ -1394,13 +1395,13 @@ button.theater-time-end:hover {
 }
 
 .theater-chat-width-slider:disabled {
-  opacity: 0.45 !important;
+  opacity: var(--appearance-content-opacity, 0.45) !important;
 }
 
 .theater-chat-width-value {
   flex: 0 0 auto !important;
   min-width: 46px !important;
-  color: #cbd5e1 !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
   font-size: 12px !important;
   line-height: 1.35 !important;
   text-align: end !important;
@@ -1419,7 +1420,7 @@ button.theater-time-end:hover {
   height: 12px !important;
   transform: translateY(-50%) !important;
   pointer-events: none !important;
-  color: #cbd5e1 !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
 }
 
 .theater-chat-theme-select {
@@ -1429,10 +1430,10 @@ button.theater-time-end:hover {
   height: 28px !important;
   margin: 0 !important;
   padding: 0 28px 0 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.24)) !important;
   border-radius: 6px !important;
   background: #111 !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   color-scheme: dark !important;
   font: inherit !important;
   font-size: 12px !important;
@@ -1452,7 +1453,7 @@ button.theater-time-end:hover {
   font-size: 11px !important;
   line-height: 1.35 !important;
   color: inherit !important;
-  opacity: 0.75 !important;
+  opacity: var(--appearance-content-opacity, 0.75) !important;
 }
 
 /* Subtitles CC popover menu */
@@ -1465,8 +1466,8 @@ button.theater-time-end:hover {
   position: absolute !important;
   inset-inline-end: 0 !important;
   bottom: 100% !important;
-  background: rgba(20, 20, 20, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.96)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   border-radius: 8px !important;
   padding: 0 !important;
   min-width: 176px !important;
@@ -1517,7 +1518,7 @@ button.theater-time-end:hover {
   border-bottom: 0 !important;
   border-radius: 7px 7px 0 0 !important;
   margin: 1px 1px 0 !important;
-  background: rgb(20, 20, 20) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
 }
 
 .theater-cc-menu-header::after {
@@ -1528,12 +1529,12 @@ button.theater-time-end:hover {
   right: -1px !important;
   bottom: 0 !important;
   height: 1px !important;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.15)) !important;
   pointer-events: none !important;
 }
 
 .theater-cc-menu-title {
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-size: 12px !important;
   font-weight: 650 !important;
   letter-spacing: 0.01em !important;
@@ -1553,7 +1554,7 @@ button.theater-time-end:hover {
 }
 
 .theater-cc-menu-options:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.1)) !important;
 }
 
 .theater-menu.is-open > .theater-cc-menu,
@@ -1577,8 +1578,8 @@ button.theater-time-end:hover {
   z-index: -1 !important;
   border-radius: 8px !important;
   border-end-end-radius: 0 !important;
-  background: rgb(20, 20, 20) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
   pointer-events: none !important;
   -webkit-mask-image: linear-gradient(#fff 0 0), linear-gradient(#fff 0 0);
@@ -1607,7 +1608,7 @@ button.theater-time-end:hover {
   -webkit-appearance: none !important;
   background: none !important;
   border: none !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   padding: 5px 12px !important;
   text-align: start !important;
   font-size: 12px !important;
@@ -1627,7 +1628,7 @@ button.theater-time-end:hover {
 }
 
 .theater-cc-menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.1)) !important;
 }
 
 .theater-cc-menu-item.active {
@@ -1638,9 +1639,9 @@ button.theater-time-end:hover {
 .theater-button-tooltip {
   position: fixed !important;
   transform: translate(-50%, -100%) !important;
-  background: rgba(15, 15, 15, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #f8fafc !important;
+  background: var(--appearance-surface, rgba(15, 15, 15, 0.9)) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   padding: 5px 10px !important;
   border-radius: 6px !important;
   font-size: 11px !important;
@@ -1701,7 +1702,7 @@ button.theater-time-end:hover {
   box-sizing: border-box !important;
   margin-top: 2px !important;
   padding-top: 6px !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   white-space: nowrap !important;
 }
 
@@ -1736,7 +1737,7 @@ button.theater-time-end:hover {
   border: 1px solid #3f3f46 !important;
   border-bottom: 2px solid #3f3f46 !important;
   border-radius: 4px !important;
-  color: #f4f4f5 !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
   font-size: 9px !important;
   font-weight: 700 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
@@ -1753,7 +1754,7 @@ button.theater-time-end:hover {
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background-color: rgba(0, 0, 0, 0.75) !important;
+  background-color: var(--appearance-surface, rgba(0, 0, 0, 0.75)) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1770,7 +1771,7 @@ button.theater-time-end:hover {
 
 .theater-help-card {
   background-color: #18181b !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   border-radius: 12px !important;
   width: 90% !important;
   max-width: 800px !important;
@@ -1788,7 +1789,7 @@ button.theater-time-end:hover {
   justify-content: space-between !important;
   align-items: center !important;
   margin-bottom: 20px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.1)) !important;
   padding-bottom: 12px !important;
   direction: inherit !important;
 }
@@ -1797,14 +1798,14 @@ button.theater-time-end:hover {
   margin: 0 !important;
   font-size: 18px !important;
   font-weight: 700 !important;
-  color: #f4f4f5 !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 .theater-help-close-btn {
   background: none !important;
   border: none !important;
-  color: #a1a1aa !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
   cursor: pointer !important;
   padding: 4px !important;
   border-radius: 6px !important;
@@ -1815,8 +1816,8 @@ button.theater-time-end:hover {
 }
 
 .theater-help-close-btn:hover {
-  color: #f4f4f5 !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.08)) !important;
 }
 
 .theater-help-grid {
@@ -1846,7 +1847,7 @@ button.theater-time-end:hover {
 }
 
 .theater-help-group + .theater-help-group {
-  border-top: 1px solid rgba(63, 63, 70, 0.5) !important;
+  border-top: 1px solid var(--appearance-border, rgba(63, 63, 70, 0.5)) !important;
   padding-top: 16px !important;
 }
 
@@ -1855,7 +1856,7 @@ button.theater-time-end:hover {
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.08em !important;
-  color: #a1a1aa !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   margin-bottom: 2px !important;
   text-align: start !important;
@@ -1874,7 +1875,7 @@ button.theater-time-end:hover {
   min-width: 0 !important;
   overflow-wrap: anywhere !important;
   font-size: 13px !important;
-  color: #d4d4d8 !important;
+  color: var(--appearance-ink, #d4d4d8) !important;
   font-weight: 500 !important;
   text-align: start !important;
 }
@@ -1887,7 +1888,7 @@ button.theater-time-end:hover {
   align-items: center !important;
   gap: 4px !important;
   flex-shrink: 0 !important;
-  color: #71717a !important;
+  color: var(--appearance-muted, #71717a) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   direction: ltr !important;
@@ -1899,7 +1900,7 @@ button.theater-time-end:hover {
   border: 1px solid #3f3f46 !important;
   border-bottom: 2px solid #3f3f46 !important;
   border-radius: 4px !important;
-  color: #f4f4f5 !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   padding: 3px 8px !important;
@@ -1926,7 +1927,7 @@ button.theater-time-end:hover {
   left: 50% !important;
   transform: translate(-50%, -50%) scale(1) !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 10px 18px !important;
@@ -1934,7 +1935,7 @@ button.theater-time-end:hover {
   flex-direction: row !important;
   align-items: center !important;
   gap: 10px !important;
-  color: #ffffff !important;
+  color: var(--appearance-ink, #ffffff) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 15px !important;
   font-weight: 700 !important;
@@ -1962,7 +1963,7 @@ button.theater-time-end:hover {
   left: auto !important;
   transform: none !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 10px 18px !important;
@@ -2024,11 +2025,11 @@ button.theater-time-end:hover {
   min-height: 54.6px !important;
   box-sizing: border-box !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 12px !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-  color: #ffffff !important;
+  color: var(--appearance-ink, #ffffff) !important;
   text-decoration: none !important;
   cursor: pointer !important;
   pointer-events: none !important;
@@ -2041,22 +2042,22 @@ button.theater-time-end:hover {
 
 .theater-home-pill:hover,
 .theater-home-pill:focus-visible {
-  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
-  background-image: linear-gradient(
+  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15))) !important;
+  background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
-  ) !important;
-  outline-color: rgba(99, 102, 241, 0.3) !important;
-  outline-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  )) !important;
+  outline-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
+  outline-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-home-pill:active {
-  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
-  background-image: linear-gradient(
+  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25))) !important;
+  background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
-  ) !important;
+  )) !important;
 }
 
 .theater-home-pill:focus-visible {
@@ -2077,13 +2078,13 @@ button.theater-time-end:hover {
   width: max-content !important;
   max-width: min(720px, calc(var(--theater-video-width, 100vw) - 114px)) !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 12px 20px !important;
   display: flex !important;
   align-items: center !important;
-  color: #ffffff !important;
+  color: var(--appearance-ink, #ffffff) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 22px !important;
   font-weight: 700 !important;
@@ -2166,7 +2167,7 @@ button.theater-time-end:hover {
 
 /* With an episode label, the series title steps back and the label leads. */
 .theater-title-hud-title {
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: var(--appearance-muted, rgba(255, 255, 255, 0.72)) !important;
 }
 
 .theater-title-hud-separator {
@@ -2191,7 +2192,7 @@ button.theater-time-end:hover {
 }
 
 .theater-everywhere-volume-overlay.boosted {
-  outline-color: color-mix(in srgb, var(--theater-volume-boost-color) 40%, transparent) !important;
+  outline-color: var(--appearance-border, color-mix(in srgb, var(--theater-volume-boost-color) 40%, transparent)) !important;
 }
 
 .theater-everywhere-volume-overlay.boosted :is(.volume-hud-text, .volume-hud-icon) {
@@ -2264,7 +2265,7 @@ button.theater-time-end:hover {
 }
 
 .volume-hud-detail {
-  color: rgba(255, 255, 255, 0.82) !important;
+  color: var(--appearance-muted, rgba(255, 255, 255, 0.82)) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   line-height: 1.3 !important;
@@ -2274,7 +2275,7 @@ button.theater-time-end:hover {
 .caption-hud-spinner {
   width: 22px !important;
   height: 22px !important;
-  border: 2.5px solid rgba(150, 150, 150, 0.6) !important;
+  border: 2.5px solid var(--appearance-border, rgba(150, 150, 150, 0.6)) !important;
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
@@ -2329,7 +2330,7 @@ button.theater-time-end:hover {
   align-items: center !important;
   justify-content: center !important;
   padding: 24px 16px !important;
-  background: rgba(9, 9, 11, 0.62) !important;
+  background: var(--appearance-surface, rgba(9, 9, 11, 0.62)) !important;
   pointer-events: auto !important;
 }
 
@@ -2339,11 +2340,11 @@ button.theater-time-end:hover {
   flex-direction: column !important;
   gap: 16px !important;
   padding: 20px 20px 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   border-radius: 12px !important;
-  background: rgba(15, 15, 15, 0.94) !important;
+  background: var(--appearance-surface, rgba(15, 15, 15, 0.94)) !important;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5) !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
@@ -2359,11 +2360,11 @@ button.theater-time-end:hover {
   font-size: 16px !important;
   font-weight: 700 !important;
   letter-spacing: -0.02em !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
 }
 
 .te-dialog-body {
-  color: #cbd5e1 !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
   font-size: 13px !important;
   line-height: 1.45 !important;
 }
@@ -2391,9 +2392,9 @@ button.theater-time-end:hover {
 }
 
 .te-dialog-btn-secondary {
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
   background: #18181b !important;
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
 }
 
 .theater-caption-options {
@@ -2406,9 +2407,9 @@ button.theater-time-end:hover {
   width: min(600px, 100%) !important;
   box-sizing: border-box !important;
   overflow: visible !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--appearance-border, rgba(255, 255, 255, 0.18)) !important;
   border-radius: 16px !important;
-  background: linear-gradient(155deg, rgba(35, 38, 40, 0.98), rgba(17, 18, 20, 0.98)) !important;
+  background: var(--appearance-surface, linear-gradient(155deg, rgba(35, 38, 40, 0.98), rgba(17, 18, 20, 0.98))) !important;
 }
 
 .theater-caption-options-dialog .te-dialog-body {
@@ -2427,8 +2428,8 @@ button.theater-time-end:hover {
   min-height: 64px !important;
   padding: 10px 14px !important;
   border-radius: 12px !important;
-  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.1), transparent 55%), #090a0b !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: var(--appearance-surface, radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.1), transparent 55%), #090a0b) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.1)) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
 }
 
@@ -2439,9 +2440,9 @@ button.theater-time-end:hover {
   gap: 16px !important;
   min-height: 0 !important;
   padding: 9px 11px !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.09)) !important;
   border-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.045) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.045)) !important;
 }
 
 .theater-caption-option-stack {
@@ -2451,7 +2452,7 @@ button.theater-time-end:hover {
 }
 
 .theater-caption-option-label {
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-size: 12px !important;
   font-weight: 700 !important;
   letter-spacing: 0.035em !important;
@@ -2475,8 +2476,8 @@ button.theater-time-end:hover {
   padding: 0 !important;
   border: 2px solid transparent !important;
   border-radius: 9px !important;
-  background: rgba(255, 255, 255, 0.09) !important;
-  color: #f8fafc !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.09)) !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-size: 26px !important;
   line-height: 1 !important;
   cursor: pointer !important;
@@ -2484,13 +2485,13 @@ button.theater-time-end:hover {
 }
 
 .theater-caption-font-choice:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.14)) !important;
   transform: translateY(-1px) !important;
 }
 
 .theater-caption-font-choice.active {
   border-color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.16) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.16)) !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 5px 14px rgba(0, 0, 0, 0.22) !important;
 }
 
@@ -2539,13 +2540,13 @@ button.theater-time-end:hover {
 .theater-caption-opacity-header {
   display: flex !important;
   justify-content: space-between !important;
-  color: #aeb4bd !important;
+  color: var(--appearance-muted, #aeb4bd) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
 }
 
 .theater-caption-opacity-header output {
-  color: #f8fafc !important;
+  color: var(--appearance-ink, #f8fafc) !important;
   font-variant-numeric: tabular-nums !important;
 }
 
@@ -2555,7 +2556,7 @@ button.theater-time-end:hover {
   width: 180px !important;
   height: 6px !important;
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.2)) !important;
   outline: none !important;
 }
 
@@ -2574,7 +2575,7 @@ button.theater-time-end:hover {
   height: 6px !important;
   border: none !important;
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: var(--appearance-hover, rgba(255, 255, 255, 0.2)) !important;
 }
 
 .theater-caption-slider::-moz-range-thumb {
@@ -2612,7 +2613,7 @@ button.theater-time-end:hover {
 .theater-caption-size-marks {
   display: flex !important;
   justify-content: space-between !important;
-  color: #a1a1aa !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
   font-size: 10px !important;
   font-variant-numeric: tabular-nums !important;
   line-height: 1 !important;
@@ -2742,7 +2743,7 @@ button.theater-time-end:hover {
 .theater-service-action-progress {
   position: absolute !important;
   inset: 0 !important;
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: var(--appearance-progress, rgba(255, 255, 255, 0.2)) !important;
   transform-origin: left center !important;
   pointer-events: none !important;
 }
@@ -2767,12 +2768,12 @@ button.theater-time-end:hover {
   padding: 8px 14px !important;
   overflow: hidden !important;
   border: 1px solid transparent !important;
-  outline: 1px solid rgba(255, 255, 255, 0.12) !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
   outline-offset: 1px !important;
   border-radius: 12px !important;
-  background: rgba(20, 20, 20, 0.8) !important;
+  background: var(--appearance-surface, rgba(20, 20, 20, 0.8)) !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-  color: #ffffff !important;
+  color: var(--appearance-ink, #ffffff) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   font-size: 14px !important;
   font-weight: 600 !important;
@@ -2793,22 +2794,22 @@ button.theater-time-end:hover {
 
 .theater-service-action:hover,
 .theater-service-action:focus-visible {
-  background-image: linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15)) !important;
-  background-image: linear-gradient(
+  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15))) !important;
+  background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
-  ) !important;
-  outline-color: rgba(99, 102, 241, 0.3) !important;
-  outline-color: color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent) !important;
+  )) !important;
+  outline-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
+  outline-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-service-action:active {
-  background-image: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)) !important;
-  background-image: linear-gradient(
+  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25))) !important;
+  background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
-  ) !important;
+  )) !important;
 }
 
 .theater-service-action:focus-visible {
@@ -2823,13 +2824,13 @@ button.theater-time-end:hover {
   position: absolute !important;
   inset: 0 !important;
   pointer-events: none !important;
-  background: linear-gradient(105deg, transparent 30%, rgba(99, 102, 241, 0.65) 50%, transparent 70%) !important;
-  background: linear-gradient(
+  background: var(--appearance-image, linear-gradient(105deg, transparent 30%, rgba(99, 102, 241, 0.65) 50%, transparent 70%)) !important;
+  background: var(--appearance-image, linear-gradient(
     105deg,
     transparent 30%,
     color-mix(in srgb, var(--accent-color, #6366f1) 65%, transparent) 50%,
     transparent 70%
-  ) !important;
+  )) !important;
   /* Not !important: an important declaration would override the keyframes. */
   transform: translateX(-70%);
   animation: theater-service-action-sweep 800ms cubic-bezier(0.4, 0, 0.3, 1) var(--theater-service-action-sweep-delay, 0ms) 1 both !important;
