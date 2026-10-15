@@ -8,7 +8,7 @@ import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
 import { VimeoAdapter } from '../media-features/vimeo-adapter';
 import { NetflixAdapter } from '../media-features/netflix-adapter';
-import { TILE_LEVELS, brandRoles, hexRgb, luminance, over, tileGlows } from '../../options/rte-colors';
+import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors';
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
 const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
@@ -117,23 +117,25 @@ describe('provider capability declarations', () => {
     assert.deepEqual(Object.fromEntries(PROVIDER_CAPABILITIES.map(provider => [provider.id, [...provider.brandColors]])), palettes);
   });
 
-  it('keeps tile text above 4.5:1 on every brand surface, on and off', () => {
+  it('keeps tile text above 4.5:1 on the resting row and under the veil on every brand', () => {
     const contrast = (a: readonly number[], b: readonly number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
     const pageBlack = hexRgb('#09090b');
+    const css = read('../../options/options.css');
+    const veil = Number(/--te-veil:\s*(\d+)%/.exec(css)![1]) / 100;
+    const offOpacity = Number(/input:not\(:checked\)\):is\(:hover[^}]*opacity:\s*([\d.]+)/.exec(css)![1]);
     // Title and note on; the dimmer title and secondary text off. Badges sit on dark glass.
     const text = { on: ['#f4f4f5', '#d4d4d8'], off: ['#d4d4d8', '#a1a1aa'] };
-    for (const provider of PROVIDER_CAPABILITIES) {
-      const { base, accents } = brandRoles(provider.brandColors);
-      for (const state of ['on', 'off'] as const) {
-        const { glows, rim } = tileGlows(accents, base, TILE_LEVELS[state].peak);
-        const [first, second = first] = accents;
-        // The brightest places: each corner's glow under the shared rim, and the bare base.
-        const surfaces = [first, second].map((color, i) => over(hexRgb(first), rim, over(hexRgb(color), glows[i], hexRgb(base))));
-        for (const surface of [...surfaces, hexRgb(base)]) {
-          for (const color of text[state]) assert.ok(contrast(hexRgb(color), surface) >= 4.5, `${provider.id} ${state}: ${color}`);
-          const glass = over(pageBlack, 0.7, surface);
-          assert.ok(contrast(hexRgb(state === 'on' ? '#e4e4e7' : '#a1a1aa'), glass) >= 4.5, `${provider.id} ${state}: badge`);
-        }
+    const badge = { on: '#e4e4e7', off: '#a1a1aa' };
+    for (const state of ['on', 'off'] as const) {
+      const check = (surface: readonly number[], label: string) => {
+        for (const color of text[state]) assert.ok(contrast(hexRgb(color), surface) >= 4.5, `${label} ${state}: ${color}`);
+        assert.ok(contrast(hexRgb(badge[state]), over(pageBlack, 0.7, surface)) >= 4.5, `${label} ${state}: badge`);
+      };
+      check(pageBlack, 'rest');
+      // The brightest orbit stop under the veil is the worst the hovered interior shows; an off tile shows it at partial opacity.
+      for (const provider of PROVIDER_CAPABILITIES) {
+        const veiled = over(pageBlack, veil, brightestStop(provider.brandColors));
+        check(state === 'on' ? veiled : over(veiled, offOpacity, pageBlack), provider.id);
       }
     }
   });

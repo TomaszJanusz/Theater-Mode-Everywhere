@@ -1693,19 +1693,13 @@ body.te-dialog-open {
   .card-heading-inner { position: sticky; top: 16px; }
 }
 .rte-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-/* Brand color lives on the tile alone: the surface glows in from the rim in the
-   service's hues over a dark base, and its static ring carries the same hues.
-   rte-colors.ts derives every per-service property from the palette. */
+/* A resting tile is a standard Settings row; brand color appears only while it
+   is hovered or focused (the animated border below), derived from the palette
+   by rte-colors.ts. */
 .rte-tile {
   display: flex; flex-direction: column; gap: 12px; min-width: 0;
-  border: 1px solid transparent; border-radius: 12px;
-  background: var(--rte-background);
-  box-shadow: var(--rte-rim);
-  transition: box-shadow 300ms ease-out;
-}
-.rte-tile:has(input:not(:checked)) {
-  background: var(--rte-background-off);
-  box-shadow: var(--rte-rim-off);
+  border: 1px solid var(--border-color); border-radius: 12px;
+  background: var(--bg-color);
 }
 .rte-tile[hidden] { display: none; }
 .rte-tile > * { position: relative; z-index: 1; }
@@ -1715,10 +1709,10 @@ body.te-dialog-open {
   padding: 16px 16px 0; flex: 1; align-content: start; cursor: pointer;
 }
 .rte-name { text-align: match-parent; font-size: 17px; font-weight: 650; line-height: 1.3; align-self: center; color: var(--text-primary); }
-/* The standard switch; a dark ring separates it from the colored surface. */
+/* The standard switch; a dark ring separates it from the colored interior. */
 .rte-tile .toggle-switch { align-self: center; border-radius: 11px; box-shadow: 0 0 0 2px var(--bg-color); }
 .rte-badges { display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
-/* Dark glass over the brand surface: the page black, translucent, never a grey pill. */
+/* Dark glass over the colored tile: the page black, translucent, never a grey pill. */
 .rte-badge {
   font-size: 11px; padding: 3px 8px; border-radius: 20px; color: #e4e4e7;
   background: color-mix(in srgb, var(--bg-color) 70%, transparent);
@@ -1744,10 +1738,12 @@ body.te-dialog-open {
 .rte-master input { width: 18px; height: 18px; accent-color: var(--accent-color); }
 #rte-count, #rte-shown, #rte-empty { color: var(--text-secondary); font-size: 12px; }
 #rte-shown { margin: 0; }
-.rte-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; margin: 10px 0; }
-#rte-filter-label { font-size: 12px; font-weight: 600; }
-/* A compact secondary button, distinct from the filter chips below it. */
-#rte-clear { height: 28px; padding: 0 10px; font-size: 12px; border-color: #52525b; border-radius: 6px; }
+.rte-filter-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin: 10px 0; }
+#rte-filter-label { flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 600; }
+/* A compact ghost button whose label never wraps; when the heading takes the
+   row, the whole button drops to its own line below it. */
+#rte-clear { height: 28px; padding: 0 10px; font-size: 12px; font-weight: 400; white-space: nowrap; background: transparent; color: var(--text-secondary); border-radius: 6px; }
+#rte-clear:hover { background: var(--border-color); color: var(--text-primary); }
 #rte-clear[hidden] { display: none; }
 .rte-filter-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
 .rte-filter-buttons button {
@@ -1758,19 +1754,25 @@ body.te-dialog-open {
 .rte-filter-buttons button:focus-visible, #rte-clear:focus-visible, .rte-master:has(:focus-visible) { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 @media (max-width: 560px) { .rte-tiles { grid-template-columns: 1fr; } }
 
-/* Animated border, adapted from Privacy Thing's animated accent border: a
-   masked conic-gradient ring whose angle is a registered property, so the
-   orbit costs no layout and runs only while a tile is hovered or has keyboard
-   focus. The boost is an additive one-turn transition over the steady orbit:
-   it pushes the comets fast on entry and, after the dwell, leaves the calmer
-   steady orbit. On leave the frozen arc fades out first; only then does the
-   boost rewind a full turn (an identical angle), so nothing visibly jumps.
-   The ring stays on ::before alone, so the planned high-contrast and
-   reduced-transparency modes can drop the motion with one override. */
+/* Animated border, adapted from Privacy Thing's animated accent border: one
+   pseudo-element covers the tile with a conic gradient whose angle is a
+   registered property, so the orbit costs no layout and runs only while a
+   tile is hovered or has keyboard focus. The gradient peeks out as the ring
+   in the transparent border; inside it the same gradient shows through a
+   dark veil, so the interior turns with the ring but keeps text contrast
+   (--te-veil is checked against every brand's brightest stop in
+   capabilities.test.ts). The boost is an additive one-turn transition over
+   the steady orbit: it pushes the comets fast on entry and, after the dwell,
+   leaves the calmer steady orbit. On leave the colors fade out first; only
+   then does the boost rewind a full turn (an identical angle), so nothing
+   visibly jumps. Ring and interior stay on ::before alone, so the planned
+   high-contrast and reduced-transparency modes can flatten them with one
+   override. */
 @property --te-border-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 @property --te-border-boost { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .te-animated-border {
   --te-border-width: 2px;
+  --te-veil: 78%;
   --te-border-orbit-duration: 9s;
   --te-border-boost-duration: 1.8s;
   --te-border-boost-easing: cubic-bezier(0.18, 0.52, 0.3, 1);
@@ -1779,9 +1781,10 @@ body.te-dialog-open {
 }
 .te-animated-border::before {
   content: ''; position: absolute; inset: -1px; z-index: 0; pointer-events: none;
-  padding: var(--te-border-width); border-radius: inherit;
-  background: conic-gradient(from calc(var(--te-border-angle) + var(--te-border-boost)), var(--te-border-stops));
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  border: var(--te-border-width) solid transparent; border-radius: inherit;
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg-color) var(--te-veil), transparent) 0 0) padding-box,
+    conic-gradient(from calc(var(--te-border-angle) + var(--te-border-boost)), var(--te-border-stops)) border-box;
   opacity: 0;
   animation: te-border-orbit var(--te-border-orbit-duration) linear infinite paused;
   transition: opacity var(--te-border-fade-duration) ease-out, --te-border-boost 0s var(--te-border-fade-duration);
@@ -1790,12 +1793,13 @@ body.te-dialog-open {
   --te-border-boost: 360deg;
   opacity: 1;
   animation-play-state: running;
-  transition: opacity 200ms ease-out, --te-border-boost var(--te-border-boost-duration) var(--te-border-boost-easing);
+  transition: opacity 350ms ease-out, --te-border-boost var(--te-border-boost-duration) var(--te-border-boost-easing);
 }
+/* An off service shows the colors at 60%, which capabilities.test.ts counts in its contrast bound. */
 .rte-tile:has(input:not(:checked)):is(:hover, :has(:focus-visible))::before { opacity: .6; }
 @keyframes te-border-orbit { to { --te-border-angle: 360deg; } }
 @media (prefers-reduced-motion: reduce) {
-  /* The static ring on the tile remains; no orbit and no fade. */
-  .te-animated-border::before { display: none; }
-  .rte-tile, .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
+  /* Hover shows the static colored ring and interior: no orbit, boost or fade. */
+  .te-animated-border::before, .te-animated-border:is(:hover, :has(:focus-visible))::before { animation: none; transition: none; }
+  .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
 }

@@ -1046,14 +1046,14 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles.png') });
     const netflix = page.locator('[data-provider="netflix"]');
     const ring = () => netflix.evaluate(el => ({ opacity: getComputedStyle(el, '::before').opacity, playState: getComputedStyle(el, '::before').animationPlayState }));
-    if ((await ring()).opacity !== '0') fail('A resting RTE tile shows its animated border.');
+    if ((await ring()).opacity !== '0') fail('A resting RTE tile shows brand colors.');
     await netflix.hover();
     await page.waitForTimeout(250);
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-1.png') });
     await page.waitForTimeout(450);
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-2.png') });
     await settle(); // the boost transition; the steady orbit itself never finishes
-    if ((await ring()).playState !== 'running') fail('The RTE border stopped orbiting while hovered.');
+    if ((await ring()).playState !== 'running' || (await ring()).opacity !== '1') fail('The RTE tile stopped showing its orbiting colors while hovered.');
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-dwell.png') });
     await page.mouse.move(2, 2);
     await settle();
