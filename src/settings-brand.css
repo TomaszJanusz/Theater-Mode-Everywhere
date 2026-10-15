@@ -1,0 +1,12 @@
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: var(--logo-gap, 8px);
+}
+
+.logo-icon-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
