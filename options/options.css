@@ -665,6 +665,11 @@ section h2 {
   text-decoration: underline;
 }
 
+/* The author's name (the external link) takes the accent; the in-page license link stays muted. */
+.copyright a[href^="http"] {
+  color: var(--accent-color);
+}
+
 .made-in-poland .heart {
   color: var(--accent-color);
 }
