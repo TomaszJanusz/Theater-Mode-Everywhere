@@ -100,6 +100,8 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         document.body.appendChild(obstacle);
         await flush();
         const obstacleBottom = document.documentElement.style.getPropertyValue('--theater-caption-bottom');
+        const liftedTransition = (document.querySelector('.theater-caption-overlay') as HTMLElement)
+          .style.getPropertyValue('transition');
         const afterInsertion = scans;
         obstacle.classList.remove('visible');
         await flush();
@@ -154,7 +156,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
         obstacle.remove();
         await flush();
         return { queued, initial, stable, tickMeasurements, baseBottom, obstacleBottom, hiddenBottom, visibilityScans,
-          raisedBottom, multilineBottom, lineLimit, restTransition, movingTransition, rowChangeScans,
+          raisedBottom, multilineBottom, lineLimit, liftedTransition, restTransition, movingTransition, rowChangeScans,
           beforeNativeFrame, nativeBeforePaint, afterNativeFrame,
           afterExit: layouts - beforeExit, queuedAfterExit: frames.size };
       });
@@ -168,6 +170,7 @@ describe('caption dock frame and cached geometry lifecycle', () => {
       assert.notEqual(report.multilineBottom, report.raisedBottom);
       assert.equal(report.lineLimit, 3);
       assert.equal(report.rowChangeScans, 0);
+      assert.ok(report.liftedTransition.includes('bottom'), report.liftedTransition);
       assert.ok(!report.restTransition.includes('bottom'), report.restTransition);
       assert.ok(report.movingTransition.includes('bottom'), report.movingTransition);
       assert.notEqual(report.nativeBeforePaint, report.beforeNativeFrame);

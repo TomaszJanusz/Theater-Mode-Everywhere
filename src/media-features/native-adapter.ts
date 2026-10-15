@@ -1,5 +1,6 @@
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { sanitizeContentTitle } from './content-title';
+import { GenericTitleSource } from '../providers/native/page-title';
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
@@ -152,13 +153,22 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
     this.enforceOverlayTrackMode();
   };
 
-  constructor(video: HTMLVideoElement) {
+  private titleSource: GenericTitleSource;
+
+  /**
+   * @param pageTitle Also read page metadata, for pages without a service integration.
+   */
+  constructor(video: HTMLVideoElement, pageTitle = false) {
     this.video = video;
+    this.titleSource = new GenericTitleSource(video, pageTitle);
   }
 
   getTitle(): string | null {
-    const titled = this.video as HTMLVideoElement & { getAttribute?: (name: string) => string | null; title?: string };
-    return sanitizeContentTitle(titled.getAttribute?.('title') || titled.title);
+    return sanitizeContentTitle(this.titleSource.read());
+  }
+
+  observeTitle(onChange: () => void): () => void {
+    return this.titleSource.observe(onChange);
   }
 
   async probe(): Promise<MediaCapabilities> {
