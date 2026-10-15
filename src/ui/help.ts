@@ -1,9 +1,11 @@
+import { containModalFocus } from '../accessibility';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
 import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
 import { createDialogCloseButton } from './dialog-close-button';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
+  let releaseFocus: (() => void) | null = null;
   let returnFocus: HTMLElement | null = null;
   let returnTrigger: string | null = null;
   let removalObserver: MutationObserver | null = null;
@@ -172,11 +174,15 @@ export function createHelp(ctx: PlayerChromeContext) {
     if (root instanceof ShadowRoot && root.host.parentNode) {
       removalObserver.observe(root.host.parentNode, { childList: true });
     }
+    const release = containModalFocus(overlay, () => hideHelpOverlay());
+    releaseFocus = () => release(false);
     closeBtn.focus();
   }
 
   function hideHelpOverlay(restoreFocus = true): void {
     if (!ctx.refs.helpOverlay && !ctx.ui().helpOpen) return;
+    releaseFocus?.();
+    releaseFocus = null;
     removalObserver?.disconnect();
     removalObserver = null;
     ctx.refs.helpOverlay?.remove();

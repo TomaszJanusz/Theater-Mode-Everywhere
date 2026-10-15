@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "Автоматично (мова браузера)"
+  },
+  "addExclusion": {
+    "message": "Додати сайт до винятків"
+  },
+  "playbackPosition": {
+    "message": "Позиція відтворення"
+  },
+  "volumeLabel": {
+    "message": "Гучність"
+  },
+  "playbackSpeed": {
+    "message": "Швидкість відтворення"
   }
 }

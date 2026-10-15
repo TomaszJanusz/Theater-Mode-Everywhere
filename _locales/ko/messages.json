@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "자동 (브라우저 언어)"
+  },
+  "addExclusion": {
+    "message": "웹사이트 제외 추가"
+  },
+  "playbackPosition": {
+    "message": "재생 위치"
+  },
+  "volumeLabel": {
+    "message": "음량"
+  },
+  "playbackSpeed": {
+    "message": "재생 속도"
   }
 }

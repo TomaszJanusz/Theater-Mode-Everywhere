@@ -78,7 +78,8 @@ import {
 import {
   getPlayerUiRoot,
   queryPlayerUi,
-  queryPlayerUiAll
+  queryPlayerUiAll,
+  PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
@@ -1351,6 +1352,16 @@ function initialize(): void {
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = editableFieldFocused(activeEl);
     if (isEditable) return false;
+    if (activeEl?.matches('input[type=range]')
+        && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
+    if (event.key === 'Escape') {
+      // The slider panel consumes Escape only while it is open (see bindSliderPopover).
+      const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')
+        ?.querySelector<HTMLElement>('.theater-volume-panel, .theater-speed-panel');
+      if (sliderPanel && !sliderPanel.inert) return false;
+    }
+    if (activeEl?.matches('.theater-scrubber-container')
+        && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
     if (theaterDialogOpen()) return false;
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
@@ -1374,7 +1385,7 @@ function initialize(): void {
     }
 
     // Let native menu buttons and the duration toggle activate with Space/Enter.
-    if (!ui().helpOpen && activeEl?.closest('.theater-menu, .theater-service-action-host, .theater-time-end')
+    if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -1611,7 +1622,7 @@ function initialize(): void {
       event.stopImmediatePropagation();
       return;
     }
-    if (!ui().helpOpen && activeEl?.closest('.theater-menu')
+    if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
       event.stopImmediatePropagation();

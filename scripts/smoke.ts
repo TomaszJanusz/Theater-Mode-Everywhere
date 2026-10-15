@@ -652,12 +652,12 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help let Tab reach controls behind the overlay.');
   }
   const pausedDuringHelp = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
-  // Even programmatic focus behind help cannot activate a hidden settings control.
+  // Inert modal surroundings reject even programmatic focus behind help.
   await gear.focus();
-  await page.keyboard.press('Space');
-  await page.keyboard.press('Enter');
-  if (await menu.isVisible() || !await page.locator('.theater-help-overlay').count()) {
-    fail('A focused gear activated settings underneath help.');
+  if (await gear.evaluate(button => button.matches(':focus'))
+      || !await helpClose.evaluate(button => button.matches(':focus'))
+      || await menu.isVisible() || !await page.locator('.theater-help-overlay').count()) {
+    fail('Help allowed focus or settings activation behind its modal.');
   }
   await page.keyboard.press('Escape');
   if (await page.locator('.theater-help-overlay').count() || !await theaterEntered(page)) {

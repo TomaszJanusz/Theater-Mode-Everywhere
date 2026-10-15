@@ -1,3 +1,5 @@
+import { containModalFocus } from './accessibility';
+import { t } from './i18n';
 import { languageRuntime } from './i18n-runtime';
 
 export type DialogActionSet =
@@ -25,9 +27,6 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
 
   return new Promise((resolve) => {
     const titleId = `te-dialog-title-${++dialogTitleSeq}`;
-    const previousFocus = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
 
     const overlay = document.createElement('div');
     overlay.className = 'te-dialog-overlay theater-backdrop-dialog';
@@ -48,6 +47,8 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
     header.appendChild(title);
 
     const body = document.createElement('div');
+    body.id = `${titleId}-body`;
+    if (typeof options.content === 'string') dialog.setAttribute('aria-describedby', body.id);
     body.className = 'te-dialog-body';
     if (typeof options.content === 'string') {
       const paragraph = document.createElement('p');
@@ -73,11 +74,11 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
     };
 
     if (options.actions.type === 'acknowledge') {
-      const acknowledge = createButton(options.actions.label || 'OK', 'primary');
+      const acknowledge = createButton(options.actions.label || t('dialogAcknowledge'), 'primary');
       acknowledge.addEventListener('click', () => close(true));
     } else {
-      const falseButton = createButton(options.actions.falseLabel || 'No', 'secondary');
-      const trueButton = createButton(options.actions.trueLabel || 'Yes', 'primary');
+      const falseButton = createButton(options.actions.falseLabel || t('dialogChoiceFalse'), 'secondary');
+      const trueButton = createButton(options.actions.trueLabel || t('dialogChoiceTrue'), 'primary');
       falseButton.addEventListener('click', () => close(false));
       trueButton.addEventListener('click', () => close(true));
     }
@@ -102,11 +103,11 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       overlay.classList.add('is-leaving');
       document.body.classList.remove('te-dialog-open');
       overlay.removeEventListener('pointerdown', onOverlayPointerDown);
-      document.removeEventListener('keydown', onKeyDown, true);
+      releaseFocus();
+      overlay.inert = true;
 
       const finish = (): void => {
         overlay.remove();
-        previousFocus?.focus();
         resolve(value);
       };
 
@@ -120,35 +121,10 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       }
     };
 
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        close(dismissValue);
-        return;
-      }
-
-      if (event.key !== 'Tab' || buttons.length === 0) {
-        return;
-      }
-
-      const first = buttons[0];
-      const last = buttons[buttons.length - 1];
-      const focused = document.activeElement;
-
-      if (event.shiftKey && focused === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && focused === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
     // Dialog strings are snapshots. Cancel instead of retaining an old-language confirmation.
     const stopLanguageRendering = languageRuntime.subscribe(() => close(false, true));
     overlay.addEventListener('pointerdown', onOverlayPointerDown);
-    document.addEventListener('keydown', onKeyDown, true);
+    const releaseFocus = containModalFocus(dialog, () => close(dismissValue));
     activeDialog = { close };
 
     requestAnimationFrame(() => {

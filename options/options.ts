@@ -189,12 +189,14 @@ async function init() {
   form.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
     validationMsg.textContent = '';
+    input.removeAttribute('aria-invalid');
 
     const inputValue = input.value;
     const domain = cleanDomain(inputValue);
 
     if (!domain) {
       validationMsg.textContent = t('invalidDomain');
+      input.setAttribute('aria-invalid', 'true');
       return;
     }
 
@@ -204,6 +206,7 @@ async function init() {
 
       if (blacklist.includes(domain)) {
         validationMsg.textContent = t('websiteAlreadyExcluded');
+        input.setAttribute('aria-invalid', 'true');
         return;
       }
 
@@ -245,14 +248,16 @@ async function init() {
       blacklist.sort();
 
       countBadge.textContent = String(blacklist.length);
+      countBadge.setAttribute('aria-label', `${t('excludedWebsitesTitle')}: ${blacklist.length}`);
       container.innerHTML = '';
 
       if (blacklist.length === 0) {
         // Render empty state
         const emptyState = document.createElement('div');
         emptyState.className = 'empty-state';
+        emptyState.setAttribute('role', 'listitem');
         emptyState.innerHTML = `
-          <svg class="empty-state-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg aria-hidden="true" class="empty-state-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -274,6 +279,7 @@ async function init() {
       blacklist.forEach(domain => {
         const item = document.createElement('div');
         item.className = 'exclusion-list-item';
+        item.setAttribute('role', 'listitem');
 
         const domainSpan = document.createElement('span');
         domainSpan.className = 'domain-name';
@@ -283,8 +289,9 @@ async function init() {
         deleteBtn.className = 'delete-list-btn';
         deleteBtn.dataset.i18nTitle = 'removeExclusion';
         deleteBtn.title = t('removeExclusion');
+        deleteBtn.setAttribute('aria-label', `${t('removeExclusion')}: ${domain}`);
         deleteBtn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
@@ -309,6 +316,8 @@ async function init() {
 
   // Remove domain from storage
   async function removeDomain(domain: string) {
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button'));
+    const index = buttons.findIndex(button => button === document.activeElement);
     try {
       const data = await safeGetStorage('blacklist');
       let blacklist = (data.blacklist || []) as string[];
@@ -317,8 +326,14 @@ async function init() {
       await chrome.storage.sync.set({ blacklist });
       
       await loadAndRenderBlacklist();
+      if (index >= 0 && !container.closest('[hidden]')
+          && (document.activeElement === document.body || document.activeElement === buttons[index])) {
+        const remaining = container.querySelectorAll<HTMLButtonElement>('button');
+        (remaining[Math.min(index, remaining.length - 1)] ?? input).focus();
+      }
       await notifyAllTabs();
     } catch (err) {
+      validationMsg.textContent = t('errorSavingSettings');
       console.error('Error removing domain:', err);
     }
   }
@@ -372,13 +387,33 @@ async function init() {
     const grid = document.getElementById('accent-color-grid') as HTMLElement | null;
     if (!grid) return;
 
-    grid.textContent = '';
+    if (grid.childElementCount) {
+      grid.querySelectorAll<HTMLButtonElement>('[role=radio]').forEach(button => {
+        const selected = button.dataset.accentColor === selectedPreset;
+        button.setAttribute('aria-checked', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+        button.classList.toggle('selected', selected);
+      });
+      return;
+    }
+    grid.addEventListener('keydown', event => {
+      const buttons = Array.from(grid.querySelectorAll<HTMLButtonElement>('[role=radio]'));
+      const index = buttons.findIndex(button => button === document.activeElement);
+      if (index < 0 || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      event.preventDefault();
+      const rtl = getComputedStyle(grid).direction === 'rtl';
+      const back = event.key === 'ArrowUp' || event.key === (rtl ? 'ArrowRight' : 'ArrowLeft');
+      const next = buttons[(index + (back ? -1 : 1) + buttons.length) % buttons.length];
+      next.focus();
+      next.click();
+    });
 
     ACCENT_COLOR_OPTIONS.forEach(option => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'accent-color-btn';
       button.dataset.accentColor = option.preset;
+      button.tabIndex = option.preset === selectedPreset ? 0 : -1;
       button.setAttribute('role', 'radio');
       const localizedLabel = t(`accentColor${option.preset[0].toUpperCase()}${option.preset.slice(1)}`);
       button.setAttribute('aria-label', t('useAccentColor', localizedLabel));
@@ -710,16 +745,37 @@ async function init() {
     });
 
     const detailsToggle = document.getElementById('rich-theater-experience-details') as HTMLButtonElement | null;
-    const richTheaterInfo = detailsToggle?.closest('.feature-info');
-    detailsToggle?.addEventListener('click', () => {
-      const expanded = !richTheaterInfo?.classList.contains('rte-popover-open');
+    const richTheaterInfo = detailsToggle?.closest<HTMLElement>('.feature-info');
+    const popover = document.getElementById('rich-theater-experience-popover');
+    const focusDetails = () => {
+      if (detailsToggle?.getAttribute('aria-expanded') === 'true' && document.activeElement === detailsToggle) popover?.focus();
+    };
+    popover?.addEventListener('transitionend', focusDetails);
+    const setDetailsOpen = (expanded: boolean, restoreFocus = false) => {
       richTheaterInfo?.classList.toggle('rte-popover-open', expanded);
-      detailsToggle.setAttribute('aria-expanded', String(expanded));
+      detailsToggle?.setAttribute('aria-expanded', String(expanded));
+      if (popover) popover.inert = !expanded;
+      if (expanded) {
+        focusDetails();
+        requestAnimationFrame(focusDetails);
+      } else if (restoreFocus) detailsToggle?.focus();
+    };
+    setDetailsOpen(false);
+    detailsToggle?.addEventListener('click', () => {
+      setDetailsOpen(detailsToggle.getAttribute('aria-expanded') !== 'true');
     });
-    document.addEventListener('click', (event) => {
+    richTheaterInfo?.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || detailsToggle?.getAttribute('aria-expanded') !== 'true') return;
+      event.preventDefault();
+      setDetailsOpen(false, true);
+    });
+    richTheaterInfo?.addEventListener('focusout', event => {
+      if (event.relatedTarget instanceof Node && richTheaterInfo.contains(event.relatedTarget)) return;
+      setDetailsOpen(false);
+    });
+    document.addEventListener('click', event => {
       if (!(event.target instanceof Node) || richTheaterInfo?.contains(event.target)) return;
-      richTheaterInfo?.classList.remove('rte-popover-open');
-      detailsToggle?.setAttribute('aria-expanded', 'false');
+      setDetailsOpen(false);
     });
   }
 

@@ -1,6 +1,9 @@
 import { translateMessage } from '../i18n-runtime';
 
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
+  playbackPosition: 'Playback position',
+  volumeLabel: 'Volume',
+  playbackSpeed: 'Playback speed',
   shortcutUnassigned: "Not assigned",
   shortcutExistingConflicts: "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts.",
   shortcutConflictTitle: "Shortcut already assigned",

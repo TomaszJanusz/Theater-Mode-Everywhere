@@ -92,6 +92,7 @@ export function createPlayerSettings(
   /** Audio rows precede player actions. Shortcuts stay the last action; footer rows close the panel. */
   function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' | 'shortcuts' = 'player') {
     row.type = 'button';
+    row.setAttribute('aria-label', label);
     row.classList.add('theater-settings-row');
     row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
     const main = document.createElement('span');
@@ -102,6 +103,7 @@ export function createPlayerSettings(
     const keys = document.createElement('span');
     keys.className = 'theater-settings-keys';
     keys.dir = 'ltr';
+    keys.setAttribute('aria-hidden', 'true');
     main.append(text, keys);
     const detail = document.createElement('span');
     detail.className = 'theater-settings-detail';
@@ -121,6 +123,7 @@ export function createPlayerSettings(
     }
     return {
       update(shortcut: string, value?: string) {
+        row.setAttribute('aria-label', value ? `${label}: ${value}` : label);
         keys.replaceChildren();
         shortcutDisplayParts(shortcut).forEach((part, index) => {
           if (index > 0) keys.append('+');

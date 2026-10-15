@@ -1,3 +1,4 @@
+import { announcePlayerStatus } from './root';
 import { contentTitle, type ContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
@@ -91,6 +92,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-seek-overlay ${HUD_PLATE_CLASS} ${direction} animate`;
     ctx.paintOverlay(overlay);
+    overlay.setAttribute('aria-hidden', 'true');
 
     const iconWrapper = document.createElement('div');
     iconWrapper.className = 'seek-icon-wrapper';
@@ -113,6 +115,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
     const textSpan = document.createElement('span');
     textSpan.textContent = ctx.t('fiveSeconds');
+    announcePlayerStatus(ctx.t(direction === 'left' ? 'seekBackward5' : 'seekForward5'));
     overlay.appendChild(textSpan);
 
     ctx.mountPlayerUi(overlay);
@@ -137,9 +140,11 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const isBoosted = !muted && logicalVolume > 1.0 && ctx.session.element.dataset.theaterBoostReady === 'true';
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}` + (isBoosted ? ' boosted' : '');
     ctx.paintOverlay(overlay);
+    overlay.setAttribute('aria-hidden', 'true');
 
     const pct = muted ? 0 : (logicalVolume <= 1.0 ? Math.round(logicalVolume * 100) : Math.round(100 + (logicalVolume - 1.0) * 400));
 
+    announcePlayerStatus(`${ctx.t('volumeLabel')}: ${pct}%`);
     let icon = '';
     if (muted || pct === 0) {
       icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -187,6 +192,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS} status-hud`;
     ctx.paintOverlay(overlay);
+    overlay.setAttribute('aria-hidden', 'true');
 
     const content = document.createElement('div');
     content.className = 'volume-hud-content';
@@ -196,6 +202,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const textEl = document.createElement('span');
     textEl.className = 'volume-hud-text';
     textEl.textContent = text;
+    announcePlayerStatus(text);
     content.append(iconEl, textEl);
     overlay.appendChild(content);
 
@@ -220,6 +227,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}`;
     ctx.paintOverlay(overlay);
+    overlay.setAttribute('aria-hidden', 'true');
 
     let icon = '';
     if (action === 'play') {
@@ -234,6 +242,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     }
 
     const text = action === 'play' ? ctx.t('play') : ctx.t('pause');
+    announcePlayerStatus(text);
 
     overlay.innerHTML = `
     <div class="volume-hud-content">
@@ -299,9 +308,11 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
   }
 
   function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>): void {
+    announcePlayerStatus(view.kind === 'status' && view.detail ? `${view.title}: ${view.detail}` : view.title);
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
     ctx.paintOverlay(overlay);
+    overlay.setAttribute('aria-hidden', 'true');
 
     const content = document.createElement('div');
     content.className = view.kind === 'status'

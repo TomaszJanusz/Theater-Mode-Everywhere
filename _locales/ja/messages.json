@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "自動（ブラウザーの言語）"
+  },
+  "addExclusion": {
+    "message": "除外するウェブサイトを追加"
+  },
+  "playbackPosition": {
+    "message": "再生位置"
+  },
+  "volumeLabel": {
+    "message": "音量"
+  },
+  "playbackSpeed": {
+    "message": "再生速度"
   }
 }

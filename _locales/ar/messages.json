@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "تلقائي (لغة المتصفح)"
+  },
+  "addExclusion": {
+    "message": "إضافة موقع إلى الاستثناءات"
+  },
+  "playbackPosition": {
+    "message": "موضع التشغيل"
+  },
+  "volumeLabel": {
+    "message": "مستوى الصوت"
+  },
+  "playbackSpeed": {
+    "message": "سرعة التشغيل"
   }
 }

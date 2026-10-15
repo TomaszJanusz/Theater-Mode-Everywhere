@@ -1,3 +1,4 @@
+import { containModalFocus } from '../accessibility';
 import type { CaptionStyle } from './caption-style';
 import {
   applyCaptionStyle,
@@ -36,6 +37,7 @@ export async function openCaptionOptionsDialog(options: {
   dialog.className = 'te-dialog theater-caption-options-dialog';
   dialog.setAttribute('role', 'dialog');
   dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-label', options.t('subtitleOptionsTitle'));
 
   const header = document.createElement('div');
   header.className = 'te-dialog-header';
@@ -149,6 +151,7 @@ export async function openCaptionOptionsDialog(options: {
   options.decorate?.(overlay);
   mountPlayerUi(overlay);
   document.body.classList.add('te-dialog-open');
+  const releaseFocus = containModalFocus(dialog, () => done.click());
   done.focus();
 
   await new Promise<void>((resolve) => {
@@ -157,7 +160,7 @@ export async function openCaptionOptionsDialog(options: {
       if (settled) return;
       settled = true;
       overlay.removeEventListener('pointerdown', onOverlay);
-      document.removeEventListener('keydown', onKeyDown, true);
+      releaseFocus(false);
       options.signal?.removeEventListener('abort', onAbort);
       document.body.classList.remove('te-dialog-open');
       overlay.remove();
@@ -167,17 +170,10 @@ export async function openCaptionOptionsDialog(options: {
     const onOverlay = (event: PointerEvent): void => {
       if (event.target === overlay) close();
     };
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      close();
-    };
     const onAbort = (): void => {
       close(false);
     };
     overlay.addEventListener('pointerdown', onOverlay);
-    document.addEventListener('keydown', onKeyDown, true);
     done.addEventListener('click', () => close(), { once: true });
     closeBtn.addEventListener('click', () => close(), { once: true });
     if (options.signal?.aborted) {
@@ -202,7 +198,12 @@ function captionSizeRow(label: string, value: number, onChange: (value: number) 
   input.step = '1';
   input.value = String(CAPTION_FONT_SCALES.indexOf(resolveCaptionFontScale(value) as typeof CAPTION_FONT_SCALES[number]));
   input.setAttribute('aria-label', label);
-  input.addEventListener('input', () => onChange(CAPTION_FONT_SCALES[Number(input.value)]));
+  const syncValue = () => input.setAttribute('aria-valuetext', `${CAPTION_FONT_SCALES[Number(input.value)] * 100}%`);
+  syncValue();
+  input.addEventListener('input', () => {
+    syncValue();
+    onChange(CAPTION_FONT_SCALES[Number(input.value)]);
+  });
 
   const marks = document.createElement('div');
   marks.className = 'theater-caption-size-marks';
@@ -307,9 +308,11 @@ function opacityControl(label: string, value: number, onChange: (value: number) 
   input.step = '0.05';
   input.value = String(value);
   input.setAttribute('aria-label', label);
+  input.setAttribute('aria-valuetext', output.textContent);
   input.addEventListener('input', () => {
     const next = Number(input.value);
     output.textContent = `${Math.round(next * 100)}%`;
+    input.setAttribute('aria-valuetext', output.textContent);
     onChange(next);
   });
   header.append(text, output);
@@ -327,6 +330,8 @@ function shadowRow(
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'theater-caption-option-row theater-caption-option-stack theater-caption-shadow-row';
+  row.setAttribute('role', 'group');
+  row.setAttribute('aria-label', label);
   const header = document.createElement('div');
   header.className = 'theater-caption-shadow-header';
   const text = document.createElement('span');
@@ -336,6 +341,7 @@ function shadowRow(
   toggle.className = 'theater-caption-toggle';
   const input = document.createElement('input');
   input.type = 'checkbox';
+  input.setAttribute('aria-label', label);
   input.checked = enabled;
   const slider = document.createElement('span');
   slider.className = 'theater-caption-toggle-track';
@@ -349,6 +355,8 @@ function shadowRow(
 function optionRow(label: string): HTMLElement {
   const row = document.createElement('div');
   row.className = 'theater-caption-option-row';
+  row.setAttribute('role', 'group');
+  row.setAttribute('aria-label', label);
   const text = document.createElement('span');
   text.className = 'theater-caption-option-label';
   text.textContent = label;
