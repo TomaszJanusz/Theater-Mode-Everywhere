@@ -128,11 +128,14 @@ async function init() {
     ...LANGUAGES.map(({ locale, name }) => ({
       value: locale, label: () => name, lang: locale.replace('_', '-'), dir: locale === 'ar' ? 'rtl' as const : 'ltr' as const
     }))
-  ], language => {
-    chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: language }).catch(error => {
+  ], async language => {
+    // Same promise form as every other settings write here; try/catch also covers a synchronous throw.
+    try {
+      await chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: language });
+    } catch (error) {
       languageMenu.render(languageRuntime.language);
       console.error('Error saving language:', error);
-    });
+    }
   });
   languageMenu.render(languageRuntime.language);
   window.addEventListener('unload', () => languageMenu.destroy(), { once: true });
