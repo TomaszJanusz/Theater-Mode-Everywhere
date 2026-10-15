@@ -24,7 +24,7 @@ export const CAPTION_TEXT_COLORS = [
 ] as const;
 
 export const LEGACY_CAPTION_BACKGROUND_COLOR = '#141414';
-export const CAPTION_BACKGROUND_COLORS = [LEGACY_CAPTION_BACKGROUND_COLOR, '#ffffff'] as const;
+export const CAPTION_BACKGROUND_COLORS = ['#000000', '#ffffff'] as const;
 
 export type CaptionFontPreset = typeof CAPTION_FONT_PRESETS[number]['id'];
 
@@ -46,7 +46,7 @@ export const DEFAULT_CAPTION_STYLE: CaptionStyle = {
   fontScale: 1,
   dropShadow: true,
   shadowOpacity: 0.92,
-  backgroundColor: LEGACY_CAPTION_BACKGROUND_COLOR,
+  backgroundColor: CAPTION_BACKGROUND_COLORS[0],
   backgroundOpacity: 0.8
 };
 
@@ -58,6 +58,7 @@ export function resolveCaptionStyle(value: unknown): CaptionStyle {
   const textOpacity = Number(raw.textOpacity);
   const shadowOpacity = Number(raw.shadowOpacity);
   const backgroundOpacity = Number(raw.backgroundOpacity);
+  const backgroundColor = parseHexColor(raw.backgroundColor, DEFAULT_CAPTION_STYLE.backgroundColor);
   return {
     textColor: parseHexColor(raw.textColor, DEFAULT_CAPTION_STYLE.textColor),
     textOpacity: Number.isFinite(textOpacity)
@@ -69,7 +70,8 @@ export function resolveCaptionStyle(value: unknown): CaptionStyle {
     shadowOpacity: Number.isFinite(shadowOpacity)
       ? clampNumber(shadowOpacity, 0, 1)
       : DEFAULT_CAPTION_STYLE.shadowOpacity,
-    backgroundColor: parseHexColor(raw.backgroundColor, DEFAULT_CAPTION_STYLE.backgroundColor),
+    backgroundColor: backgroundColor === LEGACY_CAPTION_BACKGROUND_COLOR
+      ? DEFAULT_CAPTION_STYLE.backgroundColor : backgroundColor,
     backgroundOpacity: Number.isFinite(backgroundOpacity)
       ? clampNumber(backgroundOpacity, 0, 1)
       : DEFAULT_CAPTION_STYLE.backgroundOpacity

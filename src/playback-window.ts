@@ -44,6 +44,25 @@ const HOST_SEEK_RESUME_GRACE_MS = 4_000;
 const pendingMediaSeeks = new WeakMap<HTMLVideoElement, { time: number; until: number }>();
 const pendingNativeSeekResumes = new WeakMap<HTMLVideoElement, () => void>();
 const pendingHostSeekResumes = new WeakMap<HTMLVideoElement, number>();
+const seekObservers = new WeakMap<HTMLElement, Set<(target: number) => void>>();
+
+/** Observe extension seeks before a host starts moving its native media clock. */
+export function observeMediaSeekRequests(media: PlaybackSurface, listener: (target: number) => void): () => void {
+  const element = media.element;
+  let listeners = seekObservers.get(element);
+  if (!listeners) seekObservers.set(element, listeners = new Set());
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && seekObservers.get(element) === listeners) seekObservers.delete(element);
+  };
+}
+
+function notifyMediaSeekRequest(media: HTMLVideoElement | PlaybackSurface, target: number): void {
+  if (!Number.isFinite(target)) return;
+  const element = isPlaybackSurface(media) ? media.element : media;
+  for (const listener of seekObservers.get(element) ?? []) listener(target);
+}
 
 function seekableBounds(video: HTMLVideoElement): { start: number; end: number } | null {
   try {
@@ -310,7 +329,9 @@ export function cancelPendingSeekResume(video: HTMLVideoElement): void {
 export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time: number): void {
   if (isPlaybackSurface(media) && !media.capabilities.nativeMedia) {
     const surfaceWindow = playbackWindow(media);
-    media.currentTime = surfaceWindow.seekable ? clampToWindow(time, surfaceWindow) : time;
+    const target = surfaceWindow.seekable ? clampToWindow(time, surfaceWindow) : time;
+    notifyMediaSeekRequest(media, target);
+    media.currentTime = target;
     return;
   }
   const video = nativeVideoOf(media) || media as HTMLVideoElement;
@@ -322,6 +343,7 @@ export function seekToMediaTime(media: HTMLVideoElement | PlaybackSurface, time:
   // seek requested from the paused state.
   const resumeAfterSeek = shouldResumeAfterSeek(video);
   rememberPendingMediaSeek(video, target);
+  notifyMediaSeekRequest(media, target);
   for (const attempt of hostMediaSeekAttempts(video, {
     target,
     windowLive: window.live,
@@ -341,6 +363,7 @@ export function seekToLive(video: HTMLVideoElement): boolean {
   if (!window.live) return false;
   rememberPendingMediaSeek(video, window.end);
   const liveAttempt = hostLiveSeekAttempt(video);
+  if (liveAttempt || window.seekable) notifyMediaSeekRequest(video, window.end);
   if (liveAttempt && requestHostMediaSeek(liveAttempt.detail)) return true;
   if (!window.seekable) {
     clearPendingMediaSeek(video);
