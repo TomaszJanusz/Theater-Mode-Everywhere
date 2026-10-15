@@ -156,6 +156,133 @@ section h2 {
   gap: 14px;
 }
 
+/* Section tabs: one settings card is visible at a time. */
+.settings-stack > [hidden] {
+  display: none !important;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: -8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.settings-tab {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-tab:hover {
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--accent-color) 8%, transparent);
+}
+
+.settings-tab[aria-selected="true"] {
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--accent-color) 14%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+}
+
+.settings-tab:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* About */
+.about-card {
+  gap: 0;
+}
+
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 44px 24px 32px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent-color) 12%, transparent), transparent 70%),
+    #151518;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.about-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.about-name .accent {
+  color: var(--accent-color);
+}
+
+.about-tagline {
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-style: italic;
+}
+
+.about-letter,
+.about-legal {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.about-letter a,
+.about-legal a {
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+.about-signoff {
+  color: var(--text-primary);
+}
+
+.about-legal {
+  max-width: none;
+  margin: 0;
+  border-top: 1px solid var(--border-color);
+  padding-inline: max(24px, calc((100% - 592px) / 2));
+}
+
+.about-legal h2 {
+  color: var(--text-primary);
+}
+
+.about-license {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+}
+
+.about-license:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .privacy-thing-card {
   position: relative;
   isolation: isolate;

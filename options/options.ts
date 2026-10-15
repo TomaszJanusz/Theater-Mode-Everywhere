@@ -2,6 +2,8 @@ import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/aut
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
 import { createShortcutEditor } from './shortcut-editor';
+import { setupSettingsTabs } from './tabs';
+import licenseText from '../LICENSE?raw';
 import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
@@ -97,6 +99,8 @@ const FEATURE_TOGGLES = [
 
 async function init() {
   localizeDocument();
+  setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
+  document.getElementById('license-text')!.textContent = licenseText.trim();
   configurePrivacyThingLogo();
   let raiseOnlyWithSubtitles = false;
 

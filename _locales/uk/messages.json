@@ -827,5 +827,35 @@
   },
   "crunchyrollIntegrationDescription": {
     "message": "Показує назву серії, заставку й титри, доступне керування субтитрами та попередній перегляд на шкалі часу. Вшиті субтитри лишаються на відео, і їх не можна вимкнути."
+  },
+  "aboutTitle": {
+    "message": "Про розширення"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutGreeting": {
+    "message": "Привіт!"
+  },
+  "aboutLetterOrigin": {
+    "message": "Щиро дякую, що обрали моє розширення! Theater Mode Everywhere народилося з мого роздратування від безлічі рішень, які мали забезпечити одне: зручний спосіб дивитися відео. Але це не так. У більшості програвачів в інтернеті бракує функцій, які мали б бути стандартом."
+  },
+  "aboutLetterProduct": {
+    "message": "Тому я створив Theater Mode Everywhere — універсальний програвач, який, на мою скромну думку, дає змогу зручно дивитися відео будь-де й уміє працювати з нестандартними та унікальними функціями багатьох сайтів."
+  },
+  "aboutLetterFreeHtml": {
+    "message": "Розширення безкоштовне й нікуди не надсилає інформації про вас і про те, що ви дивитеся. Якщо щось працює неправильно, повідомте про це на <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "Розширення доступне в <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> і <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Буду радий, якщо ви поділитеся своєю думкою про нього."
+  },
+  "aboutSignoff": {
+    "message": "Приємного перегляду ❤️!"
+  },
+  "aboutLegalTitle": {
+    "message": "Умови використання • Ліцензія"
+  },
+  "aboutLicenseNote": {
+    "message": "Розширення доступне за ліцензією MIT."
   }
 }

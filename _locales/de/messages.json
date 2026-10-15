@@ -827,5 +827,35 @@
   },
   "crunchyrollIntegrationDescription": {
     "message": "Zeigt den Folgentitel, Vorspann und Abspann, verfügbare Untertitel und Zeitachsen-Vorschauen. Eingebrannte Untertitel bleiben im Bild und lassen sich nicht ausschalten."
+  },
+  "aboutTitle": {
+    "message": "Über"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutGreeting": {
+    "message": "Hallo,"
+  },
+  "aboutLetterOrigin": {
+    "message": "Vielen Dank, dass du dich für meine Erweiterung entschieden hast! Theater Mode Everywhere entstand aus meinem Ärger über die vielen verschiedenen Lösungen, die eigentlich eines leisten sollten: eine bequeme Art, Videos anzusehen. Das tun sie nicht. Den meisten Playern im Internet fehlen Funktionen, die Standard sein sollten."
+  },
+  "aboutLetterProduct": {
+    "message": "Deshalb habe ich Theater Mode Everywhere entwickelt: einen universellen Player, der dir nach meiner bescheidenen Meinung überall eine bequeme Art bietet, Videos zu schauen, und die besonderen und nicht standardmäßigen Funktionen vieler Websites unterstützt."
+  },
+  "aboutLetterFreeHtml": {
+    "message": "Die Erweiterung ist kostenlos und sendet keine Informationen über dich oder darüber, was du dir ansiehst, irgendwohin. Wenn etwas nicht richtig funktioniert, kannst du es auf <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a> melden."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "Die Erweiterung ist im <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, bei <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> und bei <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a> erhältlich. Ich würde mich freuen, wenn du deine Meinung dazu teilst."
+  },
+  "aboutSignoff": {
+    "message": "Viel Spaß beim Schauen ❤️!"
+  },
+  "aboutLegalTitle": {
+    "message": "Nutzungsbedingungen • Lizenz"
+  },
+  "aboutLicenseNote": {
+    "message": "Die Erweiterung steht unter der MIT-Lizenz."
   }
 }
