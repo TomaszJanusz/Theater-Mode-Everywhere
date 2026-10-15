@@ -827,5 +827,35 @@
   },
   "crunchyrollIntegrationDescription": {
     "message": "Shows the episode title, intro and credits, available subtitle controls, and timeline previews. Burned-in captions stay on the video and cannot be turned off."
+  },
+  "aboutTitle": {
+    "message": "About"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutGreeting": {
+    "message": "Hi,"
+  },
+  "aboutLetterOrigin": {
+    "message": "Thank you so much for choosing my extension! Theater Mode Everywhere was born out of my frustration with the many different solutions that were all supposed to provide one thing: a comfortable way to watch video. They don't deliver it. Most players on the internet lack features that should be standard."
+  },
+  "aboutLetterProduct": {
+    "message": "That's why I created Theater Mode Everywhere: a universal player that, in my humble opinion, gives you a comfortable way to watch video everywhere, and can handle the non-standard, unique features of many websites."
+  },
+  "aboutLetterFreeHtml": {
+    "message": "The extension is free and doesn't send any information about you or what you watch anywhere. If something doesn't work right, you can report it on <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "The extension is available on the <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> and <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. I'd be happy if you shared your opinion about it."
+  },
+  "aboutSignoff": {
+    "message": "Happy watching ❤️!"
+  },
+  "aboutLegalTitle": {
+    "message": "Terms of use • License"
+  },
+  "aboutLicenseNote": {
+    "message": "The extension is available under the MIT license."
   }
 }

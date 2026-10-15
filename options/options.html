@@ -72,8 +72,16 @@
       </span>
     </a>
 
+    <div id="settings-tabs" class="settings-tabs" role="tablist">
+      <button type="button" role="tab" id="tab-appearance" class="settings-tab" aria-selected="true" aria-controls="appearance" data-i18n="appearanceTitle">Appearance</button>
+      <button type="button" role="tab" id="tab-features" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="features" data-i18n="featuresTitle">Features</button>
+      <button type="button" role="tab" id="tab-exclusions" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="exclusions" data-i18n="websiteExclusionsTitle">Website Exclusions</button>
+      <button type="button" role="tab" id="tab-shortcuts" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="shortcuts" data-i18n="keyboardShortcutsTitle">Keyboard Shortcuts</button>
+      <button type="button" role="tab" id="tab-about" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="about" data-i18n="aboutTitle">About</button>
+    </div>
+
     <div class="settings-stack">
-        <section class="main-card settings-card appearance-section">
+        <section id="appearance" role="tabpanel" aria-labelledby="tab-appearance" class="main-card settings-card appearance-section">
           <div class="card-heading">
             <h2 data-i18n="appearanceTitle">Appearance</h2>
             <p class="card-desc" data-i18n="appearanceDescription">Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.</p>
@@ -119,7 +127,7 @@
           </div>
         </section>
 
-      <section class="main-card settings-card features-section">
+      <section id="features" role="tabpanel" aria-labelledby="tab-features" class="main-card settings-card features-section" hidden>
         <div class="card-heading">
           <h2 data-i18n="featuresTitle">Features</h2>
           <p class="card-desc" data-i18n="featuresDescription">Turn optional theater mode behavior on or off.</p>
@@ -182,7 +190,7 @@
         </div>
       </section>
 
-      <section class="main-card settings-card exclusions-section">
+      <section id="exclusions" role="tabpanel" aria-labelledby="tab-exclusions" class="main-card settings-card exclusions-section" hidden>
         <div class="card-heading">
           <h2 data-i18n="websiteExclusionsTitle">Website Exclusions</h2>
           <p class="card-desc" data-i18n="websiteExclusionsDescription">Exclude websites where you do not want theater mode to activate automatically.</p>
@@ -209,7 +217,7 @@
         </div>
       </section>
 
-      <section class="main-card settings-card shortcuts-section">
+      <section id="shortcuts" role="tabpanel" aria-labelledby="tab-shortcuts" class="main-card settings-card shortcuts-section" hidden>
         <div class="card-heading">
           <h2 data-i18n="keyboardShortcutsTitle">Keyboard Shortcuts</h2>
           <p class="section-desc" data-i18n="keyboardShortcutsDescription">Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported.</p>
@@ -535,6 +543,32 @@
           <div class="shortcuts-actions">
             <button type="button" id="reset-shortcuts-btn" class="secondary-btn" data-i18n="resetToDefaults">Reset to defaults</button>
           </div>
+        </div>
+      </section>
+
+      <section id="about" role="tabpanel" aria-labelledby="tab-about" class="main-card about-card" hidden>
+        <div class="about-hero">
+          <svg class="about-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="72" height="72" aria-hidden="true" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+            <g transform="matrix(1.457306,1.457306,-1.445295,1.445295,341.469936,-459.223594)">
+              <path d="M452.463,207.464L286.575,249.151L411.119,374.731Z" fill="#ffffff"/>
+              <path d="M564,131.691L564,422.309C564,442.559 547.695,459 527.611,459L239.389,459C219.305,459 203,442.559 203,422.309L203,131.691C203,111.441 219.305,95 239.389,95L527.611,95C547.695,95 564,111.441 564,131.691ZM452.463,207.464L286.575,249.151L411.119,374.731L452.463,207.464Z" fill="var(--accent-color)"/>
+            </g>
+          </svg>
+          <p class="about-name">Theater Mode <span class="accent">Everywhere</span></p>
+          <p class="about-tagline" data-i18n="aboutTagline">One player to rule them all.</p>
+        </div>
+        <div class="about-letter">
+          <p data-i18n="aboutGreeting">Hi,</p>
+          <p data-i18n="aboutLetterOrigin">Thank you so much for choosing my extension! Theater Mode Everywhere was born out of my frustration with the many different solutions that were all supposed to provide one thing: a comfortable way to watch video. They don't deliver it. Most players on the internet lack features that should be standard.</p>
+          <p data-i18n="aboutLetterProduct">That's why I created Theater Mode Everywhere: a universal player that, in my humble opinion, gives you a comfortable way to watch video everywhere, and can handle the non-standard, unique features of many websites.</p>
+          <p data-i18n-html="aboutLetterFreeHtml">The extension is free and doesn't send any information about you or what you watch anywhere. If something doesn't work right, you can report it on <a href="https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+          <p data-i18n-html="aboutLetterStoresHtml">The extension is available on the <a href="https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe" target="_blank" rel="noopener noreferrer">Chrome Web Store</a>, <a href="https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/" target="_blank" rel="noopener noreferrer">Mozilla Add-ons</a> and <a href="https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik" target="_blank" rel="noopener noreferrer">Microsoft Edge Add-ons</a>. I'd be happy if you shared your opinion about it.</p>
+          <p class="about-signoff"><span data-i18n="aboutSignoff">Happy watching ❤️!</span><br>Tomek</p>
+        </div>
+        <div class="about-legal">
+          <h2 data-i18n="aboutLegalTitle">Terms of use • License</h2>
+          <p data-i18n="aboutLicenseNote">The extension is available under the MIT license.</p>
+          <pre id="license-text" class="about-license" tabindex="0"></pre>
         </div>
       </section>
     </div>

@@ -971,6 +971,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     try {
       await options.goto(new URL('options/options.html', worker.url()).href);
       await options.locator('.te-dialog-btn-primary').click();
+      await options.locator('#tab-features').click();
       const toggle = options.locator('#keep-controls-visible-toggle');
       await toggle.waitFor({ state: 'attached' });
       await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
@@ -980,6 +981,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       await page.keyboard.press('Shift+H');
       await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
       await waitForChrome(true, true, false);
+      await options.locator('#tab-shortcuts').click();
       await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
       await options.locator('#shortcut-controls-pin').press('Shift+U');
       await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleControlsPin === 'Shift+U');
@@ -1022,7 +1024,7 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
     if (process.env.THEATER_SMOKE_SCREENSHOT) await target.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, `-${suffix}.png`) });
   };
   try {
-    await options.goto(new URL('options/options.html', worker.url()).href);
+    await options.goto(new URL('options/options.html#shortcuts', worker.url()).href);
     // The second tab starts in front; visual transitions need an active page.
     await options.bringToFront();
     await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
@@ -1087,7 +1089,7 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
     await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
     await options.locator('#reset-shortcuts-btn').click();
     await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'M');
-    await second.goto(new URL('options/options.html', worker.url()).href);
+    await second.goto(new URL('options/options.html#shortcuts', worker.url()).href);
     await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
     await second.waitForSelector('.shortcuts-grid[aria-busy="false"]');
     await Promise.all([options.locator('#shortcut-toggle-mute').press('Control+M'), second.locator('#shortcut-controls-pin').press('Shift+U')]);
@@ -1176,8 +1178,9 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
     const options = await context.newPage();
     try {
       await options.goto(new URL('options/options.html', worker.url()).href);
-      await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
       await options.waitForSelector('[data-picture-align="top"][aria-checked="true"]');
+      await options.locator('#tab-shortcuts').click();
+      await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
       await options.locator('#shortcut-cycle-layout').press('Shift+K');
       await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn')?.getAttribute('aria-keyshortcuts') === 'Shift+K');
       await page.bringToFront();
@@ -1185,6 +1188,7 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
       if (await video.evaluate(video => getComputedStyle(video).objectPosition) !== '50% 0%') fail('Old layout shortcut remained active after customization.');
       await page.keyboard.press('Shift+K');
       await waitPosition('50% 50%');
+      await options.locator('#tab-appearance').click();
       await options.waitForSelector('[data-picture-align="center"][aria-checked="true"]');
       await options.locator('[data-picture-align="center"]').focus();
       await page.keyboard.press('Shift+K');
@@ -1197,6 +1201,7 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
       await waitPosition('50% 50%');
       await options.locator('[data-picture-align="top"]').click();
       await waitPosition('50% 0%');
+      await options.locator('#tab-shortcuts').click();
       await options.locator('[data-shortcut="cycleLayout"]').click();
       await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn')?.getAttribute('aria-keyshortcuts') === 'Shift+L');
     } finally { await options.close(); }
@@ -1623,6 +1628,7 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
       await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
         { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
       await options.goto(new URL('options/options.html', worker.url()).href);
+      await options.locator('#tab-features').click();
       const toggle = options.locator('#auto-enter-theater-toggle');
       await toggle.waitFor({ state: 'attached' });
       if (await toggle.isChecked()) throw new Error('Auto theater options default must be off');

@@ -827,5 +827,35 @@
   },
   "crunchyrollIntegrationDescription": {
     "message": "Pokazuje tytuł odcinka, czołówkę i napisy końcowe, dostępne sterowanie napisami oraz podgląd na osi czasu. Napisy wtopione w obraz zostają i nie da się ich wyłączyć."
+  },
+  "aboutTitle": {
+    "message": "O rozszerzeniu"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutGreeting": {
+    "message": "Cześć,"
+  },
+  "aboutLetterOrigin": {
+    "message": "Bardzo dziękuję za wybór mojego rozszerzenia! Theater Mode Everywhere jest owocem mojej irytacji na mnogość różnorakich rozwiązań, które w istocie miały zapewnić jedno: wygodny sposób konsumowania treści wideo. Tak nie jest. Większość odtwarzaczy w Internecie jest uboga w funkcje, które powinny być standardem."
+  },
+  "aboutLetterProduct": {
+    "message": "Dlatego stworzyłem Theater Mode Everywhere - uniwersalny odtwarzacz zapewniający wszędzie wygodny - w mojej skromnej opinii - sposób oglądania treści wideo, który potrafi obsłużyć niestandardowe i unikalne funkcje wielu serwisów internetowych."
+  },
+  "aboutLetterFreeHtml": {
+    "message": "Rozszerzenie jest darmowe, nie wysyła nigdzie żadnych informacji o Tobie i o tym, co oglądasz. Jeżeli widzisz nieprawidłowe działanie, możesz zgłosić je na <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHubie</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "Rozszerzenie jest dostępne na <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> i <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Będę szczęśliwy, jeżeli podzielisz się swoją opinią na jego temat."
+  },
+  "aboutSignoff": {
+    "message": "Miłego oglądania ❤️!"
+  },
+  "aboutLegalTitle": {
+    "message": "Warunki użytkowania • Licencja"
+  },
+  "aboutLicenseNote": {
+    "message": "Rozszerzenie jest dostępne na licencji MIT."
   }
 }

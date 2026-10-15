@@ -827,5 +827,35 @@
   },
   "crunchyrollIntegrationDescription": {
     "message": "Muestra el título del episodio, la intro y los créditos, los controles de subtítulos disponibles y las vistas previas de la línea de tiempo. Los subtítulos incrustados permanecen en el vídeo y no se pueden desactivar."
+  },
+  "aboutTitle": {
+    "message": "Acerca de"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutGreeting": {
+    "message": "Hola,"
+  },
+  "aboutLetterOrigin": {
+    "message": "¡Muchas gracias por elegir mi extensión! Theater Mode Everywhere nació de mi frustración con la multitud de soluciones que, en teoría, debían ofrecer una sola cosa: una forma cómoda de ver vídeo. No lo consiguen. A la mayoría de los reproductores de Internet les faltan funciones que deberían ser estándar."
+  },
+  "aboutLetterProduct": {
+    "message": "Por eso creé Theater Mode Everywhere: un reproductor universal que, en mi humilde opinión, ofrece una forma cómoda de ver vídeo en cualquier lugar y puede manejar las funciones singulares y no estándar de muchos sitios web."
+  },
+  "aboutLetterFreeHtml": {
+    "message": "La extensión es gratuita y no envía a ningún sitio información sobre ti ni sobre lo que ves. Si algo no funciona bien, puedes avisar en <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "La extensión está disponible en <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> y <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Me alegraría que compartieras tu opinión sobre ella."
+  },
+  "aboutSignoff": {
+    "message": "¡Disfruta de los vídeos! ❤️"
+  },
+  "aboutLegalTitle": {
+    "message": "Términos de uso • Licencia"
+  },
+  "aboutLicenseNote": {
+    "message": "La extensión está disponible bajo la licencia MIT."
   }
 }
