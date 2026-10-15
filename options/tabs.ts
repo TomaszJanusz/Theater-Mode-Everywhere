@@ -22,7 +22,13 @@ export function setupSettingsTabs(tablist: HTMLElement): void {
   }
 
   function tabFromHash(): HTMLButtonElement | undefined {
-    const id = decodeURIComponent(location.hash.slice(1));
+    let id: string;
+    try {
+      id = decodeURIComponent(location.hash.slice(1));
+    } catch {
+      // A malformed escape (`#%`) is just an unknown tab; it must not stop the page from initializing.
+      return undefined;
+    }
     return tabs.find((tab) => tab.getAttribute('aria-controls') === id);
   }
 
