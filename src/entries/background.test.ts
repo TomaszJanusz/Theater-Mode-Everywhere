@@ -58,3 +58,30 @@ it('background broker accepts captions after safe redirects and cancels unsafe r
   assert.equal(rejected.error, 'redirect-blocked');
   assert.equal(cancelled, true);
 });
+
+
+it('initializes fresh installs at the installed generation and preserves update acknowledgements', async () => {
+  for (const reason of ['install', 'update']) {
+    let onInstalled!: (details: { reason: string; previousVersion?: string }) => Promise<void>;
+    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: 'player-layout-and-integrations' };
+    const ignore = { addListener() {} };
+    runInNewContext(bundle, {
+      console,
+      chrome: {
+        tabs: { onActivated: ignore, onUpdated: ignore },
+        storage: {
+          onChanged: ignore,
+          sync: { async get() { return { shortcuts: {}, blacklist: [] }; } },
+          local: { async get() { return { ...local }; }, async set(values: object) { Object.assign(local, values); } }
+        },
+        runtime: {
+          getManifest: () => ({ version: '1.7.2' }),
+          onInstalled: { addListener(listener: typeof onInstalled) { onInstalled = listener; } },
+          onMessage: ignore
+        }
+      }
+    });
+    await onInstalled({ reason, previousVersion: reason === 'update' ? '1.5.0' : undefined });
+    assert.equal(local.newFeaturesSeenThrough, reason === 'install' ? '1.7' : '1.5');
+  }
+});

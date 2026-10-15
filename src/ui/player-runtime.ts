@@ -1,4 +1,6 @@
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
+import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
+import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
@@ -1091,6 +1093,17 @@ function toggleAutoTheaterCommand(): void {
   }
 }
 
+let highlightSyncRevision = 0;
+let highlightLocalRevision = 0;
+
+async function hydrateSeenThrough(): Promise<void> {
+  const revision = highlightLocalRevision;
+  const local = await readFeatureHighlightsLocal();
+  if (revision !== highlightLocalRevision) return;
+  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
+    seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], ui().featureHighlights.installed) } } });
+}
+
 async function checkBlacklistAndInit(): Promise<void> {
   const currentHostname = window.location.hostname;
   const epoch = ++settingsLoadEpoch;
@@ -1104,7 +1117,9 @@ async function checkBlacklistAndInit(): Promise<void> {
   }
 
   try {
+    const syncRevision = highlightSyncRevision;
     const data = await chrome.storage.sync.get([
+      HIGHLIGHT_NEW_FEATURES_STORAGE_KEY,
       'blacklist',
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
@@ -1132,6 +1147,10 @@ async function checkBlacklistAndInit(): Promise<void> {
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
+        featureHighlights: { ...ui().featureHighlights,
+          enabled: syncRevision === highlightSyncRevision
+            ? resolveHighlightNewFeatures(data[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
+            : ui().featureHighlights.enabled },
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
@@ -2295,11 +2314,23 @@ export function bootstrapPlayerRuntime(): void {
     });
   }
 
+  // The acknowledged generation never gates the policy/settings read above; until it arrives badges stay hidden.
+  void hydrateSeenThrough();
   checkBlacklistAndInit();
 
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
+    const onStorageChanged = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName === 'local' && changes[SEEN_THROUGH_STORAGE_KEY]) {
+        highlightLocalRevision++;
+        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
+          seenThrough: resolveSeenThrough(changes[SEEN_THROUGH_STORAGE_KEY].newValue, ui().featureHighlights.installed) } } });
+      }
       if (areaName !== 'sync') return;
+      if (changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {
+        highlightSyncRevision++;
+        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
+          enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) } } });
+      }
       if (changes[LANGUAGE_STORAGE_KEY]) void languageRuntime.set(changes[LANGUAGE_STORAGE_KEY].newValue);
 
       if (changes[SPONSORBLOCK_STORAGE_KEY]) {
@@ -2370,7 +2401,9 @@ export function bootstrapPlayerRuntime(): void {
         applyProviderFlags(resolveMediaProviderFlags(merged));
       }
       if (autoTheaterSettingsChanged) syncAutoTheaterRuntime();
-    });
+    };
+    chrome.storage.onChanged.addListener(onStorageChanged);
+    window.addEventListener('unload', () => chrome.storage.onChanged.removeListener(onStorageChanged), { once: true });
   }
 }
 

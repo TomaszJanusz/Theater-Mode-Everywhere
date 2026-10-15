@@ -1,0 +1,170 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { it } from 'node:test';
+import { buildSync } from 'esbuild';
+import { chromium, firefox, type Page } from 'playwright';
+import { ownTestBrowser } from '../test-utils/test-browser';
+import { readStylesheet } from '../test-utils/styles';
+
+const bundle = buildSync({
+  stdin: { contents: `
+    export * from './src/ui/new-badge';
+    export { setupFeatureHighlights } from './options/feature-highlights';
+    export { localizeDocument } from './src/i18n';
+    export { languageRuntime } from './src/i18n-runtime';
+    export { openWhatsNewDialog } from './src/whatsNew';
+    export { bootstrapPlayerRuntime } from './src/ui/player-runtime';
+    export { setPlayerUiCss } from './src/ui/root';`,
+  resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts' },
+  bundle: true, write: false, format: 'iife', globalName: 'BadgeTest', target: 'es2022'
+}).outputFiles[0].text;
+const optionsHtml = readFileSync(new URL('../../options/options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+const optionsCss = readStylesheet(new URL('../../options/options.css', import.meta.url));
+const uiCss = readStylesheet(new URL('./shadow.css', import.meta.url));
+const contentCss = readStylesheet(new URL('../content.css', import.meta.url));
+const media = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
+const polish = JSON.parse(readFileSync(new URL('../../_locales/pl/messages.json', import.meta.url), 'utf8'));
+
+async function installMock(page: Page, version = '1.6.0') {
+  await page.evaluate('window.__name = value => value');
+  await page.evaluate(({ version, polish }) => {
+    const listeners = new Set<(changes: object, area: string) => void>();
+    const sync: Record<string, unknown> = { keepControlsVisible: true };
+    const local: Record<string, unknown> = {};
+    function area(name: string, values: Record<string, unknown>) {
+      return {
+        async get() { return { ...values }; },
+        async set(next: Record<string, unknown>) {
+          Object.assign(values, next);
+          const changes = Object.fromEntries(Object.entries(next).map(([key, newValue]) => [key, { newValue }]));
+          for (const listener of listeners) listener(changes, name);
+        }
+      };
+    }
+    Object.assign(window, { chrome: {
+      runtime: { getManifest: () => ({ version }), sendMessage: async () => polish, onMessage: { addListener() {} } },
+      storage: { sync: area('sync', sync), local: area('local', local),
+        onChanged: { addListener: (fn: typeof listeners extends Set<infer T> ? T : never) => listeners.add(fn),
+          removeListener: (fn: typeof listeners extends Set<infer T> ? T : never) => listeners.delete(fn) } }
+    }, badgeListenerCount: () => listeners.size });
+  }, { version, polish });
+  await page.addScriptTag({ content: bundle });
+}
+
+for (const engine of ['chromium', 'firefox'] as const) {
+  it(`${engine}: shared badge has accessible text, decorative dot, accent tokens and logical RTL spacing`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent('<html dir="rtl"><body style="--accent-color:#ff0000;--bg-color:#123456"><button>Language</button><button id="gear" aria-label="Settings" aria-description="New"></button></body></html>');
+    await page.addScriptTag({ content: bundle });
+    const styles = await page.evaluate<{tag:string;tabindex:number;color:string;margin:string;fontSize:string;animation:string;dotWidth:string;dotBackground:string;dotRing:string;hidden:string;text:string}>(`(() => {
+      BadgeTest.defineNewBadge(); BadgeTest.defineNewBadge(); BadgeTest.ensureNewBadgeStyles(document);
+      const pill = BadgeTest.createNewBadge(); document.querySelector('button').append(pill);
+      const dot = BadgeTest.createNewBadge('dot'); document.getElementById('gear').append(dot);
+      const p = getComputedStyle(pill), d = getComputedStyle(dot);
+      return { tag: pill.localName, tabindex: pill.tabIndex, color: p.color, margin: p.marginRight,
+        fontSize:p.fontSize, animation:p.animationName, dotWidth:d.width, dotBackground:d.backgroundColor,
+        dotRing:d.boxShadow, hidden:dot.getAttribute('aria-hidden'), text:dot.textContent };
+    })()`);
+    assert.equal(styles.tag, 'te-new-badge'); assert.equal(styles.tabindex, -1);
+    assert.equal(styles.margin, '8px'); assert.equal(styles.fontSize, '9.5px');
+    assert.equal(styles.animation, 'none'); assert.match(styles.color, /1(?:\.0+)?[, ]/);
+    assert.equal(styles.dotWidth, '8px'); assert.equal(styles.dotBackground, 'rgb(255, 0, 0)');
+    assert.match(styles.dotRing, /18, 52, 86/); assert.equal(styles.hidden, 'true'); assert.equal(styles.text, '');
+    assert.equal(await page.getByRole('button', { name: 'Language New', exact: true }).count(), 1);
+    assert.equal(await page.getByRole('button', { name: 'Settings' }).getAttribute('aria-description'), 'New');
+    await browser.close();
+  });
+
+  it(`${engine}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
+    await installMock(page);
+    await page.evaluate(`(async () => {
+      BadgeTest.localizeDocument();
+      BadgeTest.languageRuntime.subscribe(() => BadgeTest.localizeDocument());
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+      await settingsHighlights.ready;
+    })()`);
+    assert.equal(await page.getByRole('tab', { name: 'Appearance New', exact: true }).count(), 1);
+    assert.equal(await page.getByLabel('Language New', { exact: true }).count(), 1);
+    assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 1);
+    await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
+    await page.getByRole('tab', { name: 'Wygląd Nowość', exact: true }).waitFor();
+    await page.evaluate(`BadgeTest.languageRuntime.set('automatic')`);
+    await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+    await page.waitForFunction(() => !document.querySelector('.te-new-badge'));
+    assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 0);
+    const seen = await page.evaluate(() => chrome.storage.local.get('newFeaturesSeenThrough'));
+    assert.equal(seen.newFeaturesSeenThrough, '1.6');
+    await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '1.5' }));
+    await page.getByLabel('Language New', { exact: true }).waitFor();
+    await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
+    await page.getByRole('dialog', { name: 'Update highlights' }).waitFor();
+    assert.equal(await page.locator('.te-new-badge').count(), 0, 'opening acknowledges without waiting for dismissal');
+    const listeners = await page.evaluate<number>(`badgeListenerCount()`);
+    await page.evaluate(`settingsHighlights.dispose(); settingsHighlights.dispose()`);
+    assert.equal(await page.evaluate(`badgeListenerCount()`), listeners - 1);
+    await browser.close();
+  });
+
+  it(`${engine}: Settings rejects stale storage snapshots after a live acknowledgement`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await installMock(page);
+    await page.evaluate(`(async () => {
+      let resolve;
+      const snapshot = new Promise(done => { resolve = done; });
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(snapshot);
+      await chrome.storage.sync.set({highlightNewFeatures:false});
+      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      resolve({highlightNewFeatures:true});
+      await settingsHighlights.ready;
+    })()`);
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    assert.equal(await page.locator('#highlight-new-features-toggle').isChecked(), false);
+    await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    await browser.close();
+  });
+
+  it(`${engine}: player gear dot and new menu rows follow local/sync changes, language and rebuilds`, { timeout: 45_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.route('https://badge.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><video muted loop style="width:640px;height:360px"></video>' }));
+    await page.goto('https://badge.test/');
+    await installMock(page);
+    await page.addStyleTag({ content: contentCss });
+    await page.evaluate(({ media, uiCss }) => {
+      document.querySelector('video')!.src = media;
+      // Bundle entrypoints are deliberately explicit in these browser fixtures.
+      const api = (window as unknown as { BadgeTest: { setPlayerUiCss(css: string): void; bootstrapPlayerRuntime(): void } }).BadgeTest;
+      api.setPlayerUiCss(uiCss); api.bootstrapPlayerRuntime();
+    }, { media, uiCss });
+    await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
+    await page.keyboard.press('t');
+    await page.locator('.player-settings-btn .te-new-badge[data-variant="dot"]').waitFor();
+    await page.locator('.player-settings-btn').click();
+    assert.equal(await page.getByRole('button', { name: /^Layout: Centered, New$/ }).count(), 1);
+    const gear = await page.locator('.player-settings-btn svg').boundingBox();
+    const dot = await page.locator('.player-settings-btn .te-new-badge').boundingBox();
+    assert.ok(gear && dot && Math.abs(dot.y - gear.y) < 8 && Math.abs(dot.x - gear.x) < 22,
+      'the dot stays beside the gear icon when the menu expands its trigger');
+    assert.equal(await page.locator('.audio-voice-btn .te-new-badge').count(), 1);
+    assert.equal(await page.locator('.volume-boost-btn .te-new-badge').count(), 0, 'volume boost shipped in 1.5');
+    await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
+    await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
+    await page.locator('.player-settings-btn .te-new-badge').waitFor();
+    await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
+    await page.locator('.picture-layout-btn .te-new-badge').filter({ hasText: 'Nowość' }).waitFor({ state: 'attached' });
+    await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '1.6' }));
+    await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    await page.keyboard.press('Escape'); await page.keyboard.press('t');
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    await browser.close();
+  });
+}

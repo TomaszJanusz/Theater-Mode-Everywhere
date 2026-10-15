@@ -441,10 +441,10 @@
     "message": "免费开源。"
   },
   "whatsNew": {
-    "message": "新功能"
+    "message": "更新亮点"
   },
   "whatsNewDialogTitle": {
-    "message": "新功能"
+    "message": "更新亮点"
   },
   "whatsNewLead": {
     "message": "影院模式更舒适：新增控制功能，并支持更多视频服务。"
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "详情"
+  },
+  "badgeNew": {
+    "message": "新",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "突出显示新功能"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "为最近添加的功能显示“新”标记。关闭此选项会将当前更新标记为已读。"
   }
 }

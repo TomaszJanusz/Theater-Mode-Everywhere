@@ -2,6 +2,8 @@ import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/
 import { createCombobox } from './combobox';
 import { createChoiceGrid } from './choice-grid';
 import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
+import { setupFeatureHighlights } from './feature-highlights';
+import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY } from '../src/feature-highlights';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
@@ -33,7 +35,7 @@ import {
   type PrivacyThingLogoElement
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
-import { hasUnseenWhatsNew, openWhatsNewDialog, syncWhatsNewButtonState } from '../src/whatsNew';
+import { hasUnseenWhatsNew, openWhatsNewDialog } from '../src/whatsNew';
 import { setupRteSettings } from './rte-settings';
 
 definePrivacyThingLogo();
@@ -101,9 +103,13 @@ async function init() {
   const stopLanguageStorage = observeLanguageStorage();
   window.addEventListener('unload', stopLanguageStorage, { once: true });
   const languageRevision = languageRuntime.revision;
-  const initialSettings = await safeGetStorage(['blacklist', LANGUAGE_STORAGE_KEY]);
+  const initialSettingsPromise = safeGetStorage(['blacklist', LANGUAGE_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]);
+  const highlights = setupFeatureHighlights(initialSettingsPromise);
+  const initialSettings = await initialSettingsPromise;
   await languageRuntime.set(initialSettings[LANGUAGE_STORAGE_KEY], languageRevision);
   localizeDocument();
+  await highlights.ready;
+  highlights.render();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
   document.getElementById('license-text')!.textContent = licenseText.trim();
   configurePrivacyThingLogo();
@@ -664,15 +670,15 @@ async function init() {
     const button = document.getElementById('whats-new-btn');
     if (!button) return;
 
-    await syncWhatsNewButtonState(button);
+    highlights.render();
     button.addEventListener('click', async () => {
       await openWhatsNewDialog();
-      await syncWhatsNewButtonState(button);
+      highlights.render();
     });
 
     if (await hasUnseenWhatsNew()) {
       await openWhatsNewDialog();
-      await syncWhatsNewButtonState(button);
+      highlights.render();
     }
   }
 

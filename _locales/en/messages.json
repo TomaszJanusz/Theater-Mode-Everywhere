@@ -441,10 +441,10 @@
     "message": "Free and open source."
   },
   "whatsNew": {
-    "message": "What's New"
+    "message": "Update highlights"
   },
   "whatsNewDialogTitle": {
-    "message": "What's New"
+    "message": "Update highlights"
   },
   "whatsNewLead": {
     "message": "A more comfortable theater mode, with new controls and more supported services."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Details"
+  },
+  "badgeNew": {
+    "message": "New",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Highlight new features"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Show New badges for recently added features. Turning this off marks the current update as seen."
   }
 }

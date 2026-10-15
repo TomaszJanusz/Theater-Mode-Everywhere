@@ -1,3 +1,4 @@
+import { ensureNewBadgeStyles } from './new-badge';
 import { applyUiDirection } from './messages';
 
 // Both script worlds must leave native button activation to the focused UI control.
@@ -45,6 +46,7 @@ export function getPlayerUiRoot(): ShadowRoot {
   }
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
+  ensureNewBadgeStyles(shadow);
   if (!shadow.getElementById('theater-announcements')) {
     const status = document.createElement('div');
     status.id = 'theater-announcements';

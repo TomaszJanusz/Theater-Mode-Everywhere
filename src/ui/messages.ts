@@ -16,6 +16,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   "sponsorBlockCategory_filler": "Filler",
   "sponsorBlockCategory_chapter": "Chapter",
   "sponsorBlockCategory_unknown": "SponsorBlock segment",
+  badgeNew: "New",
 
   playbackPosition: 'Playback position',
   volumeLabel: 'Volume',

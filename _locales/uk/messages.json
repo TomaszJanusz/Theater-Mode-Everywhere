@@ -441,10 +441,10 @@
     "message": "Безплатне й з відкритим кодом."
   },
   "whatsNew": {
-    "message": "Що нового"
+    "message": "Головне в оновленні"
   },
   "whatsNewDialogTitle": {
-    "message": "Що нового"
+    "message": "Головне в оновленні"
   },
   "whatsNewLead": {
     "message": "Режим кінотеатру став зручнішим: нові елементи керування та більше підтримуваних сервісів."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Докладніше"
+  },
+  "badgeNew": {
+    "message": "Новинка",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Виділяти нові функції"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Показувати позначку «Новинка» біля нещодавно доданих функцій. Після вимкнення поточне оновлення позначається як переглянуте."
   }
 }

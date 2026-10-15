@@ -25,7 +25,7 @@
             <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-            <span data-i18n="whatsNew">What's New</span>
+            <span data-i18n="whatsNew">Update highlights</span>
           </button>
           <a href="https://theater.tomaszjanusz.dev" target="_blank" rel="noopener noreferrer" class="icon-btn" data-i18n-title="homepage">
             <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -73,7 +73,7 @@
     </a>
 
     <div id="settings-tabs" class="settings-tabs" role="tablist" data-i18n-aria-label="settingsPageTitle">
-      <button type="button" role="tab" id="tab-appearance" class="settings-tab" aria-selected="true" aria-controls="appearance" data-i18n="appearanceTitle">Appearance</button>
+      <button type="button" role="tab" id="tab-appearance" data-new-feature-tab class="settings-tab" aria-selected="true" aria-controls="appearance" data-i18n="appearanceTitle">Appearance</button>
       <button type="button" role="tab" id="tab-features" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="features" data-i18n="featuresTitle">Features</button>
       <button type="button" role="tab" id="tab-exclusions" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="exclusions" data-i18n="websiteExclusionsTitle">Website Exclusions</button>
       <button type="button" role="tab" id="tab-shortcuts" class="settings-tab" aria-selected="false" tabindex="-1" aria-controls="shortcuts" data-i18n="keyboardShortcutsTitle">Keyboard Shortcuts</button>
@@ -87,7 +87,7 @@
             <p class="card-desc" data-i18n="appearanceDescription">Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.</p>
           </div></div>
           <div class="card-body">
-            <div class="appearance-block">
+            <div class="appearance-block" data-new-feature="settingsPictureLayout">
               <p id="picture-align-label" class="appearance-block-label" data-i18n="pictureAlignLabel">Layout</p>
               <div id="picture-align-grid" class="picture-align-grid" role="radiogroup" aria-labelledby="picture-align-label"></div>
               <div
@@ -124,10 +124,20 @@
               <p id="accent-color-label" class="appearance-block-label" data-i18n="accentColorLabel">Accent color</p>
               <div id="accent-color-grid" class="choice-grid" role="radiogroup" aria-labelledby="accent-color-label"></div>
             </div>
-            <div class="appearance-block">
+            <div class="appearance-block" data-new-feature="settingsLanguage">
               <p id="language-label" class="appearance-block-label" data-i18n="languageTitle">Language</p>
               <p id="language-description" class="visually-hidden" data-i18n="languageDescription">Choose the language for Settings, the popup, and player controls.</p>
               <button type="button" id="language-combobox" class="choice-combobox" aria-labelledby="language-label" aria-describedby="language-description"></button>
+            </div>
+            <div class="feature-row">
+              <div class="feature-info">
+                <label id="highlight-new-features-label" for="highlight-new-features-toggle" class="feature-label" data-i18n="highlightNewFeaturesTitle">Highlight new features</label>
+                <p id="highlight-new-features-description" class="feature-desc" data-i18n="highlightNewFeaturesDescription">Show New badges for recently added features. Turning this off marks the current update as seen.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="highlight-new-features-toggle" role="switch" aria-labelledby="highlight-new-features-label" aria-describedby="highlight-new-features-description" checked>
+                <span class="toggle-slider" aria-hidden="true"></span>
+              </label>
             </div>
           </div>
         </section>
@@ -151,7 +161,7 @@
           </div>
           <div class="feature-row">
             <div class="feature-info">
-              <label for="keep-controls-visible-toggle" class="feature-label" data-i18n="keepControlsVisibleTitle">Always show controls</label>
+              <label data-new-feature="settingsAlwaysShowControls" for="keep-controls-visible-toggle" class="feature-label" data-i18n="keepControlsVisibleTitle">Always show controls</label>
               <p class="feature-desc" data-i18n="keepControlsVisibleDescription">Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.</p>
             </div>
             <label class="toggle-switch">

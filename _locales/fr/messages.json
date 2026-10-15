@@ -441,10 +441,10 @@
     "message": "Gratuite et open source."
   },
   "whatsNew": {
-    "message": "Nouveautés"
+    "message": "Les points forts de la mise à jour"
   },
   "whatsNewDialogTitle": {
-    "message": "Nouveautés"
+    "message": "Les points forts de la mise à jour"
   },
   "whatsNewLead": {
     "message": "Un mode cinéma plus confortable, avec de nouvelles commandes et davantage de services pris en charge."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Détails"
+  },
+  "badgeNew": {
+    "message": "Nouveauté",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Mettre en évidence les nouvelles fonctionnalités"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées. Désactiver cette option marque la mise à jour actuelle comme vue."
   }
 }

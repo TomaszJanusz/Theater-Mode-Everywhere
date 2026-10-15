@@ -1,4 +1,6 @@
 import { resolveSponsorBlockMarkers } from './sponsorblock-settings';
+import { pendingFeatureHighlights, type FeatureHighlights } from '../feature-highlights';
+import { installedVersion } from '../feature-highlights-storage';
 import { resolveCaptionStyle, type CaptionStyle } from '../media-features/caption-style';
 import {
   DEFAULT_ACCENT_COLOR,
@@ -14,6 +16,7 @@ import { DEFAULT_VOLUME_BOOST_ENABLED } from './volume-boost-settings';
 import { DEFAULT_AUTO_ENTER_THEATER } from './auto-theater';
 
 export type PlayerUiState = {
+  featureHighlights: FeatureHighlights;
   theaterActive: boolean;
   helpOpen: boolean;
   toolbarVisible: boolean;
@@ -47,6 +50,7 @@ export type PlayerUiAction =
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
 
 const defaultState = (): PlayerUiState => ({
+  featureHighlights: pendingFeatureHighlights(installedVersion()),
   theaterActive: false,
   helpOpen: false,
   toolbarVisible: false,
@@ -65,7 +69,8 @@ const defaultState = (): PlayerUiState => ({
 
 function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
   return (
-    left.theaterActive === right.theaterActive
+    left.featureHighlights === right.featureHighlights
+    && left.theaterActive === right.theaterActive
     && left.helpOpen === right.helpOpen
     && left.toolbarVisible === right.toolbarVisible
     && left.sponsorBlockMarkers === right.sponsorBlockMarkers

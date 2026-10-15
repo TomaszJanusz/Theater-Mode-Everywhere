@@ -441,10 +441,10 @@
     "message": "Kostenlos und Open Source."
   },
   "whatsNew": {
-    "message": "Neuigkeiten"
+    "message": "Highlights des Updates"
   },
   "whatsNewDialogTitle": {
-    "message": "Neuigkeiten"
+    "message": "Highlights des Updates"
   },
   "whatsNewLead": {
     "message": "Ein angenehmerer Kinomodus mit neuen Steuerelementen und mehr unterstützten Diensten."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Details"
+  },
+  "badgeNew": {
+    "message": "Neu",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Neue Funktionen hervorheben"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Kürzlich hinzugefügte Funktionen mit „Neu“ kennzeichnen. Beim Ausschalten wird das aktuelle Update als gesehen markiert."
   }
 }

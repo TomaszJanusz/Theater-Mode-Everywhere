@@ -441,10 +441,10 @@
     "message": "Gratis y de código abierto."
   },
   "whatsNew": {
-    "message": "Novedades"
+    "message": "Cambios destacados"
   },
   "whatsNewDialogTitle": {
-    "message": "Novedades"
+    "message": "Cambios destacados"
   },
   "whatsNewLead": {
     "message": "Un modo teatro más cómodo, con nuevos controles y más servicios compatibles."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Detalles"
+  },
+  "badgeNew": {
+    "message": "Novedad",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Destacar nuevas funciones"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Mostrar la etiqueta «Novedad» en las funciones añadidas recientemente. Al desactivar esta opción, la actualización actual se marca como vista."
   }
 }

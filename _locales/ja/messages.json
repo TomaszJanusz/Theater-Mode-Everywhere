@@ -441,10 +441,10 @@
     "message": "無料・オープンソースです。"
   },
   "whatsNew": {
-    "message": "新着情報"
+    "message": "アップデートの主な変更点"
   },
   "whatsNewDialogTitle": {
-    "message": "新着情報"
+    "message": "アップデートの主な変更点"
   },
   "whatsNewLead": {
     "message": "新しい操作機能と対応サービスの追加で、シアターモードがさらに快適になりました。"
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "詳細"
+  },
+  "badgeNew": {
+    "message": "新機能",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "新機能を強調表示"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "最近追加された機能に「新機能」バッジを表示します。オフにすると、現在のアップデートは確認済みになります。"
   }
 }

@@ -441,10 +441,10 @@
     "message": "مجانية ومفتوحة المصدر."
   },
   "whatsNew": {
-    "message": "ما الجديد"
+    "message": "أبرز تغييرات التحديث"
   },
   "whatsNewDialogTitle": {
-    "message": "ما الجديد"
+    "message": "أبرز تغييرات التحديث"
   },
   "whatsNewLead": {
     "message": "وضع مسرح أكثر راحة مع عناصر تحكم جديدة والمزيد من الخدمات المدعومة."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "التفاصيل"
+  },
+  "badgeNew": {
+    "message": "جديد",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "تمييز الميزات الجديدة"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "إظهار شارة «جديد» للميزات المضافة مؤخرًا. يؤدي إيقاف هذا الخيار إلى وضع علامة على التحديث الحالي بأنه تمت مشاهدته."
   }
 }

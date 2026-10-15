@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Show the logo on its own, without the accent-colored square, in the popup and Settings header.
-- What's New summarizes the latest theater layouts, chat, controls, audio and service integrations, and no longer opens Settings on an update after the announcement has been acknowledged.
+- Update highlights summarizes the latest theater layouts, chat, controls, audio and service integrations. New feature badges in Settings and Player settings, with a dot on the settings gear, highlight recent additions until you open Update highlights or turn off Highlight new features in Appearance; fresh installs start with the current update marked as seen.
 - Corrected translation errors in Ukrainian, Korean, Italian and Russian, and made the Theater mode name consistent within Korean, Chinese, Spanish, Portuguese and Arabic.
 - Group video fit, player switching, controls visibility, audio and keyboard help in a labeled Player settings panel that opens on hover; Keyboard Shortcuts stays last, above Extension settings. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Menus keep their position next to their buttons.
 - Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.

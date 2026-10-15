@@ -441,10 +441,10 @@
     "message": "Bezpłatne i z otwartym kodem źródłowym."
   },
   "whatsNew": {
-    "message": "Co nowego"
+    "message": "Najważniejsze zmiany"
   },
   "whatsNewDialogTitle": {
-    "message": "Co nowego"
+    "message": "Najważniejsze zmiany"
   },
   "whatsNewLead": {
     "message": "Wygodniejszy tryb kinowy, nowe sterowanie i więcej obsługiwanych serwisów."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Szczegóły"
+  },
+  "badgeNew": {
+    "message": "Nowość",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Wyróżniaj nowe funkcje"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach. Wyłączenie oznacza bieżącą aktualizację jako obejrzaną."
   }
 }
