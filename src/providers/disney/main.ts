@@ -850,6 +850,11 @@ function watchDisneyClockVideo(video: HTMLVideoElement | null): void {
         disneyPlayerPlayIds.set(resettingPlayer, disneyPageMediaId());
         disneyResettingPlayers.delete(resettingPlayer);
       }
+      const current = replacement ?? findDisneyHivePlayer(video, true);
+      if (current) {
+        disneyVideoPlayers.set(video, current);
+        bindDisneyPlayerClock(current);
+      }
       resettingPlayer = null;
     }
     ensureDisneyClock();

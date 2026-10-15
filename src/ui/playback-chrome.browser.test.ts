@@ -203,7 +203,7 @@ describe('playback chrome updates', () => {
       assert.equal(await page.locator('.theater-loading-indicator').count(), 0, 'exit retires seek listeners and timers');
     });
 
-    it(`keeps captions clear before controls paint and throughout their fade in ${engine}`, { timeout: 30_000 }, async t => {
+    it(`sets caption clearance before controls paint, glides, and holds through their fade in ${engine}`, { timeout: 30_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch({ headless: true });
       ownTestBrowser(t, browser);
       const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -225,13 +225,20 @@ describe('playback chrome updates', () => {
       const shown = await page.evaluate(() => {
         document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
         const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
-        const caption = root.querySelector('.theater-caption-overlay')!.getBoundingClientRect();
+        const caption = root.querySelector<HTMLElement>('.theater-caption-overlay')!;
         const controls = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
-        return { bottom: Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')),
-          captionBottom: caption.bottom, controlsTop: innerHeight - Number.parseFloat(getComputedStyle(controls).bottom) - controls.offsetHeight };
+        const bottom = Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'));
+        return { bottom, targetBottom: innerHeight - bottom, transition: caption.style.transition,
+          controlsTop: innerHeight - Number.parseFloat(getComputedStyle(controls).bottom) - controls.offsetHeight };
       });
       assert.ok(shown.bottom > rest, JSON.stringify({ rest, shown }));
-      assert.ok(shown.captionBottom < shown.controlsTop, 'clearance is resolved in the show task, before the next animation frame');
+      assert.ok(shown.targetBottom < shown.controlsTop, 'the clearance target is resolved before the next animation frame');
+      assert.ok(shown.transition.includes('bottom'), 'showing controls preserves the caption glide');
+      await page.waitForFunction(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
+          < root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
+      });
       await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!.classList.contains('visible'));
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const fadingBottom = await page.evaluate(() => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')));

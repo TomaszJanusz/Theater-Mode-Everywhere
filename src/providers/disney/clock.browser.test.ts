@@ -175,6 +175,28 @@ for (const engine of ['chromium', 'firefox'] as const) {
         video.dispatchEvent(new Event('loadedmetadata'));
         emit();
         const reusedPlayer = read();
+        history.pushState({}, '', '/play/380356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        video.dispatchEvent(new Event('loadstart'));
+        const mountedListeners: Record<string, () => void> = {};
+        const mountedPlayer = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 1000, programDurationMs: 3_800_000 } },
+          on(name: string, listener: () => void) { mountedListeners[name] = listener; }
+        };
+        Object.assign(video, { mediaPlayer: mountedPlayer });
+        video.dispatchEvent(new Event('loadedmetadata'));
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacedOnSameVideo = read();
+        // The next reset belongs to the newly mounted player, even on the same video.
+        video.dispatchEvent(new Event('loadstart'));
+        mountedPlayer.timeline.info.programDurationMs = 9_000_000;
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementDuringReset = read();
+        mountedPlayer.timeline.info.programDurationMs = 3_900_000;
+        video.dispatchEvent(new Event('loadedmetadata'));
+        mountedListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementAfterReset = read();
         document.querySelector('disney-web-player')!.remove();
         history.pushState({}, '', '/play/280356b5-0596-4333-891f-e48c526a0803');
         harvest();
@@ -201,11 +223,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
         const replacementDuration = read();
         emit();
         return { fallback, native, afterApi, afterInvalid, connectedOldPlayer, rediscoveredOldPlayer,
-          duringReset, reusedPlayer, nextEpisode, afterStalePlayer, replacementDuration, afterReplacementStale: read() };
+          duringReset, reusedPlayer, replacedOnSameVideo, replacementDuringReset, replacementAfterReset,
+          nextEpisode, afterStalePlayer, replacementDuration, afterReplacementStale: read() };
       });
       assert.deepEqual(report, {
         fallback: 2844, native: 3343.5, afterApi: 3343.5, afterInvalid: 3343.5,
         connectedOldPlayer: 2844, rediscoveredOldPlayer: 2844, duringReset: 2844, reusedPlayer: 3600,
+        replacedOnSameVideo: 3800, replacementDuringReset: 3800, replacementAfterReset: 3900,
         nextEpisode: 2844, afterStalePlayer: 2844, replacementDuration: 4000, afterReplacementStale: 4000
       });
     });
