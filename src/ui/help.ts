@@ -1,5 +1,6 @@
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
 import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
+import { createDialogCloseButton } from './dialog-close-button';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
@@ -54,16 +55,7 @@ export function createHelp(ctx: PlayerChromeContext) {
     const title = document.createElement('h3');
     title.textContent = ctx.t('keyboardShortcutsTitle');
 
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'theater-help-close-btn';
-    closeBtn.setAttribute('aria-label', ctx.t('showHideHelp'));
-    closeBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  `;
+    const closeBtn = createDialogCloseButton(ctx.t('showHideHelp'));
     closeBtn.addEventListener('click', () => hideHelpOverlay());
 
     header.appendChild(title);
@@ -72,17 +64,23 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
-    const generalColumn = document.createElement('div');
+    const theaterColumn = document.createElement('div');
     const playbackColumn = document.createElement('div');
-    generalColumn.className = playbackColumn.className = 'theater-help-column';
+    theaterColumn.className = playbackColumn.className = 'theater-help-column';
 
     const groups = [
       {
-        title: ctx.t('generalControlsTitle'),
+        title: ctx.t('theaterFullscreenPipTitle'),
         items: [
           { label: ctx.t('toggleTheaterMode'), key: shortcuts.toggle },
-          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
+          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
+          { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
+        ]
+      },
+      {
+        title: ctx.t('playerControlsTitle'),
+        items: [
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
           { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
@@ -102,17 +100,11 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('nextVideo'), key: shortcuts.nextVideo },
           { label: ctx.t('seekBackward5'), key: shortcuts.seekBack },
           { label: ctx.t('seekForward5'), key: shortcuts.seekForward },
+          { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
+          { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
           { label: ctx.t('volumeUp5'), key: shortcuts.volumeUp },
           { label: ctx.t('volumeDown5'), key: shortcuts.volumeDown },
           { label: ctx.t('toggleMute'), key: shortcuts.toggleMute }
-        ]
-      },
-      {
-        title: ctx.t('frameFullscreenPipTitle'),
-        items: [
-          { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
-          { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
-          { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
         ]
       },
       {
@@ -161,9 +153,9 @@ export function createHelp(ctx: PlayerChromeContext) {
         groupEl.appendChild(row);
       });
 
-      (group === groups[0] ? generalColumn : playbackColumn).appendChild(groupEl);
+      (groups.indexOf(group) < 2 ? theaterColumn : playbackColumn).appendChild(groupEl);
     });
-    grid.append(generalColumn, playbackColumn);
+    grid.append(theaterColumn, playbackColumn);
 
     card.appendChild(grid);
     overlay.appendChild(card);
