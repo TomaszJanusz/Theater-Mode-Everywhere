@@ -100,10 +100,10 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         await assertLocalized(page, locale);
       }
       await page.locator('#tab-features').click();
-      await page.locator('#rich-theater-experience-details').click();
+      // An expanded service description is covered too: its text must follow the language live.
+      await page.locator('.rte-details-toggle').first().click();
       await switchTo(page, 'pl');
       await assertLocalized(page, 'pl');
-      await page.keyboard.press('Escape');
       await page.locator('#whats-new-btn').click();
       await page.locator('.te-dialog').waitFor();
       const acknowledge = page.locator('.te-dialog-btn-primary');

@@ -23,12 +23,21 @@ export async function assertLocalized(page: Page, locale: string, selector = 'ht
       return { key, text, pattern: new RegExp(`^${pattern}(?:: .+)?$`) };
     }).filter(({ text }) => text);
     const found: string[] = [];
+    // Inline script and style source is not user-visible copy; ancestors such as html and head would otherwise match.
+    const visibleText = (element: Element): string => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+        acceptNode: node => node.parentElement?.closest('script, style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+      });
+      let text = '';
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) text += node.nodeValue;
+      return text;
+    };
     const visit = (element: Element): void => {
       // Endonyms deliberately retain their own language, including English.
       if (element.closest('#language-combobox [lang], #language-combobox-listbox [lang]')) return;
       if (!element.matches('script, style, svg, svg *')) {
         const values = [
-          ['text', element.textContent ?? ''],
+          ['text', visibleText(element)],
           ...['title', 'aria-label', 'placeholder'].map(attribute => [attribute, element.getAttribute(attribute) ?? ''])
         ];
         for (const [attribute, value] of values) {
