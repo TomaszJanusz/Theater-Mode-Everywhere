@@ -827,6 +827,7 @@ export function createControls(
       captionPreference: refs.captionPreferenceMap[captionPreferenceHost(window.location.hostname)] || null,
       onCaptionPreferenceChange: persistCaptionPreference,
       providerFlags: refs.providerFlags,
+      timelineMarkersEnabled: ui().sponsorBlockMarkers,
       decorateCaptionDialog: (overlay) => {
         paintOverlay(overlay);
       },

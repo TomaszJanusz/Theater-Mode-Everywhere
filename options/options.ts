@@ -1,3 +1,4 @@
+import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
 import { LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage } from '../src/language';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
@@ -94,6 +95,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 }
 
 const FEATURE_TOGGLES = [
+  { id: 'sponsorblock-toggle', key: SPONSORBLOCK_STORAGE_KEY, resolve: resolveSponsorBlockMarkers },
   { id: 'auto-enter-theater-toggle', key: AUTO_THEATER_STORAGE_KEY, resolve: resolveAutoEnterTheater },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
@@ -164,6 +166,10 @@ async function init() {
           ? resolvePictureAlign(changes[PICTURE_ALIGN_STORAGE_KEY].newValue)
           : selectedPictureAlign();
         renderPictureAlignOptions(align);
+      }
+      if (changes[SPONSORBLOCK_STORAGE_KEY]) {
+        const toggle = document.getElementById('sponsorblock-toggle') as HTMLInputElement | null;
+        if (toggle) toggle.checked = resolveSponsorBlockMarkers(changes[SPONSORBLOCK_STORAGE_KEY].newValue);
       }
       if (changes[VOLUME_BOOST_STORAGE_KEY]) {
         const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;

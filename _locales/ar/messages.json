@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "سرعة التشغيل"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "علامات SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "اعرض علامات إضافة SponsorBlock المثبتة على المخطط الزمني في وضع المسرح على YouTube، باستخدام ألوانها."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "رعاية"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "ترويج ذاتي"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "وصول حصري"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "تذكير بالتفاعل"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "مقدمة"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "خاتمة"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "معاينة"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "تشويق"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "جزء غير موسيقي"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "لقطة مميزة"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "حشو"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "فصل"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "مقطع SponsorBlock"
   }
 }

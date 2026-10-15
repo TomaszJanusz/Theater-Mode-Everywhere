@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Vitesse de lecture"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Repères SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Affiche les repères de l’extension SponsorBlock installée sur la barre de lecture YouTube en mode cinéma, avec ses couleurs."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Sponsor"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Autopromotion"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Accès exclusif"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Rappel d’interaction"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Introduction"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Conclusion"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Aperçu"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Accroche"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Passage sans musique"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Moment fort"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Remplissage"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Chapitre"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Segment SponsorBlock"
   }
 }

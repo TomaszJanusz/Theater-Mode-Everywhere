@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Швидкість відтворення"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Позначки SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Показувати позначки встановленого розширення SponsorBlock на шкалі часу YouTube в режимі кінотеатру, зберігаючи його кольори."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Спонсор"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Самореклама"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Ексклюзивний доступ"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Нагадування про взаємодію"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Вступ"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Завершення"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Анонс"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Заохочувальний фрагмент"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Фрагмент без музики"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Найкращий момент"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Зайвий фрагмент"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Розділ"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Сегмент SponsorBlock"
   }
 }

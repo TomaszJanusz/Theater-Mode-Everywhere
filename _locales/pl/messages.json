@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Prędkość odtwarzania"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Znaczniki SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Pokazuj znaczniki z zainstalowanego rozszerzenia SponsorBlock na osi czasu trybu kinowego YouTube, używając jego kolorów."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Sponsor"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Autopromocja"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Dostęp na wyłączność"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Przypomnienie o interakcji"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Wstęp"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Zakończenie"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Zapowiedź"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Zachęta"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Fragment bez muzyki"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Najciekawszy moment"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Wypełniacz"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Rozdział"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Segment SponsorBlock"
   }
 }

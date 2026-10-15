@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Velocidad de reproducción"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Marcadores de SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Muestra los marcadores de la extensión SponsorBlock instalada en la línea de tiempo del modo cine de YouTube, con sus colores."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Patrocinio"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Autopromoción"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Acceso exclusivo"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Recordatorio de interacción"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Introducción"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Cierre"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Avance"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Gancho"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Sección sin música"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Momento destacado"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Relleno"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Capítulo"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Segmento de SponsorBlock"
   }
 }
