@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "The extension is available under the MIT license."
+  },
+  "languageTitle": {
+    "message": "Language"
+  },
+  "languageDescription": {
+    "message": "Choose the language for Settings, the popup, and player controls."
+  },
+  "languageAutomatic": {
+    "message": "Automatic (browser language)"
   }
 }

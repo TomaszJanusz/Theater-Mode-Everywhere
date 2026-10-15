@@ -164,5 +164,12 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     });
     grid?.setAttribute('aria-busy', 'false');
   }
-  return { initialize, refresh, applyStored };
+  function localize(): void {
+    for (const entry of entries) {
+      entry.label = document.querySelector<HTMLLabelElement>(`label[for="${entry.input.id}"]`)!.textContent!.trim();
+      entry.reset.setAttribute('aria-label', `${t('resetToDefault')}: ${entry.label}`);
+    }
+    render(current);
+  }
+  return { initialize, refresh, applyStored, localize };
 }

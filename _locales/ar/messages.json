@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "الإضافة متاحة بموجب ترخيص MIT."
+  },
+  "languageTitle": {
+    "message": "اللغة"
+  },
+  "languageDescription": {
+    "message": "اختر لغة الإعدادات والنافذة المنبثقة وعناصر التحكم في المشغّل."
+  },
+  "languageAutomatic": {
+    "message": "تلقائي (لغة المتصفح)"
   }
 }

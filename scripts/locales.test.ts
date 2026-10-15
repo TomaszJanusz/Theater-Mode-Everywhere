@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { LANGUAGES } from '../src/language';
+import { FALLBACK_MESSAGES } from '../src/i18n';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
@@ -60,6 +62,16 @@ describe('locale catalogs', () => {
     .sort();
   const canonical = readCatalog('en');
   const canonicalKeys = Object.keys(canonical).sort();
+
+  it('lists every bundled locale exactly once in the language menu', () => {
+    assert.deepEqual(LANGUAGES.map(({ locale }) => locale).sort(), locales);
+  });
+
+  it('keeps language setting fallbacks identical to English', () => {
+    for (const key of ['languageTitle', 'languageDescription', 'languageAutomatic']) {
+      assert.equal(FALLBACK_MESSAGES[key], canonical[key].message);
+    }
+  });
 
   it('uses valid message structures', () => {
     for (const locale of locales) validateCatalogShape(locale, readCatalog(locale));

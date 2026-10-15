@@ -1,3 +1,5 @@
+import { languageRuntime } from './i18n-runtime';
+
 export type DialogActionSet =
   | { type: 'acknowledge'; label?: string }
   | { type: 'choice'; trueLabel?: string; falseLabel?: string; initialFocus?: 'confirm' | 'cancel' };
@@ -89,9 +91,10 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
     const dismissValue = options.actions.type === 'acknowledge';
     let settled = false;
 
-    const close = (value: boolean): void => {
+    const close = (value: boolean, immediate = false): void => {
       if (settled) return;
       settled = true;
+      stopLanguageRendering();
       if (activeDialog?.close === close) {
         activeDialog = null;
       }
@@ -107,7 +110,8 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
         resolve(value);
       };
 
-      window.setTimeout(finish, prefersReducedMotion() ? 0 : 160);
+      if (immediate) finish();
+      else window.setTimeout(finish, prefersReducedMotion() ? 0 : 160);
     };
 
     const onOverlayPointerDown = (event: PointerEvent): void => {
@@ -141,11 +145,14 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       }
     };
 
+    // Dialog strings are snapshots. Cancel instead of retaining an old-language confirmation.
+    const stopLanguageRendering = languageRuntime.subscribe(() => close(false, true));
     overlay.addEventListener('pointerdown', onOverlayPointerDown);
     document.addEventListener('keydown', onKeyDown, true);
     activeDialog = { close };
 
     requestAnimationFrame(() => {
+      if (settled) return;
       const index = options.actions.type === 'choice' && options.actions.initialFocus === 'cancel' ? 0 : buttons.length - 1;
       buttons[index]?.focus();
     });

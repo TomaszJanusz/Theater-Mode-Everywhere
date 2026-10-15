@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "Rozszerzenie jest dostępne na licencji MIT."
+  },
+  "languageTitle": {
+    "message": "Język"
+  },
+  "languageDescription": {
+    "message": "Wybierz język ustawień, okna rozszerzenia i elementów sterujących odtwarzaczem."
+  },
+  "languageAutomatic": {
+    "message": "Automatyczny (język przeglądarki)"
   }
 }

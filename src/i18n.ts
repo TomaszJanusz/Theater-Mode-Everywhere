@@ -1,4 +1,10 @@
+import { translateMessage } from './i18n-runtime';
+
 export const FALLBACK_MESSAGES: Record<string, string> = {
+  languageTitle: "Language",
+  languageDescription: "Choose the language for Settings, the popup, and player controls.",
+  languageAutomatic: "Automatic (browser language)",
+
   shortcutUnassigned: "Not assigned",
   shortcutExistingConflicts: "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts.",
   shortcutConflictTitle: "Shortcut already assigned",
@@ -241,29 +247,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
 };
 
 export function t(messageName: string, substitutions?: string | string[]): string {
-  try {
-    if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.getMessage) {
-      const message = chrome.i18n.getMessage(messageName, substitutions);
-      if (message) {
-        return message;
-      }
-    }
-  } catch (_) {
-    // Fall through to the key for local file/dev-server contexts.
-  }
-
-  let fallback = FALLBACK_MESSAGES[messageName] || messageName;
-  const replacementValues = Array.isArray(substitutions)
-    ? substitutions
-    : substitutions === undefined
-      ? []
-      : [substitutions];
-
-  replacementValues.forEach((value, index) => {
-    fallback = fallback.replace(new RegExp(`\\$${index + 1}`, 'g'), () => value);
-  });
-
-  return fallback;
+  return translateMessage(FALLBACK_MESSAGES, messageName, substitutions);
 }
 
 export function localizeDocument(root: ParentNode = document): void {

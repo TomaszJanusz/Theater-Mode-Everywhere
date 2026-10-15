@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "本扩展基于 MIT 许可证发布。"
+  },
+  "languageTitle": {
+    "message": "语言"
+  },
+  "languageDescription": {
+    "message": "选择设置页面、扩展弹出窗口和播放器控件的显示语言。"
+  },
+  "languageAutomatic": {
+    "message": "自动（浏览器语言）"
   }
 }

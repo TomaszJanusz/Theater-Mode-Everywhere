@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "A extensão está disponível sob a licença MIT."
+  },
+  "languageTitle": {
+    "message": "Idioma"
+  },
+  "languageDescription": {
+    "message": "Escolha o idioma das configurações, da janela da extensão e dos controles do player."
+  },
+  "languageAutomatic": {
+    "message": "Automático (idioma do navegador)"
   }
 }

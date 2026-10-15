@@ -1772,6 +1772,85 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
   }
 }
 
+/** Installed-extension proof for storage propagation and isolated-world catalog delivery. */
+async function assertLanguageMenu(page: Page, origin: string, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const catalog = (locale: string): Record<string, { message: string }> => JSON.parse(
+    readFileSync(path.join(ROOT, '_locales', locale, 'messages.json'), 'utf8'));
+  const english = catalog('en');
+  const polish = catalog('pl');
+  const arabic = catalog('ar');
+  await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
+    { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
+  const options = await context.newPage();
+  const otherOptions = await context.newPage();
+  const popup = await context.newPage();
+  try {
+    await worker.evaluate(() => chrome.storage.sync.remove('language'));
+    await page.goto(`${origin}/`);
+    await waitForPlayer(page);
+    await page.locator('video#player').click();
+    await page.keyboard.press('t');
+    await page.locator('.player-settings-btn').waitFor({ state: 'attached' });
+    const extensionUrl = new URL('options/options.html#appearance', worker.url()).href;
+    await options.goto(extensionUrl);
+    await otherOptions.goto(extensionUrl);
+    await popup.goto(new URL('popup/popup.html', worker.url()).href);
+    await popup.locator('#domain-name').filter({ hasText: 'System page' }).waitFor();
+    await options.waitForFunction(() => document.querySelectorAll('#language-select option').length === 14);
+    const select = options.locator('#language-select');
+    if (await select.inputValue() !== 'automatic') throw new Error('Language must default to Automatic');
+    const before = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
+    await select.selectOption('pl');
+    await options.locator('#tab-appearance').filter({ hasText: polish.appearanceTitle.message }).waitFor();
+    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'pl');
+    await popup.locator('[data-i18n="websiteLabel"]').filter({ hasText: polish.websiteLabel.message }).waitFor();
+    await page.locator('.player-settings-btn').and(page.getByLabel(polish.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
+    if (await popup.locator('#domain-name').textContent() !== polish.systemPage.message) throw new Error('Popup dynamic domain state lost its translation');
+    // A native select stays keyboard operable through the live document refresh.
+    await select.focus();
+    await options.keyboard.press('Home');
+    await options.keyboard.press('End'); // Arabic is the last endonym.
+    await options.keyboard.press('Enter');
+    await options.waitForFunction(() => document.documentElement.dir === 'rtl' && document.documentElement.lang === 'ar');
+    await otherOptions.waitForFunction(() => document.documentElement.dir === 'rtl');
+    await popup.waitForFunction(() => document.documentElement.dir === 'rtl');
+    await page.locator('.theater-controls-wrapper[dir="rtl"][lang="ar"]').waitFor({ state: 'attached' });
+    await page.locator('.player-settings-btn').and(page.getByLabel(arabic.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
+    if (process.env.THEATER_SMOKE_SCREENSHOT) {
+      await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-language-ar-options.png'), fullPage: true });
+      await page.bringToFront();
+      await page.locator('.player-settings-btn').press('Enter');
+      await page.locator('.theater-settings-menu.visible').waitFor();
+      await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-language-ar-player.png') });
+    }
+    const after = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
+    if (JSON.stringify(before) !== JSON.stringify(after) || !await theaterEntered(page)) throw new Error('Language switch changed playback or exited theater');
+    if (await page.locator('html').getAttribute('dir') !== null) throw new Error('Player localization changed host document direction');
+
+    // Saved override on a fresh child document, then a live change back to Automatic.
+    await page.goto(`${origin}/iframe`);
+    const frame = page.frameLocator('#child');
+    await frame.locator('video#player').click();
+    await frame.locator('body').press('t');
+    await frame.locator('.theater-controls-wrapper[dir="rtl"]').waitFor({ state: 'attached' });
+    await select.selectOption('automatic');
+    await options.waitForFunction(() => document.documentElement.dir === 'ltr' && document.documentElement.lang.startsWith('en'));
+    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'automatic');
+    await frame.locator('.theater-controls-wrapper[dir="ltr"]').waitFor({ state: 'attached' });
+    await frame.locator('.player-settings-btn').and(frame.getByLabel(english.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
+    await popup.waitForFunction(() => document.documentElement.dir === 'ltr');
+    await popup.locator('#status-text').filter({ hasText: english.statusInactiveSystem.message }).waitFor();
+    await frame.locator('body').press('Escape');
+    console.log('smoke:chromium language menu: two Settings pages, popup, player, keyboard selection, saved iframe override, RTL/Automatic restoration and playback preservation passed');
+  } finally {
+    await worker.evaluate(() => chrome.storage.sync.remove('language'));
+    await options.close();
+    await otherOptions.close();
+    await popup.close();
+  }
+}
+
 async function smokeChromium(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
@@ -1798,6 +1877,10 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
     const page = context.pages()[0] || await context.newPage();
+    if (process.env.THEATER_SMOKE_LANGUAGE_ONLY === '1') {
+      await assertLanguageMenu(page, origin, context);
+      return;
+    }
     if (process.env.THEATER_SMOKE_AUTO_THEATER_ONLY === '1') {
       await assertAutoTheater(page, context);
       return;
@@ -1832,6 +1915,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');
+    await assertLanguageMenu(page, origin, context);
   } finally {
     await context?.close();
     rmSync(userDataDir, { recursive: true, force: true });
