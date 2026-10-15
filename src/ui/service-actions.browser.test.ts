@@ -50,7 +50,8 @@ const uiBundle = bundle({
       "export { DisposableScope } from './core/disposable-scope.ts';",
       "export { createToolbar } from './ui/toolbar.ts';",
       "export { createNetflixHostCaptions } from './providers/netflix/host-captions.ts';",
-      "export { mountServiceActionCta } from './ui/service-actions.ts';"
+      "export { mountServiceActionCta } from './ui/service-actions.ts';",
+      "export { observePicture, viewportPictureInsets } from './ui/picture-insets.ts';"
     ].join('\n'),
     resolveDir: SRC,
     sourcefile: 'service-actions-browser-entry.ts',
@@ -137,6 +138,98 @@ describe('service action CTA', () => {
       assert.equal(await page.locator('.theater-service-action-host').count(), 0);
       const layoutAfterDispose = await page.evaluate('window.__layout') as number;
       assert.ok(layoutAfterDispose > layoutAfterAction);
+    } finally { await browser.close(); }
+  });
+
+  it('sits in the picture corner, clears the bar, spaces stacked actions and sweeps each once', async t => {
+    const { chromium } = await import('playwright');
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      await page.setContent('<video id="v" muted style="position:fixed;left:0;top:0;width:960px;height:800px;object-fit:contain"></video><div id="ui"></div>');
+      await page.addStyleTag({ content: UI_CSS });
+      await page.addScriptTag({ content: uiBundle });
+      await page.evaluate(`(() => {
+        const scope = new TeServiceActions.DisposableScope();
+        window.__scope = scope;
+        window.__insets = { end: 0, bottom: 0 };
+        window.__toolbar = false;
+        window.__notify = null;
+        window.__unsubscribed = 0;
+        window.__actions = [{id:'recap', label:'Skip recap'}, {id:'next', label:'Up next'}];
+        TeServiceActions.mountServiceActionCta(scope, {
+          source:{read:()=>window.__actions, activate:()=>true},
+          mount:el=>document.getElementById('ui').append(el),
+          toolbarVisible:()=>window.__toolbar, subscribeToolbar:()=>()=>{}, controlsLift:()=>100,
+          pictureInsets:()=>window.__insets,
+          subscribePicture:l=>{ window.__notify = l; return ()=>{ window.__unsubscribed++; }; },
+          pollMs:20
+        });
+      })()`);
+      const delays = await page.locator('.theater-service-action').evaluateAll(buttons => buttons.map(button => ({
+        entering: button.classList.contains('is-entering'),
+        delay: (button as HTMLElement).style.getPropertyValue('--theater-service-action-sweep-delay'),
+        animation: getComputedStyle(button, '::after').animationName
+      })));
+      assert.deepEqual(delays.map(row => row.delay), ['0ms', '160ms'], 'later CTAs start their sweep behind earlier ones');
+      assert.ok(delays.every(row => row.entering && row.animation === 'theater-service-action-sweep'));
+      await page.waitForFunction(() => {
+        const sheen = getComputedStyle(document.querySelector('.theater-service-action')!, '::after');
+        return sheen.transform !== 'none' && new DOMMatrix(sheen.transform).m41 > -1;
+      }, undefined, { timeout: 3000 });
+      await page.waitForFunction(() => !document.querySelector('.theater-service-action.is-entering'), undefined, { timeout: 3000 });
+      const after = await page.locator('.theater-service-action').evaluateAll(buttons => buttons.map(button => getComputedStyle(button, '::after').content));
+      assert.deepEqual(after, ['none', 'none'], 'a finished sweep leaves no animated layer');
+
+      // The host eases `bottom`, so wait for the box to settle before reading the corner.
+      const corner = async () => {
+        await page.waitForFunction(() => document.querySelector('.theater-service-action-host')!.getAnimations().length === 0);
+        return await page.evaluate(`(() => {
+          const rect = document.querySelector('.theater-service-action-host').getBoundingClientRect();
+          return { right: innerWidth - rect.right, bottom: innerHeight - rect.bottom };
+        })()`) as { right: number; bottom: number };
+      };
+      assert.deepEqual(await corner(), { right: 24, bottom: 24 }, 'no picture insets keeps the HUD inset from the screen edge');
+
+      await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 80 }; window.__notify(); })()`);
+      assert.deepEqual(await corner(), { right: 344, bottom: 104 }, 'letterbox and chat offsets move the CTA into the picture corner');
+
+      await page.evaluate(`(() => { window.__toolbar = true; })()`);
+      await page.waitForFunction(() => document.querySelector('.theater-service-action-host')!.classList.contains('toolbar-visible'));
+      assert.equal((await corner()).bottom, 124, 'the bar still lifts a CTA that sits lower than the bar top');
+      await page.evaluate(`(() => { window.__insets = { end: 320, bottom: 200 }; window.__notify(); })()`);
+      assert.equal((await corner()).bottom, 224, 'a deeper letterbox keeps the CTA at the picture corner above the bar');
+
+      const tops = await page.locator('.theater-service-action').evaluateAll(buttons => buttons.map(button => {
+        const rect = button.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom };
+      }));
+      assert.ok(tops[1].top - tops[0].bottom >= 12, `stacked CTAs keep a visible gap: ${JSON.stringify(tops)}`);
+
+      await page.evaluate(`(() => { window.__actions = [...window.__actions, {id:'extras', label:'Extras'}]; })()`);
+      await page.waitForFunction(() => document.querySelectorAll('.theater-service-action').length === 3);
+      assert.equal(await page.locator('.theater-service-action').nth(2).evaluate(button => (button as HTMLElement).style.getPropertyValue('--theater-service-action-sweep-delay')), '0ms', 'only actions that appear together are staggered');
+
+      await page.evaluate('window.__scope.dispose()');
+      assert.equal(await page.evaluate('window.__unsubscribed'), 1);
+      assert.equal(await page.locator('.theater-service-action-host').count(), 0);
+
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.evaluate(`(() => {
+        const scope = new TeServiceActions.DisposableScope();
+        window.__actions = [{id:'recap', label:'Skip recap'}];
+        TeServiceActions.mountServiceActionCta(scope, {
+          source:{read:()=>window.__actions, activate:()=>true},
+          mount:el=>document.getElementById('ui').append(el),
+          toolbarVisible:()=>false, subscribeToolbar:()=>()=>{}, controlsLift:()=>0, pollMs:20
+        });
+      })()`);
+      const reduced = await page.locator('.theater-service-action').evaluate(button => {
+        const style = getComputedStyle(button, '::after');
+        return { content: style.content, animation: style.animationName };
+      });
+      assert.deepEqual(reduced, { content: 'none', animation: 'none' }, 'reduced motion shows no sweep');
     } finally { await browser.close(); }
   });
 

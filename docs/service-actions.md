@@ -71,6 +71,21 @@ The rest of the time, Next remains in the toolbar. The five-second announcement
 and next control were checked against the official
 [international player](https://p.bstarstatic.com/fe-static/bstar-web-new/client/assets/biliintl-player-dfb25af7.js).
 
+## Placement and appearance
+
+The CTA stack sits in the bottom-right corner of the visible picture, not of the
+viewport, so letterboxed, Raised and chat-narrowed layouts keep it on the
+video. `src/ui/picture-insets.ts` derives the offsets from the video box, the
+media size and the fit and position the picture layout writes on the element;
+`src/ui/shadow.css` adds the shared `--theater-hud-inset` (also used by caption
+notifications) to them. While the playback bar shows, the CTA stays above the bar
+or at the picture corner, whichever is higher. Stacked actions keep a 12px gap.
+
+A newly rendered action plays one accent sweep across its glass, under the
+label; actions that appear together start 160ms apart. The animation class is
+removed on `animationend`, so a hidden/re-shown host does not replay it and
+nothing keeps animating. `prefers-reduced-motion: reduce` disables it.
+
 ## Stale controls and validation
 
 Native action identity includes route, root, button, video, current media URL,

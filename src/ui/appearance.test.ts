@@ -1,11 +1,30 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { raisedCaptionRestBottom } from '../media-features/caption-dock';
-import { effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
+import { effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureEdgeInsets, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
 
 const widescreen: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1200 };
 const matched: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1080 };
 const ultrawide: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 2560, viewportHeight: 1080 };
+
+describe('picture edge insets', () => {
+  it('splits a letterbox evenly when centered and puts all of it below a raised picture', () => {
+    assert.deepEqual(pictureEdgeInsets(widescreen, 'contain', 'center center'), { end: 0, bottom: 60 });
+    assert.deepEqual(pictureEdgeInsets(widescreen, 'contain', 'center top'), { end: 0, bottom: 120 });
+  });
+
+  it('measures pillarbox bars at the end edge and leaves a matched frame flush', () => {
+    assert.deepEqual(pictureEdgeInsets(ultrawide, 'contain', 'center center'), { end: 320, bottom: 0 });
+    assert.deepEqual(pictureEdgeInsets(ultrawide, 'contain', 'center top'), { end: 320, bottom: 0 });
+    assert.deepEqual(pictureEdgeInsets(matched, 'contain', 'center top'), { end: 0, bottom: 0 });
+  });
+
+  it('treats Fill, Stretch and unmeasured media as the whole box', () => {
+    assert.deepEqual(pictureEdgeInsets(widescreen, 'cover', 'center center'), { end: 0, bottom: 0 });
+    assert.deepEqual(pictureEdgeInsets(widescreen, 'fill', 'center top'), { end: 0, bottom: 0 });
+    assert.deepEqual(pictureEdgeInsets({ ...widescreen, videoWidth: 0 }, 'contain', 'center top'), { end: 0, bottom: 0 });
+  });
+});
 
 describe('picture align', () => {
   it('raises a fitted picture and keeps every other fit centered', () => {
