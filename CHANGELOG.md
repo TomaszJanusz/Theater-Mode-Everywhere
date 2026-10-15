@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Settings footer uses a single row where space permits, with larger text and no divider above it.
 - Show the logo on its own, without the accent-colored square, in the popup and Settings header.
 - Update highlights carries the full 1.6 announcement in English, including SponsorBlock compatibility and system accessibility preferences, with localized dialog title and buttons. Its wider dialog has a close button, styled scrollbar and directional scroll shadows, with acknowledgements always visible. New feature badges in Settings and Player settings, with a dot on the settings gear, highlight recent additions until you open Update highlights or turn off Highlight new features in Appearance; fresh installs start with the current update marked as seen.
 - Corrected translation errors in Ukrainian, Korean, Italian and Russian, and made the Theater mode name consistent within Korean, Chinese, Spanish, Portuguese and Arabic.

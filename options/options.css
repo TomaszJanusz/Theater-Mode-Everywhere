@@ -626,21 +626,21 @@ section h2 {
 /* Footer style */
 .footer {
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
-  border-top: 1px solid var(--border-color);
   padding-top: 16px;
 }
 
 .footer-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
 }
 
 .copyright,
 .made-in-poland {
-  font-size: 11px;
+  font-size: 13px;
   color: #52525b;
 }
 
