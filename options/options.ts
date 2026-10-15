@@ -32,13 +32,7 @@ import {
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
 import { hasUnseenWhatsNew, openWhatsNewDialog, syncWhatsNewButtonState } from '../src/whatsNew';
-import {
-  mediaProviderFlagStorageKeys,
-  mediaProviderFlagStorageUpdate,
-  mediaProviderFlagsForRichTheaterExperience,
-  resolveMediaProviderFlags,
-  richTheaterExperienceEnabled
-} from '../src/media-features/provider-flags';
+import { setupRteSettings } from './rte-settings';
 
 definePrivacyThingLogo();
 
@@ -150,6 +144,9 @@ async function init() {
   window.addEventListener('unload', stopLanguageRendering, { once: true });
   await loadAndRenderBlacklist(initialSettings);
   await shortcutEditor.initialize();
+
+  const disposeRte = await setupRteSettings(notifyAllTabs);
+  window.addEventListener('unload', disposeRte, { once: true });
 
   // Load and bind features toggles
   await loadAndRenderFeatures();
@@ -696,14 +693,13 @@ async function init() {
   // --- Features ---
   async function loadAndRenderFeatures() {
     try {
-      const data = await safeGetStorage([...FEATURE_TOGGLES.map((item) => item.key), ...mediaProviderFlagStorageKeys()]);
+      const data = await safeGetStorage(FEATURE_TOGGLES.map((item) => item.key));
       for (const item of FEATURE_TOGGLES) {
         const toggle = document.getElementById(item.id) as HTMLInputElement | null;
         if (!toggle) continue;
         toggle.checked = item.resolve(data[item.key]);
       }
-      const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
-      if (richTheaterToggle) richTheaterToggle.checked = richTheaterExperienceEnabled(resolveMediaProviderFlags(data));
+
     } catch (err) {
       console.error('Error loading feature settings:', err);
     }
@@ -739,50 +735,7 @@ async function init() {
       });
     }
 
-    const richTheaterToggle = document.getElementById('rich-theater-experience-toggle') as HTMLInputElement | null;
-    richTheaterToggle?.addEventListener('change', async () => {
-      try {
-        const flags = mediaProviderFlagsForRichTheaterExperience(richTheaterToggle.checked);
-        await chrome.storage.sync.set(mediaProviderFlagStorageUpdate(flags));
-        await notifyAllTabs();
-      } catch (err) {
-        console.error('Error saving Rich Theater Experience setting:', err);
-      }
-    });
 
-    const detailsToggle = document.getElementById('rich-theater-experience-details') as HTMLButtonElement | null;
-    const richTheaterInfo = detailsToggle?.closest<HTMLElement>('.feature-info');
-    const popover = document.getElementById('rich-theater-experience-popover');
-    const focusDetails = () => {
-      if (detailsToggle?.getAttribute('aria-expanded') === 'true' && document.activeElement === detailsToggle) popover?.focus();
-    };
-    popover?.addEventListener('transitionend', focusDetails);
-    const setDetailsOpen = (expanded: boolean, restoreFocus = false) => {
-      richTheaterInfo?.classList.toggle('rte-popover-open', expanded);
-      detailsToggle?.setAttribute('aria-expanded', String(expanded));
-      if (popover) popover.inert = !expanded;
-      if (expanded) {
-        focusDetails();
-        requestAnimationFrame(focusDetails);
-      } else if (restoreFocus) detailsToggle?.focus();
-    };
-    setDetailsOpen(false);
-    detailsToggle?.addEventListener('click', () => {
-      setDetailsOpen(detailsToggle.getAttribute('aria-expanded') !== 'true');
-    });
-    richTheaterInfo?.addEventListener('keydown', event => {
-      if (event.key !== 'Escape' || detailsToggle?.getAttribute('aria-expanded') !== 'true') return;
-      event.preventDefault();
-      setDetailsOpen(false, true);
-    });
-    richTheaterInfo?.addEventListener('focusout', event => {
-      if (event.relatedTarget instanceof Node && richTheaterInfo.contains(event.relatedTarget)) return;
-      setDetailsOpen(false);
-    });
-    document.addEventListener('click', event => {
-      if (!(event.target instanceof Node) || richTheaterInfo?.contains(event.target)) return;
-      setDetailsOpen(false);
-    });
   }
 
   await setupWhatsNew();

@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos, incluindo YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e outros. O Theater Mode Everywhere pode exibir informações adicionais, aceitar formatos de legenda personalizados e liberar recursos específicos de cada serviço. A disponibilidade varia conforme o serviço - saiba mais "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "aqui"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Ative integrações mais avançadas com seus serviços de vídeo favoritos. A disponibilidade varia conforme o serviço."
   },
@@ -255,49 +246,49 @@
     "message": "Integração com o YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Ativa o suporte a legendas, capítulos, mapa Most Replayed e miniaturas na linha do tempo no modo teatro."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Capítulos, Mapa de popularidade, Miniaturas. Ações rápidas: pular anúncios e próximo vídeo da fila."
   },
   "vimeoIntegrationTitle": {
     "message": "Integração com o Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Ativa o suporte a marcadores de capítulos e miniaturas na linha do tempo no modo teatro."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Capítulos, Miniaturas. Ações rápidas: próximo vídeo da coleção."
   },
   "patreonIntegrationTitle": {
     "message": "Integração com o Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Ativa o suporte a legendas e miniaturas na linha do tempo no modo teatro."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Capítulos, Miniaturas."
   },
   "twitchIntegrationTitle": {
     "message": "Integração com a Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Ativa o suporte a capítulos de VOD e miniaturas na linha do tempo no modo teatro."
+    "message": "Mostra o título do canal ou vídeo e, nos VODs, as legendas, capítulos e prévias disponíveis."
   },
   "disneyIntegrationTitle": {
     "message": "Integração com Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Ativa o suporte a legendas e miniaturas na linha do tempo no modo teatro quando o player as oferece."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Miniaturas. Ações rápidas: pular abertura, resumo ou créditos e próximo episódio."
   },
   "netflixIntegrationTitle": {
     "message": "Integração com a Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Mostra o título do material atual e alterna os idiomas de legenda do player no modo teatro quando o player tem um renderizador de legendas ativo. Capítulos e miniaturas da linha do tempo não são suportados."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Miniaturas. Ações rápidas: pular abertura, resumo ou créditos e próximo episódio."
   },
   "bilibiliIntegrationTitle": {
     "message": "Integração com o Bilibili (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importa o título do vídeo, as legendas, os capítulos, o mapa de popularidade e as miniaturas da linha do tempo do bilibili.com quando disponíveis. Algumas legendas exigem login no Bilibili."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Capítulos, Mapa de popularidade, Miniaturas. Ações rápidas: confirmações nativas para pular e próximo vídeo."
   },
   "tencentIntegrationTitle": {
     "message": "Integração com Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importa títulos de episódios, legendas SRT/WebVTT e miniaturas da linha do tempo do Tencent Video / WeTV quando disponíveis. A reprodução e o próximo episódio usam os controles disponíveis do player."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Miniaturas. Ações rápidas: próximo episódio pelo player."
   },
   "liveBadge": {
     "message": "AO VIVO"
@@ -817,13 +808,13 @@
     "message": "Integração com o Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importa o título, as legendas e as miniaturas da linha do tempo das páginas de episódios e de vídeos enviados por usuários do bilibili.tv quando disponíveis. As páginas de episódios podem mostrar marcadores de abertura e encerramento. O próximo episódio usa o controle de avançar do player. Esta integração não importa uma lista de capítulos nomeados nem o mapa de popularidade."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, marcadores de abertura/encerramento, Miniaturas. Ações rápidas: pular abertura/encerramento e próximo episódio (apenas episódios)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Integração com a Crunchyroll"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Mostra o título do episódio, a abertura e os créditos, os controles de legenda disponíveis e as prévias na linha do tempo. Legendas gravadas na imagem permanecem no vídeo e não podem ser desligadas."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, marcadores de abertura/créditos, Miniaturas. Ações rápidas: pular abertura/créditos e próximo episódio."
   },
   "aboutTitle": {
     "message": "Sobre"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "Segmento do SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Escolha integrações e veja o que acrescentam ao modo cinema. Os recursos dependem do vídeo e do serviço."
+  },
+  "rteAll": {
+    "message": "Todos os serviços"
+  },
+  "rteAllShown": {
+    "message": "Todos os serviços exibidos"
+  },
+  "rteCount": {
+    "message": "$count$ de $total$ ativados",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Mostrar serviços com"
+  },
+  "rteCapabilityTitle": {
+    "message": "Título"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Legendas"
+  },
+  "rteCapabilityChapters": {
+    "message": "Capítulos"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Mapa de popularidade"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Miniaturas"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Ações rápidas"
+  },
+  "rteEmpty": {
+    "message": "Nenhum serviço oferece todos os recursos selecionados."
+  },
+  "rteClear": {
+    "message": "Limpar"
+  },
+  "rteShown": {
+    "message": "$count$ de $total$ serviços exibidos",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Depende do vídeo; pular anúncios e navegar na fila quando disponíveis."
+  },
+  "rteNoteVimeo": {
+    "message": "Capítulos e prévias quando disponíveis; próximo nas coleções."
+  },
+  "rteNotePatreon": {
+    "message": "Legendas, capítulos e prévias quando disponíveis."
+  },
+  "rteNoteTwitch": {
+    "message": "Legendas, capítulos e prévias apenas em VODs."
+  },
+  "rteNoteDisney": {
+    "message": "Legendas, prévias e pular/próximo quando oferecidos pelo player."
+  },
+  "rteNoteNetflix": {
+    "message": "Prévias exigem uma sessão trick-play pronta; legendas e ações quando disponíveis."
+  },
+  "rteNoteBilibili": {
+    "message": "Algumas legendas exigem login; os recursos dependem do vídeo."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Apenas marcadores de abertura/encerramento; pular/próximo em episódios, não em uploads."
+  },
+  "rteNoteTencent": {
+    "message": "Legendas e prévias quando disponíveis; próximo pelo player."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Apenas marcadores de abertura/créditos; legendas embutidas não podem ser desativadas."
+  },
+  "rteSaveError": {
+    "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."
+  },
+  "rteDetails": {
+    "message": "Detalhes"
   }
 }

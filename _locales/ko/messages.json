@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience(실험적 기능)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll 등 즐겨 사용하는 동영상 서비스와의 더욱 풍부한 연동을 활성화합니다. Theater Mode Everywhere는 추가 정보를 표시하고, 사용자 지정 자막 형식을 지원하며, 서비스별 기능을 사용할 수 있게 합니다. 사용 가능 여부는 서비스에 따라 다릅니다. 자세한 내용은 "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "여기"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "에서 확인하세요."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "즐겨 사용하는 동영상 서비스와의 더욱 풍부한 연동을 활성화합니다. 사용 가능 여부는 서비스에 따라 다릅니다."
   },
@@ -255,49 +246,49 @@
     "message": "YouTube 연동"
   },
   "youtubeIntegrationDescription": {
-    "message": "시어터 모드에서 자막, 챕터, Most Replayed 히트맵, 타임라인 썸네일 지원을 켭니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 광고 건너뛰기 및 대기열의 다음 동영상."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 연동"
   },
   "vimeoIntegrationDescription": {
-    "message": "시어터 모드에서 챕터 표시와 타임라인 썸네일 지원을 켭니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 챕터, 미리보기 이미지. 빠른 동작: 쇼케이스의 다음 동영상."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 연동"
   },
   "patreonIntegrationDescription": {
-    "message": "시어터 모드에서 자막과 타임라인 썸네일 지원을 켭니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 미리보기 이미지."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 연동"
   },
   "twitchIntegrationDescription": {
-    "message": "시어터 모드에서 VOD 챕터와 타임라인 썸네일 지원을 켭니다."
+    "message": "채널이나 동영상 제목을 표시합니다. VOD에서는 제공되는 자막 선택, 챕터 표시 및 타임라인 미리보기도 지원합니다."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 연동"
   },
   "disneyIntegrationDescription": {
-    "message": "플레이어가 제공하는 경우 시어터 모드에서 자막과 타임라인 썸네일 지원을 켭니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 미리보기 이미지. 빠른 동작: 인트로, 요약 또는 크레딧 건너뛰기 및 다음 에피소드."
   },
   "netflixIntegrationTitle": {
     "message": "Netflix 연동"
   },
   "netflixIntegrationDescription": {
-    "message": "시어터 모드에서 현재 작품 제목을 표시하고, 플레이어에 자막 렌더러가 있을 때 자막 언어를 전환합니다. 챕터와 타임라인 썸네일은 지원하지 않습니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 미리보기 이미지. 빠른 동작: 인트로, 요약 또는 크레딧 건너뛰기 및 다음 에피소드."
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili(bilibili.com) 연동"
   },
   "bilibiliIntegrationDescription": {
-    "message": "사용 가능할 때 bilibili.com에서 동영상 제목, 자막, 챕터, 인기 히트맵, 타임라인 썸네일을 가져옵니다. 일부 자막은 Bilibili 로그인이 필요합니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 기본 건너뛰기 확인 및 다음 동영상."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 연동"
   },
   "tencentIntegrationDescription": {
-    "message": "Tencent Video / WeTV에서 사용 가능한 에피소드 제목, SRT/WebVTT 자막, 타임라인 미리보기를 가져옵니다. 재생과 다음 에피소드 이동은 플레이어에서 제공하는 기능을 사용합니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 미리보기 이미지. 빠른 동작: 플레이어를 통한 다음 에피소드."
   },
   "liveBadge": {
     "message": "실시간"
@@ -817,13 +808,13 @@
     "message": "Bilibili.tv 연동"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "사용 가능할 때 bilibili.tv 에피소드 페이지와 사용자 업로드 페이지에서 제목, 자막, 타임라인 썸네일을 가져옵니다. 에피소드 페이지에는 인트로와 아웃트로 표시가 나올 수 있습니다. 다음 에피소드는 플레이어의 다음 컨트롤을 사용합니다. 이 통합은 이름이 있는 챕터 목록과 인기 히트맵을 가져오지 않습니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 인트로/아웃트로 표시, 미리보기 이미지. 빠른 동작: 인트로/아웃트로 건너뛰기 및 다음 에피소드(에피소드만)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 연동"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "에피소드 제목, 인트로와 엔딩, 사용 가능한 자막 제어, 타임라인 미리보기를 표시합니다. 영상 자체 자막은 끌 수 없습니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 인트로/크레딧 표시, 미리보기 이미지. 빠른 동작: 인트로/크레딧 건너뛰기 및 다음 에피소드."
   },
   "aboutTitle": {
     "message": "소개"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "SponsorBlock 구간"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "서비스 연동을 선택하고 극장 모드에 추가되는 기능을 살펴보세요. 기능은 동영상과 서비스에 따라 달라집니다."
+  },
+  "rteAll": {
+    "message": "모든 서비스"
+  },
+  "rteAllShown": {
+    "message": "표시된 모든 서비스"
+  },
+  "rteCount": {
+    "message": "$total$개 중 $count$개 켜짐",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "다음 기능이 있는 서비스 표시"
+  },
+  "rteCapabilityTitle": {
+    "message": "제목"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "자막"
+  },
+  "rteCapabilityChapters": {
+    "message": "챕터"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "인기 구간"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "미리보기 이미지"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "빠른 동작"
+  },
+  "rteEmpty": {
+    "message": "선택한 모든 기능을 제공하는 서비스가 없습니다."
+  },
+  "rteClear": {
+    "message": "초기화"
+  },
+  "rteShown": {
+    "message": "$total$개 중 $count$개 서비스 표시",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "동영상에 따라 다르며, 제공되는 경우 광고 건너뛰기와 대기열 이동을 지원합니다."
+  },
+  "rteNoteVimeo": {
+    "message": "제공되는 경우 챕터와 미리보기, 쇼케이스의 다음 동영상을 지원합니다."
+  },
+  "rteNotePatreon": {
+    "message": "제공되는 경우 자막, 챕터 및 미리보기를 지원합니다."
+  },
+  "rteNoteTwitch": {
+    "message": "자막, 챕터 및 미리보기는 VOD에서만 지원됩니다."
+  },
+  "rteNoteDisney": {
+    "message": "플레이어가 제공하는 자막, 미리보기, 건너뛰기 및 다음 에피소드를 지원합니다."
+  },
+  "rteNoteNetflix": {
+    "message": "미리보기에는 준비된 trick-play 세션이 필요하며 자막과 동작은 제공 여부에 따라 다릅니다."
+  },
+  "rteNoteBilibili": {
+    "message": "일부 자막은 로그인이 필요하며 다른 기능은 동영상에 따라 다릅니다."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "인트로와 아웃트로 표시만 지원합니다. 건너뛰기와 다음은 에피소드만 지원하며 업로드는 제외됩니다."
+  },
+  "rteNoteTencent": {
+    "message": "제공되는 경우 자막과 미리보기를 지원하며 다음 에피소드는 플레이어를 이용합니다."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "인트로와 크레딧 표시만 지원하며 영상에 삽입된 자막은 끌 수 없습니다."
+  },
+  "rteSaveError": {
+    "message": "서비스 설정을 저장하지 못했습니다. 다시 시도하세요."
+  },
+  "rteDetails": {
+    "message": "자세히"
   }
 }

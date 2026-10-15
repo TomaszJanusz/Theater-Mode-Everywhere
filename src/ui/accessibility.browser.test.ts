@@ -92,7 +92,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
       } finally { await browser.close(); }
     };
 
-    it('names Settings controls, exposes only the selected panel, and owns popover/exclusion focus', { timeout: 30_000 }, async t => {
+    it('names Settings controls, exposes only the selected panel, and owns service disclosure/exclusion focus', { timeout: 30_000 }, async t => {
       await testPage(t, async page => {
         await optionsPage(page);
         assert.match(await page.locator('#settings-tabs').ariaSnapshot(), /tablist "Theater Mode Everywhere - Settings"/);
@@ -103,13 +103,19 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         assert.match(await page.locator('#accent-color-grid').ariaSnapshot(), /radio "Use Teal as the accent color" \[checked\]/);
         assert.equal(await focused(page, '[data-accent-color=teal]'), true);
         await page.locator('#tab-features').click();
-        await page.locator('#rich-theater-experience-details').click();
-        await page.waitForFunction(() => document.activeElement?.id === 'rich-theater-experience-popover');
-        assert.match(await page.locator('#features').ariaSnapshot(), /dialog "Rich Theater Experience \(Experimental\)"/);
-        assert.equal(await focused(page, '#rich-theater-experience-popover'), true);
-        await page.keyboard.press('Escape');
-        assert.equal(await focused(page, '#rich-theater-experience-details'), true);
-        assert.equal(await page.locator('#rich-theater-experience-popover').evaluate((el: HTMLElement) => el.inert), true);
+        const service = page.locator('[data-provider="netflix"]');
+        const details = service.locator('.rte-details-toggle');
+        assert.match(await service.ariaSnapshot(), /switch "Netflix" \[checked\]/);
+        await details.press('Enter');
+        assert.equal(await details.getAttribute('aria-expanded'), 'true');
+        assert.equal(await details.getAttribute('aria-controls'), 'rte-details-netflix');
+        assert.equal(await page.locator('#rte-details-netflix').isVisible(), true);
+        assert.equal(await details.evaluate(el => el === document.activeElement), true);
+        await details.press('Space');
+        assert.equal(await details.getAttribute('aria-expanded'), 'false');
+        assert.equal(await page.locator('#rte-details-netflix').isVisible(), false);
+        await service.getByRole('switch', { name: 'Netflix' }).press('Space');
+        assert.match(await page.locator('#rte-section').ariaSnapshot(), /checkbox "All services" \[checked=mixed\]/);
         await page.locator('#tab-exclusions').click();
         assert.match(await page.locator('#exclusions').ariaSnapshot(), /button "Add website exclusion"/);
         assert.match(await page.locator('#blacklist-container').ariaSnapshot(), /list "Excluded Websites"/);

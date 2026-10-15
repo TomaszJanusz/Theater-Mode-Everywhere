@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Expérimental)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Activez des intégrations plus riches avec vos services vidéo préférés, notamment YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll et d’autres. Theater Mode Everywhere peut afficher des informations supplémentaires, prendre en charge des formats de sous-titres personnalisés et débloquer des fonctionnalités propres à chaque service. La disponibilité varie selon le service - en savoir plus "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "ici"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Activez des intégrations plus riches avec vos services vidéo préférés. La disponibilité varie selon le service."
   },
@@ -255,49 +246,49 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Active la prise en charge des sous-titres, des chapitres, de la heatmap Most Replayed et des miniatures sur la timeline en mode cinéma."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Chapitres, Carte de popularité, Miniatures. Actions rapides : passer la publicité et vidéo suivante dans la file."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Active la prise en charge des marqueurs de chapitres et des miniatures sur la timeline en mode cinéma."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Chapitres, Miniatures. Actions rapides : vidéo suivante de la collection."
   },
   "patreonIntegrationTitle": {
     "message": "Intégration Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Chapitres, Miniatures."
   },
   "twitchIntegrationTitle": {
     "message": "Intégration Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Active la prise en charge des chapitres des VOD et des miniatures sur la timeline en mode cinéma."
+    "message": "Affiche le titre de la chaîne ou de la vidéo ainsi que les sous-titres, chapitres et aperçus disponibles en VOD."
   },
   "disneyIntegrationTitle": {
     "message": "Intégration Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Active la prise en charge des sous-titres et des miniatures sur la timeline en mode cinéma lorsque le lecteur les fournit."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Miniatures. Actions rapides : passer l’introduction, le résumé ou le générique et épisode suivant."
   },
   "netflixIntegrationTitle": {
     "message": "Intégration Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Affiche le titre du programme en cours et change les langues de sous-titres du lecteur en mode cinéma lorsque le lecteur a un rendu de sous-titres actif. Les chapitres et les miniatures de la timeline ne sont pas pris en charge."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Miniatures. Actions rapides : passer l’introduction, le résumé ou le générique et épisode suivant."
   },
   "bilibiliIntegrationTitle": {
     "message": "Intégration Bilibili (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importe le titre de la vidéo, les sous-titres, les chapitres, la courbe de popularité et les miniatures de la chronologie depuis bilibili.com lorsqu’ils sont disponibles. Certains sous-titres exigent une connexion à Bilibili."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Chapitres, Carte de popularité, Miniatures. Actions rapides : confirmations natives pour passer et vidéo suivante."
   },
   "tencentIntegrationTitle": {
     "message": "Intégration Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importe les titres des épisodes, les sous-titres SRT/WebVTT et les miniatures de la chronologie de Tencent Video / WeTV, si disponibles. La lecture et le passage à l’épisode suivant utilisent les commandes disponibles du lecteur."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Miniatures. Actions rapides : épisode suivant via le lecteur."
   },
   "liveBadge": {
     "message": "DIRECT"
@@ -817,13 +808,13 @@
     "message": "Intégration Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importe le titre, les sous-titres et les miniatures de la chronologie depuis les pages d’épisodes et de vidéos envoyées par les utilisateurs sur bilibili.tv lorsqu’ils sont disponibles. Les pages d’épisodes peuvent afficher des repères d’intro et d’outro. L’épisode suivant utilise le bouton suivant du lecteur. Cette intégration n’importe pas une liste de chapitres nommés ni la courbe de popularité."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères de début/fin, Miniatures. Actions rapides : passer le début/la fin et épisode suivant (épisodes uniquement)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Intégration Crunchyroll"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Affiche le titre de l’épisode, le générique de début et de fin, les commandes de sous-titres disponibles et les aperçus de la chronologie. Les sous-titres incrustés restent à l’image et ne peuvent pas être désactivés."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères d’introduction/générique, Miniatures. Actions rapides : passer l’introduction/le générique et épisode suivant."
   },
   "aboutTitle": {
     "message": "À propos"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "Segment SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Choisissez les intégrations et découvrez leurs apports au mode cinéma. Les fonctions dépendent de la vidéo et du service."
+  },
+  "rteAll": {
+    "message": "Tous les services"
+  },
+  "rteAllShown": {
+    "message": "Tous les services affichés"
+  },
+  "rteCount": {
+    "message": "$count$ sur $total$ activés",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Afficher les services avec"
+  },
+  "rteCapabilityTitle": {
+    "message": "Titre"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Sous-titres"
+  },
+  "rteCapabilityChapters": {
+    "message": "Chapitres"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Carte de popularité"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Miniatures"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Actions rapides"
+  },
+  "rteEmpty": {
+    "message": "Aucun service ne propose toutes les fonctions sélectionnées."
+  },
+  "rteClear": {
+    "message": "Effacer"
+  },
+  "rteShown": {
+    "message": "$count$ services sur $total$ affichés",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Selon la vidéo ; publicité et file de lecture si disponibles."
+  },
+  "rteNoteVimeo": {
+    "message": "Chapitres et aperçus si disponibles ; vidéo suivante dans les collections."
+  },
+  "rteNotePatreon": {
+    "message": "Sous-titres, chapitres et aperçus si disponibles."
+  },
+  "rteNoteTwitch": {
+    "message": "Sous-titres, chapitres et aperçus uniquement en VOD."
+  },
+  "rteNoteDisney": {
+    "message": "Sous-titres, aperçus et passer/suivant si le lecteur les propose."
+  },
+  "rteNoteNetflix": {
+    "message": "Les aperçus nécessitent une session trick-play prête ; sous-titres et actions si disponibles."
+  },
+  "rteNoteBilibili": {
+    "message": "Certains sous-titres nécessitent une connexion ; les fonctions dépendent de la vidéo."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Repères de début/fin uniquement ; passer/suivant pour les épisodes, pas les vidéos publiées."
+  },
+  "rteNoteTencent": {
+    "message": "Sous-titres et aperçus si disponibles ; suivant via le lecteur."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Repères de générique uniquement ; les sous-titres incrustés ne peuvent pas être désactivés."
+  },
+  "rteSaveError": {
+    "message": "Impossible d’enregistrer les réglages des services. Réessayez."
+  },
+  "rteDetails": {
+    "message": "Détails"
   }
 }

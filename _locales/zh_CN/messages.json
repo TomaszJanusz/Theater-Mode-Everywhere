@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience（实验性功能）"
   },
-  "richTheaterExperienceDescription": {
-    "message": "启用与 YouTube、Twitch、Disney+、Netflix、Bilibili、Bilibili.tv、Tencent Video / WeTV、Crunchyroll 等常用视频服务的深度集成。Theater Mode Everywhere 可以显示更多信息、支持自定义字幕格式并解锁各服务的专属功能。功能可用性因服务而异，详情请参阅"
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "此处"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "。"
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "启用与常用视频服务的深度集成。功能可用性因服务而异。"
   },
@@ -255,49 +246,49 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "在剧场模式中启用字幕、章节、最多重播热力图和时间轴缩略图支持。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：跳过广告和播放队列中的下一个视频。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
   },
   "vimeoIntegrationDescription": {
-    "message": "在剧场模式中启用章节标记和时间轴缩略图支持。"
+    "message": "视频或播放器提供时可用：标题, 章节, 缩略图。 快捷操作：播放合集中的下一个视频。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon 集成"
   },
   "patreonIntegrationDescription": {
-    "message": "在剧场模式中启用字幕和时间轴缩略图支持。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 缩略图。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch 集成"
   },
   "twitchIntegrationDescription": {
-    "message": "在剧场模式中启用点播章节和时间轴缩略图支持。"
+    "message": "显示频道或视频标题；点播视频还可提供字幕选择、章节标记和时间轴预览。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 集成"
   },
   "disneyIntegrationDescription": {
-    "message": "当播放器提供这些内容时，在剧场模式中启用字幕和时间轴缩略图支持。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
   },
   "netflixIntegrationTitle": {
     "message": "Netflix 集成"
   },
   "netflixIntegrationDescription": {
-    "message": "在剧场模式中显示当前内容的标题，并在播放器有活动的字幕渲染器时切换字幕语言。不支持章节和时间轴缩略图。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：跳过片头、回顾或片尾字幕，以及播放下一集。"
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili（bilibili.com）集成"
   },
   "bilibiliIntegrationDescription": {
-    "message": "在可用时从 bilibili.com 导入视频标题、字幕、章节、高能进度条和时间轴缩略图。部分字幕需要登录 Bilibili。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：播放器原生跳过确认和下一个视频。"
   },
   "tencentIntegrationTitle": {
     "message": "腾讯视频 / WeTV 集成"
   },
   "tencentIntegrationDescription": {
-    "message": "在可用时从 Tencent Video / WeTV 导入剧集标题、SRT/WebVTT 字幕和时间轴缩略图。播放和下一集操作使用播放器提供的控件。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 缩略图。 快捷操作：通过播放器播放下一集。"
   },
   "liveBadge": {
     "message": "直播"
@@ -817,13 +808,13 @@
     "message": "Bilibili.tv 集成"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "在可用时从 bilibili.tv 的分集页面和用户上传页面导入标题、字幕和时间轴缩略图。分集页面可以显示片头和片尾标记。下一集使用播放器的下一集控件。此集成不导入带名称的章节列表，也不导入高能进度条。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾标记, 缩略图。 快捷操作：跳过片头/片尾和下一集（仅限剧集）。"
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 集成"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "显示单集标题、片头和片尾、可用的字幕控制以及时间轴预览。烧录在画面里的字幕会保留，无法关闭。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头/片尾字幕和下一集。"
   },
   "aboutTitle": {
     "message": "关于"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "SponsorBlock 片段"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "选择服务集成，了解它们为影院模式添加的功能。可用功能取决于视频和服务。"
+  },
+  "rteAll": {
+    "message": "所有服务"
+  },
+  "rteAllShown": {
+    "message": "所有显示的服务"
+  },
+  "rteCount": {
+    "message": "已开启 $count$ / $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "显示具有以下功能的服务"
+  },
+  "rteCapabilityTitle": {
+    "message": "标题"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "字幕"
+  },
+  "rteCapabilityChapters": {
+    "message": "章节"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "热度图"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "缩略图"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "快捷操作"
+  },
+  "rteEmpty": {
+    "message": "没有服务具备所有选定功能。"
+  },
+  "rteClear": {
+    "message": "清除"
+  },
+  "rteShown": {
+    "message": "显示 $count$ / $total$ 个服务",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "取决于视频；可用时支持跳过广告和队列导航。"
+  },
+  "rteNoteVimeo": {
+    "message": "可用时提供章节和预览；支持合集中的下一个视频。"
+  },
+  "rteNotePatreon": {
+    "message": "可用时提供字幕、章节和预览。"
+  },
+  "rteNoteTwitch": {
+    "message": "字幕、章节和预览仅适用于点播视频。"
+  },
+  "rteNoteDisney": {
+    "message": "播放器提供时支持字幕、预览以及跳过和下一集。"
+  },
+  "rteNoteNetflix": {
+    "message": "预览需要已就绪的 trick-play 会话；字幕和操作取决于可用性。"
+  },
+  "rteNoteBilibili": {
+    "message": "部分字幕需要登录；其他功能取决于视频。"
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "仅片头和片尾标记；跳过和下一集适用于剧集，不适用于用户上传视频。"
+  },
+  "rteNoteTencent": {
+    "message": "可用时提供字幕和预览；通过播放器切换下一集。"
+  },
+  "rteNoteCrunchyroll": {
+    "message": "仅片头和片尾字幕标记；无法关闭硬字幕。"
+  },
+  "rteSaveError": {
+    "message": "无法保存服务设置，请重试。"
+  },
+  "rteDetails": {
+    "message": "详情"
   }
 }

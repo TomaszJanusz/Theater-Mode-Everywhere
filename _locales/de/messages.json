@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimentell)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten, darunter YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll und weitere. Theater Mode Everywhere kann zusätzliche Informationen anzeigen, benutzerdefinierte Untertitelformate unterstützen und dienstspezifische Funktionen freischalten. Die Verfügbarkeit variiert je nach Dienst - mehr dazu "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "hier"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Aktiviere umfangreichere Integrationen mit deinen bevorzugten Videodiensten. Die Verfügbarkeit variiert je nach Dienst."
   },
@@ -255,49 +246,49 @@
     "message": "YouTube-Integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für Untertitel, Kapitel, die Most-Replayed-Heatmap und Miniaturansichten auf der Zeitleiste im Kinomodus."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Kapitel, Heatmap, Vorschaubilder. Schnellaktionen: Werbung überspringen und nächstes Video in der Warteschlange."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo-Integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für Kapitelmarken und Miniaturansichten auf der Zeitleiste im Kinomodus."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Kapitel, Vorschaubilder. Schnellaktionen: nächstes Showcase-Video."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon-Integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Kapitel, Vorschaubilder."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch-Integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für VOD-Kapitel und Miniaturansichten auf der Zeitleiste im Kinomodus."
+    "message": "Zeigt den Kanal- oder Videotitel sowie verfügbare Untertitel, Kapitelmarken und Zeitleistenvorschauen bei VODs."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+-Integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Aktiviert die Unterstützung für Untertitel und Miniaturansichten auf der Zeitleiste im Kinomodus, wenn der Player sie bereitstellt."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Vorschaubilder. Schnellaktionen: Intro, Rückblick oder Abspann überspringen und nächste Folge."
   },
   "netflixIntegrationTitle": {
     "message": "Netflix-Integration"
   },
   "netflixIntegrationDescription": {
-    "message": "Zeigt den Titel des aktuellen Materials und schaltet die Untertitelsprachen des Players im Kinomodus um, wenn der Player einen aktiven Untertitel-Renderer hat. Kapitel und Zeitachsen-Miniaturen werden nicht unterstützt."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Vorschaubilder. Schnellaktionen: Intro, Rückblick oder Abspann überspringen und nächste Folge."
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili-Integration (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importiert Videotitel, Untertitel, Kapitel, die Beliebtheitskurve und Zeitachsen-Vorschaubilder von bilibili.com, sofern verfügbar. Für manche Untertitel ist eine Anmeldung bei Bilibili erforderlich."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Kapitel, Heatmap, Vorschaubilder. Schnellaktionen: native Bestätigungen zum Überspringen und nächstes Video."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV-Integration"
   },
   "tencentIntegrationDescription": {
-    "message": "Importiert Episodentitel, SRT/WebVTT-Untertitel und Vorschaubilder für die Zeitleiste von Tencent Video / WeTV, sofern verfügbar. Wiedergabe und nächste Episode nutzen die verfügbaren Bedienelemente des Players."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Vorschaubilder. Schnellaktionen: nächste Folge über den Player."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -817,13 +808,13 @@
     "message": "Bilibili.tv-Integration"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importiert Titel, Untertitel und Zeitachsen-Vorschaubilder von Folgen- und Nutzer-Upload-Seiten auf bilibili.tv, sofern verfügbar. Folgenseiten können Intro- und Outro-Markierungen zeigen. Die nächste Folge nutzt die Weiter-Schaltfläche des Players. Diese Integration importiert keine benannte Kapitelliste und keine Beliebtheitskurve."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Outro-Marken, Vorschaubilder. Schnellaktionen: Intro/Outro überspringen und nächste Folge (nur bei Folgen)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll-Integration"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Zeigt den Folgentitel, Vorspann und Abspann, verfügbare Untertitel und Zeitachsen-Vorschauen. Eingebrannte Untertitel bleiben im Bild und lassen sich nicht ausschalten."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Abspannmarken, Vorschaubilder. Schnellaktionen: Intro/Abspann überspringen und nächste Folge."
   },
   "aboutTitle": {
     "message": "Über"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "SponsorBlock-Segment"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Wähle Integrationen und entdecke ihre Funktionen im Kinomodus. Die Verfügbarkeit hängt vom Video und Dienst ab."
+  },
+  "rteAll": {
+    "message": "Alle Dienste"
+  },
+  "rteAllShown": {
+    "message": "Alle angezeigten Dienste"
+  },
+  "rteCount": {
+    "message": "$count$ von $total$ an",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Dienste mit diesen Funktionen"
+  },
+  "rteCapabilityTitle": {
+    "message": "Titel"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Untertitel"
+  },
+  "rteCapabilityChapters": {
+    "message": "Kapitel"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Heatmap"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Vorschaubilder"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Schnellaktionen"
+  },
+  "rteEmpty": {
+    "message": "Kein Dienst bietet alle ausgewählten Funktionen."
+  },
+  "rteClear": {
+    "message": "Zurücksetzen"
+  },
+  "rteShown": {
+    "message": "$count$ von $total$ Diensten angezeigt",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Je nach Video; Werbung überspringen und Warteschlange, wenn verfügbar."
+  },
+  "rteNoteVimeo": {
+    "message": "Kapitel und Vorschauen, wenn verfügbar; nächstes Video in Showcases."
+  },
+  "rteNotePatreon": {
+    "message": "Untertitel, Kapitel und Vorschauen, wenn verfügbar."
+  },
+  "rteNoteTwitch": {
+    "message": "Untertitel, Kapitel und Vorschauen nur bei VODs."
+  },
+  "rteNoteDisney": {
+    "message": "Untertitel, Vorschauen und Überspringen/Weiter, wenn der Player sie anbietet."
+  },
+  "rteNoteNetflix": {
+    "message": "Vorschauen benötigen eine bereite Trick-Play-Sitzung; Untertitel und Aktionen, wenn verfügbar."
+  },
+  "rteNoteBilibili": {
+    "message": "Manche Untertitel erfordern eine Anmeldung; Funktionen hängen vom Video ab."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Nur Intro-/Outro-Marken; Überspringen/Weiter bei Folgen, nicht bei Uploads."
+  },
+  "rteNoteTencent": {
+    "message": "Untertitel und Vorschauen, wenn verfügbar; Weiter über den Player."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Nur Intro-/Abspannmarken; eingebrannte Untertitel lassen sich nicht ausschalten."
+  },
+  "rteSaveError": {
+    "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."
+  },
+  "rteDetails": {
+    "message": "Details"
   }
 }
