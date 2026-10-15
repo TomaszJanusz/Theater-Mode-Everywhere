@@ -2069,11 +2069,40 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
     await options.getByRole('button', { name: 'Update highlights', exact: true }).click();
     await options.getByRole('dialog', { name: 'Update highlights' }).waitFor();
     await second.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
+    for (const locale of ['en', 'pl', 'ar']) {
+      const messages = JSON.parse(readFileSync(path.join(ROOT, '_locales', locale, 'messages.json'), 'utf8'));
+      await worker.evaluate(language => chrome.storage.sync.set({ language }), locale);
+      await options.getByRole('dialog', { name: messages.whatsNewDialogTitle.message, exact: true }).waitFor();
+      await options.getByRole('button', { name: messages.dialogAcknowledge.message, exact: true }).waitFor();
+      const content = options.locator('.whats-new-content[lang="en"][dir="ltr"]');
+      await content.getByRole('heading', { name: 'Here is Theater Mode Everywhere 1.6!', exact: true }).waitFor();
+      if (await content.locator('li').count() !== 13) throw new Error('Announcement must contain 13 English list items');
+      await options.waitForFunction(locale => document.documentElement.dir === (locale === 'ar' ? 'rtl' : 'ltr'), locale);
+      await content.focus();
+      await content.press('End');
+      await options.waitForFunction(() => {
+        const content = document.querySelector('.whats-new-content');
+        return content && content.scrollTop > 0 && content.scrollTop + content.clientHeight >= content.scrollHeight - 1;
+      });
+      const screenshotDir = process.env.SMOKE_SCREENSHOT_DIR;
+      if (screenshotDir) {
+        await options.locator('.te-dialog-overlay').evaluate(async overlay => {
+          await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished));
+        });
+        await options.locator('.te-dialog-btn-primary').focus();
+        await content.evaluate(el => { el.scrollTop = 0; });
+        await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}.png`) });
+        await content.locator('em').scrollIntoViewIfNeeded();
+        await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}-end.png`) });
+      }
+      const scrollable = await content.evaluate(el => el.scrollHeight > el.clientHeight);
+      if (!scrollable) throw new Error('Long announcement should scroll within the dialog');
+    }
     const seen = await worker.evaluate(async () => (await chrome.storage.local.get('newFeaturesSeenThrough')).newFeaturesSeenThrough);
     if (seen !== version.split('.').slice(0, 2).join('.')) throw new Error('Opening Update highlights did not acknowledge the installed generation');
     console.log('smoke:chromium feature highlights: installed Settings/player wiring, version gate, cross-tab preference and acknowledgement passed');
   } finally {
-    await worker.evaluate(() => chrome.storage.sync.remove('highlightNewFeatures'));
+    await worker.evaluate(() => chrome.storage.sync.remove(['highlightNewFeatures', 'language']));
     await options.close(); await second.close();
   }
 }

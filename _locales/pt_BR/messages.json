@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "Destaques da atualização"
   },
-  "whatsNewLead": {
-    "message": "Um modo teatro mais confortável, com novos controles e mais serviços compatíveis."
-  },
-  "whatsNewItemChat": {
-    "message": "Mantenha o chat do YouTube e Twitch ao lado ou abaixo do vídeo e mostre ou oculte pelo player."
-  },
-  "whatsNewItemLayout": {
-    "message": "Escolha a imagem centralizada ou elevada; as legendas elevadas usam a faixa preta abaixo do vídeo."
-  },
-  "whatsNewItemControls": {
-    "message": "Mantenha os controles visíveis, vá ao vídeo anterior ou seguinte e veja o título no player."
-  },
-  "whatsNewItemAudio": {
-    "message": "Ajuste vozes, sons altos, graves e volume nas configurações do player quando o processamento de áudio estiver disponível."
-  },
-  "whatsNewItemServices": {
-    "message": "Novas integrações do Rich Theater Experience para Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e Netflix, com botões para pular trechos quando disponíveis."
-  },
-  "whatsNewThanks": {
-    "message": "Obrigado a @liango2 pela sugestão de controles sempre visíveis e a Denis Tyscenko pela ideia do modo teatro automático."
-  },
   "dialogAcknowledge": {
     "message": "Entendi"
   },

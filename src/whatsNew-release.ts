@@ -1,6 +1,5 @@
 export type WhatsNewRelease = {
   id: string;
-  itemKeys: readonly string[];
   autoOpenOptions: boolean;
   autoOpenFromVersions?: readonly string[];
 };
@@ -12,14 +11,8 @@ export type WhatsNewRelease = {
  * `autoOpenOptions` only for deliberate, high-impact release onboarding.
  */
 export const WHATS_NEW_RELEASE: WhatsNewRelease = {
-  id: 'player-layout-and-integrations',
-  itemKeys: [
-    'whatsNewItemChat',
-    'whatsNewItemLayout',
-    'whatsNewItemControls',
-    'whatsNewItemAudio',
-    'whatsNewItemServices'
-  ],
+  // Replaces the pre-release layout/integrations announcement with the full 1.6 copy.
+  id: '1.6',
   autoOpenOptions: true
 };
 

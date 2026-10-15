@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "Novità principali dell’aggiornamento"
   },
-  "whatsNewLead": {
-    "message": "Una modalità teatro più comoda, con nuovi controlli e più servizi supportati."
-  },
-  "whatsNewItemChat": {
-    "message": "Tieni la chat di YouTube e Twitch accanto o sotto il video e mostrala o nascondila dal lettore."
-  },
-  "whatsNewItemLayout": {
-    "message": "Scegli un'immagine centrata o rialzata; i sottotitoli rialzati usano la fascia nera sotto il video."
-  },
-  "whatsNewItemControls": {
-    "message": "Mantieni visibili i controlli, passa al video precedente o successivo e leggi il titolo nel lettore."
-  },
-  "whatsNewItemAudio": {
-    "message": "Regola voci, suoni forti, bassi e volume nelle impostazioni del lettore, quando l'elaborazione audio è disponibile."
-  },
-  "whatsNewItemServices": {
-    "message": "Nuove integrazioni Rich Theater Experience per Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e Netflix, con pulsanti per saltare le scene dove disponibili."
-  },
-  "whatsNewThanks": {
-    "message": "Grazie a @liango2 per aver suggerito i controlli sempre visibili e a Denis Tyscenko per la modalità teatro automatica."
-  },
   "dialogAcknowledge": {
     "message": "Ho capito"
   },

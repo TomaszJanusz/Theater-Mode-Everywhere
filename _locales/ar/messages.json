@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "أبرز تغييرات التحديث"
   },
-  "whatsNewLead": {
-    "message": "وضع مسرح أكثر راحة مع عناصر تحكم جديدة والمزيد من الخدمات المدعومة."
-  },
-  "whatsNewItemChat": {
-    "message": "احتفظ بدردشة YouTube وTwitch بجانب الفيديو أو أسفله، وأظهرها أو أخفها من المشغل."
-  },
-  "whatsNewItemLayout": {
-    "message": "اختر عرض الصورة في الوسط أو في الأعلى؛ ويمكن عرض الترجمة في المساحة السوداء أسفل الفيديو."
-  },
-  "whatsNewItemControls": {
-    "message": "أبقِ عناصر التحكم ظاهرة، وانتقل إلى الفيديو السابق أو التالي عند توفره، وشاهد العنوان في المشغل."
-  },
-  "whatsNewItemAudio": {
-    "message": "اضبط وضوح الحوار والأصوات العالية والجهير ومستوى الصوت من إعدادات المشغل عند توفر معالجة الصوت."
-  },
-  "whatsNewItemServices": {
-    "message": "تكاملات Rich Theater Experience جديدة مع Bilibili وBilibili.tv وTencent Video / WeTV وCrunchyroll وNetflix، مع أزرار تخطٍ حيثما تتوفر."
-  },
-  "whatsNewThanks": {
-    "message": "شكرًا لـ @liango2 على اقتراح إبقاء عناصر التحكم ظاهرة، ولـ Denis Tyscenko على اقتراح تشغيل وضع المسرح تلقائيًا."
-  },
   "dialogAcknowledge": {
     "message": "حسنًا"
   },

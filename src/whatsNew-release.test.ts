@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import {
@@ -11,25 +11,23 @@ import {
 
 const autoOpenRelease: WhatsNewRelease = {
   id: 'major-update',
-  itemKeys: [],
   autoOpenOptions: true
 };
 
 describe('Update highlights release configuration', () => {
-  it('references available announcement messages in the canonical catalog', () => {
-    const requiredKeys = [
-      'whatsNewLead',
-      ...WHATS_NEW_RELEASE.itemKeys,
-      'whatsNewThanks'
-    ];
-    // Catalog shape, other locales and key parity are covered in scripts/locales.test.ts.
-    const messages = JSON.parse(readFileSync(resolve(import.meta.dirname, '../_locales/en/messages.json'), 'utf8')) as Record<
-      string,
-      { message?: string }
-    >;
-    for (const key of requiredKeys) {
-      assert.ok(messages[key]?.message?.trim(), `announcement references missing or empty message ${key}`);
+  it('keeps announcement copy out of every locale catalog', () => {
+    const removed = ['whatsNewLead', 'whatsNewItemChat', 'whatsNewItemLayout', 'whatsNewItemControls', 'whatsNewItemAudio', 'whatsNewItemServices', 'whatsNewThanks'];
+    const locales = resolve(import.meta.dirname, '../_locales');
+    for (const locale of readdirSync(locales)) {
+      const messages = JSON.parse(readFileSync(resolve(locales, locale, 'messages.json'), 'utf8'));
+      for (const key of removed) assert.equal(Object.hasOwn(messages, key), false, `${locale}: ${key}`);
+      assert.ok(messages.whatsNewDialogTitle);
+      assert.ok(messages.whatsNew);
     }
+    assert.equal(WHATS_NEW_RELEASE.id, '1.6');
+    const update = { reason: 'update', previousVersion: '1.5.0' };
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate(update, 'player-layout-and-integrations'), true);
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate(update, '1.6'), false);
   });
 
   it('does not auto-open when the release flag is disabled', () => {

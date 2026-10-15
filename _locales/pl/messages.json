@@ -446,27 +446,6 @@
   "whatsNewDialogTitle": {
     "message": "Najważniejsze zmiany"
   },
-  "whatsNewLead": {
-    "message": "Wygodniejszy tryb kinowy, nowe sterowanie i więcej obsługiwanych serwisów."
-  },
-  "whatsNewItemChat": {
-    "message": "Zachowaj czat YouTube i Twitcha obok filmu lub pod nim; możesz go pokazać albo ukryć w odtwarzaczu."
-  },
-  "whatsNewItemLayout": {
-    "message": "Wybierz wyśrodkowany lub podniesiony obraz; napisy mogą korzystać z czarnego pasa pod filmem."
-  },
-  "whatsNewItemControls": {
-    "message": "Pozostaw sterowanie widoczne, przechodź do poprzedniego lub następnego filmu i sprawdzaj tytuł w odtwarzaczu."
-  },
-  "whatsNewItemAudio": {
-    "message": "Dostosuj dialogi, głośne dźwięki, bas i głośność w ustawieniach odtwarzacza, gdy przetwarzanie dźwięku jest dostępne."
-  },
-  "whatsNewItemServices": {
-    "message": "Nowe integracje Rich Theater Experience: Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll i Netflix oraz przyciski pomijania tam, gdzie są dostępne."
-  },
-  "whatsNewThanks": {
-    "message": "Dziękujemy @liango2 za pomysł stale widocznego sterowania i Denisowi Tyscenko za pomysł automatycznego włączania trybu kinowego."
-  },
   "dialogAcknowledge": {
     "message": "Rozumiem"
   },

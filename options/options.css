@@ -1536,9 +1536,20 @@ body.te-dialog-open {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  text-align: start;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--card-bg);
+  padding-inline-end: 8px;
+}
+
+.whats-new-content > * {
+  margin: 0;
 }
 
 .whats-new-lead {
+  font-size: inherit;
   color: var(--text-primary);
   font-weight: 600;
 }

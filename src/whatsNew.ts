@@ -1,3 +1,4 @@
+import { buildWhatsNewContent } from './whatsNew-content';
 import { acknowledgeFeatureHighlights } from './feature-highlights-storage';
 import { openDialog } from './dialog';
 import { t } from './i18n';
@@ -5,6 +6,8 @@ import {
   WHATS_NEW_ACK_STORAGE_KEY,
   WHATS_NEW_RELEASE
 } from './whatsNew-release';
+
+export { buildWhatsNewContent } from './whatsNew-content';
 
 /**
  * Stable ID of the current Update highlights announcement.
@@ -16,31 +19,6 @@ import {
  * or any release that should not reopen this dialog.
  */
 export const WHATS_NEW_ANNOUNCEMENT_ID = WHATS_NEW_RELEASE.id;
-
-export function buildWhatsNewContent(): HTMLElement {
-  const root = document.createElement('div');
-  root.className = 'whats-new-content';
-
-  const lead = document.createElement('p');
-  lead.className = 'whats-new-lead';
-  lead.textContent = t('whatsNewLead');
-  root.appendChild(lead);
-
-  const list = document.createElement('ul');
-  list.className = 'whats-new-list';
-  for (const key of WHATS_NEW_RELEASE.itemKeys) {
-    const item = document.createElement('li');
-    item.textContent = t(key);
-    list.appendChild(item);
-  }
-  root.appendChild(list);
-
-  const thanks = document.createElement('p');
-  thanks.className = 'whats-new-thanks';
-  thanks.textContent = t('whatsNewThanks');
-  root.appendChild(thanks);
-  return root;
-}
 
 export async function getAcknowledgedAnnouncementId(): Promise<string | null> {
   try {
