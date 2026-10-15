@@ -86,4 +86,5 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - Check the checkout and `git status` first. Preserve unrelated changes and untracked files; keep the diff reviewable.
 - Continue within the authorized scope. Ask when missing information changes the outcome or additional authority is needed. Branches, commits, pushes and publishing require authorization; permission to commit or push does not authorize a version bump, release tag or release workflow.
 - Stop only processes or browser sessions you started for the task, using their recorded identity. Preserve the developer's running sessions and settings.
+- Never create a branch, commit or gist just to host screenshots, videos or other PR media. Upload them with `gh pr create|edit|comment --attach './file.png#alt text'` and reference them from the PR body; commit an asset only when it is durable project documentation under `docs/`.
 - Report the resulting behavior, important choices, checks actually run and remaining gaps. Distinguish source/test evidence from live runtime evidence.
