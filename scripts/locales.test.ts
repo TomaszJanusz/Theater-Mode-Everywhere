@@ -2,7 +2,6 @@ import { FALLBACK_MESSAGES } from '../src/i18n';
 import { PLAYER_I18N_FALLBACKS } from '../src/ui/messages';
 import assert from 'node:assert/strict';
 import { LANGUAGES } from '../src/language';
-import { FALLBACK_MESSAGES } from '../src/i18n';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
