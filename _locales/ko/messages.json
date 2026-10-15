@@ -539,11 +539,8 @@
   "resetToDefaults": {
     "message": "기본값으로 초기화"
   },
-  "copyright": {
-    "message": "© 2026 Tomasz Janusz. 모든 권리 보유."
-  },
   "copyrightHtml": {
-    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. 모든 권리 보유."
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. <a href=\"#about\">MIT 라이선스</a>로 배포됩니다."
   },
   "play": {
     "message": "재생"

@@ -539,11 +539,8 @@
   "resetToDefaults": {
     "message": "إعادة تعيين الإعدادات الافتراضية"
   },
-  "copyright": {
-    "message": "© 2026 Tomasz Janusz. جميع الحقوق محفوظة."
-  },
   "copyrightHtml": {
-    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. جميع الحقوق محفوظة."
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. صادر بموجب <a href=\"#about\">ترخيص MIT</a>."
   },
   "play": {
     "message": "تشغيل"

@@ -539,11 +539,8 @@
   "resetToDefaults": {
     "message": "設定をデフォルトに戻す"
   },
-  "copyright": {
-    "message": "© 2026 Tomasz Janusz. 無断転載を禁じます。"
-  },
   "copyrightHtml": {
-    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. 無断転載を禁じます。"
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. <a href=\"#about\">MIT ライセンス</a>で公開されています。"
   },
   "play": {
     "message": "再生"

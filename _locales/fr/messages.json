@@ -539,11 +539,8 @@
   "resetToDefaults": {
     "message": "Rétablir les valeurs par défaut"
   },
-  "copyright": {
-    "message": "© 2026 Tomasz Janusz. Tous droits réservés."
-  },
   "copyrightHtml": {
-    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Tous droits réservés."
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Publié sous <a href=\"#about\">licence MIT</a>."
   },
   "play": {
     "message": "Lecture"
