@@ -27,22 +27,39 @@ function labelElements(video: HTMLVideoElement): Element[] {
   return ids.map((id) => root.getElementById?.(id)).filter((el): el is HTMLElement => Boolean(el));
 }
 
-/**
- * The page's only H1 inside the nearest container it shares with this video,
- * provided that container holds no other video. An H1 that only shares
- * `<body>` with the video may name the whole page and is not used.
- */
-export function tiedHeading(video: HTMLVideoElement): HTMLHeadingElement | null {
-  const doc = video.ownerDocument;
+type HeadingContext = { headings: HTMLHeadingElement[]; composite: boolean };
+
+function headingContext(anchor: Element, allowPair = false): HeadingContext {
+  const doc = anchor.ownerDocument;
   const headings = Array.from(doc.querySelectorAll('h1'));
-  if (headings.length === 0) return null;
-  for (let node = video.parentElement; node && node !== doc.body && node !== doc.documentElement; node = node.parentElement) {
-    const container = node;
-    const inside = headings.filter((heading) => container.contains(heading));
+  if (headings.length === 0) return { headings: [], composite: false };
+  for (let node = anchor.parentElement; node && node !== doc.documentElement; node = node.parentElement) {
+    if (node === doc.body && !allowPair) break;
+    const inside = headings.filter((heading) => node.contains(heading));
     if (inside.length === 0) continue;
-    return inside.length === 1 && node.querySelectorAll('video').length === 1 ? inside[0] : null;
+    if (node.querySelectorAll(allowPair ? 'video, iframe' : 'video').length !== 1) break;
+    if (inside.length === 1 && node !== doc.body) return { headings: inside, composite: false };
+    // Two adjacent H1s beside a single embedded player can supply series + episode.
+    // Requiring sibling headings avoids combining unrelated page sections.
+    if (allowPair && inside.length === 2 && inside[0].nextElementSibling === inside[1]) {
+      return { headings: inside, composite: true };
+    }
+    break;
   }
-  return null;
+  return { headings: [], composite: false };
+}
+
+function parentContext(doc: Document): { doc: Document; frame: Element } | null {
+  try {
+    const view = doc.defaultView;
+    if (!view || view.parent === view) return null;
+    const parentDoc = view.parent.document;
+    const frame = view.frameElement;
+    return frame && frame.ownerDocument === parentDoc ? { doc: parentDoc, frame } : null;
+  } catch {
+    // A cross-origin or sandboxed parent is intentionally unavailable.
+    return null;
+  }
 }
 
 /** Properties owned by this item, not by an item nested inside it. */
@@ -55,7 +72,7 @@ function microdataValue(el: Element): string | null {
   return el.getAttribute('content') || el.getAttribute('href') || el.getAttribute('src') || el.textContent;
 }
 
-function microdataVideoObjects(doc: Document, video: HTMLVideoElement): VideoObjectCandidate[] {
+function microdataVideoObjects(doc: Document, video: Element): VideoObjectCandidate[] {
   return Array.from(doc.querySelectorAll('[itemscope][itemtype]'))
     .filter((scope) => /schema\.org\/VideoObject\b/i.test(scope.getAttribute('itemtype') || ''))
     .map((scope) => ({
@@ -72,8 +89,7 @@ function microdataVideoObjects(doc: Document, video: HTMLVideoElement): VideoObj
  * names the media; the element's own label is always available.
  */
 export class GenericTitleSource {
-  private tracker = new GenericTitleTracker();
-  private jsonLd: { text: string; objects: VideoObjectCandidate[] } = { text: '', objects: [] };
+  private documents = new WeakMap<Document, { tracker: GenericTitleTracker; text: string; objects: VideoObjectCandidate[] }>();
 
   constructor(private video: HTMLVideoElement, private pageMetadata: boolean) {}
 
@@ -81,9 +97,23 @@ export class GenericTitleSource {
     const video = this.video;
     const doc = video.ownerDocument as Document | undefined;
     if (!doc?.querySelector) return video.getAttribute?.('title') || video.title || null;
+    if (!video.isConnected) return null;
+    const own = this.readDocument(doc, video, false);
+    const parent = this.pageMetadata ? parentContext(doc) : null;
+    // Keep each document's URL history independent, even while an element label wins.
+    const fallback = parent ? this.readDocument(parent.doc, parent.frame, true) : null;
+    return own || fallback;
+  }
+
+  private readDocument(doc: Document, anchor: Element, embedded: boolean): string | null {
+    let state = this.documents.get(doc);
+    if (!state) {
+      state = { tracker: new GenericTitleTracker(), text: '', objects: [] };
+      this.documents.set(doc, state);
+    }
     const candidates: GenericTitleCandidates = {
-      element: video.getAttribute('title'),
-      labelledBy: labelElements(video).map((el) => el.textContent).join(' '),
+      element: embedded ? null : this.video.getAttribute('title'),
+      labelledBy: embedded ? null : labelElements(this.video).map((el) => el.textContent).join(' '),
       videoObjects: [],
       openGraph: null,
       twitter: null,
@@ -92,14 +122,22 @@ export class GenericTitleSource {
       heading: null
     };
     if (this.pageMetadata) {
-      candidates.videoObjects = [...this.readJsonLd(doc), ...microdataVideoObjects(doc, video)];
+      const texts = Array.from(doc.querySelectorAll(JSON_LD_SELECTOR), (script) => script.textContent || '');
+      const text = texts.join('\n');
+      if (text !== state.text) {
+        state.text = text;
+        state.objects = texts.flatMap(parseJsonLdVideoObjects);
+      }
+      candidates.videoObjects = [...state.objects, ...microdataVideoObjects(doc, anchor)];
       candidates.openGraph = metaContent(doc, 'meta[property="og:title"]');
       candidates.twitter = metaContent(doc, 'meta[name="twitter:title"]');
       candidates.document = doc.querySelector('title')?.textContent ?? null;
       candidates.siteName = metaContent(doc, 'meta[property="og:site_name"]');
-      candidates.heading = tiedHeading(video)?.textContent ?? null;
+      const context = headingContext(anchor, embedded);
+      candidates.heading = context.headings.map((heading) => heading.textContent).join(' ');
+      candidates.headingBeforeDocument = context.composite;
     }
-    return this.tracker.select(candidates, this.mediaIdentity(doc));
+    return state.tracker.select(candidates, this.mediaIdentity(doc));
   }
 
   /**
@@ -113,18 +151,33 @@ export class GenericTitleSource {
     const doc = video.ownerDocument as Document | undefined;
     if (!doc || typeof MutationObserver === 'undefined' || !video.addEventListener) return () => {};
     let active = true;
+    const structuralTargets = new Set<Node>();
     const connect = () => {
       observer.disconnect();
+      structuralTargets.clear();
       observer.observe(video, { attributes: true, attributeFilter: ['title', 'aria-labelledby'] });
       for (const label of labelElements(video)) observer.observe(label, TEXT_CHANGES);
       if (!this.pageMetadata) return;
-      if (doc.head) observer.observe(doc.head, { childList: true });
-      const title = doc.querySelector('title');
-      if (title) observer.observe(title, TEXT_CHANGES);
-      for (const meta of doc.querySelectorAll(META_SELECTOR)) observer.observe(meta, { attributes: true, attributeFilter: ['content'] });
-      for (const script of doc.querySelectorAll(JSON_LD_SELECTOR)) observer.observe(script, TEXT_CHANGES);
-      const heading = tiedHeading(video);
-      if (heading) observer.observe(heading, TEXT_CHANGES);
+      const observeDocument = (document: Document, anchor: Element, embedded: boolean) => {
+        if (document.head) {
+          structuralTargets.add(document.head);
+          observer.observe(document.head, { childList: true });
+        }
+        const title = document.querySelector('title');
+        if (title) observer.observe(title, TEXT_CHANGES);
+        for (const meta of document.querySelectorAll(META_SELECTOR)) observer.observe(meta, { attributes: true, attributeFilter: ['content'] });
+        for (const script of document.querySelectorAll(JSON_LD_SELECTOR)) observer.observe(script, TEXT_CHANGES);
+        for (const heading of headingContext(anchor, embedded).headings) {
+          observer.observe(heading, TEXT_CHANGES);
+          if (heading.parentElement) {
+            structuralTargets.add(heading.parentElement);
+            observer.observe(heading.parentElement, { childList: true });
+          }
+        }
+      };
+      observeDocument(doc, video, false);
+      const parent = parentContext(doc);
+      if (parent) observeDocument(parent.doc, parent.frame, true);
     };
     const changed = () => {
       if (!active) return;
@@ -133,30 +186,32 @@ export class GenericTitleSource {
     };
     // Style and script insertions into <head> are frequent and cannot change the title.
     const observer = new MutationObserver((records) => {
-      if (records.some((record) => record.target !== doc.head || [...record.addedNodes, ...record.removedNodes].some(isTitleNode))) changed();
+      if (records.some((record) => !structuralTargets.has(record.target)
+        || [...record.addedNodes, ...record.removedNodes].some((node) => isTitleNode(node) || node.nodeName === 'H1'))) changed();
     });
     // Some players replace the media under the same URL.
     video.addEventListener('loadedmetadata', changed);
+    const views = [doc.defaultView, this.pageMetadata ? parentContext(doc)?.doc.defaultView : null];
+    for (const view of views) {
+      view?.addEventListener('popstate', changed);
+      view?.addEventListener('hashchange', changed);
+    }
     connect();
     return () => {
       if (!active) return;
       active = false;
       observer.disconnect();
       video.removeEventListener('loadedmetadata', changed);
+      for (const view of views) {
+        view?.removeEventListener('popstate', changed);
+        view?.removeEventListener('hashchange', changed);
+      }
     };
   }
 
   private mediaIdentity(doc: Document): MediaIdentity {
     const video = this.video;
     const sources = [video.currentSrc, video.src, ...Array.from(video.querySelectorAll('source'), (source) => source.src)];
-    return { page: doc.URL, sources: sources.filter(Boolean) };
-  }
-
-  /** Parses JSON-LD only when the scripts' text changes. */
-  private readJsonLd(doc: Document): VideoObjectCandidate[] {
-    const texts = Array.from(doc.querySelectorAll(JSON_LD_SELECTOR), (script) => script.textContent || '');
-    const text = texts.join('\n');
-    if (text !== this.jsonLd.text) this.jsonLd = { text, objects: texts.flatMap(parseJsonLdVideoObjects) };
-    return this.jsonLd.objects;
+    return { page: doc.URL, sources: sources.filter(Boolean), embedPage: video.ownerDocument.URL };
   }
 }
