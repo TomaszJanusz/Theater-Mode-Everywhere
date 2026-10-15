@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "自动（浏览器语言）"
+  },
+  "addExclusion": {
+    "message": "添加排除网站"
+  },
+  "playbackPosition": {
+    "message": "播放位置"
+  },
+  "volumeLabel": {
+    "message": "音量"
+  },
+  "playbackSpeed": {
+    "message": "播放速度"
   }
 }

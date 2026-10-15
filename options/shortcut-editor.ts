@@ -15,6 +15,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   notice.id = 'shortcut-conflict-status';
   notice.className = 'shortcut-conflict-status';
   notice.setAttribute('role', 'status');
+  notice.setAttribute('aria-atomic', 'true');
   entries[0]?.input.closest('.shortcuts-grid')?.before(notice);
   const grid = entries[0]?.input.closest('.shortcuts-grid');
   grid?.setAttribute('aria-busy', 'true');
@@ -59,7 +60,8 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
       conflictsFound ||= conflicts.length > 0;
     }
     notice.textContent = conflictsFound ? t('shortcutExistingConflicts') : '';
-    notice.hidden = !conflictsFound;
+    // Keep the live region mounted even when there is no message to announce.
+    notice.style.margin = conflictsFound ? '' : '0';
   }
 
   function applyStored(value: unknown): void {

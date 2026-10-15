@@ -592,6 +592,8 @@ export class MediaFeaturesController {
     const loading = this.captionState === 'loading';
     this.ccBtn.classList.toggle('loading', loading);
     this.ccBtn.setAttribute('aria-busy', String(loading));
+    this.ccBtn.setAttribute('aria-pressed', String(this.captionsAreOn()));
+    this.ccBtn.setAttribute('aria-disabled', String(!hasTracks));
   }
 
   setCaptionStyle(style: CaptionStyle): void {
@@ -712,16 +714,20 @@ export class MediaFeaturesController {
     item.type = 'button';
     item.className = 'theater-cc-menu-item';
     item.textContent = label;
+    item.setAttribute('aria-pressed', String(active));
     if (active) {
       item.classList.add('active');
       const checkIcon = document.createElement('span');
       checkIcon.textContent = '✓';
+      checkIcon.setAttribute('aria-hidden', 'true');
       checkIcon.style.marginLeft = '8px';
       item.appendChild(checkIcon);
     }
     item.addEventListener('click', () => {
+      const focused = (item.getRootNode() as Document | ShadowRoot).activeElement === item;
       onClick();
       this.dismissCcMenu();
+      if (focused) this.ccBtn.focus();
     });
     return item;
   }

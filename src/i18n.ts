@@ -4,7 +4,11 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   languageTitle: "Language",
   languageDescription: "Choose the language for Settings, the popup, and player controls.",
   languageAutomatic: "Automatic (browser language)",
-
+  addExclusion: "Add website exclusion",
+  playbackPosition: "Playback position",
+  volumeLabel: "Volume",
+  playbackSpeed: "Playback speed",
+  settingsSectionAudio: 'Audio',
   shortcutUnassigned: "Not assigned",
   shortcutExistingConflicts: "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts.",
   shortcutConflictTitle: "Shortcut already assigned",

@@ -1,3 +1,9 @@
+import { applyUiDirection } from './messages';
+
+// Both script worlds must leave native button activation to the focused UI control.
+export const PLAYER_NATIVE_ACTIVATION_SELECTOR = '.theater-menu, .theater-service-action-host, '
+  + '.theater-time-end, .theater-controls-row button, .te-dialog-overlay';
+
 const HOST_ID = 'theater-everywhere-ui';
 const STYLE_ID = 'theater-everywhere-ui-styles';
 
@@ -34,10 +40,20 @@ export function getPlayerUiRoot(): ShadowRoot {
     hostEl = document.createElement('div');
     hostEl.id = HOST_ID;
     hostEl.setAttribute('data-theater-everywhere-ui', '');
+    applyUiDirection(hostEl);
     (document.documentElement || document.body).appendChild(hostEl);
   }
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
+  if (!shadow.getElementById('theater-announcements')) {
+    const status = document.createElement('div');
+    status.id = 'theater-announcements';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-atomic', 'true');
+    // Keep the live region mounted before feedback arrives, without taking layout space.
+    status.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;';
+    shadow.appendChild(status);
+  }
   return shadow;
 }
 
@@ -74,4 +90,10 @@ export function eventPathIncludes(event: Event, node: Node | null): boolean {
 
 export function eventPathMatches(event: Event, selector: string): boolean {
   return event.composedPath().some((entry) => entry instanceof Element && entry.matches(selector));
+}
+
+/** User feedback only; playback ticks never write to the live region. */
+export function announcePlayerStatus(message: string): void {
+  const status = peekPlayerUiRoot()?.getElementById('theater-announcements');
+  status?.replaceChildren(document.createTextNode(message));
 }

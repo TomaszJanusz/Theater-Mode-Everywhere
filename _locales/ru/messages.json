@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "Автоматически (язык браузера)"
+  },
+  "addExclusion": {
+    "message": "Добавить сайт в исключения"
+  },
+  "playbackPosition": {
+    "message": "Позиция воспроизведения"
+  },
+  "volumeLabel": {
+    "message": "Громкость"
+  },
+  "playbackSpeed": {
+    "message": "Скорость воспроизведения"
   }
 }

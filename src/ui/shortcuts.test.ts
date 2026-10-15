@@ -267,6 +267,7 @@ describe('shortcut editor paint', () => {
         id: '',
         className: '',
         hidden: false,
+        style: {},
         textContent: '',
         setAttribute() {}
       })

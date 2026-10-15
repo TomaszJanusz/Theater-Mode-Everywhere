@@ -37,6 +37,7 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   host.classList.add(SUPPRESS_CLASS);
   releaseMenuPosition(panel);
   trigger.setAttribute('aria-expanded', 'false');
+  panel.inert = true;
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
   if (restoreFocus) trigger.focus();
   else if (active instanceof HTMLElement && panel.contains(active)) active.blur();
@@ -80,12 +81,19 @@ export function bindMenuPopover(options: {
   const syncExpanded = () => {
     const open = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
     trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    panel.inert = !open;
   };
+  syncExpanded();
   const close = (restoreFocus = false) => {
     const closed = closeMenuPopover(host, restoreFocus);
     if (closed) options.onChange?.();
     return closed;
   };
+  scope.listen(host, 'keydown', (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !close(true)) return;
+    event.preventDefault();
+    event.stopPropagation();
+  });
   const list = () => (options.centerActiveIn ? panel.querySelector<HTMLElement>(options.centerActiveIn) : null);
   const isOpen = () => host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
   // Once the user scrolls, re-renders keep their position instead of re-centering.
@@ -185,4 +193,33 @@ export function bindMenuPopover(options: {
   scope.listen(window, 'resize', () => releaseMenuPosition(panel));
 
   return { close };
+}
+
+/** Slider panels follow the existing hover/focus presentation, including AT visibility. */
+export function bindSliderPopover(host: HTMLElement, panel: HTMLElement, scope: DisposableScope): void {
+  let hovered = false;
+  let suppressed = false;
+  const sync = () => {
+    const active = (host.getRootNode() as Document | ShadowRoot).activeElement;
+    panel.inert = suppressed || (!hovered && !(active instanceof Node && host.contains(active)));
+    panel.style.visibility = suppressed ? 'hidden' : '';
+  };
+  panel.inert = true;
+  scope.listen(host, 'pointerenter', () => { hovered = true; suppressed = false; sync(); });
+  scope.listen(host, 'pointerleave', () => { hovered = false; sync(); });
+  scope.listen(host, 'focusin', sync);
+  scope.listen(host, 'keydown', (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    host.querySelector('button')?.focus();
+    suppressed = true;
+    sync();
+  });
+  scope.listen(host, 'focusout', (event: FocusEvent) => {
+    const inside = event.relatedTarget instanceof Node && host.contains(event.relatedTarget);
+    if (!inside) suppressed = false;
+    panel.inert = suppressed || (!hovered && !inside);
+    panel.style.visibility = suppressed ? 'hidden' : '';
+  });
 }

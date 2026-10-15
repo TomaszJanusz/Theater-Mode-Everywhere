@@ -9,7 +9,7 @@ import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../p
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { installMediaAudioRuntime } from './media-audio-runtime';
-import { queryPlayerUi } from '../ui/root';
+import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
@@ -350,9 +350,9 @@ export function installMainWorldRuntime(): void {
       event.stopImmediatePropagation();
       return;
     }
-    // Menu buttons and the duration toggle own native Space activation.
+    // Shared player controls own native Space/Enter activation in both worlds.
     if (event.composedPath().some(node => node instanceof Element
-        && node.matches('.theater-menu, .theater-time-end'))) return;
+        && node.matches(PLAYER_NATIVE_ACTIVATION_SELECTOR))) return;
 
     if (isTencentWasmPlayerElement(marked)) {
       if (!mainWorldOwnsWasmPlayPause(event, publishedShortcut('playPause'))) return;

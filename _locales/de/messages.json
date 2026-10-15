@@ -863,5 +863,17 @@
   },
   "languageAutomatic": {
     "message": "Automatisch (Browsersprache)"
+  },
+  "addExclusion": {
+    "message": "Website-Ausnahme hinzufügen"
+  },
+  "playbackPosition": {
+    "message": "Wiedergabeposition"
+  },
+  "volumeLabel": {
+    "message": "Lautstärke"
+  },
+  "playbackSpeed": {
+    "message": "Wiedergabegeschwindigkeit"
   }
 }

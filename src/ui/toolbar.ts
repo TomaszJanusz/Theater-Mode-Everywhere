@@ -452,6 +452,8 @@ export function createToolbar(ctx: PlayerChromeContext) {
     el.textContent = '';
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgStr.trim(), 'image/svg+xml');
+    doc.documentElement.setAttribute('aria-hidden', 'true');
+    doc.documentElement.setAttribute('focusable', 'false');
     el.appendChild(doc.documentElement);
   }
 

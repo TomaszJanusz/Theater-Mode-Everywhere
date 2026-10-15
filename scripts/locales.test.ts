@@ -1,3 +1,5 @@
+import { FALLBACK_MESSAGES } from '../src/i18n';
+import { PLAYER_I18N_FALLBACKS } from '../src/ui/messages';
 import assert from 'node:assert/strict';
 import { LANGUAGES } from '../src/language';
 import { FALLBACK_MESSAGES } from '../src/i18n';
@@ -75,6 +77,13 @@ describe('locale catalogs', () => {
 
   it('uses valid message structures', () => {
     for (const locale of locales) validateCatalogShape(locale, readCatalog(locale));
+  });
+
+  it('keeps accessibility names aligned with the English fallbacks', () => {
+    for (const key of ['addExclusion', 'playbackPosition', 'volumeLabel', 'playbackSpeed']) {
+      assert.equal(FALLBACK_MESSAGES[key], canonical[key].message, key);
+      if (key !== 'addExclusion') assert.equal(PLAYER_I18N_FALLBACKS[key], canonical[key].message, key);
+    }
   });
 
   it('keeps every locale in exact key parity with English', () => {

@@ -32,7 +32,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
-import { bindMenuPopover } from './menu-popover';
+import { bindMenuPopover, bindSliderPopover } from './menu-popover';
 import { armPictureDismiss, armPictureDismissOnLeave, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
@@ -99,6 +99,8 @@ export function createControls(
 
     const wrapper = document.createElement('div') as ExtendedHTMLDivElement;
     wrapper.className = 'theater-controls-wrapper';
+    wrapper.setAttribute('role', 'group');
+    wrapper.setAttribute('aria-label', t('playerControlsTitle'));
     paintOverlay(wrapper);
 
     // Create loading indicator
@@ -131,6 +133,9 @@ export function createControls(
     // 1. Scrubber (Progress bar)
     const scrubberContainer = document.createElement('div');
     scrubberContainer.className = 'theater-scrubber-container';
+    scrubberContainer.setAttribute('role', 'slider');
+    scrubberContainer.setAttribute('aria-label', t('playbackPosition'));
+    scrubberContainer.tabIndex = 0;
 
     const scrubberTrack = document.createElement('div');
     scrubberTrack.className = 'theater-scrubber-track';
@@ -203,6 +208,7 @@ export function createControls(
     `;
 
     setIcon(playPauseBtn, video.paused ? playIcon : pauseIcon);
+    playPauseBtn.setAttribute('aria-label', t(video.paused ? 'play' : 'pause'));
     playPauseBtn.addEventListener('click', () => {
       executeCommand({ type: 'PLAY_PAUSE' });
     });
@@ -302,6 +308,8 @@ export function createControls(
 
     const volumeSlider = document.createElement('input');
     volumeSlider.type = 'range';
+    volumeSlider.setAttribute('aria-label', t('volumeLabel'));
+    volumeSlider.setAttribute('aria-orientation', 'vertical');
     volumeSlider.className = 'theater-volume-slider theater-vertical-slider';
     volumeSlider.min = '0';
     volumeSlider.step = '0.05';
@@ -345,7 +353,9 @@ export function createControls(
       </svg>
     `;
 
+    volumeBtn.setAttribute('aria-label', t('toggleMute'));
     const updateVolumeIcon = () => {
+      volumeBtn.setAttribute('aria-pressed', String(isVideoSilent(video)));
       const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
       volumeBtn.classList.toggle('boosted', logicalVol > 1.0 && native?.dataset.theaterBoostReady === 'true');
       if (video.muted || logicalVol === 0) {
@@ -383,6 +393,7 @@ export function createControls(
         volumeTooltip.textContent = `${pct}%`;
         volumeTooltip.style.color = 'var(--theater-volume-boost-color)';
       }
+      volumeSlider.setAttribute('aria-valuetext', volumeTooltip.textContent ?? '');
     };
     updateVolumeTooltip();
 
@@ -424,6 +435,7 @@ export function createControls(
 
     volumeContainer.appendChild(volumeBtn);
     volumeContainer.appendChild(volumePanel);
+    bindSliderPopover(volumeContainer, volumePanel, controlsScope);
 
     // Elapsed sits left of the scrubber. The trailing clock sits on its right
     // and toggles between time remaining and duration.
@@ -490,7 +502,8 @@ export function createControls(
       elapsedReadout.style.cursor = playback.live && canJumpToLive ? 'pointer' : '';
       scrubberContainer.classList.toggle('theater-scrubber-live', playback.live);
       scrubberContainer.classList.toggle('theater-scrubber-live-locked', locked);
-      scrubberContainer.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      scrubberContainer.setAttribute('aria-disabled', String(!playback.seekable));
+      scrubberContainer.tabIndex = playback.seekable ? 0 : -1;
       speedContainer.hidden = playback.live;
       if (locked) {
         tooltip.classList.remove('visible');
@@ -572,6 +585,7 @@ export function createControls(
 
     const speedBtn = document.createElement('button');
     speedBtn.className = 'theater-control-btn speed-btn';
+    speedBtn.setAttribute('aria-label', t('playbackSpeed'));
 
     const speedLabel = document.createElement('span');
     speedLabel.className = 'speed-label';
@@ -607,6 +621,8 @@ export function createControls(
 
     const speedSlider = document.createElement('input');
     speedSlider.type = 'range';
+    speedSlider.setAttribute('aria-label', t('playbackSpeed'));
+    speedSlider.setAttribute('aria-orientation', 'vertical');
     speedSlider.className = 'theater-speed-slider theater-vertical-slider';
     speedSlider.min = '0';
     speedSlider.max = String(speedLevels.length - 1);
@@ -623,6 +639,7 @@ export function createControls(
 
     speedContainer.appendChild(speedBtn);
     speedContainer.appendChild(speedPanel);
+    bindSliderPopover(speedContainer, speedPanel, controlsScope);
 
     let lastNonNormalSpeed = 1.5;
 
@@ -637,6 +654,8 @@ export function createControls(
 
     const updateSpeedTooltip = () => {
       speedTooltip.textContent = `${video.playbackRate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
+      speedSlider.setAttribute('aria-valuetext', speedTooltip.textContent);
+      speedBtn.setAttribute('aria-pressed', String(video.playbackRate !== 1));
     };
     updateSpeedTooltip();
 
@@ -664,6 +683,7 @@ export function createControls(
     // PiP Button
     const pipBtn = document.createElement('button');
     pipBtn.className = 'theater-control-btn pip-btn';
+    pipBtn.setAttribute('aria-label', t('togglePictureInPicture'));
     if (!video.capabilities.pictureInPicture || !document.pictureInPictureEnabled) {
       pipBtn.style.display = 'none';
     }
@@ -672,7 +692,9 @@ export function createControls(
 
     setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
     const syncPipButton = () => {
-      pipBtn.classList.toggle('active', native != null && document.pictureInPictureElement === native);
+      const active = native != null && document.pictureInPictureElement === native;
+      pipBtn.classList.toggle('active', active);
+      pipBtn.setAttribute('aria-pressed', String(active));
     };
     syncPipButton();
     video.addEventListener('enterpictureinpicture', syncPipButton);
@@ -702,6 +724,7 @@ export function createControls(
       const active = Boolean(document.fullscreenElement);
       fullscreenBtn.classList.toggle('active', active);
       fullscreenBtn.setAttribute('aria-pressed', String(active));
+      fullscreenBtn.setAttribute('aria-label', t(active ? 'exitFullscreen' : 'toggleFullscreen'));
       setIcon(fullscreenBtn, active ? exitFullscreenIcon : enterFullscreenIcon);
     };
     syncFullscreenButton();
@@ -760,6 +783,7 @@ export function createControls(
     // Close Button
     const closeBtn = document.createElement('button');
     closeBtn.className = 'theater-control-btn close-btn';
+    closeBtn.setAttribute('aria-label', t('exitTheaterMode'));
   
     bindCustomTooltip(closeBtn, () => {
       const toggleKey = escapeHtml((ui().shortcuts.toggle || t('shortcutUnassigned')).toUpperCase());
@@ -779,7 +803,10 @@ export function createControls(
     const ccMenu = document.createElement('div');
     ccMenu.id = 'theater-cc-menu';
     ccMenu.className = 'theater-cc-menu';
-    ccBtn.setAttribute('aria-haspopup', 'menu');
+    ccBtn.setAttribute('aria-label', t('subtitlesMenuTitle'));
+    ccBtn.setAttribute('aria-haspopup', 'dialog');
+    ccMenu.setAttribute('role', 'dialog');
+    ccMenu.setAttribute('aria-label', t('subtitlesMenuTitle'));
     ccBtn.setAttribute('aria-expanded', 'false');
     ccBtn.setAttribute('aria-controls', 'theater-cc-menu');
     paintOverlay(ccMenu);
@@ -963,7 +990,10 @@ export function createControls(
         const shortcuts = ui().shortcuts;
         settings.setAudioNote(block && t(AUDIO_BLOCK_KEYS[block]));
         if (block) return;
-        if (boost) boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
+        if (boost) {
+          boost.button.setAttribute('aria-pressed', String(ui().volumeBoost));
+          boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
+        }
         for (const { name, row } of audioRows) {
           row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)));
         }
@@ -1132,7 +1162,48 @@ export function createControls(
       }
     };
 
+    const locale = t('@@ui_locale');
+    const timeUnits = ['hour', 'minute', 'second'].map(unit => new Intl.NumberFormat(
+      locale.startsWith('@@') ? 'en' : locale.replace('_', '-'),
+      { style: 'unit', unit, unitDisplay: 'long', maximumFractionDigits: 0 }
+    ));
+    const spokenTime = (seconds: number) => {
+      const total = Math.max(0, Math.floor(seconds));
+      return [Math.floor(total / 3600), Math.floor(total / 60) % 60, total % 60]
+        .map((value, index) => value || index === 2 ? timeUnits[index].format(value) : '').filter(Boolean).join(' ');
+    };
+    let accessibleTimeKey = '';
+    const syncScrubberValue = (time: number, window: ChromePlayback) => {
+      const current = Math.max(window.start, Math.min(window.end, Math.floor(time)));
+      const key = `${current}:${window.start}:${window.end}:${window.seekable}`;
+      if (key === accessibleTimeKey) return;
+      accessibleTimeKey = key;
+      scrubberContainer.setAttribute('aria-valuemin', String(window.start));
+      scrubberContainer.setAttribute('aria-valuemax', String(window.end));
+      scrubberContainer.setAttribute('aria-valuenow', String(current));
+      scrubberContainer.setAttribute('aria-valuetext', window.seekable ? `${spokenTime(current)} / ${spokenTime(window.end)}` : t('liveBadge'));
+    };
+    controlsScope.listen(scrubberContainer, 'keydown', (event: KeyboardEvent) => {
+      const window = playbackWindow(video);
+      if (!window.seekable || event.altKey || event.ctrlKey || event.metaKey) return;
+      const current = displayMediaTime(video);
+      let target: number;
+      switch (event.key) {
+        case 'ArrowLeft': case 'ArrowDown': target = current - 5; break;
+        case 'ArrowRight': case 'ArrowUp': target = current + 5; break;
+        case 'PageDown': target = current - (window.end - window.start) / 10; break;
+        case 'PageUp': target = current + (window.end - window.start) / 10; break;
+        case 'Home': target = window.start; break;
+        case 'End': target = window.end; break;
+        default: return;
+      }
+      event.preventDefault();
+      const clamped = Math.max(window.start, Math.min(window.end, target));
+      seekHostTime(video, clamped);
+      syncScrubberValue(clamped, window);
+    });
     const paintScrubber = (window: ChromePlayback) => {
+      syncScrubberValue(displayMediaTime(video), window);
       const cur = video.currentTime || 0;
 
       if (window.seekable && video.buffered && video.buffered.length > 0) {
@@ -1256,6 +1327,7 @@ export function createControls(
       mediaFeatures.setHeatmapHover(pos);
     
       const targetTime = ratioToTime(pos, window);
+      syncScrubberValue(targetTime, window);
       if (window.live) {
         paintLive(window.seekable && !isAtLiveEdge(targetTime, window), window.seekable);
       } else {
@@ -1419,9 +1491,10 @@ export function createControls(
     // Event hookups
     const onPlay = () => {
       setIcon(playPauseBtn, pauseIcon);
+      playPauseBtn.setAttribute('aria-label', t('pause'));
       setBuffering(false);
     };
-    const onPause = () => { setIcon(playPauseBtn, playIcon); };
+    const onPause = () => { setIcon(playPauseBtn, playIcon); playPauseBtn.setAttribute('aria-label', t('play')); };
     let lastMediaHref = window.location.href;
     const onTimeUpdate = () => { 
       updatePlaybackChrome();
