@@ -456,19 +456,25 @@
     "message": "新着情報"
   },
   "whatsNewLead": {
-    "message": "対応動画サービス向けの追加再生ツール、Rich Theater Experience を紹介します。"
+    "message": "新しい操作機能と対応サービスの追加で、シアターモードがさらに快適になりました。"
   },
-  "whatsNewItemCaptions": {
-    "message": "字幕をもっと便利に: トラックを選び、見た目をカスタマイズし、サイトごとに優先言語を保存できます。"
+  "whatsNewItemChat": {
+    "message": "YouTube と Twitch のチャットを動画の横や下に表示し、プレーヤーから表示・非表示を切り替えられます。"
   },
-  "whatsNewItemChapters": {
-    "message": "タイムラインの情報を充実: チャプター間を移動し、YouTube の最も繰り返し再生された場面を確認できます。"
+  "whatsNewItemLayout": {
+    "message": "映像の中央配置または上寄せを選べます。上寄せでは字幕を動画の下の黒い余白に表示します。"
   },
-  "whatsNewItemPreviews": {
-    "message": "シーク前にプレビュー: タイムラインにカーソルを合わせると、対応する YouTube、Vimeo、Patreon、Twitch、Disney+、Bilibili、Bilibili.tv、Tencent Video / WeTV プレーヤーでサムネイルを表示します。"
+  "whatsNewItemControls": {
+    "message": "操作バーを常に表示し、利用可能な場合は前後の動画へ移動できます。タイトルもプレーヤーに表示されます。"
+  },
+  "whatsNewItemAudio": {
+    "message": "音声処理が利用できる場合、プレーヤー設定で声、大きな音、低音、音量を調整できます。"
+  },
+  "whatsNewItemServices": {
+    "message": "Rich Theater Experience が Bilibili、Bilibili.tv、Tencent Video / WeTV、Crunchyroll、Netflix に対応。利用できるサービスではスキップボタンも表示します。"
   },
   "whatsNewThanks": {
-    "message": "対応サイトでは拡張機能のポップアップから、または設定ページから Rich Theater Experience (Experimental) を有効にできます。まだ実験的な機能のため、サービスによって利用できる機能が異なる場合があります :)"
+    "message": "操作バーの常時表示を提案してくれた @liango2 と、シアターモードの自動起動を提案してくれた Denis Tyscenko に感謝します。"
   },
   "dialogAcknowledge": {
     "message": "了解"

@@ -456,19 +456,25 @@
     "message": "Neuigkeiten"
   },
   "whatsNewLead": {
-    "message": "Entdecke Rich Theater Experience mit zusätzlichen Wiedergabewerkzeugen für unterstützte Videodienste."
+    "message": "Ein angenehmerer Kinomodus mit neuen Steuerelementen und mehr unterstützten Diensten."
   },
-  "whatsNewItemCaptions": {
-    "message": "Bessere Untertitel: Wähle eine Spur, passe ihr Aussehen an und speichere deine bevorzugte Sprache für jede Website."
+  "whatsNewItemChat": {
+    "message": "Behalte den Chat von YouTube und Twitch neben oder unter dem Video und blende ihn im Player ein oder aus."
   },
-  "whatsNewItemChapters": {
-    "message": "Mehr Kontext auf der Zeitleiste: Springe zwischen Kapiteln und sieh dir die meistwiederholten Momente auf YouTube an."
+  "whatsNewItemLayout": {
+    "message": "Wähle ein zentriertes oder angehobenes Bild; angehobene Untertitel nutzen den schwarzen Bereich unter dem Video."
   },
-  "whatsNewItemPreviews": {
-    "message": "Vorschau vor dem Springen: Fahre über die Zeitleiste, um Videovorschauen auf unterstützten Playern von YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv und Tencent Video / WeTV zu sehen."
+  "whatsNewItemControls": {
+    "message": "Lass die Steuerelemente sichtbar, wechsle zum vorherigen oder nächsten Video und sieh den Titel im Player."
+  },
+  "whatsNewItemAudio": {
+    "message": "Passe Dialoge, laute Geräusche, Bass und Lautstärke in den Player-Einstellungen an, sofern Audioverarbeitung verfügbar ist."
+  },
+  "whatsNewItemServices": {
+    "message": "Neue Rich Theater Experience-Integrationen für Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll und Netflix sowie Überspringen-Schaltflächen, wo verfügbar."
   },
   "whatsNewThanks": {
-    "message": "Aktiviere Rich Theater Experience (Experimental) über das Erweiterungs-Popup auf unterstützten Websites oder auf der Einstellungsseite. Die Funktion ist noch experimentell, daher können einzelne Funktionen je nach Dienst variieren :)"
+    "message": "Danke an @liango2 für den Vorschlag dauerhaft sichtbarer Steuerelemente und an Denis Tyscenko für den automatischen Kinomodus."
   },
   "dialogAcknowledge": {
     "message": "Verstanden"

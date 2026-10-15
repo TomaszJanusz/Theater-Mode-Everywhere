@@ -456,19 +456,25 @@
     "message": "Novidades"
   },
   "whatsNewLead": {
-    "message": "Conheça o Rich Theater Experience, com ferramentas extras de reprodução para serviços de vídeo compatíveis."
+    "message": "Um modo teatro mais confortável, com novos controles e mais serviços compatíveis."
   },
-  "whatsNewItemCaptions": {
-    "message": "Legendas melhores: escolha uma faixa, personalize a aparência e mantenha seu idioma preferido para cada site."
+  "whatsNewItemChat": {
+    "message": "Mantenha o chat do YouTube e Twitch ao lado ou abaixo do vídeo e mostre ou oculte pelo player."
   },
-  "whatsNewItemChapters": {
-    "message": "Mais contexto na linha do tempo: navegue entre capítulos e veja os momentos mais reproduzidos do YouTube."
+  "whatsNewItemLayout": {
+    "message": "Escolha a imagem centralizada ou elevada; as legendas elevadas usam a faixa preta abaixo do vídeo."
   },
-  "whatsNewItemPreviews": {
-    "message": "Veja antes de buscar: passe o cursor sobre a linha do tempo para ver miniaturas em players compatíveis do YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv e Tencent Video / WeTV."
+  "whatsNewItemControls": {
+    "message": "Mantenha os controles visíveis, vá ao vídeo anterior ou seguinte e veja o título no player."
+  },
+  "whatsNewItemAudio": {
+    "message": "Ajuste vozes, sons altos, graves e volume nas configurações do player quando o processamento de áudio estiver disponível."
+  },
+  "whatsNewItemServices": {
+    "message": "Novas integrações do Rich Theater Experience para Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e Netflix, com botões para pular trechos quando disponíveis."
   },
   "whatsNewThanks": {
-    "message": "Ative o Rich Theater Experience (Experimental) pelo pop-up da extensão em sites compatíveis ou pela página de Configurações. O recurso ainda é experimental, portanto algumas funções podem variar conforme o serviço :)"
+    "message": "Obrigado a @liango2 pela sugestão de controles sempre visíveis e a Denis Tyscenko pela ideia do modo teatro automático."
   },
   "dialogAcknowledge": {
     "message": "Entendi"
@@ -689,7 +695,7 @@
     "message": "Feito com <span class=\"heart\">❤</span> na 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Ativar o modo cinema automaticamente"
+    "message": "Ativar o modo teatro automaticamente"
   },
   "autoEnterTheaterOn": {
     "message": "Sim"
@@ -698,13 +704,13 @@
     "message": "Não"
   },
   "autoEnterTheaterDescription": {
-    "message": "Ative o modo cinema quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
+    "message": "Ative o modo teatro quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
   },
   "keepControlsVisibleTitle": {
     "message": "Sempre mostrar os controles"
   },
   "keepControlsVisibleDescription": {
-    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo cinema. O título e o cursor continuam se ocultando durante a inatividade."
+    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo teatro. O título e o cursor continuam se ocultando durante a inatividade."
   },
   "toggleControlsPin": {
     "message": "Alternar visibilidade dos controles"
@@ -752,7 +758,7 @@
     "message": "Escuro"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "A tela cheia com chat não está disponível. O modo cinema permanece ativo."
+    "message": "A tela cheia com chat não está disponível. O modo teatro permanece ativo."
   },
   "playerSettingsLabel": {
     "message": "Configurações do player"
@@ -799,7 +805,7 @@
     "message": "Mover atalho"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape é reservado para fechar diálogos e sair do modo cinema. Escolha outro atalho."
+    "message": "Escape é reservado para fechar diálogos e sair do modo teatro. Escolha outro atalho."
   },
   "shortcutSaveError": {
     "message": "Não foi possível salvar o atalho"

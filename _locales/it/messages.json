@@ -255,37 +255,37 @@
     "message": "Integrazione YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Attiva il supporto per sottotitoli, capitoli, heatmap Most Replayed e miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per sottotitoli, capitoli, heatmap Most Replayed e miniature sulla timeline in modalità cinema."
   },
   "vimeoIntegrationTitle": {
     "message": "Integrazione Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Attiva il supporto per i marcatori dei capitoli e le miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per i marcatori dei capitoli e le miniature sulla timeline in modalità cinema."
   },
   "patreonIntegrationTitle": {
     "message": "Integrazione Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità cinema."
   },
   "twitchIntegrationTitle": {
     "message": "Integrazione Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Attiva il supporto per i capitoli dei VOD e le miniature sulla timeline in modalità teatro."
+    "message": "Attiva il supporto per i capitoli dei VOD e le miniature sulla timeline in modalità cinema."
   },
   "disneyIntegrationTitle": {
     "message": "Integrazione Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità teatro quando il lettore li fornisce."
+    "message": "Attiva il supporto per sottotitoli e miniature sulla timeline in modalità cinema quando il lettore li fornisce."
   },
   "netflixIntegrationTitle": {
     "message": "Integrazione Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità teatro quando il lettore ha un renderer dei sottotitoli attivo. Capitoli e miniature della timeline non sono supportati."
+    "message": "Mostra il titolo del contenuto in riproduzione e cambia le lingue dei sottotitoli del lettore in modalità cinema quando il lettore ha un renderer dei sottotitoli attivo. Capitoli e miniature della timeline non sono supportati."
   },
   "bilibiliIntegrationTitle": {
     "message": "Integrazione Bilibili (bilibili.com)"
@@ -456,19 +456,25 @@
     "message": "Novità"
   },
   "whatsNewLead": {
-    "message": "Scopri Rich Theater Experience, con strumenti di riproduzione aggiuntivi per i servizi video supportati."
+    "message": "Una modalità teatro più comoda, con nuovi controlli e più servizi supportati."
   },
-  "whatsNewItemCaptions": {
-    "message": "Sottotitoli migliori: scegli una traccia, personalizzane l'aspetto e conserva la lingua preferita per ogni sito."
+  "whatsNewItemChat": {
+    "message": "Tieni la chat di YouTube e Twitch accanto o sotto il video e mostrala o nascondila dal lettore."
   },
-  "whatsNewItemChapters": {
-    "message": "Più contesto sulla timeline: passa da un capitolo all'altro e scopri i momenti più riprodotti su YouTube."
+  "whatsNewItemLayout": {
+    "message": "Scegli un'immagine centrata o rialzata; i sottotitoli rialzati usano la fascia nera sotto il video."
   },
-  "whatsNewItemPreviews": {
-    "message": "Anteprima prima di cercare: passa il cursore sulla timeline per vedere le miniature nei player supportati di YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv e Tencent Video / WeTV."
+  "whatsNewItemControls": {
+    "message": "Mantieni visibili i controlli, passa al video precedente o successivo e leggi il titolo nel lettore."
+  },
+  "whatsNewItemAudio": {
+    "message": "Regola voci, suoni forti, bassi e volume nelle impostazioni del lettore, quando l'elaborazione audio è disponibile."
+  },
+  "whatsNewItemServices": {
+    "message": "Nuove integrazioni Rich Theater Experience per Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll e Netflix, con pulsanti per saltare le scene dove disponibili."
   },
   "whatsNewThanks": {
-    "message": "Attiva Rich Theater Experience (Experimental) dal popup dell'estensione sui siti supportati o dalla pagina Impostazioni. La funzione è ancora sperimentale, quindi alcune funzionalità possono variare in base al servizio :)"
+    "message": "Grazie a @liango2 per aver suggerito i controlli sempre visibili e a Denis Tyscenko per la modalità teatro automatica."
   },
   "dialogAcknowledge": {
     "message": "Ho capito"

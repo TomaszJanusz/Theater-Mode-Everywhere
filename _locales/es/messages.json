@@ -456,19 +456,25 @@
     "message": "Novedades"
   },
   "whatsNewLead": {
-    "message": "Descubre Rich Theater Experience con herramientas de reproducción adicionales para servicios de vídeo compatibles."
+    "message": "Un modo teatro más cómodo, con nuevos controles y más servicios compatibles."
   },
-  "whatsNewItemCaptions": {
-    "message": "Mejores subtítulos: elige una pista, personaliza su aspecto y guarda tu idioma preferido para cada sitio."
+  "whatsNewItemChat": {
+    "message": "Mantén el chat de YouTube y Twitch junto al vídeo o debajo y muéstralo u ocúltalo desde el reproductor."
   },
-  "whatsNewItemChapters": {
-    "message": "Más contexto en la línea de tiempo: salta entre capítulos y descubre los momentos más repetidos de YouTube."
+  "whatsNewItemLayout": {
+    "message": "Elige una imagen centrada o elevada; los subtítulos elevados aprovechan la franja negra bajo el vídeo."
   },
-  "whatsNewItemPreviews": {
-    "message": "Previsualiza antes de buscar: pasa el cursor por la línea de tiempo para ver miniaturas en reproductores compatibles de YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv y Tencent Video / WeTV."
+  "whatsNewItemControls": {
+    "message": "Mantén los controles visibles, pasa al vídeo anterior o siguiente y consulta el título en el reproductor."
+  },
+  "whatsNewItemAudio": {
+    "message": "Ajusta las voces, los sonidos fuertes, los graves y el volumen en los ajustes del reproductor cuando esté disponible."
+  },
+  "whatsNewItemServices": {
+    "message": "Nuevas integraciones de Rich Theater Experience para Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll y Netflix, y botones para saltar contenido donde estén disponibles."
   },
   "whatsNewThanks": {
-    "message": "Activa Rich Theater Experience (Experimental) desde la ventana emergente de la extensión en sitios compatibles o desde la página de Ajustes. Sigue siendo experimental, por lo que algunas funciones pueden variar según el servicio :)"
+    "message": "Gracias a @liango2 por sugerir controles siempre visibles y a Denis Tyscenko por sugerir el modo teatro automático."
   },
   "dialogAcknowledge": {
     "message": "Entendido"
@@ -689,7 +695,7 @@
     "message": "Hecho con <span class=\"heart\">❤</span> en 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Activar el modo cine automáticamente"
+    "message": "Activar el modo teatro automáticamente"
   },
   "autoEnterTheaterOn": {
     "message": "Sí"
@@ -698,13 +704,13 @@
     "message": "No"
   },
   "autoEnterTheaterDescription": {
-    "message": "Activa el modo cine cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
+    "message": "Activa el modo teatro cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
   },
   "keepControlsVisibleTitle": {
     "message": "Mostrar siempre los controles"
   },
   "keepControlsVisibleDescription": {
-    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
+    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo teatro. El título y el cursor siguen ocultándose durante la inactividad."
   },
   "toggleControlsPin": {
     "message": "Alternar visibilidad de los controles"
@@ -752,7 +758,7 @@
     "message": "Oscuro"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "La pantalla completa con chat no está disponible. El modo cine sigue activo."
+    "message": "La pantalla completa con chat no está disponible. El modo teatro sigue activo."
   },
   "playerSettingsLabel": {
     "message": "Ajustes del reproductor"
@@ -799,7 +805,7 @@
     "message": "Mover atajo"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape está reservado para cerrar diálogos y salir del modo cine. Elige otro atajo."
+    "message": "Escape está reservado para cerrar diálogos y salir del modo teatro. Elige otro atajo."
   },
   "shortcutSaveError": {
     "message": "No se pudo guardar el atajo"
