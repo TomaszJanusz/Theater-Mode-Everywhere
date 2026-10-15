@@ -80,6 +80,38 @@ describe('picture align', () => {
     assert.equal(raisedCaptionRestBottom(horizontalLetterboxPx(widescreen), 88, widescreen.viewportHeight), 16);
   });
 
+  it('raises as soon as one default caption line, padding and edge gap fit', () => {
+    // 800px of 16:9 video is 450px tall; the remaining height becomes the bottom band.
+    const frame = { ...widescreen, viewportWidth: 800 };
+    for (const [band, expected] of [[57.7, false], [57.8, true], [57.9, true]] as const) {
+      const measured = { ...frame, viewportHeight: 450 + band };
+      const position = objectPositionForPicture('contain', 'top', measured);
+      assert.equal(pictureHasLetterbox(measured), expected, `${band}px band`);
+      assert.equal(position, expected ? 'center top' : 'center center');
+      assert.equal(raisedCaptionsUseBand(position, horizontalLetterboxPx(measured)), expected);
+      assert.equal(raisedCaptionsUseBand('center top', band), expected);
+      assert.equal(raisedCaptionsUseBand('center center', band), false);
+      assert.equal(objectPositionForPicture('contain', 'center', measured), 'center center');
+      assert.equal(objectPositionForPicture('cover', 'top', measured), 'center center');
+      assert.equal(objectPositionForPicture('fill', 'top', measured), 'center center');
+      assert.equal(objectPositionForPicture('contain', 'top', measured, {
+        raiseOnlyWithSubtitles: true, subtitlesOn: false
+      }), 'center center');
+      assert.equal(objectPositionForPicture('contain', 'top', measured, {
+        raiseOnlyWithSubtitles: true, subtitlesOn: true
+      }), position);
+    }
+  });
+
+  it('keeps unknown frames raised without treating them as a measured caption band', () => {
+    for (const dimension of ['videoWidth', 'videoHeight', 'viewportWidth', 'viewportHeight'] as const) {
+      const frame = { ...widescreen, [dimension]: 0 };
+      assert.equal(pictureHasLetterbox(frame), true);
+      assert.equal(objectPositionForPicture('contain', 'top', frame), 'center top');
+      assert.equal(raisedCaptionsUseBand('center top', horizontalLetterboxPx(frame)), false);
+    }
+  });
+
   it('keeps a raised picture centered until subtitles are on', () => {
     const held = { raiseOnlyWithSubtitles: true, subtitlesOn: false };
     const shown = { raiseOnlyWithSubtitles: true, subtitlesOn: true };

@@ -94,8 +94,8 @@ export function pictureEdgeInsets(frame: PictureFrame, fit: VideoFitMode, positi
 
 /**
  * A fitted picture leaves a usable bar when the viewport is taller than the video
- * by at least one minimum caption block. A sliver stays centered so captions do
- * not cover the picture. Unknown sizes keep the stored Raised choice until measured.
+ * by at least one caption line plus its padding and edge gap. A sliver stays
+ * centered. Unknown sizes keep the stored Raised choice until measured.
  */
 export function pictureHasLetterbox(frame: PictureFrame): boolean {
   const { videoWidth, videoHeight, viewportWidth, viewportHeight } = frame;
@@ -103,7 +103,7 @@ export function pictureHasLetterbox(frame: PictureFrame): boolean {
   return horizontalLetterboxPx(frame) >= raisedCaptionBandMin();
 }
 
-/** Caption chrome follows a measured band that can hold the block. An unmeasured frame can stay `center top` without that treatment. */
+/** Caption chrome follows a measured band that can hold one row. An unmeasured frame can stay `center top` without that treatment. */
 export function raisedCaptionsUseBand(position: string, bandHeight: number): boolean {
   return position === 'center top' && bandHeight >= raisedCaptionBandMin();
 }
