@@ -29,14 +29,15 @@ type DockMotionState = { mode: ReturnType<typeof captionDockMotion>; transition:
 function applyCaptionDockMotion(
   el: HTMLElement | null,
   motion: ReturnType<typeof captionDockMotion>,
-  modes: WeakMap<HTMLElement, DockMotionState>
+  modes: WeakMap<HTMLElement, DockMotionState>,
+  glideWhenLifted = false
 ): void {
   if (!el) return;
   // A host renderer can rewrite its inline styles during cue replacement.
   const held = modes.get(el);
   if (held?.mode === motion && el.style.getPropertyValue('transition') === held.transition
     && el.style.getPropertyPriority('transition') === 'important') return;
-  if (motion === 'moving') {
+  if (motion === 'moving' || (motion === 'lifted' && glideWhenLifted)) {
     el.style.setProperty(
       'transition',
       'bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease',
@@ -298,7 +299,9 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // land in the same frame as the new height, or the block slides up or down.
     // A picture move is the exception: captions travel with the video.
     const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
-    applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode);
+    // Our overlay glides with the control bar; a host renderer owns its own ease.
+    const glide = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode, glide);
     applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
     captionDockLifted = lifted;
     const nextBottom = `${bottom}px`;

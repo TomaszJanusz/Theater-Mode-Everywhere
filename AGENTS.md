@@ -72,9 +72,19 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - **Document the reason.** Local `docs/` hold code-adjacent contracts, constraints and procedures. Keep local explanations in comments; use documentation for reasoning that crosses boundaries. Link to code instead of enumerating its fields or narrating control flow.
 - **Keep guidance current.** Rewrite or remove outdated text when a decision changes. Most UI tweaks need no new page. Temporary plans, scratch files and diagnostic captures stay outside committed source unless explicitly requested or needed as durable project evidence.
 
+## Changelog entries on a development branch
+
+- Keep task-owned entries in `## [Unreleased]` of `CHANGELOG.md` as a concise summary of the branch's final user-visible outcome. Review the complete branch diff (`git diff <target>...HEAD`) and the related existing Unreleased entries when writing or updating that summary.
+- As development proceeds, rewrite or consolidate the entry for the feature. Fold implementation corrections, review feedback, UI iterations and changed approaches into its final description. Remove duplicates and descriptions of abandoned behavior. Keep commit-by-commit history in commits and PR discussions.
+- Choose `Added`, `Changed` or `Fixed` against the behavior users already received in a release. Use `Fixed` for a bug in released behavior. Corrections to a feature still under development belong in that feature's `Added` or `Changed` entry, including when an earlier part of it has already merged into main but is unreleased.
+- Describe what users can do and any important scope or limits. Omit internal debugging, temporary defects, performance counters and implementation details that do not affect the user-facing result.
+- Before publishing or updating the PR, reread its changelog diff as release notes: it must cover the net result of all development on the branch without requiring the reader to know its intermediate versions. Preserve unrelated entries and released sections; do not create a version or release date without explicit approval.
+- Example: adding Raised captions and then correcting their placement during development yields one `Added` entry describing Raised captions in the letterbox band. The placement corrections are folded into that description, not listed under `Fixed`.
+
 ## Delivery
 
 - Check the checkout and `git status` first. Preserve unrelated changes and untracked files; keep the diff reviewable.
 - Continue within the authorized scope. Ask when missing information changes the outcome or additional authority is needed. Branches, commits, pushes and publishing require authorization; permission to commit or push does not authorize a version bump, release tag or release workflow.
 - Stop only processes or browser sessions you started for the task, using their recorded identity. Preserve the developer's running sessions and settings.
+- Never create a branch, commit or gist just to host screenshots, videos or other PR media. Upload them with `gh pr create|edit|comment --attach './file.png#alt text'` and reference them from the PR body; commit an asset only when it is durable project documentation under `docs/`.
 - Report the resulting behavior, important choices, checks actually run and remaining gaps. Distinguish source/test evidence from live runtime evidence.

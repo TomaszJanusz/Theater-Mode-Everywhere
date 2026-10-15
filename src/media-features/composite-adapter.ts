@@ -56,11 +56,20 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
       const hostCleanup = this.hostCaptions?.observe?.(onChange);
       if (hostCleanup) cleanups.push(hostCleanup);
     } catch { /* Caption observation is optional; keep other sources usable. */ }
+    return this.subscribeAll(cleanups, (adapter) => adapter.observeHostCaptionLayout?.(onChange));
+  }
+
+  observeTitle(onChange: () => void): () => void {
+    return this.subscribeAll([], (adapter) => adapter.observeTitle?.(onChange));
+  }
+
+  /** Subscribes every adapter, isolating failures, and returns one idempotent cleanup. */
+  private subscribeAll(cleanups: Array<() => void>, subscribe: (adapter: MediaFeaturesAdapter) => (() => void) | undefined): () => void {
     for (const adapter of this.adapters) {
       try {
-        const cleanup = adapter.observeHostCaptionLayout?.(onChange);
+        const cleanup = subscribe(adapter);
         if (cleanup) cleanups.push(cleanup);
-      } catch { /* Isolate a provider that cannot subscribe to its renderer. */ }
+      } catch { /* Isolate a provider that cannot subscribe. */ }
     }
     return () => {
       for (const cleanup of cleanups.splice(0)) {

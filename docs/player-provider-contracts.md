@@ -16,9 +16,15 @@ Shared caption rendering and dock calculations stay in `media-features/` and `ui
 
 `MediaFeaturesController.runCaptionOperation` owns the complete caption request lifecycle. Menu selection, keyboard toggling, saved-language restoration, retries and cue-window downloads all pass through it. It publishes the loading HUD and CC busy state before calling the provider, applies the result once, and reports success or failure. Cue-window success dismisses the spinner without repeating the “Subtitles on” notification. Invalidation, media changes, adapter replacement and disposal dismiss pending loading UI and reject stale results and queued selections. Callers cannot opt out of loading feedback.
 
+The HUD waits 400 ms before rendering the loading message, so quick downloads do not flash a spinner. A result or dismissal cancels the pending message; delayed rendering also checks the player session epoch and element. The CC busy state still updates immediately.
+
 Providers that load captions in windows implement `prepareCaptionCueRefresh(id, time)`. It must synchronously return `null` when no download is needed, or return a lazy request that does no work until the controller calls it. The composite delegates to the adapter that activated the current track, so polling never rediscovers tracks or initiates an invisible download. Providers keep their network fallback, parsing and cache policies inside that request. Track discovery and timeline metadata do not activate a caption track and do not show caption loading UI.
 
 Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, and Crunchyroll native caption measurement lives in `providers/crunchyroll/host-surface.ts`. Native presentation remains available when a provider's data integration is disabled; the integration flag still controls its data adapter and host interactions.
+
+## Titles
+
+Adapters supply `getTitle()` and optional `observeTitle(onChange)`; `MediaFeaturesController` publishes the title chip for the current epoch and adapter, and drops notifications from a replaced adapter. A service adapter's title outranks the native adapter's. Without a service integration, the native adapter also falls back to page metadata: selection lives in `media-features/page-title.ts`, DOM reading and observation in `providers/native/page-title.ts`. A VideoObject must match the playing media, and a heading must be tied to it. A client-side navigation can change the URL before `<title>`, meta tags or the heading, so page values left over from the previous URL are rejected; scoped observers on those elements report the replacement during theater mode only.
 
 ## Playback and presentation
 

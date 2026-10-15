@@ -46,9 +46,6 @@ export function createMediaFeaturesAdapter(
 ): MediaFeaturesAdapter {
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
-  if (surface.nativeMedia instanceof HTMLVideoElement) {
-    adapters.push(new NativeTextTrackAdapter(surface.nativeMedia));
-  }
   if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter());
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
@@ -59,5 +56,9 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
+  if (surface.nativeMedia instanceof HTMLVideoElement) {
+    // Native stays first so a service title outranks it; page metadata is only a fallback without one.
+    adapters.unshift(new NativeTextTrackAdapter(surface.nativeMedia, adapters.length === 0));
+  }
   return new CompositeMediaAdapter(adapters, createHostCaptionLayoutSource());
 }

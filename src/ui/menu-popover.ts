@@ -43,6 +43,17 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   return true;
 }
 
+/** Scroll a list so its active row sits as near the middle as the ends allow. */
+function centerActiveRow(list: HTMLElement | null): void {
+  const active = list?.querySelector<HTMLElement>('.active');
+  if (!list || !active) return;
+  const listRect = list.getBoundingClientRect();
+  if (listRect.height === 0) return;
+  const rowRect = active.getBoundingClientRect();
+  const rowCenter = rowRect.top - listRect.top + list.scrollTop + rowRect.height / 2;
+  list.scrollTop = Math.max(0, Math.min(rowCenter - list.clientHeight / 2, list.scrollHeight - list.clientHeight));
+}
+
 /**
  * One menu shell for the player bar. Hover reveals it. A click pins it open
  * after the pointer leaves, and a second click closes it. Keyboard activation
@@ -57,6 +68,8 @@ export function bindMenuPopover(options: {
   prepare?: () => void;
   /** Overrides the first button, for panels whose leading rows can be hidden. */
   firstFocus?: () => HTMLElement | undefined;
+  /** Selector for a scrollable list inside the panel; opening centers its `.active` row. */
+  centerActiveIn?: string;
   onKeyboardOpen?: () => void;
   onChange?: () => void;
 }): { close: (restoreFocus?: boolean) => boolean } {
@@ -73,6 +86,32 @@ export function bindMenuPopover(options: {
     if (closed) options.onChange?.();
     return closed;
   };
+  const list = () => (options.centerActiveIn ? panel.querySelector<HTMLElement>(options.centerActiveIn) : null);
+  const isOpen = () => host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
+  // Once the user scrolls, re-renders keep their position instead of re-centering.
+  let userScrolled = false;
+  let lastScrollTop = 0;
+  if (options.centerActiveIn) {
+    const markUserScroll = () => { userScrolled = true; };
+    for (const type of ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const) {
+      scope.listen(panel, type, markUserScroll, { passive: true });
+    }
+    scope.listen(panel, 'scroll', (event: Event) => {
+      if (event.target instanceof HTMLElement && event.target.matches(options.centerActiveIn!)) {
+        lastScrollTop = event.target.scrollTop;
+      }
+    }, { capture: true, passive: true });
+    // Providers rebuild the list while the menu is open, which resets its scroll.
+    const observer = new MutationObserver(() => {
+      if (!isOpen()) return;
+      const next = list();
+      if (!next) return;
+      if (userScrolled) next.scrollTop = lastScrollTop;
+      else centerActiveRow(next);
+    });
+    observer.observe(panel, { childList: true });
+    scope.add(() => observer.disconnect());
+  }
   const show = (pin: boolean, focusFirst: boolean) => {
     const already = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
     options.onBeforeOpen?.();
@@ -84,7 +123,11 @@ export function bindMenuPopover(options: {
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
     syncExpanded();
-    if (focusFirst) (options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button'))?.focus();
+    if (focusFirst) (options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button'))?.focus({ preventScroll: true });
+    if (!already) {
+      userScrolled = false;
+      centerActiveRow(list());
+    }
     options.onChange?.();
   };
 
