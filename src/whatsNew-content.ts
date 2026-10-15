@@ -18,6 +18,8 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Rich Theater Experience' }, ': Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;'],
     [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual sites.'],
     [{ strong: 'Audio effects:' }, ' Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.'],
+    [{ strong: 'SponsorBlock support:' }, ' See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.'],
+    [{ strong: 'Accessibility:' }, ' Theater Mode Everywhere respects your system preferences for increased contrast and reduced transparency.'],
     ['The titles of the videos being played are displayed.'],
     ['You can go to the home page of the service the video is playing on.'],
     ['Theater Mode Everywhere should now use fewer resources.'],
@@ -40,6 +42,10 @@ function appendInline(parent: HTMLElement, segments: readonly InlineText[]): voi
 }
 
 export function buildWhatsNewContent(): HTMLElement {
+  const announcement = document.createElement('div');
+  announcement.className = 'whats-new-announcement';
+  announcement.lang = 'en';
+  announcement.dir = 'ltr';
   const root = document.createElement('div');
   root.className = 'whats-new-content';
   root.lang = 'en';
@@ -64,6 +70,7 @@ export function buildWhatsNewContent(): HTMLElement {
   const emphasis = document.createElement('em');
   emphasis.textContent = WHATS_NEW_CONTENT.thanks;
   thanks.append(emphasis);
-  root.append(heading, paragraph, list, thanks);
-  return root;
+  root.append(heading, paragraph, list);
+  announcement.append(root, thanks);
+  return announcement;
 }

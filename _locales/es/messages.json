@@ -847,7 +847,7 @@
     "message": "Velocidad de reproducción"
   },
   "sponsorBlockMarkersTitle": {
-    "message": "Marcadores de SponsorBlock"
+    "message": "Compatibilidad con SponsorBlock"
   },
   "sponsorBlockMarkersDescription": {
     "message": "Muestra los marcadores de la extensión SponsorBlock instalada en la línea de tiempo del modo cine de YouTube, con sus colores."

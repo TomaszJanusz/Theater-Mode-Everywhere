@@ -1,7 +1,7 @@
 import { translateMessage } from '../i18n-runtime';
 
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
-  "sponsorBlockMarkersTitle": "SponsorBlock markers",
+  "sponsorBlockMarkersTitle": "SponsorBlock support",
   "sponsorBlockMarkersDescription": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors.",
   "sponsorBlockCategory_sponsor": "Sponsor",
   "sponsorBlockCategory_selfpromo": "Self-promotion",

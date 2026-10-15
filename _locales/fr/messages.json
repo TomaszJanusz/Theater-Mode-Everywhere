@@ -847,7 +847,7 @@
     "message": "Vitesse de lecture"
   },
   "sponsorBlockMarkersTitle": {
-    "message": "Repères SponsorBlock"
+    "message": "Prise en charge de SponsorBlock"
   },
   "sponsorBlockMarkersDescription": {
     "message": "Affiche les repères de l’extension SponsorBlock installée sur la barre de lecture YouTube en mode cinéma, avec ses couleurs."

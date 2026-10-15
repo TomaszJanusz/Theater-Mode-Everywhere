@@ -847,7 +847,7 @@
     "message": "Playback speed"
   },
   "sponsorBlockMarkersTitle": {
-    "message": "SponsorBlock markers"
+    "message": "SponsorBlock support"
   },
   "sponsorBlockMarkersDescription": {
     "message": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors."
