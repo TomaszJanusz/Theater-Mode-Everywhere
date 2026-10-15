@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { chromium, type Page } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
+import { LANGUAGES } from '../src/language';
 import { WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
 const root = path.resolve(__dirname, '..');
@@ -66,6 +67,13 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'options', blacklist);
       assert.equal(await page.locator('[role=tab]').count(), 5);
+      const language = page.getByRole('combobox');
+      assert.equal(await page.getByRole('option', { includeHidden: true }).count(), LANGUAGES.length + 1);
+      for (const { locale } of LANGUAGES) {
+        const option = page.locator(`#language-combobox-listbox [data-value="${locale}"]`);
+        assert.equal(await option.getAttribute('lang'), locale.replace('_', '-'));
+        assert.equal(await option.getAttribute('dir'), locale === 'ar' ? 'rtl' : 'ltr');
+      }
       const accent = page.locator('#accent-color-grid [data-choice=teal]');
       await accent.click();
       const original = await accent.elementHandle();
@@ -78,6 +86,11 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
       for (const locale of ['pl', 'ar']) {
         await switchTo(page, locale);
         const catalog = readCatalog(locale);
+        assert.equal(await page.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value'), locale);
+        assert.equal(await page.locator('#language-combobox-listbox [data-value=automatic]').textContent(), catalog.languageAutomatic.message);
+        await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
+        assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
+        assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
         assert.equal(await accent.textContent(), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('title'), catalog.accentColorTeal.message);
         assert.equal(await accent.getAttribute('aria-label'), catalog.useAccentColor.message.replace(/\$color\$/i, catalog.accentColorTeal.message));

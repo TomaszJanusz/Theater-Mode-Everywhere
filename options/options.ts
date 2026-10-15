@@ -1,4 +1,5 @@
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
+import { createCombobox } from './combobox';
 import { createChoiceGrid } from './choice-grid';
 import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
@@ -116,27 +117,28 @@ async function init() {
 
   const shortcutEditor = createShortcutEditor(notifyAllTabs);
   const accentName = (preset: AccentColorPreset) => t(`accentColor${preset[0].toUpperCase()}${preset.slice(1)}`);
-  // Arrow keys preview accents instantly; a language switch rebuilds every open surface, so it waits for confirmation.
   const accentGrid = createChoiceGrid(document.getElementById('accent-color-grid')!, ACCENT_COLOR_OPTIONS.map(option => ({
     value: option.preset,
     label: () => accentName(option.preset),
     ariaLabel: () => t('useAccentColor', accentName(option.preset)),
     swatch: { color: option.swatch, system: option.preset === 'system' }
-  })), 'on-focus', preset => { void saveAccentColor(preset); });
-  const languageGrid = createChoiceGrid<Language>(document.getElementById('language-grid')!, [
+  })), preset => { void saveAccentColor(preset); });
+  const languageMenu = createCombobox<Language>(document.getElementById('language-combobox') as HTMLButtonElement, [
     { value: DEFAULT_LANGUAGE, label: () => t('languageAutomatic') },
     ...LANGUAGES.map(({ locale, name }) => ({
       value: locale, label: () => name, lang: locale.replace('_', '-'), dir: locale === 'ar' ? 'rtl' as const : 'ltr' as const
     }))
-  ], 'on-confirm', language => {
+  ], language => {
     chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: language }).catch(error => {
+      languageMenu.render(languageRuntime.language);
       console.error('Error saving language:', error);
     });
   });
-  languageGrid.render(languageRuntime.language);
+  languageMenu.render(languageRuntime.language);
+  window.addEventListener('unload', () => languageMenu.destroy(), { once: true });
   const stopLanguageRendering = languageRuntime.subscribe(() => {
     localizeDocument();
-    languageGrid.render(languageRuntime.language);
+    languageMenu.render(languageRuntime.language);
     accentGrid.render();
     renderPictureAlignOptions(selectedPictureAlign());
     shortcutEditor.localize();

@@ -3,16 +3,8 @@ export interface ChoiceOption<Value extends string> {
   /** Called on every render so a live language change relabels the button. */
   label(): string;
   ariaLabel?(): string;
-  lang?: string;
-  dir?: 'ltr' | 'rtl';
   swatch?: { color: string; system?: boolean };
 }
-
-/**
- * `on-focus` selects as arrow keys move (cheap previews such as accent colors);
- * `on-confirm` only moves focus, leaving Space/Enter or a click to select.
- */
-export type ChoiceActivation = 'on-focus' | 'on-confirm';
 
 export interface ChoiceGrid<Value extends string> {
   /** Omitting `selected` keeps the current choice and only relabels. */
@@ -23,7 +15,6 @@ export interface ChoiceGrid<Value extends string> {
 export function createChoiceGrid<Value extends string>(
   grid: HTMLElement,
   options: readonly ChoiceOption<Value>[],
-  activation: ChoiceActivation,
   onSelect: (value: Value) => void
 ): ChoiceGrid<Value> {
   let selected: Value | undefined;
@@ -33,8 +24,6 @@ export function createChoiceGrid<Value extends string>(
     button.className = 'choice-btn';
     button.dataset.choice = option.value;
     button.setAttribute('role', 'radio');
-    if (option.lang) button.lang = option.lang;
-    if (option.dir) button.dir = option.dir;
     if (option.swatch) {
       button.classList.add('has-swatch');
       const swatch = document.createElement('span');
@@ -73,13 +62,7 @@ export function createChoiceGrid<Value extends string>(
     const target = items[next].button;
     rove(target);
     target.focus();
-    if (activation === 'on-focus') target.click();
-  });
-
-  // Unconfirmed browsing must not leave Tab re-entering on an unchecked radio.
-  grid.addEventListener('focusout', event => {
-    if (event.relatedTarget instanceof Node && grid.contains(event.relatedTarget)) return;
-    rove(checkedButton());
+    target.click();
   });
 
   return {

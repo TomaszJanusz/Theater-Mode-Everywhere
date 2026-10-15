@@ -25,7 +25,7 @@ export async function assertLocalized(page: Page, locale: string, selector = 'ht
     const found: string[] = [];
     const visit = (element: Element): void => {
       // Endonyms deliberately retain their own language, including English.
-      if (element.closest('#language-grid [lang]')) return;
+      if (element.closest('#language-combobox [lang], #language-combobox-listbox [lang]')) return;
       if (!element.matches('script, style, svg, svg *')) {
         const values = [
           ['text', element.textContent ?? ''],
