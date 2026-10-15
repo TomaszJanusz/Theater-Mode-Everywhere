@@ -123,7 +123,6 @@
   z-index: 0 !important;
   pointer-events: none !important;
   border-radius: 12px !important;
-  background-color: rgba(9, 9, 11, 0.85) !important;
   background-color: var(--appearance-surface, color-mix(in srgb, var(--bg-color, #09090b) 85%, transparent)) !important;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12)) !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3) !important;
@@ -382,16 +381,13 @@
 }
 
 .theater-control-btn:hover {
-  background-color: var(--appearance-surface, rgba(99, 102, 241, 0.15)) !important;
   background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)) !important;
-  border-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
   border-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-control-btn:active {
   transform: scale(0.92) !important;
-  background-color: var(--appearance-surface, rgba(99, 102, 241, 0.25)) !important;
   background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)) !important;
 }
 
@@ -2042,18 +2038,15 @@ button.theater-time-end:hover {
 
 .theater-home-pill:hover,
 .theater-home-pill:focus-visible {
-  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15))) !important;
   background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
   )) !important;
-  outline-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
   outline-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-home-pill:active {
-  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25))) !important;
   background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
@@ -2794,18 +2787,15 @@ button.theater-time-end:hover {
 
 .theater-service-action:hover,
 .theater-service-action:focus-visible {
-  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15))) !important;
   background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)
   )) !important;
-  outline-color: var(--appearance-border, rgba(99, 102, 241, 0.3)) !important;
   outline-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
 }
 
 .theater-service-action:active {
-  background-image: var(--appearance-image, linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25))) !important;
   background-image: var(--appearance-image, linear-gradient(
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent),
     color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)
@@ -2824,7 +2814,6 @@ button.theater-time-end:hover {
   position: absolute !important;
   inset: 0 !important;
   pointer-events: none !important;
-  background: var(--appearance-image, linear-gradient(105deg, transparent 30%, rgba(99, 102, 241, 0.65) 50%, transparent 70%)) !important;
   background: var(--appearance-image, linear-gradient(
     105deg,
     transparent 30%,
