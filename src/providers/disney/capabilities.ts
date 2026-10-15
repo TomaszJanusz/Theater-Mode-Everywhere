@@ -11,6 +11,7 @@ export const disneyCapabilities = {
     chapters: { status: 'no' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteDisney' },
+    playlists: { status: 'conditional', noteKey: 'rteNoteDisney' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteDisney' },
   }
 } as const satisfies ProviderCapabilities;

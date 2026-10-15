@@ -274,6 +274,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteCapabilityChapters: "Chapters",
   rteCapabilityHeatmap: "Heatmap",
   rteCapabilityThumbnails: "Thumbnails",
+  rteCapabilityPlaylists: "Playlists",
   rteCapabilityQuickActions: "Quick actions",
   rteEmpty: "No service has all the selected capabilities.",
   rteClear: "Clear filter",

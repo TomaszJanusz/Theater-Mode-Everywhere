@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "الصور المصغرة"
   },
+  "rteCapabilityPlaylists": {
+    "message": "قوائم التشغيل"
+  },
   "rteCapabilityQuickActions": {
     "message": "إجراءات سريعة"
   },

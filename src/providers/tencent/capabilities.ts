@@ -11,6 +11,7 @@ export const tencentCapabilities = {
     chapters: { status: 'no' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteTencent' },
+    playlists: { status: 'conditional', noteKey: 'rteNoteTencent' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteTencent' },
   }
 } as const satisfies ProviderCapabilities;

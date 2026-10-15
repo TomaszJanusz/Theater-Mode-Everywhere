@@ -11,6 +11,7 @@ export const bilibiliIntlCapabilities = {
     chapters: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
+    playlists: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
   }
 } as const satisfies ProviderCapabilities;

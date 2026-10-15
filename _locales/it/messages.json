@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "Miniature"
   },
+  "rteCapabilityPlaylists": {
+    "message": "Playlist"
+  },
   "rteCapabilityQuickActions": {
     "message": "Azioni rapide"
   },

@@ -45,7 +45,7 @@ function registeredFrom(source: string, module: string): boolean {
 }
 
 describe('provider capability declarations', () => {
-  it('declares every provider once, with all six capabilities and no orphan declarations', () => {
+  it('declares every provider once, with all capabilities and no orphan declarations', () => {
     assert.deepEqual(PROVIDER_CAPABILITIES.map(p => p.id).sort(), [...MEDIA_PROVIDER_IDS].sort());
     const declarations = readdirSync(__dirname, { withFileTypes: true }).filter(entry => entry.isDirectory())
       .flatMap(entry => readdirSync(resolve(__dirname, entry.name)).includes('capabilities.ts') ? [entry.name] : []);
@@ -88,6 +88,10 @@ describe('provider capability declarations', () => {
       const navFile = provider.id === 'vimeo' ? 'vimeo-showcase' : folder;
       const hasActions = registeredFrom(actions, `./${folder}/service-actions`);
       const hasNavigation = registeredFrom(navigation, `./${navFile}`);
+      // Playlists use the registered PlaylistAction contract, not caption HLS
+      // playlists or contextual skip/up-next actions (such as Crunchyroll's).
+      assert.equal(hasNavigation, provider.capabilities.playlists.status !== 'no', `${provider.id}.playlists`);
+      if (hasNavigation) assert.equal(provider.capabilities.playlists.status, 'conditional');
       assert.equal(hasActions || hasNavigation, provider.capabilities.quickActions.status !== 'no');
       if (hasActions) assert.match(read(`./${folder}/service-actions.ts`), /activate|nativeServiceActionSource/);
       if (hasNavigation) assert.match(read(`./navigation/${navFile}.ts`), /next|collectElement/i);

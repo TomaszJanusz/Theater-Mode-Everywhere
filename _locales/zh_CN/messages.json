@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "缩略图"
   },
+  "rteCapabilityPlaylists": {
+    "message": "播放列表"
+  },
   "rteCapabilityQuickActions": {
     "message": "快捷操作"
   },

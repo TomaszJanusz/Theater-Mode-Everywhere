@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "サムネイル"
   },
+  "rteCapabilityPlaylists": {
+    "message": "再生リスト"
+  },
   "rteCapabilityQuickActions": {
     "message": "クイック操作"
   },

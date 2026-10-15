@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "Vorschaubilder"
   },
+  "rteCapabilityPlaylists": {
+    "message": "Wiedergabelisten"
+  },
   "rteCapabilityQuickActions": {
     "message": "Schnellaktionen"
   },

@@ -16,7 +16,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Captions under the video:' }, ' Choose a centered or raised picture. If you choose the latter, the video moves to the top and TME tries to use the space below it to display captions.'],
     [{ strong: 'Pinnable TME bar' }, ': Keep the controls visible, go to the previous or next video, and check the title in the player.'],
     [{ strong: 'Rich Theater Experience' }, ': Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;'],
-    [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual sites.'],
+    [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual sites and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.'],
     [{ strong: 'Audio effects:' }, ' Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.'],
     [{ strong: 'SponsorBlock support:' }, ' See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.'],
     [{ strong: 'Accessibility:' }, ' Theater Mode Everywhere respects your system preferences for increased contrast and reduced transparency.'],
