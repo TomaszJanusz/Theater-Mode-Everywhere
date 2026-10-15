@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { GenericTitleTracker, parseJsonLdVideoObjects, stripSiteName, type GenericTitleCandidates } from './page-title';
+import { GenericTitleTracker, parseJsonLdVideoObjects, siteNameFromUrl, stripSiteName, type GenericTitleCandidates } from './page-title';
 
 const PAGE_A = 'https://videos.example/watch/a';
 const PAGE_B = 'https://videos.example/watch/b';
@@ -68,6 +68,38 @@ describe('generic title order', () => {
     assert.equal(select(candidates({ document: 'Episode 4 | Example TV', siteName: 'Example TV' })), 'Episode 4');
     assert.equal(select(candidates({ openGraph: 'Example TV', document: 'Episode 4 — Example TV', siteName: 'Example TV' })), 'Episode 4');
     assert.equal(stripSiteName('Example TV: Episode 4', 'Example TV'), 'Example TV: Episode 4');
+  });
+});
+
+describe('host-derived site names', () => {
+  it('uses the host label without subdomains, TLDs or hyphens', () => {
+    assert.equal(siteNameFromUrl('https://www.stream-site.tv/watch'), 'streamsite');
+    assert.equal(siteNameFromUrl('https://player.Streamsite.example/embed'), 'streamsite');
+    assert.equal(siteNameFromUrl('https://www.stream-site.co.uk/watch'), 'streamsite');
+    for (const page of ['invalid', 'about:blank', 'http://localhost/', 'http://127.0.0.1/', 'http://[::1]/']) {
+      assert.equal(siteNameFromUrl(page), null, page);
+    }
+  });
+
+  it('rejects only a site-only title or its separated suffix, preserving content words', () => {
+    const page = 'https://www.stream-site.tv/watch/a';
+    assert.equal(select(candidates({ document: 'STREAMSITE' }), page), null);
+    assert.equal(select(candidates({ openGraph: 'Stream-site', document: 'Example Show — Stream Site' }), page), 'Example Show');
+    assert.equal(select(candidates({ document: 'Streamsite presents Example Show' }), page), 'Streamsite presents Example Show');
+    assert.equal(select(candidates({ document: 'A story about Streamsite' }), page), 'A story about Streamsite');
+    assert.equal(select(candidates({ document: 'Streamsite Extra' }), page), 'Streamsite Extra');
+    assert.equal(select(candidates({ heading: 'Streamsite' }), page), null);
+    assert.equal(select(candidates({ document: 'Episode | Official Name', siteName: 'Official Name' }), page), 'Episode');
+    assert.equal(select(candidates({ document: 'Streamsite', siteName: 'Official Name' }), page), 'Streamsite', 'explicit metadata takes priority over the host heuristic');
+  });
+
+  it('preserves per-URL stale tracking after stripping a derived name', () => {
+    const tracker = new GenericTitleTracker();
+    const input = candidates({ document: 'Episode A — Streamsite' });
+    const page = 'https://streamsite.example/watch/';
+    assert.equal(tracker.select(input, { page: `${page}a`, sources: [] }), 'Episode A');
+    assert.equal(tracker.select(input, { page: `${page}b`, sources: [] }), null);
+    assert.equal(tracker.select({ ...input, document: 'Episode B — Streamsite' }, { page: `${page}b`, sources: [] }), 'Episode B');
   });
 });
 
