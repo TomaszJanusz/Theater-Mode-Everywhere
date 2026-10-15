@@ -202,6 +202,7 @@ const {
   updateCaptionDock,
   closeTheaterPopovers,
   preventDoubleToggle,
+  cancelPictureClick,
   bindWasmCatcher
 } = toolbar;
 const { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay } = help;
@@ -2219,6 +2220,7 @@ function exitTheaterMode(
     eventTypes.forEach(type => {
       video.removeEventListener(type, preventDoubleToggle, true);
     });
+    cancelPictureClick();
 
     video.classList.remove('controls-visible');
   }
