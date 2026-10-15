@@ -246,7 +246,8 @@ describe('scrubber tooltip', () => {
       await paint(page, extras('Chapter only'));
       assert.ok((await state()).previewHidden && !(await state()).chapterHidden);
       await paint(page, extras());
-      assert.equal((await state()).height, plain.height);
+      // Layout heights are fractional and Firefox rounds them to 1/64 px differently between paints.
+      assert.ok(Math.abs((await state()).height - plain.height) < 0.05);
       assert.equal(await page.locator('.theater-scrubber-tooltip').evaluate((tip, nodes) =>
         nodes.every((node, i) => tip.children[i] === node), children), true);
 
