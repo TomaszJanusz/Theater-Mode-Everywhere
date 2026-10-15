@@ -12,11 +12,13 @@ export type WhatsNewRelease = {
  * `autoOpenOptions` only for deliberate, high-impact release onboarding.
  */
 export const WHATS_NEW_RELEASE: WhatsNewRelease = {
-  id: 'rich-theater-experience',
+  id: 'player-layout-and-integrations',
   itemKeys: [
-    'whatsNewItemCaptions',
-    'whatsNewItemChapters',
-    'whatsNewItemPreviews'
+    'whatsNewItemChat',
+    'whatsNewItemLayout',
+    'whatsNewItemControls',
+    'whatsNewItemAudio',
+    'whatsNewItemServices'
   ],
   autoOpenOptions: true
 };
@@ -31,9 +33,10 @@ export type WhatsNewInstallDetails = {
 
 export function shouldAutoOpenWhatsNewOnUpdate(
   details: WhatsNewInstallDetails,
+  acknowledgedId: string | undefined,
   release: WhatsNewRelease = WHATS_NEW_RELEASE
 ): boolean {
-  if (details.reason !== 'update' || !details.previousVersion || !release.autoOpenOptions) {
+  if (details.reason !== 'update' || !details.previousVersion || !release.autoOpenOptions || acknowledgedId === release.id) {
     return false;
   }
   return !release.autoOpenFromVersions || release.autoOpenFromVersions.includes(details.previousVersion);

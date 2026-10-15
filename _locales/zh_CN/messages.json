@@ -456,19 +456,25 @@
     "message": "新功能"
   },
   "whatsNewLead": {
-    "message": "认识 Rich Theater Experience，为受支持的视频服务提供更多播放工具。"
+    "message": "影院模式更舒适：新增控制功能，并支持更多视频服务。"
   },
-  "whatsNewItemCaptions": {
-    "message": "更好的字幕：选择字幕轨道，自定义字幕外观，并为每个网站保存首选语言。"
+  "whatsNewItemChat": {
+    "message": "将 YouTube 和 Twitch 聊天显示在视频旁边或下方，并可在播放器中显示或隐藏。"
   },
-  "whatsNewItemChapters": {
-    "message": "时间轴信息更丰富：在章节之间跳转，并查看 YouTube 上重播次数最多的片段。"
+  "whatsNewItemLayout": {
+    "message": "选择居中或上移画面；上移后字幕可显示在视频下方的黑色区域。"
   },
-  "whatsNewItemPreviews": {
-    "message": "搜索前先预览：将鼠标悬停在时间轴上，即可在受支持的 YouTube、Vimeo、Patreon、Twitch、Disney+、Bilibili、Bilibili.tv 和 Tencent Video / WeTV 播放器中查看视频缩略图。"
+  "whatsNewItemControls": {
+    "message": "让控制栏始终可见，在可用时切换上一个或下一个视频，并在播放器中查看标题。"
+  },
+  "whatsNewItemAudio": {
+    "message": "支持音频处理时，可在播放器设置中调整人声、响亮声音、低音和音量。"
+  },
+  "whatsNewItemServices": {
+    "message": "Rich Theater Experience 新增 Bilibili、Bilibili.tv、腾讯视频 / WeTV、Crunchyroll 和 Netflix 集成，并在支持的服务中提供跳过按钮。"
   },
   "whatsNewThanks": {
-    "message": "可在受支持网站的扩展弹出窗口中，或在设置页面中启用 Rich Theater Experience (Experimental)。该功能仍处于实验阶段，因此部分功能可能因服务而异 :)"
+    "message": "感谢 @liango2 提议始终显示控制栏，也感谢 Denis Tyscenko 提议自动开启影院模式。"
   },
   "dialogAcknowledge": {
     "message": "知道了"
@@ -689,7 +695,7 @@
     "message": "用 <span class=\"heart\">❤</span> 制造于 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "自动进入影院模式"
+    "message": "自动进入剧场模式"
   },
   "autoEnterTheaterOn": {
     "message": "开启"
@@ -698,13 +704,13 @@
     "message": "关闭"
   },
   "autoEnterTheaterDescription": {
-    "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入影院模式。"
+    "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入剧场模式。"
   },
   "keepControlsVisibleTitle": {
     "message": "始终显示控件"
   },
   "keepControlsVisibleDescription": {
-    "message": "在影院模式下保持播放控件和进度条可见。空闲时标题和光标仍会自动隐藏。"
+    "message": "在剧场模式下保持播放控件和进度条可见。空闲时标题和光标仍会自动隐藏。"
   },
   "toggleControlsPin": {
     "message": "切换控件可见性"
@@ -752,7 +758,7 @@
     "message": "深色"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "无法使用带聊天的全屏模式。影院模式保持开启。"
+    "message": "无法使用带聊天的全屏模式。剧场模式保持开启。"
   },
   "playerSettingsLabel": {
     "message": "播放器设置"
@@ -799,7 +805,7 @@
     "message": "移动快捷键"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape 用于关闭对话框和退出影院模式。请为此操作选择其他快捷键。"
+    "message": "Escape 用于关闭对话框和退出剧场模式。请为此操作选择其他快捷键。"
   },
   "shortcutSaveError": {
     "message": "无法保存快捷键"

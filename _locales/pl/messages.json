@@ -456,19 +456,25 @@
     "message": "Co nowego"
   },
   "whatsNewLead": {
-    "message": "Poznaj Rich Theater Experience z dodatkowymi narzędziami odtwarzania dla obsługiwanych serwisów wideo."
+    "message": "Wygodniejszy tryb kinowy, nowe sterowanie i więcej obsługiwanych serwisów."
   },
-  "whatsNewItemCaptions": {
-    "message": "Lepsze napisy: wybierz ścieżkę, dostosuj ich wygląd i zapamiętaj preferowany język dla każdej witryny."
+  "whatsNewItemChat": {
+    "message": "Zachowaj czat YouTube i Twitcha obok filmu lub pod nim; możesz go pokazać albo ukryć w odtwarzaczu."
   },
-  "whatsNewItemChapters": {
-    "message": "Więcej informacji na osi czasu: przechodź między rozdziałami i zobacz najczęściej odtwarzane momenty na YouTube."
+  "whatsNewItemLayout": {
+    "message": "Wybierz wyśrodkowany lub podniesiony obraz; napisy mogą korzystać z czarnego pasa pod filmem."
   },
-  "whatsNewItemPreviews": {
-    "message": "Podejrzyj przed przewinięciem: najedź na oś czasu, aby zobaczyć miniatury w obsługiwanych odtwarzaczach YouTube, Vimeo, Patreon, Twitch, Disney+, Bilibili, Bilibili.tv i Tencent Video / WeTV."
+  "whatsNewItemControls": {
+    "message": "Pozostaw sterowanie widoczne, przechodź do poprzedniego lub następnego filmu i sprawdzaj tytuł w odtwarzaczu."
+  },
+  "whatsNewItemAudio": {
+    "message": "Dostosuj dialogi, głośne dźwięki, bas i głośność w ustawieniach odtwarzacza, gdy przetwarzanie dźwięku jest dostępne."
+  },
+  "whatsNewItemServices": {
+    "message": "Nowe integracje Rich Theater Experience: Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll i Netflix oraz przyciski pomijania tam, gdzie są dostępne."
   },
   "whatsNewThanks": {
-    "message": "Włącz Rich Theater Experience (Experimental) z poziomu popupu rozszerzenia na obsługiwanych stronach lub na stronie Ustawienia. Funkcja jest nadal eksperymentalna, więc niektóre możliwości mogą różnić się zależnie od serwisu :)"
+    "message": "Dziękujemy @liango2 za pomysł stale widocznego sterowania i Denisowi Tyscenko za pomysł automatycznego włączania trybu kinowego."
   },
   "dialogAcknowledge": {
     "message": "Rozumiem"

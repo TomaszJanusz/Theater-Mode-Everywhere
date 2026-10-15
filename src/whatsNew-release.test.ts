@@ -35,15 +35,30 @@ describe('What\'s New release configuration', () => {
   it('does not auto-open when the release flag is disabled', () => {
     assert.equal(shouldAutoOpenWhatsNewOnUpdate(
       { reason: 'update', previousVersion: '1.0.0' },
+      undefined,
       { ...autoOpenRelease, autoOpenOptions: false }
     ), false);
   });
 
   it('opens only for update events with a previous version', () => {
-    assert.equal(shouldAutoOpenWhatsNewOnUpdate({ reason: 'install' }, autoOpenRelease), false);
-    assert.equal(shouldAutoOpenWhatsNewOnUpdate({ reason: 'update' }, autoOpenRelease), false);
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate({ reason: 'install' }, undefined, autoOpenRelease), false);
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate({ reason: 'update' }, undefined, autoOpenRelease), false);
     assert.equal(shouldAutoOpenWhatsNewOnUpdate(
       { reason: 'update', previousVersion: '1.0.0' },
+      undefined,
+      autoOpenRelease
+    ), true);
+  });
+
+  it('does not open Settings when the announcement has already been acknowledged', () => {
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate(
+      { reason: 'update', previousVersion: '1.0.0' },
+      autoOpenRelease.id,
+      autoOpenRelease
+    ), false);
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate(
+      { reason: 'update', previousVersion: '1.0.0' },
+      'older-announcement',
       autoOpenRelease
     ), true);
   });
@@ -55,10 +70,12 @@ describe('What\'s New release configuration', () => {
     };
     assert.equal(shouldAutoOpenWhatsNewOnUpdate(
       { reason: 'update', previousVersion: '1.0.0' },
+      undefined,
       release
     ), true);
     assert.equal(shouldAutoOpenWhatsNewOnUpdate(
       { reason: 'update', previousVersion: '1.1.0' },
+      undefined,
       release
     ), false);
   });
