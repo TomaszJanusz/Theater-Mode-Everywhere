@@ -843,6 +843,7 @@ export function createControls(
         speedSlider.blur();
       },
       prepare: () => mediaFeatures.renderCcMenu(),
+      centerActiveIn: '.theater-cc-menu-list',
       onChange: updateCaptionDock
     });
     const blurSliders = () => {
