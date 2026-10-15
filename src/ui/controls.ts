@@ -1,4 +1,3 @@
-import type { NewFeatureId } from '../feature-highlights';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
@@ -970,7 +969,7 @@ export function createControls(
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     if (native && video.capabilities.nativeMedia) {
-      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand, newItem?: NewFeatureId) => {
+      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand) => {
         const button = document.createElement('button');
         button.className = `theater-control-btn ${className}`;
         setIcon(button, icon);
@@ -978,15 +977,14 @@ export function createControls(
           event.stopPropagation();
           executeCommand(command);
         });
-        return { button, row: settings.addRow(button, t(label), 'audio', newItem) };
+        return { button, row: settings.addRow(button, t(label), 'audio') };
       };
       const boost = video.capabilities.volumeBoost
         ? audioRow('volume-boost-btn', VOLUME_BOOST_ICONS.menu, 'volumeBoostLabel', { type: 'TOGGLE_VOLUME_BOOST' })
         : null;
       const audioRows = AUDIO_SETTING_NAMES.map((name) => ({
         name,
-        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name },
-          name === 'voice' ? 'playerVoiceBoost' : name === 'leveling' ? 'playerReduceLoudSounds' : 'playerBass')
+        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
       }));
       const updateAudioRows = () => {
         const block = ctx.actions.audioBlock(native);

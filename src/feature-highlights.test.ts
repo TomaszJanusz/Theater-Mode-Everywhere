@@ -51,6 +51,6 @@ it('acknowledgement covers installed generations without regressing after downgr
 it('shows nothing as new until the acknowledged generation has been read', () => {
   const pending = pendingFeatureHighlights('1.6.0');
   assert.equal(isNewFeature('settingsLanguage', pending), false);
-  assert.equal(isNewFeature('playerBass', pending), false);
+  assert.equal(isNewFeature('playerAudio', pending), false);
   assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.0')), true, 'an existing install without a stored value still sees the current items');
 });

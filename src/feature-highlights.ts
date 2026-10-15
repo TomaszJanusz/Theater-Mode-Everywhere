@@ -10,9 +10,7 @@ export const NEW_FEATURE_ITEMS = [
   { id: 'settingsAlwaysShowControls', since: '1.6' },
   { id: 'playerPictureLayout', since: '1.6' },
   { id: 'playerAlwaysShowControls', since: '1.6' },
-  { id: 'playerVoiceBoost', since: '1.6' },
-  { id: 'playerReduceLoudSounds', since: '1.6' },
-  { id: 'playerBass', since: '1.6' }
+  { id: 'playerAudio', since: '1.6' }
 ] as const satisfies readonly { id: string; since: Generation }[];
 export type NewFeatureId = typeof NEW_FEATURE_ITEMS[number]['id'];
 

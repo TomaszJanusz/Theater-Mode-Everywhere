@@ -153,14 +153,17 @@ for (const engine of ['chromium', 'firefox'] as const) {
     const dot = await page.locator('.player-settings-btn .te-new-badge').boundingBox();
     assert.ok(gear && dot && Math.abs(dot.y - gear.y) < 8 && Math.abs(dot.x - gear.x) < 22,
       'the dot stays beside the gear icon when the menu expands its trigger');
-    assert.equal(await page.locator('.audio-voice-btn .te-new-badge').count(), 1);
+    assert.equal(await page.locator('[data-settings-section=audio] .te-new-badge').count(), 1);
+    assert.equal(await page.locator('[data-settings-section=audio] .theater-settings-heading .te-new-badge').count(), 1);
+    assert.equal(await page.locator('[data-settings-section=audio] button .te-new-badge').count(), 0);
+    assert.doesNotMatch(await page.locator('.audio-voice-btn').getAttribute('aria-label') ?? '', /New/);
     assert.equal(await page.locator('.volume-boost-btn .te-new-badge').count(), 0, 'volume boost shipped in 1.5');
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
     await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
     await page.locator('.player-settings-btn .te-new-badge').waitFor();
     await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
-    await page.locator('.picture-layout-btn .te-new-badge').filter({ hasText: 'Nowość' }).waitFor({ state: 'attached' });
+    await page.locator('[data-settings-section=audio] .theater-settings-heading .te-new-badge').filter({ hasText: 'Nowość' }).waitFor({ state: 'attached' });
     await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '1.6' }));
     await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
     await page.keyboard.press('Escape'); await page.keyboard.press('t');
