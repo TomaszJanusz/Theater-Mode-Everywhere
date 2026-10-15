@@ -960,7 +960,7 @@
     "message": "Żaden serwis nie oferuje wszystkich wybranych funkcji."
   },
   "rteClear": {
-    "message": "Wyczyść"
+    "message": "Wyczyść filtr"
   },
   "rteShown": {
     "message": "Widoczne serwisy: $count$ z $total$",

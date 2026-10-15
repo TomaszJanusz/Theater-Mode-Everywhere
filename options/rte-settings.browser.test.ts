@@ -199,32 +199,140 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     } finally { await browser.close(); }
   });
 
-  it('keeps gradient, ribbon and arc motion decorative, one-shot and reduced-motion aware', { timeout: 45000 }, async t => {
+  it('uses the standard switch, dark-glass badges and a larger title on branded tiles', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page);
+      const slider = (selector: string) => page.locator(`${selector} .toggle-slider`).evaluate(el => getComputedStyle(el).backgroundColor);
+      assert.equal(await page.locator('.rte-tile .toggle-switch').count(), 10);
+      assert.equal(await page.locator('.rte-tile .toggle-switch input:checked + .toggle-slider').count(), 10);
+      const standard = await page.locator('.toggle-switch:not(.rte-tile *)').first().evaluate(el => { const input = el.querySelector('input')!; const checked = input.checked; input.checked = true; const color = getComputedStyle(el.querySelector('.toggle-slider')!).backgroundColor; input.checked = checked; return color; });
+      for (const { id } of PROVIDER_CAPABILITIES) {
+        assert.equal(await slider(`[data-provider="${id}"]`), standard, `${id}: switch uses the standard accent, not a brand color`);
+        assert.equal(await page.locator(`[data-provider="${id}"] .toggle-switch`).evaluate(el => getComputedStyle(el).boxShadow !== 'none'), true, `${id}: dark ring around the switch`);
+      }
+      const title = await page.locator('.rte-name').first().evaluate(el => ({ size: parseFloat(getComputedStyle(el).fontSize), weight: Number(getComputedStyle(el).fontWeight) }));
+      assert.ok(title.size >= 16 && title.size <= 17, `title ${title.size}px`);
+      assert.ok(title.weight >= 650 && title.weight <= 700);
+      const badge = await page.locator('.rte-badge:not(.is-matching)').first().evaluate(el => {
+        const context = document.createElement('canvas').getContext('2d')!;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = getComputedStyle(el).backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return [...context.getImageData(0, 0, 1, 1).data];
+      });
+      // The page black (#09090b) at 70%, never an opaque or neutral grey pill.
+      assert.ok(Math.abs(badge[3] - 0.7 * 255) <= 2, `badge alpha ${badge[3]}`);
+      assert.ok(badge.slice(0, 3).every((channel, i) => Math.abs(channel - [9, 9, 11][i]) <= 3), `badge color ${badge}`);
+    } finally { await browser.close(); }
+  });
+
+  it('rests as a standard row, colors on hover and focus, and orbits one shared gradient', { timeout: 45000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);
     try {
       const page = await browser.newPage();
       await open(page);
       const netflix = page.locator('[data-provider="netflix"]');
-      const disney = page.locator('[data-provider="disney"]');
-      assert.equal(await disney.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
-      await disney.hover();
-      assert.equal(await disney.evaluate(el => getComputedStyle(el, '::before').animationIterationCount), '1');
-      assert.equal(await disney.evaluate(el => getComputedStyle(el, '::before').animationDuration), '1.1s');
-      assert.equal(await disney.evaluate(el => getComputedStyle(el, '::before').pointerEvents), 'none');
+      const settle = () => netflix.evaluate(async el => { await Promise.all(el.getAnimations({ subtree: true }).filter(animation => animation instanceof CSSTransition).map(animation => animation.finished)); });
+      const motion = () => netflix.evaluate(el => {
+        const layer = getComputedStyle(el, '::before');
+        const running = el.getAnimations({ subtree: true }).filter(animation => animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement === '::before');
+        return {
+          opacity: layer.opacity,
+          orbit: layer.animationName,
+          playState: layer.animationPlayState,
+          boosting: running.some(animation => animation instanceof CSSTransition && animation.transitionProperty === '--te-border-boost' && animation.playState === 'running'),
+          settled: layer.getPropertyValue('--te-border-boost').trim()
+        };
+      });
+      const surface = (selector = '[data-provider="netflix"]') => page.locator(selector).evaluate(el => ({ background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderTopColor }));
+      const row = await page.evaluate(() => { const probe = document.createElement('div'); probe.style.cssText = 'color: var(--border-color); background: var(--bg-color)'; document.body.append(probe); const style = getComputedStyle(probe); const result = { background: style.backgroundColor, border: style.color }; probe.remove(); return result; });
+      for (const { id } of PROVIDER_CAPABILITIES) assert.deepEqual(await surface(`[data-provider="${id}"]`), row, `${id}: rest is the standard row, no brand color`);
+      assert.deepEqual({ ...await motion(), boosting: undefined }, { opacity: '0', orbit: 'te-border-orbit', playState: 'paused', boosting: undefined, settled: '0deg' }, 'idle: colors hidden, nothing moving');
+      // One registered angle turns the one gradient layer that is both the ring and the interior.
+      const layers = await netflix.evaluate(el => {
+        const style = getComputedStyle(el, '::before');
+        return { image: style.backgroundImage, borderWidth: style.borderTopWidth, borderColor: style.borderTopColor, pointer: style.pointerEvents, origin: style.backgroundOrigin, clip: style.backgroundClip };
+      });
+      assert.match(layers.image, /^linear-gradient\(.*\), conic-gradient\(/, 'a darkening layer over the conic gradient');
+      assert.equal(layers.origin, 'padding-box, border-box');
+      assert.equal(layers.clip, 'padding-box, border-box');
+      assert.equal(layers.borderWidth, '2px');
+      assert.equal(layers.borderColor, 'rgba(0, 0, 0, 0)');
+      assert.equal(layers.pointer, 'none');
+      assert.equal(await netflix.evaluate(el => getComputedStyle(el).getPropertyValue('--te-veil').trim()), '78%', 'the veil the contrast test bounds');
       await netflix.hover();
-      assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').transitionDuration), '0.75s, 0.75s');
+      const boosted = await motion();
+      assert.equal(boosted.playState, 'running', 'hover starts the orbit');
+      assert.equal(boosted.boosting, true, 'hover boosts first');
+      assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').transitionDuration.split(', ')[0]), '0.35s', 'a soft fade in');
+      await settle();
+      const angle = () => netflix.evaluate(el => new Promise<string>(resolve => requestAnimationFrame(() => resolve(getComputedStyle(el, '::before').getPropertyValue('--te-border-angle')))));
+      const first = await angle();
+      await page.waitForTimeout(300);
+      assert.match(first, /deg$/, 'the angle is a registered <angle>');
+      assert.notEqual(await angle(), first, 'the shared angle is animating');
+      const steady = await motion();
+      assert.deepEqual({ opacity: steady.opacity, playState: steady.playState, boosting: steady.boosting, settled: steady.settled }, { opacity: '1', playState: 'running', boosting: false, settled: '360deg' }, 'dwell: only the calmer steady orbit remains');
+      assert.deepEqual(await surface(), row, 'the tile itself stays neutral under the colored layer');
+      await page.mouse.move(2, 2);
+      await settle();
+      const rested = await motion();
+      assert.deepEqual({ opacity: rested.opacity, playState: rested.playState, settled: rested.settled }, { opacity: '0', playState: 'paused', settled: '0deg' }, 'leaving fades back to neutral before rewinding');
+      await page.locator('#rte-youtube').focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      const focused = await page.locator('[data-provider="youtube"]').evaluate(el => getComputedStyle(el, '::before').animationPlayState);
+      assert.equal(focused, 'running', 'keyboard focus colors and orbits like hover');
+      await page.locator('#rte-all').focus();
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').display), 'none');
-      await disney.hover();
-      assert.equal(await disney.evaluate(el => getComputedStyle(el, '::before').display), 'none');
-      assert.equal(await disney.evaluate(el => getComputedStyle(el).transitionDuration), '0s');
-      await page.emulateMedia({ reducedMotion: 'no-preference' });
-      await page.locator('#rte-netflix').focus();
-      await page.keyboard.press('Space');
       await netflix.hover();
-      await netflix.evaluate(async el => { await Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)); });
-      assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').opacity), '0');
+      const still = await motion();
+      assert.equal(still.opacity, '1', 'reduced motion: hover still shows the static colored ring and interior');
+      assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
+      assert.equal(await netflix.evaluate(el => el.getAnimations({ subtree: true }).length), 0);
+    } finally { await browser.close(); }
+  });
+
+  it('keeps the Clear filter button compact, unbolded, unwrapped and below a wrapping heading', { timeout: 60000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      await open(page);
+      const clear = page.getByRole('button', { name: 'Clear filter' });
+      assert.equal(await clear.isVisible(), false);
+      await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
+      assert.equal(await clear.isVisible(), true);
+      assert.equal(await clear.getAttribute('class'), 'secondary-btn');
+      assert.equal(await page.locator('#rte-filter-buttons #rte-clear').count(), 0, 'not another chip in the row');
+      const style = await clear.evaluate(el => ({ weight: Number(getComputedStyle(el).fontWeight), wrap: getComputedStyle(el).whiteSpace, height: el.getBoundingClientRect().height }));
+      assert.ok(style.weight < 600, `weight ${style.weight}`);
+      assert.equal(style.wrap, 'nowrap');
+      assert.ok(style.height <= 30);
+      for (const locale of ['pl', 'de', 'fr', 'ru', 'es', 'pt_BR', 'ja', 'ko', 'zh_CN', 'ar']) {
+        await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
+        const name = catalogs[locale].rteClear.message;
+        const button = page.getByRole('button', { name });
+        assert.equal(await button.count(), 1, `${locale}: accessible name`);
+        const heading = (await page.locator('#rte-filter-label').boundingBox())!;
+        const box = (await button.boundingBox())!;
+        const lines = await button.evaluate(el => { const range = document.createRange(); range.selectNodeContents(el); return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size; });
+        assert.equal(lines, 1, `${locale}: label stays on one line`);
+        assert.ok(box.height <= 30, `${locale}: ${box.height}`);
+        const sideBySide = Math.abs(heading.y + heading.height / 2 - (box.y + box.height / 2)) < 3 && box.x !== heading.x;
+        assert.ok(sideBySide || box.y >= heading.y + heading.height, `${locale}: beside the heading or wholly below it`);
+        const chips = (await page.locator('#rte-filter-buttons').boundingBox())!;
+        assert.ok(box.y + box.height <= chips.y, `${locale}: above the chips`);
+      }
+      await page.evaluate(() => (window as unknown as Harness).setLanguage('en'));
+      await clear.focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await clear.isVisible(), false);
+      assert.equal(await page.locator('#rte-shown').getAttribute('role'), 'status');
     } finally { await browser.close(); }
   });
 

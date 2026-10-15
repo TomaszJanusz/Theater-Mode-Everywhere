@@ -960,7 +960,7 @@
     "message": "Nenhum serviço oferece todos os recursos selecionados."
   },
   "rteClear": {
-    "message": "Limpar"
+    "message": "Limpar filtro"
   },
   "rteShown": {
     "message": "$count$ de $total$ serviços exibidos",

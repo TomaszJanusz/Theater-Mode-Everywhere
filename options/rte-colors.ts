@@ -1,34 +1,62 @@
 import type { ProviderCapabilities } from '../src/providers/capabilities';
 
-/** One palette-to-CSS boundary. TME-48's data-contrast="high" and
- * data-transparency="reduced" hooks can flatten --rte-tint/--rte-border and
- * hide .rte-tile::before with one shared override, without provider selectors. */
-export function serviceColorProperties(provider: ProviderCapabilities): Record<string, string> {
-  const { brand } = provider;
-  const colors = [brand.primary, ...(brand.secondary ? [brand.secondary] : []), ...(brand.extra ?? [])];
-  const tint = colors.map((color, index) => {
-    // White is only an 8% tint, never a light surface inside the dark theme.
-    const light = color === '#FFFFFF' || color === '#FAFCFD';
-    return `color-mix(in srgb, ${color} ${light ? 8 : 14}%, transparent) ${colors.length === 1 ? 0 : index * 68 / (colors.length - 1)}%`;
-  });
-  const border = brand.uiBorder.map(color => `color-mix(in srgb, ${color} 55%, var(--border-color))`);
-  const stripeColors = brand.stripes ?? [];
-  // Column samples retain their order; varied widths evoke narrow title-card ribbons.
-  const widths = stripeColors.map((_, index) => [1, 2, 1, 3, 2][index % 5]);
-  const total = widths.reduce((sum, width) => sum + width, 0);
-  let position = 0;
-  const stripes = stripeColors.map((color, index) => {
-    const start = position * 100 / total;
-    position += widths[index];
-    return `${color} ${start}% ${position * 100 / total}%`;
-  });
+/** The dark base a brand's hues are mixed into for the dimmer gradient stops. */
+export const TILE_BASE = '#0b0b0d';
+
+export const hexRgb = (hex: string) => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
+export const luminance = (rgb: readonly number[]) => rgb.reduce((sum, channel, i) => {
+  const c = channel / 255;
+  return sum + [0.2126, 0.7152, 0.0722][i] * (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+}, 0);
+/** `color` at `alpha` over `under`, as the browser composites in sRGB. */
+export const over = (color: readonly number[], alpha: number, under: readonly number[]) => color.map((value, i) => alpha * value + (1 - alpha) * under[i]);
+const hex = (rgb: readonly number[]) => `#${rgb.map(value => Math.round(value).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+/** Splits a plain palette into roles: near-black colors tint the base, light
+ * neutrals become the highlight, and the remaining hues form the orbit. */
+export function brandRoles(colors: readonly string[]) {
+  const dark = colors.find(color => luminance(hexRgb(color)) < 0.03);
+  const neutral = (color: string) => { const rgb = hexRgb(color); return Math.max(...rgb) - Math.min(...rgb) < 24; };
+  const accents = colors.filter(color => color !== dark && luminance(hexRgb(color)) >= 0.03 && !neutral(color));
+  if (accents.length === 0) throw new Error(`Brand palette has no hue: ${colors.join(', ')}`);
   return {
-    '--service-color': brand.uiAccent,
-    '--rte-tint': brand.tile
-      ? `linear-gradient(150deg, ${brand.tile.join(', ')})`
-      : `linear-gradient(150deg, ${tint.join(', ')}, transparent ${colors.length === 1 ? 68 : 100}%)`,
-    '--rte-border': `linear-gradient(150deg, ${border.length === 1 ? [border[0], border[0]].join(', ') : border.join(', ')})`,
-    '--rte-stripes': stripes.length ? `linear-gradient(90deg, ${stripes.join(', ')})` : 'none',
-    '--rte-arc': `conic-gradient(from 240deg, transparent 0deg, ${brand.primary} 30deg, ${brand.secondary ?? brand.uiAccent} 100deg, transparent 140deg)`
+    base: dark ? hex(over(hexRgb(dark), 0.45, hexRgb(TILE_BASE))) : TILE_BASE,
+    accents,
+    highlight: colors.find(color => color !== dark && neutral(color) && luminance(hexRgb(color)) >= 0.03),
   };
+}
+
+/** The bright head of each comet: the palette's light neutral, else the first hue lifted toward white. */
+const cometHead = (accents: readonly string[], highlight: string | undefined) => highlight ?? hex(over(hexRgb(accents[0]), 0.45, [255, 255, 255]));
+
+/** The brightest color the orbit shows, which sets the worst case under the veil. */
+export function brightestStop(colors: readonly string[]): number[] {
+  const { accents, highlight } = brandRoles(colors);
+  return [cometHead(accents, highlight), ...accents].map(hexRgb).reduce((best, rgb) => luminance(rgb) > luminance(best) ? rgb : best);
+}
+
+/** Two opposite comets keep a rectangle's long sides alive while it orbits.
+ * The whole circle is opaque: a dim wash of the first hue joins the comets, so
+ * the rotating gradient also colors the tile interior seen through the veil. */
+function orbitStops(accents: readonly string[], base: string, head: string): string {
+  const tail = 20, core = 2.2, under = hexRgb(base);
+  const dim = hex(over(hexRgb(accents[0]), 0.8, under));
+  return [25, 75].flatMap(center => {
+    const trail = [...accents].reverse();
+    return [
+      `${dim} ${center - 25}%`,
+      ...trail.map((color, i) => `${hex(over(hexRgb(color), 0.75 + 0.25 * (i + 1) / trail.length, under))} ${center - tail + (tail - core) * (i + 1) / trail.length}%`),
+      `${head} ${center}%`,
+      `${accents[0]} ${center + core}%`,
+      `${dim} ${center + 25}%`,
+    ];
+  }).join(', ');
+}
+
+/** One palette-to-CSS boundary. TME-48's data-contrast="high" and
+ * data-transparency="reduced" hooks can flatten every tile by hiding
+ * .te-animated-border::before, without provider selectors. */
+export function serviceColorProperties(provider: Pick<ProviderCapabilities, 'brandColors'>): Record<string, string> {
+  const { base, accents, highlight } = brandRoles(provider.brandColors);
+  return { '--te-border-stops': orbitStops(accents, base, cometHead(accents, highlight)) };
 }

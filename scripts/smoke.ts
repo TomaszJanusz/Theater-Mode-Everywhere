@@ -1034,7 +1034,7 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     }
   };
   const settle = async () => {
-    await page.evaluate(async () => { await Promise.all(document.getAnimations().map(animation => animation.finished)); });
+    await page.evaluate(async () => { await Promise.all(document.getAnimations().filter(animation => animation instanceof CSSTransition).map(animation => animation.finished)); });
   };
   try {
     await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
@@ -1042,31 +1042,26 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(new URL('options/options.html#features', worker.url()).href);
     await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && document.getElementById('rte-count')?.textContent === '10 of 10 on');
-    await capture('tme47-rte-section.png');
-    if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme47-brand-on.png') });
+    await capture('tme60-section.png');
+    if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles.png') });
     const netflix = page.locator('[data-provider="netflix"]');
-    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-idle.png') });
+    const ring = () => netflix.evaluate(el => ({ opacity: getComputedStyle(el, '::before').opacity, playState: getComputedStyle(el, '::before').animationPlayState }));
+    if ((await ring()).opacity !== '0') fail('A resting RTE tile shows brand colors.');
     await netflix.hover();
+    await page.waitForTimeout(250);
+    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-1.png') });
+    await page.waitForTimeout(450);
+    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-2.png') });
+    await settle(); // the boost transition; the steady orbit itself never finishes
+    if ((await ring()).playState !== 'running' || (await ring()).opacity !== '1') fail('The RTE tile stopped showing its orbiting colors while hovered.');
+    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-dwell.png') });
+    await page.mouse.move(2, 2);
     await settle();
-    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-hover.png') });
-    const disney = page.locator('[data-provider="disney"]');
-    await disney.hover();
-    await page.evaluate(() => {
-      const animation = document.getAnimations().find(animation => animation instanceof CSSAnimation && animation.animationName === 'rte-arc-sweep');
-      if (animation) { animation.pause(); animation.currentTime = 550; }
-    });
-    if (captureDir) await disney.screenshot({ path: path.join(captureDir, 'tme47-disney-mid.png') });
-    await page.evaluate(() => {
-      const animation = document.getAnimations().find(animation => animation instanceof CSSAnimation && animation.animationName === 'rte-arc-sweep');
-      if (animation) { animation.currentTime = 1100; animation.play(); }
-    });
-    await settle();
-    if (captureDir) await disney.screenshot({ path: path.join(captureDir, 'tme47-disney-settled.png') });
+    if ((await ring()).opacity !== '0') fail('The RTE border did not rest after the pointer left.');
     await page.locator('#rte-all').click();
     await page.waitForFunction(() => document.getElementById('rte-count')?.textContent === '0 of 10 on');
     if (captureDir) {
-      await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme47-brand-off.png') });
-      await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-off.png') });
+      await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles-off.png') });
     }
     await page.locator('#rte-all').click();
     await page.locator('[data-provider="netflix"] .rte-control').click();
@@ -1079,7 +1074,7 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
     await page.locator('#rte-filter-buttons [data-capability="quickActions"]').click();
     if (await page.locator('.rte-tile:visible').count() !== 5 || await page.locator('#rte-all-label').textContent() !== 'All shown services') fail('RTE capability filter is not reflected in master control.');
-    await capture('tme47-rte-filter.png');
+    await capture('tme60-filter.png');
     await page.locator('#rte-all').click();
     const filtered = await worker.evaluate(async () => chrome.storage.sync.get(['netflixIntegrationEnabled', 'youtubeIntegrationEnabled']));
     if (filtered.netflixIntegrationEnabled !== true || filtered.youtubeIntegrationEnabled !== false) fail('Filtered RTE master changed a hidden provider.');
@@ -1093,12 +1088,12 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await details.click();
     await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
     await page.setViewportSize({ width: 420, height: 850 });
-    await capture('tme47-rte-narrow.png');
+    await capture('tme60-narrow.png');
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail('Narrow RTE settings overflow the viewport.');
     await page.setViewportSize({ width: 1440, height: 1000 });
     await worker.evaluate(() => chrome.storage.sync.set({ language: 'ar' }));
     await page.waitForFunction(() => document.documentElement.dir === 'rtl');
-    await capture('tme47-rte-ar.png');
+    await capture('tme60-ar.png');
     await worker.evaluate(() => chrome.storage.sync.set({ language: 'en' }));
     await page.waitForFunction(() => document.documentElement.dir === 'ltr');
     await page.locator('#tab-shortcuts').click();

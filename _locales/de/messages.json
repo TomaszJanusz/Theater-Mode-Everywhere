@@ -960,7 +960,7 @@
     "message": "Kein Dienst bietet alle ausgewählten Funktionen."
   },
   "rteClear": {
-    "message": "Zurücksetzen"
+    "message": "Filter zurücksetzen"
   },
   "rteShown": {
     "message": "$count$ von $total$ Diensten angezeigt",

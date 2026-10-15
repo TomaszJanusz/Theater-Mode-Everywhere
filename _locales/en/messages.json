@@ -960,7 +960,7 @@
     "message": "No service has all the selected capabilities."
   },
   "rteClear": {
-    "message": "Clear"
+    "message": "Clear filter"
   },
   "rteShown": {
     "message": "$count$ of $total$ services shown",

@@ -960,7 +960,7 @@
     "message": "Aucun service ne propose toutes les fonctions sélectionnées."
   },
   "rteClear": {
-    "message": "Effacer"
+    "message": "Effacer le filtre"
   },
   "rteShown": {
     "message": "$count$ services sur $total$ affichés",
