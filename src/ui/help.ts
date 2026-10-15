@@ -72,17 +72,23 @@ export function createHelp(ctx: PlayerChromeContext) {
 
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
-    const generalColumn = document.createElement('div');
+    const theaterColumn = document.createElement('div');
     const playbackColumn = document.createElement('div');
-    generalColumn.className = playbackColumn.className = 'theater-help-column';
+    theaterColumn.className = playbackColumn.className = 'theater-help-column';
 
     const groups = [
       {
-        title: ctx.t('generalControlsTitle'),
+        title: ctx.t('theaterFullscreenPipTitle'),
         items: [
           { label: ctx.t('toggleTheaterMode'), key: shortcuts.toggle },
-          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
           { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
+          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
+          { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
+        ]
+      },
+      {
+        title: ctx.t('playerControlsTitle'),
+        items: [
           { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
           { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
           { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
@@ -102,17 +108,11 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('nextVideo'), key: shortcuts.nextVideo },
           { label: ctx.t('seekBackward5'), key: shortcuts.seekBack },
           { label: ctx.t('seekForward5'), key: shortcuts.seekForward },
+          { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
+          { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
           { label: ctx.t('volumeUp5'), key: shortcuts.volumeUp },
           { label: ctx.t('volumeDown5'), key: shortcuts.volumeDown },
           { label: ctx.t('toggleMute'), key: shortcuts.toggleMute }
-        ]
-      },
-      {
-        title: ctx.t('frameFullscreenPipTitle'),
-        items: [
-          { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
-          { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
-          { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
         ]
       },
       {
@@ -161,9 +161,9 @@ export function createHelp(ctx: PlayerChromeContext) {
         groupEl.appendChild(row);
       });
 
-      (group === groups[0] ? generalColumn : playbackColumn).appendChild(groupEl);
+      (groups.indexOf(group) < 2 ? theaterColumn : playbackColumn).appendChild(groupEl);
     });
-    grid.append(generalColumn, playbackColumn);
+    grid.append(theaterColumn, playbackColumn);
 
     card.appendChild(grid);
     overlay.appendChild(card);

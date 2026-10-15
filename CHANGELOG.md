@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Group video fit, player switching, controls visibility, audio and keyboard help in a labeled Player settings panel that opens on hover; Keyboard Shortcuts stays last, above Extension settings. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Menus keep their position next to their buttons.
 - Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.
+- Keyboard shortcuts are regrouped in Help and Settings: a new first section, Theater, Fullscreen & PiP, holds theater, exit, fullscreen and Picture-in-Picture; frame stepping moves to Playback & Volume Controls, and the remaining section is renamed Player Controls.
 - Settings Appearance is a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
 - Subtitle loading shows a pulsing CC icon, and the "Loading subtitles…" HUD appears only if loading takes noticeable time, so quick loads no longer flash it.
 - Disney+ titles include the episode label, for example "VisionQuest — S1:O1 Wyzwolenie", and Disney+ captions sit above the picture and clear of the controls.

@@ -353,8 +353,8 @@
   "keyboardShortcutsDescription": {
     "message": "입력 필드를 클릭한 후 원하는 키 조합을 눌러 설정합니다. Ctrl, Alt, Shift 보조키를 지원합니다."
   },
-  "generalControlsTitle": {
-    "message": "일반 컨트롤"
+  "playerControlsTitle": {
+    "message": "플레이어 컨트롤"
   },
   "toggleTheaterMode": {
     "message": "시어터 모드 전환"
@@ -503,8 +503,8 @@
   "toggleMute": {
     "message": "음소거 전환"
   },
-  "frameFullscreenPipTitle": {
-    "message": "프레임, 전체 화면 및 PiP"
+  "theaterFullscreenPipTitle": {
+    "message": "시어터, 전체 화면 및 PiP"
   },
   "frameStepBackward": {
     "message": "이전 프레임"

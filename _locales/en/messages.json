@@ -353,8 +353,8 @@
   "keyboardShortcutsDescription": {
     "message": "Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported."
   },
-  "generalControlsTitle": {
-    "message": "General Controls"
+  "playerControlsTitle": {
+    "message": "Player Controls"
   },
   "toggleTheaterMode": {
     "message": "Toggle Theater Mode"
@@ -503,8 +503,8 @@
   "toggleMute": {
     "message": "Toggle mute"
   },
-  "frameFullscreenPipTitle": {
-    "message": "Frame, Fullscreen & PiP"
+  "theaterFullscreenPipTitle": {
+    "message": "Theater, Fullscreen & PiP"
   },
   "frameStepBackward": {
     "message": "Frame Step Backward"

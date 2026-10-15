@@ -353,8 +353,8 @@
   "keyboardShortcutsDescription": {
     "message": "Fai clic su qualsiasi campo di input e premi la combinazione di tasti desiderata per configurarla. Sono supportati modificatori come Ctrl, Alt e Maiusc."
   },
-  "generalControlsTitle": {
-    "message": "Controlli generali"
+  "playerControlsTitle": {
+    "message": "Controlli del player"
   },
   "toggleTheaterMode": {
     "message": "Attiva/Disattiva modalità cinema"
@@ -503,8 +503,8 @@
   "toggleMute": {
     "message": "Attiva/disattiva audio"
   },
-  "frameFullscreenPipTitle": {
-    "message": "Fotogrammi, Schermo intero e PiP"
+  "theaterFullscreenPipTitle": {
+    "message": "Cinema, schermo intero e PiP"
   },
   "frameStepBackward": {
     "message": "Fotogramma precedente"

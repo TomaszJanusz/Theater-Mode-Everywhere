@@ -353,8 +353,8 @@
   "keyboardShortcutsDescription": {
     "message": "入力フィールドをクリックし、設定したいキーの組み合わせを押します。Ctrl、Alt、Shiftなどの修飾キーに対応しています。"
   },
-  "generalControlsTitle": {
-    "message": "一般操作"
+  "playerControlsTitle": {
+    "message": "プレーヤー操作"
   },
   "toggleTheaterMode": {
     "message": "シアターモード切り替え"
@@ -503,8 +503,8 @@
   "toggleMute": {
     "message": "ミュートを切り替え"
   },
-  "frameFullscreenPipTitle": {
-    "message": "フレーム送り、全画面、PiP"
+  "theaterFullscreenPipTitle": {
+    "message": "シアター、全画面、PiP"
   },
   "frameStepBackward": {
     "message": "1フレーム戻る"

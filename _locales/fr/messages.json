@@ -353,8 +353,8 @@
   "keyboardShortcutsDescription": {
     "message": "Cliquez sur n'importe quel champ de saisie et appuyez sur la combinaison de touches souhaitée pour la configurer. Les touches de modification telles que Ctrl, Alt et Maj sont prises en charge."
   },
-  "generalControlsTitle": {
-    "message": "Contrôles généraux"
+  "playerControlsTitle": {
+    "message": "Contrôles du lecteur"
   },
   "toggleTheaterMode": {
     "message": "Activer/désactiver le mode cinéma"
@@ -503,8 +503,8 @@
   "toggleMute": {
     "message": "Activer/désactiver le son"
   },
-  "frameFullscreenPipTitle": {
-    "message": "Image, plein écran et PiP"
+  "theaterFullscreenPipTitle": {
+    "message": "Cinéma, plein écran et PiP"
   },
   "frameStepBackward": {
     "message": "Reculer d'une image"
