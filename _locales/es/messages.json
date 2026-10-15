@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Activa integraciones más completas con tus servicios de vídeo favoritos, incluidos YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll y otros. Theater Mode Everywhere puede mostrar información adicional, admitir formatos de subtítulos personalizados y desbloquear funciones específicas de cada servicio. La disponibilidad varía según el servicio; obtén más información "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "aquí"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Activa integraciones más completas con tus servicios de vídeo favoritos. La disponibilidad varía según el servicio."
   },
@@ -255,49 +246,49 @@
     "message": "Integración de YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Activa la compatibilidad con subtítulos, capítulos, el mapa Most Replayed y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Capítulos, Mapa de actividad, Miniaturas. Acciones rápidas: omitir anuncios y siguiente vídeo de la cola."
   },
   "vimeoIntegrationTitle": {
     "message": "Integración de Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Activa la compatibilidad con marcadores de capítulos y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Capítulos, Miniaturas. Acciones rápidas: siguiente vídeo de la colección."
   },
   "patreonIntegrationTitle": {
     "message": "Integración de Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Capítulos, Miniaturas."
   },
   "twitchIntegrationTitle": {
     "message": "Integración de Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Activa la compatibilidad con capítulos de VOD y miniaturas en la línea de tiempo en el modo teatro."
+    "message": "Muestra el título del canal o vídeo y, en vídeos bajo demanda, los subtítulos, capítulos y vistas previas disponibles."
   },
   "disneyIntegrationTitle": {
     "message": "Integración de Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Activa la compatibilidad con subtítulos y miniaturas en la línea de tiempo en el modo teatro cuando el reproductor los ofrece."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Miniaturas. Acciones rápidas: saltar intro, resumen o créditos y siguiente episodio."
   },
   "netflixIntegrationTitle": {
     "message": "Integración con Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Muestra el título del material actual y cambia los idiomas de subtítulos del reproductor en el modo teatro cuando el reproductor tiene un renderizador de subtítulos activo. Los capítulos y las miniaturas de la línea de tiempo no están disponibles."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Miniaturas. Acciones rápidas: saltar intro, resumen o créditos y siguiente episodio."
   },
   "bilibiliIntegrationTitle": {
     "message": "Integración con Bilibili (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importa el título del vídeo, los subtítulos, los capítulos, el mapa de popularidad y las miniaturas de la línea de tiempo desde bilibili.com cuando están disponibles. Algunos subtítulos requieren iniciar sesión en Bilibili."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Capítulos, Mapa de actividad, Miniaturas. Acciones rápidas: confirmaciones nativas para saltar y siguiente vídeo."
   },
   "tencentIntegrationTitle": {
     "message": "Integración con Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importa títulos de episodios, subtítulos SRT/WebVTT y miniaturas de la línea de tiempo de Tencent Video / WeTV cuando están disponibles. La reproducción y el siguiente episodio usan los controles disponibles del reproductor."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, Miniaturas. Acciones rápidas: siguiente episodio mediante el reproductor."
   },
   "liveBadge": {
     "message": "EN VIVO"
@@ -817,13 +808,13 @@
     "message": "Integración con Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importa el título, los subtítulos y las miniaturas de la línea de tiempo desde las páginas de episodios y de vídeos subidos por usuarios de bilibili.tv cuando están disponibles. Las páginas de episodios pueden mostrar marcadores de intro y outro. El episodio siguiente usa el control siguiente del reproductor. Esta integración no importa una lista de capítulos con nombre ni el mapa de popularidad."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, marcas de intro/cierre, Miniaturas. Acciones rápidas: saltar intro/cierre y siguiente episodio (solo episodios)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Integración con Crunchyroll"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Muestra el título del episodio, la intro y los créditos, los controles de subtítulos disponibles y las vistas previas de la línea de tiempo. Los subtítulos incrustados permanecen en el vídeo y no se pueden desactivar."
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, marcas de intro/créditos, Miniaturas. Acciones rápidas: saltar intro/créditos y siguiente episodio."
   },
   "aboutTitle": {
     "message": "Acerca de"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "Segmento de SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Elige integraciones y descubre qué añaden al modo cine. Las funciones dependen del vídeo y del servicio."
+  },
+  "rteAll": {
+    "message": "Todos los servicios"
+  },
+  "rteAllShown": {
+    "message": "Todos los servicios mostrados"
+  },
+  "rteCount": {
+    "message": "$count$ de $total$ activados",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Mostrar servicios con"
+  },
+  "rteCapabilityTitle": {
+    "message": "Título"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Subtítulos"
+  },
+  "rteCapabilityChapters": {
+    "message": "Capítulos"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Mapa de actividad"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Miniaturas"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Acciones rápidas"
+  },
+  "rteEmpty": {
+    "message": "Ningún servicio tiene todas las funciones seleccionadas."
+  },
+  "rteClear": {
+    "message": "Limpiar"
+  },
+  "rteShown": {
+    "message": "$count$ de $total$ servicios mostrados",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Según el vídeo; omitir anuncios y navegar por la cola cuando estén disponibles."
+  },
+  "rteNoteVimeo": {
+    "message": "Capítulos y vistas previas cuando estén disponibles; siguiente en colecciones."
+  },
+  "rteNotePatreon": {
+    "message": "Subtítulos, capítulos y vistas previas cuando estén disponibles."
+  },
+  "rteNoteTwitch": {
+    "message": "Subtítulos, capítulos y vistas previas solo en vídeos bajo demanda."
+  },
+  "rteNoteDisney": {
+    "message": "Subtítulos, vistas previas y saltar/siguiente si el reproductor los ofrece."
+  },
+  "rteNoteNetflix": {
+    "message": "Las vistas previas requieren una sesión trick-play lista; subtítulos y acciones si están disponibles."
+  },
+  "rteNoteBilibili": {
+    "message": "Algunos subtítulos requieren iniciar sesión; las funciones dependen del vídeo."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Solo marcas de intro y cierre; saltar/siguiente en episodios, no en vídeos de usuarios."
+  },
+  "rteNoteTencent": {
+    "message": "Subtítulos y vistas previas si están disponibles; siguiente mediante el reproductor."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Solo marcas de intro y créditos; no se pueden desactivar los subtítulos incrustados."
+  },
+  "rteSaveError": {
+    "message": "No se pudieron guardar los ajustes. Inténtalo de nuevo."
+  },
+  "rteDetails": {
+    "message": "Detalles"
   }
 }

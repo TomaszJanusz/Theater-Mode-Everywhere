@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience（試験運用）"
   },
-  "richTheaterExperienceDescription": {
-    "message": "YouTube、Twitch、Disney+、Netflix、Bilibili、Bilibili.tv、Tencent Video / WeTV、Crunchyroll など、お気に入りの動画サービスとのより高度な連携を有効にします。Theater Mode Everywhere は、追加情報の表示、カスタム字幕形式への対応、サービス固有機能の利用を可能にします。利用できる機能はサービスによって異なります。詳しくは"
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "こちら"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "。"
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "お気に入りの動画サービスとのより高度な連携を有効にします。利用できる機能はサービスによって異なります。"
   },
@@ -255,49 +246,49 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "シアターモードで字幕、チャプター、Most Replayed ヒートマップ、タイムラインのサムネイルのサポートを有効にします。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：広告スキップとキュー内の次の動画。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
   },
   "vimeoIntegrationDescription": {
-    "message": "シアターモードでチャプターマーカーとタイムラインのサムネイルのサポートを有効にします。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, チャプター, サムネイル。 クイック操作：ショーケース内の次の動画。"
   },
   "patreonIntegrationTitle": {
     "message": "Patreon連携"
   },
   "patreonIntegrationDescription": {
-    "message": "シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, サムネイル。"
   },
   "twitchIntegrationTitle": {
     "message": "Twitch連携"
   },
   "twitchIntegrationDescription": {
-    "message": "シアターモードでVODチャプターとタイムラインのサムネイルのサポートを有効にします。"
+    "message": "チャンネルや動画のタイトルを表示します。VODでは、提供される字幕の選択、チャプターマーカー、タイムラインプレビューも利用できます。"
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ 連携"
   },
   "disneyIntegrationDescription": {
-    "message": "プレーヤーが提供する場合、シアターモードで字幕とタイムラインのサムネイルのサポートを有効にします。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
   },
   "netflixIntegrationTitle": {
     "message": "Netflix 連携"
   },
   "netflixIntegrationDescription": {
-    "message": "シアターモードで再生中のタイトルを表示し、プレーヤーに字幕レンダラーがある場合に字幕言語を切り替えます。チャプターとタイムラインのサムネイルには対応していません。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：イントロ・あらすじ・クレジットのスキップと次のエピソード。"
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili（bilibili.com）連携"
   },
   "bilibiliIntegrationDescription": {
-    "message": "利用できる場合、bilibili.com から動画タイトル、字幕、チャプター、高エネルギー進捗ヒートマップ、タイムラインのサムネイルを取り込みます。一部の字幕は Bilibili へのログインが必要です。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：プレーヤーのスキップ確認と次の動画。"
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV 連携"
   },
   "tencentIntegrationDescription": {
-    "message": "Tencent Video / WeTV から、利用可能なエピソードのタイトル、SRT/WebVTT 字幕、タイムラインのサムネイルを取り込みます。再生と次のエピソードへの移動には、プレーヤーで利用可能な操作を使用します。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, サムネイル。 クイック操作：プレーヤー経由の次のエピソード。"
   },
   "liveBadge": {
     "message": "配信中"
@@ -817,13 +808,13 @@
     "message": "Bilibili.tv 連携"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "利用できる場合、bilibili.tv のエピソードページとユーザー投稿ページからタイトル、字幕、タイムラインのサムネイルを取り込みます。エピソードページではオープニングとエンディングの目印を表示できます。次のエピソードはプレーヤーの次へ操作を使います。この統合は名前付きチャプター一覧と高エネルギー進捗ヒートマップを取り込みません。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・アウトロのマーカー, サムネイル。 クイック操作：イントロ・アウトロのスキップと次のエピソード（エピソードのみ）。"
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll 連携"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "エピソードのタイトル、オープニングとエンディング、利用できる字幕の操作、タイムラインのプレビューを表示します。映像に焼き込まれた字幕はオフにできません。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・クレジットのマーカー, サムネイル。 クイック操作：イントロ・クレジットのスキップと次のエピソード。"
   },
   "aboutTitle": {
     "message": "このツールについて"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "SponsorBlock セグメント"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "連携するサービスを選び、シアターモードで使える機能を確認できます。機能は動画やサービスによって異なります。"
+  },
+  "rteAll": {
+    "message": "すべてのサービス"
+  },
+  "rteAllShown": {
+    "message": "表示中のすべてのサービス"
+  },
+  "rteCount": {
+    "message": "$total$ 件中 $count$ 件オン",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "次の機能があるサービスを表示"
+  },
+  "rteCapabilityTitle": {
+    "message": "タイトル"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "字幕"
+  },
+  "rteCapabilityChapters": {
+    "message": "チャプター"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "ヒートマップ"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "サムネイル"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "クイック操作"
+  },
+  "rteEmpty": {
+    "message": "選択した機能をすべて備えたサービスはありません。"
+  },
+  "rteClear": {
+    "message": "クリア"
+  },
+  "rteShown": {
+    "message": "$total$ 件中 $count$ 件のサービスを表示",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "動画により異なります。広告スキップとキュー移動は利用可能な場合のみ。"
+  },
+  "rteNoteVimeo": {
+    "message": "提供される場合にチャプターとプレビュー、ショーケースの次の動画に対応。"
+  },
+  "rteNotePatreon": {
+    "message": "提供される場合に字幕、チャプター、プレビューに対応。"
+  },
+  "rteNoteTwitch": {
+    "message": "字幕、チャプター、プレビューはVODのみ。"
+  },
+  "rteNoteDisney": {
+    "message": "プレーヤーが提供する字幕、プレビュー、スキップ、次のエピソードに対応。"
+  },
+  "rteNoteNetflix": {
+    "message": "プレビューには準備済みのtrick-playセッションが必要。字幕と操作は利用可能な場合のみ。"
+  },
+  "rteNoteBilibili": {
+    "message": "一部の字幕にはログインが必要。機能は動画により異なります。"
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "イントロ・アウトロのマーカーのみ。スキップと次へはエピソードのみで投稿動画は対象外。"
+  },
+  "rteNoteTencent": {
+    "message": "提供される場合に字幕とプレビュー、プレーヤー経由で次のエピソードに対応。"
+  },
+  "rteNoteCrunchyroll": {
+    "message": "イントロ・クレジットのマーカーのみ。焼き付け字幕はオフにできません。"
+  },
+  "rteSaveError": {
+    "message": "サービス設定を保存できませんでした。もう一度お試しください。"
+  },
+  "rteDetails": {
+    "message": "詳細"
   }
 }

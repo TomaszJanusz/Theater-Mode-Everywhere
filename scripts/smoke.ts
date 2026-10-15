@@ -1,3 +1,4 @@
+import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../src/media-features/provider-flags';
 import { createServer } from 'node:http';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import type { AddressInfo } from 'node:net';
@@ -1015,6 +1016,106 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   console.log(`smoke controls pin: idle, playback, repeat, input, focus, hover, captions, popovers, fullscreen and rebuild${context ? ', persistence and settings' : ''} passed`);
 }
 
+async function assertRteSettings(context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const page = await context.newPage();
+  const keys = [...mediaProviderFlagStorageKeys(), 'language'];
+  const original = await worker.evaluate(keys => chrome.storage.sync.get(keys), keys);
+  const captureDir = process.env.THEATER_RTE_SCREENSHOT_DIR;
+  const capture = async (name: string, fullPage = true) => {
+    if (captureDir) {
+      mkdirSync(captureDir, { recursive: true });
+      if (fullPage) {
+        await page.evaluate(() => scrollTo(0, 0));
+        await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      }
+      await page.screenshot({ path: path.join(captureDir, name), fullPage });
+    }
+  };
+  const settle = async () => {
+    await page.evaluate(async () => { await Promise.all(document.getAnimations().map(animation => animation.finished)); });
+  };
+  try {
+    await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
+    await worker.evaluate(update => chrome.storage.sync.set(update), { ...mediaProviderFlagStorageUpdate(defaultMediaProviderFlags()), language: 'en' });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(new URL('options/options.html#features', worker.url()).href);
+    await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && document.getElementById('rte-count')?.textContent === '10 of 10 on');
+    await capture('tme47-rte-section.png');
+    if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme47-brand-on.png') });
+    const netflix = page.locator('[data-provider="netflix"]');
+    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-idle.png') });
+    await netflix.hover();
+    await settle();
+    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-hover.png') });
+    const disney = page.locator('[data-provider="disney"]');
+    await disney.hover();
+    await page.evaluate(() => {
+      const animation = document.getAnimations().find(animation => animation instanceof CSSAnimation && animation.animationName === 'rte-arc-sweep');
+      if (animation) { animation.pause(); animation.currentTime = 550; }
+    });
+    if (captureDir) await disney.screenshot({ path: path.join(captureDir, 'tme47-disney-mid.png') });
+    await page.evaluate(() => {
+      const animation = document.getAnimations().find(animation => animation instanceof CSSAnimation && animation.animationName === 'rte-arc-sweep');
+      if (animation) { animation.currentTime = 1100; animation.play(); }
+    });
+    await settle();
+    if (captureDir) await disney.screenshot({ path: path.join(captureDir, 'tme47-disney-settled.png') });
+    await page.locator('#rte-all').click();
+    await page.waitForFunction(() => document.getElementById('rte-count')?.textContent === '0 of 10 on');
+    if (captureDir) {
+      await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme47-brand-off.png') });
+      await netflix.screenshot({ path: path.join(captureDir, 'tme47-netflix-off.png') });
+    }
+    await page.locator('#rte-all').click();
+    await page.locator('[data-provider="netflix"] .rte-control').click();
+    await page.waitForFunction(() => (document.getElementById('rte-all') as HTMLInputElement).indeterminate);
+    const saved = await worker.evaluate(async () => chrome.storage.sync.get(['netflixIntegrationEnabled', 'youtubeIntegrationEnabled']));
+    if (saved.netflixIntegrationEnabled !== false || saved.youtubeIntegrationEnabled !== true) fail('RTE tile changed an unrelated provider flag.');
+    await capture('tme47-rte-partial.png');
+    await worker.evaluate(() => chrome.storage.sync.set({ netflixIntegrationEnabled: true }));
+    await page.waitForFunction(() => (document.getElementById('rte-netflix') as HTMLInputElement).checked);
+    await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
+    await page.locator('#rte-filter-buttons [data-capability="quickActions"]').click();
+    if (await page.locator('.rte-tile:visible').count() !== 5 || await page.locator('#rte-all-label').textContent() !== 'All shown services') fail('RTE capability filter is not reflected in master control.');
+    await capture('tme47-rte-filter.png');
+    await page.locator('#rte-all').click();
+    const filtered = await worker.evaluate(async () => chrome.storage.sync.get(['netflixIntegrationEnabled', 'youtubeIntegrationEnabled']));
+    if (filtered.netflixIntegrationEnabled !== true || filtered.youtubeIntegrationEnabled !== false) fail('Filtered RTE master changed a hidden provider.');
+    await page.locator('#rte-clear').click();
+    await page.locator('#rte-all').click();
+    const details = netflix.locator('.rte-details-toggle');
+    await details.press('Enter');
+    if (await details.getAttribute('aria-expanded') !== 'true' || !await page.locator('#rte-netflix').isChecked()) fail('RTE Details toggled the provider or did not expand.');
+    await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
+    await capture('tme47-rte-details.png');
+    await details.click();
+    await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
+    await page.setViewportSize({ width: 420, height: 850 });
+    await capture('tme47-rte-narrow.png');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail('Narrow RTE settings overflow the viewport.');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await worker.evaluate(() => chrome.storage.sync.set({ language: 'ar' }));
+    await page.waitForFunction(() => document.documentElement.dir === 'rtl');
+    await capture('tme47-rte-ar.png');
+    await worker.evaluate(() => chrome.storage.sync.set({ language: 'en' }));
+    await page.waitForFunction(() => document.documentElement.dir === 'ltr');
+    await page.locator('#tab-shortcuts').click();
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await page.evaluate(() => scrollTo(0, document.getElementById('shortcuts')!.offsetTop + 300));
+    const sticky = await page.locator('#shortcuts .card-heading-inner').boundingBox();
+    if (!sticky || Math.abs(sticky.y - 16) > 2) fail('Settings heading did not follow the long section.');
+    await capture('tme47-sticky.png', false);
+    console.log('smoke RTE settings: installed tiles, flags, mixed/filtered master, details, live storage/language, RTL, narrow and sticky heading passed');
+  } finally {
+    await worker.evaluate(async ({ keys, original }) => {
+      await chrome.storage.sync.remove(keys);
+      await chrome.storage.sync.set(original);
+    }, { keys, original });
+    await page.close();
+  }
+}
+
 async function assertShortcutManagement(page: Page, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
   await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
@@ -1898,6 +1999,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await waitForPlayer(page);
     if (process.env.THEATER_SMOKE_SHORTCUTS_ONLY !== '1') await assertControlsPin(page, context);
     await assertShortcutManagement(page, context);
+    await assertRteSettings(context);
     await assertFullscreenAndHelp(page, true, context);
 
     await setBlacklist(context, ['127.0.0.1']);

@@ -27,10 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Rich Theater Experience integrations
 
+- Settings → Features now has service tiles with individual switches, capability badges and filters, inline details, and an All services control that applies to the services shown. Subtle brand colors distinguish services, motion respects reduced-motion settings, and settings headings follow long sections as you scroll.
 - Add Bilibili and Tencent Video / WeTV: titles, subtitles, chapters or timeline thumbnails where available, and the host's previous/next controls. Theater mode also works on Tencent's WebAssembly player.
 - Add Bilibili.tv as its own integration for episode and upload pages: titles, subtitles, timeline thumbnails, Intro/Outro markers, and next-episode navigation.
 - Add Crunchyroll: episode titles, intro and credits chapters, timeline previews and subtitle selection. Burned-in captions show no misleading Off option.
-- Add Netflix: theater rendering for trailers and previews, plus on watch pages the episode title, native subtitle selection and timeline previews. RTE has one switch per service; an existing RTE-off choice is kept.
+- Add Netflix: theater rendering for trailers and previews, plus on watch pages the episode title, native subtitle selection and timeline previews. An existing RTE-off choice is kept.
 - Show contextual action buttons at the bottom right of the picture where the service offers them: Netflix, Disney+, Crunchyroll and Bilibili skip intro, credits, recap or up next, and YouTube forwards its ad skip. They follow the host player's availability and countdown, stay inside letterboxed, Raised and chat-narrowed pictures with the same edge inset as the subtitle notification, keep a gap when several appear, and each plays a brief accent sweep as it appears (none with reduced motion).
 - Enter theater automatically on Netflix and Disney+ watch pages, like the other Rich Theater Experience services.
 

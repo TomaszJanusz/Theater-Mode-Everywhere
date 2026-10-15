@@ -239,15 +239,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Eksperymentalne)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo, takimi jak YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll i inne. Theater Mode Everywhere może wyświetlać dodatkowe informacje, obsługiwać niestandardowe formaty napisów oraz odblokowywać funkcje charakterystyczne dla danego serwisu. Dostępność różni się zależnie od serwisu - przeczytaj więcej "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "tutaj"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Włącz bogatsze integracje z ulubionymi serwisami wideo. Dostępność różni się zależnie od serwisu."
   },
@@ -255,49 +246,49 @@
     "message": "Integracja z YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Włącza obsługę napisów, rozdziałów, heatmapy Most Replayed i miniaturek na osi czasu w trybie kinowym."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Rozdziały, Mapa popularności, Miniatury. Szybkie akcje: pomijanie reklam i następny film w kolejce."
   },
   "vimeoIntegrationTitle": {
     "message": "Integracja z Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Włącza obsługę znaczników rozdziałów i miniaturek na osi czasu w trybie kinowym."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Rozdziały, Miniatury. Szybkie akcje: następny film w kolekcji."
   },
   "patreonIntegrationTitle": {
     "message": "Integracja z Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "Włącza obsługę napisów i miniaturek na osi czasu w trybie kinowym."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Rozdziały, Miniatury."
   },
   "twitchIntegrationTitle": {
     "message": "Integracja z Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "Włącza obsługę rozdziałów VOD i miniaturek na osi czasu w trybie kinowym."
+    "message": "Pokazuje tytuł kanału lub filmu oraz dostępne w nagraniach VOD napisy, znaczniki rozdziałów i podglądy na osi czasu."
   },
   "disneyIntegrationTitle": {
     "message": "Integracja z Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "Włącza obsługę napisów i miniaturek na osi czasu w trybie kinowym, gdy odtwarzacz je udostępnia."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Miniatury. Szybkie akcje: pomijanie intra, streszczenia lub napisów końcowych i następny odcinek."
   },
   "netflixIntegrationTitle": {
     "message": "Integracja z Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "Pokazuje tytuł bieżącego materiału i przełącza języki napisów odtwarzacza w trybie kinowym, gdy odtwarzacz ma aktywny renderer napisów. Rozdziały i miniatury na osi czasu nie są obsługiwane."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Miniatury. Szybkie akcje: pomijanie intra, streszczenia lub napisów końcowych i następny odcinek."
   },
   "bilibiliIntegrationTitle": {
     "message": "Integracja z Bilibili (bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Importuje tytuł filmu, napisy, rozdziały, mapę popularności i miniatury osi czasu z bilibili.com, jeśli są dostępne. Niektóre napisy wymagają zalogowania do Bilibili."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Rozdziały, Mapa popularności, Miniatury. Szybkie akcje: natywne potwierdzenia pomijania i następny film."
   },
   "tencentIntegrationTitle": {
     "message": "Integracja z Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "Importuje tytuły odcinków, napisy SRT/WebVTT i miniatury osi czasu z Tencent Video / WeTV, jeśli są dostępne. Sterowanie odtwarzaniem i przejście do następnego odcinka korzystają z dostępnych funkcji odtwarzacza."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Miniatury. Szybkie akcje: następny odcinek przez odtwarzacz."
   },
   "liveBadge": {
     "message": "NA ŻYWO"
@@ -817,13 +808,13 @@
     "message": "Integracja z Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Importuje tytuł, napisy i miniatury osi czasu ze stron odcinków i filmów użytkowników bilibili.tv, jeśli są dostępne. Strony odcinków mogą pokazywać znaczniki czołówki i napisów końcowych. Następny odcinek korzysta z przycisku odtwarzacza. Ta integracja nie importuje listy nazwanych rozdziałów ani mapy popularności."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, znaczniki intra/outra, Miniatury. Szybkie akcje: pomijanie intra/outra i następny odcinek (tylko odcinki)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Integracja z Crunchyroll"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Pokazuje tytuł odcinka, czołówkę i napisy końcowe, dostępne sterowanie napisami oraz podgląd na osi czasu. Napisy wtopione w obraz zostają i nie da się ich wyłączyć."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, znaczniki intra/napisów końcowych, Miniatury. Szybkie akcje: pomijanie intra/napisów końcowych i następny odcinek."
   },
   "aboutTitle": {
     "message": "O rozszerzeniu"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "Segment SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Wybierz integracje i sprawdź, co dodają do trybu kinowego. Funkcje zależą od filmu i serwisu."
+  },
+  "rteAll": {
+    "message": "Wszystkie serwisy"
+  },
+  "rteAllShown": {
+    "message": "Wszystkie widoczne serwisy"
+  },
+  "rteCount": {
+    "message": "Włączone: $count$ z $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Pokaż serwisy z funkcjami"
+  },
+  "rteCapabilityTitle": {
+    "message": "Tytuł"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Napisy"
+  },
+  "rteCapabilityChapters": {
+    "message": "Rozdziały"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Mapa popularności"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Miniatury"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Szybkie akcje"
+  },
+  "rteEmpty": {
+    "message": "Żaden serwis nie oferuje wszystkich wybranych funkcji."
+  },
+  "rteClear": {
+    "message": "Wyczyść"
+  },
+  "rteShown": {
+    "message": "Widoczne serwisy: $count$ z $total$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Zależnie od filmu; pomijanie reklam i kolejka, gdy dostępne."
+  },
+  "rteNoteVimeo": {
+    "message": "Rozdziały i podglądy, gdy dostępne; następny film w kolekcjach."
+  },
+  "rteNotePatreon": {
+    "message": "Napisy, rozdziały i podglądy, gdy dostępne."
+  },
+  "rteNoteTwitch": {
+    "message": "Napisy, rozdziały i podglądy tylko w nagraniach VOD."
+  },
+  "rteNoteDisney": {
+    "message": "Napisy, podglądy i pomijanie/następny odcinek, gdy udostępnia je odtwarzacz."
+  },
+  "rteNoteNetflix": {
+    "message": "Podglądy wymagają gotowej sesji trick-play; napisy i pomijanie, gdy dostępne."
+  },
+  "rteNoteBilibili": {
+    "message": "Niektóre napisy wymagają logowania; funkcje zależą od filmu."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Tylko znaczniki intra i outra; pomijanie i następny odcinek nie dotyczą filmów użytkowników."
+  },
+  "rteNoteTencent": {
+    "message": "Napisy i podglądy, gdy dostępne; następny odcinek przez odtwarzacz."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Tylko znaczniki intra i napisów końcowych; wtopionych napisów nie można wyłączyć."
+  },
+  "rteSaveError": {
+    "message": "Nie udało się zapisać ustawień serwisów. Spróbuj ponownie."
+  },
+  "rteDetails": {
+    "message": "Szczegóły"
   }
 }

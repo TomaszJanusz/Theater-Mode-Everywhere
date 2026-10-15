@@ -233,15 +233,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (تجريبية)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك، بما في ذلك YouTube وTwitch وDisney+ وNetflix وBilibili وBilibili.tv وTencent Video / WeTV وCrunchyroll وغيرها. يمكن لـ Theater Mode Everywhere عرض معلومات إضافية ودعم تنسيقات ترجمة مخصصة وإتاحة ميزات خاصة بكل خدمة. يختلف التوفر حسب الخدمة - اقرأ المزيد "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "هنا"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "فعّل تكاملات أكثر ثراءً مع خدمات الفيديو المفضلة لديك. يختلف التوفر حسب الخدمة."
   },
@@ -255,49 +246,49 @@
     "message": "تكامل YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "يفعّل دعم الترجمات والفصول وخريطة Most Replayed والصور المصغّرة على الخط الزمني في وضع المسرح."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الفصول, خريطة المشاهدة, الصور المصغرة. إجراءات سريعة: تخطي الإعلانات والفيديو التالي في قائمة الانتظار."
   },
   "vimeoIntegrationTitle": {
     "message": "تكامل Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "يفعّل دعم علامات الفصول والصور المصغّرة على الخط الزمني في وضع المسرح."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الفصول, الصور المصغرة. إجراءات سريعة: الفيديو التالي في المجموعة."
   },
   "patreonIntegrationTitle": {
     "message": "تكامل Patreon"
   },
   "patreonIntegrationDescription": {
-    "message": "يفعّل دعم الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الفصول, الصور المصغرة."
   },
   "twitchIntegrationTitle": {
     "message": "تكامل Twitch"
   },
   "twitchIntegrationDescription": {
-    "message": "يفعّل دعم فصول الفيديو المسجّل والصور المصغّرة على الخط الزمني في وضع المسرح."
+    "message": "يعرض عنوان القناة أو الفيديو، مع اختيار الترجمة وعلامات الفصول ومعاينات الخط الزمني المتاحة للفيديو حسب الطلب."
   },
   "disneyIntegrationTitle": {
     "message": "تكامل Disney+"
   },
   "disneyIntegrationDescription": {
-    "message": "يفعّل دعم الترجمات والصور المصغّرة على الخط الزمني في وضع المسرح عندما يوفّرها المشغّل."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الصور المصغرة. إجراءات سريعة: تخطي المقدمة أو الملخص أو شارة النهاية والحلقة التالية."
   },
   "netflixIntegrationTitle": {
     "message": "تكامل Netflix"
   },
   "netflixIntegrationDescription": {
-    "message": "يعرض عنوان المادة الحالية ويبدّل لغات ترجمة المشغّل في وضع المسرح عندما يكون لدى المشغّل عارض ترجمات نشط. الفصول وصور الخط الزمني غير مدعومة."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الصور المصغرة. إجراءات سريعة: تخطي المقدمة أو الملخص أو شارة النهاية والحلقة التالية."
   },
   "bilibiliIntegrationTitle": {
     "message": "تكامل Bilibili ‏(bilibili.com)"
   },
   "bilibiliIntegrationDescription": {
-    "message": "يستورد عنوان الفيديو والترجمات والفصول وخريطة الشعبية وصور الخط الزمني المصغرة من bilibili.com عند توفرها. تتطلب بعض الترجمات تسجيل الدخول إلى Bilibili."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الفصول, خريطة المشاهدة, الصور المصغرة. إجراءات سريعة: تأكيدات التخطي الأصلية والفيديو التالي."
   },
   "tencentIntegrationTitle": {
     "message": "تكامل Tencent Video / WeTV"
   },
   "tencentIntegrationDescription": {
-    "message": "يستورد عناوين الحلقات وترجمات SRT/WebVTT والصور المصغرة للخط الزمني من Tencent Video / WeTV عند توفرها. يستخدم التشغيل والانتقال إلى الحلقة التالية عناصر التحكم المتاحة في المشغل."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, الصور المصغرة. إجراءات سريعة: الحلقة التالية عبر المشغل."
   },
   "liveBadge": {
     "message": "مباشر"
@@ -817,13 +808,13 @@
     "message": "تكامل Bilibili.tv"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "يستورد العنوان والترجمات وصور الخط الزمني المصغرة من صفحات حلقات bilibili.tv وصفحات الفيديو التي يرفعها المستخدمون عند توفرها. يمكن أن تعرض صفحات الحلقات علامات المقدمة والخاتمة. تستخدم الحلقة التالية زر التالي في المشغّل. هذا التكامل لا يستورد قائمة فصول بأسماء ولا خريطة الشعبية."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, علامات المقدمة/النهاية, الصور المصغرة. إجراءات سريعة: تخطي المقدمة/النهاية والحلقة التالية (للحلقات فقط)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "تكامل Crunchyroll"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "يعرض عنوان الحلقة والمقدمة والختام وعناصر التحكم المتاحة للترجمة ومعاينات الخط الزمني. الترجمات المدمجة في الصورة تبقى ولا يمكن إيقافها."
+    "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, علامات المقدمة/شارة النهاية, الصور المصغرة. إجراءات سريعة: تخطي المقدمة/شارة النهاية والحلقة التالية."
   },
   "aboutTitle": {
     "message": "حول"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "مقطع SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "اختر تكاملات الخدمات واستكشف ما تضيفه إلى وضع المسرح. تعتمد الميزات على الفيديو والخدمة."
+  },
+  "rteAll": {
+    "message": "كل الخدمات"
+  },
+  "rteAllShown": {
+    "message": "كل الخدمات المعروضة"
+  },
+  "rteCount": {
+    "message": "$count$ من $total$ مفعّلة",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "عرض الخدمات التي توفر"
+  },
+  "rteCapabilityTitle": {
+    "message": "العنوان"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "الترجمة"
+  },
+  "rteCapabilityChapters": {
+    "message": "الفصول"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "خريطة المشاهدة"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "الصور المصغرة"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "إجراءات سريعة"
+  },
+  "rteEmpty": {
+    "message": "لا توجد خدمة توفر كل الميزات المحددة."
+  },
+  "rteClear": {
+    "message": "مسح"
+  },
+  "rteShown": {
+    "message": "عرض $count$ من $total$ خدمات",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "حسب الفيديو؛ تخطي الإعلانات والتنقل في قائمة الانتظار عند توفرهما."
+  },
+  "rteNoteVimeo": {
+    "message": "الفصول والمعاينات عند توفرها؛ الفيديو التالي في المجموعات."
+  },
+  "rteNotePatreon": {
+    "message": "الترجمة والفصول والمعاينات عند توفرها."
+  },
+  "rteNoteTwitch": {
+    "message": "الترجمة والفصول والمعاينات للفيديو حسب الطلب فقط."
+  },
+  "rteNoteDisney": {
+    "message": "الترجمة والمعاينات والتخطي والتالي عندما يوفرها المشغل."
+  },
+  "rteNoteNetflix": {
+    "message": "تحتاج المعاينات إلى جلسة trick-play جاهزة؛ الترجمة والإجراءات عند توفرها."
+  },
+  "rteNoteBilibili": {
+    "message": "تتطلب بعض الترجمات تسجيل الدخول؛ تعتمد الميزات الأخرى على الفيديو."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "علامات المقدمة والنهاية فقط؛ التخطي والتالي للحلقات وليس لمقاطع المستخدمين."
+  },
+  "rteNoteTencent": {
+    "message": "الترجمة والمعاينات عند توفرها؛ الانتقال للتالي عبر المشغل."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "علامات المقدمة وشارة النهاية فقط؛ لا يمكن إيقاف الترجمة المدمجة في الفيديو."
+  },
+  "rteSaveError": {
+    "message": "تعذر حفظ إعدادات الخدمات. حاول مرة أخرى."
+  },
+  "rteDetails": {
+    "message": "التفاصيل"
   }
 }

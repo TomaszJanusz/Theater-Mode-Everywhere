@@ -239,15 +239,6 @@
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
   },
-  "richTheaterExperienceDescription": {
-    "message": "Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more "
-  },
-  "richTheaterExperienceReadMore": {
-    "message": "here"
-  },
-  "richTheaterExperienceDescriptionEnd": {
-    "message": "."
-  },
   "richTheaterExperiencePopupDescription": {
     "message": "Enable richer integrations with your favorite video services. Availability varies by service."
   },
@@ -255,49 +246,49 @@
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode."
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: skip ads and next video in the queue."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"
   },
   "vimeoIntegrationDescription": {
-    "message": "Enables support for chapter markers and thumbnails on the timeline in theater mode."
+    "message": "Available when provided by the video or player: Title, Chapters, Thumbnails. Quick actions: next showcase video."
   },
   "patreonIntegrationTitle": {
     "message": "Patreon integration"
   },
   "patreonIntegrationDescription": {
-    "message": "Enables support for captions and thumbnails on the timeline in theater mode."
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Thumbnails."
   },
   "twitchIntegrationTitle": {
     "message": "Twitch integration"
   },
   "twitchIntegrationDescription": {
-    "message": "Enables support for VOD chapters and thumbnails on the timeline in theater mode."
+    "message": "Shows the channel or video title, plus VOD subtitle selection, chapter markers and timeline previews when supplied."
   },
   "disneyIntegrationTitle": {
     "message": "Disney+ integration"
   },
   "disneyIntegrationDescription": {
-    "message": "Enables support for captions and thumbnails on the timeline in theater mode when the player provides them."
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: skip intro, recap or credits and next episode."
   },
   "netflixIntegrationTitle": {
     "message": "Netflix integration"
   },
   "netflixIntegrationDescription": {
-    "message": "Shows the current title and switches the player's subtitle languages in theater mode when the player has an active subtitle renderer. Chapters and timeline thumbnails are not supported."
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: skip intro, recap or credits and next episode."
   },
   "bilibiliIntegrationTitle": {
     "message": "Bilibili (bilibili.com) integration"
   },
   "bilibiliIntegrationDescription": {
-    "message": "Imports the video title, subtitles, chapters, the high-energy progress heatmap, and timeline thumbnails from bilibili.com when available. Some subtitles require signing in to Bilibili."
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: native skip confirmations and next video."
   },
   "tencentIntegrationTitle": {
     "message": "Tencent Video / WeTV integration"
   },
   "tencentIntegrationDescription": {
-    "message": "Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls."
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: next episode through the player."
   },
   "liveBadge": {
     "message": "LIVE"
@@ -817,13 +808,13 @@
     "message": "Bilibili.tv integration"
   },
   "bilibiliIntlIntegrationDescription": {
-    "message": "Imports the title, subtitles, and timeline thumbnails from bilibili.tv episode and user-upload pages when available. Episode pages can show intro and outro markers. Next episode uses the player’s next control. This integration does not import a named chapter list or the high-energy heatmap."
+    "message": "Available when provided by the video or player: Title, Subtitles, intro/outro markers, Thumbnails. Quick actions: skip intro/outro and next episode (episodes only)."
   },
   "crunchyrollIntegrationTitle": {
     "message": "Crunchyroll integration"
   },
   "crunchyrollIntegrationDescription": {
-    "message": "Shows the episode title, intro and credits, available subtitle controls, and timeline previews. Burned-in captions stay on the video and cannot be turned off."
+    "message": "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode."
   },
   "aboutTitle": {
     "message": "About"
@@ -920,5 +911,102 @@
   },
   "sponsorBlockCategory_unknown": {
     "message": "SponsorBlock segment"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Choose service integrations and explore what each adds to theater mode. Features depend on the video and the service."
+  },
+  "rteAll": {
+    "message": "All services"
+  },
+  "rteAllShown": {
+    "message": "All shown services"
+  },
+  "rteCount": {
+    "message": "$count$ of $total$ on",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteFilterLabel": {
+    "message": "Show services with"
+  },
+  "rteCapabilityTitle": {
+    "message": "Title"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Subtitles"
+  },
+  "rteCapabilityChapters": {
+    "message": "Chapters"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Heatmap"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Thumbnails"
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Quick actions"
+  },
+  "rteEmpty": {
+    "message": "No service has all the selected capabilities."
+  },
+  "rteClear": {
+    "message": "Clear"
+  },
+  "rteShown": {
+    "message": "$count$ of $total$ services shown",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Depends on the video; ad skip and queue navigation when available."
+  },
+  "rteNoteVimeo": {
+    "message": "Chapters and previews when provided; next in showcases."
+  },
+  "rteNotePatreon": {
+    "message": "Subtitles, chapters and previews when provided."
+  },
+  "rteNoteTwitch": {
+    "message": "Subtitles, chapters and previews on VODs only."
+  },
+  "rteNoteDisney": {
+    "message": "Subtitles, previews and skip/next when the player provides them."
+  },
+  "rteNoteNetflix": {
+    "message": "Previews need a ready trick-play session; subtitles and skip/next when available."
+  },
+  "rteNoteBilibili": {
+    "message": "Some subtitles require login; other features depend on the video."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Intro/outro markers only; skip/next on episodes, not uploads."
+  },
+  "rteNoteTencent": {
+    "message": "Subtitles and previews when provided; next via the player."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Intro/credits markers only; burned-in subtitles cannot be turned off."
+  },
+  "rteSaveError": {
+    "message": "Could not save service settings. Please try again."
+  },
+  "rteDetails": {
+    "message": "Details"
   }
 }

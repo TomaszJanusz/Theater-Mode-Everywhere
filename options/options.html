@@ -82,10 +82,10 @@
 
     <div class="settings-stack">
         <section id="appearance" role="tabpanel" aria-labelledby="tab-appearance" class="main-card settings-card appearance-section">
-          <div class="card-heading">
+          <div class="card-heading"><div class="card-heading-inner">
             <h2 data-i18n="appearanceTitle">Appearance</h2>
             <p class="card-desc" data-i18n="appearanceDescription">Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.</p>
-          </div>
+          </div></div>
           <div class="card-body">
             <div class="appearance-block">
               <p id="picture-align-label" class="appearance-block-label" data-i18n="pictureAlignLabel">Layout</p>
@@ -134,11 +134,12 @@
           </div>
         </section>
 
-      <section id="features" role="tabpanel" aria-labelledby="tab-features" class="main-card settings-card features-section" hidden>
-        <div class="card-heading">
+      <section id="features" role="tabpanel" aria-labelledby="tab-features" class="features-section" hidden>
+        <div class="main-card settings-card">
+        <div class="card-heading"><div class="card-heading-inner">
           <h2 data-i18n="featuresTitle">Features</h2>
           <p class="card-desc" data-i18n="featuresDescription">Turn optional theater mode behavior on or off.</p>
-        </div>
+        </div></div>
         <div class="card-body">
           <div class="feature-row">
             <div class="feature-info">
@@ -180,38 +181,36 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <div class="feature-title-row">
-                <label for="rich-theater-experience-toggle" class="feature-label" data-i18n="richTheaterExperienceTitle">Rich Theater Experience (Experimental)</label>
-              </div>
-              <p class="feature-desc"><span data-i18n="richTheaterExperienceDescription">Enable richer integrations with your favorite video services, including YouTube, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll, and more. Theater Mode Everywhere can show additional information, support custom subtitle formats, and unlock service-specific features. Availability varies by service - read more </span><button type="button" id="rich-theater-experience-details" class="feature-inline-link" aria-controls="rich-theater-experience-popover" aria-expanded="false" aria-haspopup="dialog" data-i18n-aria-label="richTheaterExperienceTitle" data-i18n="richTheaterExperienceReadMore">here</button><span data-i18n="richTheaterExperienceDescriptionEnd">.</span></p>
-              <div id="rich-theater-experience-popover" class="feature-popover" role="dialog" tabindex="-1" data-i18n-aria-label="richTheaterExperienceTitle">
-                <p><strong data-i18n="youtubeIntegrationTitle">YouTube integration</strong> - <span data-i18n="youtubeIntegrationDescription">Enables support for captions, chapters, Most Replayed heatmap, and thumbnails on the timeline in theater mode.</span></p>
-                <p><strong data-i18n="vimeoIntegrationTitle">Vimeo integration</strong> - <span data-i18n="vimeoIntegrationDescription">Enables support for chapter markers and thumbnails on the timeline in theater mode.</span></p>
-                <p><strong data-i18n="patreonIntegrationTitle">Patreon integration</strong> - <span data-i18n="patreonIntegrationDescription">Enables support for captions and thumbnails on the timeline in theater mode.</span></p>
-                <p><strong data-i18n="twitchIntegrationTitle">Twitch integration</strong> - <span data-i18n="twitchIntegrationDescription">Enables support for VOD chapters and thumbnails on the timeline in theater mode.</span></p>
-                <p><strong data-i18n="disneyIntegrationTitle">Disney+ integration</strong> - <span data-i18n="disneyIntegrationDescription">Enables support for captions and thumbnails on the timeline in theater mode when the player provides them.</span></p>
-                <p><strong data-i18n="netflixIntegrationTitle">Netflix integration</strong> - <span data-i18n="netflixIntegrationDescription">Shows the current title and switches the player's subtitle languages in theater mode when the player has an active subtitle renderer. Chapters and timeline thumbnails are not supported.</span></p>
-                <p><strong data-i18n="bilibiliIntegrationTitle">Bilibili (bilibili.com) integration</strong> - <span data-i18n="bilibiliIntegrationDescription">Imports the video title, subtitles, chapters, the high-energy progress heatmap, and timeline thumbnails from bilibili.com when available. Some subtitles require signing in to Bilibili.</span></p>
-                <p><strong data-i18n="bilibiliIntlIntegrationTitle">Bilibili.tv integration</strong> - <span data-i18n="bilibiliIntlIntegrationDescription">Imports the title, subtitles, and timeline thumbnails from bilibili.tv episode and user-upload pages when available. Episode pages can show intro and outro markers. Next episode uses the player’s next control. This integration does not import a named chapter list or the high-energy heatmap.</span></p>
-                <p><strong data-i18n="tencentIntegrationTitle">Tencent Video / WeTV integration</strong> - <span data-i18n="tencentIntegrationDescription">Imports episode titles, SRT/WebVTT subtitles and timeline thumbnails from Tencent Video / WeTV when available. Playback and next-episode controls use the player’s available controls.</span></p>
-                <p><strong data-i18n="crunchyrollIntegrationTitle">Crunchyroll integration</strong> - <span data-i18n="crunchyrollIntegrationDescription">Shows the episode title, intro and credits, available subtitle controls, and timeline previews. Burned-in captions stay on the video and cannot be turned off.</span></p>
-              </div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="rich-theater-experience-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
         </div>
+        </div>
+        <section id="rte-section" class="main-card settings-card" aria-labelledby="rte-title">
+          <div class="card-heading"><div class="card-heading-inner">
+            <h2 id="rte-title" data-i18n="rteSectionTitle">Rich Theater Experience</h2>
+            <p class="card-desc" data-i18n="rteSectionDescription">Choose service integrations and explore what each adds to theater mode. Features depend on the video and the service.</p>
+            <div id="rte-filters" role="group" aria-labelledby="rte-filter-label">
+              <p id="rte-filter-label" data-i18n="rteFilterLabel">Show services with</p>
+              <div id="rte-filter-buttons" class="rte-filter-buttons"></div>
+              <button id="rte-clear" type="button" data-i18n="rteClear" hidden>Clear</button>
+            </div>
+          </div></div>
+          <div class="card-body">
+            <div class="rte-master-row">
+              <label class="rte-master"><input type="checkbox" id="rte-all" aria-describedby="rte-count"><span id="rte-all-label"></span></label>
+              <span id="rte-count" role="status" aria-atomic="true"></span>
+            </div>
+            <p id="rte-shown" role="status" aria-atomic="true"></p>
+            <div id="rte-tiles" class="rte-tiles"></div>
+            <p id="rte-empty" data-i18n="rteEmpty" hidden>No service has all the selected capabilities.</p>
+            <p id="rte-error" role="alert" hidden></p>
+          </div>
+        </section>
       </section>
 
       <section id="exclusions" role="tabpanel" aria-labelledby="tab-exclusions" class="main-card settings-card exclusions-section" hidden>
-        <div class="card-heading">
+        <div class="card-heading"><div class="card-heading-inner">
           <h2 data-i18n="websiteExclusionsTitle">Website Exclusions</h2>
           <p class="card-desc" data-i18n="websiteExclusionsDescription">Exclude websites where you do not want theater mode to activate automatically.</p>
-        </div>
+        </div></div>
         <div class="card-body">
           <form id="add-domain-form" class="add-form">
             <div class="input-row">
@@ -235,10 +234,10 @@
       </section>
 
       <section id="shortcuts" role="tabpanel" aria-labelledby="tab-shortcuts" class="main-card settings-card shortcuts-section" hidden>
-        <div class="card-heading">
+        <div class="card-heading"><div class="card-heading-inner">
           <h2 data-i18n="keyboardShortcutsTitle">Keyboard Shortcuts</h2>
           <p class="section-desc" data-i18n="keyboardShortcutsDescription">Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported.</p>
-        </div>
+        </div></div>
         <div class="card-body">
           <div class="shortcuts-grid">
             <div class="shortcut-group">
