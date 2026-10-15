@@ -85,14 +85,14 @@ export async function acknowledgeWhatsNew(): Promise<void> {
 }
 
 export async function openWhatsNewDialog(): Promise<boolean> {
-  const result = await openDialog({
+  const result = await openDialog(() => ({
     title: t('whatsNewDialogTitle'),
     content: buildWhatsNewContent(),
     actions: {
       type: 'acknowledge',
       label: t('dialogAcknowledge')
     }
-  });
+  }));
 
   if (result) {
     await acknowledgeWhatsNew();

@@ -661,7 +661,7 @@ section h2 {
   color: var(--accent-color);
 }
 
-.made-in-poland .heart {
+.heart {
   color: var(--accent-color);
 }
 
@@ -953,19 +953,19 @@ section h2 {
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-.accent-color-grid {
+.choice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 8px;
 }
 
-.appearance-section .accent-color-grid {
+.appearance-section .choice-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.accent-color-btn {
+.choice-btn {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   min-height: 34px;
@@ -983,24 +983,28 @@ section h2 {
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.accent-color-btn:hover {
+.choice-btn.has-swatch {
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+
+.choice-btn:hover {
   border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
   background-color: color-mix(in srgb, var(--accent-color) 10%, #18181b);
 }
 
-.accent-color-btn:focus-visible {
+.choice-btn:focus-visible {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 24%, transparent);
   outline: none;
 }
 
-.accent-color-btn.selected {
+.choice-btn.selected {
   border-color: var(--accent-color);
   background-color: color-mix(in srgb, var(--accent-color) 16%, #18181b);
   color: #ffffff;
 }
 
-.accent-color-swatch {
+.choice-swatch {
   width: 18px;
   height: 18px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1012,11 +1016,21 @@ section h2 {
   background: conic-gradient(from 45deg, #37adff, #51cd00, #ffcb00, #ff4ad8, #af51f5, #37adff);
 }
 
-.accent-color-label {
+.choice-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Endonyms and the Automatic label are longer than color names; wrap instead of truncating. */
+.appearance-section .choice-grid--language {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+
+.choice-grid--language .choice-label {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .appearance-block {
@@ -1272,11 +1286,11 @@ section h2 {
     width: 100% !important;
   }
 
-  .accent-color-grid {
+  .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .appearance-section .accent-color-grid {
+  .appearance-section .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1563,24 +1577,16 @@ body.te-dialog-open {
   margin: 0 0 16px;
 }
 
-.language-select {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  margin-block-start: 12px;
-  padding: 12px 14px;
-  font: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color-scheme: dark;
-}
-
-.language-select:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* A shared sticky heading, bounded by its own card (overflow: clip does not

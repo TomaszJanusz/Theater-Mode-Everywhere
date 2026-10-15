@@ -96,7 +96,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
 
   async function save(action: keyof Shortcuts, shortcut: string) {
     if (isReservedShortcut(action, shortcut)) {
-      await openDialog({ title: t('shortcutConflictTitle'), content: t('shortcutEscapeReserved'), actions: { type: 'acknowledge' } });
+      await openDialog(() => ({ title: t('shortcutConflictTitle'), content: t('shortcutEscapeReserved'), actions: { type: 'acknowledge' } }));
       return;
     }
     let confirmedOwners: Array<keyof Shortcuts> = [];
@@ -105,13 +105,13 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
       if (result.status === 'reserved') return;
       if (result.status === 'conflict') {
         const conflicts = result.owners;
-        const names = conflicts.map(key => entries.find(entry => entry.action === key)?.label || key).join(', ');
-        const target = entries.find(entry => entry.action === action)!.label;
-        const confirmed = await openDialog({
+        const confirmed = await openDialog(() => ({
           title: t('shortcutConflictTitle'),
-          content: t('shortcutConflictDescription', [shortcut, names, target]),
+          content: t('shortcutConflictDescription', [shortcut,
+            conflicts.map(key => entries.find(entry => entry.action === key)?.label || key).join(', '),
+            entries.find(entry => entry.action === action)!.label]),
           actions: { type: 'choice', falseLabel: t('shortcutKeepAssignment'), trueLabel: t('shortcutReassign'), initialFocus: 'cancel' }
-        });
+        }));
         if (!confirmed) return;
         confirmedOwners = conflicts;
         continue; // The single background writer revalidates after a user's choice.
@@ -129,7 +129,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     try { await operation(); }
     catch (error) {
       console.error('Unable to save shortcuts:', error);
-      await openDialog({ title: t('shortcutSaveError'), content: t('shortcutSaveErrorDescription'), actions: { type: 'acknowledge' } });
+      await openDialog(() => ({ title: t('shortcutSaveError'), content: t('shortcutSaveErrorDescription'), actions: { type: 'acknowledge' } }));
     } finally {
       render(current);
       busy = false;

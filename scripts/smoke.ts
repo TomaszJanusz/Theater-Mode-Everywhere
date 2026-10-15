@@ -1,5 +1,6 @@
 import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../src/media-features/provider-flags';
 import { createServer } from 'node:http';
+import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -1898,26 +1899,40 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await otherOptions.goto(extensionUrl);
     await popup.goto(new URL('popup/popup.html', worker.url()).href);
     await popup.locator('#domain-name').filter({ hasText: 'System page' }).waitFor();
-    await options.waitForFunction(() => document.querySelectorAll('#language-select option').length === 14);
-    const select = options.locator('#language-select');
-    if (await select.inputValue() !== 'automatic') throw new Error('Language must default to Automatic');
+    await options.waitForFunction(() => document.querySelectorAll('#language-grid [role=radio]').length === 14);
+    const grid = options.locator('#language-grid');
+    if (await grid.locator('[aria-checked=true]').getAttribute('data-choice') !== 'automatic') throw new Error('Language must default to Automatic');
     const before = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
-    await select.selectOption('pl');
+    await options.screenshot({ path: '/tmp/lang-appearance-en.png', fullPage: true });
+    await grid.locator('[data-choice=pl]').click();
     await options.locator('#tab-appearance').filter({ hasText: polish.appearanceTitle.message }).waitFor();
-    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'pl');
+    await otherOptions.waitForFunction(() => document.querySelector('#language-grid [data-choice=pl]')?.getAttribute('aria-checked') === 'true');
     await popup.locator('[data-i18n="websiteLabel"]').filter({ hasText: polish.websiteLabel.message }).waitFor();
     await page.locator('.player-settings-btn').and(page.getByLabel(polish.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
     if (await popup.locator('#domain-name').textContent() !== polish.systemPage.message) throw new Error('Popup dynamic domain state lost its translation');
-    // A native select stays keyboard operable through the live document refresh.
-    await select.focus();
+    await assertLocalized(options, 'pl');
+    await assertLocalized(otherOptions, 'pl');
+    await assertLocalized(popup, 'pl');
+    await assertLocalized(page, 'pl', '#theater-everywhere-ui');
+    await options.screenshot({ path: '/tmp/lang-appearance-pl.png', fullPage: true });
+    // Browsing languages keeps the catalog stable until explicit confirmation.
+    await grid.locator('[aria-checked=true]').focus();
     await options.keyboard.press('Home');
     await options.keyboard.press('End'); // Arabic is the last endonym.
+    if (await grid.locator('[aria-checked=true]').getAttribute('data-choice') !== 'pl') throw new Error('Arrow navigation must not change language');
     await options.keyboard.press('Enter');
     await options.waitForFunction(() => document.documentElement.dir === 'rtl' && document.documentElement.lang === 'ar');
     await otherOptions.waitForFunction(() => document.documentElement.dir === 'rtl');
     await popup.waitForFunction(() => document.documentElement.dir === 'rtl');
     await page.locator('.theater-controls-wrapper[dir="rtl"][lang="ar"]').waitFor({ state: 'attached' });
     await page.locator('.player-settings-btn').and(page.getByLabel(arabic.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
+    await assertLocalized(options, 'ar');
+    await assertLocalized(popup, 'ar');
+    await assertLocalized(page, 'ar', '#theater-everywhere-ui');
+    await options.screenshot({ path: '/tmp/lang-appearance-ar.png', fullPage: true });
+    await options.keyboard.press('ArrowRight');
+    if (await grid.locator('[data-choice=ko]').evaluate(el => el === document.activeElement) !== true) throw new Error('RTL arrows must reverse');
+    if (await grid.locator('[aria-checked=true]').getAttribute('data-choice') !== 'ar') throw new Error('RTL navigation changed language');
     if (process.env.THEATER_SMOKE_SCREENSHOT) {
       await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-language-ar-options.png'), fullPage: true });
       await page.bringToFront();
@@ -1935,14 +1950,16 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await frame.locator('video#player').click();
     await frame.locator('body').press('t');
     await frame.locator('.theater-controls-wrapper[dir="rtl"]').waitFor({ state: 'attached' });
-    await select.selectOption('automatic');
+    await grid.locator('[data-choice=automatic]').click();
     await options.waitForFunction(() => document.documentElement.dir === 'ltr' && document.documentElement.lang.startsWith('en'));
-    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'automatic');
+    await otherOptions.waitForFunction(() => document.querySelector('#language-grid [data-choice=automatic]')?.getAttribute('aria-checked') === 'true');
     await frame.locator('.theater-controls-wrapper[dir="ltr"]').waitFor({ state: 'attached' });
     await frame.locator('.player-settings-btn').and(frame.getByLabel(english.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
     await popup.waitForFunction(() => document.documentElement.dir === 'ltr');
     await popup.locator('#status-text').filter({ hasText: english.statusInactiveSystem.message }).waitFor();
     await frame.locator('body').press('Escape');
+    await options.locator('#tab-about').click();
+    await options.screenshot({ path: '/tmp/lang-about.png', fullPage: true });
     console.log('smoke:chromium language menu: two Settings pages, popup, player, keyboard selection, saved iframe override, RTL/Automatic restoration and playback preservation passed');
   } finally {
     await worker.evaluate(() => chrome.storage.sync.remove('language'));

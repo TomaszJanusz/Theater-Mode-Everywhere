@@ -1,5 +1,6 @@
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
-import { LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage } from '../src/language';
+import { createChoiceGrid } from './choice-grid';
+import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from '../src/language';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
@@ -114,32 +115,32 @@ async function init() {
   const countBadge = document.getElementById('blacklist-count') as HTMLElement;
 
   const shortcutEditor = createShortcutEditor(notifyAllTabs);
-  const languageSelect = document.getElementById('language-select') as HTMLSelectElement;
-  for (const { locale, name } of LANGUAGES) {
-    const option = new Option(name, locale);
-    option.lang = locale.replace('_', '-');
-    option.dir = locale === 'ar' ? 'rtl' : 'ltr';
-    languageSelect.add(option);
-  }
-  languageSelect.value = languageRuntime.language;
-  languageSelect.addEventListener('change', async () => {
-    try {
-      await chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: resolveLanguage(languageSelect.value) });
-    } catch (error) {
-      languageSelect.value = languageRuntime.language;
+  const accentName = (preset: AccentColorPreset) => t(`accentColor${preset[0].toUpperCase()}${preset.slice(1)}`);
+  // Arrow keys preview accents instantly; a language switch rebuilds every open surface, so it waits for confirmation.
+  const accentGrid = createChoiceGrid(document.getElementById('accent-color-grid')!, ACCENT_COLOR_OPTIONS.map(option => ({
+    value: option.preset,
+    label: () => accentName(option.preset),
+    ariaLabel: () => t('useAccentColor', accentName(option.preset)),
+    swatch: { color: option.swatch, system: option.preset === 'system' }
+  })), 'on-focus', preset => { void saveAccentColor(preset); });
+  const languageGrid = createChoiceGrid<Language>(document.getElementById('language-grid')!, [
+    { value: DEFAULT_LANGUAGE, label: () => t('languageAutomatic') },
+    ...LANGUAGES.map(({ locale, name }) => ({
+      value: locale, label: () => name, lang: locale.replace('_', '-'), dir: locale === 'ar' ? 'rtl' as const : 'ltr' as const
+    }))
+  ], 'on-confirm', language => {
+    chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: language }).catch(error => {
       console.error('Error saving language:', error);
-    }
+    });
   });
+  languageGrid.render(languageRuntime.language);
   const stopLanguageRendering = languageRuntime.subscribe(() => {
     localizeDocument();
-    languageSelect.value = languageRuntime.language;
-    const focusedAccent = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.accentColor : undefined;
-    const selectedAccent = document.querySelector<HTMLElement>('[data-accent-color][aria-checked="true"]');
-    renderAccentColorOptions(resolveAccentColorPreset(selectedAccent?.dataset.accentColor));
-    if (focusedAccent) document.querySelector<HTMLElement>(`[data-accent-color="${focusedAccent}"]`)?.focus();
+    languageGrid.render(languageRuntime.language);
+    accentGrid.render();
     renderPictureAlignOptions(selectedPictureAlign());
     shortcutEditor.localize();
-    validationMsg.textContent = '';
+    localizeBlacklist();
   });
   window.addEventListener('unload', stopLanguageRendering, { once: true });
   await loadAndRenderBlacklist(initialSettings);
@@ -184,21 +185,21 @@ async function init() {
   }
 
   // Load and bind appearance controls
-  renderAccentColorOptions(DEFAULT_ACCENT_COLOR);
+  accentGrid.render(DEFAULT_ACCENT_COLOR);
   renderPictureAlignOptions(DEFAULT_PICTURE_ALIGN);
   await loadAndRenderAppearance();
 
   // Handle Form Submit
   form.addEventListener('submit', async (e: Event) => {
     e.preventDefault();
-    validationMsg.textContent = '';
+    setValidation();
     input.removeAttribute('aria-invalid');
 
     const inputValue = input.value;
     const domain = cleanDomain(inputValue);
 
     if (!domain) {
-      validationMsg.textContent = t('invalidDomain');
+      setValidation('invalidDomain');
       input.setAttribute('aria-invalid', 'true');
       return;
     }
@@ -208,7 +209,7 @@ async function init() {
       const blacklist = (data.blacklist || []) as string[];
 
       if (blacklist.includes(domain)) {
-        validationMsg.textContent = t('websiteAlreadyExcluded');
+        setValidation('websiteAlreadyExcluded');
         input.setAttribute('aria-invalid', 'true');
         return;
       }
@@ -221,7 +222,7 @@ async function init() {
       await notifyAllTabs();
     } catch (err) {
       console.error('Error adding domain:', err);
-      validationMsg.textContent = t('errorSavingSettings');
+      setValidation('errorSavingSettings');
     }
   });
 
@@ -251,8 +252,8 @@ async function init() {
       blacklist.sort();
 
       countBadge.textContent = String(blacklist.length);
-      countBadge.setAttribute('aria-label', `${t('excludedWebsitesTitle')}: ${blacklist.length}`);
       container.innerHTML = '';
+      localizeBlacklist();
 
       if (blacklist.length === 0) {
         // Render empty state
@@ -317,6 +318,18 @@ async function init() {
     }
   }
 
+  function localizeBlacklist(): void {
+    countBadge.setAttribute('aria-label', `${t('excludedWebsitesTitle')}: ${countBadge.textContent}`);
+    container.querySelectorAll<HTMLElement>('.exclusion-list-item').forEach(item => {
+      item.querySelector('button')?.setAttribute('aria-label', `${t('removeExclusion')}: ${item.querySelector('.domain-name')?.textContent}`);
+    });
+  }
+
+  function setValidation(key = ''): void {
+    validationMsg.dataset.i18n = key;
+    validationMsg.textContent = key ? t(key) : '';
+  }
+
   // Remove domain from storage
   async function removeDomain(domain: string) {
     const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button'));
@@ -336,7 +349,7 @@ async function init() {
       }
       await notifyAllTabs();
     } catch (err) {
-      validationMsg.textContent = t('errorSavingSettings');
+      setValidation('errorSavingSettings');
       console.error('Error removing domain:', err);
     }
   }
@@ -386,69 +399,6 @@ async function init() {
     }
   }
 
-  function renderAccentColorOptions(selectedPreset: AccentColorPreset) {
-    const grid = document.getElementById('accent-color-grid') as HTMLElement | null;
-    if (!grid) return;
-
-    if (grid.childElementCount) {
-      grid.querySelectorAll<HTMLButtonElement>('[role=radio]').forEach(button => {
-        const selected = button.dataset.accentColor === selectedPreset;
-        button.setAttribute('aria-checked', String(selected));
-        button.tabIndex = selected ? 0 : -1;
-        button.classList.toggle('selected', selected);
-      });
-      return;
-    }
-    grid.addEventListener('keydown', event => {
-      const buttons = Array.from(grid.querySelectorAll<HTMLButtonElement>('[role=radio]'));
-      const index = buttons.findIndex(button => button === document.activeElement);
-      if (index < 0 || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
-      event.preventDefault();
-      const rtl = getComputedStyle(grid).direction === 'rtl';
-      const back = event.key === 'ArrowUp' || event.key === (rtl ? 'ArrowRight' : 'ArrowLeft');
-      const next = buttons[(index + (back ? -1 : 1) + buttons.length) % buttons.length];
-      next.focus();
-      next.click();
-    });
-
-    ACCENT_COLOR_OPTIONS.forEach(option => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'accent-color-btn';
-      button.dataset.accentColor = option.preset;
-      button.tabIndex = option.preset === selectedPreset ? 0 : -1;
-      button.setAttribute('role', 'radio');
-      const localizedLabel = t(`accentColor${option.preset[0].toUpperCase()}${option.preset.slice(1)}`);
-      button.setAttribute('aria-label', t('useAccentColor', localizedLabel));
-      button.setAttribute('aria-checked', option.preset === selectedPreset ? 'true' : 'false');
-      button.title = localizedLabel;
-
-      if (option.preset === selectedPreset) {
-        button.classList.add('selected');
-      }
-
-      const swatch = document.createElement('span');
-      swatch.className = 'accent-color-swatch';
-      if (option.preset === 'system') {
-        swatch.classList.add('system-swatch');
-      } else {
-        swatch.style.backgroundColor = option.swatch;
-      }
-
-      const label = document.createElement('span');
-      label.className = 'accent-color-label';
-      label.textContent = localizedLabel;
-
-      button.appendChild(swatch);
-      button.appendChild(label);
-      button.addEventListener('click', () => {
-        void saveAccentColor(option.preset);
-      });
-
-      grid.appendChild(button);
-    });
-  }
-
   async function loadAndRenderAppearance() {
     try {
       const data = await safeGetStorage([
@@ -458,13 +408,13 @@ async function init() {
       ]);
       const selectedPreset = resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]);
       applyAccentColorPreset(document.documentElement, selectedPreset);
-      renderAccentColorOptions(selectedPreset);
+      accentGrid.render(selectedPreset);
       raiseOnlyWithSubtitles = resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]);
       renderPictureAlignOptions(resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]));
     } catch (err) {
       console.error('Error loading appearance settings:', err);
       applyAccentColorPreset(document.documentElement, DEFAULT_ACCENT_COLOR);
-      renderAccentColorOptions(DEFAULT_ACCENT_COLOR);
+      accentGrid.render(DEFAULT_ACCENT_COLOR);
       renderPictureAlignOptions(DEFAULT_PICTURE_ALIGN);
     }
   }
@@ -675,7 +625,7 @@ async function init() {
   async function saveAccentColor(preset: AccentColorPreset) {
     try {
       applyAccentColorPreset(document.documentElement, preset);
-      renderAccentColorOptions(preset);
+      accentGrid.render(preset);
 
       if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
         return;

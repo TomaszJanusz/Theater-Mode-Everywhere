@@ -213,7 +213,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   aboutLetterProduct: "That's why I created Theater Mode Everywhere: a universal player that, in my humble opinion, gives you a comfortable way to watch video everywhere, and can handle the non-standard, unique features of many websites.",
   aboutLetterFreeHtml: "The extension is free and doesn't send any information about you or what you watch anywhere. If something doesn't work right, you can report it on <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>.",
   aboutLetterStoresHtml: "Theater Mode Everywhere is available on the <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> and <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. I'd be happy if you shared your opinion about it.",
-  aboutSignoff: "Happy watching ❤️!",
+  aboutSignoff: "Happy watching!",
   aboutLegalTitle: "Terms of use • License",
   aboutLicenseNote: "The extension is available under the MIT license.",
   play: 'Play',

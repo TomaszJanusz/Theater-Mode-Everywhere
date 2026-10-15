@@ -20,7 +20,9 @@ interface ActiveDialog {
 let activeDialog: ActiveDialog | null = null;
 let dialogTitleSeq = 0;
 
-export function openDialog(options: OpenDialogOptions): Promise<boolean> {
+/** A copy factory keeps an open dialog localized without losing its action or focus. */
+export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)): Promise<boolean> {
+  const options = typeof source === 'function' ? source() : source;
   if (activeDialog) {
     activeDialog.close(false);
   }
@@ -121,8 +123,23 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       }
     };
 
-    // Dialog strings are snapshots. Cancel instead of retaining an old-language confirmation.
-    const stopLanguageRendering = languageRuntime.subscribe(() => close(false, true));
+    const stopLanguageRendering = languageRuntime.subscribe(() => {
+      // Callers with snapshot copy still cancel rather than show a stale confirmation.
+      if (typeof source !== 'function') { close(false, true); return; }
+      const copy = source();
+      title.textContent = copy.title;
+      if (typeof copy.content === 'string') {
+        body.firstElementChild!.textContent = copy.content;
+      } else {
+        body.replaceChildren(copy.content);
+      }
+      if (copy.actions.type === 'acknowledge') {
+        buttons[0].textContent = copy.actions.label || t('dialogAcknowledge');
+      } else {
+        buttons[0].textContent = copy.actions.falseLabel || t('dialogChoiceFalse');
+        buttons[1].textContent = copy.actions.trueLabel || t('dialogChoiceTrue');
+      }
+    });
     overlay.addEventListener('pointerdown', onOverlayPointerDown);
     const releaseFocus = containModalFocus(dialog, () => close(dismissValue));
     activeDialog = { close };
