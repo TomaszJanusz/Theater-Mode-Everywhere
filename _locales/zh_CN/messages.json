@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "播放速度"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "SponsorBlock 标记"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "在 YouTube 影院模式时间轴上显示已安装的 SponsorBlock 扩展程序的标记，并使用其配色。"
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "赞助"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "自我推广"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "独家访问"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "互动提醒"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "片头"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "片尾"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "预告"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "吸引注意"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "非音乐片段"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "精彩时刻"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "填充内容"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "章节"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "SponsorBlock 片段"
   }
 }

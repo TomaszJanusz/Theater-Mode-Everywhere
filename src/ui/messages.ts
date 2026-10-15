@@ -1,6 +1,22 @@
 import { translateMessage } from '../i18n-runtime';
 
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
+  "sponsorBlockMarkersTitle": "SponsorBlock markers",
+  "sponsorBlockMarkersDescription": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors.",
+  "sponsorBlockCategory_sponsor": "Sponsor",
+  "sponsorBlockCategory_selfpromo": "Self-promotion",
+  "sponsorBlockCategory_exclusive_access": "Exclusive access",
+  "sponsorBlockCategory_interaction": "Interaction reminder",
+  "sponsorBlockCategory_intro": "Intro",
+  "sponsorBlockCategory_outro": "Outro",
+  "sponsorBlockCategory_preview": "Preview",
+  "sponsorBlockCategory_hook": "Hook",
+  "sponsorBlockCategory_music_offtopic": "Non-music section",
+  "sponsorBlockCategory_poi_highlight": "Highlight",
+  "sponsorBlockCategory_filler": "Filler",
+  "sponsorBlockCategory_chapter": "Chapter",
+  "sponsorBlockCategory_unknown": "SponsorBlock segment",
+
   playbackPosition: 'Playback position',
   volumeLabel: 'Volume',
   playbackSpeed: 'Playback speed',

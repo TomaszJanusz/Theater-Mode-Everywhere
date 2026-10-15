@@ -1,3 +1,4 @@
+import { resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { resolveCaptionStyle, type CaptionStyle } from '../media-features/caption-style';
 import {
   DEFAULT_ACCENT_COLOR,
@@ -16,6 +17,7 @@ export type PlayerUiState = {
   theaterActive: boolean;
   helpOpen: boolean;
   toolbarVisible: boolean;
+  sponsorBlockMarkers: boolean;
   keepControlsVisible: boolean;
   videoFit: VideoFitMode;
   pictureAlign: PictureAlign;
@@ -48,6 +50,7 @@ const defaultState = (): PlayerUiState => ({
   theaterActive: false,
   helpOpen: false,
   toolbarVisible: false,
+  sponsorBlockMarkers: resolveSponsorBlockMarkers(undefined),
   keepControlsVisible: false,
   videoFit: DEFAULT_VIDEO_FIT,
   pictureAlign: DEFAULT_PICTURE_ALIGN,
@@ -65,6 +68,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     left.theaterActive === right.theaterActive
     && left.helpOpen === right.helpOpen
     && left.toolbarVisible === right.toolbarVisible
+    && left.sponsorBlockMarkers === right.sponsorBlockMarkers
     && left.keepControlsVisible === right.keepControlsVisible
     && left.videoFit === right.videoFit
     && left.pictureAlign === right.pictureAlign

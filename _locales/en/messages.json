@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Playback speed"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "SponsorBlock markers"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Sponsor"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Self-promotion"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Exclusive access"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Interaction reminder"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Intro"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Outro"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Preview"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Hook"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Non-music section"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Highlight"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Filler"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Chapter"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "SponsorBlock segment"
   }
 }

@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "재생 속도"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "SponsorBlock 마커"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "설치된 SponsorBlock 확장 프로그램의 마커를 해당 색상으로 YouTube 영화관 모드 타임라인에 표시합니다."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "스폰서"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "자체 홍보"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "독점 액세스"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "참여 유도"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "인트로"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "아웃트로"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "미리보기"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "관심 유도"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "음악 외 구간"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "하이라이트"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "불필요한 구간"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "챕터"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "SponsorBlock 구간"
   }
 }

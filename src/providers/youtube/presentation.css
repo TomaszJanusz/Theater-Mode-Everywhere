@@ -55,3 +55,24 @@ html.theater-using-overlay-captions .ytp-caption-window-container {
   display: none !important;
   visibility: hidden !important;
 }
+
+/* SponsorBlock views: SkipNotice/UpcomingNotice mount .sponsorSkipNoticeContainer
+ * in #movie_player; NoticeComponent also owns info/error/submission notices via
+ * .sponsorSkipNoticeParent. The native absolute notice (z≈1000) is behind our
+ * fixed video. Lift only the notice, and use viewport coordinates. The video
+ * container must not trap it below a sibling stacking context. No notice bridge.
+ */
+html.theater-everywhere-html-active #movie_player:has(.sponsorSkipNoticeContainer) .html5-video-container {
+  z-index: 2147483646 !important;
+}
+html.theater-everywhere-html-active #movie_player .sponsorSkipNoticeContainer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+}
+html.theater-everywhere-html-active #movie_player .sponsorSkipNoticeParent {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+}

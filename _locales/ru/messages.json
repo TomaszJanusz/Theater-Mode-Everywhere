@@ -875,5 +875,50 @@
   },
   "playbackSpeed": {
     "message": "Скорость воспроизведения"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Маркеры SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Показывать маркеры установленного расширения SponsorBlock на шкале времени YouTube в режиме кинотеатра, сохраняя его цвета."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Спонсор"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Самореклама"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Эксклюзивный доступ"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Напоминание о взаимодействии"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Вступление"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Завершение"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Анонс"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Завлекающий фрагмент"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Фрагмент без музыки"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Лучший момент"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Пустой фрагмент"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Глава"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Сегмент SponsorBlock"
   }
 }

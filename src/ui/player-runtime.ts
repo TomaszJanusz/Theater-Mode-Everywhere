@@ -1,3 +1,4 @@
+import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
@@ -1108,6 +1109,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
+      SPONSORBLOCK_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
       KEEP_CONTROLS_VISIBLE_STORAGE_KEY,
@@ -1135,6 +1137,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
         audio: resolveStoredAudioSettings(data),
+        sponsorBlockMarkers: resolveSponsorBlockMarkers(data[SPONSORBLOCK_STORAGE_KEY]),
         volumeBoost: resolveVolumeBoostEnabled(data[VOLUME_BOOST_STORAGE_KEY]),
         raiseOnlyWithSubtitles: resolveRaiseOnlyWithSubtitles(data[RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY]),
         accentColor: resolveAccentColorPreset(data[ACCENT_COLOR_STORAGE_KEY]),
@@ -2298,6 +2301,13 @@ export function bootstrapPlayerRuntime(): void {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
       if (changes[LANGUAGE_STORAGE_KEY]) void languageRuntime.set(changes[LANGUAGE_STORAGE_KEY].newValue);
+
+      if (changes[SPONSORBLOCK_STORAGE_KEY]) {
+        const enabled = resolveSponsorBlockMarkers(changes[SPONSORBLOCK_STORAGE_KEY].newValue);
+        uiStore.dispatch({ type: 'HYDRATE', value: { sponsorBlockMarkers: enabled } });
+        const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
+        wrapper?._mediaFeatures?.setTimelineMarkersEnabled(enabled);
+      }
 
       if (changes[VOLUME_BOOST_STORAGE_KEY]) {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));

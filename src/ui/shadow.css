@@ -2850,3 +2850,10 @@ button.theater-time-end:hover {
     animation: none !important;
   }
 }
+
+.theater-scrubber-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 3px;
+}

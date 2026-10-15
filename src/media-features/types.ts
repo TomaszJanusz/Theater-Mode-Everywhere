@@ -134,3 +134,16 @@ export interface MediaFeaturesAdapter {
   invalidate?(): void;
   dispose(): void;
 }
+
+/** Normalized positions in the shared scrubber, independent of media duration. */
+export type TimelineMarker = {
+  start: number;
+  end: number;
+  color: string;
+  opacity: number;
+  labelKey: string;
+  textColor?: string;
+};
+export interface TimelineMarkerSource {
+  observe(publish: (markers: readonly TimelineMarker[]) => void): () => void;
+}

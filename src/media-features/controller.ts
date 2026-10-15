@@ -1,3 +1,4 @@
+import { createTimelineMarkerSource } from '../providers/timeline/markers';
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
 import { contentTitle, type ContentTitle } from './content-title';
 import { CaptionRenderer } from './caption-renderer';
@@ -11,7 +12,7 @@ import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 import { heatmapRidgePath } from './heatmap-path';
-import type { CaptionActivationResult, CaptionCueRefresh, CaptionTrack, Chapter, HostCaptionLayout, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap } from './types';
+import type { CaptionActivationResult, CaptionCueRefresh, CaptionTrack, Chapter, HostCaptionLayout, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap, TimelineMarker } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
@@ -42,6 +43,7 @@ export type MediaFeaturesBindings = {
   captionPreference?: CaptionLanguagePreference | null;
   onCaptionPreferenceChange?: (pref: CaptionLanguagePreference) => void;
   providerFlags?: MediaProviderFlags;
+  timelineMarkersEnabled?: boolean;
   decorateCaptionDialog?: (overlay: HTMLElement) => void;
   adapter?: MediaFeaturesAdapter;
   renderer?: CaptionOverlayRenderer;
@@ -65,6 +67,9 @@ export class MediaFeaturesController {
   private video: PlaybackSurface;
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
+  private markers: readonly TimelineMarker[] = [];
+  private timelineMarkersEnabled = false;
+  private stopMarkers = () => {};
   private chapterLayer: HTMLDivElement;
   private heatmapLayer: SVGSVGElement;
   private heatmapHasData = false;
@@ -172,6 +177,22 @@ export class MediaFeaturesController {
       heatmapHost.insertBefore(this.heatmapLayer, heatmapHost.firstChild);
     }
     this.observeAdapter();
+    this.setTimelineMarkersEnabled(bindings.timelineMarkersEnabled === true);
+  }
+
+  setTimelineMarkersEnabled(enabled: boolean): void {
+    this.timelineMarkersEnabled = enabled;
+    this.stopMarkers();
+    this.stopMarkers = () => {};
+    this.markers = [];
+    if (enabled && !this.disposed && typeof document !== 'undefined') {
+      this.stopMarkers = createTimelineMarkerSource(this.video.element)?.observe(markers => {
+        if (this.disposed) return;
+        this.markers = markers;
+        this.renderChapterMarks();
+      }) || (() => {});
+    }
+    this.renderChapterMarks();
   }
 
   readHostCaptionLayout(): HostCaptionLayout | null {
@@ -231,6 +252,7 @@ export class MediaFeaturesController {
     this.adapter = adapter;
     this.invalidate();
     this.observeAdapter();
+    this.setTimelineMarkersEnabled(this.timelineMarkersEnabled);
     void this.refresh();
   }
 
@@ -443,7 +465,18 @@ export class MediaFeaturesController {
     this.chapterLayer.replaceChildren();
     if (typeof document === 'undefined') return;
     const duration = this.video.duration;
-    if (!Number.isFinite(duration) || duration <= 0 || this.chapters.length === 0) return;
+    for (const marker of this.markers) {
+      const mark = document.createElement('div');
+      mark.className = 'theater-scrubber-segment';
+      mark.style.left = `${marker.start * 100}%`;
+      mark.style.width = `${(marker.end - marker.start) * 100}%`;
+      mark.style.backgroundColor = marker.color;
+      mark.style.opacity = String(marker.opacity);
+      if (marker.textColor) mark.style.color = marker.textColor;
+      mark.title = this.t(marker.labelKey);
+      this.chapterLayer.appendChild(mark);
+    }
+    if (!Number.isFinite(duration) || duration <= 0) return;
     for (const chapter of this.chapters) {
       if (chapter.start <= 0) continue;
       const mark = document.createElement('div');
@@ -946,8 +979,12 @@ export class MediaFeaturesController {
   tooltipExtras(time: number): TooltipMediaExtras {
     const chapter = chapterAtTime(this.chapters, time);
     const preview = this.adapter.getPreviewFrame?.(time, this.video.duration || 0) || null;
+    const ratio = time / this.video.duration;
+    const markerLabels = this.markers
+      .filter(marker => ratio >= marker.start && ratio <= Math.max(marker.end, marker.start + .003))
+      .map(marker => this.t(marker.labelKey));
     return {
-      chapterTitle: chapter?.title || '',
+      chapterTitle: markerLabels.join(' · ') || chapter?.title || '',
       preview
     };
   }
@@ -963,6 +1000,7 @@ export class MediaFeaturesController {
    */
   dispose(): void {
     this.disposed = true;
+    this.stopMarkers();
     this.stopObservingAdapter();
     this.bumpEpoch();
     this.refreshQueued = false;
