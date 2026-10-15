@@ -70,6 +70,10 @@ let disneyPlaybackTitle: string | null = null;
 let disneyPlayerHeader: DisneyPlayerHeader | null = null;
 let cachedDisneyPlayer: DisneyHivePlayer | null = null;
 let cachedDisneyPlayerHost: Element | null = null;
+// Rediscovery of a connected old host is not evidence of a new playback session.
+const disneyPlayerPlayIds = new WeakMap<DisneyHivePlayer, string | null>();
+const disneyVideoPlayers = new WeakMap<HTMLVideoElement, DisneyHivePlayer>();
+const disneyResettingPlayers = new WeakSet<DisneyHivePlayer>();
 const disneyClockBoundPlayers = new WeakSet<object>();
 let clockPlayerGeneration = 0;
 let disneyClockTargets: HTMLVideoElement[] = [];
@@ -660,7 +664,11 @@ function invalidateDisneyPlayerCache(): void {
   clockPlayerGeneration += 1;
 }
 
-function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHivePlayer {
+function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHivePlayer | null {
+  const playId = disneyPageMediaId();
+  if (disneyResettingPlayers.has(player)) return null;
+  if (disneyPlayerPlayIds.has(player) && disneyPlayerPlayIds.get(player) !== playId) return null;
+  disneyPlayerPlayIds.set(player, playId);
   if (cachedDisneyPlayer !== player) clockPlayerGeneration += 1;
   cachedDisneyPlayer = player;
   cachedDisneyPlayerHost = host;
@@ -669,6 +677,8 @@ function rememberDisneyPlayer(player: DisneyHivePlayer, host: Element): DisneyHi
 
 function disneyPlayerCacheValid(): boolean {
   if (!cachedDisneyPlayer || !isDisneyHivePlayer(cachedDisneyPlayer)) return false;
+  if (disneyResettingPlayers.has(cachedDisneyPlayer)) return false;
+  if (disneyPlayerPlayIds.get(cachedDisneyPlayer) !== disneyPageMediaId()) return false;
   if (!cachedDisneyPlayerHost?.isConnected) return false;
   const web = document.querySelector('disney-web-player');
   if (
@@ -749,16 +759,25 @@ function findDisneyHivePlayer(video?: HTMLVideoElement | null, refresh = false):
   const web = document.querySelector('disney-web-player');
   if (web) {
     const fromWeb = disneyPlayerFromFiberHost(web);
-    if (fromWeb) return rememberDisneyPlayer(fromWeb, web);
+    if (fromWeb) {
+      const current = rememberDisneyPlayer(fromWeb, web);
+      if (current) return current;
+    }
   }
   const videos = disneyMediaVideos(video || null);
   for (const node of videos) {
     const attached = disneyPlayerFromNode(node);
-    if (attached) return rememberDisneyPlayer(attached, node);
+    if (attached) {
+      const current = rememberDisneyPlayer(attached, node);
+      if (current) return current;
+    }
     let host: Element | null = node;
     while (host) {
       const fromFiber = disneyPlayerFromFiberHost(host);
-      if (fromFiber) return rememberDisneyPlayer(fromFiber, host);
+      if (fromFiber) {
+        const current = rememberDisneyPlayer(fromFiber, host);
+        if (current) return current;
+      }
       host = host.parentElement;
     }
   }
@@ -800,6 +819,7 @@ function disneyHiveSeekReached(player: DisneyHivePlayer | null, targetSeconds: n
 }
 
 function rememberDisneyClockVideo(video: HTMLVideoElement | null): void {
+  if (video && cachedDisneyPlayer && disneyPlayerCacheValid()) disneyVideoPlayers.set(video, cachedDisneyPlayer);
   disneyClockTargets = disneyClockTargets.filter((node) => node.isConnected && node !== video);
   if (video) disneyClockTargets.unshift(video);
   disneyClockTargets = disneyClockTargets.slice(0, 4);
@@ -814,11 +834,37 @@ function watchDisneyClockVideo(video: HTMLVideoElement | null): void {
   disneyClockVideo = video;
   if (!video) return;
   const onPlayback = () => ensureDisneyClock();
+  let resettingPlayer: DisneyHivePlayer | null = null;
+  const onReset = () => {
+    resettingPlayer = disneyVideoPlayers.get(video) ?? null;
+    if (resettingPlayer) disneyResettingPlayers.add(resettingPlayer);
+    if (resettingPlayer === cachedDisneyPlayer) invalidateDisneyPlayerCache();
+    ensureDisneyClock();
+  };
+  const onMetadata = () => {
+    // A reused Hive object may adopt the new route only after this video's
+    // reset has completed. A URL change or an old timecode alone cannot do it.
+    if (resettingPlayer && video.isConnected && video.readyState >= 1) {
+      const replacement = findDisneyHivePlayer(video, true);
+      if (!replacement) {
+        disneyPlayerPlayIds.set(resettingPlayer, disneyPageMediaId());
+        disneyResettingPlayers.delete(resettingPlayer);
+      }
+      resettingPlayer = null;
+    }
+    ensureDisneyClock();
+  };
   video.addEventListener('play', onPlayback);
   video.addEventListener('pause', onPlayback);
+  video.addEventListener('emptied', onReset);
+  video.addEventListener('loadstart', onReset);
+  video.addEventListener('loadedmetadata', onMetadata);
   unwatchDisneyClockVideo = () => {
     video.removeEventListener('play', onPlayback);
     video.removeEventListener('pause', onPlayback);
+    video.removeEventListener('emptied', onReset);
+    video.removeEventListener('loadstart', onReset);
+    video.removeEventListener('loadedmetadata', onMetadata);
   };
 }
 
@@ -880,6 +926,7 @@ function discoverDisneyClockPlayer(): void {
   const video = disneyActiveMediaVideo();
   rememberDisneyClockVideo(video);
   const player = findDisneyHivePlayer(video);
+  if (video && player) disneyVideoPlayers.set(video, player);
   bindDisneyPlayerClock(player);
 }
 

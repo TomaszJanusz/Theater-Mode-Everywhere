@@ -9,16 +9,17 @@ const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
-    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
+    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
     resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
   },
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
+  bundle: true, write: false, format: 'iife', globalName: 'VideoSelectionTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
 }).outputFiles[0].text;
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {
   interface Window {
     setVideoSelectionEnabled(enabled: boolean): void;
+    VideoSelectionTest: { isInactiveStandbyVideo(video: HTMLVideoElement): boolean };
   }
 }
 
@@ -50,6 +51,37 @@ async function selected(frame: Page | Frame): Promise<string> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  it(`${engine}: standby detection includes hidden hosts and wrappers`, async t => {
+    const browser = await (await import('playwright'))[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent('<main></main>');
+    await boot(page);
+    const result = await page.evaluate(() => {
+      const inactive = window.VideoSelectionTest.isInactiveStandbyVideo;
+      return ['disney-web-player', 'div.txp_videos_container'].map(selector => {
+        const outer = document.createElement('section');
+        const host = document.createElement(selector.split('.')[0]);
+        host.className = selector.split('.')[1] ?? '';
+        const wrapper = document.createElement('div');
+        const video = document.createElement('video');
+        video.style.display = 'block';
+        wrapper.append(video); host.append(wrapper); outer.append(host); document.body.append(outer);
+        const visible = inactive(video);
+        host.style.display = 'none'; const hiddenHost = inactive(video);
+        host.style.display = ''; wrapper.style.display = 'none'; const hiddenWrapper = inactive(video);
+        wrapper.style.display = ''; outer.style.display = 'none'; const hiddenOuter = inactive(video);
+        // Generic players retain their existing eligibility rules.
+        document.body.append(wrapper); const generic = inactive(video);
+        wrapper.remove(); outer.remove();
+        return { visible, hiddenHost, hiddenWrapper, hiddenOuter, generic };
+      });
+    });
+    assert.deepEqual(result, Array.from({ length: 2 }, () => ({
+      visible: false, hiddenHost: true, hiddenWrapper: true, hiddenOuter: true, generic: false
+    })));
+  });
+
   it(`${engine}: Disney episode replacement waits past the hidden standby and restores on exit`, { timeout: 30_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
@@ -96,12 +128,17 @@ for (const engine of ['chromium', 'firefox'] as const) {
       replacement.style.cssText = 'width:100%;height:100%';
       replacement.src = media;
       current.after(replacement);
-      current.style.display = 'none';
+      const retired = document.createElement('div');
+      retired.id = 'retired-player';
+      retired.style.display = 'none';
+      current.before(retired);
+      retired.append(current);
     }, MEDIA);
     await page.waitForFunction(() => document.querySelector('video[data-theater-everywhere]')?.id === 'connected-replacement');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('video[data-theater-everywhere]'));
     assert.equal(await page.locator('#standby').getAttribute('style'), 'display:none');
+    assert.equal(await page.locator('#retired-player').evaluate(host => host.style.display), 'none');
     assert.equal(await page.locator('#connected-replacement').evaluate(video => video.style.position), '');
     await page.locator('#episode').dispatchEvent('loadedmetadata');
     assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);

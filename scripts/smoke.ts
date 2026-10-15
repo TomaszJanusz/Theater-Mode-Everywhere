@@ -700,13 +700,31 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   }
   await page.keyboard.press('Escape');
   await captionOptions.waitFor({ state: 'detached' });
+  // This is a keyboard dismissal check. Hover must not open a different menu
+  // as the dialog disappears and the caption/player layout settles.
+  await page.mouse.move(640, 300);
   await cc.press('Enter');
   await captionsMenu.waitFor();
+  await page.waitForFunction(() => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    const menu = root.querySelector('.theater-cc-menu')!;
+    return menu.parentElement!.classList.contains('is-open')
+      && root.querySelector('.cc-btn')!.getAttribute('aria-expanded') === 'true'
+      && Boolean(root.activeElement && menu.contains(root.activeElement));
+  });
   await page.keyboard.press('Escape');
   await captionsMenu.waitFor({ state: 'hidden' });
   if (await captionsMenu.isVisible() || !await theaterEntered(page)
       || !await cc.evaluate(button => button.matches(':focus'))) {
-    fail('Escape did not dismiss captions and return focus without leaving theater mode.');
+    const state = await page.evaluate(() => {
+      const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+      return { htmlClasses: document.documentElement.className,
+        focused: root?.activeElement?.outerHTML ?? document.activeElement?.outerHTML,
+        captionHost: root?.querySelector('.theater-cc-menu')?.parentElement?.className,
+        settingsHost: root?.querySelector('.theater-settings-menu')?.parentElement?.className,
+        expanded: root?.querySelector('.cc-btn')?.getAttribute('aria-expanded') };
+    });
+    fail(`Escape did not dismiss captions and return focus without leaving theater mode: ${JSON.stringify(state)}`);
   }
   await gear.press('Enter');
   await page.keyboard.press('Shift+Tab');

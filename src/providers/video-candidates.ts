@@ -25,6 +25,9 @@ export function isInactiveStandbyVideo(video: HTMLVideoElement): boolean {
   if (!video.closest(STANDBY_VIDEO_HOST_SELECTOR)) return false;
   const view = video.ownerDocument?.defaultView;
   if (!view) return false;
-  const style = view.getComputedStyle(video);
-  return style.visibility === 'hidden' || style.display === 'none';
+  if (view.getComputedStyle(video).visibility === 'hidden') return true;
+  for (let node: Element | null = video; node; node = node.parentElement) {
+    if (view.getComputedStyle(node).display === 'none') return true;
+  }
+  return false;
 }

@@ -156,17 +156,57 @@ for (const engine of ['chromium', 'firefox'] as const) {
         player.timeline.info.programDurationMs = 0;
         emit();
         const afterInvalid = read();
-        document.querySelector('disney-web-player')!.remove();
         history.pushState({}, '', '/play/180356b5-0596-4333-891f-e48c526a0803');
+        harvest();
+        player.timeline.info.programDurationMs = 3_343_500;
+        emit();
+        const connectedOldPlayer = read();
+        // A harvest wakes rediscovery; it must not relabel the same old object.
+        window.dispatchEvent(new CustomEvent('theater-everywhere-disney-harvest'));
+        emit();
+        const rediscoveredOldPlayer = read();
+        const video = document.querySelector('video')!;
+        video.dispatchEvent(new Event('loadstart'));
+        emit();
+        const duringReset = read();
+        // Disney may reuse Hive after the media element finishes mounting.
+        Object.defineProperty(video, 'readyState', { configurable: true, value: 4 });
+        player.timeline.info.programDurationMs = 3_600_000;
+        video.dispatchEvent(new Event('loadedmetadata'));
+        emit();
+        const reusedPlayer = read();
+        document.querySelector('disney-web-player')!.remove();
+        history.pushState({}, '', '/play/280356b5-0596-4333-891f-e48c526a0803');
         harvest();
         const nextEpisode = read();
         player.timeline.info.programDurationMs = 3_343_500;
         emit();
-        return { fallback, native, afterApi, afterInvalid, nextEpisode, afterStalePlayer: read() };
+        const afterStalePlayer = read();
+        const shell = document.createElement('disney-web-player');
+        const replacement = document.createElement('video');
+        replacement.className = 'hive-video';
+        replacement.style.cssText = 'width:640px;height:360px';
+        const replacementListeners: Record<string, () => void> = {};
+        const nextPlayer = {
+          seek() {}, play() {},
+          timeline: { info: { playheadPositionMs: 1000, programDurationMs: 4_000_000 } },
+          on(name: string, listener: () => void) { replacementListeners[name] = listener; }
+        };
+        // React may still expose the old object while the video owns the new one.
+        Object.assign(shell, { __reactFiber$test: { memoizedProps: { mediaPlayer: player } } });
+        Object.assign(replacement, { mediaPlayer: nextPlayer });
+        shell.append(replacement); document.body.append(shell);
+        api.handleDisneyMediaSeek({ time: 1 }, replacement);
+        replacementListeners['@EVENT/PLAYER/TIMECODE']();
+        const replacementDuration = read();
+        emit();
+        return { fallback, native, afterApi, afterInvalid, connectedOldPlayer, rediscoveredOldPlayer,
+          duringReset, reusedPlayer, nextEpisode, afterStalePlayer, replacementDuration, afterReplacementStale: read() };
       });
       assert.deepEqual(report, {
         fallback: 2844, native: 3343.5, afterApi: 3343.5, afterInvalid: 3343.5,
-        nextEpisode: 2844, afterStalePlayer: 2844
+        connectedOldPlayer: 2844, rediscoveredOldPlayer: 2844, duringReset: 2844, reusedPlayer: 3600,
+        nextEpisode: 2844, afterStalePlayer: 2844, replacementDuration: 4000, afterReplacementStale: 4000
       });
     });
 

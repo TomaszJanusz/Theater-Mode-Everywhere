@@ -18,7 +18,7 @@ const BUNDLE = esbuild.buildSync({
     contents: [
       "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
       "export { setPlayerUiCss } from './ui/root';",
-      "export { playbackWindow } from './playback-window';"
+      "export { playbackWindow, seekToMediaTime } from './playback-window';"
     ].join('\n'),
     resolveDir: SRC, loader: 'ts'
   },
@@ -161,6 +161,35 @@ describe('playback chrome updates', () => {
       assert.equal(await loading(), true, 'the target clock alone does not establish loaded media');
       await clock(secondTarget);
       assert.equal(await loading(), false, 'a paused seek also settles when the target is ready');
+      const request = async (time: number) => page.evaluate(time => {
+        (window as unknown as { PlaybackChromeTest: {
+          seekToMediaTime(video: HTMLVideoElement, time: number): void;
+        } }).PlaybackChromeTest.seekToMediaTime(document.querySelector('video')!, time);
+      }, time);
+      const shortTarget = secondTarget + 1;
+      await request(shortTarget);
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        for (const name of ['play', 'timeupdate', 'canplay', 'seeked']) video.dispatchEvent(new Event(name));
+      });
+      await clock(secondTarget);
+      assert.equal(await loading(), true, 'old events cannot settle a seek within the arrival tolerance');
+      await clock(shortTarget);
+      assert.equal(await loading(), false, 'the new clock settles a short paused seek');
+      await request(shortTarget);
+      assert.equal(await loading(), false, 'a paused no-op seek does not wait for a host event that may never fire');
+      await request(shortTarget + 1);
+      await page.evaluate(() => { document.querySelector('video')!.dispatchEvent(new Event('seeking')); });
+      // A second request must not inherit the preceding request's seeking evidence.
+      await request(shortTarget + 2);
+      await clock(shortTarget);
+      assert.equal(await loading(), true, 'a newer short seek retires previous start evidence');
+      await page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        video.dispatchEvent(new Event('seeking'));
+        video.dispatchEvent(new Event('seeked'));
+      });
+      assert.equal(await loading(), false, 'native seek start and completion also acknowledge the latest request');
       // Keyboard seeks use the same request lifecycle.
       await page.keyboard.press('ArrowRight');
       assert.equal(await loading(), true);

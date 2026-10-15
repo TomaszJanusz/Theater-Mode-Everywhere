@@ -1362,7 +1362,7 @@ export function createControls(
     // Buffering / Loading State Helper
     let bufferingTimeout: number | null = null;
     let bufferingFailsafe: number | null = null;
-    let requestedSeek: number | null = null;
+    let requestedSeek: { target: number; from: number; started: boolean } | null = null;
 
     const setBuffering = (isBuffering: boolean, immediate = false) => {
       if (isBuffering) {
@@ -1386,7 +1386,9 @@ export function createControls(
         // seek. Those timeupdate/play events must not dismiss the new request.
         if (requestedSeek !== null) {
           const time = readProviderClock(native) ?? video.currentTime;
-          if (Math.abs(time - requestedSeek) > 2.5 || video.seeking || video.readyState < 2) return;
+          const advanced = Math.abs(time - requestedSeek.from) > 0.04;
+          if ((!requestedSeek.started && !advanced) || Math.abs(time - requestedSeek.target) > 2.5
+            || video.seeking || video.readyState < 2) return;
           requestedSeek = null;
         }
         if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
@@ -1507,7 +1509,11 @@ export function createControls(
       }, requestedSeek !== null ? 10_000 : 4000);
     };
     const onWaiting = () => { setBuffering(true); armBufferingFailsafe(); };
-    const onSeeking = () => { setBuffering(true, true); armBufferingFailsafe(); };
+    const onSeeking = () => {
+      if (requestedSeek) requestedSeek.started = true;
+      setBuffering(true, true);
+      armBufferingFailsafe();
+    };
     const onSeeked = () => { 
       updatePlaybackChrome();
       setBuffering(false); 
@@ -1521,7 +1527,13 @@ export function createControls(
     };
 
     controlsScope.add(observeMediaSeekRequests(video, target => {
-      requestedSeek = target;
+      const from = readProviderClock(native) ?? video.currentTime;
+      if (Math.abs(target - from) < 0.001 && !video.seeking && video.readyState >= 2) {
+        requestedSeek = null;
+        setBuffering(false);
+        return;
+      }
+      requestedSeek = { target, from, started: false };
       setBuffering(true, true);
       armBufferingFailsafe();
     }));
