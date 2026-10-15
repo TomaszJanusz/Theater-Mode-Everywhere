@@ -6,6 +6,7 @@ import { build, buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
+import { assertLocalized, readCatalog } from '../test-utils/language-audit';
 
 const ROOT = path.resolve(__dirname, '../..');
 const PLAYER = buildSync({
@@ -38,7 +39,7 @@ async function mockStorage(page: Page): Promise<void> {
       }
     };
     Object.defineProperty(window, 'chrome', { configurable: true, value: {
-      runtime: { getURL: file => file },
+      runtime: { getURL: file => file, sendMessage: async request => (${JSON.stringify({ pl: readCatalog('pl'), ar: readCatalog('ar') })})[request.locale] },
       storage: { sync: storage, onChanged: { addListener: listener => changed.push(listener) } },
       tabs: { query: async () => [] }
     } });
@@ -52,7 +53,7 @@ async function optionsPage(page: Page): Promise<void> {
   await page.goto('http://accessibility.test/options');
   await page.addStyleTag({ content: readStylesheet(path.join(ROOT, 'options/options.css')) });
   await page.addScriptTag({ content: await OPTIONS });
-  await page.locator('.accent-color-btn').first().waitFor();
+  await page.locator('.choice-btn').first().waitFor();
 }
 
 async function playerPage(page: Page): Promise<void> {
@@ -101,7 +102,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.locator('#accent-color-grid [aria-checked=true]').focus();
         await page.keyboard.press('ArrowRight');
         assert.match(await page.locator('#accent-color-grid').ariaSnapshot(), /radio "Use Teal as the accent color" \[checked\]/);
-        assert.equal(await focused(page, '[data-accent-color=teal]'), true);
+        assert.equal(await focused(page, '#accent-color-grid [data-choice=teal]'), true);
         await page.locator('#tab-features').click();
         const service = page.locator('[data-provider="netflix"]');
         const details = service.locator('.rte-details-toggle');
@@ -133,6 +134,45 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.evaluate(() => chrome.storage.sync.set({ shortcuts: { toggle: 'T', cycle: 'T' } }));
         assert.equal(await page.locator('#shortcut-toggle').getAttribute('aria-invalid'), 'true');
         assert.match(await page.locator('#shortcut-conflict-status').ariaSnapshot(), /status: Some shortcuts are assigned to multiple actions/);
+      });
+    });
+
+    it('relocalizes player menus, tooltips, HUD and help and retires old caption dialogs', { timeout: 30_000 }, async t => {
+      await testPage(t, async page => {
+        await playerPage(page);
+        await page.keyboard.press('ArrowRight');
+        await page.locator('.cc-btn').click();
+        await page.locator('.theater-cc-menu-options').click();
+        await page.locator('.theater-caption-options-dialog').waitFor();
+        for (const locale of ['pl', 'ar']) {
+          await page.evaluate(locale => chrome.storage.sync.set({ language: locale }), locale);
+          await page.waitForFunction(locale => document.querySelector('#theater-everywhere-ui')?.getAttribute('lang') === locale, locale);
+          await page.locator('.theater-caption-options-dialog').waitFor({ state: 'detached' });
+          await assertLocalized(page, locale);
+          await page.locator('.theater-help-overlay').waitFor({ state: 'detached' });
+          await page.locator('.player-settings-btn').click();
+          await page.locator('.theater-settings-menu.visible').waitFor();
+          await assertLocalized(page, locale);
+          await page.locator('.cc-btn').click();
+          await page.locator('.theater-cc-menu-options').click();
+          await page.locator('.theater-caption-options-dialog').waitFor();
+          await assertLocalized(page, locale);
+          await page.keyboard.press('Escape');
+          await page.locator('.theater-caption-options-dialog').waitFor({ state: 'detached' });
+          await page.keyboard.press('h');
+          await page.locator('.theater-help-overlay').waitFor();
+          await assertLocalized(page, locale);
+          if (locale === 'pl') {
+            // Keep Help open through the next catalog change; the player restores it.
+            await page.evaluate(() => chrome.storage.sync.set({ language: 'ar' }));
+            await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')?.getAttribute('lang') === 'ar');
+            await page.locator('.theater-help-overlay').waitFor();
+            await assertLocalized(page, 'ar');
+          }
+          await page.locator('.theater-help-close-btn').click();
+        }
+        assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'the host retains its original direction');
+        assert.equal(await page.locator('video').evaluate((video: HTMLVideoElement) => video.paused), true);
       });
     });
 

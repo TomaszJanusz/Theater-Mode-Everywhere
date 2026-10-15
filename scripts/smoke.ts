@@ -1,5 +1,6 @@
 import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../src/media-features/provider-flags';
 import { createServer } from 'node:http';
+import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -1894,23 +1895,52 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await page.keyboard.press('t');
     await page.locator('.player-settings-btn').waitFor({ state: 'attached' });
     const extensionUrl = new URL('options/options.html#appearance', worker.url()).href;
+    await options.setViewportSize({ width: 1280, height: 1100 });
     await options.goto(extensionUrl);
     await otherOptions.goto(extensionUrl);
     await popup.goto(new URL('popup/popup.html', worker.url()).href);
     await popup.locator('#domain-name').filter({ hasText: 'System page' }).waitFor();
-    await options.waitForFunction(() => document.querySelectorAll('#language-select option').length === 14);
-    const select = options.locator('#language-select');
-    if (await select.inputValue() !== 'automatic') throw new Error('Language must default to Automatic');
+    await options.waitForFunction(() => document.querySelectorAll('#language-combobox-listbox [role=option]').length === 14);
+    const combo = options.getByRole('combobox');
+    const list = options.getByRole('listbox');
+    // Diagnostic captures only; they follow the same THEATER_SMOKE_SCREENSHOT gate as the other smoke screenshots.
+    const languageScreenshot = async (name: string) => {
+      if (process.env.THEATER_SMOKE_SCREENSHOT) {
+        await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, `-${name}.png`), fullPage: true, animations: 'disabled' });
+      }
+    };
+    if (await options.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value') !== 'automatic') throw new Error('Language must default to Automatic');
     const before = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
-    await select.selectOption('pl');
+    await languageScreenshot('lang-dropdown-en');
+    await combo.click();
+    await list.waitFor();
+    await languageScreenshot('lang-combobox-open');
+    await options.keyboard.press('End');
+    await options.keyboard.press('Escape');
+    if (await combo.getAttribute('aria-expanded') !== 'false' || await combo.evaluate(el => el !== document.activeElement)) throw new Error('Escape must close and retain trigger focus');
+    if (await options.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value') !== 'automatic') throw new Error('Escape committed a language');
+    await combo.focus();
+    await languageScreenshot('lang-dropdown-hover');
+    await options.locator('#accent-color-grid [data-choice=green]').click();
+    await options.locator('#accent-color-grid [data-choice=green].selected').waitFor();
+    await combo.focus();
+    await languageScreenshot('lang-dropdown-green');
+    await options.locator('#accent-color-grid [data-choice=system]').click();
+    await options.locator('#accent-color-grid [data-choice=system].selected').waitFor();
+    await combo.click();
+    await options.getByRole('option', { name: 'Polski', exact: true }).click();
     await options.locator('#tab-appearance').filter({ hasText: polish.appearanceTitle.message }).waitFor();
-    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'pl');
+    await otherOptions.waitForFunction(() => document.querySelector('#language-combobox-listbox [aria-selected=true]')?.getAttribute('data-value') === 'pl');
     await popup.locator('[data-i18n="websiteLabel"]').filter({ hasText: polish.websiteLabel.message }).waitFor();
     await page.locator('.player-settings-btn').and(page.getByLabel(polish.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
     if (await popup.locator('#domain-name').textContent() !== polish.systemPage.message) throw new Error('Popup dynamic domain state lost its translation');
-    // A native select stays keyboard operable through the live document refresh.
-    await select.focus();
-    await options.keyboard.press('Home');
+    await assertLocalized(options, 'pl');
+    await assertLocalized(otherOptions, 'pl');
+    await assertLocalized(popup, 'pl');
+    await assertLocalized(page, 'pl', '#theater-everywhere-ui');
+    await languageScreenshot('lang-dropdown-pl');
+    await combo.focus();
+    await options.keyboard.press('ArrowDown');
     await options.keyboard.press('End'); // Arabic is the last endonym.
     await options.keyboard.press('Enter');
     await options.waitForFunction(() => document.documentElement.dir === 'rtl' && document.documentElement.lang === 'ar');
@@ -1918,6 +1948,13 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await popup.waitForFunction(() => document.documentElement.dir === 'rtl');
     await page.locator('.theater-controls-wrapper[dir="rtl"][lang="ar"]').waitFor({ state: 'attached' });
     await page.locator('.player-settings-btn').and(page.getByLabel(arabic.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
+    await assertLocalized(options, 'ar');
+    await assertLocalized(popup, 'ar');
+    await assertLocalized(page, 'ar', '#theater-everywhere-ui');
+    await languageScreenshot('lang-dropdown-ar');
+    await combo.click();
+    await languageScreenshot('lang-combobox-open-ar');
+    await options.keyboard.press('Escape');
     if (process.env.THEATER_SMOKE_SCREENSHOT) {
       await options.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-language-ar-options.png'), fullPage: true });
       await page.bringToFront();
@@ -1935,14 +1972,19 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await frame.locator('video#player').click();
     await frame.locator('body').press('t');
     await frame.locator('.theater-controls-wrapper[dir="rtl"]').waitFor({ state: 'attached' });
-    await select.selectOption('automatic');
+    await combo.focus();
+    await options.keyboard.press('ArrowUp');
+    await options.keyboard.press('Home');
+    await options.keyboard.press('Enter');
     await options.waitForFunction(() => document.documentElement.dir === 'ltr' && document.documentElement.lang.startsWith('en'));
-    await otherOptions.waitForFunction(() => (document.getElementById('language-select') as HTMLSelectElement).value === 'automatic');
+    await otherOptions.waitForFunction(() => document.querySelector('#language-combobox-listbox [aria-selected=true]')?.getAttribute('data-value') === 'automatic');
     await frame.locator('.theater-controls-wrapper[dir="ltr"]').waitFor({ state: 'attached' });
     await frame.locator('.player-settings-btn').and(frame.getByLabel(english.playerSettingsLabel.message, { exact: true })).waitFor({ state: 'attached' });
     await popup.waitForFunction(() => document.documentElement.dir === 'ltr');
     await popup.locator('#status-text').filter({ hasText: english.statusInactiveSystem.message }).waitFor();
     await frame.locator('body').press('Escape');
+    await options.locator('#tab-about').click();
+    await languageScreenshot('lang-about');
     console.log('smoke:chromium language menu: two Settings pages, popup, player, keyboard selection, saved iframe override, RTL/Automatic restoration and playback preservation passed');
   } finally {
     await worker.evaluate(() => chrome.storage.sync.remove('language'));

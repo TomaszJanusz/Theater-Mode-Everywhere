@@ -661,7 +661,7 @@ section h2 {
   color: var(--accent-color);
 }
 
-.made-in-poland .heart {
+.heart {
   color: var(--accent-color);
 }
 
@@ -953,21 +953,18 @@ section h2 {
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-.accent-color-grid {
+.choice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 8px;
 }
 
-.appearance-section .accent-color-grid {
+.appearance-section .choice-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.accent-color-btn {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
+.choice-btn,
+.choice-combobox {
   min-height: 34px;
   background-color: #18181b;
   border: 1px solid var(--border-color);
@@ -983,24 +980,39 @@ section h2 {
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.accent-color-btn:hover {
+.choice-btn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.choice-btn.has-swatch {
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+
+.choice-btn:hover,
+.choice-combobox:hover,
+.choice-option.active {
   border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
   background-color: color-mix(in srgb, var(--accent-color) 10%, #18181b);
 }
 
-.accent-color-btn:focus-visible {
+.choice-btn:focus-visible,
+.choice-combobox:focus-visible {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 24%, transparent);
   outline: none;
 }
 
-.accent-color-btn.selected {
+.choice-btn.selected,
+.choice-option[aria-selected="true"] {
   border-color: var(--accent-color);
   background-color: color-mix(in srgb, var(--accent-color) 16%, #18181b);
   color: #ffffff;
 }
 
-.accent-color-swatch {
+.choice-swatch {
   width: 18px;
   height: 18px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1012,11 +1024,110 @@ section h2 {
   background: conic-gradient(from 45deg, #37adff, #51cd00, #ffcb00, #ff4ad8, #af51f5, #37adff);
 }
 
-.accent-color-label {
+.choice-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.choice-combobox {
+  position: relative;
+  align-self: flex-start;
+  min-width: min(220px, 100%);
+  max-width: min(360px, 100%);
+  padding-inline-end: 36px;
+  --choice-chevron-color: var(--text-secondary);
+}
+
+.choice-combobox::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: 12px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background-color: var(--choice-chevron-color);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2 4 4 4 4-4' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.15s ease;
+}
+
+.choice-combobox:hover,
+.choice-combobox:focus-visible {
+  --choice-chevron-color: var(--accent-color);
+}
+
+.choice-combobox[aria-expanded="true"]::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.choice-listbox {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) #18181b;
+  position: fixed;
+  z-index: 100;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: #18181b;
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.choice-listbox[hidden] {
+  display: none;
+}
+
+.choice-option {
+  position: relative;
+  min-height: 34px;
+  padding: 8px 10px;
+  padding-left: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Selection marks follow the popup direction; endonyms retain their own dir. */
+.choice-listbox[dir="rtl"] .choice-option {
+  padding-left: 10px;
+  padding-right: 28px;
+}
+
+.choice-listbox[dir="rtl"] .choice-option::before {
+  left: auto;
+  right: 8px;
+}
+
+.choice-combobox .choice-label {
+  display: block;
+}
+
+.choice-option[aria-selected="true"]::before {
+  content: '✓';
+  position: absolute;
+  left: 8px;
+  color: var(--accent-color);
+}
+
+.choice-btn:disabled,
+.choice-combobox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice-combobox,
+  .choice-combobox::after {
+    transition: none;
+  }
 }
 
 .appearance-block {
@@ -1272,11 +1383,11 @@ section h2 {
     width: 100% !important;
   }
 
-  .accent-color-grid {
+  .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .appearance-section .accent-color-grid {
+  .appearance-section .choice-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1563,24 +1674,16 @@ body.te-dialog-open {
   margin: 0 0 16px;
 }
 
-.language-select {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  margin-block-start: 12px;
-  padding: 12px 14px;
-  font: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color-scheme: dark;
-}
-
-.language-select:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* A shared sticky heading, bounded by its own card (overflow: clip does not

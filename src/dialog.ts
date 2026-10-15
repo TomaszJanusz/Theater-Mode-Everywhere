@@ -20,7 +20,9 @@ interface ActiveDialog {
 let activeDialog: ActiveDialog | null = null;
 let dialogTitleSeq = 0;
 
-export function openDialog(options: OpenDialogOptions): Promise<boolean> {
+/** A copy factory keeps an open dialog localized without losing its action or focus. */
+export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)): Promise<boolean> {
+  const options = typeof source === 'function' ? source() : source;
   if (activeDialog) {
     activeDialog.close(false);
   }
@@ -48,15 +50,20 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
 
     const body = document.createElement('div');
     body.id = `${titleId}-body`;
-    if (typeof options.content === 'string') dialog.setAttribute('aria-describedby', body.id);
     body.className = 'te-dialog-body';
-    if (typeof options.content === 'string') {
-      const paragraph = document.createElement('p');
-      paragraph.textContent = options.content;
-      body.appendChild(paragraph);
-    } else {
-      body.appendChild(options.content);
-    }
+    // Plain text is the dialog's description; a caller-built node owns its own semantics.
+    const setBodyContent = (content: string | Node): void => {
+      if (typeof content === 'string') {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = content;
+        body.replaceChildren(paragraph);
+        dialog.setAttribute('aria-describedby', body.id);
+      } else {
+        body.replaceChildren(content);
+        dialog.removeAttribute('aria-describedby');
+      }
+    };
+    setBodyContent(options.content);
 
     const footer = document.createElement('div');
     footer.className = 'te-dialog-footer';
@@ -121,8 +128,19 @@ export function openDialog(options: OpenDialogOptions): Promise<boolean> {
       }
     };
 
-    // Dialog strings are snapshots. Cancel instead of retaining an old-language confirmation.
-    const stopLanguageRendering = languageRuntime.subscribe(() => close(false, true));
+    const stopLanguageRendering = languageRuntime.subscribe(() => {
+      // Callers with snapshot copy still cancel rather than show a stale confirmation.
+      if (typeof source !== 'function') { close(false, true); return; }
+      const copy = source();
+      title.textContent = copy.title;
+      setBodyContent(copy.content);
+      if (copy.actions.type === 'acknowledge') {
+        buttons[0].textContent = copy.actions.label || t('dialogAcknowledge');
+      } else {
+        buttons[0].textContent = copy.actions.falseLabel || t('dialogChoiceFalse');
+        buttons[1].textContent = copy.actions.trueLabel || t('dialogChoiceTrue');
+      }
+    });
     overlay.addEventListener('pointerdown', onOverlayPointerDown);
     const releaseFocus = containModalFocus(dialog, () => close(dismissValue));
     activeDialog = { close };
