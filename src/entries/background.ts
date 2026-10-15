@@ -1,3 +1,4 @@
+import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { resolveDomainPolicy } from '../platform/domain-policy';
 import { createShortcutUpdateQueue, readShortcutUpdate } from '../ui/shortcut-updates';
@@ -114,6 +115,10 @@ const shortcutUpdates = createShortcutUpdateQueue({
 });
 
 chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
+  if (message?.action === 'get-language-catalog') {
+    loadLanguageCatalog(message.locale).then(sendResponse).catch(() => sendResponse(null));
+    return true;
+  }
   if (message?.action === 'update-shortcuts') {
     const request = readShortcutUpdate(message.request);
     const optionsUrl = chrome.runtime.getURL('options/options.html');

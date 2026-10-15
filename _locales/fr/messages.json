@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "L'extension est disponible sous licence MIT."
+  },
+  "languageTitle": {
+    "message": "Langue"
+  },
+  "languageDescription": {
+    "message": "Choisissez la langue des paramètres, de la fenêtre contextuelle et des commandes du lecteur."
+  },
+  "languageAutomatic": {
+    "message": "Automatique (langue du navigateur)"
   }
 }

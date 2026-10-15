@@ -179,9 +179,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
     ownTestBrowser(t, browser);
     try {
       const { page, target } = await fixture(browser);
+      assert.equal(await target.evaluate(() => window.autoStorageProbe.reads), 1, 'Automatic language must reuse the initial settings read');
       assert.ok(await target.evaluate(() => window.autoStorageProbe.deepScans > 0), 'the qualifying paused watch must exercise deep discovery');
       const unrelated: StorageValues = {
-        unrelatedResearchKey: 'x', captionStyle: {}, captionPreferenceByHost: {},
+        language: 'automatic', unrelatedResearchKey: 'x', captionStyle: {}, captionPreferenceByHost: {},
         accentColor: 'blue', voiceBoost: 'off', volumeLeveling: 'off', bassLevel: 'original',
         volumeBoostEnabled: true, shortcuts: { toggle: 'Ctrl+Shift+Y' },
         keepControlsVisible: true, videoFitMode: 'cover', pictureAlign: 'top',

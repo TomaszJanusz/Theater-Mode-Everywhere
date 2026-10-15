@@ -1,3 +1,5 @@
+import { LANGUAGE_STORAGE_KEY } from '../src/language';
+import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 /* Popup script for Theater Everywhere */
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
@@ -16,6 +18,15 @@ import { shouldPatchMainWorld } from '../src/providers/registry';
 fetchAndApplyTheme();
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const stopLanguageStorage = observeLanguageStorage();
+  window.addEventListener('unload', stopLanguageStorage, { once: true });
+  const revision = languageRuntime.revision;
+  let shortcuts = withShortcutDefaults(undefined);
+  try {
+    const data = await chrome.storage.sync.get(['shortcuts', LANGUAGE_STORAGE_KEY]);
+    shortcuts = withShortcutDefaults(data.shortcuts);
+    await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], revision);
+  } catch (error) { console.error('Error loading popup preferences:', error); }
   localizeDocument();
 
   const domainNameEl = document.getElementById('domain-name') as HTMLElement;
@@ -28,6 +39,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentDomain = '';
   let activeTabId: number | null = null;
+  let domainMessage: string | null = 'loadingLabel';
+  let status = { active: true, key: 'statusActive', substitution: undefined as string | undefined };
+  // Dynamic domain/status text has its own owner after initialization.
+  domainNameEl.removeAttribute('data-i18n');
+  statusTextEl.removeAttribute('data-i18n');
+  const renderShortcut = () => {
+    const keyCap = document.querySelector('.key-cap');
+    if (keyCap) keyCap.textContent = shortcuts.toggle || t('shortcutUnassigned');
+  };
+  const stopLanguageRendering = languageRuntime.subscribe(() => {
+    localizeDocument();
+    if (domainMessage) domainNameEl.textContent = t(domainMessage);
+    setUIState(status.active, status.key, status.substitution);
+    renderShortcut();
+  });
+  window.addEventListener('unload', stopLanguageRendering, { once: true });
+  renderShortcut();
 
   // 1. Get current active tab
   try {
@@ -43,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           domain = domain.substring(4);
         }
         currentDomain = domain;
+        domainMessage = null;
         domainNameEl.textContent = url.hostname;
         if (shouldPatchMainWorld(url.hostname)) {
           richTheaterCard.hidden = false;
@@ -54,30 +83,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateStatusUI();
       } else {
         // System pages (chrome://, about://, etc.)
-        domainNameEl.textContent = t('systemPage');
+        domainMessage = 'systemPage';
+        domainNameEl.textContent = t(domainMessage);
         toggleEl.disabled = true;
-        setUIState(false, t('statusInactiveSystem'));
+        setUIState(false, 'statusInactiveSystem');
       }
     } else {
-      domainNameEl.textContent = t('noActivePage');
+      domainMessage = 'noActivePage';
+      domainNameEl.textContent = t(domainMessage);
       toggleEl.disabled = true;
-      setUIState(false, t('statusUnavailable'));
+      setUIState(false, 'statusUnavailable');
     }
   } catch (err) {
     console.error('Popup initialization error:', err);
-    domainNameEl.textContent = t('errorLoading');
+    domainMessage = 'errorLoading';
+    domainNameEl.textContent = t(domainMessage);
     toggleEl.disabled = true;
-  }
-
-  try {
-    const data = await chrome.storage.sync.get('shortcuts');
-    const toggleShortcut = withShortcutDefaults(data.shortcuts).toggle || t('shortcutUnassigned');
-    const keyCapEl = document.querySelector('.key-cap') as HTMLElement | null;
-    if (keyCapEl) {
-      keyCapEl.textContent = toggleShortcut;
-    }
-  } catch (err) {
-    console.error('Error loading shortcuts in popup:', err);
   }
 
   // 2. Open options page
@@ -113,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.storage.sync.set({ blacklist });
       
       // Update local UI
-      setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+      setUIState(isActive, isActive ? 'statusActive' : 'statusDisabled');
 
       // Notify the active tab's content script to update its state dynamically
       if (activeTabId) {
@@ -151,9 +172,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       toggleEl.checked = isActive;
       const parentEntry = parentBlockedEntry(policy);
       if (parentEntry) {
-        setUIState(false, t('statusDisabledByParent', parentEntry));
+        setUIState(false, 'statusDisabledByParent', parentEntry);
       } else {
-        setUIState(isActive, isActive ? t('statusActive') : t('statusDisabled'));
+        setUIState(isActive, isActive ? 'statusActive' : 'statusDisabled');
       }
     } catch (err) {
       console.error('Error reading storage:', err);
@@ -161,8 +182,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Helper to change classes/texts of indicators
-  function setUIState(active: boolean, text: string) {
-    statusTextEl.textContent = text;
+  function setUIState(active: boolean, key: string, substitution?: string) {
+    status = { active, key, substitution };
+    statusTextEl.textContent = t(key, substitution);
     if (active) {
       statusDotEl.className = 'dot active';
     } else {

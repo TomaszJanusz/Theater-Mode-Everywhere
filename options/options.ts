@@ -1,3 +1,5 @@
+import { LANGUAGES, LANGUAGE_STORAGE_KEY, resolveLanguage } from '../src/language';
+import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
@@ -98,6 +100,11 @@ const FEATURE_TOGGLES = [
 ] as const;
 
 async function init() {
+  const stopLanguageStorage = observeLanguageStorage();
+  window.addEventListener('unload', stopLanguageStorage, { once: true });
+  const languageRevision = languageRuntime.revision;
+  const initialSettings = await safeGetStorage(['blacklist', LANGUAGE_STORAGE_KEY]);
+  await languageRuntime.set(initialSettings[LANGUAGE_STORAGE_KEY], languageRevision);
   localizeDocument();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
   document.getElementById('license-text')!.textContent = licenseText.trim();
@@ -110,11 +117,36 @@ async function init() {
   const container = document.getElementById('blacklist-container') as HTMLElement;
   const countBadge = document.getElementById('blacklist-count') as HTMLElement;
 
-  // Load and render blacklist on startup
-  await loadAndRenderBlacklist();
-
-  // Load and bind keyboard shortcuts on startup
   const shortcutEditor = createShortcutEditor(notifyAllTabs);
+  const languageSelect = document.getElementById('language-select') as HTMLSelectElement;
+  for (const { locale, name } of LANGUAGES) {
+    const option = new Option(name, locale);
+    option.lang = locale.replace('_', '-');
+    option.dir = locale === 'ar' ? 'rtl' : 'ltr';
+    languageSelect.add(option);
+  }
+  languageSelect.value = languageRuntime.language;
+  languageSelect.addEventListener('change', async () => {
+    try {
+      await chrome.storage.sync.set({ [LANGUAGE_STORAGE_KEY]: resolveLanguage(languageSelect.value) });
+    } catch (error) {
+      languageSelect.value = languageRuntime.language;
+      console.error('Error saving language:', error);
+    }
+  });
+  const stopLanguageRendering = languageRuntime.subscribe(() => {
+    localizeDocument();
+    languageSelect.value = languageRuntime.language;
+    const focusedAccent = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.accentColor : undefined;
+    const selectedAccent = document.querySelector<HTMLElement>('[data-accent-color][aria-checked="true"]');
+    renderAccentColorOptions(resolveAccentColorPreset(selectedAccent?.dataset.accentColor));
+    if (focusedAccent) document.querySelector<HTMLElement>(`[data-accent-color="${focusedAccent}"]`)?.focus();
+    renderPictureAlignOptions(selectedPictureAlign());
+    shortcutEditor.localize();
+    validationMsg.textContent = '';
+  });
+  window.addEventListener('unload', stopLanguageRendering, { once: true });
+  await loadAndRenderBlacklist(initialSettings);
   await shortcutEditor.initialize();
 
   // Load and bind features toggles
@@ -188,9 +220,9 @@ async function init() {
   });
 
   // Load and render domains list
-  async function loadAndRenderBlacklist() {
+  async function loadAndRenderBlacklist(initialData?: Record<string, unknown>) {
     try {
-      const data = await safeGetStorage('blacklist');
+      const data = initialData ?? await safeGetStorage('blacklist');
       let blacklist = (data.blacklist || []) as string[];
       
       // Normalize blacklist: strip www. and remove duplicates
@@ -227,8 +259,10 @@ async function init() {
           </svg>
         `;
         const emptyTitle = document.createElement('h3');
+        emptyTitle.dataset.i18n = 'noExclusionsYet';
         emptyTitle.textContent = t('noExclusionsYet');
         const emptyDescription = document.createElement('p');
+        emptyDescription.dataset.i18n = 'noExclusionsDescription';
         emptyDescription.textContent = t('noExclusionsDescription');
         emptyState.appendChild(emptyTitle);
         emptyState.appendChild(emptyDescription);
@@ -247,6 +281,7 @@ async function init() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-list-btn';
+        deleteBtn.dataset.i18nTitle = 'removeExclusion';
         deleteBtn.title = t('removeExclusion');
         deleteBtn.innerHTML = `
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -266,6 +301,7 @@ async function init() {
       const errorEl = document.createElement('div');
       errorEl.style.padding = '20px';
       errorEl.style.color = 'var(--danger-color)';
+      errorEl.dataset.i18n = 'errorLoadingSettings';
       errorEl.textContent = t('errorLoadingSettings');
       container.replaceChildren(errorEl);
     }

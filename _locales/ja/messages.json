@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "この拡張機能は MIT ライセンスで提供されています。"
+  },
+  "languageTitle": {
+    "message": "言語"
+  },
+  "languageDescription": {
+    "message": "設定ページ、ポップアップ、プレーヤーの操作ボタンに使用する言語を選択します。"
+  },
+  "languageAutomatic": {
+    "message": "自動（ブラウザーの言語）"
   }
 }

@@ -1,3 +1,4 @@
+import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
 import { observeProviderClock, readProviderClock } from '../providers/timeline';
@@ -1650,6 +1651,19 @@ export function createControls(
         onLayout: updateCaptionDock
       });
     }
+    controlsScope.add(languageRuntime.subscribe(() => {
+      // Rebuild only the current chrome; teardown retires caption/provider work.
+      // Reuse the bound surface so language changes never seek, pause or exit theater.
+      const focused = wrapper.getRootNode() instanceof ShadowRoot
+        ? (wrapper.getRootNode() as ShadowRoot).activeElement : document.activeElement;
+      const focusedClasses = focused instanceof HTMLElement ? [...focused.classList] : [];
+      const helpOpen = ctx.ui().helpOpen;
+      createCustomControls(video);
+      if (helpOpen) showHelpOverlay();
+      else if (focusedClasses.length) {
+        queryPlayerUi<HTMLElement>(`.${focusedClasses.join('.')}`)?.focus();
+      }
+    }));
     showToolbar();
   }
 

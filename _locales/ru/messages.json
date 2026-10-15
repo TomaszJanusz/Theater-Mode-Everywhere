@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "Расширение распространяется по лицензии MIT."
+  },
+  "languageTitle": {
+    "message": "Язык"
+  },
+  "languageDescription": {
+    "message": "Выберите язык настроек, всплывающего окна расширения и элементов управления плеером."
+  },
+  "languageAutomatic": {
+    "message": "Автоматически (язык браузера)"
   }
 }

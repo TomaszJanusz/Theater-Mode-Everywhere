@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "Розширення доступне за ліцензією MIT."
+  },
+  "languageTitle": {
+    "message": "Мова"
+  },
+  "languageDescription": {
+    "message": "Виберіть мову налаштувань, спливного вікна розширення та елементів керування програвачем."
+  },
+  "languageAutomatic": {
+    "message": "Автоматично (мова браузера)"
   }
 }

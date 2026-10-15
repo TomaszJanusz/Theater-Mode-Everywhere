@@ -1,3 +1,5 @@
+import { LANGUAGE_STORAGE_KEY } from '../language';
+import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisit } from './auto-theater';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
@@ -1090,6 +1092,7 @@ function toggleAutoTheaterCommand(): void {
 async function checkBlacklistAndInit(): Promise<void> {
   const currentHostname = window.location.hostname;
   const epoch = ++settingsLoadEpoch;
+  const languageRevision = languageRuntime.revision;
   // A pending policy read must never auto-enter under the previous blacklist.
   autoTheaterPolicyAllowed = false;
 
@@ -1102,6 +1105,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     const data = await chrome.storage.sync.get([
       'blacklist',
       'shortcuts',
+      LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
@@ -1115,6 +1119,8 @@ async function checkBlacklistAndInit(): Promise<void> {
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
     ]);
+    if (epoch !== settingsLoadEpoch) return;
+    await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], languageRevision);
     if (epoch !== settingsLoadEpoch) return;
     const blacklist = (data.blacklist || []) as string[];
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
@@ -2280,6 +2286,7 @@ export function bootstrapPlayerRuntime(): void {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
+      if (changes[LANGUAGE_STORAGE_KEY]) void languageRuntime.set(changes[LANGUAGE_STORAGE_KEY].newValue);
 
       if (changes[VOLUME_BOOST_STORAGE_KEY]) {
         applyVolumeBoost(resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue));

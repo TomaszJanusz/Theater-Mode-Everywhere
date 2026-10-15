@@ -1,3 +1,5 @@
+import { translateMessage } from '../i18n-runtime';
+
 export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   shortcutUnassigned: "Not assigned",
   shortcutExistingConflicts: "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts.",
@@ -144,29 +146,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
 export type UiDirection = 'ltr' | 'rtl';
 
 export function t(messageName: string, substitutions?: string | string[]): string {
-  try {
-    if (typeof chrome !== 'undefined' && chrome.i18n && chrome.i18n.getMessage) {
-      const message = chrome.i18n.getMessage(messageName, substitutions);
-      if (message) {
-        return message;
-      }
-    }
-  } catch {
-    // Content scripts can run in test pages without extension i18n.
-  }
-
-  let fallback = PLAYER_I18N_FALLBACKS[messageName] || messageName;
-  const replacementValues = Array.isArray(substitutions)
-    ? substitutions
-    : substitutions === undefined
-      ? []
-      : [substitutions];
-
-  replacementValues.forEach((value, index) => {
-    fallback = fallback.replace(new RegExp(`\\$${index + 1}`, 'g'), () => value);
-  });
-
-  return fallback;
+  return translateMessage(PLAYER_I18N_FALLBACKS, messageName, substitutions);
 }
 
 export function getUiDirection(): UiDirection {

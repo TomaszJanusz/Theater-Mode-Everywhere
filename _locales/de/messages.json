@@ -854,5 +854,14 @@
   },
   "aboutLicenseNote": {
     "message": "Die Erweiterung steht unter der MIT-Lizenz."
+  },
+  "languageTitle": {
+    "message": "Sprache"
+  },
+  "languageDescription": {
+    "message": "Wähle die Sprache für die Einstellungen, das Erweiterungs-Popup und die Wiedergabesteuerung."
+  },
+  "languageAutomatic": {
+    "message": "Automatisch (Browsersprache)"
   }
 }

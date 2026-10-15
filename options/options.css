@@ -1613,3 +1613,23 @@ body.te-dialog-open {
   font-size: 13px;
   margin: 0 0 16px;
 }
+
+.language-select {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  margin-block-start: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color-scheme: dark;
+}
+
+.language-select:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
