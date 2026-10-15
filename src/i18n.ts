@@ -221,6 +221,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   subtitleOpacity: 'Opacity',
   subtitlePreviewSample: 'Sample caption',
   dialogDone: 'Done',
+  dialogClose: 'Close',
   switchVideoTooltip: 'Switch Video on Page <kbd>$1</kbd>',
   keyboardShortcutsTooltip: 'Keyboard Shortcuts <kbd>$1</kbd>',
   fiveSeconds: '5 seconds',

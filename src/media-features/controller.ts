@@ -685,6 +685,7 @@ export class MediaFeaturesController {
       t: this.t,
       style: this.captionStyle,
       signal: this.dialogAbort.signal,
+      returnFocus: this.ccBtn,
       onChange: (style) => {
         this.setCaptionStyle(style);
         this.onCaptionStyleChange?.(style);

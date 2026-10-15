@@ -9,6 +9,7 @@ import {
   resolveCaptionFontScale,
   type CaptionFontPreset
 } from './caption-style';
+import { createDialogCloseButton } from '../ui/dialog-close-button';
 import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
@@ -22,6 +23,8 @@ export async function openCaptionOptionsDialog(options: {
   style: CaptionStyle;
   onChange: (style: CaptionStyle) => void;
   decorate?: (overlay: HTMLElement) => void;
+  /** Receives focus when the user dismisses the dialog; not when the signal aborts. */
+  returnFocus?: HTMLElement;
   signal?: AbortSignal;
 }): Promise<void> {
   const current = { ...options.style };
@@ -34,9 +37,13 @@ export async function openCaptionOptionsDialog(options: {
   dialog.setAttribute('role', 'dialog');
   dialog.setAttribute('aria-modal', 'true');
 
+  const header = document.createElement('div');
+  header.className = 'te-dialog-header';
   const title = document.createElement('h2');
   title.className = 'te-dialog-title';
   title.textContent = options.t('subtitleOptionsTitle');
+  const closeBtn = createDialogCloseButton(options.t('dialogClose'));
+  header.append(title, closeBtn);
 
   const body = document.createElement('div');
   body.className = 'te-dialog-body';
@@ -137,7 +144,7 @@ export async function openCaptionOptionsDialog(options: {
   done.textContent = options.t('dialogDone');
   footer.append(reset, done);
 
-  dialog.append(title, body, footer);
+  dialog.append(header, body, footer);
   overlay.appendChild(dialog);
   options.decorate?.(overlay);
   mountPlayerUi(overlay);
@@ -146,7 +153,7 @@ export async function openCaptionOptionsDialog(options: {
 
   await new Promise<void>((resolve) => {
     let settled = false;
-    const close = (): void => {
+    const close = (restoreFocus = true): void => {
       if (settled) return;
       settled = true;
       overlay.removeEventListener('pointerdown', onOverlay);
@@ -154,6 +161,7 @@ export async function openCaptionOptionsDialog(options: {
       options.signal?.removeEventListener('abort', onAbort);
       document.body.classList.remove('te-dialog-open');
       overlay.remove();
+      if (restoreFocus && options.returnFocus?.isConnected) options.returnFocus.focus();
       resolve();
     };
     const onOverlay = (event: PointerEvent): void => {
@@ -166,13 +174,14 @@ export async function openCaptionOptionsDialog(options: {
       close();
     };
     const onAbort = (): void => {
-      close();
+      close(false);
     };
     overlay.addEventListener('pointerdown', onOverlay);
     document.addEventListener('keydown', onKeyDown, true);
-    done.addEventListener('click', close, { once: true });
+    done.addEventListener('click', () => close(), { once: true });
+    closeBtn.addEventListener('click', () => close(), { once: true });
     if (options.signal?.aborted) {
-      close();
+      close(false);
       return;
     }
     options.signal?.addEventListener('abort', onAbort, { once: true });

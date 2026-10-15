@@ -1,5 +1,6 @@
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
 import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
+import { createDialogCloseButton } from './dialog-close-button';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
@@ -54,16 +55,7 @@ export function createHelp(ctx: PlayerChromeContext) {
     const title = document.createElement('h3');
     title.textContent = ctx.t('keyboardShortcutsTitle');
 
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'theater-help-close-btn';
-    closeBtn.setAttribute('aria-label', ctx.t('showHideHelp'));
-    closeBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  `;
+    const closeBtn = createDialogCloseButton(ctx.t('showHideHelp'));
     closeBtn.addEventListener('click', () => hideHelpOverlay());
 
     header.appendChild(title);
