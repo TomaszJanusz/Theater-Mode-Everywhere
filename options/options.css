@@ -1624,7 +1624,7 @@ body.te-dialog-open {
 .rte-badges { display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
 .rte-badge { font-size: 11px; padding: 3px 7px; border-radius: 20px; background: #303035; color: #d4d4d8; }
 .rte-badge.is-matching { background: color-mix(in srgb, var(--accent-color) 22%, #303035); color: var(--text-primary); outline: 1px solid var(--accent-color); }
-.rte-note { grid-column: 1 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.rte-note { grid-column: 1 / -1; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
 .rte-tile:has(input:not(:checked)) .rte-name,
 .rte-tile:has(input:not(:checked)) .rte-badge { color: var(--text-secondary); }
 .rte-tile:has(input:not(:checked)) .rte-badge { background: #27272a; }
