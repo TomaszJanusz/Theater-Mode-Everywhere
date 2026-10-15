@@ -28,7 +28,7 @@ Deliberately preserved:
 | Surface/property | Reason |
 | --- | --- |
 | Video, host/native controls, native chat documents, provider-native captions and SponsorBlock segment colors | Host or user ownership. These preferences restyle extension chrome, without changing playback, provider integrations or host presentation. |
-| Subtitle colors, backgrounds/opacity, swatches, raised-caption background and karaoke word emphasis | Explicit viewer preferences and caption content; modes must not overwrite them. The surrounding subtitle controls/dialog still adapt. |
+| Subtitle colors, backgrounds/opacity, swatches, raised-caption background and karaoke word emphasis | Explicit viewer preferences and caption content; modes must not overwrite them. The surrounding subtitle controls/dialog and high-contrast status notification still use readable UI text tokens. |
 | Timeline buffer/progress/heatmap, thumbnails and service countdown progress | Data layered over the track or image, rather than a glass UI surface. Buffer/progress must remain distinguishable. High contrast outlines the enclosing track and uses a visible solid countdown fill (`#71717a`, 3.67:1 against the panel; white text is 4.83:1). |
 | Transparent structural wrappers, notches/masks and the WASM pointer catcher | They expose an owned plate or the video and must not become solid rectangles. |
 | Visibility/fade transitions, loaders, shadows and image/marquee edge masks | They express lifecycle/depth or clip media. Reduce transparency does not change the separate reduced-motion preference. Decorative RTE animation is removed because its layer is removed. |

@@ -28,7 +28,7 @@ const bundle = esbuild.buildSync({ stdin: { contents: `
     setPlayerUiCss(css);
     const root = getPlayerUiRoot();
     root.innerHTML += '<div class="theater-controls-wrapper visible"><button>Play</button><div class="theater-settings-menu"><span class="theater-settings-label">Player settings</span></div></div>';
-    root.innerHTML += '<div class="theater-service-action-progress"></div><div class="theater-caption-overlay-text" style="--theater-caption-color:rgb(250,217,0);--theater-caption-bg:rgba(1,2,3,0.4)">Captions</div>';
+    root.innerHTML += '<div class="theater-everywhere-caption-hud" style="--theater-caption-color:#010203">Caption feedback</div><div class="theater-service-action-progress"></div><div class="theater-caption-overlay-text" style="--theater-caption-color:rgb(250,217,0);--theater-caption-bg:rgba(1,2,3,0.4)">Captions</div>';
     ensureNewBadgeStyles(document);
     document.body.append(createNewBadge());
     if (document.getElementById('rte-tiles')) window.stopRte = await setupRteSettings(async () => {});
@@ -149,6 +149,7 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
             border: tokenColor('--border-color'),
             badgeText: style('.te-new-badge').color, badge: style('.te-new-badge').backgroundColor,
             ring: getComputedStyle(document.querySelector('.te-animated-border')!, '::before').content,
+            notification: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-caption-hud')!).color,
             progress: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-service-action-progress')!).backgroundColor,
             player: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!, '::before').backgroundColor
           };
@@ -167,6 +168,7 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
         }
         assert.ok(ratio(colors.accent, colors.panel) >= (high ? 7 : 3), `${label} accent indicator`);
         if (high) {
+          assert.ok(ratio(colors.notification, colors.panel) >= 7, `${label} caption feedback stays readable independently of caption color`);
           assert.ok(ratio(colors.border, colors.panel) >= 3, `${label} boundary`);
           assert.ok(ratio(colors.progress, colors.panel) >= 3, `${label} countdown progress`);
           assert.ok(ratio(colors.text, colors.progress) >= 4.5, `${label} text over countdown progress`);

@@ -2194,6 +2194,7 @@ async function assertAppearanceModes(context: BrowserContext, origin: string): P
     await player.locator('.player-settings-btn').press('Escape'); // First dismiss the menu.
     await player.keyboard.press('Escape');
     await player.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+    await player.locator('#theater-everywhere-ui').waitFor({ state: 'detached' });
     await player.keyboard.press('t');
     await waitModes('high', 'reduced');
     console.log('smoke:chromium appearance: installed Settings, cross-tab storage, popup, shadow player, RTE, restoration and reentry passed');
