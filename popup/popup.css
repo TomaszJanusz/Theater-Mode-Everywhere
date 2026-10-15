@@ -1,3 +1,5 @@
+@import '../src/settings-brand.css';
+
 /* Popup styling for Theater Everywhere */
 
 :root {
@@ -51,22 +53,6 @@ body {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
-}
-
-.logo-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.logo-icon-svg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
-  padding: 6px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--accent-color) 24%, transparent);
 }
 
 .logo-text {
