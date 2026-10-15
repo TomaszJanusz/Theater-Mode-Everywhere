@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
+import { ownTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
@@ -82,6 +83,45 @@ async function waitForHud(page: Page, text: string): Promise<void> {
 
 describe('playback HUD browser regressions', () => {
   for (const engine of ['chromium', 'firefox'] as const) {
+    it(`centers the feedback HUD on the picture across layout, fit and resize in ${engine}`, { timeout: 60_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      for (const settings of [
+        { pictureAlign: 'center', videoFitMode: 'contain' },
+        { pictureAlign: 'top', videoFitMode: 'contain' },
+        { pictureAlign: 'top', videoFitMode: 'cover' },
+        { pictureAlign: 'top', videoFitMode: 'fill' }
+      ]) {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
+        await page.goto('http://playback-hud.test/');
+        await boot(page, settings);
+        const checkCenter = async () => {
+          await page.keyboard.press('ArrowUp');
+          const result = await page.locator('.theater-everywhere-volume-overlay').evaluate(hud => {
+            const video = document.querySelector('video')!;
+            const media = video.getBoundingClientRect();
+            const raised = getComputedStyle(video).objectPosition === '50% 0%';
+            const height = raised ? Math.min(media.height, media.width * video.videoHeight / video.videoWidth) : media.height;
+            const rect = hud.getBoundingClientRect();
+            const center = rect.top + rect.height / 2;
+            hud.classList.add('fade-out');
+            const fading = hud.getBoundingClientRect();
+            return { center, fadingCenter: fading.top + fading.height / 2, expected: media.top + height / 2 };
+          });
+          assert.ok(Math.abs(result.center - result.expected) < 1, JSON.stringify({ settings, result }));
+          assert.ok(Math.abs(result.fadingCenter - result.center) < 1, 'fading must retain the same center');
+        };
+        await checkCenter();
+        await page.setViewportSize({ width: 960, height: 900 });
+        await page.waitForFunction(() => document.documentElement.style.getPropertyValue('--theater-video-width') === '960px');
+        await checkCenter();
+        await page.locator('.close-btn').dispatchEvent('click');
+        assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--theater-hud-center-y')), '');
+        await page.close();
+      }
+    });
+
     it(`keeps boosted HUD and toolbar speakers orange over a green accent in ${engine}`, { timeout: 60_000 }, async () => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

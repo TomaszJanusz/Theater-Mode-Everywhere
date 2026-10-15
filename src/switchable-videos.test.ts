@@ -11,6 +11,7 @@ function fakeVideo(init: {
   srcObject?: unknown;
   sourceEl?: unknown;
   visibility?: string;
+  display?: string;
   hosts?: string[];
   videoWidth?: number;
   videoHeight?: number;
@@ -24,7 +25,7 @@ function fakeVideo(init: {
   const box = init.box || { width: init.clientWidth ?? 880, height: init.clientHeight ?? 495 };
   return {
     currentSrc: init.currentSrc ?? '',
-    ownerDocument: { defaultView: { getComputedStyle: () => ({ visibility: init.visibility ?? 'visible', display: 'block' }) } },
+    ownerDocument: { defaultView: { getComputedStyle: () => ({ visibility: init.visibility ?? 'visible', display: init.display ?? 'block' }) } },
     src: init.src ?? '',
     srcObject: init.srcObject ?? null,
     querySelector: () => init.sourceEl ?? null,
@@ -64,6 +65,17 @@ function mainYouTubeVideo(): HTMLVideoElement {
 }
 
 describe('switchable theater videos', () => {
+  it('excludes the Disney standby before and after the real episode video mounts', () => {
+    const standby = fakeVideo({ display: 'none', hosts: ['disney-web-player'] });
+    assert.deepEqual(selectSwitchableVideos([standby]), []);
+    const current = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/episode',
+      readyState: 4, videoWidth: 1920, videoHeight: 1080, hosts: ['disney-web-player'] });
+    assert.deepEqual(selectSwitchableVideos([standby, current]), [current]);
+    const sourcedStandby = fakeVideo({ currentSrc: 'blob:https://www.disneyplus.com/standby',
+      readyState: 4, videoWidth: 1920, videoHeight: 1080, display: 'none', hosts: ['disney-web-player'] });
+    assert.deepEqual(selectSwitchableVideos([sourcedStandby, current]), [current]);
+  });
+
   it('ignores empty leftover videos with no source or metadata', () => {
     assert.equal(isSwitchableTheaterVideo(fakeVideo({
       box: { width: 880, height: 495 }

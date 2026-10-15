@@ -1079,7 +1079,7 @@ button.theater-time-end:hover {
 
 .theater-caption-overlay-text {
   display: inline-block !important;
-  background: var(--theater-caption-bg, rgba(20, 20, 20, 0.8)) !important;
+  background: var(--theater-caption-bg, rgba(0, 0, 0, 0.8)) !important;
   color: var(--theater-caption-color, rgba(250, 217, 0, 1)) !important;
   padding: 6px 12px !important;
   border-radius: 6px !important;
@@ -1922,9 +1922,9 @@ button.theater-time-end:hover {
 /* Volume level overlay HUD */
 .theater-everywhere-volume-overlay {
   position: fixed !important;
-  top: 10% !important;
+  top: var(--theater-hud-center-y, 50vh) !important;
   left: 50% !important;
-  transform: translate(-50%, 0) scale(1) !important;
+  transform: translate(-50%, -50%) scale(1) !important;
   border: 1px solid transparent !important;
   outline: 1px solid rgba(255, 255, 255, 0.12) !important;
   outline-offset: 1px !important;
@@ -2194,7 +2194,7 @@ button.theater-time-end:hover {
 
 .theater-everywhere-volume-overlay.fade-out {
   opacity: 0 !important;
-  transform: translate(-50%, 0) scale(1) !important;
+  transform: translate(-50%, -50%) scale(1) !important;
   transition: opacity 0.2s ease !important;
 }
 

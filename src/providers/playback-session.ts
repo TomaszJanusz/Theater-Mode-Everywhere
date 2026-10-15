@@ -1,5 +1,5 @@
 import type { PlaybackSurface } from '../playback-surface';
-import { isInactiveThumbPlayerVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isInactiveStandbyVideo, selectSwitchableVideos } from '../switchable-videos';
 import { isTencentHost } from './hosts';
 import { openTencentPlaybackSession } from './tencent/playback-session';
 import {
@@ -28,7 +28,7 @@ export function findProviderTheaterTarget(discovery: {
 }): HTMLElement | null {
   if (isProviderPlaybackFrameDocument()) return null;
   if (!isTencentHost()) return discovery.findBestVideo();
-  const pool = selectSwitchableVideos(discovery.findAllVideosDeep().filter(video => !isInactiveThumbPlayerVideo(video)));
+  const pool = selectSwitchableVideos(discovery.findAllVideosDeep().filter(video => !isInactiveStandbyVideo(video)));
   const best = discovery.findBestVideo();
   const switchable = pool.length > 0 ? (best && pool.includes(best) ? best : pool[0]) : null;
   const wasm = Array.from(document.querySelectorAll('fake-iframe-video')).find(element => isUsableTencentWasmPlayer(element)) || null;

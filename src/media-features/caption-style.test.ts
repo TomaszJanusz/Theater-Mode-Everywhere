@@ -31,6 +31,16 @@ describe('caption font scale', () => {
     });
   });
 
+  it('uses black for the old dark background and retains the selected opacity and other colors', () => {
+    const style = resolveCaptionStyle({ backgroundColor: '#141414', backgroundOpacity: 0.35 });
+    assert.equal(style.backgroundColor, '#000000');
+    assert.equal(style.backgroundOpacity, 0.35);
+    assert.equal(resolveCaptionStyle({ backgroundColor: '#ffffff' }).backgroundColor, '#ffffff');
+    const properties = new Map<string, string>();
+    applyCaptionStyle({ style: { setProperty: (name: string, value: string) => properties.set(name, value) } } as unknown as HTMLElement, style);
+    assert.equal(properties.get('--theater-caption-bg'), 'rgba(0, 0, 0, 0.35)');
+  });
+
   it('renders a crisp bottom-right shadow with configurable opacity', () => {
     const properties = new Map<string, string>();
     const target = {
