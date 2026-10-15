@@ -8,6 +8,7 @@ import {
 } from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
 import {
+  WHATS_NEW_ACK_STORAGE_KEY,
   shouldAutoOpenWhatsNewOnUpdate,
   whatsNewAutoOpenStorageKey
 } from '../whatsNew-release';
@@ -176,13 +177,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       console.error('[Theater Everywhere] Error migrating legacy YouTube exclusion:', err);
     }
 
-    if (!shouldAutoOpenWhatsNewOnUpdate(details)) return;
-
     try {
       const targetVersion = chrome.runtime.getManifest().version;
       const storageKey = whatsNewAutoOpenStorageKey(targetVersion);
-      const data = await chrome.storage.local.get(storageKey);
-      if (data[storageKey]) return;
+      const data = await chrome.storage.local.get([WHATS_NEW_ACK_STORAGE_KEY, storageKey]);
+      if (!shouldAutoOpenWhatsNewOnUpdate(details, data[WHATS_NEW_ACK_STORAGE_KEY]) || data[storageKey]) return;
 
       await chrome.storage.local.set({ [storageKey]: true });
       await chrome.runtime.openOptionsPage();

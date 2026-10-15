@@ -456,19 +456,25 @@
     "message": "ما الجديد"
   },
   "whatsNewLead": {
-    "message": "تعرّف على Rich Theater Experience مع أدوات تشغيل إضافية لخدمات الفيديو المدعومة."
+    "message": "وضع مسرح أكثر راحة مع عناصر تحكم جديدة والمزيد من الخدمات المدعومة."
   },
-  "whatsNewItemCaptions": {
-    "message": "ترجمات أفضل: اختر مسارًا، وخصّص مظهر الترجمة، واحتفظ بلغتك المفضلة لكل موقع."
+  "whatsNewItemChat": {
+    "message": "احتفظ بدردشة YouTube وTwitch بجانب الفيديو أو أسفله، وأظهرها أو أخفها من المشغل."
   },
-  "whatsNewItemChapters": {
-    "message": "مزيد من السياق على الخط الزمني: انتقل بين الفصول وشاهد أكثر اللحظات إعادةً على YouTube."
+  "whatsNewItemLayout": {
+    "message": "اختر عرض الصورة في الوسط أو في الأعلى؛ ويمكن عرض الترجمة في المساحة السوداء أسفل الفيديو."
   },
-  "whatsNewItemPreviews": {
-    "message": "عاين قبل البحث: مرّر فوق الخط الزمني لرؤية صور مصغرة على مشغلات YouTube وVimeo وPatreon وTwitch وDisney+ وBilibili وBilibili.tv وTencent Video / WeTV المدعومة."
+  "whatsNewItemControls": {
+    "message": "أبقِ عناصر التحكم ظاهرة، وانتقل إلى الفيديو السابق أو التالي عند توفره، وشاهد العنوان في المشغل."
+  },
+  "whatsNewItemAudio": {
+    "message": "اضبط وضوح الحوار والأصوات العالية والجهير ومستوى الصوت من إعدادات المشغل عند توفر معالجة الصوت."
+  },
+  "whatsNewItemServices": {
+    "message": "تكاملات Rich Theater Experience جديدة مع Bilibili وBilibili.tv وTencent Video / WeTV وCrunchyroll وNetflix، مع أزرار تخطٍ حيثما تتوفر."
   },
   "whatsNewThanks": {
-    "message": "فعّل Rich Theater Experience (Experimental) من نافذة الإضافة على المواقع المدعومة أو من صفحة الإعدادات. ما زالت الميزة تجريبية، لذا قد تختلف بعض الوظائف حسب الخدمة :)"
+    "message": "شكرًا لـ @liango2 على اقتراح إبقاء عناصر التحكم ظاهرة، ولـ Denis Tyscenko على اقتراح تشغيل وضع المسرح تلقائيًا."
   },
   "dialogAcknowledge": {
     "message": "حسنًا"
@@ -689,7 +695,7 @@
     "message": "صنع بـ <span class=\"heart\">❤</span> في 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "الدخول إلى وضع السينما تلقائيًا"
+    "message": "الدخول إلى وضع المسرح تلقائيًا"
   },
   "autoEnterTheaterOn": {
     "message": "تشغيل"
@@ -698,7 +704,7 @@
     "message": "إيقاف"
   },
   "autoEnterTheaterDescription": {
-    "message": "ادخل إلى وضع السينما عندما يبدأ تشغيل الفيديو الرئيسي على صفحات المشاهدة في الخدمات المدعومة مع تفعيل Rich Theater Experience."
+    "message": "ادخل إلى وضع المسرح عندما يبدأ تشغيل الفيديو الرئيسي على صفحات المشاهدة في الخدمات المدعومة مع تفعيل Rich Theater Experience."
   },
   "keepControlsVisibleTitle": {
     "message": "إظهار عناصر التحكم دائمًا"
