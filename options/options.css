@@ -623,21 +623,21 @@ section h2 {
 /* Footer style */
 .footer {
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--appearance-muted, var(--text-secondary));
-  border-top: 1px solid var(--border-color);
   padding-top: 16px;
 }
 
 .footer-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
 }
 
 .copyright,
 .made-in-poland {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--appearance-ink, #52525b);
 }
 
@@ -1534,6 +1534,37 @@ body.te-dialog-open {
   animation: te-dialog-rise-out 0.16s ease both;
 }
 
+.te-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.te-dialog-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--appearance-muted, var(--text-secondary));
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.te-dialog-close:hover {
+  color: var(--appearance-ink, var(--text-primary));
+  background: var(--border-color);
+}
+
+.te-dialog-close:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .te-dialog-title {
   font-size: 18px;
   font-weight: 750;
@@ -1547,20 +1578,73 @@ body.te-dialog-open {
   line-height: 1.5;
 }
 
+.te-dialog-whats-new {
+  --whats-new-bg: var(--appearance-surface, var(--card-bg));
+  width: min(650px, 100%);
+  max-height: 100%;
+  background: var(--whats-new-bg);
+}
+
+.te-dialog-whats-new .te-dialog-body,
+.whats-new-announcement {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.whats-new-announcement {
+  gap: 16px;
+}
+
 .whats-new-content {
   display: flex;
   flex-direction: column;
+  flex: 0 1 auto;
   gap: 12px;
   text-align: start;
   max-height: 60vh;
+  min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-secondary) var(--card-bg);
-  padding-inline-end: 8px;
+  overscroll-behavior: contain;
+  scrollbar-width: auto;
+  scrollbar-color: var(--appearance-muted, var(--text-secondary)) var(--whats-new-bg);
+  scrollbar-gutter: stable;
+  padding: 4px 12px 4px 0;
+  /* Local covers move with the content, revealing each radial shadow only
+     while there is more content to scroll towards that edge. */
+  background:
+    linear-gradient(var(--whats-new-bg) 30%, transparent) center top / 100% 32px local no-repeat,
+    linear-gradient(transparent, var(--whats-new-bg) 70%) center bottom / 100% 32px local no-repeat,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 70%), transparent) center top / 100% 14px scroll no-repeat,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 70%), transparent) center bottom / 100% 14px scroll no-repeat;
+  background-color: var(--whats-new-bg);
 }
 
 .whats-new-content > * {
   margin: 0;
+  flex-shrink: 0;
+}
+
+/* Chromium's standard scrollbar colors can restore auto-hiding overlay bars.
+   Use its explicit track/thumb styling to keep the scroll affordance visible. */
+@supports selector(::-webkit-scrollbar) {
+  .whats-new-content {
+    scrollbar-color: auto;
+  }
+}
+
+.whats-new-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.whats-new-content::-webkit-scrollbar-track {
+  background: var(--whats-new-bg);
+}
+
+.whats-new-content::-webkit-scrollbar-thumb {
+  border: 2px solid var(--whats-new-bg);
+  border-radius: 8px;
+  background: var(--appearance-muted, var(--text-secondary));
 }
 
 .whats-new-lead {
@@ -1595,7 +1679,10 @@ body.te-dialog-open {
 }
 
 .whats-new-thanks {
-  margin-top: 2px;
+  margin: 0;
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
   color: var(--appearance-muted, var(--text-secondary));
   font-size: 13px;
   font-style: italic;

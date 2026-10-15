@@ -847,7 +847,7 @@
     "message": "播放速度"
   },
   "sponsorBlockMarkersTitle": {
-    "message": "SponsorBlock 标记"
+    "message": "SponsorBlock 支持"
   },
   "sponsorBlockMarkersDescription": {
     "message": "在 YouTube 影院模式时间轴上显示已安装的 SponsorBlock 扩展程序的标记，并使用其配色。"

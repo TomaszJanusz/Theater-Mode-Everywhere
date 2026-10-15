@@ -158,7 +158,7 @@ it('Features switch has an accessible name, defaults on and persists through sha
       };
       window.chrome = {runtime:{getURL: file => file},storage:{sync:storage,onChanged:{addListener:fn => changes.push(fn)}},tabs:{query:async()=>[]}};`);
     await page.addScriptTag({ content: options.outputFiles![0].text });
-    const toggle = page.getByRole('checkbox', { name: 'SponsorBlock markers', exact: true });
+    const toggle = page.getByRole('checkbox', { name: 'SponsorBlock support', exact: true });
     await toggle.waitFor({ state: 'attached' });
     await page.waitForFunction(() => document.querySelector<HTMLInputElement>('#sponsorblock-toggle')!.checked);
     await page.locator('label[for=sponsorblock-toggle]').click();

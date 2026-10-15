@@ -46,7 +46,13 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
     title.id = titleId;
     title.className = 'te-dialog-title';
     title.textContent = options.title;
-    header.appendChild(title);
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'te-dialog-close';
+    closeButton.setAttribute('aria-label', t('dialogClose'));
+    closeButton.textContent = '×';
+    closeButton.addEventListener('click', () => close(dismissValue));
+    header.append(title, closeButton);
 
     const body = document.createElement('div');
     body.id = `${titleId}-body`;
@@ -133,6 +139,7 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
       if (typeof source !== 'function') { close(false, true); return; }
       const copy = source();
       title.textContent = copy.title;
+      closeButton.setAttribute('aria-label', t('dialogClose'));
       setBodyContent(copy.content);
       if (copy.actions.type === 'acknowledge') {
         buttons[0].textContent = copy.actions.label || t('dialogAcknowledge');

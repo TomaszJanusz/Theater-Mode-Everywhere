@@ -33,6 +33,8 @@ export async function assertLocalized(page: Page, locale: string, selector = 'ht
       return text;
     };
     const visit = (element: Element): void => {
+      // Release announcements are deliberately English-only, independently of UI language.
+      if (element.closest('.whats-new-announcement[lang="en"]')) return;
       // Endonyms deliberately retain their own language, including English.
       if (element.closest('#language-combobox [lang], #language-combobox-listbox [lang]')) return;
       if (!element.matches('script, style, svg, svg *')) {

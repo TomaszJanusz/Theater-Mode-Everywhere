@@ -69,6 +69,7 @@ export async function openWhatsNewDialog(): Promise<boolean> {
   const result = await openDialog(() => ({
     title: t('whatsNewDialogTitle'),
     content: buildWhatsNewContent(),
+    setup: (_overlay, dialog) => dialog.classList.add('te-dialog-whats-new'),
     actions: {
       type: 'acknowledge',
       label: t('dialogAcknowledge')

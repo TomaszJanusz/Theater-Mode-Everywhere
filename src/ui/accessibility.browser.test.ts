@@ -346,7 +346,11 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         assert.match(await page.locator('body').ariaSnapshot(), /dialog "Review"/);
         assert.equal(await page.locator('#opener').evaluate((el: HTMLElement) => el.inert), true);
         await page.keyboard.press('Tab');
+        assert.equal(await focused(page, '.te-dialog-close'), true);
+        await page.keyboard.press('Tab');
         assert.equal(await focused(page, 'a'), true);
+        await page.keyboard.press('Shift+Tab');
+        assert.equal(await focused(page, '.te-dialog-close'), true);
         await page.keyboard.press('Shift+Tab');
         assert.equal(await focused(page, '.te-dialog-btn-primary'), true);
         await page.keyboard.press('Escape');

@@ -2,6 +2,7 @@ import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderF
 import { createServer } from 'node:http';
 import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
+import { WHATS_NEW_CONTENT } from '../src/whatsNew-content';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -2076,7 +2077,8 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
       await options.getByRole('button', { name: messages.dialogAcknowledge.message, exact: true }).waitFor();
       const content = options.locator('.whats-new-content[lang="en"][dir="ltr"]');
       await content.getByRole('heading', { name: 'Here is Theater Mode Everywhere 1.6!', exact: true }).waitFor();
-      if (await content.locator('li').count() !== 13) throw new Error('Announcement must contain 13 English list items');
+      if (await content.locator('li').count() !== WHATS_NEW_CONTENT.items.length) throw new Error('Announcement must contain every English release item');
+      await options.locator('.whats-new-thanks em').waitFor();
       await options.waitForFunction(locale => document.documentElement.dir === (locale === 'ar' ? 'rtl' : 'ltr'), locale);
       await content.focus();
       await content.press('End');
@@ -2092,7 +2094,7 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
         await options.locator('.te-dialog-btn-primary').focus();
         await content.evaluate(el => { el.scrollTop = 0; });
         await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}.png`) });
-        await content.locator('em').scrollIntoViewIfNeeded();
+        await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
         await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}-end.png`) });
       }
       const scrollable = await content.evaluate(el => el.scrollHeight > el.clientHeight);

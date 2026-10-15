@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
-import { chromium } from 'playwright';
+import { chromium, firefox } from 'playwright';
 import { ownTestBrowser } from './test-utils/test-browser';
 
 const bundle = buildSync({
@@ -45,6 +45,8 @@ it('renders static English semantic content safely and refreshes localized dialo
       'Rich Theater Experience: Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;',
       'Rich Theater Experience: You can turn RTE on or off for individual sites.',
       'Audio effects: Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.',
+      'SponsorBlock support: See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.',
+      'Accessibility: Theater Mode Everywhere respects your system preferences for increased contrast and reduced transparency.',
       'The titles of the videos being played are displayed.',
       'You can go to the home page of the service the video is playing on.',
       'Theater Mode Everywhere should now use fewer resources.',
@@ -52,9 +54,11 @@ it('renders static English semantic content safely and refreshes localized dialo
       'A clearer layout of the extension\'s settings page; a new "About" page has been added.',
       'You can change the language, and the translations have been improved.'
     ]);
-    assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pinnable TME bar', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:']);
-    assert.equal(await root.locator('p em').textContent(), 'Thank you to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
+    assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pinnable TME bar', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Accessibility:']);
+    assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Thank you to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
     await page.locator('.te-dialog-btn-primary').focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('.te-dialog-close').evaluate(el => el === document.activeElement), true, 'close button is in the focus loop');
     await page.keyboard.press('Tab');
     assert.equal(await root.evaluate(el => el === document.activeElement), true, 'scroll area is in the focus loop');
     const englishBody = await root.textContent();
@@ -63,6 +67,7 @@ it('renders static English semantic content safely and refreshes localized dialo
       assert.equal(await page.locator('.te-dialog-title').textContent(), catalogs[locale].whatsNewDialogTitle.message);
       assert.equal(await page.locator('.te-dialog-btn-primary').textContent(), catalogs[locale].dialogAcknowledge.message);
       assert.equal(await root.textContent(), englishBody);
+      assert.equal(await page.locator('.te-dialog-close').getAttribute('aria-label'), catalogs[locale].dialogClose.message);
     }
     // Even HTML-like text can only become text nodes; the renderer has no HTML sink.
     const payload = '<script>throw new Error("injected")</script><img src=x onerror=alert(1)>';
@@ -80,3 +85,46 @@ it('renders static English semantic content safely and refreshes localized dialo
     assert.equal(await page.locator('#opener').evaluate(el => el === document.activeElement), true);
   } finally { await browser.close(); }
 });
+
+for (const browserType of [chromium, firefox]) {
+  it(`${browserType.name()}: highlights keep thanks and actions visible while scrolling and resizing`, { timeout: 30_000 }, async t => {
+    const browser = await browserType.launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage({ viewport: { width: 1000, height: 800 }, reducedMotion: 'reduce' });
+    await page.setContent('<html><body><button id="opener">Open</button></body></html>');
+    await page.addStyleTag({ content: readFileSync(new URL('../options/options.css', import.meta.url), 'utf8').replace(/^@import.*$/m, '') });
+    await page.addScriptTag({ content: bundle });
+    await page.locator('#opener').focus();
+    await page.evaluate('void Announcement.openWhatsNewDialog()');
+    const dialog = page.getByRole('dialog');
+    await dialog.waitFor();
+    assert.equal((await dialog.boundingBox())!.width, 650);
+    const scroll = page.locator('.whats-new-content');
+    const thanks = page.locator('.whats-new-thanks');
+    const initialThanks = await thanks.boundingBox();
+    assert.ok(await scroll.evaluate(el => el.scrollHeight > el.clientHeight));
+    await scroll.focus();
+    await page.keyboard.press('End');
+    await page.waitForFunction(() => {
+      const el = document.querySelector('.whats-new-content')!;
+      return Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) <= 1;
+    });
+    assert.deepEqual(await thanks.boundingBox(), initialThanks);
+    for (const viewport of [{ width: 375, height: 550 }, { width: 800, height: 400 }]) {
+      await page.setViewportSize(viewport);
+      for (const locator of [dialog, thanks, page.locator('.te-dialog-close'), page.locator('.te-dialog-btn-primary')]) {
+        const box = (await locator.boundingBox())!;
+        assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height);
+      }
+      assert.ok(await scroll.evaluate(el => el.clientHeight > 0 && el.scrollWidth <= el.clientWidth));
+    }
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await dialog.waitFor({ state: 'detached' });
+    assert.ok(await page.locator('#opener').evaluate(el => el === document.activeElement));
+    await page.evaluate('void Announcement.openWhatsNewDialog()');
+    await dialog.waitFor();
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({ state: 'detached' });
+    assert.ok(await page.locator('#opener').evaluate(el => el === document.activeElement));
+    await browser.close();
+  });
+}
