@@ -15,7 +15,7 @@ const autoOpenRelease: WhatsNewRelease = {
   autoOpenOptions: true
 };
 
-describe('What\'s New release configuration', () => {
+describe('Update highlights release configuration', () => {
   it('references available announcement messages in the canonical catalog', () => {
     const requiredKeys = [
       'whatsNewLead',

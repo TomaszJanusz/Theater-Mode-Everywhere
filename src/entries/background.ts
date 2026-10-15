@@ -1,3 +1,4 @@
+import { initialSeenThrough } from '../feature-highlights';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -191,13 +192,14 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       await chrome.storage.local.set({ [storageKey]: true });
       await chrome.runtime.openOptionsPage();
     } catch (err) {
-      console.error('[Theater Everywhere] Error opening What\'s New after update:', err);
+      console.error('[Theater Everywhere] Error opening Update highlights after update:', err);
     }
     return;
   }
 
   if (details.reason === 'install') {
     try {
+      await chrome.storage.local.set(initialSeenThrough(details.reason, chrome.runtime.getManifest().version));
       const data = await chrome.storage.sync.get(['shortcuts', 'blacklist']);
       if (!data.shortcuts) {
         await chrome.storage.sync.set({

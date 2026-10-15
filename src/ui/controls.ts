@@ -1,3 +1,4 @@
+import type { NewFeatureId } from '../feature-highlights';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
@@ -962,14 +963,14 @@ export function createControls(
       event.stopPropagation();
       executeCommand({ type: 'CYCLE_LAYOUT' });
     });
-    const layoutRow = settings.addRow(layoutBtn, t('pictureAlignLabel'));
+    const layoutRow = settings.addRow(layoutBtn, t('pictureAlignLabel'), 'player', 'playerPictureLayout');
     const updateLayoutRow = () => layoutRow.update(ui().shortcuts.cycleLayout,
       t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'));
     updateLayoutRow();
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
     if (native && video.capabilities.nativeMedia) {
-      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand) => {
+      const audioRow = (className: string, icon: string, label: string, command: PlayerCommand, newItem?: NewFeatureId) => {
         const button = document.createElement('button');
         button.className = `theater-control-btn ${className}`;
         setIcon(button, icon);
@@ -977,14 +978,15 @@ export function createControls(
           event.stopPropagation();
           executeCommand(command);
         });
-        return { button, row: settings.addRow(button, t(label), 'audio') };
+        return { button, row: settings.addRow(button, t(label), 'audio', newItem) };
       };
       const boost = video.capabilities.volumeBoost
         ? audioRow('volume-boost-btn', VOLUME_BOOST_ICONS.menu, 'volumeBoostLabel', { type: 'TOGGLE_VOLUME_BOOST' })
         : null;
       const audioRows = AUDIO_SETTING_NAMES.map((name) => ({
         name,
-        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
+        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name },
+          name === 'voice' ? 'playerVoiceBoost' : name === 'leveling' ? 'playerReduceLoudSounds' : 'playerBass')
       }));
       const updateAudioRows = () => {
         const block = ctx.actions.audioBlock(native);
@@ -1039,7 +1041,7 @@ export function createControls(
     pinBtn.type = 'button';
     pinBtn.className = 'theater-control-btn controls-visibility-toggle';
     setIcon(pinBtn, CONTROLS_VISIBILITY_ICON);
-    const pinRow = settings.addRow(pinBtn, t('keepControlsVisibleTitle'));
+    const pinRow = settings.addRow(pinBtn, t('keepControlsVisibleTitle'), 'player', 'playerAlwaysShowControls');
     const updatePinButton = () => {
       const pinned = ui().keepControlsVisible;
       pinBtn.classList.toggle('active', pinned);

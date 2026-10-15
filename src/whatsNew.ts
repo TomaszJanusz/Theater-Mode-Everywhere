@@ -1,3 +1,4 @@
+import { acknowledgeFeatureHighlights } from './feature-highlights-storage';
 import { openDialog } from './dialog';
 import { t } from './i18n';
 import {
@@ -6,9 +7,9 @@ import {
 } from './whatsNew-release';
 
 /**
- * Stable ID of the current What's New announcement.
+ * Stable ID of the current Update highlights announcement.
  *
- * Bump this string only when the What's New copy should be shown again
+ * Bump this string only when the Update highlights copy should be shown again
  * to people who already dismissed a previous announcement.
  *
  * Leave it unchanged for version bumps, hotfixes, store-listing edits,
@@ -68,6 +69,7 @@ export async function hasUnseenWhatsNew(): Promise<boolean> {
 
 export async function acknowledgeWhatsNew(): Promise<void> {
   try {
+    await acknowledgeFeatureHighlights();
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
       await chrome.storage.local.set({
         [WHATS_NEW_ACK_STORAGE_KEY]: WHATS_NEW_ANNOUNCEMENT_ID
@@ -85,6 +87,7 @@ export async function acknowledgeWhatsNew(): Promise<void> {
 }
 
 export async function openWhatsNewDialog(): Promise<boolean> {
+  await acknowledgeWhatsNew();
   const result = await openDialog(() => ({
     title: t('whatsNewDialogTitle'),
     content: buildWhatsNewContent(),
@@ -94,15 +97,5 @@ export async function openWhatsNewDialog(): Promise<boolean> {
     }
   }));
 
-  if (result) {
-    await acknowledgeWhatsNew();
-  }
-
   return result;
-}
-
-export async function syncWhatsNewButtonState(button: HTMLElement): Promise<void> {
-  const unseen = await hasUnseenWhatsNew();
-  button.classList.toggle('has-unseen', unseen);
-  button.toggleAttribute('data-unseen', unseen);
 }

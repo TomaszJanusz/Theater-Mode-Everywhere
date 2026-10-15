@@ -6,7 +6,7 @@ export type WhatsNewRelease = {
 };
 
 /**
- * Release-owned configuration for the current What's New announcement.
+ * Release-owned configuration for the current Update highlights announcement.
  *
  * Change `id` only when an announcement should be shown again. Set
  * `autoOpenOptions` only for deliberate, high-impact release onboarding.

@@ -2857,3 +2857,14 @@ button.theater-time-end:hover {
   height: 100%;
   min-width: 3px;
 }
+
+.theater-settings-gear-icon {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  --new-badge-inset-block-start: -4px;
+  --new-badge-inset-inline-end: -5px;
+  --new-badge-surrounding-color: var(--bg-color, #09090b);
+}

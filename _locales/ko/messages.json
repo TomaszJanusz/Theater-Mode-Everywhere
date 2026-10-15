@@ -441,10 +441,10 @@
     "message": "무료이며 오픈 소스입니다."
   },
   "whatsNew": {
-    "message": "새로운 소식"
+    "message": "업데이트 주요 변경 사항"
   },
   "whatsNewDialogTitle": {
-    "message": "새로운 소식"
+    "message": "업데이트 주요 변경 사항"
   },
   "whatsNewLead": {
     "message": "새로운 컨트롤과 더 많은 지원 서비스로 더 편안해진 극장 모드입니다."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "자세히"
+  },
+  "badgeNew": {
+    "message": "신규",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "새 기능 강조 표시"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "최근 추가된 기능에 “신규” 배지를 표시합니다. 이 옵션을 끄면 현재 업데이트가 확인한 것으로 표시됩니다."
   }
 }

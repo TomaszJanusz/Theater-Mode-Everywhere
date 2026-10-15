@@ -441,10 +441,10 @@
     "message": "Бесплатно и с открытым исходным кодом."
   },
   "whatsNew": {
-    "message": "Что нового"
+    "message": "Главное в обновлении"
   },
   "whatsNewDialogTitle": {
-    "message": "Что нового"
+    "message": "Главное в обновлении"
   },
   "whatsNewLead": {
     "message": "Режим кинотеатра стал удобнее: новые элементы управления и больше поддерживаемых сервисов."
@@ -1008,5 +1008,15 @@
   },
   "rteDetails": {
     "message": "Подробнее"
+  },
+  "badgeNew": {
+    "message": "Новинка",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Выделять новые функции"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Показывать метку «Новинка» у недавно добавленных функций. При отключении текущее обновление отмечается как просмотренное."
   }
 }

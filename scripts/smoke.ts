@@ -1994,6 +1994,95 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
   }
 }
 
+/** Probe the extension's isolated world, since a page-world registry proves nothing here. */
+async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<void> {
+  const client = await context.newCDPSession(page);
+  const worlds: number[] = [];
+  client.on('Runtime.executionContextCreated', ({ context }) => {
+    const isDefault: unknown = context.auxData?.isDefault;
+    if (isDefault === false) worlds.push(context.id);
+  });
+  try {
+    await client.send('Runtime.enable');
+    for (const contextId of worlds) {
+      const { result, exceptionDetails } = await client.send('Runtime.evaluate', {
+        contextId, returnByValue: true,
+        expression: `(() => {
+          if (typeof chrome === 'undefined' || !chrome.runtime?.id) return null;
+          const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+          if (!root) throw new Error('Player shadow root is missing');
+          try {
+            if (!globalThis.customElements) return {registry: 'unavailable', upgraded: false};
+            const tag = 'tme-smoke-badge-probe';
+            if (!customElements.get(tag)) customElements.define(tag, class extends HTMLElement {
+              connectedCallback() { this.textContent = 'upgraded'; }
+            });
+            const badge = document.createElement(tag);
+            root.append(badge);
+            const upgraded = badge.textContent === 'upgraded';
+            badge.remove();
+            return {registry: 'available', upgraded};
+          } catch (error) { return {registry: String(error), upgraded: false}; }
+        })()`
+      });
+      if (exceptionDetails) throw new Error(exceptionDetails.text);
+      if (result.value) {
+        console.log('smoke:chromium badge custom-element feasibility (installed isolated world):', result.value);
+        return;
+      }
+    }
+    throw new Error('No extension isolated world was found for the badge feasibility check');
+  } finally {
+    await client.detach();
+  }
+}
+
+/** Installed storage/world wiring: future badges stay hidden in the shipping 1.5 build. */
+async function assertFeatureHighlights(page: Page, origin: string, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  await worker.evaluate(({ key, release }) => chrome.storage.local.set({
+    [key]: release, newFeaturesSeenThrough: '0.0'
+  }), { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
+  const options = await context.newPage();
+  const second = await context.newPage();
+  try {
+    await page.goto(origin);
+    await waitForPlayer(page);
+    await page.locator('video#player').click();
+    await page.keyboard.press('t');
+    await page.locator('.player-settings-btn').waitFor();
+    await assertBadgeWorld(page, context);
+    const url = new URL('options/options.html#appearance', worker.url()).href;
+    await options.goto(url); await second.goto(url);
+    await options.locator('#whats-new-btn.has-unseen').waitFor();
+    await second.locator('#whats-new-btn.has-unseen').waitFor();
+    const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
+    if (version.startsWith('1.5.')) {
+      if (await options.locator('.te-new-badge').count() || await page.locator('.te-new-badge').count()) {
+        throw new Error('Unshipped 1.6 features were highlighted by a 1.5 build');
+      }
+    }
+    await options.locator('label.toggle-switch').filter({ has: options.locator('#highlight-new-features-toggle') }).click();
+    await second.waitForFunction(() => !(document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked);
+    await options.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
+    await second.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    await options.locator('label.toggle-switch').filter({ has: options.locator('#highlight-new-features-toggle') }).click();
+    await second.waitForFunction(() => (document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked);
+    await worker.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0' }));
+    await options.locator('#whats-new-btn.has-unseen').waitFor();
+    await options.getByRole('button', { name: 'Update highlights', exact: true }).click();
+    await options.getByRole('dialog', { name: 'Update highlights' }).waitFor();
+    await second.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
+    const seen = await worker.evaluate(async () => (await chrome.storage.local.get('newFeaturesSeenThrough')).newFeaturesSeenThrough);
+    if (seen !== version.split('.').slice(0, 2).join('.')) throw new Error('Opening Update highlights did not acknowledge the installed generation');
+    console.log('smoke:chromium feature highlights: installed Settings/player wiring, version gate, cross-tab preference and acknowledgement passed');
+  } finally {
+    await worker.evaluate(() => chrome.storage.sync.remove('highlightNewFeatures'));
+    await options.close(); await second.close();
+  }
+}
+
 async function smokeChromium(origin: string, unpackedDir: string): Promise<void> {
   if (!playwrightExecutable('chromium')) {
     skipLocally('Skipping smoke:chromium. Run: pnpm exec playwright install chromium firefox');
@@ -2060,6 +2149,7 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');
     await assertLanguageMenu(page, origin, context);
+    await assertFeatureHighlights(page, origin, context);
   } finally {
     await context?.close();
     rmSync(userDataDir, { recursive: true, force: true });
