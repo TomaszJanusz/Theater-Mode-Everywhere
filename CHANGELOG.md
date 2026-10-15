@@ -9,36 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Preserve existing Twitch and YouTube chat in theater mode, beside the picture or below it in narrow windows. Show/hide chat from the player toolbar and choose its width and Light / Service settings / Dark theme from Player settings; preferences are remembered per service. [Usage, validation and remaining release qualification](docs/research/native-chat-validation.md).
+#### Chat, layout and player controls
 
-- Change the Centered/Raised picture layout from Player settings or the configurable Shift+L shortcut. The preference is shared with Settings → Appearance.
-
-- Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted.
-
+- Preserve existing Twitch and YouTube chat in theater mode, beside the picture or below it in narrow windows. Show/hide chat from the player toolbar or Alt+R (a chat the viewer collapsed is reopened natively), and choose its width and Light / Service settings / Dark theme from Player settings; preferences are remembered per service. Replay that the service does not offer shows no chat controls. [Usage, validation and remaining release qualification](docs/research/native-chat-validation.md).
+- Choose a Centered or Raised picture layout from Settings → Appearance, Player settings or the configurable Shift+L shortcut. Raised pins a widescreen picture to the top of a taller screen (16:10, 4:3) while subtitles are on, so the spare black sits below for captions and controls. Fill and Stretch stay centered, and the saved Raised choice returns when Video Fit is set back to Fit.
+- Raised captions sit in that black band. One or two lines stay centered in a short 16:10 letterbox, three or more stick to the bottom of the screen, and a deeper band centers a short block no more than 48px below the picture. Their background uses the video black at the opacity chosen in subtitle options.
 - Keep the playback controls and progress bar visible in theater mode using Player settings → Always show controls, the configurable Shift+H shortcut, or Settings → Features → Always show controls. The preference is remembered across videos and tabs; the title and cursor still hide when idle. Thanks to [@liango2](https://github.com/liango2) for suggesting this feature in [#3](https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/3).
+- Previous and next buttons sit beside play and appear only while the host can actually use them. They work for YouTube playlists and queues (even when YouTube hides its own buttons), PeerTube / video.js, Dailymotion, Vimeo Showcase and the Rich Theater Experience services that expose next-episode navigation, and preview the target on hover where the host provides one.
+- The player shows the title beside the controls, with a home button, and the F shortcut opens fullscreen without theater mode. The configured fullscreen shortcut enters TME with its controls and takes precedence over host player shortcuts.
+- The time readout shows elapsed time, the scrubber, then time remaining; click the trailing clock to switch to the total duration. Digits change in fixed slots, so the bar never shifts.
+- Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted, and edits from several Settings tabs are saved in order.
+- Player settings gain an Audio section: Volume boost, Voice boost (light or strong dialogue enhancement), Reduce loud sounds and Bass, with shortcuts V, R, B and Shift+B. Audio is processed only while a setting is on. On protected (DRM) media, or when the server refuses cross-origin access, the section explains why audio settings are unavailable instead of listing dead rows.
 
-- Added a Layout setting in Appearance: Centered or Raised. Raised pins a widescreen picture to the top of a taller screen (16:10, 4:3) so the spare black sits below for captions and controls. Fill and Stretch stay centered, and the saved Raised choice returns when Video Fit is set back to Fit.
-- Raised captions sit in that black band. One or two lines stay vertically centered in a short 16:10 letterbox. Three or more lines stick to the bottom of the screen. A deeper band still centers a short block, never more than 48px below the picture. Up to three lines show when the band is tall enough.
-- Raised caption backgrounds use the video black at the opacity chosen in subtitle options.
+#### Rich Theater Experience integrations
+
+- Add Bilibili and Tencent Video / WeTV: titles, subtitles, chapters or timeline thumbnails where available, and the host's previous/next controls. Theater mode also works on Tencent's WebAssembly player.
+- Add Bilibili.tv as its own integration for episode and upload pages: titles, subtitles, timeline thumbnails, Intro/Outro markers, and next-episode navigation.
+- Add Crunchyroll: episode titles, intro and credits chapters, timeline previews and subtitle selection. Burned-in captions show no misleading Off option.
+- Add Netflix: theater rendering for trailers and previews, plus on watch pages the episode title, native subtitle selection and timeline previews. RTE has one switch per service; an existing RTE-off choice is kept.
+- Show contextual action buttons at the bottom right of the player where the service offers them: Netflix, Disney+, Crunchyroll and Bilibili skip intro, credits, recap or up next, and YouTube forwards its ad skip. They follow the host player's availability and countdown.
+- Enter theater automatically on Netflix and Disney+ watch pages, like the other Rich Theater Experience services.
 
 ### Changed
 
-- Keyboard Shortcuts stays the last action in Player settings, below every other action and above Extension settings.
-
+- Group video fit, player switching, controls visibility, audio and keyboard help in a labeled Player settings panel that opens on hover; Keyboard Shortcuts stays last, above Extension settings. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Menus keep their position next to their buttons.
 - Keyboard help uses two columns on wide screens and a scrollable single column on narrow screens.
-
-- Group video fit, player switching, controls visibility and keyboard help in a labeled player settings panel. Playback, captions, speed, PiP, fullscreen and exit remain directly available. Controls visibility uses a player-with-bottom-bar symbol.
-- Settings Appearance is now a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
-
-- Lower background CPU and memory use. Plain mouse movement no longer scans the page for video, chat watching and timers run only on Twitch and YouTube watch pages and pause in hidden tabs, the Disney clock follows native player events instead of a constant poll, and unrelated network responses are no longer cloned or decoded. Captions caches and body reads are size-bounded, and release packages are minified with a readable diagnostic build available through `TME_BUILD=diagnostic`.
+- Settings Appearance is a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
+- Subtitle loading shows a pulsing CC icon, and the "Loading subtitles…" HUD appears only if loading takes noticeable time, so quick loads no longer flash it.
+- Disney+ titles include the episode label, for example "VisionQuest — S1:O1 Wyzwolenie", and Disney+ captions sit above the picture and clear of the controls.
+- Lower background CPU and memory use. Plain mouse movement no longer scans the page for video, chat watching and timers run only on Twitch and YouTube watch pages and pause in hidden tabs, the Disney clock follows native player events instead of a constant poll, and unrelated network responses are no longer cloned or decoded. Captions caches and body reads are size-bounded, the scrubber tooltip reuses its elements, and release packages are minified with a readable diagnostic build available through `TME_BUILD=diagnostic`.
 
 ### Fixed
 
-- The configured fullscreen shortcut now enters TME with its controls and intercepts host player shortcuts, just like the theater shortcut. Held keys no longer toggle either mode repeatedly.
-- Shortcut edits from multiple Settings tabs are serialized; single-shortcut resets also validate conflicts.
-
-- Raised no longer pulls captions to the screen edge, or paints an opaque black caption background, before the letterbox can be measured.
-- Raised captions on a 16:10 screen no longer slide up or down when the number of lines changes. That motion was the control-bar transition chasing the caption height.
+- Clicking the picture or a control shows the play/pause HUD again, and clicking the picture closes an open player menu without pausing.
+- YouTube captions stay on the track selected in the menu.
+- Cancelling Volume Boost while its media is still loading restores host playback.
+- Several player lifecycle races on navigation and theater exit, found in an audit, are fixed.
 
 ## [1.5.0] - 2026-09-20
 
