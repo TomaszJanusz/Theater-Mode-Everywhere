@@ -55,7 +55,7 @@ it('renders static English semantic content safely and refreshes localized dialo
       'You can change the language, and the translations have been improved.'
     ]);
     assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pinnable TME bar', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Accessibility:']);
-    assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Thank you to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
+    assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
     await page.locator('.te-dialog-btn-primary').focus();
     await page.keyboard.press('Tab');
     assert.equal(await page.locator('.te-dialog-close').evaluate(el => el === document.activeElement), true, 'close button is in the focus loop');

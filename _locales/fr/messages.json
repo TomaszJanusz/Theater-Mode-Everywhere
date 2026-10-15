@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "version : $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "Bonjour,"
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere est disponible sur le <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> et <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Je serais ravi que vous partagiez votre avis à son sujet."
   },
-  "aboutSignoff": {
-    "message": "Bon visionnage !"
+  "aboutSignoffHtml": {
+    "message": "Bon visionnage <span class=\"heart\" aria-hidden=\"true\">❤</span> !"
   },
   "aboutLegalTitle": {
     "message": "Conditions d'utilisation • Licence"
@@ -918,7 +926,7 @@
     "message": "Afficher les services avec"
   },
   "rteCapabilityTitle": {
-    "message": "Titre"
+    "message": "Titres"
   },
   "rteCapabilitySubtitles": {
     "message": "Sous-titres"

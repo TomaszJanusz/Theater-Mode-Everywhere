@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "버전: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "안녕하세요."
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere는 <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a>, <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>에서 받을 수 있습니다. 사용 후기를 남겨 주시면 기쁘겠습니다."
   },
-  "aboutSignoff": {
-    "message": "즐겁게 시청하세요!"
+  "aboutSignoffHtml": {
+    "message": "즐겁게 시청하세요 <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
   },
   "aboutLegalTitle": {
     "message": "이용 약관 • 라이선스"

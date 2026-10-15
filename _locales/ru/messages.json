@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "версия: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "Привет!"
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere доступен в <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> и <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Буду рад, если вы поделитесь своим мнением о нём."
   },
-  "aboutSignoff": {
-    "message": "Приятного просмотра!"
+  "aboutSignoffHtml": {
+    "message": "Приятного просмотра <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
   },
   "aboutLegalTitle": {
     "message": "Условия использования • Лицензия"
@@ -918,7 +926,7 @@
     "message": "Показать сервисы с функциями"
   },
   "rteCapabilityTitle": {
-    "message": "Название"
+    "message": "Названия"
   },
   "rteCapabilitySubtitles": {
     "message": "Субтитры"

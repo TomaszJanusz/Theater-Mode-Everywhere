@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "الإصدار: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "مرحباً،"
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere متاح على <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a> و<a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> و<a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. سيسعدني أن تشاركني رأيك فيها."
   },
-  "aboutSignoff": {
-    "message": "مشاهدة ممتعة!"
+  "aboutSignoffHtml": {
+    "message": "مشاهدة ممتعة <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
   },
   "aboutLegalTitle": {
     "message": "شروط الاستخدام • الترخيص"
@@ -918,7 +926,7 @@
     "message": "عرض الخدمات التي توفر"
   },
   "rteCapabilityTitle": {
-    "message": "العنوان"
+    "message": "العناوين"
   },
   "rteCapabilitySubtitles": {
     "message": "الترجمة"
