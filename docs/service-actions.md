@@ -86,14 +86,6 @@ label; actions that appear together start 160ms apart. The animation class is
 removed on `animationend`, so a hidden/re-shown host does not replay it and
 nothing keeps animating. `prefers-reduced-motion: reduce` disables it.
 
-Captures from the shared CTA module and stylesheet on a synthetic 16:9 picture
-in a 16:10 window (a fixture, not an installed-extension or live-host pass):
-[one action](screenshots/service-actions/layout/single-letterbox.png),
-[stacked, Raised](screenshots/service-actions/layout/multiple-raised.png),
-[stacked, beside chat](screenshots/service-actions/layout/multiple-chat.png),
-[stacked, Raised with the bar](screenshots/service-actions/layout/multiple-raised-bar.png) and
-[the staggered sweep](screenshots/service-actions/layout/sweep-stagger.png) (animated PNG).
-
 ## Stale controls and validation
 
 Native action identity includes route, root, button, video, current media URL,
