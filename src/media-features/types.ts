@@ -126,6 +126,8 @@ export interface MediaFeaturesAdapter {
   getPreviewFrame?(time: number, duration: number): PreviewFrame | null;
   mediaId?(): string | null;
   getTitle?(): string | null;
+  /** Reports title source changes; returns idempotent cleanup. */
+  observeTitle?(onChange: () => void): () => void;
   /** Label shown beside this adapter's title, such as the episode. */
   getSubtitle?(): string | null;
   reload?(): Promise<void>;

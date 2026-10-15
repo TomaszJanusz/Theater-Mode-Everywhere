@@ -941,6 +941,47 @@ describe('MediaFeaturesController captions toggle', () => {
     ]);
   });
 
+  it('publishes observed title changes only for the current adapter and disconnects on rebind and exit', async () => {
+    const titles: Array<string | null> = [];
+    const calls: string[] = [];
+    const notify = new Map<string, () => void>();
+    let firstTitle = 'Episode A';
+    const titledAdapter = (name: string, title: () => string): MediaFeaturesAdapter => ({
+      probe: async () => ({ captions: false, chapters: false, previews: false }),
+      listCaptionTracks: async () => [],
+      activateCaptionTrack: async () => ({ status: 'off', delivery: 'none', cues: [] }),
+      getTitle: title,
+      observeTitle: (onChange) => {
+        notify.set(name, onChange);
+        calls.push(`observe:${name}`);
+        return () => calls.push(`disconnect:${name}`);
+      },
+      dispose: () => {}
+    });
+    const composite = new CompositeMediaAdapter([titledAdapter('first', () => firstTitle)]);
+    const { controller } = createController(composite, {
+      adapter: composite,
+      onTitle: (title) => titles.push(title?.title ?? null)
+    });
+    await controller.refresh();
+    firstTitle = 'Episode B';
+    notify.get('first')!();
+    assert.deepEqual(titles, ['Episode A', 'Episode B']);
+
+    controller.rebindAdapter(titledAdapter('second', () => 'Other video'));
+    await controller.refresh();
+    firstTitle = 'Late episode';
+    notify.get('first')!();
+    assert.equal(titles.at(-1), 'Other video', 'a disconnected adapter cannot publish');
+    assert.ok(!titles.includes('Late episode'));
+
+    controller.dispose();
+    const published = titles.length;
+    notify.get('second')!();
+    assert.equal(titles.length, published);
+    assert.deepEqual(calls, ['observe:first', 'disconnect:first', 'observe:second', 'disconnect:second']);
+  });
+
   it('publishes available and reloaded titles before caption discovery completes', async () => {
     const titles: Array<string | null> = [];
     let title = 'Available title';

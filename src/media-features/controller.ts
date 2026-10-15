@@ -104,7 +104,7 @@ export class MediaFeaturesController {
   private lastCaptionCueTime = Number.NaN;
   private captionDiagnostics: Array<Record<string, unknown>> = [];
   private dialogAbort = new AbortController();
-  private stopObservingHostCaptions = () => {};
+  private stopObservingAdapter = () => {};
 
   /**
    * Binds the provider, renderer and caption UI, retaining the saved language
@@ -171,7 +171,7 @@ export class MediaFeaturesController {
       const heatmapHost = bindings.scrubberTrack.parentElement || bindings.scrubberTrack;
       heatmapHost.insertBefore(this.heatmapLayer, heatmapHost.firstChild);
     }
-    this.observeHostCaptions();
+    this.observeAdapter();
   }
 
   readHostCaptionLayout(): HostCaptionLayout | null {
@@ -180,13 +180,26 @@ export class MediaFeaturesController {
     catch { return null; }
   }
 
-  private observeHostCaptions(): void {
+  /** Subscribes to the current adapter's host captions and title sources. */
+  private observeAdapter(): void {
     const adapter = this.adapter;
+    const cleanups: Array<() => void> = [];
     try {
-      this.stopObservingHostCaptions = adapter.observeHostCaptionLayout?.(() => {
+      const cleanup = adapter.observeHostCaptionLayout?.(() => {
         if (!this.disposed && this.adapter === adapter) this.onCaptionChange?.();
-      }) ?? (() => {});
-    } catch { this.stopObservingHostCaptions = () => {}; }
+      });
+      if (cleanup) cleanups.push(cleanup);
+    } catch { /* Caption layout observation is optional. */ }
+    try {
+      // The current epoch is read at notification time; an old adapter fails the identity check.
+      const cleanup = adapter.observeTitle?.(() => this.publishTitle(this.sessionEpoch, adapter));
+      if (cleanup) cleanups.push(cleanup);
+    } catch { /* Title observation is optional. */ }
+    this.stopObservingAdapter = () => {
+      for (const cleanup of cleanups.splice(0)) {
+        try { cleanup(); } catch { /* Release every subscription. */ }
+      }
+    };
   }
 
   setHeatmapHover(ratio: number | null): void {
@@ -213,11 +226,11 @@ export class MediaFeaturesController {
 
   rebindAdapter(adapter: MediaFeaturesAdapter): void {
     if (this.disposed) return;
-    this.stopObservingHostCaptions();
+    this.stopObservingAdapter();
     this.adapter.dispose();
     this.adapter = adapter;
     this.invalidate();
-    this.observeHostCaptions();
+    this.observeAdapter();
     void this.refresh();
   }
 
@@ -943,7 +956,7 @@ export class MediaFeaturesController {
    */
   dispose(): void {
     this.disposed = true;
-    this.stopObservingHostCaptions();
+    this.stopObservingAdapter();
     this.bumpEpoch();
     this.refreshQueued = false;
     this.activeTrackId = null;
