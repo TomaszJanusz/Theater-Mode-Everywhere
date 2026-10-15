@@ -1,6 +1,6 @@
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
-import { installedVersion, readFeatureHighlightsLocal } from '../feature-highlights-storage';
+import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
+import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
@@ -1096,6 +1096,14 @@ function toggleAutoTheaterCommand(): void {
 let highlightSyncRevision = 0;
 let highlightLocalRevision = 0;
 
+async function hydrateSeenThrough(): Promise<void> {
+  const revision = highlightLocalRevision;
+  const local = await readFeatureHighlightsLocal();
+  if (revision !== highlightLocalRevision) return;
+  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
+    seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], ui().featureHighlights.installed) } } });
+}
+
 async function checkBlacklistAndInit(): Promise<void> {
   const currentHostname = window.location.hostname;
   const epoch = ++settingsLoadEpoch;
@@ -1110,8 +1118,7 @@ async function checkBlacklistAndInit(): Promise<void> {
 
   try {
     const syncRevision = highlightSyncRevision;
-    const localRevision = highlightLocalRevision;
-    const [data, local] = await Promise.all([chrome.storage.sync.get([
+    const data = await chrome.storage.sync.get([
       HIGHLIGHT_NEW_FEATURES_STORAGE_KEY,
       'blacklist',
       'shortcuts',
@@ -1129,7 +1136,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
       CAPTION_PREF_STORAGE_KEY
-    ]), readFeatureHighlightsLocal()]);
+    ]);
     if (epoch !== settingsLoadEpoch) return;
     await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], languageRevision);
     if (epoch !== settingsLoadEpoch) return;
@@ -1137,13 +1144,13 @@ async function checkBlacklistAndInit(): Promise<void> {
     hydrateChatPreferences(data[CHAT_PREFERENCES_STORAGE_KEY]);
     const saved = data.shortcuts || {};
     applyProviderFlags(resolveMediaProviderFlags(data as Record<string, unknown>));
-    const highlights = resolveFeatureHighlights(installedVersion(), data, local);
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
-        featureHighlights: { ...highlights,
-          enabled: syncRevision === highlightSyncRevision ? highlights.enabled : ui().featureHighlights.enabled,
-          seenThrough: localRevision === highlightLocalRevision ? highlights.seenThrough : ui().featureHighlights.seenThrough },
+        featureHighlights: { ...ui().featureHighlights,
+          enabled: syncRevision === highlightSyncRevision
+            ? resolveHighlightNewFeatures(data[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
+            : ui().featureHighlights.enabled },
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
@@ -2307,6 +2314,8 @@ export function bootstrapPlayerRuntime(): void {
     });
   }
 
+  // The acknowledged generation never gates the policy/settings read above; until it arrives badges stay hidden.
+  void hydrateSeenThrough();
   checkBlacklistAndInit();
 
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {

@@ -3,7 +3,7 @@ import { it } from 'node:test';
 import {
   acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
   resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
+  pendingFeatureHighlights, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
 } from './feature-highlights';
 
 it('fresh installs start seen; updates keep their existing acknowledgement, including skips', () => {
@@ -46,4 +46,11 @@ it('acknowledgement covers installed generations without regressing after downgr
   const acknowledged = { ...state, seenThrough: acknowledgeGeneration(disabled) };
   assert.equal(isNewFeature('settingsLanguage', acknowledged), false);
   assert.equal(acknowledgeGeneration({ ...state, seenThrough: '1.7' }), '1.7');
+});
+
+it('shows nothing as new until the acknowledged generation has been read', () => {
+  const pending = pendingFeatureHighlights('1.6.0');
+  assert.equal(isNewFeature('settingsLanguage', pending), false);
+  assert.equal(isNewFeature('playerBass', pending), false);
+  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.0')), true, 'an existing install without a stored value still sees the current items');
 });

@@ -64,6 +64,12 @@ export function resolveFeatureHighlights(
   };
 }
 
+/** Before the acknowledged generation is read nothing counts as new, so a badge never flashes and vanishes. */
+export function pendingFeatureHighlights(version: string): FeatureHighlights {
+  const installed = installedGeneration(version);
+  return { installed, seenThrough: installed, enabled: true };
+}
+
 export function isNewSince(since: Generation, state: FeatureHighlights): boolean {
   return state.enabled && compareGenerations(since, state.seenThrough) > 0
     && compareGenerations(since, previousGeneration(state.installed)) >= 0

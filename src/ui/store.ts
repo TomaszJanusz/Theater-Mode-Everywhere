@@ -1,5 +1,5 @@
 import { resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { resolveFeatureHighlights, type FeatureHighlights } from '../feature-highlights';
+import { pendingFeatureHighlights, type FeatureHighlights } from '../feature-highlights';
 import { installedVersion } from '../feature-highlights-storage';
 import { resolveCaptionStyle, type CaptionStyle } from '../media-features/caption-style';
 import {
@@ -50,7 +50,7 @@ export type PlayerUiAction =
   | { type: 'SET_SHORTCUTS'; value: Shortcuts };
 
 const defaultState = (): PlayerUiState => ({
-  featureHighlights: resolveFeatureHighlights(installedVersion()),
+  featureHighlights: pendingFeatureHighlights(installedVersion()),
   theaterActive: false,
   helpOpen: false,
   toolbarVisible: false,
