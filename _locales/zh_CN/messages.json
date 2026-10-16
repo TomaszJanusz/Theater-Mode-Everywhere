@@ -234,7 +234,7 @@
     "message": "Rich Theater Experience（实验性功能）"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "启用与常用视频服务的深度集成。功能可用性因服务而异。"
+    "message": "仅为此服务启用增强集成。"
   },
   "volumeBoostTitle": {
     "message": "音量增强"

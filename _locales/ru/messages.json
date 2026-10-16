@@ -234,7 +234,7 @@
     "message": "Rich Theater Experience (экспериментальная функция)"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "Включите расширенную интеграцию с любимыми видеосервисами. Доступность зависит от сервиса."
+    "message": "Включите расширенную интеграцию только для этого сервиса."
   },
   "volumeBoostTitle": {
     "message": "Усиление звука"

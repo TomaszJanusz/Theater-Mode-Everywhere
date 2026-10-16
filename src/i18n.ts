@@ -128,7 +128,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   volumeBoostTitle: 'Volume Boost',
   volumeBoostDescription: 'Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.',
   richTheaterExperienceTitle: 'Rich Theater Experience (Experimental)',
-  richTheaterExperiencePopupDescription: 'Enable richer integrations with your favorite video services. Availability varies by service.',
+  richTheaterExperiencePopupDescription: 'Enable richer integrations only for this service.',
   youtubeIntegrationTitle: 'YouTube integration',
   youtubeIntegrationDescription: "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: skip ads and next video in the queue.",
   vimeoIntegrationTitle: 'Vimeo integration',
