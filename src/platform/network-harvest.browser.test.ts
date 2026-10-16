@@ -351,24 +351,24 @@ for (const browserType of [chromium, firefox]) {
       let sequence = 0, cancelled = 0;
       const request = url => new Promise(resolve => {
         const message = HarvestTest.createWorldMessage('PAGE_FETCH', {url}, 'bounded-' + ++sequence);
-        const onMessage = event => {
-          if (event.data?.type !== 'PAGE_FETCH_RESULT' || event.data?.requestId !== message.requestId) return;
-          window.removeEventListener('message', onMessage); resolve(event.data.payload);
+        const {port1, port2} = new MessageChannel();
+        port1.onmessage = event => {
+          port1.close(); resolve(event.data.payload);
         };
-        window.addEventListener('message', onMessage);
-        window.dispatchEvent(new MessageEvent('message', {data:message, origin:location.origin, source:window}));
+        window.dispatchEvent(new MessageEvent('message', {data:message, origin:location.origin, source:window, ports:[port2]}));
       });
       const caption = 'https://cdn.dssott.com/captions/en.vtt';
       const bif = 'https://cdn.dssott.com/thumbnails/movie.bif';
       const text = ${JSON.stringify('WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello')};
-      window.fetch = () => Promise.resolve(new Response(text));
+      const response = (body, url, init) => { const result = new Response(body, init); Object.defineProperty(result, 'url', {value:url}); return result; };
+      window.fetch = () => Promise.resolve(response(text, caption));
       const valid = await request(caption);
-      window.fetch = () => Promise.resolve(new Response(new ReadableStream({
+      window.fetch = () => Promise.resolve(response(new ReadableStream({
         pull(c) { c.enqueue(new Uint8Array(${MAX_CAPTION_BYTES} + 1)); }, cancel() {cancelled++;}
-      }, {highWaterMark:0}), {headers:{'content-length':'1'}}));
+      }, {highWaterMark:0}), caption, {headers:{'content-length':'1'}}));
       const oversized = await request(caption);
       const bifSize = ${MAX_CAPTION_BYTES} + 1;
-      window.fetch = () => Promise.resolve(new Response(new Uint8Array(bifSize)));
+      window.fetch = () => Promise.resolve(response(new Uint8Array(bifSize), bif));
       const binary = await request(bif);
       const binarySize = (await (await window.nativeFetch(binary.body)).arrayBuffer()).byteLength;
       URL.revokeObjectURL(binary.body);
@@ -376,7 +376,7 @@ for (const browserType of [chromium, firefox]) {
       window.fetch = () => new Promise(resolve => {headers = resolve;});
       const stale = request(caption);
       history.pushState(null, '', '/play/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
-      headers(new Response(new ReadableStream({cancel() {cancelled++;}})));
+      headers(response(new ReadableStream({cancel() {cancelled++;}}), caption));
       return {valid, oversized, binaryOk:binary.ok, binarySize, stale:await stale, cancelled};
     })()`);
     assert.deepEqual(results, {

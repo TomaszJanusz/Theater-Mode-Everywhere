@@ -107,7 +107,7 @@ function installPage(pathname = `/watch/${MEDIA}/07-ghost-episode-2`) {
   const attrs = new Set<string>(['data-te-crunchyroll-integration-off']);
   const classes = new Set<string>();
   const location = { hostname: 'www.crunchyroll.com', pathname, search: '', origin: 'https://www.crunchyroll.com' };
-  const win = Object.assign(new EventTarget(), { location, setTimeout, clearTimeout, postMessage(_request: WorldEnvelope) {} });
+  const win = Object.assign(new EventTarget(), { location, setTimeout, clearTimeout, postMessage(_request: WorldEnvelope, _origin: string, _ports: MessagePort[]) {} });
   const doc: {
     title: string;
     querySelectorAll?: (selector: string) => unknown[];
@@ -603,11 +603,8 @@ describe('Crunchyroll RTE', () => {
     const page = installPage();
     let delay = false;
     let release = () => {};
-    page.win.postMessage = (request: WorldEnvelope) => {
-      const send = () => page.win.dispatchEvent(Object.assign(new Event('message'), {
-        source: page.win,
-        data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS_BODY }, request.requestId, request.nonce, request.origin)
-      }));
+    page.win.postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+      const send = () => ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS_BODY }, request.requestId, request.nonce, request.origin));
       if (delay) release = send;
       else send();
     };

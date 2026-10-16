@@ -161,9 +161,8 @@ describe('Tencent RTE', () => {
       const requestId = (event as CustomEvent).detail.requestId;
       page.win.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, tencent: snapshot } }));
     });
-    (page.win as any).postMessage = (request: WorldEnvelope) => {
-      const send = () => page.win.dispatchEvent(Object.assign(new Event('message'), { source: page.win,
-        data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin) }));
+    (page.win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+      const send = () => ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin) );
       if (delay) replies.push(send); else send();
     };
     const adapter = new TencentAdapter();

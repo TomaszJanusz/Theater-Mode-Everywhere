@@ -1,3 +1,4 @@
+import { isChildFrameMessage } from '../../protocol/frame-messages';
 import { isTwitchGqlUrl } from '../network-harvest';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
@@ -425,12 +426,9 @@ export function installTwitchMain(): void {
     } catch {
       return;
     }
-    const fromChildFrame = Array.from(document.querySelectorAll('iframe')).some(
-      (iframe) => iframe.contentWindow === event.source
-    );
-    if (!fromChildFrame) return;
     const data = event.data;
     if (data && data.type === 'theater-everywhere-twitch-harvest-snapshot' && data.snapshot && typeof data.snapshot === 'object') {
+      if (!isChildFrameMessage(event)) return;
       if (!twitchHarvestSnapshotMatchesPage(window.location.href, data.snapshot.videoId)) return;
       applyTwitchHarvestSnapshot(data.snapshot);
     }
