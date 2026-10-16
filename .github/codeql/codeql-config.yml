@@ -1,0 +1,63 @@
+# CodeQL scope and triage guidance for Theater Everywhere.
+#
+# Threat model: content scripts and the MAIN-world runtime run inside arbitrary
+# host pages. Host DOM, page JSON, caption bodies and window messages are
+# untrusted input. Bundled locale strings, icons and extension settings are
+# trusted. The issues worth finding are DOM XSS in the shadow-DOM UI, message
+# handlers without origin/provenance checks (src/protocol, src/platform,
+# provider main-world bridges), fetches of host-controlled URLs, ReDoS in
+# caption and page parsers, and prototype pollution from parsed host data.
+name: Theater Everywhere CodeQL
+
+# security-extended adds the medium-precision queries this codebase needs:
+# js/missing-origin-check, js/insecure-randomness,
+# js/incomplete-url-substring-sanitization, regex injection and polynomial
+# ReDoS. security-and-quality is left out because its maintainability queries
+# overlap strict TypeScript and would bury the security alerts in noise.
+queries:
+  - uses: security-extended
+
+# Shipped extension code, build/publish scripts, local tooling and workflow files.
+# `.github` must stay in the list or the actions analysis has nothing to scan.
+paths:
+  - src
+  - popup
+  - options
+  - scripts
+  - tools
+  - vite.config.ts
+  - .github
+
+# Generated output, tests and fixtures. Tests use fake hosts, static HTML and
+# Math.random freely, so scanning them adds alerts with no shipped impact.
+paths-ignore:
+  - dist
+  - node_modules
+  - '**/*.test.ts'
+  - src/test-utils
+  - test
+  - test_player.html
+  - test_multi_player.html
+  - docs
+  - store-listings
+  - tmp
+
+# Known intentional patterns. Triage these instead of filtering their queries,
+# so a new instance at a different sink still surfaces:
+# - innerHTML with static SVG markup or bundled locale strings (src/ui/hud.ts,
+#   src/ui/dialog-close-button.ts, options/options.ts, src/i18n.ts
+#   data-i18n-html). Real only if host- or user-supplied text reaches the
+#   string.
+# - Reading document.documentElement.innerHTML as parser input (Twitch,
+#   Patreon and Disney adapters). It is a read, not a sink.
+# - Math.random in request correlation IDs (te-nf-, te-cr-, te-cc-). They are
+#   not secrets. The frame nonce in src/protocol/frame-messages.ts prefers
+#   crypto.randomUUID/getRandomValues; an alert on its Math.random fallback is
+#   worth a look.
+# - Same-window postMessage(..., '*') between isolated and MAIN worlds
+#   (src/media-features/probe.ts, src/platform/main-world-runtime.ts).
+#   Listeners check isSameWindowMessage, the world envelope and requestId or
+#   origin. Page scripts share that window, so an alert here still warrants
+#   checking that the handler validates what it acts on (e.g. PAGE_FETCH URLs).
+# - new RegExp from escaped constants (src/media-features/crunchyroll-cdn.ts,
+#   scripts/). Real only if unescaped external input is concatenated.
