@@ -1010,7 +1010,7 @@
     "message": "Destacar novos recursos"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Mostrar a etiqueta “Novidade” nos recursos adicionados recentemente. Desativar esta opção marca a atualização atual como vista."
+    "message": "Mostrar a etiqueta “Novidade” nos recursos adicionados recentemente."
   },
   "highContrastTitle": {
     "message": "Alto contraste"

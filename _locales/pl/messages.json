@@ -1010,7 +1010,7 @@
     "message": "Wyróżniaj nowe funkcje"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach. Wyłączenie oznacza bieżącą aktualizację jako obejrzaną."
+    "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach."
   },
   "highContrastTitle": {
     "message": "Wysoki kontrast"

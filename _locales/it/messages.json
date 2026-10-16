@@ -1010,7 +1010,7 @@
     "message": "Evidenzia le nuove funzionalità"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Mostra l’etichetta «Novità» per le funzionalità aggiunte di recente. Disattivando questa opzione, l’aggiornamento attuale viene segnato come visto."
+    "message": "Mostra l’etichetta «Novità» per le funzionalità aggiunte di recente."
   },
   "highContrastTitle": {
     "message": "Contrasto elevato"

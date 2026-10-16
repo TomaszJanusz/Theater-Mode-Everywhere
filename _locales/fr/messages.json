@@ -1010,7 +1010,7 @@
     "message": "Mettre en évidence les nouvelles fonctionnalités"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées. Désactiver cette option marque la mise à jour actuelle comme vue."
+    "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées."
   },
   "highContrastTitle": {
     "message": "Contraste élevé"

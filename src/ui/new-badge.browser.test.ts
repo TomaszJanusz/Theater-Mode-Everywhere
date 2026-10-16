@@ -115,43 +115,51 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await browser.close();
   });
 
-  it(`${engine}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
-    await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
-    await installMock(page);
-    await page.evaluate(`(async () => {
-      BadgeTest.localizeDocument();
-      BadgeTest.languageRuntime.subscribe(() => BadgeTest.localizeDocument());
-      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
-      await settingsHighlights.ready;
-    })()`);
-    assert.equal(await page.getByRole('tab', { name: 'Appearance New', exact: true }).count(), 1);
-    assert.equal(await page.getByLabel('Language New', { exact: true }).count(), 1);
-    for (const name of ['Automatically enter theater mode', 'High contrast', 'Reduce transparency', 'Reduce motion']) {
-      assert.equal(await page.getByLabel(`${name} New`, { exact: true }).count(), 1, name);
-    }
-    assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 1);
-    await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
-    await page.getByRole('tab', { name: 'Wygląd Nowość', exact: true }).waitFor();
-    await page.evaluate(`BadgeTest.languageRuntime.set('automatic')`);
-    await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
-    await page.waitForFunction(() => !document.querySelector('.te-new-badge'));
-    assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 0);
-    const seen = await page.evaluate(() => chrome.storage.local.get('newFeaturesSeenThrough'));
-    assert.equal(seen.newFeaturesSeenThrough, '1.6');
-    await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
-    assert.equal(await page.locator('.te-new-badge').count(), 0);
-    await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '1.5' }));
-    await page.getByLabel('Language New', { exact: true }).waitFor();
-    await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
-    await page.getByRole('dialog', { name: 'Update highlights' }).waitFor();
-    assert.equal(await page.locator('.te-new-badge').count(), 0, 'opening acknowledges without waiting for dismissal');
-    const listeners = await page.evaluate<number>(`badgeListenerCount()`);
-    await page.evaluate(`settingsHighlights.dispose(); settingsHighlights.dispose()`);
-    assert.equal(await page.evaluate(`badgeListenerCount()`), listeners - 1);
-    await browser.close();
-  });
+  for (const version of ['1.6.0', '0.26.1016.1512']) {
+    it(`${engine} ${version}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
+      const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
+      await installMock(page, version);
+      await page.evaluate(`(async () => {
+        BadgeTest.localizeDocument();
+        BadgeTest.languageRuntime.subscribe(() => BadgeTest.localizeDocument());
+        window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+        await settingsHighlights.ready;
+      })()`);
+      assert.equal(await page.getByRole('tab', { name: 'Appearance New', exact: true }).count(), 1);
+      assert.equal(await page.getByLabel('Language New', { exact: true }).count(), 1);
+      for (const name of ['Automatically enter theater mode', 'High contrast', 'Reduce transparency', 'Reduce motion']) {
+        assert.equal(await page.getByLabel(`${name} New`, { exact: true }).count(), 1, name);
+      }
+      assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 1);
+      await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
+      await page.getByRole('tab', { name: 'Wygląd Nowość', exact: true }).waitFor();
+      await page.evaluate(`BadgeTest.languageRuntime.set('automatic')`);
+      const seenBefore = await page.evaluate(() => chrome.storage.local.get(null));
+      await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+      await page.waitForFunction(() => !document.querySelector('.te-new-badge'));
+      assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 0);
+      assert.deepEqual(await page.evaluate(() => chrome.storage.local.get(null)), seenBefore,
+        'hiding badges does not acknowledge either the feature catalog or the announcement');
+      await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+      await page.getByLabel('Language New', { exact: true }).waitFor();
+      await page.locator('#whats-new-btn.has-unseen').waitFor();
+      await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
+      await page.getByRole('dialog', { name: 'Update highlights' }).waitFor();
+      assert.equal(await page.locator('.te-new-badge').count(), 0, 'opening acknowledges without waiting for dismissal');
+      await page.locator('.te-dialog-btn-primary').click();
+      await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+      await page.waitForFunction(async () => (await chrome.storage.sync.get('highlightNewFeatures')).highlightNewFeatures === false);
+      await page.locator('label.toggle-switch').filter({ has: page.locator('#highlight-new-features-toggle') }).click();
+      await page.waitForFunction(async () => (await chrome.storage.sync.get('highlightNewFeatures')).highlightNewFeatures === true);
+      assert.equal(await page.locator('.te-new-badge').count(), 0, 'toggling preserves previously acknowledged items');
+      const listeners = await page.evaluate<number>(`badgeListenerCount()`);
+      await page.evaluate(`settingsHighlights.dispose(); settingsHighlights.dispose()`);
+      assert.equal(await page.evaluate(`badgeListenerCount()`), listeners - 1);
+      await browser.close();
+    });
+  }
 
   it(`${engine}: Settings rejects stale storage snapshots after a live acknowledgement`, { timeout: 30_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);

@@ -1010,7 +1010,7 @@
     "message": "突出显示新功能"
   },
   "highlightNewFeaturesDescription": {
-    "message": "为最近添加的功能显示“新”标记。关闭此选项会将当前更新标记为已读。"
+    "message": "为最近添加的功能显示“新”标记。"
   },
   "highContrastTitle": {
     "message": "高对比度"
