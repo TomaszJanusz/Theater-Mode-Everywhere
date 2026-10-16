@@ -364,9 +364,9 @@ section h2 {
 
 .privacy-thing-card privacy-thing-logo {
   display: block;
-  width: 146px;
-  height: 28px;
-  flex: 0 1 146px;
+  width: 160px;
+  height: 30.68px; /* keeps the logo's 146:28 proportions */
+  flex: 0 1 160px;
   color: var(--appearance-ink, #f4f4f5);
   --privacy-thing-cursor-color: var(--accent-color);
 }
