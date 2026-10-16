@@ -48,7 +48,9 @@ it('renders static English semantic content safely and refreshes localized dialo
       'Rich Theater Experience: You can turn RTE on or off for individual sites and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.',
       'Audio effects: Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.',
       'SponsorBlock support: See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.',
-      'Automatic theater mode: A corner notice announces the entry for at least 3 seconds; click it or press Esc to cancel.',
+      'Automatic theater mode: A corner notice counts down the seconds before the entry; click it or press Esc to cancel, or turn the countdown off in Settings → Features.',
+      'Video launcher: Turn it on in Settings → Features to get a small button on a paused video that enters theater mode. It stays out of the way of page and native controls and hides while the video plays. With YouTube Rich Theater Experience it sits in the native toolbar. When you turn AutoTheater off, TME offers to enable it.',
+      'Fullscreen in theater mode: Double-click the picture to enter or leave fullscreen without leaving theater mode.',
       'Accessibility: Theater Mode Everywhere respects your system preferences for increased contrast, reduced transparency and reduced motion.',
       'The titles of the videos being played are displayed.',
       'You can go to the home page of the service the video is playing on.',
@@ -57,7 +59,7 @@ it('renders static English semantic content safely and refreshes localized dialo
       'A clearer layout of the extension\'s settings page; a new "About" page has been added.',
       'You can change the language, and the translations have been improved.'
     ]);
-    assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pinnable TME bar', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Accessibility:']);
+    assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pinnable TME bar', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:']);
     assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
     await page.locator('.te-dialog-btn-primary').focus();
     await page.keyboard.press('Tab');
