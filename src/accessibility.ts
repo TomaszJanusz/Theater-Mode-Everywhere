@@ -1,3 +1,5 @@
+import { MODAL_KEY_EVENT, type ModalKey } from './protocol/modal';
+
 /** Focus follows the active control through our open shadow root. */
 export function activeElementDeep(): HTMLElement | null {
   let active = document.activeElement;
@@ -38,12 +40,24 @@ export function containModalFocus(dialog: HTMLElement, onEscape: () => void): (r
       }
     }
   };
+  const onRelay = (event: Event): void => {
+    if (event.target !== dialog || !(event instanceof CustomEvent)) return;
+    const command: unknown = event.detail;
+    if (command !== 'escape' && command !== 'next' && command !== 'previous') return;
+    const key: ModalKey = command;
+    const keyboard = new KeyboardEvent('keydown', { key: key === 'escape' ? 'Escape' : 'Tab',
+      shiftKey: key === 'previous', cancelable: true });
+    onKeyDown(keyboard);
+    if (keyboard.defaultPrevented) event.preventDefault();
+  };
+  dialog.addEventListener(MODAL_KEY_EVENT, onRelay);
   document.addEventListener('keydown', onKeyDown, true);
   let disposed = false;
   return (restoreFocus = true) => {
     if (disposed) return;
     disposed = true;
     document.removeEventListener('keydown', onKeyDown, true);
+    dialog.removeEventListener(MODAL_KEY_EVENT, onRelay);
     for (const [element, inert] of siblings) element.inert = inert;
     if (restoreFocus && previous?.isConnected && !previous.closest('[inert]')) previous.focus();
   };

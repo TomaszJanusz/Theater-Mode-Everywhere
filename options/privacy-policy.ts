@@ -52,7 +52,6 @@ function buildContent(): HTMLElement {
   const article = document.createElement('div');
   article.className = 'privacy-policy-text';
   article.lang = 'en';
-  article.tabIndex = 0;
   article.append(renderMarkdown(policy));
   // The document's own title (its h1, rendered as h2) repeats the dialog title.
   article.querySelector('h2')?.remove();
@@ -71,6 +70,8 @@ export function openPrivacyPolicy(): void {
   void openDialog(() => ({
     title: t('privacyPolicy'),
     content: buildContent(),
+    size: 'wide',
+    scrollable: true,
     setup: (_overlay, dialog) => dialog.classList.add('te-dialog-privacy'),
     actions: { type: 'acknowledge', label: t('dialogClose') }
   }));

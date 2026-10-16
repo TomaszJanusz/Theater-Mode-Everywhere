@@ -638,14 +638,14 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await gear.press('Enter');
   await menu.locator('.help-btn').focus();
   await page.keyboard.press('Enter');
-  await page.locator('.theater-help-close-btn').press('Enter');
+  await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   if (await page.locator('.theater-help-overlay').count() || await menu.isVisible()
       || !await gear.evaluate(button => button.matches(':focus'))) fail('Enter closing row-opened help lost focus or reopened settings.');
   // Escape restores the gear; opening help from there must transfer focus into help.
   await gear.press('Enter');
   await page.keyboard.press('Escape');
   await page.keyboard.press('h');
-  const helpClose = page.locator('.theater-help-close-btn');
+  const helpClose = page.locator('.theater-help-overlay .te-dialog-close');
   await helpClose.waitFor();
   if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help left focus on the settings gear.');
   const pinnedDuringHelp = await pin.getAttribute('aria-pressed');
@@ -653,10 +653,11 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (await pin.getAttribute('aria-pressed') !== pinnedDuringHelp) fail('Controls visibility preference changed behind help.');
   for (const key of ['Tab', 'Shift+Tab', 'Shift+Tab']) {
     await page.keyboard.press(key);
-    if (!await helpClose.evaluate(button => button.matches(':focus'))) fail('Help let Tab reach controls behind the overlay.');
+    if (!await page.locator('.theater-help-overlay .te-dialog').evaluate(dialog => dialog.contains((dialog.getRootNode() as Document | ShadowRoot).activeElement))) fail('Help let Tab reach controls behind the overlay.');
   }
   const pausedDuringHelp = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
   // Inert modal surroundings reject even programmatic focus behind help.
+  await helpClose.focus();
   await gear.focus();
   if (await gear.evaluate(button => button.matches(':focus'))
       || !await helpClose.evaluate(button => button.matches(':focus'))
@@ -892,6 +893,9 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('h');
   await helpClose.waitFor();
   await page.keyboard.press('Shift+T');
+  if (!await page.locator('#other-player').evaluate(video => video.classList.contains('theater-everywhere-video-active'))) fail('Player switching fired behind the modal.');
+  // Simulate a host-driven player rebuild while modal focus is active.
+  await switchButton.evaluate((button: HTMLElement) => button.click());
   await page.waitForFunction(() => document.querySelector('video#player')!.classList.contains('theater-everywhere-video-active'));
   await assertHelpAfterRebuild();
   await waitForChrome(true, true, true);
@@ -1347,7 +1351,10 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   if (!await page.locator('.audio-voice-btn').isVisible()) await gear.click();
   const section = page.locator('[data-settings-section="audio"]');
   await section.waitFor();
-  if (await section.locator('.theater-settings-heading').textContent() !== 'Audio') fail('Audio section heading is missing.');
+  // The heading can contain a nested New badge; its label is still Audio.
+  const audioHeading = await section.locator('.theater-settings-heading').evaluate(heading =>
+    Array.from(heading.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
+  if (audioHeading !== 'Audio') fail(`Audio section heading is missing: ${JSON.stringify(audioHeading)}`);
   const details = await section.locator('.theater-settings-detail').allInnerTexts();
   if (details.join('|') !== 'Off|Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
   if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
@@ -1418,7 +1425,7 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   await page.keyboard.press('h');
   await page.locator('.theater-help-overlay').waitFor();
   for (const key of ['v', 'r', 'b', 'Shift+B']) await page.keyboard.press(key);
-  await page.locator('.theater-help-close-btn').press('Enter');
+  await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   await page.locator('.theater-help-overlay').waitFor({ state: 'detached' });
   await page.evaluate(() => {
     for (const [key, code, shiftKey] of [['v', 'KeyV', false], ['r', 'KeyR', false], ['b', 'KeyB', false], ['B', 'KeyB', true]] as const) {
@@ -1514,7 +1521,7 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
     const grid = overlay.querySelector('.theater-help-grid')!;
     return { columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
       rows: overlay.querySelectorAll('.theater-help-row').length,
-      closeVisible: overlay.querySelector('.theater-help-close-btn')!.getBoundingClientRect().top >= 0 };
+      closeVisible: overlay.querySelector('.te-dialog-close')!.getBoundingClientRect().top >= 0 };
   });
   await page.keyboard.press('Shift+L');
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
@@ -1525,7 +1532,7 @@ async function assertFullscreenAndHelp(page: Page, earlyHost = false, context?: 
   await page.setViewportSize({ width: 540, height: 480 });
   const narrow = await inspect();
   if (narrow.columns !== 1 || narrow.rows !== 27 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
-  await page.locator('.theater-help-close-btn').press('Enter');
+  await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   await help.waitFor({ state: 'detached' });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.keyboard.press('Escape');
@@ -2095,10 +2102,11 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
       if (await content.locator('li').count() !== WHATS_NEW_CONTENT.items.length) throw new Error('Announcement must contain every English release item');
       await options.locator('.whats-new-thanks em').waitFor();
       await options.waitForFunction(locale => document.documentElement.dir === (locale === 'ar' ? 'rtl' : 'ltr'), locale);
-      await content.focus();
-      await content.press('End');
+      const scroll = options.locator('.te-dialog-body');
+      await scroll.focus();
+      await scroll.press('End');
       await options.waitForFunction(() => {
-        const content = document.querySelector('.whats-new-content');
+        const content = document.querySelector('.te-dialog-body');
         return content && content.scrollTop > 0 && content.scrollTop + content.clientHeight >= content.scrollHeight - 1;
       });
       const screenshotDir = process.env.SMOKE_SCREENSHOT_DIR;
@@ -2107,12 +2115,12 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
           await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished));
         });
         await options.locator('.te-dialog-btn-primary').focus();
-        await content.evaluate(el => { el.scrollTop = 0; });
+        await scroll.evaluate(el => { el.scrollTop = 0; });
         await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}.png`) });
-        await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
+        await scroll.evaluate(el => { el.scrollTop = el.scrollHeight; });
         await options.screenshot({ path: path.join(screenshotDir, `tme58-dialog-${locale}-end.png`) });
       }
-      const scrollable = await content.evaluate(el => el.scrollHeight > el.clientHeight);
+      const scrollable = await scroll.evaluate(el => el.scrollHeight > el.clientHeight);
       if (!scrollable) throw new Error('Long announcement should scroll within the dialog');
     }
     const version = await worker.evaluate(() => chrome.runtime.getManifest().version);

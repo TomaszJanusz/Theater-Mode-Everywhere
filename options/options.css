@@ -1,4 +1,4 @@
-@import '../src/ui/dialog-close-button.css';
+@import '../src/ui/modal.css';
 @import '../src/appearance-tokens.css';
 @import '../src/settings-brand.css';
 
@@ -1475,136 +1475,14 @@ section h2 {
 /* The dialog scroll lock removes the viewport scrollbar; a reserved gutter keeps the page from shifting. */
 html { scrollbar-gutter: stable; }
 
-body.te-dialog-open {
-  overflow: hidden;
-}
-
-.te-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: var(--appearance-surface, rgba(9, 9, 11, 0.62));
-  backdrop-filter: var(--appearance-blur, blur(10px) saturate(140%));
-  -webkit-backdrop-filter: var(--appearance-blur, blur(10px) saturate(140%));
-  animation: te-dialog-fade-in 0.18s ease both;
-}
-
-.te-dialog-overlay.is-leaving {
-  animation: te-dialog-fade-out 0.16s ease both;
-}
-
-.te-dialog {
-  width: min(440px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 22px 22px 18px;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  background: var(--appearance-surface, color-mix(in srgb, var(--card-bg) 94%, transparent));
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
-  color: var(--appearance-ink, var(--text-primary));
-  animation: te-dialog-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.te-dialog-overlay.is-leaving .te-dialog {
-  animation: te-dialog-rise-out 0.16s ease both;
-}
-
-.te-dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.te-dialog-title {
-  font-size: 18px;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-}
-
-.te-dialog-body {
-  color: var(--appearance-muted, var(--text-secondary));
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.te-dialog-whats-new {
-  --whats-new-bg: var(--appearance-surface, var(--card-bg));
-  width: min(650px, 100%);
-  max-height: 100%;
-  background: var(--whats-new-bg);
-}
-
-.te-dialog-whats-new .te-dialog-body,
-.whats-new-announcement {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* No gap: the scroll area's bottom shadow fades straight into the separator above the footer note,
-   so the two read as one edge instead of a shadow floating over the content. */
-.whats-new-announcement {
-  gap: 0;
-}
-
+.whats-new-announcement { min-height: 0; }
 .whats-new-content {
   display: flex;
   flex-direction: column;
-  flex: 0 1 auto;
   gap: 12px;
   text-align: start;
-  max-height: 60vh;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: auto;
-  scrollbar-color: var(--accent-color) var(--whats-new-bg);
-  scrollbar-gutter: stable;
-  padding: 4px 12px 16px 0;
-  /* Local covers move with the content, revealing each radial shadow only
-     while there is more content to scroll towards that edge. */
-  background:
-    linear-gradient(var(--whats-new-bg) 30%, transparent) center top / 100% 32px local no-repeat,
-    linear-gradient(transparent, var(--whats-new-bg) 70%) center bottom / 100% 32px local no-repeat,
-    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 70%), transparent) center top / 100% 14px scroll no-repeat,
-    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 70%), transparent) center bottom / 100% 14px scroll no-repeat;
-  background-color: var(--whats-new-bg);
 }
-
-.whats-new-content > * {
-  margin: 0;
-  flex-shrink: 0;
-}
-
-/* Chromium's standard scrollbar colors can restore auto-hiding overlay bars.
-   Use its explicit track/thumb styling to keep the scroll affordance visible. */
-@supports selector(::-webkit-scrollbar) {
-  .whats-new-content {
-    scrollbar-color: auto;
-  }
-}
-
-.whats-new-content::-webkit-scrollbar {
-  width: 10px;
-}
-
-.whats-new-content::-webkit-scrollbar-track {
-  background: var(--whats-new-bg);
-}
-
-.whats-new-content::-webkit-scrollbar-thumb {
-  border: 2px solid var(--whats-new-bg);
-  border-radius: 8px;
-  background: var(--accent-color);
-}
+.whats-new-content > * { margin: 0; }
 
 .whats-new-lead {
   font-size: inherit;
@@ -1648,21 +1526,6 @@ body.te-dialog-open {
   line-height: 1.45;
 }
 
-.about-privacy-btn {
-  align-self: flex-start;
-}
-
-.te-dialog-privacy {
-  width: min(720px, 100%);
-  max-height: 100%;
-}
-
-.te-dialog-privacy .te-dialog-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .privacy-policy {
   display: flex;
   flex-direction: column;
@@ -1671,16 +1534,11 @@ body.te-dialog-open {
 }
 
 .privacy-policy-text {
-  max-height: 60vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-inline-end: 12px;
   text-align: start;
   /* The policy is English even in right-to-left interfaces. */
   direction: ltr;
 }
 
-.privacy-policy-text:focus-visible,
 .privacy-policy-online:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
@@ -1717,86 +1575,15 @@ body.te-dialog-open {
   color: var(--accent-color);
 }
 
-.te-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 4px;
-}
-
-.te-dialog-btn {
-  min-height: 38px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-}
-
-.te-dialog-btn-primary {
-  border: none;
-  background: var(--accent-color);
-  color: var(--accent-text);
-}
-
-.te-dialog-btn-primary:hover {
-  background: var(--accent-hover);
-}
-
-.te-dialog-btn-secondary,
 .about-privacy-btn {
+  align-self: flex-start;
   border: 1px solid var(--border-color);
   background: #18181b;
   color: var(--appearance-ink, var(--text-primary));
 }
-
-.te-dialog-btn-secondary:hover,
 .about-privacy-btn:hover {
   background: #27272a;
   border-color: var(--text-secondary);
-}
-
-.te-dialog-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 36%, transparent);
-}
-
-.te-dialog-btn:active {
-  transform: scale(0.98);
-}
-
-@keyframes te-dialog-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes te-dialog-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes te-dialog-rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes te-dialog-rise-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(6px) scale(0.98);
-  }
 }
 
 .options-input[aria-invalid="true"] {
@@ -1964,10 +1751,6 @@ body.te-dialog-open {
 }
 /* An off service shows the colors at 60%, which capabilities.test.ts counts in its contrast bound. */
 .rte-tile:has(input:not(:checked)):is(:hover, :has(:focus-visible))::before { opacity: .6; }
-:root[data-motion="reduced"] :is(.te-dialog-overlay, .te-dialog, .te-dialog-overlay.is-leaving, .te-dialog-overlay.is-leaving .te-dialog) {
-  /* Fill-both entrances would paint their start keyframe for a frame; skip them entirely. */
-  animation: none;
-}
 @keyframes te-border-orbit { to { --te-border-angle: 360deg; } }
 :root[data-motion="reduced"] .te-animated-border::before,
 :root[data-motion="reduced"] .te-animated-border:is(:hover, :has(:focus-visible))::before {

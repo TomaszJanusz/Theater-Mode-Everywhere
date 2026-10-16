@@ -51,8 +51,6 @@ export function buildWhatsNewContent(): HTMLElement {
   root.className = 'whats-new-content';
   root.lang = 'en';
   root.dir = 'ltr';
-  // Include the scroll area in the modal's keyboard focus loop.
-  root.tabIndex = 0;
 
   const heading = document.createElement('h3');
   heading.className = 'whats-new-lead';

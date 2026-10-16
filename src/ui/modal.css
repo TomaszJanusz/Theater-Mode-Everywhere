@@ -1,0 +1,190 @@
+/* One shell for extension pages and the player shadow root. Content styles belong
+   to their feature; geometry, surfaces, scrolling and controls belong here. */
+.te-dialog-overlay {
+  --modal-surface: var(--appearance-surface, #18181b);
+  --modal-border: var(--appearance-border, #27272a);
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  background: var(--appearance-surface, rgba(9, 9, 11, 0.62)) !important;
+  backdrop-filter: var(--appearance-blur, blur(10px) saturate(140%)) !important;
+  -webkit-backdrop-filter: var(--appearance-blur, blur(10px) saturate(140%)) !important;
+  pointer-events: auto !important;
+  direction: inherit !important;
+  scrollbar-color: var(--accent-color, #6366f1) transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  animation: te-modal-fade-in 0.18s ease both;
+}
+
+.te-dialog {
+  box-sizing: border-box !important;
+  width: min(440px, 100%) !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 22px 22px 18px !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 14px !important;
+  background: var(--modal-surface) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38) !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  text-align: start !important;
+  overflow-wrap: anywhere !important;
+  animation: te-modal-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.te-dialog[data-size="wide"] { width: min(650px, 100%) !important; }
+
+.te-dialog-header {
+  display: flex !important;
+  flex: none !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.te-dialog-title {
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  font-size: 18px !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+}
+
+.te-dialog-body {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 4px 12px 4px 0 !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-color: var(--accent-color, #6366f1) var(--modal-surface);
+  /* Covers scroll with content; shadows appear only towards hidden content. */
+  background:
+    linear-gradient(var(--modal-surface) 30%, transparent) center top / 100% 32px local no-repeat,
+    linear-gradient(transparent, var(--modal-surface) 70%) center bottom / 100% 32px local no-repeat,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 70%), transparent) center top / 100% 14px scroll no-repeat,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 70%), transparent) center bottom / 100% 14px scroll no-repeat;
+  background-color: var(--modal-surface) !important;
+}
+
+.te-dialog-body:dir(rtl) { padding: 4px 0 4px 12px !important; }
+.te-dialog-body > p { margin: 0; }
+
+.te-dialog-note, .te-dialog-footer { flex: none !important; }
+.te-dialog-note { margin: 0 !important; padding: 0 !important; }
+.te-dialog-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 4px 0 0 !important;
+  border: 0 !important;
+}
+.te-dialog-note[hidden], .te-dialog-footer[hidden] { display: none !important; }
+
+.te-dialog-btn {
+  appearance: none !important;
+  box-sizing: border-box !important;
+  min-height: 38px !important;
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  cursor: pointer !important;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease !important;
+}
+.te-dialog-btn-primary {
+  border: none !important;
+  background: var(--accent-color, #6366f1) !important;
+  color: var(--accent-text, #ffffff) !important;
+}
+.te-dialog-btn-primary:hover { background: var(--accent-hover, #4f46e5) !important; }
+.te-dialog-btn-secondary {
+  border: 1px solid var(--modal-border) !important;
+  background: var(--modal-surface) !important;
+  color: var(--appearance-ink, #f4f4f5) !important;
+}
+.te-dialog-btn-secondary:hover { background: var(--appearance-hover, #27272a) !important; }
+.te-dialog-btn:active { transform: scale(0.98); }
+.te-dialog-body:focus-visible, .te-dialog-btn:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 2px !important;
+}
+
+@supports selector(::-webkit-scrollbar) {
+  .te-dialog-body { scrollbar-color: auto; }
+}
+.te-dialog-body::-webkit-scrollbar { width: 10px; }
+.te-dialog-body::-webkit-scrollbar-track { background: var(--modal-surface); }
+.te-dialog-body::-webkit-scrollbar-thumb {
+  border: 2px solid var(--modal-surface);
+  border-radius: 8px;
+  background: var(--accent-color, #6366f1);
+}
+
+@keyframes te-modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes te-modal-rise-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Shared close control, including native-button normalization. */
+.te-dialog-close {
+  font: inherit !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  flex: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: none !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.2s ease, background-color 0.2s ease !important;
+}
+
+.te-dialog-close:hover {
+  color: var(--appearance-ink, #f4f4f5) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.08)) !important;
+}
+
+.te-dialog-close:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 2px !important;
+}
+
+:root[data-motion="reduced"] :is(.te-dialog-overlay, .te-dialog),
+:host([data-motion="reduced"]) :is(.te-dialog-overlay, .te-dialog) {
+  animation: none !important;
+}

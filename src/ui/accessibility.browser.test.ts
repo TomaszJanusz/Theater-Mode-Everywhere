@@ -361,11 +361,11 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.locator('#fixture-setting').evaluate(el => el.remove());
         await page.keyboard.press('Enter');
         await page.locator('.help-btn').click();
-        assert.match(await page.getByRole('dialog', { name: 'Keyboard Shortcuts' }).ariaSnapshot(), /button "Show\/Hide Help"/);
+        assert.match(await page.getByRole('dialog', { name: 'Keyboard Shortcuts' }).ariaSnapshot(), /button "Close"/);
         await page.keyboard.press('Tab');
-        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-close'), true);
+        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-body'), true);
         await page.locator('.player-settings-btn').focus();
-        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-close'), true);
+        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-body'), true);
         await page.keyboard.press('Escape');
         assert.equal(await focused(page, '.player-settings-btn'), true);
         await page.locator('.play-pause-btn').focus();

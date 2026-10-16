@@ -1,4 +1,4 @@
-@import './dialog-close-button.css';
+@import './modal.css';
 @import '../appearance-tokens.css';
 /*
  * Skin for the player UI, adopted only by #theater-everywhere-ui's shadow
@@ -30,8 +30,6 @@
    and leave the frame unfiltered. */
 .theater-backdrop-plate,
 .theater-backdrop-hint,
-.theater-backdrop-shade,
-.theater-backdrop-dialog,
 .theater-hud-plate {
   --theater-frost: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='n'/%3E%3CfeColorMatrix in='n' result='hi' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.6 0 0 0 -1.25'/%3E%3CfeColorMatrix in='n' result='lo' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 0 0 0 0.35'/%3E%3CfeMerge%3E%3CfeMergeNode in='lo'/%3E%3CfeMergeNode in='hi'/%3E%3C/feMerge%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   position: relative !important;
@@ -39,9 +37,7 @@
 }
 
 .theater-backdrop-plate,
-.theater-backdrop-hint,
-.theater-backdrop-shade,
-.theater-backdrop-dialog {
+.theater-backdrop-hint {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -54,8 +50,6 @@
 
 .theater-backdrop-plate::before,
 .theater-backdrop-hint::before,
-.theater-backdrop-shade::before,
-.theater-backdrop-dialog::before,
 .theater-hud-plate::before {
   content: "" !important;
   position: absolute !important;
@@ -1741,61 +1735,7 @@ button.theater-time-end:hover {
   text-transform: uppercase !important;
 }
 
-/* Shortcuts Help Overlay Modal */
-.theater-help-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  background-color: var(--appearance-surface, rgba(0, 0, 0, 0.75)) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 2147483647 !important;
-  opacity: 1 !important;
-  animation: theaterFadeIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  pointer-events: auto !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-}
-
-.theater-help-overlay[dir="rtl"] {
-  direction: rtl !important;
-}
-
-.theater-help-card {
-  background-color: #18181b !important;
-  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
-  border-radius: 12px !important;
-  width: 90% !important;
-  max-width: 800px !important;
-  max-height: calc(100dvh - 48px) !important;
-  overflow-y: auto !important;
-  box-sizing: border-box !important;
-  padding: 24px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
-  animation: theaterScaleIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  direction: inherit !important;
-}
-
-.theater-help-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 20px !important;
-  border-bottom: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.1)) !important;
-  padding-bottom: 12px !important;
-  direction: inherit !important;
-}
-
-.theater-help-header h3 {
-  margin: 0 !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  color: var(--appearance-ink, #f4f4f5) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-}
-
+/* Keyboard shortcuts content; the modal shell lives in modal.css. */
 .theater-help-grid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -1812,7 +1752,6 @@ button.theater-time-end:hover {
 
 @media (max-width: 680px) {
   .theater-help-grid { grid-template-columns: minmax(0, 1fr) !important; }
-  .theater-help-card { padding: 16px !important; max-height: calc(100dvh - 24px) !important; }
 }
 
 .theater-help-group {
@@ -1884,16 +1823,6 @@ button.theater-time-end:hover {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1 !important;
   text-transform: uppercase !important;
-}
-
-@keyframes theaterFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes theaterScaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 /* Volume level overlay HUD */
@@ -2449,102 +2378,10 @@ button.theater-time-end:hover {
   user-select: none !important;
 }
 
-.te-dialog-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 2147483647 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 24px 16px !important;
-  background: var(--appearance-surface, rgba(9, 9, 11, 0.62)) !important;
-  pointer-events: auto !important;
-}
-
-.te-dialog {
-  width: min(380px, 100%) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 16px !important;
-  padding: 20px 20px 16px !important;
-  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
-  border-radius: 12px !important;
-  background: var(--appearance-surface, rgba(15, 15, 15, 0.94)) !important;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5) !important;
-  color: var(--appearance-ink, #f8fafc) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-}
-
-.te-dialog-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-}
-
-.te-dialog-title {
-  margin: 0 !important;
-  font-size: 16px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em !important;
-  color: var(--appearance-ink, #f8fafc) !important;
-}
-
-.te-dialog-body {
-  color: var(--appearance-ink, #cbd5e1) !important;
-  font-size: 13px !important;
-  line-height: 1.45 !important;
-}
-
-.te-dialog-footer {
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 8px !important;
-}
-
-.te-dialog-btn {
-  min-height: 36px !important;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 650 !important;
-  cursor: pointer !important;
-}
-
-.te-dialog-btn-primary {
-  border: none !important;
-  background: var(--accent-color, #6366f1) !important;
-  color: var(--accent-text, #ffffff) !important;
-}
-
-.te-dialog-btn-secondary {
-  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
-  background: #18181b !important;
-  color: var(--appearance-ink, #f8fafc) !important;
-}
-
 .theater-caption-options {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   gap: 8px !important;
-}
-
-.theater-caption-options-dialog {
-  width: min(600px, 100%) !important;
-  box-sizing: border-box !important;
-  overflow: visible !important;
-  border-color: var(--appearance-border, rgba(255, 255, 255, 0.18)) !important;
-  border-radius: 16px !important;
-  background: var(--appearance-surface, linear-gradient(155deg, rgba(35, 38, 40, 0.98), rgba(17, 18, 20, 0.98))) !important;
-}
-
-.theater-caption-options-dialog .te-dialog-body {
-  overflow: visible !important;
-}
-
-.theater-caption-options-footer {
-  justify-content: space-between !important;
 }
 
 .theater-caption-options-preview {
@@ -2821,10 +2658,7 @@ button.theater-time-end:hover {
 }
 
 @media (max-width: 520px) {
-  .theater-caption-options-dialog {
-    padding: 16px 14px 14px !important;
-  }
-
+  .theater-caption-options { grid-template-columns: minmax(0, 1fr) !important; }
   .theater-caption-font-choice {
     height: 42px !important;
     font-size: 23px !important;
