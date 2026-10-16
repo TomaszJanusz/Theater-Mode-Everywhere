@@ -27,6 +27,8 @@ declare global {
     };
     storageListeners: Array<(changes: Record<string, { newValue?: unknown }>, area: string) => void>;
     pointeroverListeners: number;
+    activatorPointerListeners: number;
+    activatorPointerRegistrations: number;
   }
 }
 
@@ -41,15 +43,25 @@ const PAGE = `<style>
 <video id="small"></video>
 <p style="position:absolute;top:600px">Outside</p>`;
 
-async function boot(page: Page, stored: Record<string, unknown> = {}): Promise<void> {
+async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE): Promise<void> {
   await page.addInitScript(`window.__name = target => target; window.storageListeners = []; window.pointeroverListeners = 0;
+    window.activatorPointerListeners = 0; window.activatorPointerRegistrations = 0;
     const add = EventTarget.prototype.addEventListener;
-    EventTarget.prototype.addEventListener = function (type, ...rest) { if (type === 'pointerover') window.pointeroverListeners++; return add.call(this, type, ...rest); };
+    const remove = EventTarget.prototype.removeEventListener;
+    EventTarget.prototype.addEventListener = function (type, ...rest) { if (type === 'pointerover') window.pointeroverListeners++;
+      if (this === document && (type === 'pointermove' || type === 'pointerover')) {
+        window.activatorPointerListeners++; window.activatorPointerRegistrations++;
+      }
+      return add.call(this, type, ...rest); };
+    EventTarget.prototype.removeEventListener = function (type, ...rest) {
+      if (this === document && (type === 'pointermove' || type === 'pointerover')) window.activatorPointerListeners--;
+      return remove.call(this, type, ...rest);
+    };
     window.chrome = { runtime: { onMessage: { addListener() {} } }, storage: {
       sync: { get: async () => (${JSON.stringify({ keepControlsVisible: true, ...stored })}), set: async () => {} },
       local: { get: async () => ({}), set: async () => {} },
       onChanged: { addListener: fn => window.storageListeners.push(fn), removeListener() {} } } };`);
-  await page.route('https://activator.test/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+  await page.route('https://activator.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('https://activator.test/');
   await page.evaluate(media => {
     for (const video of document.querySelectorAll('video')) video.src = media;
@@ -80,12 +92,12 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
-  const launch = async (t: Parameters<typeof ownTestBrowser>[0], stored?: Record<string, unknown>) => {
+  const launch = async (t: Parameters<typeof ownTestBrowser>[0], stored?: Record<string, unknown>, html = PAGE) => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
-    await boot(page, stored);
+    await boot(page, stored, html);
     return page;
   };
 
@@ -204,6 +216,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     const page = await launch(t, { videoActivator: false });
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     const before = await page.evaluate(() => window.pointeroverListeners);
+    assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
     await hover(page, 400, 260);
     await page.waitForTimeout(150);
     assert.equal(await launcher(page), null);
@@ -213,6 +226,155 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     await page.evaluate(() => { for (const listener of window.storageListeners) listener({ videoActivator: { newValue: false } }, 'sync'); });
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 0);
+  });
+
+  it(`${engine}: approach shows before reaching the video, the zone passes page clicks, and leaving hides`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await page.evaluate(() => {
+      const link = document.createElement('button');
+      link.id = 'nearby'; link.textContent = 'Page action';
+      link.style.cssText = 'position:absolute;left:60px;top:230px;width:35px;height:40px';
+      link.onclick = () => link.dataset.clicked = 'yes';
+      document.body.append(link);
+    });
+    await hover(page, 80, 250); // 20px outside the video; its zone margin is 36px.
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    assert.equal((await launcher(page))!.x, 688);
+    await page.mouse.click(80, 250);
+    assert.equal(await page.locator('#nearby').getAttribute('data-clicked'), 'yes');
+    await page.mouse.move(63, 250);
+    await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+  });
+
+  it(`${engine}: no pointer listeners without videos, outside the viewport, or with only previews`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, {}, '<body></body>');
+    assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
+    await page.evaluate(media => {
+      const video = document.createElement('video'); video.id = 'added'; video.src = media;
+      video.style.cssText = 'position:absolute;left:100px;top:900px;width:640px;height:360px';
+      document.body.append(video);
+    }, MEDIA);
+    await page.waitForFunction(() => (document.getElementById('added') as HTMLVideoElement).readyState >= 1);
+    assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
+    await page.evaluate(() => { document.getElementById('added')!.style.top = '80px'; });
+    await page.waitForFunction(() => window.activatorPointerListeners === 2);
+    await page.evaluate(() => {
+      const video = document.getElementById('added') as HTMLVideoElement; video.muted = true; video.loop = true;
+    });
+    await page.waitForFunction(() => window.activatorPointerListeners === 0);
+    await page.evaluate(() => document.getElementById('added')!.remove());
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 0);
+  });
+
+  it(`${engine}: overlapping approach zones select one nearest video and refresh after layout changes`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await page.evaluate(media => {
+      const video = document.createElement('video'); video.id = 'second'; video.src = media;
+      video.style.cssText = 'position:absolute;left:780px;top:80px;width:640px;height:360px';
+      document.body.append(video);
+    }, MEDIA);
+    await page.waitForFunction(() => (document.getElementById('second') as HTMLVideoElement).readyState >= 1);
+    await hover(page, 750, 250);
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    assert.equal((await launcher(page))!.x, 688);
+    await page.mouse.move(770, 250);
+    await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft === 792);
+    assert.equal(await page.locator('#theater-everywhere-ui .theater-video-activator').count(), 1);
+    await page.evaluate(() => { document.getElementById('second')!.style.left = '1500px'; });
+    await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft === 688);
+    await page.evaluate(() => { document.getElementById('player')!.style.top = '900px'; });
+    await page.waitForFunction(() => window.activatorPointerListeners === 0);
+    assert.equal(await launcher(page), null);
+  });
+
+  it(`${engine}: approach keeps the 2.5s idle hide, focus exception, touch exclusion and Space activation`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await page.clock.install();
+    await hover(page, 80, 250);
+    await page.clock.runFor(50);
+    assert.ok(await launcher(page));
+    await page.clock.runFor(2501);
+    assert.equal(await launcher(page), null);
+    await page.mouse.move(81, 250);
+    await page.clock.runFor(50);
+    assert.ok(await launcher(page));
+    await page.locator('#theater-everywhere-ui .theater-video-activator').focus();
+    await page.evaluate(() => { (document.getElementById('main') as HTMLElement).style.width = '600px'; });
+    await page.clock.runFor(100);
+    assert.equal(await page.locator('#theater-everywhere-ui .theater-video-activator').evaluate(button => button.getRootNode() instanceof ShadowRoot
+      && (button.getRootNode() as ShadowRoot).activeElement === button), true, 'layout refresh retains focus');
+    await page.clock.runFor(2501);
+    assert.ok(await launcher(page), 'focus keeps it visible past idle');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', clientX: 80, clientY: 250 })));
+    await page.clock.runFor(50);
+    assert.equal(await launcher(page), null);
+    await page.mouse.move(82, 250);
+    await page.clock.runFor(50);
+    await page.locator('#theater-everywhere-ui .theater-video-activator').focus();
+    await page.keyboard.press('Space');
+    await page.clock.runFor(100);
+    assert.equal(await page.locator('video[data-theater-everywhere]').count(), 1);
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 0);
+  });
+
+  it(`${engine}: cached pointer movement has no layout reads or DOM queries and coalesces bursts`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await hover(page, 80, 250);
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    const counts = await page.evaluate(async () => {
+      // Let initial observer publications settle, using frames rather than a timing delay.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      let reads = 0, queries = 0, frames = 0;
+      const rect = Element.prototype.getBoundingClientRect;
+      const query = Document.prototype.querySelectorAll;
+      const raf = window.requestAnimationFrame;
+      Element.prototype.getBoundingClientRect = function () { reads++; return rect.call(this); };
+      Document.prototype.querySelectorAll = function (...args: [string]) { queries++; return query.apply(this, args); };
+      window.requestAnimationFrame = callback => { frames++; return raf.call(window, callback); };
+      for (let i = 0; i < 100; i++) document.dispatchEvent(new PointerEvent('pointermove', { clientX: 80, clientY: 240 + i % 20, pointerType: 'mouse' }));
+      await new Promise<void>(resolve => raf.call(window, () => resolve()));
+      Element.prototype.getBoundingClientRect = rect;
+      Document.prototype.querySelectorAll = query;
+      window.requestAnimationFrame = raf;
+      return { reads, queries, frames };
+    });
+    assert.deepEqual(counts, { reads: 0, queries: 0, frames: 1 });
+  });
+
+  it(`${engine}: removal, navigation, hidden tabs and fullscreen release old pointer work`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await hover(page, 80, 250);
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
+    assert.equal(await launcher(page), null);
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 2, 'one fresh pair, no accumulated listeners');
+    await hover(page, 80, 250);
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    assert.equal(await launcher(page), null);
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 0);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForFunction(() => window.activatorPointerListeners === 2);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: document.body });
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    assert.equal(await page.evaluate(() => window.activatorPointerListeners), 0);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null });
+      document.dispatchEvent(new Event('fullscreenchange'));
+      document.getElementById('main')!.remove();
+    });
+    await page.waitForFunction(() => window.activatorPointerListeners === 0);
+    assert.equal(await launcher(page), null);
   });
 
   it(`${engine}: the entry notice is opaque with a thinner border`, { timeout: 40_000 }, async t => {

@@ -5,6 +5,7 @@ import {
   ACTIVATOR_SIZE,
   chooseActivatorSpot,
   isActivatorVideoEligible,
+  nearestActivatorVideo,
   type ActivatorSpot,
   type Box
 } from './video-activator-placement';
@@ -76,11 +77,8 @@ function logoMark(): SVGSVGElement {
 }
 
 /**
- * A small launcher over the hovered video. The only always-on cost is one passive
- * `pointerover` listener: it fires when the pointer crosses into another element, never
- * per pixel. Pointermove, scroll, resize and a ResizeObserver exist only while a video is
- * hovered, and everything is released on leave. The caller owns arming: it disposes this
- * while theater is open, the setting is off or the domain is excluded.
+ * The caller owns the setting/theater/domain gates. Discovery and geometry are event-driven;
+ * pointer movement only selects among cached eligible rectangles, once per animation frame.
  */
 export function createVideoActivator(options: {
   /** Opens theater for this video through the regular toggle path. */
@@ -93,7 +91,12 @@ export function createVideoActivator(options: {
   /** Where the button sits relative to the video; valid while the video keeps its size and the viewport its shape. */
   type Placement = { key: string; spot: { dx: number; dy: number; name: ActivatorSpot } | null };
   let hovered: HTMLVideoElement | null = null;
-  let hoverScope: DisposableScope | null = null;
+  let tracking: DisposableScope | null = null;
+  let pointerScope: DisposableScope | null = null;
+  const candidates = new Map<HTMLVideoElement, { video: HTMLVideoElement; box: Box }>();
+  let pointBlocked = false;
+  let onButton = false;
+  let geometryDirty = false;
   let button: HTMLButtonElement | null = null;
   let placement: Placement | null = null;
   let lastSpot: ActivatorSpot | null = null;
@@ -102,7 +105,7 @@ export function createVideoActivator(options: {
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingPoint: [number, number] | null = null;
   let pointFrame = 0;
-  let layoutFrame = 0;
+
   scope.add(() => clearTimeout(idleTimer));
 
   // innerWidth/Height, not documentElement.client*: quirks-mode documents report the content height there.
@@ -135,10 +138,16 @@ export function createVideoActivator(options: {
     const view = viewport();
     const key = `${Math.round(box.width)}x${Math.round(box.height)}@${view.width}x${view.height}`;
     if (placement?.key === key) return placement;
-    // The button is itself a hit target, so measure with it out of the way.
-    button?.remove();
-    const choice = chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
-      { preferred: lastSpot, bottomBlocked: video.controls });
+    // Ignore our own hit target without detaching it and losing keyboard focus.
+    const pointerEvents = button?.style.pointerEvents ?? '';
+    if (button) button.style.pointerEvents = 'none';
+    let choice: ReturnType<typeof chooseActivatorSpot>;
+    try {
+      choice = chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
+        { preferred: lastSpot, bottomBlocked: video.controls });
+    } finally {
+      if (button) button.style.pointerEvents = pointerEvents;
+    }
     if (choice) lastSpot = choice.spot;
     return { key, spot: choice && { name: choice.spot, dx: choice.box.left - box.left, dy: choice.box.top - box.top } };
   }
@@ -152,11 +161,8 @@ export function createVideoActivator(options: {
   function leave(): void {
     hideButton();
     button = null;
-    hoverScope?.dispose();
-    hoverScope = null;
     hovered = null;
     placement = null;
-    pendingPoint = null;
     idleHidden = false;
   }
 
@@ -201,15 +207,11 @@ export function createVideoActivator(options: {
     return next;
   }
 
-  /** The one place that reads the video's rect: on enter, on resize, and coalesced per frame while scrolling. */
   function refreshLayout(): void {
     const video = hovered;
-    if (!video) return;
-    const rect = video.getBoundingClientRect();
+    const box = video && candidates.get(video)?.box;
+    if (!video || !box) { leave(); return; }
     const view = viewport();
-    if (!video.isConnected || rect.bottom <= 0 || rect.right <= 0 || rect.top >= view.height
-        || rect.left >= view.width || !eligible(video, rect)) { leave(); return; }
-    const box = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
     placement = place(video, box);
     const spot = placement.spot;
     if (!spot) { hideButton(); return; }
@@ -225,74 +227,178 @@ export function createVideoActivator(options: {
     element.style.top = `${Math.round(top)}px`;
     if (!element.isConnected) mountPlayerUi(element);
     idleHidden = false;
-    armIdle();
+    armIdle(Math.max(0, IDLE_HIDE_MS - (performance.now() - lastActivity)));
   }
 
-  function enter(video: HTMLVideoElement): void {
-    if (!eligible(video, video.getBoundingClientRect())) return;
-    hovered = video;
-    const owned = scope.child();
-    hoverScope = owned;
-    const schedule = (): void => {
-      if (layoutFrame) return;
-      layoutFrame = owned.raf(() => { layoutFrame = 0; refreshLayout(); });
-    };
-    owned.add(() => { layoutFrame = 0; });
-    owned.listen(document, 'pointermove', () => {
-      lastActivity = performance.now();
-      // After an idle hide the next movement brings the button back from the cached spot.
-      if (idleHidden) { idleHidden = false; schedule(); }
-    }, { passive: true, capture: true });
-    owned.listen(window, 'scroll', schedule, { passive: true, capture: true });
-    owned.listen(window, 'resize', schedule, { passive: true });
-    owned.listen(document.documentElement, 'mouseleave', leave);
-    owned.listen(video, 'enterpictureinpicture', leave);
-    if (typeof ResizeObserver === 'function') {
-      let initial = true; // observe() reports the current size once
-      const observer = new ResizeObserver(() => { if (initial) initial = false; else schedule(); });
-      observer.observe(video);
-      owned.add(() => observer.disconnect());
+  function consider(video: HTMLVideoElement | null, activity = false): void {
+    if (activity) lastActivity = performance.now();
+    if (video === hovered) {
+      if (video && idleHidden && activity) refreshLayout();
+      return;
     }
+    leave();
+    if (!video) return;
+    hovered = video;
     lastActivity = performance.now();
     refreshLayout();
   }
 
-  function consider(video: HTMLVideoElement | null): void {
-    if (video === hovered) { lastActivity = performance.now(); return; }
-    leave();
-    if (video) enter(video);
-  }
-
-  function resolveAtPoint(): void {
-    pointFrame = 0;
+  function resolveAtPoint(activity = false): void {
+    if (geometryDirty) return; // The invalidation frame, never pointer movement, owns layout reads.
+    if (onButton) { if (activity) lastActivity = performance.now(); return; }
     const point = pendingPoint;
-    pendingPoint = null;
-    if (!point) return;
-    // Pages without a light-DOM video need no hit test; the collection is live and cached.
-    if (!hovered && document.getElementsByTagName('video').length === 0) return;
-    const stack = document.elementsFromPoint(point[0], point[1]);
-    if (stack[0]?.id === EXTENSION_UI_HOST_ID) { consider(null); return; }
-    const video = stack.find((element): element is HTMLVideoElement => element instanceof HTMLVideoElement) ?? null;
-    // A modal over the video owns the pointer.
-    const modal = video && stack.slice(0, stack.indexOf(video)).some(element => element.matches(MODAL_SELECTOR));
-    consider(modal ? null : video);
+    const nearest = point && !pointBlocked ? nearestActivatorVideo(candidates.values(), ...point) : null;
+    consider(nearest?.video ?? null, activity);
   }
 
-  scope.listen(document, 'pointerover', (event: PointerEvent) => {
-    if (event.pointerType === 'touch' || document.fullscreenElement) return;
-    const path = event.composedPath();
-    if (button && path.includes(button)) return;
-    const host = document.getElementById(EXTENSION_UI_HOST_ID);
-    if (host && path.includes(host)) { consider(null); return; }
-    const direct = path.find((node): node is HTMLVideoElement => node instanceof HTMLVideoElement);
-    if (direct) { pendingPoint = null; consider(direct); return; }
-    pendingPoint = [event.clientX, event.clientY];
-    if (!pointFrame) pointFrame = scope.raf(resolveAtPoint);
-  }, { passive: true, capture: true });
-  scope.listen(document, 'fullscreenchange', leave);
-  scope.listen(document, 'visibilitychange', () => { if (document.hidden) leave(); });
-  scope.listen(window, 'pagehide', leave);
-  scope.listen(window, 'popstate', leave);
-  scope.add(leave);
+  function syncPointer(): void {
+    if (!candidates.size) {
+      pointerScope?.dispose();
+      pointerScope = null;
+      pendingPoint = null;
+      leave();
+      return;
+    }
+    if (pointerScope || !tracking) return;
+    const owned = tracking.child();
+    pointerScope = owned;
+    owned.add(() => { pointFrame = 0; pointerScope = null; });
+    owned.listen(document, 'pointerover', (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      const path = event.composedPath();
+      onButton = Boolean(button && path.includes(button));
+      pointBlocked = !onButton && path.some(node => node instanceof Element
+        && (node.id === EXTENSION_UI_HOST_ID || node.matches(MODAL_SELECTOR)));
+    }, { passive: true, capture: true });
+    owned.listen(document, 'pointermove', (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      pendingPoint = [event.clientX, event.clientY];
+      if (!pointFrame) pointFrame = owned.raf(() => { pointFrame = 0; resolveAtPoint(true); });
+    }, { passive: true, capture: true });
+    owned.listen(document.documentElement, 'mouseleave', () => {
+      pendingPoint = null;
+      onButton = false;
+      consider(null);
+    });
+  }
+
+  /** Discovery is incremental; no DOM query or layout read is performed by pointer handlers. */
+  function startTracking(): void {
+    if (tracking || scope.isDisposed || document.hidden || document.fullscreenElement) return;
+    const owned = scope.child();
+    tracking = owned;
+    const videos = new Map<HTMLVideoElement, DisposableScope>();
+    const roots = new Set<Document | ShadowRoot>();
+    let frame = 0;
+    let geometryScope: DisposableScope | null = null;
+    const schedule = (): void => {
+      geometryDirty = true;
+      if (!frame) frame = owned.raf(() => { frame = 0; measure(); });
+    };
+    const resize = new ResizeObserver(schedule);
+    const intersection = new IntersectionObserver(schedule);
+    owned.add(() => resize.disconnect());
+    owned.add(() => intersection.disconnect());
+
+    function measure(): void {
+      geometryDirty = false;
+      candidates.clear();
+      const view = viewport();
+      if ([...roots].some(root => root instanceof ShadowRoot && !root.host.isConnected)) {
+        const connected = [...roots].filter(root => !(root instanceof ShadowRoot) || root.host.isConnected);
+        mutations.disconnect();
+        roots.clear();
+        for (const root of connected) observeRoot(root);
+      }
+      for (const [video, videoScope] of videos) {
+        if (!video.isConnected) {
+          videoScope.dispose();
+          videos.delete(video);
+          continue;
+        }
+        const rect = video.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.right > 0 && rect.top < view.height && rect.left < view.width
+            && eligible(video, rect)) candidates.set(video, { video, box: rect });
+      }
+      if (!candidates.size) {
+        geometryScope?.dispose();
+        geometryScope = null;
+      } else if (!geometryScope) {
+        geometryScope = owned.child();
+        geometryScope.listen(window, 'scroll', schedule, { passive: true, capture: true });
+        geometryScope.listen(window, 'resize', schedule, { passive: true });
+      }
+      // Page chrome may have changed without changing the video's size.
+      placement = null;
+      syncPointer();
+      const previous = hovered;
+      resolveAtPoint();
+      if (hovered && hovered === previous && !idleHidden) refreshLayout();
+    }
+
+    function discover(node: Node): void {
+      if (!(node instanceof Element || node instanceof Document || node instanceof ShadowRoot)) return;
+      if (node instanceof Element && node.id === EXTENSION_UI_HOST_ID) return;
+      if (node instanceof HTMLVideoElement && !videos.has(node)) {
+        const videoScope = owned.child();
+        videos.set(node, videoScope);
+        resize.observe(node);
+        intersection.observe(node);
+        videoScope.add(() => { resize.unobserve(node); intersection.unobserve(node); });
+        for (const event of ['loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
+          videoScope.listen(node, event, schedule);
+        }
+      }
+      if (node instanceof Document || node instanceof ShadowRoot) observeRoot(node);
+      if (node instanceof Element && node.shadowRoot) discover(node.shadowRoot);
+      for (const child of node.children) discover(child);
+    }
+
+    const mutations = new MutationObserver(records => {
+      let changed = false;
+      for (const record of records) {
+        if (record.target instanceof Element && record.target.closest('#' + EXTENSION_UI_HOST_ID)) continue;
+        if (record.type === 'attributes') { changed = true; continue; }
+        for (const node of record.addedNodes) {
+          if (node instanceof Element && node.id === EXTENSION_UI_HOST_ID) continue;
+          discover(node);
+          changed = true;
+        }
+        if (record.removedNodes.length) changed = true;
+      }
+      if (changed && videos.size) schedule();
+    });
+    function observeRoot(root: Document | ShadowRoot): void {
+      if (roots.has(root)) return;
+      roots.add(root);
+      mutations.observe(root, { childList: true, subtree: true, attributes: true,
+        attributeFilter: ['class', 'style', 'hidden', 'src', 'muted', 'loop', 'controls'] });
+    }
+    owned.add(() => mutations.disconnect());
+    owned.add(() => {
+      tracking = null;
+      candidates.clear();
+      pendingPoint = null;
+      pointBlocked = false;
+      onButton = false;
+      geometryDirty = false;
+      leave();
+    });
+    discover(document);
+    measure();
+  }
+
+  function stopTracking(): void { tracking?.dispose(); }
+  function syncTracking(): void {
+    if (document.hidden || document.fullscreenElement) stopTracking();
+    else startTracking();
+  }
+  scope.listen(document, 'fullscreenchange', syncTracking);
+  scope.listen(document, 'visibilitychange', syncTracking);
+  scope.listen(window, 'pagehide', stopTracking);
+  scope.listen(window, 'pageshow', syncTracking);
+  // Drop the old visit's point and cached work before discovering the new visit.
+  scope.listen(window, 'popstate', () => { stopTracking(); startTracking(); });
+  startTracking();
   return { dispose: () => scope.dispose() };
 }
