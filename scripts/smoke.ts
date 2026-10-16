@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import { WHATS_NEW_CONTENT } from '../src/whatsNew-content';
-import { runningGeneration } from '../src/feature-highlights';
+import { NEW_FEATURE_ITEMS, featureHighlightsAcknowledgement, resolveFeatureHighlights, SEEN_ITEMS_STORAGE_KEY } from '../src/feature-highlights';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -2010,7 +2010,13 @@ async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<vo
           const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
           if (!root) throw new Error('Player shadow root is missing');
           try {
-            if (!globalThis.customElements) return {registry: 'unavailable', upgraded: false};
+            if (!globalThis.customElements) {
+              const badge = root.querySelector('.te-new-badge');
+              if (badge?.localName !== 'span' || getComputedStyle(badge).fontSize !== '9.5px') {
+                throw new Error('Isolated-world badge fallback is missing or unstyled');
+              }
+              return {registry: 'unavailable', upgraded: false, badge: badge.localName};
+            }
             const tag = 'tme-smoke-badge-probe';
             if (!customElements.get(tag)) customElements.define(tag, class extends HTMLElement {
               connectedCallback() { this.textContent = 'upgraded'; }
@@ -2025,6 +2031,7 @@ async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<vo
       });
       if (exceptionDetails) throw new Error(exceptionDetails.text);
       if (result.value) {
+        if (!['available', 'unavailable'].includes(result.value.registry)) throw new Error(result.value.registry);
         console.log('smoke:chromium badge custom-element feasibility (installed isolated world):', result.value);
         return;
       }
@@ -2035,11 +2042,13 @@ async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<vo
   }
 }
 
-/** Installed storage/world wiring for New badges; a development build on the previous manifest version shows the next generation's. */
+/** Installed storage/world wiring, including date-version builds and same-generation item additions. */
 async function assertFeatureHighlights(page: Page, origin: string, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
+  const localKeys = [WHATS_NEW_ACK_STORAGE_KEY, 'newFeaturesSeenThrough', SEEN_ITEMS_STORAGE_KEY];
+  const originalLocal = await worker.evaluate(keys => chrome.storage.local.get(keys), localKeys);
   await worker.evaluate(({ key, release }) => chrome.storage.local.set({
-    [key]: release, newFeaturesSeenThrough: '0.0'
+    [key]: release, newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: []
   }), { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
   const options = await context.newPage();
   const second = await context.newPage();
@@ -2049,11 +2058,21 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
     await page.locator('video#player').click();
     await page.keyboard.press('t');
     await page.locator('.player-settings-btn').waitFor();
+    await page.locator('.player-settings-btn .te-new-badge[data-variant="dot"]').waitFor();
     await assertBadgeWorld(page, context);
+    await page.locator('.player-settings-btn').press('Enter');
+    await page.locator('[data-settings-section=audio] .te-new-badge').waitFor();
+    await page.locator('.player-settings-btn').press('Enter');
     const url = new URL('options/options.html#appearance', worker.url()).href;
     await options.goto(url); await second.goto(url);
     await options.locator('#whats-new-btn.has-unseen').waitFor();
     await second.locator('#whats-new-btn.has-unseen').waitFor();
+    for (const { id } of NEW_FEATURE_ITEMS.filter(item => !item.id.startsWith('player'))) {
+      await options.locator(`[data-new-feature="${id}"] .te-new-badge`).waitFor({ state: 'attached' });
+    }
+    // Viewing Settings and using the player do not themselves acknowledge badges.
+    await options.reload();
+    await options.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
     await options.locator('label.toggle-switch').filter({ has: options.locator('#highlight-new-features-toggle') }).click();
     await second.waitForFunction(() => !(document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked);
     await options.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
@@ -2061,7 +2080,7 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
     await options.locator('label.toggle-switch').filter({ has: options.locator('#highlight-new-features-toggle') }).click();
     await second.waitForFunction(() => (document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked);
-    await worker.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0' }));
+    await worker.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: [] }));
     await options.locator('#whats-new-btn.has-unseen').waitFor();
     await options.getByRole('button', { name: 'Update highlights', exact: true }).click();
     await options.getByRole('dialog', { name: 'Update highlights' }).waitFor();
@@ -2097,11 +2116,40 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
       if (!scrollable) throw new Error('Long announcement should scroll within the dialog');
     }
     const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
-    const seen = await worker.evaluate(async () => (await chrome.storage.local.get('newFeaturesSeenThrough')).newFeaturesSeenThrough);
-    if (seen !== runningGeneration(version)) throw new Error('Opening Update highlights did not acknowledge the installed generation');
+    const seen = await worker.evaluate(() => chrome.storage.local.get(['newFeaturesSeenThrough', 'newFeaturesSeenItems']));
+    const expected = featureHighlightsAcknowledgement(resolveFeatureHighlights(version, {}, { newFeaturesSeenThrough: '0.0' }));
+    for (const [key, value] of Object.entries(expected)) {
+      if (JSON.stringify(seen[key]) !== JSON.stringify(value)) throw new Error(`Opening Update highlights did not acknowledge ${key}`);
+    }
+    await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    await options.reload();
+    await options.locator('#whats-new-btn:not(.has-unseen)').waitFor();
+    if (await options.locator('.te-new-badge').count()) throw new Error('Unchanged development items reappeared after reload');
+    if (resolveFeatureHighlights(version).development) {
+      // Persisted catalog from a build before these two items joined the same generation.
+      const earlierItems = NEW_FEATURE_ITEMS.filter(item => !['settingsLanguage', 'playerAudio'].includes(item.id))
+        .map(item => `${item.id}@${item.since}`);
+      await worker.evaluate(({ key, items }) => chrome.storage.local.set({ [key]: items }), { key: SEEN_ITEMS_STORAGE_KEY, items: earlierItems });
+      await options.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+      await second.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+      await page.locator('.player-settings-btn .te-new-badge').waitFor();
+      await page.locator('.player-settings-btn').press('Enter');
+      await page.locator('[data-settings-section=audio] .te-new-badge').waitFor();
+      if (await page.locator('.picture-layout-btn .te-new-badge').count()) throw new Error('Previously acknowledged player item reappeared');
+      const screenshotDir = process.env.SMOKE_SCREENSHOT_DIR;
+      if (screenshotDir) {
+        await options.locator('#tab-appearance').click();
+        await options.screenshot({ path: path.join(screenshotDir, 'badges-after-settings.png'), fullPage: true });
+        await page.screenshot({ path: path.join(screenshotDir, 'badges-after-player.png') });
+      }
+    }
     console.log('smoke:chromium feature highlights: installed Settings/player wiring, version gate, cross-tab preference and acknowledgement passed');
   } finally {
-    await worker.evaluate(() => chrome.storage.sync.remove(['highlightNewFeatures', 'language']));
+    await worker.evaluate(async ({ keys, original }) => {
+      await chrome.storage.local.remove(keys.filter(key => !(key in original)));
+      await chrome.storage.local.set(original);
+      await chrome.storage.sync.remove(['highlightNewFeatures', 'language']);
+    }, { keys: localKeys, original: originalLocal });
     await options.close(); await second.close();
   }
 }
@@ -2240,6 +2288,10 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
     await worker.evaluate(() => chrome.storage.sync.set({ shortcuts: { exit: 'X' } }));
 
     const page = context.pages()[0] || await context.newPage();
+    if (process.env.THEATER_SMOKE_HIGHLIGHTS_ONLY === '1') {
+      await assertFeatureHighlights(page, origin, context);
+      return;
+    }
     if (process.env.THEATER_SMOKE_APPEARANCE_ONLY === '1') {
       await assertAppearanceModes(context, origin);
       return;

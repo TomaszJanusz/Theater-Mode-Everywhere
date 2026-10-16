@@ -1,6 +1,8 @@
 /** Release generations and visibility rules; deliberately independent of browser APIs. */
 export type Generation = `${number}.${number}`;
+export const SEEN_ITEMS_STORAGE_KEY = 'newFeaturesSeenItems';
 export const SEEN_THROUGH_STORAGE_KEY = 'newFeaturesSeenThrough';
+export const FEATURE_HIGHLIGHTS_LOCAL_KEYS = [SEEN_THROUGH_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY];
 export const HIGHLIGHT_NEW_FEATURES_STORAGE_KEY = 'highlightNewFeatures';
 
 // One id has one UI home. Tab/toolbar indicators aggregate their visible children.
@@ -36,7 +38,7 @@ export function installedGeneration(version: string): Generation {
 }
 
 /**
- * Generation the running code behaves as. A development build still carries the previous
+ * Generation the running code behaves as. A development build carries a date-based or previous
  * manifest version while already containing the next generation's items, so it counts as that
  * generation; otherwise its New badges could never show (or be acknowledged) locally.
  */
@@ -69,24 +71,48 @@ export function resolveSeenThrough(value: unknown, installed: Generation): Gener
   return isGeneration(value) ? value : previousGeneration(installed);
 }
 
-export type FeatureHighlights = { installed: Generation; seenThrough: Generation; enabled: boolean };
+export type FeatureHighlights = {
+  installed: Generation; seenThrough: Generation; enabled: boolean;
+  development?: { released: Generation; seenItems: readonly string[] };
+};
+
+function itemKey(item: { id: string; since: Generation }): string {
+  return `${item.id}@${item.since}`;
+}
+
+/** Apply only supplied keys, so live changes cannot discard the other acknowledgement. */
+export function withFeatureHighlightsLocal(state: FeatureHighlights, local: Record<string, unknown>): FeatureHighlights {
+  const value = local[SEEN_ITEMS_STORAGE_KEY];
+  return { ...state,
+    seenThrough: SEEN_THROUGH_STORAGE_KEY in local
+      ? resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], state.installed) : state.seenThrough,
+    ...(state.development && SEEN_ITEMS_STORAGE_KEY in local ? {
+      development: { ...state.development,
+        seenItems: Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [] }
+    } : {})
+  };
+}
 export function resolveFeatureHighlights(
   version: string,
   sync: Record<string, unknown> = {},
   local: Record<string, unknown> = {}
 ): FeatureHighlights {
   const installed = runningGeneration(version);
-  return {
+  return withFeatureHighlightsLocal({
     installed,
+    ...(compareGenerations(installedGeneration(version), installed) < 0
+      ? { development: { released: installedGeneration(version), seenItems: [] } } : {}),
     seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], installed),
     enabled: resolveHighlightNewFeatures(sync[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
-  };
+  }, local);
 }
 
 /** Before the acknowledged generation is read nothing counts as new, so a badge never flashes and vanishes. */
 export function pendingFeatureHighlights(version: string): FeatureHighlights {
   const installed = runningGeneration(version);
-  return { installed, seenThrough: installed, enabled: true };
+  const state = resolveFeatureHighlights(version);
+  return { ...state, installed, seenThrough: installed,
+    ...(state.development ? { development: { ...state.development, seenItems: NEW_FEATURE_ITEMS.map(itemKey) } } : {}) };
 }
 
 export function isNewSince(since: Generation, state: FeatureHighlights): boolean {
@@ -96,7 +122,11 @@ export function isNewSince(since: Generation, state: FeatureHighlights): boolean
 }
 
 export function isNewFeature(id: NewFeatureId, state: FeatureHighlights): boolean {
-  return isNewSince(NEW_FEATURE_ITEMS.find(item => item.id === id)!.since, state);
+  const item = NEW_FEATURE_ITEMS.find(item => item.id === id)!;
+  if (state.development && compareGenerations(item.since, state.development.released) > 0) {
+    return state.enabled && !state.development.seenItems.includes(itemKey(item));
+  }
+  return isNewSince(item.since, state);
 }
 
 /** Install initializes; updates intentionally leave the acknowledgement untouched. */
@@ -105,5 +135,23 @@ export function initialSeenThrough(reason: string, version: string): Record<stri
 }
 
 export function acknowledgeGeneration(state: FeatureHighlights): Generation {
-  return compareGenerations(state.seenThrough, state.installed) > 0 ? state.seenThrough : state.installed;
+  const installed = state.development?.released ?? state.installed;
+  return compareGenerations(state.seenThrough, installed) > 0 ? state.seenThrough : installed;
+}
+
+/**
+ * Releases acknowledge a generation. Builds containing unreleased items acknowledge the exact
+ * id/since pairs present in that profile, independently of the manifest's date-based version.
+ * Reloading or rebuilding identical items stays acknowledged; adding an item (even in the same
+ * generation) shows it again. Legacy generation-only acknowledgements cannot hide unreleased items.
+ * Opening Update highlights (also the automatic Settings prompt) or disabling highlights acknowledges
+ * the catalog; merely viewing Settings or using player controls does not.
+ */
+export function featureHighlightsAcknowledgement(state: FeatureHighlights): Record<string, unknown> {
+  return {
+    [SEEN_THROUGH_STORAGE_KEY]: acknowledgeGeneration(state),
+    ...(state.development ? { [SEEN_ITEMS_STORAGE_KEY]: [...new Set([
+      ...state.development.seenItems, ...NEW_FEATURE_ITEMS.map(itemKey)
+    ])] } : {})
+  };
 }

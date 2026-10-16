@@ -9,6 +9,7 @@ import { readStylesheet } from '../test-utils/styles';
 const bundle = buildSync({
   stdin: { contents: `
     export * from './src/ui/new-badge';
+    export { NEW_FEATURE_ITEMS } from './src/feature-highlights';
     export { setupFeatureHighlights } from './options/feature-highlights';
     export { localizeDocument } from './src/i18n';
     export { languageRuntime } from './src/i18n-runtime';
@@ -52,6 +53,37 @@ async function installMock(page: Page, version = '1.6.0') {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  it(`${engine}: development Settings restores only newly added items after an acknowledged catalog`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
+    await installMock(page, '0.26.1016.1512');
+    await page.evaluate(`(async () => {
+      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+      await settingsHighlights.ready;
+    })()`);
+    await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+    await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
+    await page.waitForFunction(() => !document.querySelector('.te-new-badge'));
+    await page.locator('.te-dialog-btn-primary').click();
+    await page.evaluate(`(async () => {
+      settingsHighlights.dispose();
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+      await settingsHighlights.ready;
+    })()`);
+    assert.equal(await page.locator('.te-new-badge').count(), 0, 'remount with unchanged items stays acknowledged');
+    // A snapshot written before Language joined the same generation, as in a rebuilt extension.
+    await page.evaluate(async () => {
+      const local = await chrome.storage.local.get('newFeaturesSeenItems');
+      await chrome.storage.local.set({ newFeaturesSeenItems: local.newFeaturesSeenItems.filter((key: string) => key !== 'settingsLanguage@1.6') });
+    });
+    await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+    assert.equal(await page.locator('[data-new-feature=settingsHighContrast] .te-new-badge').count(), 0);
+    await page.locator('#whats-new-btn.has-unseen').waitFor();
+    await browser.close();
+  });
+
   it(`${engine}: shared badge has accessible text, decorative dot, accent tokens and logical RTL spacing`, { timeout: 30_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage();
@@ -73,6 +105,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.match(styles.dotRing, /18, 52, 86/); assert.equal(styles.hidden, 'true'); assert.equal(styles.text, '');
     assert.equal(await page.getByRole('button', { name: 'Language New', exact: true }).count(), 1);
     assert.equal(await page.getByRole('button', { name: 'Settings' }).getAttribute('aria-description'), 'New');
+    const fallback = await page.evaluate(`(() => {
+      Object.defineProperty(window, 'customElements', { value: undefined, configurable: true });
+      BadgeTest.defineNewBadge();
+      const pill = BadgeTest.createNewBadge(); document.body.append(pill);
+      return { tag: pill.localName, text: pill.textContent, font: getComputedStyle(pill).fontSize };
+    })()`);
+    assert.deepEqual(fallback, { tag: 'span', text: 'New', font: '9.5px' });
     await browser.close();
   });
 
@@ -134,12 +173,29 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await browser.close();
   });
 
+  it(`${engine}: development hydration preserves both acknowledgement keys across a partial live update`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await installMock(page, '0.26.1016.1512');
+    await page.evaluate(`(async () => {
+      let resolveLocal;
+      chrome.storage.local.get = () => new Promise(resolve => { resolveLocal = resolve; });
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(Promise.resolve({}));
+      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      resolveLocal({newFeaturesSeenThrough:'1.5', newFeaturesSeenItems: BadgeTest.NEW_FEATURE_ITEMS.map(item => item.id + '@' + item.since)});
+      await settingsHighlights.ready;
+    })()`);
+    assert.equal(await page.locator('.te-new-badge').count(), 0, 'generation event cannot discard the item snapshot');
+    await browser.close();
+  });
+
   it(`${engine}: player gear dot and new menu rows follow local/sync changes, language and rebuilds`, { timeout: 45_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage();
     await page.route('https://badge.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><video muted loop style="width:640px;height:360px"></video>' }));
     await page.goto('https://badge.test/');
-    await installMock(page);
+    await installMock(page, '0.26.1016.1512');
+    await page.evaluate(`window.getBadgeLocal = chrome.storage.local.get; chrome.storage.local.get = () => new Promise(resolve => { window.resolveBadgeLocal = resolve; })`);
     await page.addStyleTag({ content: contentCss });
     await page.evaluate(({ media, uiCss }) => {
       document.querySelector('video')!.src = media;
@@ -147,6 +203,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const api = (window as unknown as { BadgeTest: { setPlayerUiCss(css: string): void; bootstrapPlayerRuntime(): void } }).BadgeTest;
       api.setPlayerUiCss(uiCss); api.bootstrapPlayerRuntime();
     }, { media, uiCss });
+    await page.evaluate(`(async () => {
+      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      resolveBadgeLocal({newFeaturesSeenThrough:'1.6'});
+      // Later acknowledgement reads use the normal mock storage again.
+      chrome.storage.local.get = getBadgeLocal;
+    })()`);
     await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
     await page.keyboard.press('t');
     await page.locator('.player-settings-btn .te-new-badge[data-variant="dot"]').waitFor();
@@ -167,8 +229,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.locator('.player-settings-btn .te-new-badge').waitFor();
     await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
     await page.locator('[data-settings-section=audio] .theater-settings-heading .te-new-badge').filter({ hasText: 'Nowość' }).waitFor({ state: 'attached' });
-    await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '1.6' }));
+    await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
     await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    await page.locator('.te-dialog-btn-primary').click();
     await page.keyboard.press('Escape'); await page.keyboard.press('t');
     assert.equal(await page.locator('.te-new-badge').count(), 0);
     await browser.close();
