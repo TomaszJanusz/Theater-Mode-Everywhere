@@ -12,6 +12,7 @@ export const bilibiliIntlCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
     playlists: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
+    launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteBilibiliIntl' },
   }
 } as const satisfies ProviderCapabilities;

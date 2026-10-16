@@ -12,6 +12,7 @@ export const youtubeCapabilities = {
     heatmap: { status: 'conditional', noteKey: 'rteNoteYoutube' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteYoutube' },
     playlists: { status: 'conditional', noteKey: 'rteNoteYoutube' },
+    launcher: { status: 'conditional', noteKey: 'rteNoteLauncher' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteYoutube' },
   }
 } as const satisfies ProviderCapabilities;

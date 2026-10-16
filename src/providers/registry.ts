@@ -1,3 +1,5 @@
+import { youtubeLauncherPlacement } from './youtube/launcher-placement';
+import type { LauncherPlacementFactory } from './launcher-placement';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import { disneyWatchPlayback } from './disney/watch-playback';
@@ -15,11 +17,12 @@ export type ProviderDefinition = {
   id: ProviderId;
   matchesHost: (hostname: string) => boolean;
   watchPlayback?: WatchPlayback;
+  launcherPlacement?: LauncherPlacementFactory;
 };
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
-  { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname), watchPlayback: youtubeWatchPlayback },
+  { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname), watchPlayback: youtubeWatchPlayback, launcherPlacement: youtubeLauncherPlacement },
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },

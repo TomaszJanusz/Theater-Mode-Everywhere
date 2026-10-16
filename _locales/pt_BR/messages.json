@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Listas de reprodução"
   },
+  "rteCapabilityLauncher": {
+    "message": "Botão do modo cinema"
+  },
+  "rteNoteLauncher": {
+    "message": "Usa a barra do player nativo quando há um local disponível; caso contrário, o botão aparece sobre o vídeo."
+  },
   "rteCapabilityQuickActions": {
     "message": "Ações rápidas"
   },

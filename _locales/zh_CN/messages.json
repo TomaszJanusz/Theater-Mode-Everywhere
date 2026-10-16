@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "播放列表"
   },
+  "rteCapabilityLauncher": {
+    "message": "影院模式按钮"
+  },
+  "rteNoteLauncher": {
+    "message": "原生播放器工具栏提供可用位置时，将按钮放在工具栏中；否则显示在视频上方。"
+  },
   "rteCapabilityQuickActions": {
     "message": "快捷操作"
   },

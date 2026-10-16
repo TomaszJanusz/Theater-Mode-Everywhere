@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Playlist"
   },
+  "rteCapabilityLauncher": {
+    "message": "Pulsante modalità cinema"
+  },
+  "rteNoteLauncher": {
+    "message": "Usa la barra del lettore nativo quando è disponibile uno spazio; altrimenti il pulsante appare sul video."
+  },
   "rteCapabilityQuickActions": {
     "message": "Azioni rapide"
   },

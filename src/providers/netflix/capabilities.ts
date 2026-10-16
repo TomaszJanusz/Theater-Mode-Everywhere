@@ -12,6 +12,7 @@ export const netflixCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteNetflix' },
     playlists: { status: 'conditional', noteKey: 'rteNoteNetflix' },
+    launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteNetflix' },
   }
 } as const satisfies ProviderCapabilities;

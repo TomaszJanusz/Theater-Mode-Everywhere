@@ -1643,6 +1643,7 @@ html { scrollbar-gutter: stable; }
 [data-capability="heatmap"] { --rte-capability-color: #fda4af; }
 [data-capability="thumbnails"] { --rte-capability-color: #93c5fd; }
 [data-capability="playlists"] { --rte-capability-color: #86efac; }
+[data-capability="launcher"] { --rte-capability-color: #a5b4fc; }
 [data-capability="quickActions"] { --rte-capability-color: #fdba74; }
 .rte-badge, .rte-filter-buttons button {
   --rte-badge-color: var(--appearance-ink, var(--rte-capability-color));

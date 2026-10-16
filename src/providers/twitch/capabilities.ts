@@ -12,6 +12,7 @@ export const twitchCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteTwitch' },
     playlists: { status: 'no' },
+    launcher: { status: 'no' },
     quickActions: { status: 'no' },
   }
 } as const satisfies ProviderCapabilities;

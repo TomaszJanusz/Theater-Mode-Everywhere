@@ -12,6 +12,7 @@ export const vimeoCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteVimeo' },
     playlists: { status: 'conditional', noteKey: 'rteNoteVimeo' },
+    launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteVimeo' },
   }
 } as const satisfies ProviderCapabilities;

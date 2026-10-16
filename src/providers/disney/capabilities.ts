@@ -12,6 +12,7 @@ export const disneyCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteDisney' },
     playlists: { status: 'conditional', noteKey: 'rteNoteDisney' },
+    launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteDisney' },
   }
 } as const satisfies ProviderCapabilities;

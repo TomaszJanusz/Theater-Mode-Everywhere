@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { buildSync } from 'esbuild';
 import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
+import { providerDefinition } from './registry';
 import { VimeoAdapter } from '../media-features/vimeo-adapter';
 import { NetflixAdapter } from '../media-features/netflix-adapter';
 import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors';
@@ -66,6 +67,7 @@ describe('provider capability declarations', () => {
 
   for (const provider of PROVIDER_CAPABILITIES) {
     it(`${provider.id}: adapter methods and registered actions match the declaration`, () => {
+      assert.equal(Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no');
       const folder = folders[provider.id] ?? provider.id;
       const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
       const implemented = methods(source);

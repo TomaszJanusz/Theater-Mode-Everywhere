@@ -1,3 +1,5 @@
+import { createProviderLauncherPlacement, type LauncherPlacement, type LauncherSlot } from '../providers/launcher-placement';
+import { observeProviderWatchPlaybackChanges } from '../providers/watch-playback';
 import { DisposableScope } from '../core/disposable-scope';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { mountPlayerUi, peekPlayerUiRoot } from './root';
@@ -6,7 +8,6 @@ import {
   chooseActivatorSpot,
   isActivatorVideoEligible,
   nearestActivatorVideo,
-  type ActivatorSpot,
   type Box
 } from './video-activator-placement';
 
@@ -54,7 +55,7 @@ function coversPageUi(element: Element, video: HTMLVideoElement, videoBox: Box):
   return false;
 }
 
-function logoMark(): SVGSVGElement {
+function logoMark(monochrome = false): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 1000 1000');
   svg.setAttribute('aria-hidden', 'true');
@@ -69,9 +70,10 @@ function logoMark(): SVGSVGElement {
   triangle.setAttribute('fill', '#ffffff');
   const body = document.createElementNS(SVG_NS, 'path');
   body.setAttribute('d', 'M564,131.691L564,422.309C564,442.559 547.695,459 527.611,459L239.389,459C219.305,459 203,442.559 203,422.309L203,131.691C203,111.441 219.305,95 239.389,95L527.611,95C547.695,95 564,111.441 564,131.691ZM452.463,207.464L286.575,249.151L411.119,374.731L452.463,207.464Z');
-  body.setAttribute('fill', 'var(--accent-color, #6366f1)');
+  body.setAttribute('fill', monochrome ? 'currentColor' : 'var(--accent-color, #6366f1)');
   body.setAttribute('fill-rule', 'evenodd');
-  group.append(triangle, body);
+  if (!monochrome) group.append(triangle);
+  group.append(body);
   svg.append(group);
   return svg;
 }
@@ -88,8 +90,6 @@ export function createVideoActivator(options: {
   label(): string;
 }): VideoActivator {
   const scope = new DisposableScope();
-  /** Where the button sits relative to the video; valid while the video keeps its size and the viewport its shape. */
-  type Placement = { key: string; spot: { dx: number; dy: number; name: ActivatorSpot } | null };
   let hovered: HTMLVideoElement | null = null;
   let tracking: DisposableScope | null = null;
   let pointerScope: DisposableScope | null = null;
@@ -98,8 +98,9 @@ export function createVideoActivator(options: {
   let onButton = false;
   let geometryDirty = false;
   let button: HTMLButtonElement | null = null;
-  let placement: Placement | null = null;
-  let lastSpot: ActivatorSpot | null = null;
+  const providerPlacements = new Map<HTMLVideoElement, LauncherPlacement>();
+  let nativeSlot: LauncherSlot | null = null;
+  let shownBox: string | null = null;
   let lastActivity = 0;
   let idleHidden = false;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -113,7 +114,7 @@ export function createVideoActivator(options: {
 
   function eligible(video: HTMLVideoElement, box: Box): boolean {
     const root = video.getRootNode();
-    return isActivatorVideoEligible({
+    return video.paused && isActivatorVideoEligible({
       width: box.width, height: box.height,
       visible: video.isConnected && (typeof video.checkVisibility !== 'function'
         || video.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })),
@@ -134,35 +135,25 @@ export function createVideoActivator(options: {
     return (at < 0 ? stack : stack.slice(0, at)).every(element => element.contains(video) || !coversPageUi(element, video, box));
   }
 
-  function place(video: HTMLVideoElement, box: Box): Placement {
+  function place(video: HTMLVideoElement, box: Box) {
     const view = viewport();
-    const key = `${Math.round(box.width)}x${Math.round(box.height)}@${view.width}x${view.height}`;
-    if (placement?.key === key) return placement;
-    // Ignore our own hit target without detaching it and losing keyboard focus.
-    const pointerEvents = button?.style.pointerEvents ?? '';
-    if (button) button.style.pointerEvents = 'none';
-    let choice: ReturnType<typeof chooseActivatorSpot>;
-    try {
-      choice = chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
-        { preferred: lastSpot, bottomBlocked: video.controls });
-    } finally {
-      if (button) button.style.pointerEvents = pointerEvents;
-    }
-    if (choice) lastSpot = choice.spot;
-    return { key, spot: choice && { name: choice.spot, dx: choice.box.left - box.left, dy: choice.box.top - box.top } };
+    return chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
+      { bottomBlocked: video.controls })?.box ?? null;
   }
 
   function hideButton(): void {
     clearTimeout(idleTimer);
     idleTimer = undefined;
     button?.remove();
+    shownBox = null;
+    nativeSlot = null;
+    onButton = false;
   }
 
   function leave(): void {
     hideButton();
     button = null;
     hovered = null;
-    placement = null;
     idleHidden = false;
   }
 
@@ -173,9 +164,9 @@ export function createVideoActivator(options: {
       // Pointermove only stamps the time; one timer re-arms for the remainder.
       const rest = IDLE_HIDE_MS - (performance.now() - lastActivity);
       if (rest > 0) { armIdle(rest); return; }
-      if (peekPlayerUiRoot()?.activeElement === button) return; // keyboard focus keeps it
+      if (document.activeElement === button || peekPlayerUiRoot()?.activeElement === button) return; // keyboard focus keeps it
       idleHidden = true;
-      button?.remove();
+      hideButton();
     }, ms);
   }
 
@@ -186,19 +177,23 @@ export function createVideoActivator(options: {
     next.className = VIDEO_ACTIVATOR_CLASS;
     next.setAttribute('aria-label', options.label());
     next.title = options.label();
-    next.append(logoMark());
+    next.append(logoMark(Boolean(nativeSlot)));
     options.paint(next);
     // Pressing must not move focus out of the page's player or reach host handlers.
     next.addEventListener('mousedown', event => event.preventDefault());
     next.addEventListener('pointerdown', event => event.stopPropagation());
     next.addEventListener('click', event => {
       event.stopPropagation();
+      if (button !== next || !next.isConnected) return;
       const video = hovered;
-      const usable = video?.isConnected && eligible(video, video.getBoundingClientRect());
+      const usable = video?.isConnected && eligible(video, video.getBoundingClientRect())
+        && (!nativeSlot || providerPlacements.get(video)?.read()?.before === nativeSlot.before);
       leave();
       if (video && usable) options.activate(video);
     });
+    next.addEventListener('keyup', event => event.stopPropagation());
     next.addEventListener('keydown', event => {
+      event.stopPropagation();
       if (event.key !== 'Escape') return;
       leave();
       next.blur();
@@ -212,11 +207,27 @@ export function createVideoActivator(options: {
     const box = video && candidates.get(video)?.box;
     if (!video || !box) { leave(); return; }
     const view = viewport();
-    placement = place(video, box);
-    const spot = placement.spot;
+    const key = `${box.left},${box.top},${box.width},${box.height}@${view.width},${view.height}`;
+    const slot = providerPlacements.get(video)?.read() ?? null;
+    if (button?.isConnected && shownBox === key && nativeSlot?.before === slot?.before
+        && (!slot || button.nextElementSibling === slot.before)) return;
+    const focused = button && (document.activeElement === button || peekPlayerUiRoot()?.activeElement === button);
+    hideButton();
+    button = null;
+    nativeSlot = slot;
+    if (slot) {
+      const nativeButton = ensureButton();
+      slot.mount(nativeButton);
+      shownBox = key;
+      idleHidden = false;
+      if (focused) nativeButton.focus();
+      armIdle(Math.max(0, IDLE_HIDE_MS - (performance.now() - lastActivity)));
+      return;
+    }
+    const spot = place(video, box);
     if (!spot) { hideButton(); return; }
-    const left = box.left + spot.dx;
-    const top = box.top + spot.dy;
+    const left = spot.left;
+    const top = spot.top;
     // Scrolling can carry the cached spot off screen while the video is still visible.
     if (left < 0 || top < 0 || left + ACTIVATOR_SIZE > view.width || top + ACTIVATOR_SIZE > view.height) {
       hideButton();
@@ -226,6 +237,8 @@ export function createVideoActivator(options: {
     element.style.left = `${Math.round(left)}px`;
     element.style.top = `${Math.round(top)}px`;
     if (!element.isConnected) mountPlayerUi(element);
+    shownBox = key;
+    if (focused) element.focus();
     idleHidden = false;
     armIdle(Math.max(0, IDLE_HIDE_MS - (performance.now() - lastActivity)));
   }
@@ -328,8 +341,8 @@ export function createVideoActivator(options: {
         geometryScope.listen(window, 'scroll', schedule, { passive: true, capture: true });
         geometryScope.listen(window, 'resize', schedule, { passive: true });
       }
-      // Page chrome may have changed without changing the video's size.
-      placement = null;
+      // Only a new appearance or a changed rectangle may choose a new overlay slot.
+      if (hovered && !candidates.has(hovered)) leave();
       syncPointer();
       const previous = hovered;
       resolveAtPoint();
@@ -345,8 +358,16 @@ export function createVideoActivator(options: {
         resize.observe(node);
         intersection.observe(node);
         videoScope.add(() => { resize.unobserve(node); intersection.unobserve(node); });
-        for (const event of ['loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
-          videoScope.listen(node, event, schedule);
+        const providerPlacement = createProviderLauncherPlacement(node, schedule);
+        if (providerPlacement) {
+          providerPlacements.set(node, providerPlacement);
+          videoScope.add(() => { providerPlacement.dispose(); providerPlacements.delete(node); });
+        }
+        for (const event of ['play', 'playing', 'pause', 'loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
+          videoScope.listen(node, event, () => {
+            if (!node.paused && hovered === node) leave();
+            schedule();
+          });
         }
       }
       if (node instanceof Document || node instanceof ShadowRoot) observeRoot(node);
@@ -399,6 +420,7 @@ export function createVideoActivator(options: {
   scope.listen(window, 'pageshow', syncTracking);
   // Drop the old visit's point and cached work before discovering the new visit.
   scope.listen(window, 'popstate', () => { stopTracking(); startTracking(); });
+  scope.add(observeProviderWatchPlaybackChanges(() => { stopTracking(); startTracking(); }));
   startTracking();
   return { dispose: () => scope.dispose() };
 }
