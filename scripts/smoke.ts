@@ -975,7 +975,7 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     try {
       await options.goto(new URL('options/options.html', worker.url()).href);
       await options.locator('.te-dialog-btn-primary').click();
-      await options.locator('#tab-features').click();
+      await options.locator('#tab-appearance').click();
       const toggle = options.locator('#keep-controls-visible-toggle');
       await toggle.waitFor({ state: 'attached' });
       await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
