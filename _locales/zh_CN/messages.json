@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "版本：$version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "你好，"
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere 已上架 <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>、<a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> 和 <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>。如果你愿意分享对它的看法，我会很高兴。"
   },
-  "aboutSignoff": {
-    "message": "祝观看愉快！"
+  "aboutSignoffHtml": {
+    "message": "祝观看愉快<span class=\"heart\" aria-hidden=\"true\">❤</span>！"
   },
   "aboutLegalTitle": {
     "message": "使用条款 • 许可证"

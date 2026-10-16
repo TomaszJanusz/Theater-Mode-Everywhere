@@ -801,6 +801,14 @@
   "aboutTagline": {
     "message": "One player to rule them all."
   },
+  "aboutVersion": {
+    "message": "versão: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
   "aboutGreeting": {
     "message": "Olá,"
   },
@@ -816,8 +824,8 @@
   "aboutLetterStoresHtml": {
     "message": "O Theater Mode Everywhere está disponível na <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, no <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> e no <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Ficarei feliz se você compartilhar sua opinião sobre ela."
   },
-  "aboutSignoff": {
-    "message": "Boa diversão!"
+  "aboutSignoffHtml": {
+    "message": "Boa diversão <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
   },
   "aboutLegalTitle": {
     "message": "Termos de uso • Licença"
@@ -918,7 +926,7 @@
     "message": "Mostrar serviços com"
   },
   "rteCapabilityTitle": {
-    "message": "Título"
+    "message": "Títulos"
   },
   "rteCapabilitySubtitles": {
     "message": "Legendas"

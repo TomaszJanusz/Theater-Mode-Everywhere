@@ -27,7 +27,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     ['A clearer layout of the extension\'s settings page; a new "About" page has been added.'],
     ['You can change the language, and the translations have been improved.']
   ],
-  thanks: 'Thank you to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
+  thanks: 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
 };
 
 function appendInline(parent: HTMLElement, segments: readonly InlineText[]): void {

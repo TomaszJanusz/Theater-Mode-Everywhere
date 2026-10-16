@@ -37,6 +37,7 @@ import {
   type PrivacyThingLogoElement
 } from '@privacy-thing/brand';
 import { localizeDocument, t } from '../src/i18n';
+import { installedVersion } from '../src/feature-highlights-storage';
 import { hasUnseenWhatsNew, openWhatsNewDialog } from '../src/whatsNew';
 import { setupRteSettings } from './rte-settings';
 
@@ -117,6 +118,8 @@ async function init() {
   highlights.render();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
   document.getElementById('license-text')!.textContent = licenseText.trim();
+  const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };
+  renderVersion();
   configurePrivacyThingLogo();
   let raiseOnlyWithSubtitles = false;
 
@@ -152,6 +155,7 @@ async function init() {
   window.addEventListener('unload', () => languageMenu.destroy(), { once: true });
   const stopLanguageRendering = languageRuntime.subscribe(() => {
     localizeDocument();
+    renderVersion();
     languageMenu.render(languageRuntime.language);
     accentGrid.render();
     renderPictureAlignOptions(selectedPictureAlign());

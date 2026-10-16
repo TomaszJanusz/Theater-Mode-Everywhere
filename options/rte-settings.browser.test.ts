@@ -287,7 +287,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(layers.borderWidth, '2px');
       assert.equal(layers.borderColor, 'rgba(0, 0, 0, 0)');
       assert.equal(layers.pointer, 'none');
-      assert.equal(await netflix.evaluate(el => getComputedStyle(el).getPropertyValue('--te-veil').trim()), '78%', 'the veil the contrast test bounds');
+      assert.equal(await netflix.evaluate(el => getComputedStyle(el).getPropertyValue('--te-veil').trim()), '88%', 'the veil the contrast test bounds');
       await netflix.hover();
       const boosted = await motion();
       assert.equal(boosted.playState, 'running', 'hover starts the orbit');

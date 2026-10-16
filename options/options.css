@@ -29,6 +29,11 @@
   }
 }
 
+/* The draggable thumb of every scrollbar takes the accent. */
+* {
+  scrollbar-color: var(--accent-color) transparent;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -231,6 +236,11 @@ section h2 {
   color: var(--appearance-muted, var(--text-secondary));
   font-size: 15px;
   font-style: italic;
+}
+
+.about-version {
+  color: var(--appearance-muted, var(--text-secondary));
+  font-size: 12px;
 }
 
 .about-letter,
@@ -1065,7 +1075,7 @@ section h2 {
 .choice-listbox {
   color-scheme: dark;
   scrollbar-width: thin;
-  scrollbar-color: var(--text-secondary) #18181b;
+  scrollbar-color: var(--accent-color) #18181b;
   position: fixed;
   z-index: 100;
   padding: 4px;
@@ -1592,8 +1602,10 @@ body.te-dialog-open {
   min-height: 0;
 }
 
+/* No gap: the scroll area's bottom shadow fades straight into the separator above the footer note,
+   so the two read as one edge instead of a shadow floating over the content. */
 .whats-new-announcement {
-  gap: 16px;
+  gap: 0;
 }
 
 .whats-new-content {
@@ -1607,9 +1619,9 @@ body.te-dialog-open {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: auto;
-  scrollbar-color: var(--appearance-muted, var(--text-secondary)) var(--whats-new-bg);
+  scrollbar-color: var(--accent-color) var(--whats-new-bg);
   scrollbar-gutter: stable;
-  padding: 4px 12px 4px 0;
+  padding: 4px 12px 16px 0;
   /* Local covers move with the content, revealing each radial shadow only
      while there is more content to scroll towards that edge. */
   background:
@@ -1644,7 +1656,7 @@ body.te-dialog-open {
 .whats-new-content::-webkit-scrollbar-thumb {
   border: 2px solid var(--whats-new-bg);
   border-radius: 8px;
-  background: var(--appearance-muted, var(--text-secondary));
+  background: var(--accent-color);
 }
 
 .whats-new-lead {
@@ -1824,10 +1836,12 @@ body.te-dialog-open {
 .rte-name { text-align: match-parent; font-size: 17px; font-weight: 650; line-height: 1.3; align-self: center; color: var(--text-primary); }
 /* The standard switch; a dark ring separates it from the colored interior. */
 .rte-tile .toggle-switch { align-self: center; border-radius: 11px; box-shadow: 0 0 0 2px var(--bg-color); }
-.rte-badges { display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; }
+/* The first badge's text, not its pill, aligns with the tile title: the row is pulled out by the pill's inline padding. */
+.rte-badges { --rte-badge-pad-x: 8px; display: flex; flex-wrap: wrap; gap: 5px; grid-column: 1 / -1; margin-inline-start: calc(-1 * var(--rte-badge-pad-x)); }
 /* Dark glass over the colored tile: the page black, translucent, never a grey pill. */
 .rte-badge {
-  font-size: 11px; padding: 3px 8px; border-radius: 20px; color: var(--appearance-ink, #e4e4e7);
+  /* line-height: 1 puts the capitals optically centered; the extra top pixel offsets the empty descender space. */
+  font-size: 11px; line-height: 1; padding: 5px var(--rte-badge-pad-x) 4px; border-radius: 20px; color: var(--appearance-ink, #e4e4e7);
   background: var(--appearance-surface, color-mix(in srgb, var(--bg-color) 70%, transparent));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }
@@ -1885,7 +1899,7 @@ body.te-dialog-open {
 @property --te-border-boost { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .te-animated-border {
   --te-border-width: 2px;
-  --te-veil: 78%;
+  --te-veil: 88%;
   --te-border-orbit-duration: 9s;
   --te-border-boost-duration: 1.8s;
   --te-border-boost-easing: cubic-bezier(0.18, 0.52, 0.3, 1);
