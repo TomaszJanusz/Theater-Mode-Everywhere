@@ -1086,6 +1086,7 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await details.press('Enter');
     if (await details.getAttribute('aria-expanded') !== 'true' || !await page.locator('#rte-netflix').isChecked()) fail('RTE Details toggled the provider or did not expand.');
     await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
+    await settle(); // the details height transition
     await capture('tme47-rte-details.png');
     await details.click();
     await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
