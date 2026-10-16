@@ -4,6 +4,7 @@ import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import { WHATS_NEW_CONTENT } from '../src/whatsNew-content';
 import { NEW_FEATURE_ITEMS, featureHighlightsAcknowledgement, resolveFeatureHighlights, SEEN_ITEMS_STORAGE_KEY } from '../src/feature-highlights';
+import { shouldOfferVideoActivator } from '../src/ui/video-activator-settings';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -362,7 +363,23 @@ async function assertThumbPlayerSwap(page: Page): Promise<void> {
   });
 }
 
-async function assertControlsPin(page: Page, context?: BrowserContext): Promise<void> {
+async function declineVideoActivatorPrompt(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog');
+  await dialog.waitFor();
+  const decline = dialog.locator('.te-dialog-btn-secondary');
+  if (!await decline.evaluate(button => button.matches(':focus'))) {
+    fail('The Video launcher offer must initially focus No.');
+  }
+  await decline.press('Enter');
+  await dialog.waitFor({ state: 'detached' });
+  // Moving focus into the modal can dismiss the settings popover.
+  if (!await page.locator('.theater-settings-menu').isVisible()) {
+    await page.locator('.player-settings-btn').press('Enter');
+  }
+  await page.locator('.auto-theater-btn').focus();
+}
+
+async function assertControlsPin(page: Page, context?: BrowserContext, installed = !!context): Promise<void> {
   const pin = page.locator('.controls-visibility-toggle');
   const controls = page.locator('.theater-controls-wrapper');
   const waitForChrome = async (pinned: boolean, visible: boolean, headerVisible: boolean) => {
@@ -602,8 +619,14 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.keyboard.press('Space');
   if (await autoTheater.getAttribute('aria-pressed') === autoBefore) fail('Space did not toggle automatic theater entry.');
   await page.keyboard.press('Enter');
-  if (await autoTheater.getAttribute('aria-pressed') !== autoBefore
-      || await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) fail('Auto theater keyboard activation changed playback or failed to restore the preference.');
+  // Turning AutoTheater off now offers the default-off launcher in installed builds.
+  // Answer it before checking menu navigation; the modal owns focus until dismissed.
+  if (installed) await declineVideoActivatorPrompt(page);
+  await page.waitForFunction(before => document.getElementById('theater-everywhere-ui')?.shadowRoot
+    ?.querySelector('.auto-theater-btn')?.getAttribute('aria-pressed') === before, autoBefore);
+  if (await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) {
+    fail('Auto theater keyboard activation changed playback.');
+  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.help-btn').evaluate(button => button.matches(':focus')
       && button.nextElementSibling?.classList.contains('extension-settings-btn'))) {
@@ -1764,9 +1787,16 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
       if (process.env.THEATER_SMOKE_SCREENSHOT) {
         await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-auto-entry.png') });
       }
+      const offerLauncher = shouldOfferVideoActivator(await worker.evaluate(() =>
+        chrome.storage.sync.get(['videoActivator', 'videoActivatorPromptAnswer'])));
       await auto.press('Enter');
       await options.waitForFunction(() => !(document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
       await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === false);
+      // This path also runs alone with a fresh profile, before the controls smoke.
+      if (offerLauncher) {
+        await declineVideoActivatorPrompt(page);
+        await options.waitForFunction(async () => (await chrome.storage.sync.get('videoActivatorPromptAnswer')).videoActivatorPromptAnswer === false);
+      }
       await auto.press('Space');
       await options.waitForFunction(() => (document.getElementById('auto-enter-theater-toggle') as HTMLInputElement).checked);
       await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
@@ -2398,7 +2428,7 @@ async function tryFirefoxSideload(origin: string): Promise<boolean> {
     sideloadVerified = true;
     await page.keyboard.press('Escape');
     await delay(500);
-    await assertControlsPin(page);
+    await assertControlsPin(page, undefined, true);
     console.log('smoke:firefox passed (sideloaded MV3 xpi)');
     return true;
   } catch (error) {
