@@ -30,7 +30,7 @@ export function installedGeneration(version: string): Generation {
  * manifest version while already containing the next generation's items, so it counts as that
  * generation; otherwise its New badges could never show (or be acknowledged) locally.
  */
-function runningGeneration(version: string): Generation {
+export function runningGeneration(version: string): Generation {
   const manifest = installedGeneration(version);
   return NEW_FEATURE_ITEMS.reduce<Generation>(
     (latest, item) => compareGenerations(item.since, latest) > 0 ? item.since : latest, manifest);
