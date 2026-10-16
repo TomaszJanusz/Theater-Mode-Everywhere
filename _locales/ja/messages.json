@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "表示中のすべてのサービス"
   },
-  "rteCount": {
-    "message": "$total$ 件中 $count$ 件オン",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "次の機能があるサービスを表示"
   },

@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "所有显示的服务"
   },
-  "rteCount": {
-    "message": "已开启 $count$ / $total$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "显示具有以下功能的服务"
   },

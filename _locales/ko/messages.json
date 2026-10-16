@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "표시된 모든 서비스"
   },
-  "rteCount": {
-    "message": "$total$개 중 $count$개 켜짐",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "다음 기능이 있는 서비스 표시"
   },

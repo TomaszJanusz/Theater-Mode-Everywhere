@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "Wszystkie widoczne serwisy"
   },
-  "rteCount": {
-    "message": "Włączone: $count$ z $total$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "Pokaż serwisy z funkcjami"
   },

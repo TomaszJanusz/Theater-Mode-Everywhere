@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "Todos los servicios mostrados"
   },
-  "rteCount": {
-    "message": "$count$ de $total$ activados",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "Mostrar servicios con"
   },

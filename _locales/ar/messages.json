@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "كل الخدمات المعروضة"
   },
-  "rteCount": {
-    "message": "$count$ من $total$ مفعّلة",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "عرض الخدمات التي توفر"
   },
