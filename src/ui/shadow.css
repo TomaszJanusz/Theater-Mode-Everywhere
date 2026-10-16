@@ -2273,7 +2273,7 @@ button.theater-time-end:hover {
   box-sizing: border-box !important;
   width: 40px !important;
   height: 40px !important;
-  padding: 8px !important;
+  padding: 0 !important;
   margin: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -2304,7 +2304,33 @@ button.theater-time-end:hover {
   display: block !important;
   width: 24px !important;
   height: 24px !important;
+  flex: none !important;
   pointer-events: none !important;
+}
+
+/* The mark inverts on hover and keyboard focus: the accent body empties into an accent outline and the
+   cutout takes the accent. The fade is skipped under Reduce motion, where the shared token rule would otherwise lose to this selector. */
+.theater-video-activator .launcher-body {
+  fill: var(--accent-color, #6366f1) !important;
+  stroke: var(--accent-color, #6366f1) !important;
+  stroke-width: 14px !important;
+  stroke-linejoin: round !important;
+}
+
+.theater-video-activator .launcher-triangle {
+  fill: #ffffff !important;
+}
+
+:host(:not([data-motion="reduced"])) .theater-video-activator :is(.launcher-body, .launcher-triangle) {
+  transition: fill 0.12s ease !important;
+}
+
+.theater-video-activator:is(:hover, :focus-visible) .launcher-body {
+  fill: transparent !important;
+}
+
+.theater-video-activator:is(:hover, :focus-visible) .launcher-triangle {
+  fill: var(--accent-color, #6366f1) !important;
 }
 
 @keyframes theater-video-activator-in {

@@ -20,6 +20,7 @@ export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChan
       if (!before) return null;
       return {
         before,
+        persistent: true,
         mount(button) {
           button.classList.add('ytp-button');
           // YT's control class supplies color (normally white), including theme overrides.

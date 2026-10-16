@@ -5,6 +5,8 @@ import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { mountPlayerUi, peekPlayerUiRoot } from './root';
 import {
   ACTIVATOR_SIZE,
+  activatorPlayGraceRemaining,
+  activatorTitle,
   chooseActivatorSpot,
   isActivatorVideoEligible,
   nearestActivatorVideo,
@@ -28,7 +30,11 @@ const CONTENT_SELECTOR = 'img, svg, canvas, picture, iframe, video, object, embe
 const SHELL_COVERAGE = 0.9;
 const MODAL_SELECTOR = '[aria-modal="true"], dialog[open]';
 
-export type VideoActivator = { dispose(): void };
+export type VideoActivator = {
+  /** Re-reads the tooltip, which carries the user's current theater shortcut. */
+  syncTitles(): void;
+  dispose(): void;
+};
 
 function hasOwnText(element: Element): boolean {
   for (const node of element.childNodes) {
@@ -66,10 +72,12 @@ function logoMark(monochrome = false): SVGSVGElement {
   const group = document.createElementNS(SVG_NS, 'g');
   group.setAttribute('transform', 'matrix(1.457306,1.457306,-1.445295,1.445295,341.469936,-459.223594)');
   const triangle = document.createElementNS(SVG_NS, 'path');
+  triangle.setAttribute('class', 'launcher-triangle');
   triangle.setAttribute('d', 'M452.463,207.464L286.575,249.151L411.119,374.731Z');
   triangle.setAttribute('fill', '#ffffff');
   const body = document.createElementNS(SVG_NS, 'path');
   body.setAttribute('d', 'M564,131.691L564,422.309C564,442.559 547.695,459 527.611,459L239.389,459C219.305,459 203,442.559 203,422.309L203,131.691C203,111.441 219.305,95 239.389,95L527.611,95C547.695,95 564,111.441 564,131.691ZM452.463,207.464L286.575,249.151L411.119,374.731L452.463,207.464Z');
+  body.setAttribute('class', 'launcher-body');
   body.setAttribute('fill', monochrome ? 'currentColor' : 'var(--accent-color, #6366f1)');
   body.setAttribute('fill-rule', 'evenodd');
   if (!monochrome) group.append(triangle);
@@ -88,6 +96,8 @@ export function createVideoActivator(options: {
   /** Applies accent and direction, like every other player overlay. */
   paint(element: HTMLElement): void;
   label(): string;
+  /** The configured theater shortcut; empty while unassigned. */
+  shortcut(): string;
 }): VideoActivator {
   const scope = new DisposableScope();
   let hovered: HTMLVideoElement | null = null;
@@ -100,6 +110,10 @@ export function createVideoActivator(options: {
   let button: HTMLButtonElement | null = null;
   const providerPlacements = new Map<HTMLVideoElement, LauncherPlacement>();
   let nativeSlot: LauncherSlot | null = null;
+  /** Buttons mounted in persistent provider slots; they follow the native toolbar, not the pointer. */
+  const persistentButtons = new Map<HTMLVideoElement, { button: HTMLButtonElement; before: HTMLElement }>();
+  /** performance.now() is measured from the page load; an SPA visit restarts the window. */
+  let visitStartedAt = 0;
   let shownBox: string | null = null;
   let lastActivity = 0;
   let idleHidden = false;
@@ -112,9 +126,12 @@ export function createVideoActivator(options: {
   // innerWidth/Height, not documentElement.client*: quirks-mode documents report the content height there.
   const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
 
-  function eligible(video: HTMLVideoElement, box: Box): boolean {
+  const playGraceRemaining = () => activatorPlayGraceRemaining(performance.now() - visitStartedAt);
+
+  /** Whether the video could host a launcher at all, whether or not it is paused. */
+  function launchable(video: HTMLVideoElement, box: Box): boolean {
     const root = video.getRootNode();
-    return video.paused && isActivatorVideoEligible({
+    return isActivatorVideoEligible({
       width: box.width, height: box.height,
       visible: video.isConnected && (typeof video.checkVisibility !== 'function'
         || video.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })),
@@ -124,6 +141,11 @@ export function createVideoActivator(options: {
         || (root instanceof ShadowRoot && root.host.id === EXTENSION_UI_HOST_ID),
       pictureInPicture: document.pictureInPictureElement === video
     });
+  }
+
+  /** Overlay eligibility: paused, or playing within the page-load grace window. */
+  function eligible(video: HTMLVideoElement, box: Box): boolean {
+    return (video.paused || playGraceRemaining() > 0) && launchable(video, box);
   }
 
   function isFree(video: HTMLVideoElement, box: Box, x: number, y: number): boolean {
@@ -170,18 +192,66 @@ export function createVideoActivator(options: {
     }, ms);
   }
 
-  function ensureButton(): HTMLButtonElement {
-    if (button) return button;
+  const currentTitle = () => activatorTitle(options.label(), options.shortcut());
+
+  function syncTitles(): void {
+    const title = currentTitle();
+    for (const element of [button, ...[...persistentButtons.values()].map(entry => entry.button)]) {
+      if (element && element.title !== title) element.title = title;
+    }
+  }
+
+  function createButton(monochrome: boolean): HTMLButtonElement {
     const next = document.createElement('button');
     next.type = 'button';
     next.className = VIDEO_ACTIVATOR_CLASS;
     next.setAttribute('aria-label', options.label());
-    next.title = options.label();
-    next.append(logoMark(Boolean(nativeSlot)));
+    next.title = currentTitle();
+    next.append(logoMark(monochrome));
     options.paint(next);
     // Pressing must not move focus out of the page's player or reach host handlers.
     next.addEventListener('mousedown', event => event.preventDefault());
     next.addEventListener('pointerdown', event => event.stopPropagation());
+    next.addEventListener('keyup', event => event.stopPropagation());
+    return next;
+  }
+
+  /** Persistent slots: no pointer, idle or playback timing; the provider's toolbar decides visibility. */
+  function syncPersistent(videos: Iterable<HTMLVideoElement>): void {
+    const live = new Set<HTMLVideoElement>();
+    for (const video of videos) {
+      const slot = providerPlacements.get(video)?.read();
+      if (!slot?.persistent || !video.isConnected || !launchable(video, video.getBoundingClientRect())) continue;
+      live.add(video);
+      const mounted = persistentButtons.get(video);
+      if (mounted?.button.isConnected && mounted.before === slot.before && mounted.button.nextElementSibling === slot.before) continue;
+      const focused = mounted && (document.activeElement === mounted.button || peekPlayerUiRoot()?.activeElement === mounted.button);
+      mounted?.button.remove();
+      const element = createButton(true);
+      element.addEventListener('click', event => {
+        event.stopPropagation();
+        const current = persistentButtons.get(video);
+        if (current?.button !== element || !element.isConnected) return;
+        // The toolbar may have been rebuilt since the last layout pass.
+        const usable = video.isConnected && launchable(video, video.getBoundingClientRect())
+          && providerPlacements.get(video)?.read()?.before === current.before;
+        if (usable) options.activate(video);
+      });
+      element.addEventListener('keydown', event => event.stopPropagation());
+      persistentButtons.set(video, { button: element, before: slot.before });
+      slot.mount(element);
+      if (focused) element.focus();
+    }
+    for (const [video, entry] of persistentButtons) {
+      if (live.has(video)) continue;
+      entry.button.remove();
+      persistentButtons.delete(video);
+    }
+  }
+
+  function ensureButton(): HTMLButtonElement {
+    if (button) return button;
+    const next = createButton(Boolean(nativeSlot));
     next.addEventListener('click', event => {
       event.stopPropagation();
       if (button !== next || !next.isConnected) return;
@@ -191,7 +261,6 @@ export function createVideoActivator(options: {
       leave();
       if (video && usable) options.activate(video);
     });
-    next.addEventListener('keyup', event => event.stopPropagation());
     next.addEventListener('keydown', event => {
       event.stopPropagation();
       if (event.key !== 'Escape') return;
@@ -310,6 +379,14 @@ export function createVideoActivator(options: {
       geometryDirty = true;
       if (!frame) frame = owned.raf(() => { frame = 0; measure(); });
     };
+    // One timer ends the grace window: playback then removes a launcher that autoplay had spared.
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    const armGrace = (): void => {
+      clearTimeout(graceTimer);
+      const remaining = playGraceRemaining();
+      if (remaining > 0) graceTimer = setTimeout(schedule, remaining);
+    };
+    owned.add(() => clearTimeout(graceTimer));
     const resize = new ResizeObserver(schedule);
     const intersection = new IntersectionObserver(schedule);
     owned.add(() => resize.disconnect());
@@ -332,6 +409,8 @@ export function createVideoActivator(options: {
           continue;
         }
         const rect = video.getBoundingClientRect();
+        // A persistent slot lives in the native toolbar; the overlay never competes for that video.
+        if (providerPlacements.get(video)?.read()?.persistent) continue;
         if (rect.bottom > 0 && rect.right > 0 && rect.top < view.height && rect.left < view.width
             && eligible(video, rect)) candidates.set(video, { video, box: rect });
       }
@@ -343,6 +422,7 @@ export function createVideoActivator(options: {
         geometryScope.listen(window, 'scroll', schedule, { passive: true, capture: true });
         geometryScope.listen(window, 'resize', schedule, { passive: true });
       }
+      syncPersistent(videos.keys());
       // Only a new appearance or a changed rectangle may choose a new overlay slot.
       if (hovered && !candidates.has(hovered)) leave();
       syncPointer();
@@ -367,7 +447,7 @@ export function createVideoActivator(options: {
         }
         for (const event of ['play', 'playing', 'pause', 'loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
           videoScope.listen(node, event, () => {
-            if (!node.paused && hovered === node) leave();
+            if (!node.paused && hovered === node && playGraceRemaining() <= 0) leave();
             schedule();
           });
         }
@@ -406,7 +486,10 @@ export function createVideoActivator(options: {
       onButton = false;
       geometryDirty = false;
       leave();
+      for (const entry of persistentButtons.values()) entry.button.remove();
+      persistentButtons.clear();
     });
+    armGrace();
     discover(document);
     measure();
   }
@@ -421,8 +504,9 @@ export function createVideoActivator(options: {
   scope.listen(window, 'pagehide', stopTracking);
   scope.listen(window, 'pageshow', syncTracking);
   // Drop the old visit's point and cached work before discovering the new visit.
-  scope.listen(window, 'popstate', () => { stopTracking(); startTracking(); });
-  scope.add(observeProviderWatchPlaybackChanges(() => { stopTracking(); startTracking(); }));
+  const restartVisit = (): void => { visitStartedAt = performance.now(); stopTracking(); startTracking(); };
+  scope.listen(window, 'popstate', restartVisit);
+  scope.add(observeProviderWatchPlaybackChanges(restartVisit));
   startTracking();
-  return { dispose: () => scope.dispose() };
+  return { syncTitles, dispose: () => scope.dispose() };
 }

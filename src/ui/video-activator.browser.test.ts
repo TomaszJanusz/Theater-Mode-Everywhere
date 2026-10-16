@@ -29,6 +29,8 @@ declare global {
     pointeroverListeners: number;
     activatorPointerListeners: number;
     activatorPointerRegistrations: number;
+    /** Ages the page: added to performance.now(), which the launcher reads as time since load. */
+    perfOffset?: number;
   }
 }
 
@@ -46,6 +48,8 @@ const PAGE = `<style>
 async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE, host = 'activator.test'): Promise<void> {
   await page.addInitScript(`window.__name = target => target; window.storageListeners = []; window.pointeroverListeners = 0;
     window.activatorPointerListeners = 0; window.activatorPointerRegistrations = 0;
+    const perfNow = performance.now.bind(performance);
+    performance.now = () => perfNow() + (window.perfOffset || 0);
     const add = EventTarget.prototype.addEventListener;
     const remove = EventTarget.prototype.removeEventListener;
     EventTarget.prototype.addEventListener = function (type, ...rest) { if (type === 'pointerover') window.pointeroverListeners++;
@@ -93,12 +97,14 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 
 for (const engine of ['chromium', 'firefox'] as const) {
   const launch = async (t: Parameters<typeof ownTestBrowser>[0], {
-    stored, html = PAGE, host = 'activator.test', freezeClock = false
-  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean } = {}) => {
+    stored, html = PAGE, host = 'activator.test', freezeClock = false, pageAge = 60_000
+  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; pageAge?: number } = {}) => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
+    // Most scenarios predate the five-second load window; fresh-page tests pass pageAge: 0.
+    await page.addInitScript(`window.perfOffset = ${pageAge};`);
     if (freezeClock) {
       // Install before runtime startup so no native timer/frame survives the switch.
       const time = new Date('2026-01-01T00:00:00Z');
@@ -476,7 +482,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: native playback hides immediately and pause permits another appearance`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
+    const page = await launch(t, { pageAge: 60_000 });
     await hover(page, 400, 260);
     const button = page.locator('#theater-everywhere-ui .theater-video-activator');
     await button.waitFor();
@@ -511,9 +517,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
       ['sponsorblock', 'theater-video-activator ytp-button', 'ytp-button ytp-autonav-toggle', 'settings']);
     assert.deepEqual(await native.evaluate(el => ({ background: getComputedStyle(el).backgroundColor, fill: el.querySelector('path')!.getAttribute('fill'), paths: el.querySelectorAll('path').length })),
       { background: 'rgba(0, 0, 0, 0)', fill: 'currentColor', paths: 1 });
-    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-87-youtube-toolbar.png' });
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-youtube-toolbar.png' });
     await page.evaluate(() => document.querySelector('.ytp-autonav-toggle-button')!.closest('button')!.remove());
     await native.waitFor({ state: 'detached' });
+    await hover(page, 405, 260);
     await page.locator('#theater-everywhere-ui .theater-video-activator').waitFor();
     await toolbar();
     await native.waitFor();
@@ -530,15 +537,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ videoActivator: true, youtubeIntegrationEnabled: true })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: true } }, 'sync'); });
     await hover(page, 430, 260);
     await native.waitFor();
-    await page.evaluate(async () => { const v = document.getElementById('main') as HTMLVideoElement; v.muted = true; await v.play(); });
-    await native.waitFor({ state: 'detached' });
-    await page.evaluate(() => (document.getElementById('main') as HTMLVideoElement).pause());
-    await hover(page, 440, 260);
-    await native.waitFor();
     await page.evaluate(() => document.dispatchEvent(new Event('yt-page-data-updated')));
-    await native.waitFor({ state: 'detached' });
-    await hover(page, 450, 260);
     await native.waitFor();
+    assert.equal(await native.count(), 1, 'navigation leaves exactly one toolbar button');
     const replaced = await native.elementHandle();
     await page.evaluate(() => {
       const video = document.getElementById('main')!;
@@ -567,6 +568,148 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await native.waitFor({ state: 'detached' });
     await toolbar();
     assert.equal(await native.count(), 0, 'disposed source cannot reinject after video removal');
+  });
+
+  const YOUTUBE_PAGE = PAGE.replace('id="player"', 'id="player" class="html5-video-player"') + `<style>
+      .ytp-right-controls { position:absolute;right:0;bottom:0;height:48px;display:flex;color:white;background:#222; }
+      .ytp-button { width:48px;height:48px;color:inherit;fill:currentColor; }
+    </style>
+    <div id="player-late"></div>`;
+  const addToolbar = (page: Page) => page.evaluate(() => {
+    document.querySelector('.ytp-right-controls')?.remove();
+    const cluster = document.createElement('div'); cluster.className = 'ytp-right-controls';
+    cluster.innerHTML = '<button class="ytp-button ytp-autonav-toggle" aria-label="Autoplay"><div class="ytp-autonav-toggle-button">A</div></button><button class="ytp-button">⚙</button>';
+    document.getElementById('player')!.append(cluster);
+  });
+
+  it(`${engine}: the mark is centred in the button and inverts on hover and focus`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await hover(page, 400, 260);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.waitFor();
+    await button.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+    const centre = (selector: string) => button.evaluate((element, selector) => {
+      const target = selector ? element.querySelector(selector)! : element;
+      const box = target.getBoundingClientRect();
+      return [box.left + box.width / 2, box.top + box.height / 2, box.width, box.height];
+    }, selector);
+    const [bx, by] = await centre('');
+    for (const selector of ['svg', '.launcher-body']) {
+      const [x, y] = await centre(selector);
+      assert.ok(Math.abs(x - bx) <= 0.5 && Math.abs(y - by) <= 0.5, `${selector} centre (${x},${y}) vs button (${bx},${by})`);
+    }
+    const fills = () => button.evaluate(element => {
+      const style = (selector: string) => getComputedStyle(element.querySelector(selector)!);
+      return { accent: getComputedStyle(element).getPropertyValue('--accent-color').trim(), body: style('.launcher-body').fill,
+        stroke: style('.launcher-body').stroke, triangle: style('.launcher-triangle').fill };
+    });
+    const rest = await fills();
+    assert.equal(rest.body, rest.stroke, 'resting body is filled with the accent');
+    assert.equal(rest.triangle, 'rgb(255, 255, 255)');
+    await page.mouse.move(await button.evaluate(element => (element as HTMLElement).offsetLeft + 20), await button.evaluate(element => (element as HTMLElement).offsetTop + 20));
+    await page.waitForFunction(() => {
+      const body = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.launcher-body')!;
+      return getComputedStyle(body).fill === 'none' || getComputedStyle(body).fill === 'rgba(0, 0, 0, 0)';
+    });
+    const hovered = await fills();
+    assert.equal(hovered.triangle, rest.body, 'hovered mark takes the accent');
+    assert.equal(hovered.stroke, rest.stroke, 'the rhombus outline stays');
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-launcher-hover.png' });
+    // Keyboard focus shows the same inverted state; the transition collapses under Reduce motion.
+    await page.mouse.move(400, 260);
+    await page.evaluate(() => document.getElementById('theater-everywhere-ui')!.setAttribute('data-motion', 'reduced'));
+    await page.keyboard.press('Shift');
+    await button.focus();
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-video-activator:focus-visible'));
+    await page.waitForFunction(accent => getComputedStyle(document.getElementById('theater-everywhere-ui')!.shadowRoot!
+      .querySelector('.launcher-triangle')!).fill === accent, rest.body);
+    const duration = await button.evaluate(element => getComputedStyle(element.querySelector('.launcher-body')!).transitionDuration);
+    assert.ok(parseFloat(duration) < 0.001, duration);
+    await page.evaluate(() => document.getElementById('theater-everywhere-ui')!.setAttribute('data-contrast', 'high'));
+    await page.waitForFunction(() => {
+      const host = document.getElementById('theater-everywhere-ui')!;
+      return host.getAttribute('data-contrast') === 'high'
+        && getComputedStyle(host.shadowRoot!.querySelector('.theater-video-activator')!).borderTopWidth === '2px';
+    });
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-launcher-high-contrast-reduced-motion.png' });
+  });
+
+  it(`${engine}: a video that starts playing right after load keeps the launcher until the window ends`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { pageAge: -1_000_000 });
+    await hover(page, 400, 260);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.waitFor();
+    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await button.count(), 1, 'autoplay within the window does not hide the launcher');
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-launcher-autoplay.png' });
+  });
+
+  it(`${engine}: the play window ends on one timer and an SPA visit restarts it`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { freezeClock: true });
+    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
+    await hover(page, 400, 260);
+    await page.clock.runFor(50);
+    assert.equal(await launcher(page), null, 'a long-loaded page hides the launcher during playback');
+    await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
+    await page.mouse.move(2, 590);
+    await hover(page, 410, 260);
+    await page.clock.runFor(50);
+    assert.ok(await launcher(page), 'a new visit reopens the window for a playing video');
+    await page.clock.runFor(2400);
+    await page.mouse.move(412, 262);
+    await page.clock.runFor(2400);
+    assert.ok(await launcher(page), 'still inside the window');
+    await page.clock.runFor(500);
+    assert.equal(await launcher(page), null, 'the window ended and playback hides the launcher');
+  });
+
+  it(`${engine}: the tooltip carries the configured theater shortcut in both surfaces`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { stored: { shortcuts: { toggle: 'Shift+Y' } }, html: YOUTUBE_PAGE, host: 'www.youtube.com' });
+    await hover(page, 400, 260);
+    const overlay = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await overlay.waitFor();
+    assert.equal(await overlay.getAttribute('title'), 'Enter theater mode [Shift+Y]');
+    assert.equal(await overlay.getAttribute('aria-label'), 'Enter theater mode');
+    await addToolbar(page);
+    const native = page.locator('.ytp-right-controls .theater-video-activator');
+    await native.waitFor();
+    assert.equal(await native.getAttribute('title'), 'Enter theater mode [Shift+Y]');
+    const change = (toggle: string) => page.evaluate(toggle => {
+      for (const listener of window.storageListeners) listener({ shortcuts: { newValue: { toggle } } }, 'sync');
+    }, toggle);
+    await change('K');
+    await page.waitForFunction(() => document.querySelector('.ytp-right-controls .theater-video-activator')?.getAttribute('title') === 'Enter theater mode [K]');
+    await change('');
+    await page.waitForFunction(() => document.querySelector('.ytp-right-controls .theater-video-activator')?.getAttribute('title') === 'Enter theater mode');
+  });
+
+  it(`${engine}: a persistent YouTube slot ignores playback, pointer and idle timing`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { html: YOUTUBE_PAGE, host: 'www.youtube.com', freezeClock: true });
+    const native = page.locator('.ytp-right-controls .theater-video-activator');
+    await addToolbar(page);
+    await page.clock.runFor(50);
+    assert.equal(await native.count(), 1, 'shown without any pointer approach');
+    assert.equal(await launcher(page), null, 'no overlay competes with the toolbar');
+    await page.clock.runFor(10_000);
+    assert.equal(await native.count(), 1, 'idle time does not hide it');
+    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
+    await page.clock.runFor(50);
+    assert.equal(await native.count(), 1, 'playback does not hide it');
+    await hover(page, 400, 260);
+    await page.clock.runFor(2600);
+    assert.equal(await native.count(), 1);
+    assert.equal(await launcher(page), null);
+    // Geometry: the toolbar mark is centred in the toolbar button.
+    const [bx, by, mx, my] = await native.evaluate(element => {
+      const box = element.getBoundingClientRect(); const mark = element.querySelector('path')!.getBoundingClientRect();
+      return [box.left + box.width / 2, box.top + box.height / 2, mark.left + mark.width / 2, mark.top + mark.height / 2];
+    });
+    assert.ok(Math.abs(bx - mx) <= 0.5 && Math.abs(by - my) <= 0.5, `toolbar mark (${mx},${my}) vs button (${bx},${by})`);
+    // Removing the anchor falls back to the paused-only overlay rules; the playing video gets none.
+    await page.evaluate(() => document.querySelector('.ytp-autonav-toggle-button')!.closest('button')!.remove());
+    await page.clock.runFor(50);
+    assert.equal(await native.count(), 0);
   });
 
   it(`${engine}: the entry notice is opaque with a thinner border`, { timeout: 40_000 }, async t => {

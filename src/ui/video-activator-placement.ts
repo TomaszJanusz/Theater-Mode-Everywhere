@@ -3,6 +3,8 @@
  * Geometry and occlusion arrive as plain data or an injected probe, so nothing here
  * touches the DOM.
  */
+import { shortcutDisplayParts } from './shortcuts';
+
 export type Box = { left: number; top: number; width: number; height: number };
 export type Viewport = { width: number; height: number };
 export type ActivatorSpot = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
@@ -15,6 +17,23 @@ export const ACTIVATOR_MIN_HEIGHT = 135;
 
 /** Hosts keep titles and share buttons on the left and controls at the bottom; the right corner is usually quietest. */
 const SPOT_ORDER: readonly ActivatorSpot[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'];
+
+/**
+ * A video that starts playing this soon after the page (or SPA visit) began is still a fresh
+ * arrival, so the launcher is not hidden by its autoplay; normal hide-on-play applies afterwards.
+ */
+export const ACTIVATOR_PLAY_GRACE_MS = 5000;
+
+/** Milliseconds of the grace window left, `sinceVisitMs` after the visit began; zero once it has passed. */
+export function activatorPlayGraceRemaining(sinceVisitMs: number): number {
+  return Math.min(ACTIVATOR_PLAY_GRACE_MS, Math.max(0, ACTIVATOR_PLAY_GRACE_MS - sinceVisitMs));
+}
+
+/** The launcher tooltip: the label plus the user's theater shortcut in brackets, none while unassigned. */
+export function activatorTitle(label: string, shortcut: string): string {
+  const keys = shortcutDisplayParts(shortcut).join('+');
+  return keys ? `${label} [${keys}]` : label;
+}
 
 export type ActivatorVideoFacts = {
   width: number;
