@@ -117,6 +117,7 @@ import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
 import {
   createHud,
+  TITLE_HUD_CLASS,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
@@ -1377,6 +1378,8 @@ function initialize(): void {
       const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')
         ?.querySelector<HTMLElement>('.theater-volume-panel, .theater-speed-panel');
       if (sliderPanel && !sliderPanel.inert) return false;
+      // A keyboard-revealed title consumes the first Escape (see dismissTitleReveal in hud.ts).
+      if (activeEl?.matches(`.${TITLE_HUD_CLASS}:focus-visible`)) return false;
     }
     if (activeEl?.matches('.theater-scrubber-container')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;

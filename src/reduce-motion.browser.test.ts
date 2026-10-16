@@ -17,7 +17,7 @@ const stylesheet = (path: string) => esbuild.buildSync({ entryPoints: [path], bu
 const optionsCss = stylesheet('options/options.css');
 const shadowCss = stylesheet('src/ui/shadow.css');
 
-for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion collapses extension animation and truncates the marquee title`, { timeout: 30000 }, async t => {
+for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion collapses extension animation and stops the marquee`, { timeout: 30000 }, async t => {
   const browser = await engine.launch({ headless: true });
   ownTestBrowser(t, browser);
   const page = await browser.newPage();
@@ -31,23 +31,18 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion c
   const measure = () => page.evaluate(() => {
     const shadow = document.getElementById('host')!.shadowRoot!;
     const track = getComputedStyle(shadow.querySelector('.theater-title-hud-track')!);
-    const text = getComputedStyle(shadow.querySelector('.theater-title-hud-text')!);
-    const clone = getComputedStyle(shadow.querySelector('.theater-title-hud-text-clone')!);
     return {
       settings: parseFloat(getComputedStyle(document.getElementById('combo')!).transitionDuration),
-      marquee: parseFloat(track.animationDuration), ellipsis: text.textOverflow, clone: clone.display,
+      marquee: parseFloat(track.animationDuration),
       reduced: (window as unknown as { isMotionReduced(): boolean }).isMotionReduced()
     };
   });
   await page.evaluate(() => (window as unknown as { setMotion(on: boolean): void }).setMotion(false));
   const normal = await measure();
   assert.ok(normal.settings >= 0.1 && normal.marquee >= 1, 'normal motion keeps its timings');
-  assert.notEqual(normal.ellipsis, 'ellipsis');
   assert.equal(normal.reduced, false);
   await page.evaluate(() => (window as unknown as { setMotion(on: boolean): void }).setMotion(true));
   const reduced = await measure();
   assert.ok(reduced.settings < 0.001 && reduced.marquee < 0.001, 'settings transitions and the marquee collapse');
-  assert.equal(reduced.ellipsis, 'ellipsis');
-  assert.equal(reduced.clone, 'none');
   assert.equal(reduced.reduced, true);
 });

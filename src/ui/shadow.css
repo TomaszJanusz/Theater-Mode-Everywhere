@@ -2173,7 +2173,12 @@ button.theater-time-end:hover {
   92%, 100% { transform: translateX(50%); }
 }
 
-/* Reduced motion: a long title stops scrolling and truncates; the plate keeps its marquee width. */
+/* Reduced motion: an overflowing title stops scrolling. It rests as head…tail (the end of a
+   title usually carries the episode or series) and shows in full, wrapped, on hover or focus. */
+.theater-title-hud-smart {
+  display: none !important;
+}
+
 :host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-viewport {
   width: 100% !important;
   margin-inline-start: 0 !important;
@@ -2182,22 +2187,70 @@ button.theater-time-end:hover {
   mask-image: none !important;
 }
 
+/* The full-text track stays in the accessibility tree while the head…tail is what shows. */
 :host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-track {
-  width: 100% !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
   animation: none !important;
   transform: none !important;
 }
 
-:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-text {
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-text-clone {
+  display: none !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-smart {
+  display: flex !important;
+  width: 100% !important;
+  white-space: pre !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-head {
   flex: 0 1 auto !important;
   min-width: 0 !important;
-  padding-inline-end: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 
-:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-text-clone {
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee .theater-title-hud-tail {
+  flex: none !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-smart {
   display: none !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-track {
+  position: static !important;
+  width: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:is(:hover, :focus-visible) .theater-title-hud-text:not(.theater-title-hud-text-clone) {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  padding-inline-end: 0 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  line-clamp: 3 !important;
+  overflow-wrap: anywhere !important;
+}
+
+:host([data-motion="reduced"]) .theater-everywhere-title-hud.marquee:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+}
+
+/* The revealed title grows downward; the home pill keeps its resting height. */
+:host([data-motion="reduced"]) .theater-everywhere-header-hud:has(.theater-everywhere-title-hud.marquee:is(:hover, :focus-visible)) .theater-home-pill {
+  align-self: flex-start !important;
 }
 
 .theater-everywhere-volume-overlay.boosted {

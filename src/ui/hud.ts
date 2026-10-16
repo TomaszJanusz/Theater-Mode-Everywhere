@@ -1,3 +1,5 @@
+import { isMotionReduced } from '../appearance-runtime';
+import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
 import { contentTitle, type ContentTitle } from '../media-features/content-title';
 import { discoverParentOrigin } from '../platform/parent-origin';
@@ -391,6 +393,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const cleaned = contentTitle(title?.title, title?.subtitle);
     const existing = ctx.queryPlayerUi(`.${TITLE_HUD_CLASS}`) as HTMLElement | null;
     if (!cleaned) {
+      stopTitleWatch?.();
       existing?.remove();
       return;
     }
@@ -412,15 +415,25 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
       const text = document.createElement('span');
       text.className = 'theater-title-hud-text';
       track.appendChild(text);
-      viewport.appendChild(track);
+      // Reduced motion swaps the scrolling track for this static head…tail rendering (shadow.css).
+      const smart = document.createElement('div');
+      smart.className = 'theater-title-hud-smart';
+      smart.setAttribute('aria-hidden', 'true');
+      smart.append(document.createElement('span'), document.createElement('span'));
+      smart.children[0].className = 'theater-title-hud-head';
+      smart.children[1].className = 'theater-title-hud-tail';
+      overlay.addEventListener('keydown', dismissTitleReveal);
+      viewport.append(track, smart);
       overlay.appendChild(viewport);
       header.appendChild(overlay);
+      watchTitleLayout(overlay, header);
     }
 
     const text = overlay.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)');
     const subtitle = text?.querySelector('.theater-title-hud-subtitle');
     if (text && (text.firstChild?.textContent !== cleaned.title || (subtitle?.textContent ?? null) !== cleaned.subtitle)) {
       renderTitleText(text, cleaned);
+      renderSmartTitle(overlay.querySelector('.theater-title-hud-smart')!, cleaned);
     }
     layoutTitleMarquee(overlay);
   }
@@ -443,6 +456,60 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     text.replaceChildren(title, separator, subtitle);
   }
 
+  function renderSmartTitle(smart: Element, content: ContentTitle): void {
+    const segments: TitleSegment[] = content.subtitle
+      ? [{ text: content.title, className: 'theater-title-hud-title' }, { text: ' • ', className: 'theater-title-hud-separator' },
+        { text: content.subtitle, className: 'theater-title-hud-subtitle' }]
+      : [{ text: content.title }];
+    const { head, tail } = splitTitleForTruncation(segments);
+    const render = (parts: readonly TitleSegment[]) => parts.map(part => {
+      const span = document.createElement('span');
+      if (part.className) span.className = part.className;
+      span.textContent = part.text;
+      return span;
+    });
+    smart.children[0].replaceChildren(...render(head));
+    smart.children[1].replaceChildren(...render(tail));
+  }
+
+  // The first Escape only closes a keyboard reveal; theater exit keeps working afterwards.
+  function dismissTitleReveal(event: KeyboardEvent): void {
+    const overlay = event.currentTarget as HTMLElement;
+    if (event.key !== 'Escape' || !overlay.matches(':focus-visible')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    overlay.blur();
+  }
+
+  let stopTitleWatch: (() => void) | null = null;
+  /**
+   * Re-lays out the title when the header width or the Reduce motion setting changes. Both
+   * are events, coalesced to one frame; nothing runs per playback tick.
+   */
+  function watchTitleLayout(overlay: HTMLElement, header: HTMLElement): void {
+    stopTitleWatch?.();
+    let frame = 0;
+    const relayout = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (overlay.isConnected) layoutTitleMarquee(overlay);
+        else stopTitleWatch?.();
+      });
+    };
+    const size = typeof ResizeObserver === 'function' ? new ResizeObserver(relayout) : null;
+    size?.observe(header);
+    const host = (header.getRootNode() as ShadowRoot).host;
+    const motion = host && typeof MutationObserver === 'function' ? new MutationObserver(relayout) : null;
+    motion?.observe(host, { attributes: true, attributeFilter: ['data-motion'] });
+    stopTitleWatch = () => {
+      cancelAnimationFrame(frame);
+      size?.disconnect();
+      motion?.disconnect();
+      stopTitleWatch = null;
+    };
+  }
+
   function layoutTitleMarquee(overlay: HTMLElement): void {
     const track = overlay.querySelector('.theater-title-hud-track') as HTMLElement | null;
     const text = track?.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)') as HTMLElement | null;
@@ -456,12 +523,17 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     overlay.removeAttribute('title');
     const viewWidth = viewport.clientWidth;
     const textWidth = text.scrollWidth;
+    // Only a reduced-motion overflowing title is focusable. Changing the attribute only when it
+    // differs keeps focus on the title across a relayout.
+    const focusable = viewWidth > 0 && textWidth > viewWidth + 1 && isMotionReduced();
+    if (focusable) { if (!overlay.hasAttribute('tabindex')) overlay.tabIndex = 0; }
+    else overlay.removeAttribute('tabindex');
     if (viewWidth <= 0 || textWidth <= viewWidth + 1) return;
 
-    // Reduced motion shows the same overflowing title as a static ellipsis (see shadow.css),
-    // so the full title stays available on hover. Assistive technology reads the whole text.
+    // Reduced motion shows a static head…tail and reveals the full title on hover/focus
+    // (see shadow.css). Assistive technology reads the whole text either way.
     overlay.classList.add('marquee');
-    overlay.title = text.textContent ?? '';
+    if (!isMotionReduced()) overlay.title = text.textContent ?? '';
     const clone = text.cloneNode(true) as HTMLElement;
     clone.classList.add('theater-title-hud-text-clone');
     clone.setAttribute('aria-hidden', 'true');

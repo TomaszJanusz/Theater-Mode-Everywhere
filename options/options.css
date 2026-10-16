@@ -1909,6 +1909,10 @@ body.te-dialog-open {
 }
 /* An off service shows the colors at 60%, which capabilities.test.ts counts in its contrast bound. */
 .rte-tile:has(input:not(:checked)):is(:hover, :has(:focus-visible))::before { opacity: .6; }
+:root[data-motion="reduced"] :is(.te-dialog-overlay, .te-dialog, .te-dialog-overlay.is-leaving, .te-dialog-overlay.is-leaving .te-dialog) {
+  /* Fill-both entrances would paint their start keyframe for a frame; skip them entirely. */
+  animation: none;
+}
 @keyframes te-border-orbit { to { --te-border-angle: 360deg; } }
 :root[data-motion="reduced"] .te-animated-border::before,
 :root[data-motion="reduced"] .te-animated-border:is(:hover, :has(:focus-visible))::before {

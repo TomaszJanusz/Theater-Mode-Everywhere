@@ -119,8 +119,13 @@ listeners still settle. Stylesheets must not add their own
   destroy). Extension-owned page transitions (picture move, caption dock, provider
   caption lifts) read it, and script timing uses `isMotionReduced()`. Host animations and
   native player UI are untouched.
-- **Marquee title.** The overflow layout and `title` tooltip are decided in script
-  regardless of motion; with Reduce motion the CSS stops the scroll, hides the clone and
-  shows a static ellipsis. The tooltip carries the full title; screen readers read the
-  whole text node.
+- **Marquee title.** Overflow is detected in script as before (on title change, header resize
+  and a Reduce motion change, coalesced to one frame; no per-frame work). With Reduce motion the
+  scroll is replaced by a static head…tail: [title-truncation](../src/ui/title-truncation.ts)
+  keeps the last ~28 characters from a word boundary and CSS ellipsizes the head, so the browser
+  decides how much fits and nothing is measured in script. Hover or keyboard focus (the title
+  becomes focusable only in this state) shows the whole title wrapped over up to three lines,
+  without motion; the first Escape closes a keyboard reveal before theater exit. The full text
+  node stays in the accessibility tree throughout; the head…tail copy is `aria-hidden`. RTL
+  follows logical flex order.
 - **Kept deliberately.** Service-action countdown progress is data, not decoration.
