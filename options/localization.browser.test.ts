@@ -128,7 +128,7 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         assert.equal(await text.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
         const online = page.locator('.privacy-policy-online');
         assert.equal(await online.textContent(), catalog.privacyPolicyOpenOnline.message);
-        assert.equal(await online.getAttribute('href'), 'https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/main/PRIVACY.md');
+        assert.equal(await online.getAttribute('href'), 'https://theater.tomaszjanusz.dev/privacy-policy/');
         assert.equal(await online.getAttribute('target'), '_blank');
         assert.equal(await online.getAttribute('rel'), 'noopener noreferrer');
         assert.equal(await dialog.locator('script, [onclick], a[href^="javascript:"]').count(), 0);

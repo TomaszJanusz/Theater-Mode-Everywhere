@@ -3,7 +3,7 @@ import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
 import { parseMarkdown, type Block, type Inline } from './markdown';
 
-export const PRIVACY_POLICY_URL = 'https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/main/PRIVACY.md';
+export const PRIVACY_POLICY_URL = 'https://theater.tomaszjanusz.dev/privacy-policy/';
 
 function renderInline(nodes: Inline[]): Node[] {
   return nodes.map((node): Node => {
