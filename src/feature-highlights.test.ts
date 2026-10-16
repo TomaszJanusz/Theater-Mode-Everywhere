@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import {
-  acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
+  featureHighlightsAcknowledgement, SEEN_ITEMS_STORAGE_KEY, acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
   resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
   pendingFeatureHighlights, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
 } from './feature-highlights';
@@ -33,7 +33,7 @@ it('a development build on the previous manifest version shows and acknowledges 
   const dev = resolveFeatureHighlights('1.5.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
   assert.equal(dev.installed, '1.6');
   assert.equal(isNewFeature('playerAudio', dev), true);
-  assert.equal(isNewFeature('playerAudio', { ...dev, seenThrough: acknowledgeGeneration(dev) }), false);
+  assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights('1.5.0', {}, featureHighlightsAcknowledgement(dev))), false);
   assert.equal(isNewFeature('playerAudio', pendingFeatureHighlights('1.5.0')), false);
 });
 
@@ -79,4 +79,28 @@ it('registers every New marker of Settings, and every service tile added since 1
   }
   const state = resolveFeatureHighlights('1.6.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
   for (const item of NEW_FEATURE_ITEMS) assert.equal(isNewFeature(item.id, state), true, item.id);
+});
+
+it('development acknowledgements track item identity rather than suppressing a whole unreleased generation', () => {
+  for (const version of ['0.26.1016.1512', '1.5.0']) {
+    const legacy = { [SEEN_THROUGH_STORAGE_KEY]: '1.6' };
+    const state = resolveFeatureHighlights(version, {}, legacy);
+    assert.equal(isNewFeature('playerAudio', state), true, 'legacy generation ack cannot hide unreleased items');
+    const acknowledged = featureHighlightsAcknowledgement(state);
+    const reloaded = resolveFeatureHighlights(version, {}, acknowledged);
+    assert.equal(NEW_FEATURE_ITEMS.some(item => isNewFeature(item.id, reloaded)), false);
+    const rebuilt = resolveFeatureHighlights('0.26.1017.1200', {}, acknowledged);
+    assert.equal(isNewFeature('playerAudio', rebuilt), false, 'date/version changes alone do not resurrect items');
+    const beforeAudioWasAdded = { ...acknowledged,
+      [SEEN_ITEMS_STORAGE_KEY]: (acknowledged[SEEN_ITEMS_STORAGE_KEY] as string[]).filter(key => key !== 'playerAudio@1.6') };
+    const added = resolveFeatureHighlights(version, {}, beforeAudioWasAdded);
+    assert.equal(isNewFeature('playerAudio', added), true);
+    assert.equal(isNewFeature('playerPictureLayout', added), false);
+    assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(version,
+      { [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: false }, beforeAudioWasAdded)), false);
+    assert.equal(isNewFeature('playerAudio', pendingFeatureHighlights(version)), false);
+  }
+  const release = resolveFeatureHighlights('1.6.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5', [SEEN_ITEMS_STORAGE_KEY]: NEW_FEATURE_ITEMS.map(item => `${item.id}@${item.since}`) });
+  assert.equal(isNewFeature('playerAudio', release), true, 'dev snapshots do not acknowledge a release');
+  assert.deepEqual(featureHighlightsAcknowledgement(release), { [SEEN_THROUGH_STORAGE_KEY]: '1.6' });
 });

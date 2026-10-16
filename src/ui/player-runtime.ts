@@ -1,6 +1,6 @@
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
-import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
+import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
 import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
@@ -1094,14 +1094,12 @@ function toggleAutoTheaterCommand(): void {
 }
 
 let highlightSyncRevision = 0;
-let highlightLocalRevision = 0;
+// Keep per-key live values until hydration settles: one key changing must not discard the other's snapshot.
+const highlightLocalOverrides: Record<string, unknown> = {};
 
 async function hydrateSeenThrough(): Promise<void> {
-  const revision = highlightLocalRevision;
   const local = await readFeatureHighlightsLocal();
-  if (revision !== highlightLocalRevision) return;
-  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
-    seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], ui().featureHighlights.installed) } } });
+  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights, { ...local, ...highlightLocalOverrides }) } });
 }
 
 async function checkBlacklistAndInit(): Promise<void> {
@@ -2335,10 +2333,12 @@ export function bootstrapPlayerRuntime(): void {
 
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     const onStorageChanged = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
-      if (areaName === 'local' && changes[SEEN_THROUGH_STORAGE_KEY]) {
-        highlightLocalRevision++;
-        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
-          seenThrough: resolveSeenThrough(changes[SEEN_THROUGH_STORAGE_KEY].newValue, ui().featureHighlights.installed) } } });
+      if (areaName === 'local' && FEATURE_HIGHLIGHTS_LOCAL_KEYS.some(key => changes[key])) {
+        for (const key of FEATURE_HIGHLIGHTS_LOCAL_KEYS) {
+          if (changes[key]) highlightLocalOverrides[key] = changes[key].newValue;
+        }
+        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights,
+          highlightLocalOverrides) } });
       }
       if (areaName !== 'sync') return;
       if (changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {

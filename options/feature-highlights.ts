@@ -1,8 +1,8 @@
 import { DisposableScope } from '../src/core/disposable-scope';
 import {
-  compareGenerations, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, isNewFeature,
-  resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY
+  withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, isNewFeature,
+  resolveFeatureHighlights, resolveHighlightNewFeatures,
+  NEW_FEATURE_ITEMS
 } from '../src/feature-highlights';
 import { installedVersion, readFeatureHighlightsLocal } from '../src/feature-highlights-storage';
 import { languageRuntime } from '../src/i18n-runtime';
@@ -15,7 +15,7 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
   const scope = new DisposableScope();
   let state = resolveFeatureHighlights(version);
   let syncRevision = 0;
-  let localRevision = 0;
+  const localOverrides: Record<string, unknown> = {};
   defineNewBadge();
   ensureNewBadgeStyles(document);
   const toggle = document.querySelector<HTMLInputElement>('#highlight-new-features-toggle');
@@ -47,7 +47,7 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     }
     if (toggle) toggle.checked = state.enabled;
     const button = document.getElementById('whats-new-btn');
-    const unseen = state.enabled && compareGenerations(state.seenThrough, state.installed) < 0;
+    const unseen = NEW_FEATURE_ITEMS.some(item => isNewFeature(item.id, state));
     button?.classList.toggle('has-unseen', unseen);
     button?.toggleAttribute('data-unseen', unseen);
     if (unseen) button?.setAttribute('aria-description', t('badgeNew'));
@@ -59,9 +59,11 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
       if (area === 'sync' && changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {
         syncRevision++;
         state = { ...state, enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) };
-      } else if (area === 'local' && changes[SEEN_THROUGH_STORAGE_KEY]) {
-        localRevision++;
-        state = { ...state, seenThrough: resolveSeenThrough(changes[SEEN_THROUGH_STORAGE_KEY].newValue, state.installed) };
+      } else if (area === 'local' && FEATURE_HIGHLIGHTS_LOCAL_KEYS.some(key => changes[key])) {
+        for (const key of FEATURE_HIGHLIGHTS_LOCAL_KEYS) {
+          if (changes[key]) localOverrides[key] = changes[key].newValue;
+        }
+        state = withFeatureHighlightsLocal(state, localOverrides);
       } else return;
       render();
     };
@@ -90,10 +92,10 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     readFeatureHighlightsLocal()
   ]).then(([sync, local]) => {
     if (scope.isDisposed) return;
-    const snapshot = resolveFeatureHighlights(version, sync, local);
+    const snapshot = resolveFeatureHighlights(version, sync, { ...local, ...localOverrides });
     state = { ...state,
       enabled: syncRevision ? state.enabled : snapshot.enabled,
-      seenThrough: localRevision ? state.seenThrough : snapshot.seenThrough };
+      seenThrough: snapshot.seenThrough, development: snapshot.development };
     render();
   }).catch(error => { if (!scope.isDisposed) render(); console.error('Error loading feature highlights:', error); });
   scope.listen(window, 'unload', () => scope.dispose(), { once: true });
