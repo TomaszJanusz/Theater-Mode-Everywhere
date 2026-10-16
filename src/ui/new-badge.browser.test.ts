@@ -41,6 +41,11 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
           Object.assign(values, next);
           const changes = Object.fromEntries(Object.entries(next).map(([key, newValue]) => [key, { newValue }]));
           for (const listener of listeners) listener(changes, name);
+        },
+        async remove(keys: string[]) {
+          for (const key of keys) delete values[key];
+          const changes = Object.fromEntries(keys.map(key => [key, {}]));
+          for (const listener of listeners) listener(changes, name);
         }
       };
     }
@@ -56,7 +61,9 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
     const lifecycle = BadgeTest.createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
     const send = chrome.runtime.sendMessage;
     chrome.runtime.sendMessage = message => message.action === 'feature-highlights'
-      ? (message.operation === 'read' ? lifecycle.read() : lifecycle.acknowledge().then(() => ({}))) : send(message);
+      ? ({ read: () => lifecycle.read(), acknowledge: () => lifecycle.acknowledge().then(() => ({})),
+          hide: () => lifecycle.hideUntilNextVersion().then(() => ({})),
+          restore: () => lifecycle.restoreHidden().then(() => ({})) })[message.operation]() : send(message);
   })()`);
 }
 
@@ -214,6 +221,46 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await browser.close();
     });
   }
+
+  it(`${engine}: Hide until next version hides badges live, restores them and ends with a new version`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
+    await installMock(page);
+    const mount = `(async () => {
+      BadgeTest.localizeDocument();
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+      await settingsHighlights.ready;
+    })()`;
+    await page.evaluate(mount);
+    const button = page.getByRole('button', { name: 'Hide until next version', exact: true });
+    await page.locator('.te-new-badge').first().waitFor({ state: 'attached' });
+    const before = await page.evaluate(() => chrome.storage.local.get(null));
+    await button.click();
+    await page.waitForFunction(() => !document.querySelector('.te-new-badge') && !document.querySelector('#whats-new-btn.has-unseen'));
+    const restore = page.getByRole('button', { name: 'Restore badges', exact: true });
+    await restore.waitFor();
+    const hidden = await page.evaluate(() => chrome.storage.local.get(null));
+    assert.equal(hidden.newFeaturesHiddenThrough, CURRENT_GENERATION);
+    assert.equal(hidden.newFeaturesSeenThrough, before.newFeaturesSeenThrough, 'hiding never acknowledges');
+    assert.equal(await page.evaluate(() => (document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked), true);
+    // A freshly opened Settings page starts hidden; a localized label follows the language.
+    await page.evaluate(`settingsHighlights.dispose()`);
+    await page.evaluate(mount);
+    await restore.waitFor();
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
+    await page.getByRole('button', { name: 'Przywróć oznaczenia', exact: true }).waitFor();
+    await page.evaluate(`BadgeTest.languageRuntime.set('automatic')`);
+    await restore.click();
+    await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+    await button.waitFor();
+    assert.equal('newFeaturesHiddenThrough' in await page.evaluate(() => chrome.storage.local.get(null)), false);
+    // The marker of an earlier generation no longer hides anything in this one.
+    await page.evaluate(`chrome.storage.local.set({ newFeaturesHiddenThrough: '0.1' })`);
+    await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
+    await browser.close();
+  });
 
   it(`${engine}: Settings rejects stale storage snapshots after a live acknowledgement`, { timeout: 30_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);

@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Mostrar a etiqueta “Novidade” nos recursos adicionados recentemente."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Ocultar até a próxima versão"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Restaurar selos"
+  },
   "highContrastTitle": {
     "message": "Alto contraste"
   },

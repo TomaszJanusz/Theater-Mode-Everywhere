@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "最近追加された機能に「新機能」バッジを表示します。"
   },
+  "highlightNewFeaturesHide": {
+    "message": "次のバージョンまで非表示"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "バッジを元に戻す"
+  },
   "highContrastTitle": {
     "message": "ハイコントラスト"
   },

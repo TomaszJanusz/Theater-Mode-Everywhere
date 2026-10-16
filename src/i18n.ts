@@ -25,6 +25,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   badgeNew: "New",
   highlightNewFeaturesTitle: "Highlight new features",
   highlightNewFeaturesDescription: "Show New badges for recently added features.",
+  highlightNewFeaturesHide: "Hide until next version",
+  highlightNewFeaturesRestore: "Restore badges",
 
   languageTitle: "Language",
   languageDescription: "Choose the language for Settings, the popup, and player controls.",

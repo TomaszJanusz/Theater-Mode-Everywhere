@@ -69,7 +69,7 @@ describe('locale catalogs', () => {
   });
 
   it('keeps language setting fallbacks identical to English', () => {
-    for (const key of ['languageTitle', 'languageDescription', 'languageAutomatic']) {
+    for (const key of ['languageTitle', 'languageDescription', 'languageAutomatic', 'highlightNewFeaturesHide', 'highlightNewFeaturesRestore']) {
       assert.equal(FALLBACK_MESSAGES[key], canonical[key].message);
     }
   });

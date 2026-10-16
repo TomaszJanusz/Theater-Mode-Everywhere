@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "为最近添加的功能显示“新”标记。"
   },
+  "highlightNewFeaturesHide": {
+    "message": "隐藏至下一版本"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "恢复标记"
+  },
   "highContrastTitle": {
     "message": "高对比度"
   },

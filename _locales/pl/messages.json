@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Ukryj do następnej wersji"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Przywróć oznaczenia"
+  },
   "highContrastTitle": {
     "message": "Wysoki kontrast"
   },

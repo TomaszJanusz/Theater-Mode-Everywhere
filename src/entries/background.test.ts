@@ -100,7 +100,8 @@ it('routes badge hydration and acknowledgements through the background and rejec
         onChanged: ignore,
         local: {
           async get() { return { ...values }; },
-          async set(next: object) { Object.assign(values, next); }
+          async set(next: object) { Object.assign(values, next); },
+          async remove(keys: string[]) { keys.forEach(key => delete values[key]); }
         }
       },
       runtime: {
@@ -112,6 +113,7 @@ it('routes badge hydration and acknowledgements through the background and rejec
   let replied = false;
   assert.equal(listener({ action: 'feature-highlights', operation: 'read' }, { id: 'foreign' }, () => { replied = true; }), false);
   assert.equal(listener({ action: 'feature-highlights', operation: 'erase' }, { id: 'extension' }, () => { replied = true; }), false);
+  assert.equal(listener({ action: 'feature-highlights', operation: 'toString' }, { id: 'extension' }, () => { replied = true; }), false);
   assert.equal(replied, false);
   const request = (operation: string) => new Promise<unknown>(resolve => {
     assert.equal(listener({ action: 'feature-highlights', operation }, { id: 'extension' }, resolve), true);
@@ -121,4 +123,8 @@ it('routes badge hydration and acknowledgements through the background and rejec
   assert.equal((snapshot.newFeaturesWindow as { generation: string }).generation, CURRENT_GENERATION);
   await request('acknowledge');
   assert.equal(values.newFeaturesSeenThrough, CURRENT_GENERATION);
+  await request('hide');
+  assert.equal(values.newFeaturesHiddenThrough, CURRENT_GENERATION);
+  await request('restore');
+  assert.equal('newFeaturesHiddenThrough' in values, false);
 });

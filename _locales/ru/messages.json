@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Показывать метку «Новинка» у недавно добавленных функций."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Скрыть до следующей версии"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Вернуть значки"
+  },
   "highContrastTitle": {
     "message": "Высокая контрастность"
   },

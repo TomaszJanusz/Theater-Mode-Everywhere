@@ -1,10 +1,10 @@
 import { DisposableScope } from '../src/core/disposable-scope';
 import {
-  withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, isNewFeature,
+  badgesHiddenUntilNextVersion, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, isNewFeature,
   resolveFeatureHighlights, resolveHighlightNewFeatures,
   NEW_FEATURE_ITEMS
 } from '../src/feature-highlights';
-import { installedVersion, readFeatureHighlightsLocal } from '../src/feature-highlights-storage';
+import { installedVersion, readFeatureHighlightsLocal, setFeatureHighlightsHidden } from '../src/feature-highlights-storage';
 import { languageRuntime } from '../src/i18n-runtime';
 import { t } from '../src/i18n';
 import { createNewBadge, defineNewBadge, ensureNewBadgeStyles } from '../src/ui/new-badge';
@@ -18,6 +18,7 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
   defineNewBadge();
   ensureNewBadgeStyles(document);
   const toggle = document.querySelector<HTMLInputElement>('#highlight-new-features-toggle');
+  const hideButton = document.querySelector<HTMLButtonElement>('#highlight-new-features-hide');
 
   function setPill(label: Element | null, visible: boolean) {
     const old = label?.querySelector('.te-new-badge');
@@ -45,6 +46,12 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
       setPill(tab, newBlocks.some(block => panel?.contains(block)));
     }
     if (toggle) toggle.checked = state.enabled;
+    if (hideButton) {
+      const hidden = badgesHiddenUntilNextVersion(state);
+      hideButton.textContent = t(hidden ? 'highlightNewFeaturesRestore' : 'highlightNewFeaturesHide');
+      // Hiding while the switch is off has nothing to hide; restoring stays available.
+      hideButton.disabled = !state.enabled && !hidden;
+    }
     const button = document.getElementById('whats-new-btn');
     const unseen = NEW_FEATURE_ITEMS.some(item => isNewFeature(item.id, state));
     button?.classList.toggle('has-unseen', unseen);
@@ -81,6 +88,16 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
       } catch (error) {
         render();
         console.error('Error saving feature highlights:', error);
+      }
+    });
+  });
+  if (hideButton) scope.listen(hideButton, 'click', () => {
+    const hide = !badgesHiddenUntilNextVersion(state);
+    pendingWrite = pendingWrite.then(async () => {
+      try {
+        await setFeatureHighlightsHidden(hide);
+      } catch (error) {
+        console.error('Error saving hidden feature highlights:', error);
       }
     });
   });

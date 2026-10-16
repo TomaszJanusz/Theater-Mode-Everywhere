@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Afficher la mention « Nouveauté » pour les fonctionnalités récemment ajoutées."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Masquer jusqu’à la prochaine version"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Rétablir les badges"
+  },
   "highContrastTitle": {
     "message": "Contraste élevé"
   },

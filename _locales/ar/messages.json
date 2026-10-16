@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "إظهار شارة «جديد» للميزات المضافة مؤخرًا."
   },
+  "highlightNewFeaturesHide": {
+    "message": "إخفاء حتى الإصدار التالي"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "استعادة الشارات"
+  },
   "highContrastTitle": {
     "message": "تباين عالٍ"
   },
