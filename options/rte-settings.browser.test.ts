@@ -406,6 +406,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     const region = tile.locator('.rte-details-region');
     const height = () => tile.evaluate(el => el.getBoundingClientRect().height);
     const settle = () => region.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    assert.equal(await button.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
     const collapsed = await height();
     await button.click();
     assert.ok(await region.evaluate(el => el.getAnimations().some(animation => animation instanceof CSSTransition && animation.transitionProperty === 'grid-template-rows')));

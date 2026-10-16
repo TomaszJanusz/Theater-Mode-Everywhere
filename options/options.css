@@ -1851,9 +1851,9 @@ body.te-dialog-open {
 .rte-note { grid-column: 1 / -1; color: var(--appearance-muted, #d4d4d8); font-size: 11px; line-height: 1.5; }
 .rte-details-toggle {
   align-self: flex-end; margin: 0 16px 16px; padding: 0; border: 0; background: transparent;
-  color: var(--appearance-muted, #d4d4d8); font: inherit; font-size: 12px; text-decoration: underline;
-  text-underline-offset: 3px; cursor: pointer;
+  color: var(--appearance-muted, #d4d4d8); font: inherit; font-size: 12px; text-decoration: none; cursor: pointer;
 }
+.rte-details-toggle:hover { color: var(--text-primary); }
 .rte-details-region { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 240ms ease, visibility 240ms; }
 .rte-details-region.is-expanded { grid-template-rows: 1fr; visibility: visible; }
 .rte-details { min-height: 0; overflow: hidden; margin: 0 16px; color: var(--appearance-muted, #d4d4d8); font-size: 12px; line-height: 1.5; }
