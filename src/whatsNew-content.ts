@@ -8,7 +8,7 @@ type AnnouncementContent = {
 
 // Release copy is deliberately English-only, independent of the interface language.
 export const WHATS_NEW_CONTENT: AnnouncementContent = {
-  heading: 'Here is Theater Mode Everywhere 1.6!',
+  heading: 'Here is Theater Mode Everywhere 2.0!',
   paragraph: ["I'm delighted to announce that this is the ", { strong: 'biggest update' }, ' of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.'],
   items: [
     [{ strong: 'New services in Rich Theater Experience' }, ': Support for the unique features of Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix 🥳'],

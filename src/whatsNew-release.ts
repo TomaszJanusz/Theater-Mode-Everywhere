@@ -11,8 +11,8 @@ export type WhatsNewRelease = {
  * `autoOpenOptions` only for deliberate, high-impact release onboarding.
  */
 export const WHATS_NEW_RELEASE: WhatsNewRelease = {
-  // Replaces the pre-release layout/integrations announcement with the full 1.6 copy.
-  id: '1.6',
+  // Replaces the pre-release layout/integrations announcement with the full 2.0 copy.
+  id: '2.0',
   autoOpenOptions: true
 };
 

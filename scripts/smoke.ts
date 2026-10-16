@@ -2091,7 +2091,7 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
       await options.getByRole('dialog', { name: messages.whatsNewDialogTitle.message, exact: true }).waitFor();
       await options.getByRole('button', { name: messages.dialogAcknowledge.message, exact: true }).waitFor();
       const content = options.locator('.whats-new-content[lang="en"][dir="ltr"]');
-      await content.getByRole('heading', { name: 'Here is Theater Mode Everywhere 1.6!', exact: true }).waitFor();
+      await content.getByRole('heading', { name: WHATS_NEW_CONTENT.heading, exact: true }).waitFor();
       if (await content.locator('li').count() !== WHATS_NEW_CONTENT.items.length) throw new Error('Announcement must contain every English release item');
       await options.locator('.whats-new-thanks em').waitFor();
       await options.waitForFunction(locale => document.documentElement.dir === (locale === 'ar' ? 'rtl' : 'ltr'), locale);

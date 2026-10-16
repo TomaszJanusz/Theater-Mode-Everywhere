@@ -7,6 +7,7 @@ import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { assertLocalized, readCatalog } from '../test-utils/language-audit';
+import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const ROOT = path.resolve(__dirname, '../..');
 const PLAYER = buildSync({
@@ -27,7 +28,7 @@ const OPTIONS = build({
 
 async function mockStorage(page: Page): Promise<void> {
   await page.addInitScript({ content: `
-    localStorage.setItem('whatsNewAcknowledgedId', '1.6');
+    localStorage.setItem('whatsNewAcknowledgedId', '${WHATS_NEW_RELEASE.id}');
     const saved = { keepControlsVisible: true, blacklist: ['example.com', 'second.com'] };
     const changed = [];
     const storage = {

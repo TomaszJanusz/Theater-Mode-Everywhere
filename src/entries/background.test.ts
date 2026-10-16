@@ -4,6 +4,7 @@ import path from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { it } from 'node:test';
 import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
@@ -63,7 +64,7 @@ it('background broker accepts captions after safe redirects and cancels unsafe r
 it('initializes fresh installs at the installed generation and preserves update acknowledgements', async () => {
   for (const reason of ['install', 'update']) {
     let onInstalled!: (details: { reason: string; previousVersion?: string }) => Promise<void>;
-    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: '1.6' };
+    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: WHATS_NEW_RELEASE.id };
     const ignore = { addListener() {} };
     runInNewContext(bundle, {
       console,

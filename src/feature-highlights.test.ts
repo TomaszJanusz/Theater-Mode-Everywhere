@@ -4,67 +4,86 @@ import { it } from 'node:test';
 import {
   featureHighlightsAcknowledgement, SEEN_ITEMS_STORAGE_KEY, acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
   resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  pendingFeatureHighlights, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
+  pendingFeatureHighlights, previousGeneration, compareGenerations, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
 } from './feature-highlights';
 import { MEDIA_PROVIDER_IDS } from './media-features/provider-flags';
+import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from './test-utils/release';
+
+// Generation in which the registered items shipped, and the one preceding it: an upgrade that sees them all as new.
+const ITEMS_SINCE = NEW_FEATURE_ITEMS.map(item => item.since).sort(compareGenerations)[0];
+const BEFORE_ITEMS = previousGeneration(ITEMS_SINCE);
+// A development build carries the previous manifest version while already containing the items.
+const DEV_VERSION = `${BEFORE_ITEMS}.0`;
 
 it('fresh installs start seen; updates keep their existing acknowledgement, including skips', () => {
-  const fresh = initialSeenThrough('install', '1.6.3');
-  assert.deepEqual(fresh, { [SEEN_THROUGH_STORAGE_KEY]: '1.6' });
-  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.3', {}, fresh)), false);
-  assert.deepEqual(initialSeenThrough('update', '1.7.0'), {});
-  const skipped = resolveFeatureHighlights('1.7.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
-  assert.equal(isNewSince('1.6', skipped), true);
-  assert.equal(isNewSince('1.7', skipped), true);
+  const patch = `${CURRENT_VERSION}.3`;
+  const fresh = initialSeenThrough('install', patch);
+  assert.deepEqual(fresh, { [SEEN_THROUGH_STORAGE_KEY]: CURRENT_GENERATION });
+  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights(patch, {}, fresh)), false);
+  // Synthetic far-future line: independent of the current release.
+  assert.deepEqual(initialSeenThrough('update', '9.2.0'), {});
+  const skipped = resolveFeatureHighlights('9.2.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '9.0' });
+  assert.equal(isNewSince('9.1', skipped), true);
+  assert.equal(isNewSince('9.2', skipped), true);
+});
+
+it('upgrading from before the items shows them and acknowledges through the current generation', () => {
+  // The 1.5 line is the last release before the 2.0 major rollover, which history supplies.
+  assert.equal(previousGeneration('2.0'), '1.5');
+  const state = resolveFeatureHighlights(CURRENT_VERSION, {}, { [SEEN_THROUGH_STORAGE_KEY]: BEFORE_ITEMS });
+  assert.equal(isNewFeature('playerAudio', state), true);
+  assert.equal(compareGenerations('1.10', '2.0') < 0, true);
+  assert.deepEqual(featureHighlightsAcknowledgement(state), { [SEEN_THROUGH_STORAGE_KEY]: CURRENT_GENERATION });
 });
 
 it('expires old generations, excludes future items and compares minors numerically', () => {
-  const state = resolveFeatureHighlights('1.7.2', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.2' });
-  assert.equal(isNewSince('1.5', state), false);
-  assert.equal(isNewSince('1.6', state), true);
-  assert.equal(isNewSince('1.7', state), true);
-  assert.equal(isNewSince('1.8', state), false);
-  assert.equal(isNewSince('1.10', resolveFeatureHighlights('1.10.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.9' })), true);
-  assert.equal(installedGeneration('1.6.9.1'), '1.6');
+  // Synthetic lines: arithmetic must not depend on the current release.
+  const state = resolveFeatureHighlights('9.2.2', {}, { [SEEN_THROUGH_STORAGE_KEY]: '8.2' });
+  assert.equal(isNewSince('9.0', state), false);
+  assert.equal(isNewSince('9.1', state), true);
+  assert.equal(isNewSince('9.2', state), true);
+  assert.equal(isNewSince('8.8', state), false);
+  assert.equal(isNewSince('9.10', resolveFeatureHighlights('9.10.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '9.9' })), true);
+  assert.equal(installedGeneration('9.0.9.1'), '9.0');
   assert.throws(() => installedGeneration('bad'));
 });
 
 it('a development build on the previous manifest version shows and acknowledges the new generation', () => {
-  const dev = resolveFeatureHighlights('1.5.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
-  assert.equal(dev.installed, '1.6');
+  const dev = resolveFeatureHighlights(DEV_VERSION, {}, { [SEEN_THROUGH_STORAGE_KEY]: BEFORE_ITEMS });
+  assert.equal(dev.installed, ITEMS_SINCE);
   assert.equal(isNewFeature('playerAudio', dev), true);
-  assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights('1.5.0', {}, featureHighlightsAcknowledgement(dev))), false);
-  assert.equal(isNewFeature('playerAudio', pendingFeatureHighlights('1.5.0')), false);
+  assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(DEV_VERSION, {}, featureHighlightsAcknowledgement(dev))), false);
+  assert.equal(isNewFeature('playerAudio', pendingFeatureHighlights(DEV_VERSION)), false);
 });
 
 it('normalizes missing/invalid storage through shared resolvers', () => {
-  for (const value of [undefined, null, 1.6, false, [], {}, '1.6.0', '01.6', '1.x', '1.-1', 'Infinity.0']) {
-    assert.equal(resolveSeenThrough(value, '1.6'), '1.5');
+  for (const value of [undefined, null, 1.6, false, [], {}, '2.0.0', '01.6', '1.x', '1.-1', 'Infinity.0']) {
+    assert.equal(resolveSeenThrough(value, CURRENT_GENERATION), PREVIOUS_GENERATION);
     assert.equal(resolveHighlightNewFeatures(value), value === false ? false : true);
   }
   assert.equal(resolveHighlightNewFeatures(false), false);
-  assert.equal(resolveSeenThrough('1.4', '1.6'), '1.4');
-  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.0')), true);
+  assert.equal(resolveSeenThrough('1.4', CURRENT_GENERATION), '1.4');
+  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights(CURRENT_VERSION)), true);
 });
 
 it('acknowledgement covers installed generations without regressing after downgrade', () => {
-  const state = resolveFeatureHighlights('1.6.0');
-  assert.equal(acknowledgeGeneration(state), '1.6');
-  const disabled = resolveFeatureHighlights('1.6.0', { [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: false });
+  const state = resolveFeatureHighlights(CURRENT_VERSION);
+  assert.equal(acknowledgeGeneration(state), CURRENT_GENERATION);
+  const disabled = resolveFeatureHighlights(CURRENT_VERSION, { [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: false });
   assert.equal(isNewFeature('settingsLanguage', disabled), false);
   const acknowledged = { ...state, seenThrough: acknowledgeGeneration(disabled) };
   assert.equal(isNewFeature('settingsLanguage', acknowledged), false);
-  assert.equal(acknowledgeGeneration({ ...state, seenThrough: '1.7' }), '1.7');
+  assert.equal(acknowledgeGeneration({ ...state, seenThrough: '9.9' }), '9.9');
 });
 
 it('shows nothing as new until the acknowledged generation has been read', () => {
-  const pending = pendingFeatureHighlights('1.6.0');
+  const pending = pendingFeatureHighlights(CURRENT_VERSION);
   assert.equal(isNewFeature('settingsLanguage', pending), false);
   assert.equal(isNewFeature('playerAudio', pending), false);
-  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.0')), true, 'an existing install without a stored value still sees the current items');
+  assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights(CURRENT_VERSION)), true, 'an existing install without a stored value still sees the current items');
 });
 
-it('registers every New marker of Settings, and every service tile added since 1.5.0', () => {
+it('registers every New marker of Settings, and every service tile added since the previous release', () => {
   const html = readFileSync(new URL('../options/options.html', import.meta.url), 'utf8');
   const ids = new Set<string>(NEW_FEATURE_ITEMS.map(item => item.id));
   const marked = [...html.matchAll(/data-new-feature="([^"]+)"/g)].map(match => match[1]);
@@ -77,13 +96,13 @@ it('registers every New marker of Settings, and every service tile added since 1
   for (const id of ['rteBilibili', 'rteBilibiliIntl', 'rteTencent', 'rteCrunchyroll', 'rteNetflix']) {
     assert.ok(ids.has(id) && tiles.has(id), `${id} is registered for a real service tile`);
   }
-  const state = resolveFeatureHighlights('1.6.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
+  const state = resolveFeatureHighlights(CURRENT_VERSION, {}, { [SEEN_THROUGH_STORAGE_KEY]: BEFORE_ITEMS });
   for (const item of NEW_FEATURE_ITEMS) assert.equal(isNewFeature(item.id, state), true, item.id);
 });
 
 it('development acknowledgements track item identity rather than suppressing a whole unreleased generation', () => {
-  for (const version of ['0.26.1016.1512', '1.5.0']) {
-    const legacy = { [SEEN_THROUGH_STORAGE_KEY]: '1.6' };
+  for (const version of ['0.26.1016.1512', DEV_VERSION]) {
+    const legacy = { [SEEN_THROUGH_STORAGE_KEY]: ITEMS_SINCE };
     const state = resolveFeatureHighlights(version, {}, legacy);
     assert.equal(isNewFeature('playerAudio', state), true, 'legacy generation ack cannot hide unreleased items');
     const acknowledged = featureHighlightsAcknowledgement(state);
@@ -92,7 +111,7 @@ it('development acknowledgements track item identity rather than suppressing a w
     const rebuilt = resolveFeatureHighlights('0.26.1017.1200', {}, acknowledged);
     assert.equal(isNewFeature('playerAudio', rebuilt), false, 'date/version changes alone do not resurrect items');
     const beforeAudioWasAdded = { ...acknowledged,
-      [SEEN_ITEMS_STORAGE_KEY]: (acknowledged[SEEN_ITEMS_STORAGE_KEY] as string[]).filter(key => key !== 'playerAudio@1.6') };
+      [SEEN_ITEMS_STORAGE_KEY]: (acknowledged[SEEN_ITEMS_STORAGE_KEY] as string[]).filter(key => key !== `playerAudio@${ITEMS_SINCE}`) };
     const added = resolveFeatureHighlights(version, {}, beforeAudioWasAdded);
     assert.equal(isNewFeature('playerAudio', added), true);
     assert.equal(isNewFeature('playerPictureLayout', added), false);
@@ -100,7 +119,7 @@ it('development acknowledgements track item identity rather than suppressing a w
       { [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: false }, beforeAudioWasAdded)), false);
     assert.equal(isNewFeature('playerAudio', pendingFeatureHighlights(version)), false);
   }
-  const release = resolveFeatureHighlights('1.6.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5', [SEEN_ITEMS_STORAGE_KEY]: NEW_FEATURE_ITEMS.map(item => `${item.id}@${item.since}`) });
+  const release = resolveFeatureHighlights(CURRENT_VERSION, {}, { [SEEN_THROUGH_STORAGE_KEY]: BEFORE_ITEMS, [SEEN_ITEMS_STORAGE_KEY]: NEW_FEATURE_ITEMS.map(item => `${item.id}@${item.since}`) });
   assert.equal(isNewFeature('playerAudio', release), true, 'dev snapshots do not acknowledge a release');
-  assert.deepEqual(featureHighlightsAcknowledgement(release), { [SEEN_THROUGH_STORAGE_KEY]: '1.6' });
+  assert.deepEqual(featureHighlightsAcknowledgement(release), { [SEEN_THROUGH_STORAGE_KEY]: CURRENT_GENERATION });
 });
