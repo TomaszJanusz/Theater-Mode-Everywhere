@@ -94,6 +94,61 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
       } finally { await browser.close(); }
     };
 
+    it('shares close-button geometry and states between Settings and shadow dialogs', { timeout: 30_000 }, async t => {
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const settings = await browser.newPage();
+        const player = await browser.newPage();
+        await optionsPage(settings);
+        await settings.locator('#whats-new-btn').click();
+        await playerPage(player);
+        await player.keyboard.press('h');
+        const buttons = [settings.locator('.te-dialog-close'), player.locator('.theater-help-overlay .te-dialog-close')];
+        const style = (button: typeof buttons[number]) => button.evaluate(el => {
+          const css = getComputedStyle(el);
+          return Object.fromEntries(['borderTopWidth', 'borderTopStyle', 'borderTopColor', 'backgroundColor',
+            'width', 'height', 'padding', 'borderRadius', 'outlineWidth', 'outlineStyle', 'outlineColor',
+            'outlineOffset', 'transitionDuration'].map(key => [key, css[key as keyof CSSStyleDeclaration]]));
+        });
+        for (const mode of ['normal', 'high', 'reduced', 'rtl', 'forced'] as const) {
+          for (const page of [settings, player]) {
+            await page.emulateMedia({ forcedColors: mode === 'forced' ? 'active' : 'none' });
+            await page.evaluate(mode => {
+              const root = document.getElementById('theater-everywhere-ui') ?? document.documentElement;
+              root.dataset.contrast = mode === 'high' ? 'high' : 'normal';
+              root.dataset.transparency = mode === 'reduced' ? 'reduced' : 'normal';
+              root.dataset.motion = mode === 'reduced' ? 'reduced' : 'normal';
+              root.dir = mode === 'rtl' ? 'rtl' : 'ltr';
+            }, mode);
+          }
+          for (const state of ['rest', 'hover', 'focus'] as const) {
+            for (let i = 0; i < buttons.length; i++) {
+              const page = [settings, player][i];
+              await page.mouse.move(0, 0);
+              await buttons[i].evaluate(el => (el as HTMLElement).blur());
+              if (state === 'hover') await buttons[i].hover();
+              if (state === 'focus') {
+                await page.keyboard.press('Tab');
+                await buttons[i].focus();
+              }
+              // Wait for observable transition completion before sampling the final colors.
+              await buttons[i].evaluate(async el => {
+                await Promise.all(el.getAnimations().map(animation => animation.finished));
+              });
+            }
+            const [pageStyle, shadowStyle] = await Promise.all(buttons.map(style));
+            assert.deepEqual(pageStyle, shadowStyle, `${mode}: ${state}`);
+            assert.equal(pageStyle.width, '32px');
+            assert.equal(pageStyle.height, '32px');
+            assert.equal(pageStyle.borderTopWidth, '0px', 'the X stays borderless, including High contrast');
+            if (state === 'rest') assert.match(String(pageStyle.backgroundColor), /^rgba\(\d+, \d+, \d+, 0\)$/);
+            if (state === 'focus') assert.notEqual(pageStyle.outlineStyle, 'none', 'keyboard focus remains visible');
+          }
+        }
+      } finally { await browser.close(); }
+    });
+
     it('names Settings controls, exposes only the selected panel, and owns service disclosure/exclusion focus', { timeout: 30_000 }, async t => {
       await testPage(t, async page => {
         await optionsPage(page);
@@ -170,7 +225,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
             await page.locator('.theater-help-overlay').waitFor();
             await assertLocalized(page, 'ar');
           }
-          await page.locator('.theater-help-close-btn').click();
+          await page.locator('.te-dialog-close').click();
         }
         assert.equal(await page.locator('html').getAttribute('dir'), 'rtl', 'the host retains its original direction');
         assert.equal(await page.locator('video').evaluate((video: HTMLVideoElement) => video.paused), true);
@@ -283,7 +338,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         assert.equal(await page.locator('.theater-controls-wrapper').evaluate((el: HTMLElement) => el.inert), true);
         await dialog.getByRole('button', { name: 'Done', exact: true }).focus();
         await page.keyboard.press('Tab');
-        assert.equal(await focused(page, '.theater-caption-options-dialog .theater-help-close-btn'), true);
+        assert.equal(await focused(page, '.theater-caption-options-dialog .te-dialog-close'), true);
         await page.keyboard.press('Shift+Tab');
         assert.equal(await focused(page, '.theater-caption-options-dialog .te-dialog-btn-primary'), true);
         await page.keyboard.press('Escape');
@@ -306,11 +361,11 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.locator('#fixture-setting').evaluate(el => el.remove());
         await page.keyboard.press('Enter');
         await page.locator('.help-btn').click();
-        assert.match(await page.getByRole('dialog', { name: 'Keyboard Shortcuts' }).ariaSnapshot(), /button "Show\/Hide Help"/);
+        assert.match(await page.getByRole('dialog', { name: 'Keyboard Shortcuts' }).ariaSnapshot(), /button "Close"/);
         await page.keyboard.press('Tab');
-        assert.equal(await focused(page, '.theater-help-overlay .theater-help-close-btn'), true);
+        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-body'), true);
         await page.locator('.player-settings-btn').focus();
-        assert.equal(await focused(page, '.theater-help-overlay .theater-help-close-btn'), true);
+        assert.equal(await focused(page, '.theater-help-overlay .te-dialog-body'), true);
         await page.keyboard.press('Escape');
         assert.equal(await focused(page, '.player-settings-btn'), true);
         await page.locator('.play-pause-btn').focus();

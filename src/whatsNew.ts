@@ -66,15 +66,22 @@ export async function acknowledgeWhatsNew(): Promise<void> {
 
 export async function openWhatsNewDialog(): Promise<boolean> {
   await acknowledgeWhatsNew();
-  const result = await openDialog(() => ({
-    title: t('whatsNewDialogTitle'),
-    content: buildWhatsNewContent(),
-    setup: (_overlay, dialog) => dialog.classList.add('te-dialog-whats-new'),
-    actions: {
-      type: 'acknowledge',
-      label: t('dialogAcknowledge')
-    }
-  }));
+  const result = await openDialog(() => {
+    const content = buildWhatsNewContent();
+    const note = content.querySelector('.whats-new-thanks') ?? undefined;
+    return {
+      title: t('whatsNewDialogTitle'),
+      content,
+      note,
+      size: 'wide',
+      scrollable: true,
+      setup: (_overlay, dialog) => dialog.classList.add('te-dialog-whats-new'),
+      actions: {
+        type: 'acknowledge',
+        label: t('dialogAcknowledge')
+      }
+    };
+  });
 
   return result;
 }

@@ -4,6 +4,7 @@ import { it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox } from 'playwright';
 import { ownTestBrowser } from './test-utils/test-browser';
+import { readStylesheet } from './test-utils/styles';
 import { WHATS_NEW_CONTENT } from './whatsNew-content';
 
 const bundle = buildSync({
@@ -62,13 +63,15 @@ it('renders static English semantic content safely and refreshes localized dialo
     await page.keyboard.press('Tab');
     assert.equal(await page.locator('.te-dialog-close').evaluate(el => el === document.activeElement), true, 'close button is in the focus loop');
     await page.keyboard.press('Tab');
-    assert.equal(await root.evaluate(el => el === document.activeElement), true, 'scroll area is in the focus loop');
+    assert.equal(await page.locator('.te-dialog-body').evaluate(el => el === document.activeElement), true, 'shared scroll area is in the focus loop');
     const englishBody = await root.textContent();
     for (const locale of ['pl', 'ar', 'en']) {
       await page.evaluate(`Announcement.languageRuntime.set('${locale}')`);
       assert.equal(await page.locator('.te-dialog-title').textContent(), catalogs[locale].whatsNewDialogTitle.message);
       assert.equal(await page.locator('.te-dialog-btn-primary').textContent(), catalogs[locale].dialogAcknowledge.message);
       assert.equal(await root.textContent(), englishBody);
+      assert.equal(await page.locator('.whats-new-thanks').getAttribute('lang'), 'en');
+      assert.equal(await page.locator('.whats-new-thanks').getAttribute('dir'), 'ltr');
       assert.equal(await page.locator('.te-dialog-close').getAttribute('aria-label'), catalogs[locale].dialogClose.message);
     }
     // Even HTML-like text can only become text nodes; the renderer has no HTML sink.
@@ -93,7 +96,7 @@ for (const browserType of [chromium, firefox]) {
     const browser = await browserType.launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 800 }, reducedMotion: 'reduce' });
     await page.setContent('<html><body><button id="opener">Open</button></body></html>');
-    await page.addStyleTag({ content: readFileSync(new URL('../options/options.css', import.meta.url), 'utf8').replace(/^@import.*$/m, '') });
+    await page.addStyleTag({ content: readStylesheet(new URL('../options/options.css', import.meta.url)) });
     // Settings marks its root through the shared observer; this harness has no extension runtime.
     await page.addStyleTag({ content: readFileSync(new URL('../src/appearance-tokens.css', import.meta.url), 'utf8') });
     await page.evaluate(() => { document.documentElement.dataset.motion = 'reduced'; });
@@ -103,14 +106,14 @@ for (const browserType of [chromium, firefox]) {
     const dialog = page.getByRole('dialog');
     await dialog.waitFor();
     assert.equal((await dialog.boundingBox())!.width, 650);
-    const scroll = page.locator('.whats-new-content');
+    const scroll = page.locator('.te-dialog-body');
     const thanks = page.locator('.whats-new-thanks');
     const initialThanks = await thanks.boundingBox();
     assert.ok(await scroll.evaluate(el => el.scrollHeight > el.clientHeight));
     await scroll.focus();
     await page.keyboard.press('End');
     await page.waitForFunction(() => {
-      const el = document.querySelector('.whats-new-content')!;
+      const el = document.querySelector('.te-dialog-body')!;
       return Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) <= 1;
     });
     assert.deepEqual(await thanks.boundingBox(), initialThanks);

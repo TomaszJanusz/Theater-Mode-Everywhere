@@ -51,8 +51,6 @@ export function buildWhatsNewContent(): HTMLElement {
   root.className = 'whats-new-content';
   root.lang = 'en';
   root.dir = 'ltr';
-  // Include the scroll area in the modal's keyboard focus loop.
-  root.tabIndex = 0;
 
   const heading = document.createElement('h3');
   heading.className = 'whats-new-lead';
@@ -68,6 +66,9 @@ export function buildWhatsNewContent(): HTMLElement {
   }
   const thanks = document.createElement('p');
   thanks.className = 'whats-new-thanks';
+  // The modal may place this note outside the announcement's scrolling content.
+  thanks.lang = 'en';
+  thanks.dir = 'ltr';
   const emphasis = document.createElement('em');
   emphasis.textContent = WHATS_NEW_CONTENT.thanks;
   thanks.append(emphasis);

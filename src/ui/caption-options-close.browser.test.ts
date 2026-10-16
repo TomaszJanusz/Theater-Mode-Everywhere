@@ -95,7 +95,7 @@ describe('caption options dialog close button', () => {
         await dialog.waitFor();
         const close = dialog.getByRole('button', { name: 'Close', exact: true });
         assert.equal(await close.count(), 1);
-        assert.equal(await close.evaluate(button => button.classList.contains('theater-help-close-btn')), true, 'shares the Help close button styling');
+        assert.equal(await close.evaluate(button => button.classList.contains('te-dialog-close')), true, 'shares the Help close button styling');
         if (method === 'X button') await close.click();
         else await page.keyboard.press('Escape');
         await dialog.waitFor({ state: 'detached' });

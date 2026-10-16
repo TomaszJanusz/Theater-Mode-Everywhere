@@ -1,3 +1,4 @@
+import { disposeModalIn } from './modal';
 import { observeAppearance, PAGE_MOTION_ATTRIBUTE, type AppearanceModes } from '../appearance-runtime';
 import { ensureNewBadgeStyles } from './new-badge';
 import { applyUiDirection } from './messages';
@@ -91,6 +92,7 @@ export function queryPlayerUiAll<T extends Element>(selector: string): T[] {
 }
 
 export function destroyPlayerUi(): void {
+  if (shadow) disposeModalIn(shadow);
   cancelPendingAnnouncement();
   stopAppearance?.();
   stopAppearance = undefined;

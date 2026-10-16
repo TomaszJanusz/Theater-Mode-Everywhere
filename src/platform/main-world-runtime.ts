@@ -1,3 +1,4 @@
+import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
@@ -340,12 +341,29 @@ export function installMainWorldRuntime(): void {
     }
   }
 
+  const modalKeys = new Set<string>();
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
+    const modal = queryPlayerUi<HTMLElement>('.te-dialog-overlay > .te-dialog[aria-modal="true"]');
+    const identity = event.code || event.key;
+    if (modal || modalKeys.has(identity)) {
+      if (event.type === 'keydown') modalKeys.add(identity);
+      if (event.type === 'keyup') modalKeys.delete(identity);
+      // Stop host window-capture shortcuts while preserving native input defaults.
+      // Only focus navigation/dismissal needs forwarding to the isolated controller.
+      const dismissShortcut = modal?.dataset.dismissShortcut;
+      const dismiss = event.key === 'Escape' || Boolean(dismissShortcut && matchesShortcut(event, dismissShortcut));
+      if (modal && event.type === 'keydown' && (dismiss || event.key === 'Tab')) {
+        const relay = new CustomEvent(MODAL_KEY_EVENT, { cancelable: true,
+          detail: dismiss ? 'escape' : event.shiftKey ? 'previous' : 'next' });
+        modal.dispatchEvent(relay);
+        if (relay.defaultPrevented) event.preventDefault();
+      }
+      event.stopImmediatePropagation();
+      return;
+    }
     if (isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     const marked = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
     if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
-    // The content world owns help focus and native activation of its close button.
-    if (queryPlayerUi('.theater-help-overlay')) return;
     // Netflix cancels Space at window capture, including its keyup default.
     // Stop host listeners while retaining the focused button's native action.
     if ((event.key === ' ' || event.key === 'Enter') && event.composedPath().some(node => node instanceof Element
@@ -395,6 +413,7 @@ export function installMainWorldRuntime(): void {
     }));
   }
 
+  window.addEventListener('blur', () => modalKeys.clear());
   window.addEventListener('keydown', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keyup', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);

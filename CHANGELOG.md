@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Settings and player dialogs share one layout, close control, scrolling area and keyboard behavior, including High contrast and right-to-left layouts. Update highlights keeps its acknowledgements visible; subtitle options returns focus to the CC button.
 - Updated the privacy policy to explain browser settings sync and direct video-service requests, and linked it from Settings → About.
 
 - Settings footer uses a single row where space permits, with larger text and no divider above it.
@@ -55,7 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings and keyboard shortcuts share grouped panels and matching rows. Appearance groups accessibility preferences together and includes Always show controls.
 - Settings Appearance is a full-width card. Layout sits above accent colors, each choice shows a wireframe and which screens it suits, and the Privacy Thing promo is a short strip under the header.
 - The subtitles menu opens scrolled so the active track sits as close to the middle of the list as possible, with keyboard or pointer, and keeps your own scroll position once you move the list.
-- The subtitle options dialog has an X close button beside its title; it closes like Escape and returns focus to the CC button.
 - Subtitle loading shows a pulsing CC icon, and the "Loading subtitles…" HUD appears only if loading takes noticeable time, so quick loads no longer flash it.
 - Disney+ titles include the episode label, for example "VisionQuest — S1:O1 Wyzwolenie", and Disney+ captions sit above the picture and clear of the controls, including while the bar fades out. Caption movement keeps its glide when the controls appear.
 - Lower background CPU and memory use. Plain mouse movement no longer scans the page for video, chat watching and timers run only on Twitch and YouTube watch pages and pause in hidden tabs, the Disney clock follows native player events instead of a constant poll, and unrelated network responses are no longer cloned or decoded. Captions caches and body reads are size-bounded, the scrubber tooltip reuses its elements, and release packages are minified with a readable diagnostic build available through `TME_BUILD=diagnostic`.

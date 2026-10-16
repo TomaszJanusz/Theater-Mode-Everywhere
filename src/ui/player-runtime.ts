@@ -1432,24 +1432,6 @@ function initialize(): void {
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 
-    // Help owns keyboard focus; do not activate toolbar controls behind it.
-    if (ui().helpOpen) {
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
-        return true;
-      }
-      if ((event.key === ' ' || event.key === 'Enter')
-          && activeEl?.closest('.theater-help-overlay, .theater-menu')) {
-        if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        return !activeEl.closest('.theater-help-overlay');
-      }
-    }
-
     // Let native menu buttons and the duration toggle activate with Space/Enter.
     if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
@@ -1578,14 +1560,7 @@ function initialize(): void {
       }
       return true;
     } else if (matchesShortcut(event, shortcuts.exit) || event.key === 'Escape' || event.key === 'Esc') {
-      // If help overlay is open, close it instead of exiting theater mode
-      if (ui().helpOpen) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        hideHelpOverlay();
-        return true;
-      } else if (session.hasUi) {
+      if (session.hasUi) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1681,13 +1656,6 @@ function initialize(): void {
       }
     }
     const activeEl = getActiveElementDeep() as HTMLElement | null;
-    if (ui().helpOpen && (event.key === ' ' || event.key === 'Enter')
-        && activeEl?.closest('.theater-help-overlay, .theater-menu')) {
-      if (!activeEl.closest('.theater-help-overlay')) event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      return;
-    }
     if (!ui().helpOpen && activeEl?.closest(PLAYER_NATIVE_ACTIVATION_SELECTOR)
         && (event.key === ' ' || event.key === 'Enter')) {
       event.stopPropagation();
@@ -2234,7 +2202,7 @@ function exitTheaterMode(
   cancelAudioReload?.();
   cancelAudioReload = null;
   try {
-  hideHelpOverlay();
+  hideHelpOverlay(false);
   stopNativeChatSession();
 
   if (document.fullscreenElement) {

@@ -1,4 +1,4 @@
-import { containModalFocus } from '../accessibility';
+import { createModal, type Modal } from '../ui/modal';
 import type { CaptionStyle } from './caption-style';
 import {
   applyCaptionStyle,
@@ -10,7 +10,6 @@ import {
   resolveCaptionFontScale,
   type CaptionFontPreset
 } from './caption-style';
-import { createDialogCloseButton } from '../ui/dialog-close-button';
 import { mountPlayerUi } from '../player-ui-root';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
@@ -30,25 +29,7 @@ export async function openCaptionOptionsDialog(options: {
 }): Promise<void> {
   const current = { ...options.style };
 
-  const overlay = document.createElement('div');
-  overlay.className = 'te-dialog-overlay theater-backdrop-dialog';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'te-dialog theater-caption-options-dialog';
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
-  dialog.setAttribute('aria-label', options.t('subtitleOptionsTitle'));
-
-  const header = document.createElement('div');
-  header.className = 'te-dialog-header';
-  const title = document.createElement('h2');
-  title.className = 'te-dialog-title';
-  title.textContent = options.t('subtitleOptionsTitle');
-  const closeBtn = createDialogCloseButton(options.t('dialogClose'));
-  header.append(title, closeBtn);
-
-  const body = document.createElement('div');
-  body.className = 'te-dialog-body';
+  let modal: Modal | undefined;
 
   const form = document.createElement('div');
   form.className = 'theater-caption-options';
@@ -65,6 +46,7 @@ export async function openCaptionOptionsDialog(options: {
   paintPreview();
 
   const commit = (): void => {
+    if (!modal?.isOpen) return;
     paintPreview();
     options.onChange({ ...current });
   };
@@ -126,62 +108,29 @@ export async function openCaptionOptionsDialog(options: {
     }));
   };
   renderOptions();
-  body.appendChild(form);
-
-  const footer = document.createElement('div');
-  footer.className = 'te-dialog-footer theater-caption-options-footer';
-  const reset = document.createElement('button');
-  reset.type = 'button';
-  reset.className = 'te-dialog-btn te-dialog-btn-secondary';
-  reset.textContent = options.t('resetToDefault');
-  reset.addEventListener('click', () => {
-    Object.assign(current, DEFAULT_CAPTION_STYLE);
-    commit();
-    renderOptions();
-    reset.focus();
+  const returnFocus = options.returnFocus;
+  modal = createModal({
+    title: options.t('subtitleOptionsTitle'),
+    closeLabel: options.t('dialogClose'),
+    content: form,
+    size: 'wide',
+    scrollable: true,
+    mount: mountPlayerUi,
+    decorate: options.decorate,
+    returnFocus: returnFocus ? () => returnFocus : undefined,
+    signal: options.signal,
+    actions: [
+      { label: options.t('resetToDefault'), kind: 'secondary', run: () => {
+        Object.assign(current, DEFAULT_CAPTION_STYLE);
+        commit();
+        renderOptions();
+      } },
+      { label: options.t('dialogDone'), kind: 'primary', value: true }
+    ]
   });
-  const done = document.createElement('button');
-  done.type = 'button';
-  done.className = 'te-dialog-btn te-dialog-btn-primary';
-  done.textContent = options.t('dialogDone');
-  footer.append(reset, done);
-
-  dialog.append(header, body, footer);
-  overlay.appendChild(dialog);
-  options.decorate?.(overlay);
-  mountPlayerUi(overlay);
-  document.body.classList.add('te-dialog-open');
-  const releaseFocus = containModalFocus(dialog, () => done.click());
-  done.focus();
-
-  await new Promise<void>((resolve) => {
-    let settled = false;
-    const close = (restoreFocus = true): void => {
-      if (settled) return;
-      settled = true;
-      overlay.removeEventListener('pointerdown', onOverlay);
-      releaseFocus(false);
-      options.signal?.removeEventListener('abort', onAbort);
-      document.body.classList.remove('te-dialog-open');
-      overlay.remove();
-      if (restoreFocus && options.returnFocus?.isConnected) options.returnFocus.focus();
-      resolve();
-    };
-    const onOverlay = (event: PointerEvent): void => {
-      if (event.target === overlay) close();
-    };
-    const onAbort = (): void => {
-      close(false);
-    };
-    overlay.addEventListener('pointerdown', onOverlay);
-    done.addEventListener('click', () => close(), { once: true });
-    closeBtn.addEventListener('click', () => close(), { once: true });
-    if (options.signal?.aborted) {
-      close(false);
-      return;
-    }
-    options.signal?.addEventListener('abort', onAbort, { once: true });
-  });
+  // A family marker is for discovery/testing only; it never owns shell styles.
+  modal.dialog.classList.add('theater-caption-options-dialog');
+  await modal.closed;
 }
 
 function captionSizeRow(label: string, value: number, onChange: (value: number) => void): HTMLElement {

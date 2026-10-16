@@ -44,7 +44,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
-  await page.addStyleTag({ content: readFileSync(path.join(root, surface, `${surface}.css`), 'utf8') }).catch(() => undefined);
+  await page.addStyleTag({ content: readStylesheet(path.join(root, surface, `${surface}.css`)) }).catch(() => undefined);
   await page.addScriptTag({ content: (await bundles)[surface === 'options' ? 0 : 1] });
   if (surface === 'popup') {
     await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
@@ -165,8 +165,9 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         assert.equal(await dialog.getAttribute('aria-labelledby'), await page.locator('.te-dialog-title').getAttribute('id'));
         assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), true);
         const text = page.locator('.privacy-policy-text');
+        const scroll = page.locator('.te-dialog-body');
         assert.match(await text.textContent() ?? '', /Stored settings/);
-        assert.equal(await text.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
+        assert.equal(await scroll.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
         const online = page.locator('.privacy-policy-online');
         assert.equal(await online.textContent(), catalog.privacyPolicyOpenOnline.message);
         assert.equal(await online.getAttribute('href'), 'https://theater.tomaszjanusz.dev/privacy-policy/');

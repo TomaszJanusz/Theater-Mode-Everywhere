@@ -1,14 +1,11 @@
-import { containModalFocus } from '../accessibility';
+import { activeElementDeep } from '../accessibility';
+import { createModal, type Modal } from './modal';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
 import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
-import { createDialogCloseButton } from './dialog-close-button';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
-  let releaseFocus: (() => void) | null = null;
-  let returnFocus: HTMLElement | null = null;
-  let returnTrigger: string | null = null;
-  let removalObserver: MutationObserver | null = null;
+  let modal: Modal | null = null;
 
   function toggleHelpOverlay(): void {
     const overlay = ctx.queryPlayerUi('.theater-help-overlay') as HTMLElement | null;
@@ -23,10 +20,8 @@ export function createHelp(ctx: PlayerChromeContext) {
     if (ctx.refs.helpOverlay?.isConnected) return;
     if (ctx.refs.helpOverlay) hideHelpOverlay(false);
 
-    let active = document.activeElement;
-    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
-    returnFocus = active instanceof HTMLElement ? active : null;
-    returnTrigger = returnFocus?.closest('.theater-settings-menu, .player-settings-btn')
+    const returnFocus = activeElementDeep();
+    const returnTrigger = returnFocus?.closest('.theater-settings-menu, .player-settings-btn')
       ? '.player-settings-btn'
       : returnFocus?.closest('.theater-cc-menu') ? '.cc-btn' : null;
 
@@ -34,35 +29,6 @@ export function createHelp(ctx: PlayerChromeContext) {
     ctx.actions.showToolbar();
 
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;
-
-    const overlay = document.createElement('div');
-    overlay.className = 'theater-help-overlay theater-backdrop-shade';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', ctx.t('keyboardShortcutsTitle'));
-    ctx.paintOverlay(overlay);
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        hideHelpOverlay();
-      }
-    });
-
-    const card = document.createElement('div');
-    card.className = 'theater-help-card';
-
-    const header = document.createElement('div');
-    header.className = 'theater-help-header';
-
-    const title = document.createElement('h3');
-    title.textContent = ctx.t('keyboardShortcutsTitle');
-
-    const closeBtn = createDialogCloseButton(ctx.t('showHideHelp'));
-    closeBtn.addEventListener('click', () => hideHelpOverlay());
-
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    card.appendChild(header);
 
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
@@ -159,45 +125,34 @@ export function createHelp(ctx: PlayerChromeContext) {
     });
     grid.append(theaterColumn, playbackColumn);
 
-    card.appendChild(grid);
-    overlay.appendChild(card);
-    ctx.mountPlayerUi(overlay);
-
-    ctx.refs.helpOverlay = overlay;
-    ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
-    // Host removals are not user dismissals: clear modal state without moving focus.
-    removalObserver = new MutationObserver(() => {
-      if (!overlay.isConnected) hideHelpOverlay(false);
+    modal = createModal({
+      title: ctx.t('keyboardShortcutsTitle'),
+      closeLabel: ctx.t('dialogClose'),
+      content: grid,
+      size: 'wide',
+      scrollable: true,
+      initialFocus: 'close',
+      dismissShortcut: shortcuts.showHelp,
+      mount: ctx.mountPlayerUi,
+      decorate: overlay => { overlay.classList.add('theater-help-overlay'); ctx.paintOverlay(overlay); },
+      returnFocus: () => returnTrigger ? ctx.queryPlayerUi<HTMLElement>(returnTrigger) : returnFocus,
+      onClose: () => {
+        modal = null;
+        ctx.refs.helpOverlay = null;
+        ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
+        ctx.actions.scheduleToolbarHide();
+      }
     });
-    removalObserver.observe(overlay.parentNode!, { childList: true });
-    const root = overlay.getRootNode();
-    if (root instanceof ShadowRoot && root.host.parentNode) {
-      removalObserver.observe(root.host.parentNode, { childList: true });
-    }
-    const release = containModalFocus(overlay, () => hideHelpOverlay());
-    releaseFocus = () => release(false);
-    closeBtn.focus();
+    ctx.refs.helpOverlay = modal.overlay;
+    ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: true });
   }
 
   function hideHelpOverlay(restoreFocus = true): void {
-    if (!ctx.refs.helpOverlay && !ctx.ui().helpOpen) return;
-    releaseFocus?.();
-    releaseFocus = null;
-    removalObserver?.disconnect();
-    removalObserver = null;
-    ctx.refs.helpOverlay?.remove();
-    ctx.refs.helpOverlay = null;
-    ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
-    const target = returnTrigger
-      ? ctx.queryPlayerUi<HTMLElement>(returnTrigger)
-      : returnFocus;
-    returnFocus = null;
-    returnTrigger = null;
-    if (restoreFocus && target?.isConnected && target.getClientRects().length
-        && !target.closest('[inert]') && getComputedStyle(target).visibility !== 'hidden') {
-      target.focus();
+    if (modal) modal.close(false, restoreFocus);
+    else {
+      ctx.refs.helpOverlay = null;
+      ctx.uiStore.dispatch({ type: 'SET_HELP_OPEN', value: false });
     }
-    ctx.actions.scheduleToolbarHide();
   }
 
   return { toggleHelpOverlay, showHelpOverlay, hideHelpOverlay };
