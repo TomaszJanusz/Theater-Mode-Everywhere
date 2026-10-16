@@ -1019,7 +1019,7 @@
     "message": "Destacar nuevas funciones"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Mostrar la etiqueta «Novedad» en las funciones añadidas recientemente. Al desactivar esta opción, la actualización actual se marca como vista."
+    "message": "Mostrar la etiqueta «Novedad» en las funciones añadidas recientemente."
   },
   "highContrastTitle": {
     "message": "Contraste alto"

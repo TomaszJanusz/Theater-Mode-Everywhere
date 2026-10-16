@@ -1019,7 +1019,7 @@
     "message": "Highlight new features"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Show New badges for recently added features. Turning this off marks the current update as seen."
+    "message": "Show New badges for recently added features."
   },
   "highContrastTitle": {
     "message": "High contrast"

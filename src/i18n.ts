@@ -24,7 +24,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   "sponsorBlockCategory_unknown": "SponsorBlock segment",
   badgeNew: "New",
   highlightNewFeaturesTitle: "Highlight new features",
-  highlightNewFeaturesDescription: "Show New badges for recently added features. Turning this off marks the current update as seen.",
+  highlightNewFeaturesDescription: "Show New badges for recently added features.",
 
   languageTitle: "Language",
   languageDescription: "Choose the language for Settings, the popup, and player controls.",

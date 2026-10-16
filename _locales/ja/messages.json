@@ -1019,7 +1019,7 @@
     "message": "新機能を強調表示"
   },
   "highlightNewFeaturesDescription": {
-    "message": "最近追加された機能に「新機能」バッジを表示します。オフにすると、現在のアップデートは確認済みになります。"
+    "message": "最近追加された機能に「新機能」バッジを表示します。"
   },
   "highContrastTitle": {
     "message": "ハイコントラスト"
