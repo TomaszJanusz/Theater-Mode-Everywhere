@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Attiva la modalità cinema appena la riproduzione è pronta, senza l’avviso di 3 secondi."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Attivare il pulsante sul video?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater è ora disattivato. Vuoi mostrare un piccolo pulsante sui video per attivare manualmente la modalità cinema? Puoi modificare questa scelta in Impostazioni → Funzionalità → Pulsante sul video."
+  },
   "videoActivatorTitle": {
     "message": "Pulsante sul video"
   },

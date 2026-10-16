@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Enter as soon as playback is ready, without the 3-second notice."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Enable the video launcher?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater is now off. Would you like a small button on videos to enter theater mode manually? You can change this later in Settings → Features → Video launcher."
+  },
   "videoActivatorTitle": {
     "message": "Video launcher"
   },

@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Włącz tryb kinowy, gdy odtwarzanie będzie gotowe, bez 3-sekundowego powiadomienia."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Włączyć przycisk na wideo?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater jest teraz wyłączony. Czy chcesz wyświetlać na filmach mały przycisk do ręcznego włączania trybu kinowego? Możesz to później zmienić w Ustawienia → Funkcje → Przycisk na wideo."
+  },
   "videoActivatorTitle": {
     "message": "Przycisk na wideo"
   },

@@ -58,7 +58,7 @@ async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAG
       return remove.call(this, type, ...rest);
     };
     window.chrome = { runtime: { onMessage: { addListener() {} } }, storage: {
-      sync: { get: async () => (${JSON.stringify({ keepControlsVisible: true, ...stored })}), set: async () => {} },
+      sync: { get: async () => (${JSON.stringify({ keepControlsVisible: true, videoActivator: true, ...stored })}), set: async () => {} },
       local: { get: async () => ({}), set: async () => {} },
       onChanged: { addListener: fn => window.storageListeners.push(fn), removeListener() {} } } };`);
   await page.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: html }));
@@ -257,6 +257,15 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     await page.evaluate(() => document.getElementById('main')!.remove());
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
+  });
+
+  it(`${engine}: missing and invalid launcher preferences install no pointer listeners`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { stored: { videoActivator: undefined } });
+    assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
+    await page.evaluate(() => { for (const listener of window.storageListeners) listener({ videoActivator: { newValue: 'true' } }, 'sync'); });
+    assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
+    await hover(page, 400, 260);
+    assert.equal(await launcher(page), null);
   });
 
   it(`${engine}: the setting off installs no listener and no DOM, and applies live`, { timeout: 40_000 }, async t => {
@@ -514,11 +523,11 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await old!.evaluate(el => el.isConnected), false);
     await old!.evaluate(el => el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);
-    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ youtubeIntegrationEnabled: false })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: false } }, 'sync'); });
+    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ videoActivator: true, youtubeIntegrationEnabled: false })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: false } }, 'sync'); });
     await native.waitFor({ state: 'detached' });
     await hover(page, 420, 260);
     await page.locator('#theater-everywhere-ui .theater-video-activator').waitFor();
-    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ youtubeIntegrationEnabled: true })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: true } }, 'sync'); });
+    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ videoActivator: true, youtubeIntegrationEnabled: true })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: true } }, 'sync'); });
     await hover(page, 430, 260);
     await native.waitFor();
     await page.evaluate(async () => { const v = document.getElementById('main') as HTMLVideoElement; v.muted = true; await v.play(); });

@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Activer le mode cinéma dès que la lecture est prête, sans l’avis de 3 secondes."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Activer le bouton sur la vidéo ?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater est maintenant désactivé. Voulez-vous afficher un petit bouton sur les vidéos pour activer le mode cinéma manuellement ? Vous pourrez modifier ce choix dans Paramètres → Fonctionnalités → Bouton sur la vidéo."
+  },
   "videoActivatorTitle": {
     "message": "Bouton sur la vidéo"
   },

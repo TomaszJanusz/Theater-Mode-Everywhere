@@ -1,3 +1,4 @@
+import { saveAutoTheaterEnabled } from '../src/ui/auto-theater-settings';
 import { setupAppearanceChoices } from './appearance-choices';
 import { observeDocumentAppearance } from '../src/appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from '../src/ui/sponsorblock-settings';
@@ -692,7 +693,8 @@ async function init() {
       if (!toggle) continue;
       toggle.addEventListener('change', async () => {
         try {
-          await chrome.storage.sync.set({ [item.key]: toggle.checked });
+          if (item.key === AUTO_THEATER_STORAGE_KEY) await saveAutoTheaterEnabled(toggle.checked);
+          else await chrome.storage.sync.set({ [item.key]: toggle.checked });
           await notifyAllTabs();
         } catch (err) {
           console.error('Error saving feature setting:', err);
