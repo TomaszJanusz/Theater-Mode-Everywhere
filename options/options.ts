@@ -168,6 +168,7 @@ async function init() {
 
   const disposeRte = await setupRteSettings(notifyAllTabs);
   window.addEventListener('unload', disposeRte, { once: true });
+  highlights.render(); // Service tiles exist only now.
 
   // Load and bind features toggles
   await loadAndRenderFeatures();

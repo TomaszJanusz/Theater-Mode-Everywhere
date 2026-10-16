@@ -2,17 +2,13 @@ import { DisposableScope } from '../src/core/disposable-scope';
 import {
   compareGenerations, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, isNewFeature,
   resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  SEEN_THROUGH_STORAGE_KEY, type NewFeatureId
+  NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY
 } from '../src/feature-highlights';
 import { installedVersion, readFeatureHighlightsLocal } from '../src/feature-highlights-storage';
 import { languageRuntime } from '../src/i18n-runtime';
 import { t } from '../src/i18n';
 import { acknowledgeWhatsNew } from '../src/whatsNew';
 import { createNewBadge, defineNewBadge, ensureNewBadgeStyles } from '../src/ui/new-badge';
-
-const SETTINGS_ITEMS = [
-  'settingsLanguage', 'settingsPictureLayout', 'settingsAlwaysShowControls'
-] as const satisfies readonly NewFeatureId[];
 
 /** Page-owned storage subscription, installed before either asynchronous snapshot. */
 export function setupFeatureHighlights(initialSync: Promise<Record<string, unknown>>, version = installedVersion()) {
@@ -36,12 +32,14 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
 
   function render() {
     const newBlocks: Element[] = [];
-    for (const id of SETTINGS_ITEMS) {
+    // Player items have no home on this page; their query simply finds nothing.
+    for (const { id } of NEW_FEATURE_ITEMS) {
       const block = document.querySelector(`[data-new-feature="${id}"]`);
-      const label = block?.querySelector('.appearance-block-label, .feature-label') ?? block;
+      if (!block) continue;
+      const label = block.querySelector('.appearance-block-label, .feature-label, .rte-name') ?? block;
       const visible = isNewFeature(id, state);
       setPill(label, visible);
-      if (block && visible) newBlocks.push(block);
+      if (visible) newBlocks.push(block);
     }
     for (const tab of document.querySelectorAll('[data-new-feature-tab]')) {
       const panel = document.getElementById(tab.getAttribute('aria-controls') ?? '');

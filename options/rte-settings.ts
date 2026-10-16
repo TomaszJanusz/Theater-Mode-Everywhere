@@ -37,11 +37,15 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     label.className = 'rte-control';
     tile.className = 'rte-tile te-animated-border';
     tile.dataset.provider = provider.id;
+    tile.dataset.newFeature = `rte${provider.id[0].toUpperCase()}${provider.id.slice(1)}`;
     for (const [key, value] of Object.entries(serviceColorProperties(provider))) tile.style.setProperty(key, value);
+    // The NEW badge joins the title row but stays out of the switch's accessible name.
+    const title = document.createElement('span');
+    title.className = 'rte-name';
     const name = document.createElement('bdi');
-    name.className = 'rte-name';
     name.id = `rte-name-${provider.id}`;
     name.textContent = provider.name;
+    title.append(name);
     const control = document.createElement('span');
     control.className = 'toggle-switch';
     const input = document.createElement('input');
@@ -71,7 +75,7 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     note.id = `rte-note-${provider.id}`;
     if (provider.noteKey) note.dataset.i18n = provider.noteKey;
     input.setAttribute('aria-describedby', `${badgeList.id}${provider.noteKey ? ` ${note.id}` : ''}`);
-    label.append(name, control, badgeList);
+    label.append(title, control, badgeList);
     if (provider.noteKey) label.append(note);
     const details = document.createElement('button');
     details.type = 'button';

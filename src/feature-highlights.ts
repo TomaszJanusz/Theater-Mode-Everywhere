@@ -8,6 +8,16 @@ export const NEW_FEATURE_ITEMS = [
   { id: 'settingsLanguage', since: '1.6' },
   { id: 'settingsPictureLayout', since: '1.6' },
   { id: 'settingsAlwaysShowControls', since: '1.6' },
+  { id: 'settingsAutoEnterTheater', since: '1.6' },
+  { id: 'settingsHighContrast', since: '1.6' },
+  { id: 'settingsReduceTransparency', since: '1.6' },
+  { id: 'settingsReduceMotion', since: '1.6' },
+  // Service tiles are named `rte` + the provider id with a capital first letter.
+  { id: 'rteBilibili', since: '1.6' },
+  { id: 'rteBilibiliIntl', since: '1.6' },
+  { id: 'rteTencent', since: '1.6' },
+  { id: 'rteCrunchyroll', since: '1.6' },
+  { id: 'rteNetflix', since: '1.6' },
   { id: 'playerPictureLayout', since: '1.6' },
   { id: 'playerAlwaysShowControls', since: '1.6' },
   { id: 'playerAudio', since: '1.6' }

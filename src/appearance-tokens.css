@@ -105,9 +105,10 @@
 }
 
 
-/* Ring and interior are the same decorative layer. Stop the work as well as hiding it. */
+/* The ring and its interior are one decorative layer. High contrast removes it and stops its work.
+   Reduce transparency leaves it alone: the brand colors are motion, governed by Reduce motion. */
 @media (forced-colors: none) {
-  :root:is([data-contrast="high"], [data-transparency="reduced"]) .te-animated-border::before {
+  :root[data-contrast="high"] .te-animated-border::before {
     content: none;
     animation: none;
     transition: none;
