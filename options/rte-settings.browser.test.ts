@@ -278,6 +278,47 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     } finally { await browser.close(); }
   });
 
+  it('aligns badge edges with titles and distinguishes disabled integrations without disabling their controls', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page);
+      const tile = page.locator('[data-provider="netflix"]');
+      const appearance = () => tile.evaluate(el => ({
+        border: getComputedStyle(el).borderTopStyle,
+        badge: getComputedStyle(el.querySelector('.rte-badge')!).backgroundColor
+      }));
+      for (const dir of ['ltr', 'rtl']) {
+        await page.locator('html').evaluate((el, dir) => el.setAttribute('dir', dir), dir);
+        const offset = await tile.evaluate((el, dir) => {
+          const title = el.querySelector('.rte-name')!.getBoundingClientRect();
+          const badge = el.querySelector('.rte-badge')!.getBoundingClientRect();
+          return dir === 'rtl' ? title.right - badge.right : badge.left - title.left;
+        }, dir);
+        assert.ok(Math.abs(offset) < 1, `${dir}: badge edge aligns with title (${offset}px)`);
+      }
+      await page.mouse.move(0, 0);
+      const enabled = await appearance();
+      assert.equal(enabled.border, 'solid');
+      // A storage change from the popup or another Settings page must style the same tile.
+      await page.evaluate(() => (window as unknown as Harness).external({ netflixIntegrationEnabled: false }));
+      const disabled = await appearance();
+      assert.equal(disabled.border, 'dashed');
+      assert.notEqual(disabled.badge, enabled.badge);
+      const toggle = page.locator('#rte-netflix');
+      assert.equal(await toggle.isDisabled(), false, 'off is a saved preference, not an unavailable control');
+      await tile.locator('.rte-details-toggle').click();
+      assert.equal(await tile.locator('.rte-details-toggle').getAttribute('aria-expanded'), 'true');
+      await toggle.focus();
+      await toggle.press('Space');
+      assert.equal(await toggle.isChecked(), true);
+      await page.mouse.move(0, 0);
+      await page.locator('#rte-all').focus();
+      assert.deepEqual(await appearance(), enabled, 'enabling restores the original visual state');
+    } finally { await browser.close(); }
+  });
+
   it('distinguishes notes and keeps contrast over every brightest hover stop in appearance modes', { timeout: 45000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);
