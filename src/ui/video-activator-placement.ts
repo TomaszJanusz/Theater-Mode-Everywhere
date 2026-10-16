@@ -1,11 +1,11 @@
 /**
- * Pure rules for the video activator: which videos qualify and which corner is free.
+ * Pure rules for the video activator: which videos qualify and which position is free.
  * Geometry and occlusion arrive as plain data or an injected probe, so nothing here
  * touches the DOM.
  */
 export type Box = { left: number; top: number; width: number; height: number };
 export type Viewport = { width: number; height: number };
-export type ActivatorSpot = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+export type ActivatorSpot = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
 
 export const ACTIVATOR_SIZE = 40;
 export const ACTIVATOR_MARGIN = 12;
@@ -14,7 +14,7 @@ export const ACTIVATOR_MIN_WIDTH = 240;
 export const ACTIVATOR_MIN_HEIGHT = 135;
 
 /** Hosts keep titles and share buttons on the left and controls at the bottom; the right corner is usually quietest. */
-const SPOT_ORDER: readonly ActivatorSpot[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+const SPOT_ORDER: readonly ActivatorSpot[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'];
 
 export type ActivatorVideoFacts = {
   width: number;
@@ -36,6 +36,14 @@ export function isActivatorVideoEligible(facts: ActivatorVideoFacts): boolean {
 }
 
 export function spotBox(video: Box, spot: ActivatorSpot, size = ACTIVATOR_SIZE, margin = ACTIVATOR_MARGIN): Box {
+  if (spot.endsWith('center')) {
+    // Centre the button at one-third / two-thirds of the video height.
+    return {
+      left: video.left + (video.width - size) / 2,
+      top: video.top + video.height * (spot === 'top-center' ? 1 / 3 : 2 / 3) - size / 2,
+      width: size, height: size
+    };
+  }
   const left = spot.endsWith('left') ? video.left + margin : video.left + video.width - margin - size;
   const top = spot.startsWith('top') ? video.top + margin : video.top + video.height - margin - size;
   return { left, top, width: size, height: size };
@@ -59,8 +67,8 @@ export type SpotChoice = { spot: ActivatorSpot; box: Box };
 /**
  * First candidate that is fully on screen and whose sample points are all free.
  * The previous spot is tried first so the button stays where the viewer last saw it.
- * `bottomBlocked` drops the bottom row for players with a native control bar, which
- * is drawn by the browser and invisible to hit testing.
+ * `bottomBlocked` drops both bottom corners and the lower centre slot for native
+ * controls, which are drawn by the browser and invisible to hit testing.
  */
 export function chooseActivatorSpot(
   video: Box,

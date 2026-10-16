@@ -133,16 +133,54 @@ for (const engine of ['chromium', 'firefox'] as const) {
     });
     await hover(page, 420, 280);
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
-    // Cover the remaining corners with a toolbar: nothing is free, so nothing is shown.
+    // Cover every remaining slot, then leave so the next appearance probes again.
     await page.evaluate(() => {
-      for (const css of ['left:0;top:0', 'left:0;bottom:0', 'right:0;bottom:0']) {
+      for (const css of ['left:0;top:0', 'left:0;bottom:0', 'right:0;bottom:0', 'left:296px;top:96px', 'left:296px;top:216px']) {
         const ui = document.createElement('a');
         ui.href = '#'; ui.className = 'ui'; ui.style.cssText = css; ui.textContent = 'x';
         document.getElementById('player')!.append(ui);
       }
     });
     await hover(page, 450, 300);
-    await page.waitForTimeout(150);
+    // Wait for the pointer frame; no candidate can produce a launcher.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await launcher(page), null);
+  });
+
+  it(`${engine}: centre slots avoid occupied corners and stay frozen for each appearance`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await page.evaluate(() => {
+      for (const css of ['left:0;top:0', 'right:0;top:0', 'left:0;bottom:0', 'right:0;bottom:0']) {
+        const ui = document.createElement('button');
+        ui.className = 'ui'; ui.style.cssText = css; ui.textContent = 'Host';
+        document.getElementById('player')!.append(ui);
+      }
+    });
+    await hover(page, 400, 260);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.waitFor();
+    assert.deepEqual(await launcher(page), { x: 400, y: 180, width: 40, label: 'Enter theater mode' });
+    const original = await button.elementHandle();
+    await button.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    await page.screenshot({ path: `/tmp/tme-84-${engine}-top-center.png` });
+    await page.evaluate(() => {
+      const ui = document.createElement('button');
+      ui.className = 'ui'; ui.style.cssText = 'left:296px;top:96px'; ui.textContent = 'Host';
+      document.getElementById('player')!.append(ui);
+    });
+    await page.mouse.move(450, 270);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await original!.evaluate(el => el.isConnected), true);
+    assert.equal((await launcher(page))!.y, 180, 'occlusion changes do not move a visible launcher');
+    await page.mouse.move(400, 600);
+    await button.waitFor({ state: 'detached' });
+    await hover(page, 400, 260);
+    await button.waitFor();
+    assert.deepEqual(await launcher(page), { x: 400, y: 300, width: 40, label: 'Enter theater mode' });
+    await button.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    await page.screenshot({ path: `/tmp/tme-84-${engine}-bottom-center.png` });
+    await button.click();
+    await page.waitForSelector('video[data-theater-everywhere]');
     assert.equal(await launcher(page), null);
   });
 
