@@ -1,11 +1,11 @@
-import { abandonBody } from './bounded-body';
+import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
-import { fetchWithoutHarvest, isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
+import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { installXhrHarvest } from './xhr-harvest';
-import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
-import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
+import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
+import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { findActiveVideo } from './active-video';
 import { installMediaAudioRuntime } from './media-audio-runtime';
@@ -67,6 +67,10 @@ import {
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
   const FETCH_WRAPPED = Symbol.for('theater-everywhere.wrapped-fetch');
+  // Capture the capability operations before host code can replace the prototypes.
+  const postPortMessage: (port: MessagePort, message: WorldEnvelope) => void = Function.prototype.call.bind(MessagePort.prototype.postMessage);
+  const closePort: (port: MessagePort) => void = Function.prototype.call.bind(MessagePort.prototype.close);
+  const stopMessage: (event: Event) => void = Function.prototype.call.bind(Event.prototype.stopImmediatePropagation);
   // A replacement transport may return a URL-less Response. Keep its known
   // request URL so only genuinely URL-less host metadata uses the fallback.
   const responseUrls = new WeakMap<Response, string>();
@@ -470,21 +474,14 @@ export function installMainWorldRuntime(): void {
     return false;
   }
 
-  function respondPageFetch(
-    requestId: string,
-    nonce: string,
-    origin: string,
-    okFlag: boolean,
-    body?: string
-  ): void {
-    window.postMessage(
-      createWorldMessage('PAGE_FETCH_RESULT', { ok: okFlag, body }, requestId, nonce, origin),
-      '*'
-    );
-  }
-
-  function handlePageFetch(requestId: string, url: string, nonce: string, origin: string): void {
-    const respond = (okFlag: boolean, body?: string) => respondPageFetch(requestId, nonce, origin, okFlag, body);
+  function handlePageFetch(requestId: string, url: string, nonce: string, origin: string, port: MessagePort): void {
+    const respond = (ok: boolean, body?: string) => {
+      try {
+        postPortMessage(port, createWorldMessage('PAGE_FETCH_RESULT', { ok, body }, requestId, nonce, origin));
+      } finally {
+        closePort(port);
+      }
+    };
     try {
       if (!pageFetchAllowed(url)) {
         respond(false);
@@ -497,13 +494,8 @@ export function installMainWorldRuntime(): void {
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 15_000);
           try {
-            const response = await fetchWithoutHarvest(url, { credentials: 'omit', signal: controller.signal });
-            if (!response.ok) { abandonBody(response.body); return null; }
-            const request = classifyMediaFetchUrl(url, window.location.href);
-            if (request?.provider === 'tencent' && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
-            if (request?.provider === 'bilibili' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
-            if (request?.provider === 'bilibiliIntl' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
-            if (request?.provider === 'crunchyroll' && response.url && !assertSafeRedirect(response.url, request)) { abandonBody(response.body); return null; }
+            const response = await fetchPageMedia(url, { credentials: 'omit', signal: controller.signal });
+            if (!response) return null;
             const isBif = isAllowedDisneyBifUrl(url);
             const maxBytes = isBif ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
             const buffer = await readPageResponseBytes(response, maxBytes, controller.signal, () => window.location.href === href && pageFetchAllowed(url));
@@ -529,8 +521,16 @@ export function installMainWorldRuntime(): void {
     if (envelope.origin !== event.origin) return;
     const url = envelope.payload.url;
     if (typeof url !== 'string') return;
-    handlePageFetch(envelope.requestId, url, envelope.nonce, envelope.origin);
-  });
+    const port = event.ports[0];
+    if (!port || event.ports.length !== 1) return;
+    // Claim the reply capability before later page listeners can observe it. Both
+    // worlds boot at document_start; the envelope carries no shared secret.
+    // This assumes our capture listener runs first: earlier page code (including
+    // inherited about:blank documents) or tampered MAIN APIs can still intercept
+    // the handoff. MAIN fetch/host data are not trusted against a hostile host.
+    stopMessage(event);
+    handlePageFetch(envelope.requestId, url, envelope.nonce, envelope.origin, port);
+  }, { capture: true });
 
   window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
     const detail = (event as CustomEvent<{ live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean }>).detail || {};

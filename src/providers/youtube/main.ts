@@ -1,7 +1,7 @@
-import { abandonBody } from '../../platform/bounded-body';
 import { readPageResponseBytes } from '../../platform/page-body';
 import { qualifiesYoutubeHeatmap } from '../network-harvest';
-import { fetchWithoutHarvest } from '../../platform/harvest-ownership';
+import { fetchPageMedia } from '../../platform/page-fetch';
+import { isChildFrameMessage } from '../../protocol/frame-messages';
 import {
   createTimedtextCacheRecord,
   selectCaptionTrackOption,
@@ -463,8 +463,8 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 4000);
     try {
-      const response = await fetchWithoutHarvest(candidate, { credentials: 'include', signal: controller.signal });
-      if (!response.ok) { abandonBody(response.body); continue; }
+      const response = await fetchPageMedia(candidate, { credentials: 'include', signal: controller.signal });
+      if (!response) continue;
       const buffer = await readPageResponseBytes(response, MAX_CAPTION_BYTES, controller.signal, current);
       if (!buffer) continue;
       const text = new TextDecoder().decode(buffer);
@@ -725,6 +725,7 @@ export function installYoutubeMain(): void {
     const data = youtubeRecord(event.data);
     const record = youtubeRecord(data?.record);
     if (data?.type === 'theater-everywhere-timedtext-body' && typeof record?.body === 'string') {
+      if (!isChildFrameMessage(event)) return;
       if (typeof record.url !== 'string' || !isAllowedTimedtextUrl(record.url) || record.body.length > MAX_TIMEDTEXT_STRING_LENGTH) return;
       const cached = createTimedtextCacheRecord(record.url, record.body);
       if (!cached) return;

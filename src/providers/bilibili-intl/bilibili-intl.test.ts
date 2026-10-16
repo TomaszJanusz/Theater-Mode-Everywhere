@@ -475,11 +475,8 @@ describe('Bilibili.tv RTE', () => {
         }, null) }
       }));
     });
-    (win as any).postMessage = (request: WorldEnvelope) => {
-      win.dispatchEvent(Object.assign(new Event('message'), {
-        source: win,
-        data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS }, request.requestId, request.nonce, request.origin)
-      }));
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+      ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ASS }, request.requestId, request.nonce, request.origin));
     };
     const adapter = new BilibiliIntlAdapter();
     try {
@@ -538,12 +535,9 @@ describe('Bilibili.tv RTE', () => {
       }));
     });
     const deliveries: Array<(body: string) => void> = [];
-    (win as any).postMessage = (request: WorldEnvelope) => {
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       deliveries.push((body: string) => {
-        win.dispatchEvent(Object.assign(new Event('message'), {
-          source: win,
-          data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin)
-        }));
+        ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
       });
     };
     const adapter = new BilibiliIntlAdapter();
@@ -616,12 +610,9 @@ describe('Bilibili.tv RTE', () => {
       }));
     });
     const deliveries: Array<(body: string) => void> = [];
-    (win as any).postMessage = (request: WorldEnvelope) => {
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       deliveries.push((body: string) => {
-        win.dispatchEvent(Object.assign(new Event('message'), {
-          source: win,
-          data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin)
-        }));
+        ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
       });
     };
     const adapter = new BilibiliIntlAdapter();
@@ -972,11 +963,8 @@ describe('Bilibili.tv RTE', () => {
         }));
       });
     });
-    (win as any).postMessage = (request: WorldEnvelope) => {
-      win.dispatchEvent(Object.assign(new Event('message'), {
-        source: win,
-        data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: '<html>login</html>' }, request.requestId, request.nonce, request.origin)
-      }));
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+      ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: '<html>login</html>' }, request.requestId, request.nonce, request.origin));
     };
     const trackId = snapshot.captionTracks[0].id;
     const adapter = new BilibiliIntlAdapter();
@@ -1056,14 +1044,11 @@ describe('Bilibili.tv RTE', () => {
       }));
     });
     const deliveries: Array<{ url: string; send: (body: string) => void }> = [];
-    (win as any).postMessage = (request: WorldEnvelope) => {
+    (win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
       deliveries.push({
         url: String(request.payload.url),
         send: (body: string) => {
-          win.dispatchEvent(Object.assign(new Event('message'), {
-            source: win,
-            data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin)
-          }));
+          ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body }, request.requestId, request.nonce, request.origin));
         }
       });
     };
@@ -1294,7 +1279,7 @@ describe('Bilibili.tv RTE', () => {
       assert.equal(requested.some((url) => url.includes('/ogv/play/episode') || url.includes('playurl')), false);
 
       const adapter = new BilibiliIntlAdapter();
-      const win = globalThis.window as EventTarget & { location: { pathname: string }; postMessage?: (request: WorldEnvelope) => void };
+      const win = globalThis.window as EventTarget & { location: { pathname: string }; postMessage?: (request: WorldEnvelope, origin: string, ports: MessagePort[]) => void };
       const ugcCues = JSON.stringify({ body: [{ from: 1, to: 2, content: 'uploaded line' }] });
       win.addEventListener('theater-everywhere-media-probe', (event) => {
         const requestId = (event as CustomEvent).detail.requestId;
@@ -1302,11 +1287,8 @@ describe('Bilibili.tv RTE', () => {
           detail: { requestId, bilibiliIntl: fresh }
         }));
       });
-      win.postMessage = (request: WorldEnvelope) => {
-        win.dispatchEvent(Object.assign(new Event('message'), {
-          source: win,
-          data: createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ugcCues }, request.requestId, request.nonce, request.origin)
-        }));
+      win.postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {
+        ports[0].postMessage(createWorldMessage('PAGE_FETCH_RESULT', { ok: true, body: ugcCues }, request.requestId, request.nonce, request.origin));
       };
       assert.equal((await adapter.getChapters()).length, 0);
       assert.equal((await adapter.probe()).chapters, false);

@@ -134,6 +134,13 @@ export function isTrustedFrameSource(
   return { fromParent, fromChild };
 }
 
+/** Checks direct child ownership without reading cross-origin frame contents. */
+export function isChildFrameMessage(event: MessageEvent): boolean {
+  return event.source !== null && Array.from(document.querySelectorAll('iframe')).some(
+    (iframe) => iframe.contentWindow === event.source
+  );
+}
+
 export function originMatchesIframe(event: MessageEvent, iframe: HTMLIFrameElement): boolean {
   try {
     if (!iframe.src) return false;

@@ -1,7 +1,7 @@
 import { sanitizeContentTitle } from './content-title';
 import { readYoutubePlayerMetadata, youtubeRecord } from './parsers/youtube-player-response';
 import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
-import { createWorldMessage, isSameWindowMessage, readWorldEnvelope } from '../protocol/world-messages';
+import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { BilibiliSnapshot } from './parsers/bilibili';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
 import type { TencentSnapshot } from '../providers/tencent/main';
@@ -203,27 +203,35 @@ export function requestPageFetch(url: string, timeoutMs = 8000): Promise<string 
   return new Promise((resolve) => {
     const request = createWorldMessage('PAGE_FETCH', { url });
     let settled = false;
+    const { port1, port2 } = new MessageChannel();
 
     const onMessage = (event: MessageEvent) => {
-      if (!isSameWindowMessage(event)) return;
       const envelope = readWorldEnvelope(event.data);
       if (!envelope || envelope.type !== 'PAGE_FETCH_RESULT') return;
-      if (envelope.requestId !== request.requestId) return;
+      if (envelope.requestId !== request.requestId || envelope.nonce !== request.nonce || envelope.origin !== request.origin) return;
       const body = envelope.payload.body;
-      finish(envelope.payload.ok && typeof body === 'string' ? body : null);
+      finish(envelope.payload.ok === true && typeof body === 'string' ? body : null);
     };
 
     const finish = (body: string | null) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      window.removeEventListener('message', onMessage);
+      port1.onmessage = null;
+      port1.onmessageerror = null;
+      port1.close();
+      port2.close();
       resolve(body && body.trim() ? body : null);
     };
 
     const timer = window.setTimeout(() => finish(null), timeoutMs);
-    window.addEventListener('message', onMessage);
-    window.postMessage(request, '*');
+    port1.onmessage = onMessage;
+    port1.onmessageerror = () => finish(null);
+    try {
+      window.postMessage(request, '*', [port2]);
+    } catch {
+      finish(null);
+    }
   });
 }
 
