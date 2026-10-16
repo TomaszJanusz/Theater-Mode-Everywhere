@@ -228,10 +228,9 @@ export function requestPageFetch(url: string, timeoutMs = 8000): Promise<string 
     port1.onmessage = onMessage;
     port1.onmessageerror = () => finish(null);
     try {
-      // The broker lives in this same window; restrict delivery to its own origin. Opaque origins
-      // (sandboxed frames) serialize to 'null', which postMessage rejects as a target.
-      const targetOrigin = window.location.origin === 'null' ? '*' : window.location.origin;
-      window.postMessage(request, targetOrigin, [port2]);
+      // The broker lives in this same window; '/' restricts delivery to the sender's own origin,
+      // including opaque origins (sandboxed frames), which have no serialized form to name.
+      window.postMessage(request, '/', [port2]);
     } catch {
       finish(null);
     }
