@@ -829,8 +829,11 @@
   "aboutLetterProduct": {
     "message": "Por eso creé Theater Mode Everywhere: un reproductor universal que, en mi humilde opinión, ofrece una forma cómoda de ver vídeo en cualquier lugar y puede manejar las funciones singulares y no estándar de muchos sitios web."
   },
+  "privacyPolicy": {
+    "message": "Política de privacidad"
+  },
   "aboutLetterFreeHtml": {
-    "message": "La extensión es gratuita y no envía a ningún sitio información sobre ti ni sobre lo que ves. Si algo no funciona bien, puedes avisar en <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
+    "message": "La extensión es gratuita y no envía información sobre ti ni sobre lo que ves al desarrollador ni a terceros ajenos a la reproducción. Los ajustes pueden sincronizarse mediante tu cuenta del navegador, y las funciones de reproducción pueden contactar directamente con el servicio que estás viendo. Si algo no funciona bien, puedes avisar en <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
   },
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere está disponible en <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> y <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Me alegraría que compartieras tu opinión sobre ella."

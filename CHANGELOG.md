@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated the privacy policy to explain browser settings sync and direct video-service requests, and linked it from Settings → About.
+
 - Settings footer uses a single row where space permits, with larger text and no divider above it.
 - Show the logo on its own, without the accent-colored square, in the popup and Settings header.
 - Update highlights carries the full 1.6 announcement in English, including SponsorBlock compatibility and system accessibility preferences, with localized dialog title and buttons. Its wider dialog has a close button, styled scrollbar and directional scroll shadows, with acknowledgements always visible. New feature badges in Settings (including Automatically enter theater mode, High contrast, Reduce transparency, Reduce motion and the Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix tiles) and Player settings, with one badge for the whole Audio section and a dot on the settings gear, highlight recent additions until you open Update highlights or turn off Highlight new features in Appearance; fresh installs start with the current update marked as seen.

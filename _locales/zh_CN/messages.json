@@ -829,8 +829,11 @@
   "aboutLetterProduct": {
     "message": "因此我创建了 Theater Mode Everywhere：在我看来，这是一款通用播放器，能在任何地方提供舒适的观看体验，并支持许多网站的非标准特色功能。"
   },
+  "privacyPolicy": {
+    "message": "隐私政策"
+  },
   "aboutLetterFreeHtml": {
-    "message": "该扩展免费，不会向任何地方发送关于你或你观看内容的任何信息。如果发现运行不正常，可以在 <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a> 上反馈。"
+    "message": "该扩展免费，不会向开发者或无关第三方发送关于你或你观看内容的任何信息。设置可以通过你的浏览器账号同步，播放功能可以直接联系你正在观看的服务。如果发现运行不正常，可以在 <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a> 上反馈。"
   },
   "aboutLetterStoresHtml": {
     "message": "Theater Mode Everywhere 已上架 <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>、<a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> 和 <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>。如果你愿意分享对它的看法，我会很高兴。"

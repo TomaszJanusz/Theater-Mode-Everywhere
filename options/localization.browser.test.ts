@@ -39,7 +39,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     } });
   };
   // tsx names nested callbacks with __name; keep that helper inside the fixture.
-  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: { pl: readCatalog('pl'), ar: readCatalog('ar') }, blacklist, url, release: WHATS_NEW_RELEASE.id })});` });
+  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: { en: readCatalog('en'), pl: readCatalog('pl'), ar: readCatalog('ar') }, blacklist, url, release: WHATS_NEW_RELEASE.id })});` });
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
@@ -105,6 +105,16 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         assert.equal(await accent.getAttribute('aria-checked'), 'true');
         assert.equal(await page.locator('#validation-msg').textContent(), catalog.invalidDomain.message);
         await assertLocalized(page, locale);
+      }
+      await page.locator('#tab-about').click();
+      const privacy = page.locator('#about a[data-i18n="privacyPolicy"]');
+      for (const locale of ['en', 'pl', 'ar']) {
+        await switchTo(page, locale);
+        assert.equal(await privacy.isVisible(), true);
+        assert.equal(await privacy.textContent(), readCatalog(locale).privacyPolicy.message);
+        assert.equal(await privacy.getAttribute('href'), 'https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/main/PRIVACY.md');
+        assert.equal(await privacy.getAttribute('target'), '_blank');
+        assert.equal(await privacy.getAttribute('rel'), 'noopener noreferrer');
       }
       await page.locator('#tab-features').click();
       // An expanded service description is covered too: its text must follow the language live.
