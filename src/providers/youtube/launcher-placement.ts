@@ -23,11 +23,16 @@ export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChan
         persistent: true,
         mount(button) {
           button.classList.add('ytp-button');
-          // YT's control class supplies color (normally white), including theme overrides.
+          // `.ytp-button` supplies the size; its colour is #eee, while native icons hard-code white, so set white here.
+          // The right cluster is a line-height:56px flex row with align-items:flex-end, so a centred flex box
+          // with an explicit 24px mark is the only layout that lands on the native centre line at any player size.
           // Assign, never replace cssText: the shared launcher already set its accent and fade tokens inline.
-          Object.assign(button.style, { background: 'transparent', border: '0', padding: '0', verticalAlign: 'top', cursor: 'pointer' });
+          Object.assign(button.style, {
+            display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#fff',
+            background: 'transparent', border: '0', padding: '0', verticalAlign: 'top', cursor: 'pointer'
+          });
           const svg = button.querySelector('svg');
-          if (svg) svg.style.cssText = 'width:24px;height:100%;display:block;margin:auto;fill:currentColor;pointer-events:none';
+          if (svg) svg.style.cssText = 'width:24px;height:24px;display:block;flex:none;fill:currentColor;pointer-events:none';
           before.before(button);
         }
       };
