@@ -222,12 +222,14 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
-    if (existing) {
-      existing.remove();
-    }
+    // A click previews its action before the command runs; the command then
+    // reports the same action and must not flash a second icon.
+    if (existing?.dataset.playbackAction === action && !existing.classList.contains('fade-out')) return;
+    existing?.remove();
 
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}`;
+    overlay.dataset.playbackAction = action;
     ctx.paintOverlay(overlay);
     overlay.setAttribute('aria-hidden', 'true');
 
@@ -261,6 +263,11 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
         overlay.remove();
       }, 200);
     }, 800);
+  }
+
+  /** Withdraws a previewed play/pause icon whose click was cancelled. */
+  function dismissPlaybackIndicator(): void {
+    ctx.queryPlayerUi('.theater-everywhere-volume-overlay[data-playback-action]')?.remove();
   }
 
   let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -550,6 +557,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     triggerVolumeIndicator,
     triggerStatusIndicator,
     triggerPlaybackIndicator,
+    dismissPlaybackIndicator,
     triggerCaptionHud,
     createPlayerHeader,
     syncContentTitle

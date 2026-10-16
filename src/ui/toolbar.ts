@@ -17,7 +17,7 @@ import { resolveChromeVisibility } from './controls-visibility';
 import { renderKbdText } from './kbd-text';
 import { closeMenuPopover } from './menu-popover';
 import { consumePictureDismiss } from './picture-dismiss';
-import { createPictureClickGate } from './picture-click';
+import { createPictureClickGate, type PictureClickGate } from './picture-click';
 import { closePlayerSettings } from './player-settings';
 import type { ExtendedHTMLDivElement } from './controls';
 import type { PlayerChromeContext } from './runtime-context';
@@ -393,13 +393,24 @@ export function createToolbar(ctx: PlayerChromeContext) {
 
   // Theater's picture: click plays/pauses, double-click toggles fullscreen
   // (theater stays active, so a second double-click returns to plain theater).
-  // The listeners exist only while a theater session owns a <video>.
-  const videoClicks = createPictureClickGate(
-    () => {
-      if (ctx.session.element?.tagName === 'VIDEO') ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
-    },
-    togglePictureFullscreen
-  );
+  // The listeners exist only while a theater session owns a <video>. The video
+  // and the WASM catcher share this wiring; toolbar buttons and shortcuts call
+  // executeCommand directly and never wait for the double-click window.
+  function createPictureGate(canToggle: () => boolean): PictureClickGate {
+    return createPictureClickGate({
+      commit: () => {
+        if (canToggle()) ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
+      },
+      fullscreen: togglePictureFullscreen,
+      preview: () => {
+        const action = canToggle() ? ctx.actions.nextPlaybackAction() : null;
+        if (action) ctx.actions.triggerPlaybackIndicator(action);
+      },
+      revoke: () => ctx.actions.dismissPlaybackIndicator()
+    });
+  }
+
+  const videoClicks = createPictureGate(() => ctx.session.element?.tagName === 'VIDEO');
 
   function preventDoubleToggle(e: Event): void {
     if (!ctx.session.element) return;
@@ -422,16 +433,14 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // otherwise leave shortcuts typing into a page field, chat or iframe.
     if (e.type === 'pointerdown') ctx.actions.focusTheaterPage();
 
-    if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO' && !consumePictureDismiss()) {
-      videoClicks.click();
+    if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO') {
+      if (consumePictureDismiss()) videoClicks.cancel();
+      else videoClicks.click();
     }
   }
 
   function bindWasmCatcher(catcher: HTMLElement): () => void {
-    const clicks = createPictureClickGate(
-      () => ctx.actions.executeCommand({ type: 'PLAY_PAUSE' }),
-      togglePictureFullscreen
-    );
+    const clicks = createPictureGate(() => true);
     const onClick = (event: MouseEvent) => {
       if (!isPrimaryPointerEvent(event)) return;
       event.preventDefault();

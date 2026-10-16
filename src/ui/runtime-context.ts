@@ -98,6 +98,9 @@ export type PlayerChromeActions = {
   triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: 'up' | 'down'): void;
   triggerStatusIndicator(text: string, icon: string): void;
   triggerPlaybackIndicator(action: 'play' | 'pause'): void;
+  dismissPlaybackIndicator(): void;
+  /** The action a PLAY_PAUSE command would perform now, or null without a playable surface. */
+  nextPlaybackAction(): 'play' | 'pause' | null;
   seekHostTime(video: PlaybackSurface, time: number): void;
   playlistNavigationAvailable(): PlaylistNavState;
   subscribePlaylistNavigation(listener: (state: PlaylistNavState) => void): () => void;

@@ -33,7 +33,7 @@ import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
-import { armPictureDismiss, armPictureDismissOnLeave, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
+import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { mountNativeChatControls, nativeChatState } from './chat';
@@ -893,7 +893,7 @@ export function createControls(
       const onPicture = eventPathIncludes(e, session.element) || eventPathMatches(e, '.theater-wasm-catcher');
       if (primary && (e.type === 'pointerdown' || e.type === 'mousedown')) {
         if (onPicture) {
-          if (playerChromeExpanded(wrapper)) armPictureDismiss();
+          beginPicturePress(playerChromeExpanded(wrapper));
         } else {
           clearPictureDismiss();
         }
@@ -920,6 +920,7 @@ export function createControls(
     window.addEventListener('keydown', clearDismissOnKey, true);
 
     const onWindowBlur = () => {
+      clearPictureDismiss();
       closeTheaterPopovers();
       updateCaptionDock();
     };

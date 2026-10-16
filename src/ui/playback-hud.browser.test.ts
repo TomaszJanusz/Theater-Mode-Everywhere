@@ -195,8 +195,9 @@ describe('playback HUD browser regressions', () => {
       assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
 
       await page.locator('video').click({ position: { x: 80, y: 80 } });
+      // The HUD previews the click's action before the double-click window ends.
       await waitForHud(page, 'Play');
-      assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), false);
+      await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
 
       await page.keyboard.press('k');
       await waitForHud(page, 'Pause');
@@ -255,6 +256,54 @@ describe('playback HUD browser regressions', () => {
         // A plain click waits out the double-click window before pausing.
         await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
         assert.equal(await paused(), true, 'a later video click still pauses');
+        assert.deepEqual(errors, []);
+      } finally {
+        await browser.close();
+      }
+    });
+
+    it(`keeps stale popover leaves from swallowing clicks and keeps double-click off playback in ${engine}`, async () => {
+      const browserType = (await import('playwright'))[engine];
+      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+      const browser = await browserType.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const errors: string[] = [];
+        page.on('pageerror', error => errors.push(error.message));
+        await page.route('http://playback-hud.test/**', route => route.fulfill({
+          contentType: 'text/html',
+          body: FIXTURE
+        }));
+        await page.goto('http://playback-hud.test/');
+        await boot(page);
+        const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
+
+        // A popover left earlier must not turn a later, unrelated click into a no-op.
+        await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
+        await page.waitForTimeout(1100);
+        await page.locator('video').click({ position: { x: 120, y: 80 } });
+        await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
+
+        // The HUD names the intended action as soon as the click lands.
+        await page.locator('video').click({ position: { x: 120, y: 80 } });
+        await waitForHud(page, 'Play');
+        await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
+
+        // A fast double-click is fullscreen only: no play/pause events, no leftover HUD.
+        await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot
+          ?.querySelector('.theater-everywhere-volume-overlay'));
+        await page.evaluate(() => {
+          const video = document.querySelector('video') as HTMLVideoElement;
+          const w = window as unknown as { playbackEvents: string[] };
+          w.playbackEvents = [];
+          video.addEventListener('pause', () => w.playbackEvents.push('pause'));
+          video.addEventListener('play', () => w.playbackEvents.push('play'));
+        });
+        await page.locator('video').dblclick({ position: { x: 120, y: 80 } });
+        await page.waitForTimeout(500);
+        assert.deepEqual(await page.evaluate(() => (window as unknown as { playbackEvents: string[] }).playbackEvents), []);
+        assert.equal(await paused(), false);
+        assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0, 'cancelled click leaves no HUD');
         assert.deepEqual(errors, []);
       } finally {
         await browser.close();
