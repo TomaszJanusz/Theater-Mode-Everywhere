@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings are split into tabs — Appearance, Features, Website Exclusions, Keyboard Shortcuts and About — instead of one long page. The open tab is kept in the address (for example `options.html#shortcuts`), so a reload or link returns to the same section. About carries a short note from the author, the logo and tagline, and the MIT license text.
 - Shortcut conflict validation in Settings: keep the existing assignment or move it to another action, leaving the previous action unassigned. Existing duplicate shortcuts are highlighted, and edits from several Settings tabs are saved in order.
 - Player settings gain an Audio section: Volume boost, Voice boost (light or strong dialogue enhancement), Reduce loud sounds and Bass, with shortcuts V, R, B and Shift+B. Audio is processed only while a setting is on. On protected (DRM) media, or when the server refuses cross-origin access, the section explains why audio settings are unavailable instead of listing dead rows.
-- Show installed SponsorBlock markers in the YouTube theater timeline with SponsorBlock’s colors, keep its notices visible, and enable or disable markers with SponsorBlock support in Settings → Features.
+- Show installed SponsorBlock markers in the YouTube theater timeline with SponsorBlock’s colors and an accent-contrasting border so segments remain distinct from played progress, keep its notices visible, and enable or disable markers with SponsorBlock support in Settings → Features.
 
 #### Rich Theater Experience integrations
 

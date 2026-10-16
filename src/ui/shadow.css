@@ -2842,6 +2842,10 @@ button.theater-time-end:hover {
 }
 
 .theater-scrubber-segment {
+  /* The shared accent foreground separates even an exact color match with played progress.
+     A border also survives forced colors, where box shadows are removed. */
+  box-sizing: border-box;
+  border: 1px solid var(--accent-text, #ffffff);
   position: absolute;
   top: 0;
   height: 100%;
