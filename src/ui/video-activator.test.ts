@@ -20,9 +20,9 @@ const viewport = { width: 1280, height: 720 };
 const inside = (box: Box, x: number, y: number) => x >= box.left && x <= box.left + box.width && y >= box.top && y <= box.top + box.height;
 
 describe('video activator settings', () => {
-  it('defaults on and only an explicit boolean changes it', () => {
-    assert.equal(DEFAULT_VIDEO_ACTIVATOR, true);
-    for (const value of [undefined, null, 'false', 0, 1, {}, []]) assert.equal(resolveVideoActivator(value), true);
+  it('defaults off and preserves explicit opt-in', () => {
+    assert.equal(DEFAULT_VIDEO_ACTIVATOR, false);
+    for (const value of [undefined, null, 'false', 'true', 0, 1, {}, []]) assert.equal(resolveVideoActivator(value), false);
     assert.equal(resolveVideoActivator(false), false);
     assert.equal(resolveVideoActivator(true), true);
   });

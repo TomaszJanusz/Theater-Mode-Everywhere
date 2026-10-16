@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "3秒間の通知を表示せず、再生の準備ができ次第シアターモードに切り替えます。"
   },
+  "videoActivatorPromptTitle": {
+    "message": "動画ランチャーを有効にしますか？"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater はオフになりました。動画に小さなボタンを表示して、手動でシアターモードに切り替えられるようにしますか？後から「設定 → 機能 → 動画ランチャー」で変更できます。"
+  },
   "videoActivatorTitle": {
     "message": "動画ランチャー"
   },

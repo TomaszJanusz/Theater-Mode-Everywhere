@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Sobald die Wiedergabe bereit ist, ohne den 3-sekündigen Hinweis in den Kinomodus wechseln."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Video-Schaltfläche aktivieren?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater ist jetzt ausgeschaltet. Möchtest du eine kleine Schaltfläche auf Videos anzeigen, um den Kinomodus manuell zu starten? Du kannst dies später unter Einstellungen → Funktionen → Video-Schaltfläche ändern."
+  },
   "videoActivatorTitle": {
     "message": "Video-Schaltfläche"
   },

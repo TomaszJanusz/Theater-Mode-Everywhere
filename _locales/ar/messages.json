@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "الدخول بمجرد أن يصبح التشغيل جاهزًا، دون إشعار مدته 3 ثوانٍ."
   },
+  "videoActivatorPromptTitle": {
+    "message": "هل تريد تفعيل الزر على الفيديو؟"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "تم إيقاف AutoTheater. هل تريد إظهار زر صغير على الفيديوهات للدخول إلى وضع السينما يدويًا؟ يمكنك تغيير ذلك لاحقًا من الإعدادات ← الميزات ← زر على الفيديو."
+  },
   "videoActivatorTitle": {
     "message": "زر على الفيديو"
   },

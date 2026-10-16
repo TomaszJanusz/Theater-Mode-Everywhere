@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Entrar en cuanto la reproducción esté lista, sin el aviso de 3 segundos."
   },
+  "videoActivatorPromptTitle": {
+    "message": "¿Activar el botón sobre el vídeo?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater está desactivado. ¿Quieres mostrar un pequeño botón sobre los vídeos para entrar en el modo cine manualmente? Puedes cambiarlo más tarde en Ajustes → Funciones → Botón sobre el vídeo."
+  },
   "videoActivatorTitle": {
     "message": "Botón sobre el vídeo"
   },

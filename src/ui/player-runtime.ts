@@ -1,3 +1,4 @@
+import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
@@ -84,6 +85,7 @@ import {
   unmountTheaterStage
 } from './theater-layout';
 import {
+  mountPlayerUi,
   getPlayerUiRoot,
   queryPlayerUi,
   queryPlayerUiAll,
@@ -1118,7 +1120,12 @@ function toggleAutoTheaterCommand(): void {
   syncAutoTheaterRuntime();
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
-      void chrome.storage.sync.set({ [AUTO_THEATER_STORAGE_KEY]: next }).catch(error => {
+      const player = refs.activeVideo;
+      const controls = queryPlayerUi('.theater-controls-wrapper');
+      void saveAutoTheaterEnabled(next, {
+        mount: overlay => { mountPlayerUi(overlay); },
+        isCurrent: () => refs.isInitialized && ui().theaterActive && refs.activeVideo === player && !!controls?.isConnected
+      }).catch(error => {
         console.error('[Theater Everywhere] Could not save automatic theater entry:', error);
       });
     }

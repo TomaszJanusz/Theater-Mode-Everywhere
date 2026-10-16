@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Включить режим кинотеатра, как только воспроизведение будет готово, без 3-секундного уведомления."
   },
+  "videoActivatorPromptTitle": {
+    "message": "Включить кнопку на видео?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater теперь выключен. Показывать на видео небольшую кнопку для ручного включения режима кинотеатра? Это можно изменить позже в Настройки → Функции → Кнопка на видео."
+  },
   "videoActivatorTitle": {
     "message": "Кнопка на видео"
   },

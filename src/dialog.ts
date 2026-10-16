@@ -1,12 +1,12 @@
 import { t } from './i18n';
 import { languageRuntime } from './i18n-runtime';
-import { createModal, type ModalAction, type ModalContent } from './ui/modal';
+import { createModal, type ModalAction, type ModalOptions, type ModalContent } from './ui/modal';
 
 export type DialogActionSet =
   | { type: 'acknowledge'; label?: string }
   | { type: 'choice'; trueLabel?: string; falseLabel?: string; initialFocus?: 'confirm' | 'cancel' };
 
-export interface OpenDialogOptions {
+export interface OpenDialogOptions extends Pick<ModalOptions, 'mount' | 'signal'> {
   title: string;
   content: string | Node;
   note?: Node;
@@ -29,6 +29,8 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
   const options = typeof source === 'function' ? source() : source;
   const modal = createModal({
     ...modalCopy(options),
+    mount: options.mount,
+    signal: options.signal,
     size: options.size,
     scrollable: options.scrollable,
     initialFocus: options.actions.type === 'choice' && options.actions.initialFocus === 'cancel' ? 0 : undefined,

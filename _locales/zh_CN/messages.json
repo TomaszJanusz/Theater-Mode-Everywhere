@@ -673,6 +673,12 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "播放就绪后立即进入影院模式，不显示 3 秒提示。"
   },
+  "videoActivatorPromptTitle": {
+    "message": "启用视频启动按钮？"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater 已关闭。是否在视频上显示一个小按钮，以便手动进入影院模式？你可以稍后在「设置 → 功能 → 视频启动按钮」中更改此选项。"
+  },
   "videoActivatorTitle": {
     "message": "视频启动按钮"
   },
