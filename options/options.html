@@ -228,10 +228,9 @@
           </div></div>
           <div class="card-body">
             <div class="rte-master-row">
-              <label class="rte-master"><input type="checkbox" id="rte-all" aria-describedby="rte-count"><span id="rte-all-label"></span></label>
-              <span id="rte-count" role="status" aria-atomic="true"></span>
+              <p id="rte-shown" role="status" aria-atomic="true"></p>
+              <label class="rte-master"><span id="rte-all-label"></span><input type="checkbox" id="rte-all"></label>
             </div>
-            <p id="rte-shown" role="status" aria-atomic="true"></p>
             <div id="rte-tiles" class="rte-tiles"></div>
             <p id="rte-empty" data-i18n="rteEmpty" hidden>No service has all the selected capabilities.</p>
             <p id="rte-error" role="alert" hidden></p>

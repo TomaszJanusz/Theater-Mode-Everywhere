@@ -86,15 +86,24 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     const description = document.createElement('div');
     const detailsTitle = document.createElement('h3');
     const detailsText = document.createElement('p');
-    description.append(detailsTitle, detailsText);
+    const content = document.createElement('div');
+    content.append(detailsTitle, detailsText);
+    description.append(content);
+    const region = document.createElement('div');
+    region.className = 'rte-details-region';
+    region.append(description);
     description.className = 'rte-details';
     description.id = `rte-details-${provider.id}`;
-    description.hidden = true;
+    description.inert = true;
+    description.setAttribute('aria-hidden', 'true');
     details.addEventListener('click', () => {
-      description.hidden = !description.hidden;
-      details.setAttribute('aria-expanded', String(!description.hidden));
+      const expanded = details.getAttribute('aria-expanded') !== 'true';
+      details.setAttribute('aria-expanded', String(expanded));
+      description.inert = !expanded;
+      description.setAttribute('aria-hidden', String(!expanded));
+      region.classList.toggle('is-expanded', expanded);
     }, { signal: events.signal });
-    tile.append(label, details, description);
+    tile.append(label, details, region);
     tiles.append(tile);
     inputs.set(provider.id, input);
     badges.set(provider.id, providerBadges);
@@ -121,7 +130,6 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     master.indeterminate = on > 0 && on < visible.length;
     master.disabled = !ready || visible.length === 0;
     document.getElementById('rte-all-label')!.textContent = t(selected.size ? 'rteAllShown' : 'rteAll');
-    document.getElementById('rte-count')!.textContent = t('rteCount', [String(on), String(visible.length)]);
     document.getElementById('rte-shown')!.textContent = t('rteShown', [String(visible.length), String(PROVIDER_CAPABILITIES.length)]);
     document.getElementById('rte-empty')!.hidden = visible.length !== 0;
     clear.hidden = selected.size === 0;
