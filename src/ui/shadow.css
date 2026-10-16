@@ -1724,7 +1724,8 @@ button.theater-time-end:hover {
   -webkit-box-orient: vertical !important;
 }
 
-.theater-button-tooltip kbd {
+.theater-button-tooltip kbd,
+.theater-auto-notice kbd {
   background-color: #27272a !important;
   border: 1px solid #3f3f46 !important;
   border-bottom: 2px solid #3f3f46 !important;
@@ -2334,6 +2335,24 @@ button.theater-time-end:hover {
   white-space: normal !important;
 }
 
+/* The automatic-entry notice is the one corner HUD that accepts a click. */
+.theater-everywhere-caption-hud.theater-auto-notice {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.theater-auto-notice .volume-hud-copy {
+  align-items: flex-start !important;
+  text-align: start !important;
+}
+
+.theater-auto-notice-hint {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: normal !important;
+}
+
 .caption-hud-spinner {
   width: 22px !important;
   height: 22px !important;
@@ -2341,6 +2360,12 @@ button.theater-time-end:hover {
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-auto-notice .caption-hud-spinner {
+    animation: none !important;
+  }
 }
 
 @keyframes volume-hud-zoom-in {

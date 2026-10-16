@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Netflix: theater rendering for trailers and previews, plus on watch pages the episode title, native subtitle selection and timeline previews. An existing RTE-off choice is kept.
 - Show contextual action buttons at the bottom right of the picture where the service offers them: Netflix, Disney+, Crunchyroll and Bilibili skip intro, credits, recap or up next, and YouTube forwards its ad skip. They follow the host player's availability and countdown, stay inside letterboxed, Raised and chat-narrowed pictures with the same edge inset as the subtitle notification, keep a gap when several appear, and each plays a brief accent sweep as it appears (none with reduced motion).
 - Enter theater automatically on Netflix and Disney+ watch pages, like the other Rich Theater Experience services.
+- A spinner in the page corner now announces automatic theater entry as soon as the player is known to qualify, even while its stream is still loading, and stays for at least 3 seconds before theater opens. Click it or press Esc to cancel; that video then stays as it is, and the next one announces again.
 
 ### Changed
 

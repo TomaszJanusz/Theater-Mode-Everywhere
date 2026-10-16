@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Attiva la modalità cinema quando il video principale inizia la riproduzione nelle pagine di visione dei servizi supportati con Rich Theater Experience attivo."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Attivazione della modalità cinema…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Fai clic o premi <kbd>$KEY$</kbd> per annullare",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Mostra sempre i controlli"
   },

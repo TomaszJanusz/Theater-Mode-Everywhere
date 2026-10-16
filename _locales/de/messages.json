@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Aktiviere den Kinomodus, wenn das Hauptvideo auf einer Wiedergabeseite eines unterstützten Dienstes bei aktiviertem Rich Theater Experience startet."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Kinomodus wird aktiviert…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Klicken oder <kbd>$KEY$</kbd> drücken zum Abbrechen",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Steuerelemente immer anzeigen"
   },

@@ -26,7 +26,7 @@ declare global {
       createAutoTheaterRuntime: typeof import('./auto-theater-runtime').createAutoTheaterRuntime;
       installWatchPlaybackQueries(): void;
     };
-    autoTheaterProbe: { entries: number; active: boolean };
+    autoTheaterProbe: { entries: number; active: boolean; shown: number; hidden: number; cancel?: () => void };
     autoTheaterRuntime: AutoTheaterRuntime;
     watchPageProbe: {
       entries: number; active: boolean; enabled: boolean; policyAllowed: boolean;
@@ -61,14 +61,15 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.addScriptTag({ content: BUNDLE });
       await page.evaluate(flags => {
         window.AutoTheaterTest.installWatchPlaybackQueries();
-        const probe: Window['autoTheaterProbe'] = { entries: 0, active: false };
+        const probe: Window['autoTheaterProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
         window.autoTheaterProbe = probe;
         window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
           visit: { current: { identity: null, entered: false } },
           enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
           editableFocused: () => false, theaterActive: () => probe.active,
           transitioning: () => false, findBestVideo: () => document.querySelector('video'),
-          enter: () => { probe.entries++; probe.active = true; }
+          enter: () => { probe.entries++; probe.active = true; },
+          showNotice: () => () => {}, minNoticeMs: 0
         });
       }, defaultMediaProviderFlags());
       await page.locator('video').evaluate((video: HTMLVideoElement) => video.play());
@@ -97,6 +98,78 @@ for (const engine of ['chromium', 'firefox'] as const) {
         document.querySelector('video')!.dispatchEvent(new Event('playing'));
       });
       assert.equal(await page.evaluate(() => window.autoTheaterProbe.entries), 1, 'exit and cleanup must prevent reentry');
+    } finally {
+      await browser.close();
+    }
+  });
+
+  it(`auto entry in ${engine} announces intent, waits out the minimum notice time, and cancels on request`, { timeout: 60_000 }, async t => {
+    const browserType = (await import('playwright'))[engine];
+    assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+    const browser = await browserType.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await page.addInitScript('window.__name = target => target;');
+      await page.route('https://www.youtube.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
+      }));
+      await page.goto('https://www.youtube.com/watch?v=abcdefghijk');
+      await page.evaluate(media => {
+        document.querySelector('video')!.src = media;
+        Object.assign(document.getElementById('movie_player')!, {
+          getVideoData: () => ({ video_id: new URL(location.href).searchParams.get('v') }),
+          getPlayerState: () => 3
+        });
+      }, MEDIA);
+      await page.waitForFunction(() => document.querySelector('video')!.readyState > 2);
+      await page.addScriptTag({ content: BUNDLE });
+      await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 60_000)); // Time moves only through runFor.
+      const start = (identity: string) => page.evaluate(flags => {
+        window.AutoTheaterTest.installWatchPlaybackQueries();
+        const probe: Window['autoTheaterProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
+        window.autoTheaterProbe = probe;
+        window.autoTheaterRuntime?.dispose();
+        window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+          visit: { current: { identity: null, entered: false } },
+          enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+          editableFocused: () => false, theaterActive: () => probe.active,
+          transitioning: () => false, findBestVideo: () => document.querySelector('video'),
+          enter: () => { probe.entries++; probe.active = true; },
+          showNotice: cancel => { probe.shown++; probe.cancel = cancel; return () => { probe.hidden++; }; }
+        });
+      }, defaultMediaProviderFlags()).then(() => identity);
+      const probe = () => page.evaluate(() => { const { entries, active, shown, hidden } = window.autoTheaterProbe; return { entries, active, shown, hidden }; });
+
+      await start('first');
+      await page.locator('video').evaluate((video: HTMLVideoElement) => video.play());
+      assert.deepEqual(await probe(), { entries: 0, active: false, shown: 1, hidden: 0 }, 'ready media is announced before entry');
+      await page.clock.runFor(2999);
+      assert.equal((await probe()).entries, 0);
+      await page.clock.runFor(1);
+      assert.deepEqual(await probe(), { entries: 1, active: true, shown: 1, hidden: 1 });
+
+      await page.evaluate(() => { history.replaceState({}, '', '/watch?v=lmnopqrstuv'); });
+      await start('second');
+      await page.evaluate(() => window.autoTheaterRuntime.refresh());
+      await page.clock.runFor(1000);
+      assert.equal(await page.evaluate(() => window.autoTheaterRuntime.cancelPending()), true);
+      await page.clock.runFor(10_000);
+      await page.evaluate(() => {
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+        window.autoTheaterRuntime.refresh();
+      });
+      await page.clock.runFor(10_000);
+      assert.deepEqual(await probe(), { entries: 0, active: false, shown: 1, hidden: 1 }, 'cancelling stops entry for the same media');
+
+      await page.evaluate(() => { history.replaceState({}, '', '/watch?v=zyxwvutsrqp'); });
+      await page.evaluate(() => document.dispatchEvent(new Event('yt-navigate-finish')));
+      await page.evaluate(() => window.autoTheaterRuntime.refresh());
+      assert.equal((await probe()).shown, 2, 'new content announces again');
+      await page.evaluate(() => window.autoTheaterRuntime.dispose());
+      await page.clock.runFor(10_000);
+      assert.deepEqual(await probe(), { entries: 0, active: false, shown: 2, hidden: 2 }, 'disposal removes the notice and entry');
     } finally {
       await browser.close();
     }
@@ -141,7 +214,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
             providerFlags: () => probe.flags, editableFocused: () => probe.editable,
             theaterActive: () => probe.active, transitioning: () => probe.transitioning,
             findBestVideo: () => document.getElementById(probe.candidateId) as HTMLVideoElement,
-            enter: () => { probe.entries++; probe.active = true; }
+            enter: () => { probe.entries++; probe.active = true; },
+          showNotice: () => () => {}, minNoticeMs: 0
           });
         }, { flags: defaultMediaProviderFlags(), first: fixture.first });
         await page.evaluate(async media => {

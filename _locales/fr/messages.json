@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Active le mode cinéma lorsque la vidéo principale démarre sur les pages de lecture des services pris en charge avec Rich Theater Experience activé."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Activation du mode cinéma…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Cliquez ou appuyez sur <kbd>$KEY$</kbd> pour annuler",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Toujours afficher les commandes"
   },

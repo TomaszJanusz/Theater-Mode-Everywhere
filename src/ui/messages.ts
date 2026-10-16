@@ -48,6 +48,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   extensionSettingsLabel: "Extension settings",
   autoEnterTheaterTitle: "Automatically enter theater mode",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
+  autoEnterNoticeTitle: "Entering theater mode…",
+  autoEnterNoticeHint: "Click or press <kbd>$1</kbd> to cancel",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
   videoFitLabel: "Video fit",

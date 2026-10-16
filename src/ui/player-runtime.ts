@@ -6,6 +6,7 @@ import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
 import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisit } from './auto-theater';
+import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -1071,7 +1072,8 @@ function syncAutoTheaterRuntime(): void {
     theaterActive: () => session.hasUi,
     transitioning: () => refs.isTransitioning,
     findBestVideo,
-    enter: enterTheaterMode
+    enter: enterTheaterMode,
+    showNotice: cancel => showAutoTheaterNotice(paintOverlay, cancel)
   });
 }
 
@@ -1384,6 +1386,15 @@ function initialize(): void {
     if (activeEl?.matches('.theater-scrubber-container')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
     if (theaterDialogOpen()) return false;
+
+    // The announced automatic entry is cancelled by Escape like by a click, and the
+    // key then belongs to the notice: it neither reaches the host nor exits anything.
+    if ((event.key === 'Escape' || event.key === 'Esc') && autoTheaterRuntime?.cancelPending()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return true;
+    }
 
     const shortcuts = ui().shortcuts || defaultShortcuts;
 

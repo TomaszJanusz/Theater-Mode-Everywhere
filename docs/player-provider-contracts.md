@@ -57,7 +57,9 @@ publications, and calls the regular theater entry path. YouTube observes only th
 main player's ad-state classes, since ad completion need not emit another playing
 event. The opt-in preference defaults off; a visit records entry so exiting or
 changing preferences cannot reenter the same content. New content identities reset
-that record. Automatic entry requires an enabled provider, an allowed domain, a
+that record. Entry is announced first: once every condition except finished loading holds
+(`ui/auto-theater-intent.ts`), a corner notice shows for at least 3 s from that moment, and
+entry waits for both that time and playback. Click or Escape cancels it and consumes the visit. Automatic entry requires an enabled provider, an allowed domain, a
 top-level document, active playback, no fullscreen and no focused editable field.
 
 YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>` and
