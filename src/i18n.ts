@@ -269,7 +269,6 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteSectionDescription: "Choose service integrations and explore what each adds to theater mode. Features depend on the video and the service.",
   rteAll: "All services",
   rteAllShown: "All shown services",
-  rteCount: "$1 of $2 on",
   rteFilterLabel: "Show services with",
   rteCapabilityTitle: "Titles",
   rteCapabilitySubtitles: "Subtitles",

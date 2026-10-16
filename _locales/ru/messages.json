@@ -922,17 +922,6 @@
   "rteAllShown": {
     "message": "Все показанные сервисы"
   },
-  "rteCount": {
-    "message": "Включено $count$ из $total$",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      },
-      "total": {
-        "content": "$2"
-      }
-    }
-  },
   "rteFilterLabel": {
     "message": "Показать сервисы с функциями"
   },
