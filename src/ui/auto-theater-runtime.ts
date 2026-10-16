@@ -1,7 +1,7 @@
 import { DisposableScope } from '../core/disposable-scope';
 import type { MediaProviderFlags } from '../media-features/provider-flags';
 import { observeProviderMediaChanges } from '../providers/media-events';
-import { confirmProviderWatchVideo, readProviderWatchPage } from '../providers/watch-playback';
+import { confirmProviderWatchVideo, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
 import { shouldAutoEnterTheater, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
@@ -75,8 +75,8 @@ export function createAutoTheaterRuntime(options: {
     const video = options.findBestVideo();
     if (video !== observedVideo) {
       stopObserving?.();
-      observedVideo = video;
-      stopObserving = video ? page.playback.observe?.(video, refresh) : undefined;
+      stopObserving = video ? page.playback.observe?.(video, refresh) ?? undefined : undefined;
+      observedVideo = stopObserving ? video : null;
     }
     if (!video) {
       intent.update(null);
@@ -107,9 +107,13 @@ export function createAutoTheaterRuntime(options: {
   scope.listen(document, 'play', refresh, true);
   scope.listen(document, 'playing', refresh, true);
   scope.listen(document, 'loadeddata', refresh, true);
+  scope.listen(document, 'fullscreenchange', refresh);
+  // Focus can move to another editable field; wait for activeElement to settle.
+  scope.listen(document, 'focusout', () => { scope.timeout(refresh, 0); }, true);
   scope.listen(window, 'popstate', refresh);
   scope.listen(window, 'hashchange', refresh);
   scope.add(observeProviderMediaChanges(refresh));
+  scope.add(observeProviderWatchPlaybackChanges(refresh));
   refresh(); // Playback may already be underway when storage hydration completes.
   return { refresh, cancelPending, dispose: () => scope.dispose() };
 }

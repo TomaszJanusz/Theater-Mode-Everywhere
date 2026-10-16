@@ -31,7 +31,7 @@ declare global {
     watchPageProbe: {
       entries: number; active: boolean; enabled: boolean; policyAllowed: boolean;
       editable: boolean; transitioning: boolean; flags: MediaProviderFlags;
-      candidateId: string; nativeId: string;
+      candidateId: string; nativeId: string; focusChecks?: number;
     };
   }
 }
@@ -174,6 +174,125 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await browser.close();
     }
   });
+
+  for (const scenario of ['yt-player-updated', 'yt-page-data-updated', 'focus', 'fullscreen', 'transition', 'miniplayer', 'observe retry', 'observe player'] as const) {
+    it(`YouTube auto entry in ${engine} re-evaluates ${scenario} without another playing event`, { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await page.addInitScript('window.__name = target => target;');
+        await page.route('https://www.youtube.com/**', route => route.fulfill({
+          contentType: 'text/html', body: '<input id="search"><input id="comment"><ytd-miniplayer></ytd-miniplayer><ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
+        }));
+        await page.goto('https://www.youtube.com/watch?v=abcdefghijk');
+        await page.addScriptTag({ content: BUNDLE });
+        await page.evaluate(({ flags, scenario }) => {
+          window.AutoTheaterTest.installWatchPlaybackQueries();
+          const probe: Window['watchPageProbe'] = {
+            entries: 0, active: false, enabled: true, policyAllowed: true,
+            editable: false, transitioning: scenario === 'transition', flags,
+            candidateId: '', nativeId: 'abcdefghijk'
+          };
+          window.watchPageProbe = probe;
+          const player = document.getElementById('movie_player')!;
+          Object.assign(player, { getVideoData: () => ({ video_id: probe.nativeId }) });
+          if (scenario.startsWith('yt-')) {
+            history.pushState({}, '', '/watch?v=lmnopqrstuv');
+          } else if (scenario === 'focus') {
+            document.getElementById('search')!.focus();
+          } else if (scenario === 'fullscreen') {
+            Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => player });
+          } else if (scenario === 'miniplayer') {
+            history.pushState({}, '', '/');
+            document.querySelector('ytd-miniplayer')!.append(player);
+          } else if (scenario === 'observe retry') {
+            player.id = 'pending-player';
+            player.classList.add('ad-showing');
+          } else if (scenario === 'observe player') {
+            // The candidate exists before the stable player adopts it.
+            document.querySelector('ytd-watch-flexy')!.append(document.querySelector('video')!);
+            player.classList.add('ad-showing');
+          }
+          window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+            visit: { current: { identity: null, entered: false } },
+            enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+            editableFocused: () => {
+              probe.focusChecks = (probe.focusChecks ?? 0) + 1;
+              return document.activeElement instanceof HTMLInputElement;
+            },
+            theaterActive: () => probe.active, transitioning: () => probe.transitioning,
+            findBestVideo: () => document.querySelector('video'),
+            enter: () => { probe.entries++; probe.active = true; }
+          });
+        }, { flags: defaultMediaProviderFlags(), scenario });
+        await page.locator('video').evaluate(async (video: HTMLVideoElement, media) => {
+          video.src = media;
+          await video.play();
+        }, MEDIA);
+        await page.waitForFunction(() => {
+          const video = document.querySelector('video')!;
+          return !video.paused && video.readyState > 2;
+        });
+        assert.equal(await page.evaluate(() => window.watchPageProbe.entries), 0, 'initial gate must block entry');
+        if (scenario === 'focus') {
+          const checks = await page.evaluate(() => window.watchPageProbe.focusChecks ?? 0);
+          await page.locator('#comment').focus();
+          await page.waitForFunction(checks => (window.watchPageProbe.focusChecks ?? 0) > checks, checks);
+          assert.equal(await page.evaluate(() => window.watchPageProbe.entries), 0, 'moving between editable fields stays blocked');
+        }
+        await page.evaluate(scenario => {
+          const player = document.querySelector('ytd-watch-flexy div, ytd-miniplayer div')!;
+          if (scenario.startsWith('yt-')) {
+            window.watchPageProbe.nativeId = 'lmnopqrstuv';
+            document.dispatchEvent(new Event(scenario));
+          } else if (scenario === 'focus') {
+            (document.activeElement as HTMLElement).blur();
+          } else if (scenario === 'fullscreen') {
+            Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => null });
+            document.dispatchEvent(new Event('fullscreenchange'));
+          } else if (scenario === 'transition') {
+            window.watchPageProbe.transitioning = false;
+            // player-runtime calls refresh when its existing transition timer ends.
+            window.autoTheaterRuntime.refresh();
+          } else if (scenario === 'miniplayer') {
+            history.pushState({}, '', '/watch?v=abcdefghijk');
+            document.dispatchEvent(new Event('yt-navigate-finish'));
+            document.querySelector('ytd-watch-flexy')!.append(player);
+            document.dispatchEvent(new Event('yt-page-data-updated'));
+          } else {
+            player.id = 'movie_player';
+            if (scenario === 'observe retry') document.dispatchEvent(new Event('yt-player-updated'));
+            player.append(document.querySelector('video')!);
+            player.classList.remove('ad-showing');
+          }
+        }, scenario);
+        await page.waitForFunction(() => window.watchPageProbe.entries === 1);
+        await page.evaluate(() => {
+          const trigger = () => {
+            for (const name of ['yt-player-updated', 'yt-page-data-updated', 'yt-navigate-finish', 'fullscreenchange', 'focusout']) {
+              document.dispatchEvent(new Event(name));
+            }
+            document.querySelector('video')!.dispatchEvent(new Event('playing'));
+          };
+          trigger();
+          window.watchPageProbe.active = false;
+          trigger();
+          // Queue a focus callback before disposal, then change the visit.
+          window.autoTheaterRuntime.dispose();
+          window.autoTheaterRuntime.dispose();
+          history.pushState({}, '', '/watch?v=zyxwvutsrqp');
+          window.watchPageProbe.nativeId = 'zyxwvutsrqp';
+          trigger();
+          window.autoTheaterRuntime.refresh();
+        });
+        assert.equal(await page.evaluate(() => window.watchPageProbe.entries), 1, 'repeated triggers, exit and disposal must not reenter');
+      } finally {
+        await browser.close();
+      }
+    });
+  }
 
   for (const fixture of [
     {
