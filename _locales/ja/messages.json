@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "3秒間の通知を表示せず、再生の準備ができ次第シアターモードに切り替えます。"
   },
+  "videoActivatorTitle": {
+    "message": "動画ランチャー"
+  },
+  "videoActivatorDescription": {
+    "message": "動画にカーソルを合わせると、空いている隅に小さなボタンを表示します。クリックするとシアターモードに切り替わります。"
+  },
+  "videoActivatorLabel": {
+    "message": "シアターモードに切り替える"
+  },
   "autoEnterTheaterOn": {
     "message": "オン"
   },

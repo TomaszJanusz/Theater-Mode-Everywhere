@@ -53,6 +53,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   accessibilityTitle: "Accessibility",
   autoTheaterSkipCountdownTitle: "Skip countdown",
   autoTheaterSkipCountdownDescription: "Enter as soon as playback is ready, without the 3-second notice.",
+  videoActivatorTitle: "Video launcher",
+  videoActivatorDescription: "Show a small button in a free corner of a video when you point at it. Click it to enter theater mode.",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",

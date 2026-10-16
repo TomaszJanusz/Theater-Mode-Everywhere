@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Sobald die Wiedergabe bereit ist, ohne den 3-sekündigen Hinweis in den Kinomodus wechseln."
   },
+  "videoActivatorTitle": {
+    "message": "Video-Schaltfläche"
+  },
+  "videoActivatorDescription": {
+    "message": "Zeigt eine kleine Schaltfläche in einer freien Ecke des Videos, wenn du mit dem Mauszeiger darauf zeigst. Ein Klick darauf startet den Kinomodus."
+  },
+  "videoActivatorLabel": {
+    "message": "Kinomodus aktivieren"
+  },
   "autoEnterTheaterOn": {
     "message": "Ein"
   },

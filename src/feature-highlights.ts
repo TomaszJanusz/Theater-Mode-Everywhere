@@ -11,6 +11,7 @@ export const NEW_FEATURE_ITEMS = [
   { id: 'settingsPictureLayout', since: '2.0' },
   { id: 'settingsAlwaysShowControls', since: '2.0' },
   { id: 'settingsAutoEnterTheater', since: '2.0' },
+  { id: 'settingsVideoActivator', since: '2.0' },
   { id: 'settingsHighContrast', since: '2.0' },
   { id: 'settingsReduceTransparency', since: '2.0' },
   { id: 'settingsReduceMotion', since: '2.0' },

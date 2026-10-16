@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Увімкнути режим кінотеатру, щойно відтворення буде готове, без 3-секундного сповіщення."
   },
+  "videoActivatorTitle": {
+    "message": "Кнопка на відео"
+  },
+  "videoActivatorDescription": {
+    "message": "Показувати невелику кнопку у вільному куті відео під час наведення курсора. Натисніть її, щоб увімкнути режим кінотеатру."
+  },
+  "videoActivatorLabel": {
+    "message": "Увімкнути режим кінотеатру"
+  },
   "autoEnterTheaterOn": {
     "message": "Увімк."
   },

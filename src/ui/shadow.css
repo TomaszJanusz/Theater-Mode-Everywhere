@@ -2340,9 +2340,64 @@ button.theater-time-end:hover {
   pointer-events: auto !important;
   cursor: pointer !important;
   /* The accent frame replaces the hairline outline; the padding keeps the content box unchanged. */
-  border: 4px solid var(--accent-color, #6366f1) !important;
+  border: 2px solid var(--accent-color, #6366f1) !important;
   outline: none !important;
-  padding: 7px 15px !important;
+  padding: 9px 17px !important;
+  /* A notice about a pending action must stay legible over any picture: opaque in every appearance. */
+  background: var(--appearance-normal-panel) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.theater-everywhere-caption-hud.theater-auto-notice::before {
+  content: none !important;
+}
+
+/* Launcher over the hovered video. Solid in every appearance, so Reduce transparency changes nothing;
+   Reduce motion collapses the entrance through the shared token rule. */
+.theater-video-activator {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  box-sizing: border-box !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.28)) !important;
+  border-radius: 12px !important;
+  background: var(--appearance-normal-panel) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  animation: theater-video-activator-in 0.16s cubic-bezier(0.25, 1, 0.5, 1) both !important;
+}
+
+.theater-video-activator:hover {
+  background: var(--appearance-hover, #27272a) !important;
+}
+
+.theater-video-activator:focus-visible {
+  outline: 3px solid var(--appearance-high-text, #ffffff) !important;
+  outline-offset: 2px !important;
+}
+
+:host([data-contrast="high"]) .theater-video-activator {
+  border: 2px solid var(--appearance-high-border) !important;
+}
+
+.theater-video-activator svg {
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  pointer-events: none !important;
+}
+
+@keyframes theater-video-activator-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .theater-auto-notice .volume-hud-copy {

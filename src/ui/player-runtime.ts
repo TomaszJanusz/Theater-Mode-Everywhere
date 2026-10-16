@@ -7,6 +7,8 @@ import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, type AutoTheaterVisit } from './auto-theater';
 import { showAutoTheaterNotice } from './auto-theater-notice';
+import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
+import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -1039,6 +1041,7 @@ function refreshExtensionAccentColor(): void {
     '.theater-everywhere-seek-overlay',
     '.theater-everywhere-volume-overlay',
     '.theater-everywhere-caption-hud',
+    `.${VIDEO_ACTIVATOR_CLASS}`,
     '.te-dialog-overlay'
   ].join(',');
   for (const el of [
@@ -1076,6 +1079,29 @@ function syncAutoTheaterRuntime(): void {
     findBestVideo,
     enter: enterTheaterMode,
     showNotice: cancel => showAutoTheaterNotice(paintOverlay, cancel)
+  });
+}
+
+let videoActivator: VideoActivator | null = null;
+
+/** Armed only where the toggle shortcut would work and nothing of ours is on screen. */
+function syncVideoActivator(): void {
+  const armed = refs.isInitialized && ui().videoActivator && autoTheaterPolicyAllowed
+    && !ui().theaterActive && !isProviderPlaybackFrameDocument();
+  if (!armed) {
+    videoActivator?.dispose();
+    videoActivator = null;
+    return;
+  }
+  videoActivator ??= createVideoActivator({
+    label: () => t('videoActivatorLabel'),
+    paint: paintOverlay,
+    activate: video => {
+      // Same state the pointer path leaves behind, then the shortcut's own entry.
+      pendingVideoPointer = null;
+      refs.activeVideo = video;
+      toggleTheaterMode();
+    }
   });
 }
 
@@ -1124,6 +1150,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
       AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
+      VIDEO_ACTIVATOR_STORAGE_KEY,
       SPONSORBLOCK_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
@@ -1153,6 +1180,7 @@ async function checkBlacklistAndInit(): Promise<void> {
             : ui().featureHighlights.enabled },
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(data[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY]),
+        videoActivator: resolveVideoActivator(data[VIDEO_ACTIVATOR_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
@@ -1190,6 +1218,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       }
     }
     syncAutoTheaterRuntime();
+    syncVideoActivator();
     refreshExtensionAccentColor();
   } catch (err) {
     if (epoch !== settingsLoadEpoch) return;
@@ -1338,6 +1367,8 @@ function initialize(): void {
   session.runtimeScope.add(() => {
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
+    videoActivator?.dispose();
+    videoActivator = null;
     pendingVideoPointer = null;
     refs.activeVideo = null;
   });
@@ -1356,6 +1387,7 @@ function initialize(): void {
     }
   };
   session.runtimeScope.add(uiStore.subscribe(publishEntryShortcuts));
+  session.runtimeScope.add(uiStore.subscribe(syncVideoActivator));
   publishEntryShortcuts();
 
   // 1. Keyboard Listener (T and Escape)
@@ -1805,6 +1837,7 @@ function initialize(): void {
 
   refs.isInitialized = true;
   syncAutoTheaterRuntime();
+  syncVideoActivator();
 }
 
 // Cleanup and remove listeners
@@ -2377,6 +2410,10 @@ export function bootstrapPlayerRuntime(): void {
         uiStore.dispatch({ type: 'HYDRATE', value: {
           autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY].newValue)
         } });
+      }
+
+      if (changes[VIDEO_ACTIVATOR_STORAGE_KEY]) {
+        uiStore.dispatch({ type: 'HYDRATE', value: { videoActivator: resolveVideoActivator(changes[VIDEO_ACTIVATOR_STORAGE_KEY].newValue) } });
       }
 
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {

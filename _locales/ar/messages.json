@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "الدخول بمجرد أن يصبح التشغيل جاهزًا، دون إشعار مدته 3 ثوانٍ."
   },
+  "videoActivatorTitle": {
+    "message": "زر على الفيديو"
+  },
+  "videoActivatorDescription": {
+    "message": "يعرض زرًا صغيرًا في زاوية فارغة من الفيديو عند تمرير المؤشر عليه. انقر عليه لتفعيل وضع المسرح."
+  },
+  "videoActivatorLabel": {
+    "message": "تفعيل وضع المسرح"
+  },
   "autoEnterTheaterOn": {
     "message": "تشغيل"
   },

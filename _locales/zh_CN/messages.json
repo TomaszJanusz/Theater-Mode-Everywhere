@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "播放就绪后立即进入影院模式，不显示 3 秒提示。"
   },
+  "videoActivatorTitle": {
+    "message": "视频启动按钮"
+  },
+  "videoActivatorDescription": {
+    "message": "将指针移到视频上时，在空闲角落显示一个小按钮。点击即可进入剧场模式。"
+  },
+  "videoActivatorLabel": {
+    "message": "进入剧场模式"
+  },
   "autoEnterTheaterOn": {
     "message": "开启"
   },

@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Włącz tryb kinowy, gdy odtwarzanie będzie gotowe, bez 3-sekundowego powiadomienia."
   },
+  "videoActivatorTitle": {
+    "message": "Przycisk na wideo"
+  },
+  "videoActivatorDescription": {
+    "message": "Pokazuj mały przycisk w wolnym rogu wideo, gdy najedziesz na nie kursorem. Kliknij go, aby włączyć tryb kinowy."
+  },
+  "videoActivatorLabel": {
+    "message": "Włącz tryb kinowy"
+  },
   "autoEnterTheaterOn": {
     "message": "Wł."
   },
