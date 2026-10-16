@@ -73,11 +73,11 @@ describe('video activator placement', () => {
     const [x, y] = samplePoints(spotBox(video, 'top-right'))[8];
     assert.equal(chooseActivatorSpot(video, viewport, (px, py) => !(px === x && py === y))?.spot, 'top-left');
   });
-  it('returns nothing when no corner is free, rather than covering page UI', () => {
+  it('returns nothing when no position is free, rather than covering page UI', () => {
     assert.equal(chooseActivatorSpot(video, viewport, () => false), null);
   });
   it('skips the bottom row above a native control bar', () => {
-    const top = [spotBox(video, 'top-right'), spotBox(video, 'top-left')];
+    const top = [spotBox(video, 'top-right'), spotBox(video, 'top-left'), spotBox(video, 'top-center')];
     const freeBottomOnly = (x: number, y: number) => !top.some(box => inside(box, x, y));
     assert.equal(chooseActivatorSpot(video, viewport, freeBottomOnly)?.spot, 'bottom-right');
     assert.equal(chooseActivatorSpot(video, viewport, freeBottomOnly, { bottomBlocked: true }), null);
