@@ -2324,6 +2324,27 @@ button.theater-time-end:hover {
   white-space: normal !important;
 }
 
+/* Seconds until entry, centered in the notice's spinner. The shared time display supplies the digit roll. */
+.theater-auto-notice .volume-hud-icon {
+  position: relative !important;
+}
+
+.theater-auto-notice .caption-hud-spinner {
+  width: 28px !important;
+  height: 28px !important;
+  box-sizing: border-box !important;
+}
+
+.theater-auto-notice-count {
+  position: absolute !important;
+  inset: 0 !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
+  pointer-events: none !important;
+}
+
 .caption-hud-spinner {
   width: 22px !important;
   height: 22px !important;

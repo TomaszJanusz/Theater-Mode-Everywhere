@@ -1,6 +1,17 @@
 /** An announced automatic entry stays visible this long before theater opens. */
 export const AUTO_ENTER_NOTICE_MIN_MS = 3000;
 
+/** Whole seconds shown on the notice: rounded up, and never below 1 while entry is still pending. */
+export function noticeSecondsRemaining(remainingMs: number): number {
+  return Math.max(1, Math.ceil(Math.max(0, remainingMs) / 1000));
+}
+
+/** Time until the displayed seconds next change, or null once the last second is showing. */
+export function msUntilNoticeSecondChanges(remainingMs: number): number | null {
+  const seconds = noticeSecondsRemaining(remainingMs);
+  return seconds <= 1 ? null : remainingMs - (seconds - 1) * 1000;
+}
+
 export type AutoEnterTarget<K> = {
   /** Identity of the thing being entered (the video); a different key restarts the notice. */
   key: K;
@@ -26,12 +37,15 @@ export type AutoEnterIntent<K> = {
  */
 export function createAutoEnterIntent<K>(options: {
   minVisibleMs: number;
-  show(): void;
+  /** `remainingMs` reads the notice's remaining minimum time from the same clock as the timer. */
+  show(remainingMs: () => number): void;
   hide(): void;
   recheck(): void;
+  now?: () => number;
   setTimer?: (callback: () => void, ms: number) => unknown;
   clearTimer?: (handle: unknown) => void;
 }): AutoEnterIntent<K> {
+  const now = options.now ?? (() => performance.now());
   const setTimer = options.setTimer ?? ((callback, ms) => setTimeout(callback, ms));
   const clearTimer = options.clearTimer ?? ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
   let pending: { key: K; elapsed: boolean; timer: unknown } | null = null;
@@ -52,6 +66,7 @@ export function createAutoEnterIntent<K>(options: {
       }
       if (pending && !Object.is(pending.key, target.key)) stop();
       if (!pending) {
+        const deadline = now() + options.minVisibleMs;
         const state = { key: target.key, elapsed: false, timer: undefined as unknown };
         pending = state;
         state.timer = setTimer(() => {
@@ -59,7 +74,7 @@ export function createAutoEnterIntent<K>(options: {
           state.elapsed = true;
           options.recheck();
         }, options.minVisibleMs);
-        options.show();
+        options.show(() => Math.max(0, deadline - now()));
       }
       if (!target.ready || !pending.elapsed) return false;
       stop();

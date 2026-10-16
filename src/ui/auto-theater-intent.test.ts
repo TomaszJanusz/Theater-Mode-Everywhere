@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
+import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent, msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
 
 function harness() {
   let now = 0;
@@ -96,4 +96,34 @@ it('rejects stale intent: lost eligibility, replaced media and disposal', () => 
   advance(AUTO_ENTER_NOTICE_MIN_MS);
   assert.equal(log.at(-1), 'hide');
   assert.equal(log.filter(entry => entry === 'show').length, log.filter(entry => entry === 'hide').length);
+});
+
+it('rounds the notice countdown up and holds the last second until entry', () => {
+  assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 3);
+  assert.equal(noticeSecondsRemaining(2001), 3);
+  assert.equal(noticeSecondsRemaining(2000), 2);
+  assert.equal(noticeSecondsRemaining(1), 1);
+  assert.equal(noticeSecondsRemaining(0), 1, 'waiting for playback keeps showing 1');
+  assert.equal(noticeSecondsRemaining(-50), 1);
+  assert.equal(msUntilNoticeSecondChanges(3000), 1000);
+  assert.equal(msUntilNoticeSecondChanges(2500), 500);
+  assert.equal(msUntilNoticeSecondChanges(2000), 1000);
+  assert.equal(msUntilNoticeSecondChanges(1000), null);
+  assert.equal(msUntilNoticeSecondChanges(0), null);
+});
+
+it('hands the notice a remaining time read from the intent clock', () => {
+  let now = 100;
+  let remaining: (() => number) | undefined;
+  const intent = createAutoEnterIntent<object>({
+    minVisibleMs: 3000, now: () => now,
+    show: read => { remaining = read; }, hide: () => {}, recheck: () => {},
+    setTimer: () => 0, clearTimer: () => {}
+  });
+  intent.update({ key: {}, ready: false });
+  assert.equal(remaining!(), 3000);
+  now += 1250;
+  assert.equal(remaining!(), 1750);
+  now += 5000;
+  assert.equal(remaining!(), 0);
 });
