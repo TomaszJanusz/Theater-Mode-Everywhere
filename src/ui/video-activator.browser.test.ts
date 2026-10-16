@@ -23,7 +23,7 @@ declare global {
     ActivatorTest: {
       bootstrapPlayerRuntime(): void;
       setPlayerUiCss(css: string): void;
-      showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void): () => void;
+      showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number): () => void;
     };
     storageListeners: Array<(changes: Record<string, { newValue?: unknown }>, area: string) => void>;
     pointeroverListeners: number;
@@ -201,7 +201,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     // Pointing at the extension's own interface hides it instead of re-evaluating the video beneath.
     await page.evaluate(() => {
-      const hud = window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {});
+      const hud = window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000);
       (window as unknown as { hideNotice: () => void }).hideNotice = hud;
     });
     const notice = page.locator('#theater-everywhere-ui .theater-auto-notice');
@@ -536,7 +536,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
 
   it(`${engine}: the entry notice is opaque with a thinner border`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
-    await page.evaluate(() => { window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {}); });
+    await page.evaluate(() => { window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); });
     const style = await page.evaluate(() => {
       const notice = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice')!;
       const css = getComputedStyle(notice);

@@ -25,7 +25,7 @@ export function createAutoTheaterRuntime(options: {
   findBestVideo(): HTMLVideoElement | null;
   enter(video: HTMLVideoElement): void;
   /** Shows the entry notice and returns its cleanup. */
-  showNotice(cancel: () => void): () => void;
+  showNotice(cancel: () => void, remainingMs: () => number): () => void;
   minNoticeMs?: number;
   skipCountdown?(): boolean;
 }): AutoTheaterRuntime {
@@ -41,7 +41,7 @@ export function createAutoTheaterRuntime(options: {
   let hideNotice: (() => void) | undefined;
   const intent = createAutoEnterIntent<HTMLVideoElement>({
     minVisibleMs: options.minNoticeMs ?? AUTO_ENTER_NOTICE_MIN_MS,
-    show: () => { hideNotice = options.showNotice(cancelPending); },
+    show: remainingMs => { hideNotice = options.showNotice(cancelPending, remainingMs); },
     hide: () => { hideNotice?.(); hideNotice = undefined; },
     recheck: () => refresh()
   });

@@ -1085,7 +1085,7 @@ function syncAutoTheaterRuntime(): void {
     transitioning: () => refs.isTransitioning,
     findBestVideo,
     enter: enterTheaterMode,
-    showNotice: cancel => showAutoTheaterNotice(paintOverlay, cancel)
+    showNotice: (cancel, remainingMs) => showAutoTheaterNotice(paintOverlay, cancel, remainingMs)
   });
 }
 
