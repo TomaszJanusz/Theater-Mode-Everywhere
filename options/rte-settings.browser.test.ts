@@ -6,6 +6,7 @@ import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
 import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
+import { brightestStop, hexRgb, luminance, over } from './rte-colors';
 import { LANGUAGES } from '../src/language';
 
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
@@ -274,6 +275,47 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(high.text, 'rgb(255, 255, 255)');
       assert.equal(high.background, 'rgb(24, 24, 27)');
 
+    } finally { await browser.close(); }
+  });
+
+  it('distinguishes notes and keeps contrast over every brightest hover stop in appearance modes', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page);
+      const veil = Number(/--te-veil:\s*(\d+)%/.exec(css)![1]) / 100;
+      const contrast = (a: number[], b: number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+      for (const mode of [{}, { reduceMotion: 'on' }, { reduceTransparency: 'on' }, { highContrast: 'on' }]) {
+        await page.evaluate(mode => (window as unknown as Harness).external({ reduceMotion: 'off', reduceTransparency: 'off', highContrast: 'off', ...mode }), mode);
+        for (const enabled of [true, false]) {
+          await page.locator('.rte-tile input').evaluateAll((inputs, checked) => inputs.forEach(input => { (input as HTMLInputElement).checked = checked; }), enabled);
+          for (const hovered of [false, true]) {
+            const provider = PROVIDER_CAPABILITIES[0];
+            const tile = page.locator(`[data-provider="${provider.id}"]`);
+            await page.mouse.move(0, 0);
+            if (hovered) await tile.hover();
+            const colors = await tile.evaluate(el => {
+              const rgb = (element: Element) => {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d')!;
+                context.fillStyle = getComputedStyle(element).color;
+                context.fillRect(0, 0, 1, 1);
+                return Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
+              };
+              return { note: rgb(el.querySelector('.rte-note')!), title: rgb(el.querySelector('.rte-name')!), badges: Array.from(el.querySelectorAll('.rte-badge')).map(rgb) };
+            });
+            assert.notDeepEqual(colors.note, colors.title, provider.id + ': note differs from title');
+            for (const badge of colors.badges) assert.notDeepEqual(colors.note, badge, provider.id + ': note differs from badges');
+            const base = hexRgb('#09090b');
+            // Full-strength decoration bounds disabled tiles too; high contrast removes it.
+            for (const palette of PROVIDER_CAPABILITIES) {
+              const surface = hovered && !('highContrast' in mode) ? over(base, veil, brightestStop(palette.brandColors)) : base;
+              assert.ok(contrast(colors.note, surface) >= 4.5, palette.id + ': note contrast');
+            }
+          }
+        }
+      }
     } finally { await browser.close(); }
   });
 
