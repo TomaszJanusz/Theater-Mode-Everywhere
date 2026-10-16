@@ -90,7 +90,11 @@ for (const engine of ['chromium', 'firefox'] as const) for (const dir of ['ltr',
     // Hover reveals the whole title on wrapped lines, without motion.
     await hud.hover();
     assert.equal(await style(hud, '.theater-title-hud-smart', 'display'), 'none');
-    assert.ok((await hud.boundingBox())!.height > restHeight * 1.4, 'wrapped onto more lines');
+    // Poll the settled layout: the wrapped height lands a frame after :hover applies.
+    await page.waitForFunction(rest => {
+      const title = document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-title-hud')!;
+      return title.getBoundingClientRect().height > rest * 1.4;
+    }, restHeight, { timeout: 5000 });
     assert.equal(await style(hud, '.theater-title-hud-text-clone', 'display'), 'none', 'the scroll clone never shows twice');
     await page.mouse.move(5, 500);
     assert.equal(await style(hud, '.theater-title-hud-smart', 'display'), 'flex');

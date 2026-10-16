@@ -186,9 +186,11 @@ describe('caption loading browser regressions', () => {
       await button.locator('svg').evaluate(svg => { svg.getAnimations()[0].currentTime = 0; });
       await screenshot(page, 'restore-loading-white.png');
       await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.getAttribute('data-motion') === 'reduced');
       assert.equal(await button.locator('svg').evaluate(svg => getComputedStyle(svg).animationName), 'none');
       assert.equal(await button.locator('svg').evaluate(svg => getComputedStyle(svg).color), 'rgb(0, 117, 255)');
       await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.getAttribute('data-motion') === 'normal');
       loading.release();
       await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.cc-btn')!.getAttribute('aria-busy') === 'false');
       assert.match(await hud.innerText(), /Subtitles on\s+English/);
