@@ -383,6 +383,9 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       const still = await motion();
       assert.equal(still.opacity, '1', 'reduced motion: hover still shows the static colored ring and interior');
       assert.equal(await netflix.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
+      // Reduced motion collapses durations instead of removing transitions, so the hover's own
+      // badge/colour transitions end within a frame; wait for that settled state.
+      await netflix.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))));
       assert.equal(await netflix.evaluate(el => el.getAnimations({ subtree: true }).length), 0);
     } finally { await browser.close(); }
   });
