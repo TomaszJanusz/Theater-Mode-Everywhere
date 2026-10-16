@@ -70,6 +70,8 @@ it('renders static English semantic content safely and refreshes localized dialo
       assert.equal(await page.locator('.te-dialog-title').textContent(), catalogs[locale].whatsNewDialogTitle.message);
       assert.equal(await page.locator('.te-dialog-btn-primary').textContent(), catalogs[locale].dialogAcknowledge.message);
       assert.equal(await root.textContent(), englishBody);
+      assert.equal(await page.locator('.whats-new-thanks').getAttribute('lang'), 'en');
+      assert.equal(await page.locator('.whats-new-thanks').getAttribute('dir'), 'ltr');
       assert.equal(await page.locator('.te-dialog-close').getAttribute('aria-label'), catalogs[locale].dialogClose.message);
     }
     // Even HTML-like text can only become text nodes; the renderer has no HTML sink.

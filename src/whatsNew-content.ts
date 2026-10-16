@@ -66,6 +66,9 @@ export function buildWhatsNewContent(): HTMLElement {
   }
   const thanks = document.createElement('p');
   thanks.className = 'whats-new-thanks';
+  // The modal may place this note outside the announcement's scrolling content.
+  thanks.lang = 'en';
+  thanks.dir = 'ltr';
   const emphasis = document.createElement('em');
   emphasis.textContent = WHATS_NEW_CONTENT.thanks;
   thanks.append(emphasis);
