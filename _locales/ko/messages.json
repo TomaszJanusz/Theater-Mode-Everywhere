@@ -234,7 +234,7 @@
     "message": "Rich Theater Experience(실험적 기능)"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "즐겨 사용하는 동영상 서비스와의 더욱 풍부한 연동을 활성화합니다. 사용 가능 여부는 서비스에 따라 다릅니다."
+    "message": "이 서비스에만 향상된 연동을 활성화합니다."
   },
   "volumeBoostTitle": {
     "message": "음량 부스트"

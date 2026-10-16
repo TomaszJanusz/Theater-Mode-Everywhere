@@ -234,7 +234,7 @@
     "message": "Rich Theater Experience (експериментальна функція)"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "Увімкніть розширену інтеграцію з улюбленими відеосервісами. Доступність залежить від сервісу."
+    "message": "Увімкніть розширену інтеграцію лише для цього сервісу."
   },
   "volumeBoostTitle": {
     "message": "Посилення звуку"

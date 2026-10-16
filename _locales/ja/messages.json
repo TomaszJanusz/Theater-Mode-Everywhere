@@ -234,7 +234,7 @@
     "message": "Rich Theater Experience（試験運用）"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "お気に入りの動画サービスとのより高度な連携を有効にします。利用できる機能はサービスによって異なります。"
+    "message": "このサービスでのみ拡張連携を有効にします。"
   },
   "volumeBoostTitle": {
     "message": "音量ブースト"

@@ -71,6 +71,15 @@ export function resolveMediaProviderFlags(data: Record<string, unknown> | null |
   return next;
 }
 
+// Materialize inferred off defaults before editing one legacy service, so the
+// remaining missing flags cannot fall back to on when the legacy condition ends.
+export function mediaProviderFlagLegacyDefaults(stored: Record<string, unknown>): Record<string, boolean> {
+  const flags = resolveMediaProviderFlags(stored);
+  return Object.fromEntries(MEDIA_PROVIDER_IDS
+    .filter(id => typeof stored[MEDIA_PROVIDER_FLAG_KEYS[id]] !== 'boolean' && !flags[id])
+    .map(id => [MEDIA_PROVIDER_FLAG_KEYS[id], false]));
+}
+
 export function mediaProviderFlagStorageKeys(): string[] {
   return MEDIA_PROVIDER_IDS.map((id) => MEDIA_PROVIDER_FLAG_KEYS[id]);
 }

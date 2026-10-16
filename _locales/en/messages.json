@@ -240,7 +240,7 @@
     "message": "Rich Theater Experience (Experimental)"
   },
   "richTheaterExperiencePopupDescription": {
-    "message": "Enable richer integrations with your favorite video services. Availability varies by service."
+    "message": "Enable richer integrations only for this service."
   },
   "youtubeIntegrationTitle": {
     "message": "YouTube integration"

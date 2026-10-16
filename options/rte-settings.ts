@@ -2,7 +2,7 @@ import { serviceColorProperties } from './rte-colors';
 import { t } from '../src/i18n';
 import { languageRuntime } from '../src/i18n-runtime';
 import {
-  MEDIA_PROVIDER_FLAG_KEYS, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate,
+  MEDIA_PROVIDER_FLAG_KEYS, mediaProviderFlagLegacyDefaults, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate,
   resolveMediaProviderFlags, type MediaProviderId
 } from '../src/media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES, type MediaCapability } from '../src/providers/capabilities';
@@ -207,9 +207,7 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     // inferred off defaults once: enabling an original service must not make
     // missing newer flags silently fall back to on. Ordinary controls can then
     // keep writing exactly their own keys, including under a capability filter.
-    const legacyDefaults = Object.fromEntries(PROVIDER_CAPABILITIES
-      .filter(provider => typeof stored[MEDIA_PROVIDER_FLAG_KEYS[provider.id]] !== 'boolean' && !flags[provider.id])
-      .map(provider => [MEDIA_PROVIDER_FLAG_KEYS[provider.id], false]));
+    const legacyDefaults = mediaProviderFlagLegacyDefaults(stored);
     if (Object.keys(legacyDefaults).length > 0) {
       const migrationRevision = revision;
       await chrome.storage.sync.set(legacyDefaults);
