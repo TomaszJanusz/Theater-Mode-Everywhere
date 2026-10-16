@@ -92,11 +92,20 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
-  const launch = async (t: Parameters<typeof ownTestBrowser>[0], stored?: Record<string, unknown>, html = PAGE, host = 'activator.test') => {
+  const launch = async (t: Parameters<typeof ownTestBrowser>[0], {
+    stored, html = PAGE, host = 'activator.test', freezeClock = false
+  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean } = {}) => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
+    if (freezeClock) {
+      // Install before runtime startup so no native timer/frame survives the switch.
+      const time = new Date('2026-01-01T00:00:00Z');
+      await page.clock.install({ time });
+      // install() alone still advances with wall time between Playwright commands.
+      await page.clock.pauseAt(new Date(time.getTime() + 60_000));
+    }
     await boot(page, stored, html, host);
     return page;
   };
@@ -251,7 +260,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: the setting off installs no listener and no DOM, and applies live`, { timeout: 40_000 }, async t => {
-    const page = await launch(t, { videoActivator: false });
+    const page = await launch(t, { stored: { videoActivator: false } });
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     const before = await page.evaluate(() => window.pointeroverListeners);
     assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
@@ -286,7 +295,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: no pointer listeners without videos, outside the viewport, or with only previews`, { timeout: 40_000 }, async t => {
-    const page = await launch(t, {}, '<body></body>');
+    const page = await launch(t, { html: '<body></body>' });
     assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
     await page.evaluate(media => {
       const video = document.createElement('video'); video.id = 'added'; video.src = media;
@@ -327,25 +336,42 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: approach keeps the 2.5s idle hide, focus exception, touch exclusion and Space activation`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
-    await page.clock.install();
+    const page = await launch(t, { freezeClock: true });
     await hover(page, 80, 250);
-    await page.clock.runFor(50);
+    const activityFrame = page.evaluate(() => new Promise<number>(resolve => requestAnimationFrame(() => resolve(performance.now()))));
+    await page.clock.runFor(16); // Resolve the coalesced pointer on the first controlled frame.
+    const elapsed = await page.evaluate(start => performance.now() - start, await activityFrame);
     assert.ok(await launcher(page));
-    await page.clock.runFor(2501);
+    await page.clock.runFor(2499 - elapsed);
+    assert.ok(await launcher(page), 'visible until the 2.5s idle deadline');
+    await page.clock.runFor(1);
     assert.equal(await launcher(page), null);
     await page.mouse.move(81, 250);
     await page.clock.runFor(50);
     assert.ok(await launcher(page));
-    await page.locator('#theater-everywhere-ui .theater-video-activator').focus();
-    await page.evaluate(() => { (document.getElementById('main') as HTMLElement).style.width = '600px'; });
-    await page.clock.runFor(100);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.focus();
+    const beforeLayout = await button.elementHandle();
+    await page.evaluate(() => {
+      (document.getElementById('main') as HTMLElement).style.width = '600px';
+      // Native ResizeObserver delivery is independent of the fake clock. Invalidate
+      // synchronously, then observe the remount before checking focus retention.
+      window.dispatchEvent(new Event('resize'));
+    });
+    await page.clock.runFor(16);
+    await page.waitForFunction(element => !element!.isConnected, beforeLayout);
     assert.equal(await page.locator('#theater-everywhere-ui .theater-video-activator').evaluate(button => button.getRootNode() instanceof ShadowRoot
       && (button.getRootNode() as ShadowRoot).activeElement === button), true, 'layout refresh retains focus');
     await page.clock.runFor(2501);
     assert.ok(await launcher(page), 'focus keeps it visible past idle');
     await page.keyboard.press('Escape');
-    await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', clientX: 80, clientY: 250 })));
+    assert.equal(await launcher(page), null);
+    await page.evaluate(() => {
+      // Exercise a layout publication arriving after dismissal, as a delayed
+      // ResizeObserver callback can: cached pointer work must not reopen it.
+      window.dispatchEvent(new Event('resize'));
+      document.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'touch', clientX: 80, clientY: 250 }));
+    });
     await page.clock.runFor(50);
     assert.equal(await launcher(page), null);
     await page.mouse.move(82, 250);
@@ -459,7 +485,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       .ytp-right-controls { position:absolute;right:0;bottom:0;height:40px;display:flex;color:white;background:#222; }
       .ytp-button { width:40px;height:40px;color:inherit;fill:currentColor; }
     </style>`;
-    const page = await launch(t, {}, html, 'www.youtube.com');
+    const page = await launch(t, { html, host: 'www.youtube.com' });
     // Add the native cluster after discovery, as on a late player bind.
     const toolbar = (nested = false) => page.evaluate(nested => {
       document.querySelector('.ytp-right-controls')?.remove();

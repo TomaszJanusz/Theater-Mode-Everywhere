@@ -195,6 +195,8 @@ export function createVideoActivator(options: {
     next.addEventListener('keydown', event => {
       event.stopPropagation();
       if (event.key !== 'Escape') return;
+      // A late geometry refresh must not turn the dismissed point into a new hover.
+      pendingPoint = null;
       leave();
       next.blur();
     });
