@@ -34,7 +34,7 @@ it('renders static English semantic content safely and refreshes localized dialo
     const root = page.locator('.whats-new-content');
     assert.equal(await root.getAttribute('lang'), 'en');
     assert.equal(await root.getAttribute('dir'), 'ltr');
-    assert.equal(await root.locator('h3 strong').textContent(), 'Here is Theater Mode Everywhere 1.6!');
+    assert.equal(await root.locator('h3 strong').textContent(), 'Here is Theater Mode Everywhere 2.0!');
     assert.equal(await root.locator(':scope > p').first().textContent(), "I'm delighted to announce that this is the biggest update of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.");
     assert.equal(await root.locator(':scope > p strong').textContent(), 'biggest update');
     assert.deepEqual(await root.locator('ul > li').allTextContents(), [

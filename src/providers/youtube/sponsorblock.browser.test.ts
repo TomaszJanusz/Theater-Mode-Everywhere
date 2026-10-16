@@ -190,7 +190,7 @@ it('Features switch has an accessible name, defaults on and persists through sha
     await page.route('http://settings.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
     await page.goto('http://settings.test/#features');
     await page.addStyleTag({ content: readStylesheet(path.join(ROOT, 'options/options.css')) });
-    await page.evaluate(`localStorage.setItem('whatsNewAcknowledgedId', '1.6');
+    await page.evaluate(`localStorage.setItem('whatsNewAcknowledgedId', '2.0');
       window.saved = {}; window.changes = [];
       const storage = {
         get: (keys, callback) => { callback?.(saved); return Promise.resolve(saved); },

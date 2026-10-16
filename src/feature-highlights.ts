@@ -7,22 +7,22 @@ export const HIGHLIGHT_NEW_FEATURES_STORAGE_KEY = 'highlightNewFeatures';
 
 // One id has one UI home. Tab/toolbar indicators aggregate their visible children.
 export const NEW_FEATURE_ITEMS = [
-  { id: 'settingsLanguage', since: '1.6' },
-  { id: 'settingsPictureLayout', since: '1.6' },
-  { id: 'settingsAlwaysShowControls', since: '1.6' },
-  { id: 'settingsAutoEnterTheater', since: '1.6' },
-  { id: 'settingsHighContrast', since: '1.6' },
-  { id: 'settingsReduceTransparency', since: '1.6' },
-  { id: 'settingsReduceMotion', since: '1.6' },
+  { id: 'settingsLanguage', since: '2.0' },
+  { id: 'settingsPictureLayout', since: '2.0' },
+  { id: 'settingsAlwaysShowControls', since: '2.0' },
+  { id: 'settingsAutoEnterTheater', since: '2.0' },
+  { id: 'settingsHighContrast', since: '2.0' },
+  { id: 'settingsReduceTransparency', since: '2.0' },
+  { id: 'settingsReduceMotion', since: '2.0' },
   // Service tiles are named `rte` + the provider id with a capital first letter.
-  { id: 'rteBilibili', since: '1.6' },
-  { id: 'rteBilibiliIntl', since: '1.6' },
-  { id: 'rteTencent', since: '1.6' },
-  { id: 'rteCrunchyroll', since: '1.6' },
-  { id: 'rteNetflix', since: '1.6' },
-  { id: 'playerPictureLayout', since: '1.6' },
-  { id: 'playerAlwaysShowControls', since: '1.6' },
-  { id: 'playerAudio', since: '1.6' }
+  { id: 'rteBilibili', since: '2.0' },
+  { id: 'rteBilibiliIntl', since: '2.0' },
+  { id: 'rteTencent', since: '2.0' },
+  { id: 'rteCrunchyroll', since: '2.0' },
+  { id: 'rteNetflix', since: '2.0' },
+  { id: 'playerPictureLayout', since: '2.0' },
+  { id: 'playerAlwaysShowControls', since: '2.0' },
+  { id: 'playerAudio', since: '2.0' }
 ] as const satisfies readonly { id: string; since: Generation }[];
 export type NewFeatureId = typeof NEW_FEATURE_ITEMS[number]['id'];
 

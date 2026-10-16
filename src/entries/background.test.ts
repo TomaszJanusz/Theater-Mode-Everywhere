@@ -63,7 +63,7 @@ it('background broker accepts captions after safe redirects and cancels unsafe r
 it('initializes fresh installs at the installed generation and preserves update acknowledgements', async () => {
   for (const reason of ['install', 'update']) {
     let onInstalled!: (details: { reason: string; previousVersion?: string }) => Promise<void>;
-    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: '1.6' };
+    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: '2.0' };
     const ignore = { addListener() {} };
     runInNewContext(bundle, {
       console,

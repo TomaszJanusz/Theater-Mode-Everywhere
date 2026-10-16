@@ -24,10 +24,10 @@ describe('Update highlights release configuration', () => {
       assert.ok(messages.whatsNewDialogTitle);
       assert.ok(messages.whatsNew);
     }
-    assert.equal(WHATS_NEW_RELEASE.id, '1.6');
+    assert.equal(WHATS_NEW_RELEASE.id, '2.0');
     const update = { reason: 'update', previousVersion: '1.5.0' };
     assert.equal(shouldAutoOpenWhatsNewOnUpdate(update, 'player-layout-and-integrations'), true);
-    assert.equal(shouldAutoOpenWhatsNewOnUpdate(update, '1.6'), false);
+    assert.equal(shouldAutoOpenWhatsNewOnUpdate(update, '2.0'), false);
   });
 
   it('does not auto-open when the release flag is disabled', () => {

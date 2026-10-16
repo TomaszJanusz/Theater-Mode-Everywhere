@@ -26,7 +26,7 @@ const contentCss = readStylesheet(new URL('../content.css', import.meta.url));
 const media = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 const polish = JSON.parse(readFileSync(new URL('../../_locales/pl/messages.json', import.meta.url), 'utf8'));
 
-async function installMock(page: Page, version = '1.6.0') {
+async function installMock(page: Page, version = '2.0.0') {
   await page.evaluate('window.__name = value => value');
   await page.evaluate(({ version, polish }) => {
     const listeners = new Set<(changes: object, area: string) => void>();
@@ -59,7 +59,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
     await installMock(page, '0.26.1016.1512');
     await page.evaluate(`(async () => {
-      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      await chrome.storage.local.set({newFeaturesSeenThrough:'2.0'});
       window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
       await settingsHighlights.ready;
     })()`);
@@ -76,7 +76,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     // A snapshot written before Language joined the same generation, as in a rebuilt extension.
     await page.evaluate(async () => {
       const local = await chrome.storage.local.get('newFeaturesSeenItems');
-      await chrome.storage.local.set({ newFeaturesSeenItems: local.newFeaturesSeenItems.filter((key: string) => key !== 'settingsLanguage@1.6') });
+      await chrome.storage.local.set({ newFeaturesSeenItems: local.newFeaturesSeenItems.filter((key: string) => key !== 'settingsLanguage@2.0') });
     });
     await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
     assert.equal(await page.locator('[data-new-feature=settingsHighContrast] .te-new-badge').count(), 0);
@@ -115,7 +115,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await browser.close();
   });
 
-  for (const version of ['1.6.0', '0.26.1016.1512']) {
+  for (const version of ['2.0.0', '0.26.1016.1512']) {
     it(`${engine} ${version}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
       const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
       const page = await browser.newPage();
@@ -170,7 +170,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const snapshot = new Promise(done => { resolve = done; });
       window.settingsHighlights = BadgeTest.setupFeatureHighlights(snapshot);
       await chrome.storage.sync.set({highlightNewFeatures:false});
-      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      await chrome.storage.local.set({newFeaturesSeenThrough:'2.0'});
       resolve({highlightNewFeatures:true});
       await settingsHighlights.ready;
     })()`);
@@ -189,7 +189,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       let resolveLocal;
       chrome.storage.local.get = () => new Promise(resolve => { resolveLocal = resolve; });
       window.settingsHighlights = BadgeTest.setupFeatureHighlights(Promise.resolve({}));
-      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
+      await chrome.storage.local.set({newFeaturesSeenThrough:'2.0'});
       resolveLocal({newFeaturesSeenThrough:'1.5', newFeaturesSeenItems: BadgeTest.NEW_FEATURE_ITEMS.map(item => item.id + '@' + item.since)});
       await settingsHighlights.ready;
     })()`);
@@ -212,8 +212,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
       api.setPlayerUiCss(uiCss); api.bootstrapPlayerRuntime();
     }, { media, uiCss });
     await page.evaluate(`(async () => {
-      await chrome.storage.local.set({newFeaturesSeenThrough:'1.6'});
-      resolveBadgeLocal({newFeaturesSeenThrough:'1.6'});
+      await chrome.storage.local.set({newFeaturesSeenThrough:'2.0'});
+      resolveBadgeLocal({newFeaturesSeenThrough:'2.0'});
       // Later acknowledgement reads use the normal mock storage again.
       chrome.storage.local.get = getBadgeLocal;
     })()`);
