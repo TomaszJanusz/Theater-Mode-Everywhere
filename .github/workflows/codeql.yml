@@ -1,0 +1,70 @@
+name: CodeQL
+
+# Advisory security scan that runs alongside CI and is not a required check.
+# Both languages use build-mode none, so no Node or pnpm setup is needed. Expect
+# a few minutes per job, running in parallel with the CI `check` job. What gets
+# scanned and why lives in .github/codeql/codeql-config.yml.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'store-listings/**'
+      - '_locales/**'
+      - 'icons/**'
+      - 'tmp/**'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'store-listings/**'
+      - '_locales/**'
+      - 'icons/**'
+      - 'tmp/**'
+  schedule:
+    # Weekly rescan picks up new CodeQL queries without waiting for a code change.
+    - cron: '28 12 * * 6'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript
+          - actions
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:${{ matrix.language }}'
