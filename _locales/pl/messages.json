@@ -246,7 +246,7 @@
     "message": "Integracja z YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Rozdziały, Mapa popularności, Miniatury. Szybkie akcje: pomijanie reklam i następny film w kolejce."
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, Rozdziały, Mapa popularności, Miniatury. Szybkie akcje: pomijanie reklam i następny film w kolejce. Gdy Rich Theater Experience dla YouTube i Przycisk na wideo są włączone, szukaj przycisku na pasku odtwarzacza, tuż po lewej stronie przełącznika autoodtwarzania."
   },
   "vimeoIntegrationTitle": {
     "message": "Integracja z Vimeo"
@@ -683,7 +683,7 @@
     "message": "Przycisk na wideo"
   },
   "videoActivatorDescription": {
-    "message": "Pokazuj mały przycisk w wolnym rogu wideo, gdy najedziesz na nie kursorem. Kliknij go, aby włączyć tryb kinowy."
+    "message": "Pokazuj mały przycisk w wolnym rogu wideo, gdy najedziesz na nie kursorem. Kliknij go, aby włączyć tryb kinowy. Z Rich Theater Experience niektóre serwisy pokazują go w stałym miejscu."
   },
   "videoActivatorLabel": {
     "message": "Włącz tryb kinowy"

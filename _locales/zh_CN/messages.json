@@ -246,7 +246,7 @@
     "message": "YouTube 集成"
   },
   "youtubeIntegrationDescription": {
-    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：跳过广告和播放队列中的下一个视频。"
+    "message": "视频或播放器提供时可用：标题, 字幕, 章节, 热度图, 缩略图。 快捷操作：跳过广告和播放队列中的下一个视频。启用 YouTube 的 Rich Theater Experience 和视频启动按钮后，按钮位于播放器工具栏中，紧挨自动播放开关的左侧。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 集成"
@@ -683,7 +683,7 @@
     "message": "视频启动按钮"
   },
   "videoActivatorDescription": {
-    "message": "将指针移到视频上时，在空闲角落显示一个小按钮。点击即可进入剧场模式。"
+    "message": "将指针移到视频上时，在空闲角落显示一个小按钮。点击即可进入剧场模式。启用 Rich Theater Experience 后，部分服务会将按钮显示在固定位置。"
   },
   "videoActivatorLabel": {
     "message": "进入剧场模式"

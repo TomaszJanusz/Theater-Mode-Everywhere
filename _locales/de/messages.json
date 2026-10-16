@@ -246,7 +246,7 @@
     "message": "YouTube-Integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Kapitel, Heatmap, Vorschaubilder. Schnellaktionen: Werbung überspringen und nächstes Video in der Warteschlange."
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Kapitel, Heatmap, Vorschaubilder. Schnellaktionen: Werbung überspringen und nächstes Video in der Warteschlange. Wenn Rich Theater Experience für YouTube und die Video-Schaltfläche aktiviert sind, findest du die Schaltfläche in der Player-Leiste direkt links neben dem Schalter für die automatische Wiedergabe."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo-Integration"
@@ -683,7 +683,7 @@
     "message": "Video-Schaltfläche"
   },
   "videoActivatorDescription": {
-    "message": "Zeigt eine kleine Schaltfläche in einer freien Ecke des Videos, wenn du mit dem Mauszeiger darauf zeigst. Ein Klick darauf startet den Kinomodus."
+    "message": "Zeigt eine kleine Schaltfläche in einer freien Ecke des Videos, wenn du mit dem Mauszeiger darauf zeigst. Ein Klick darauf startet den Kinomodus. Mit Rich Theater Experience nutzen einige Dienste stattdessen eine feste Position."
   },
   "videoActivatorLabel": {
     "message": "Kinomodus aktivieren"

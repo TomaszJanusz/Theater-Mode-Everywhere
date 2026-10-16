@@ -246,7 +246,7 @@
     "message": "YouTube 연동"
   },
   "youtubeIntegrationDescription": {
-    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 광고 건너뛰기 및 대기열의 다음 동영상."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 광고 건너뛰기 및 대기열의 다음 동영상. YouTube의 Rich Theater Experience와 영상 실행 버튼을 켜면 플레이어 도구 모음의 자동 재생 스위치 바로 왼쪽에 버튼이 표시됩니다."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 연동"
@@ -683,7 +683,7 @@
     "message": "영상 실행 버튼"
   },
   "videoActivatorDescription": {
-    "message": "영상 위에 포인터를 올리면 빈 모서리에 작은 버튼을 표시합니다. 클릭하면 영화관 모드로 전환합니다."
+    "message": "영상 위에 포인터를 올리면 빈 모서리에 작은 버튼을 표시합니다. 클릭하면 영화관 모드로 전환합니다. Rich Theater Experience를 켜면 일부 서비스에서는 고정된 위치에 표시됩니다."
   },
   "videoActivatorLabel": {
     "message": "영화관 모드로 전환"

@@ -246,7 +246,7 @@
     "message": "YouTube integration"
   },
   "youtubeIntegrationDescription": {
-    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: skip ads and next video in the queue."
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: skip ads and next video in the queue. With YouTube Rich Theater Experience and Video launcher enabled, look in the player toolbar, just left of the autoplay switch."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo integration"
@@ -683,7 +683,7 @@
     "message": "Video launcher"
   },
   "videoActivatorDescription": {
-    "message": "Show a small button in a free corner of a video when you point at it. Click it to enter theater mode."
+    "message": "Show a small button in a free corner of a video when you point at it. Click it to enter theater mode. With Rich Theater Experience, some services use a fixed spot instead."
   },
   "videoActivatorLabel": {
     "message": "Enter theater mode"

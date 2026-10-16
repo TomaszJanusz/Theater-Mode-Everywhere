@@ -246,7 +246,7 @@
     "message": "Intégration YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Chapitres, Carte de popularité, Miniatures. Actions rapides : passer la publicité et vidéo suivante dans la file."
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, Chapitres, Carte de popularité, Miniatures. Actions rapides : passer la publicité et vidéo suivante dans la file. Avec Rich Theater Experience pour YouTube et Bouton sur la vidéo activés, le bouton se trouve dans la barre du lecteur, juste à gauche du commutateur de lecture automatique."
   },
   "vimeoIntegrationTitle": {
     "message": "Intégration Vimeo"
@@ -683,7 +683,7 @@
     "message": "Bouton sur la vidéo"
   },
   "videoActivatorDescription": {
-    "message": "Affiche un petit bouton dans un coin libre de la vidéo lorsque vous la survolez. Cliquez dessus pour activer le mode cinéma."
+    "message": "Affiche un petit bouton dans un coin libre de la vidéo lorsque vous la survolez. Cliquez dessus pour activer le mode cinéma. Avec Rich Theater Experience, certains services le placent à un endroit fixe."
   },
   "videoActivatorLabel": {
     "message": "Activer le mode cinéma"
