@@ -841,6 +841,15 @@
   "privacyPolicy": {
     "message": "Privacy policy"
   },
+  "privacyPolicyDescription": {
+    "message": "How the extension handles your data. The full policy is written in English."
+  },
+  "privacyPolicyRead": {
+    "message": "Read privacy policy"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "Open online version"
+  },
   "aboutLetterFreeHtml": {
     "message": "The extension is free and doesn't send any information about you or what you watch to the developer or unrelated third parties. Settings can sync through your browser account, and playback features can contact the service you are watching directly. If something doesn't work right, you can report it on <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
   },
@@ -1019,7 +1028,7 @@
     "message": "Highlight new features"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Show New badges for recently added features. Turning this off marks the current update as seen."
+    "message": "Show New badges for recently added features."
   },
   "highContrastTitle": {
     "message": "High contrast"

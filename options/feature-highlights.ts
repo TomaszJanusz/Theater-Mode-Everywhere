@@ -7,7 +7,6 @@ import {
 import { installedVersion, readFeatureHighlightsLocal } from '../src/feature-highlights-storage';
 import { languageRuntime } from '../src/i18n-runtime';
 import { t } from '../src/i18n';
-import { acknowledgeWhatsNew } from '../src/whatsNew';
 import { createNewBadge, defineNewBadge, ensureNewBadgeStyles } from '../src/ui/new-badge';
 
 /** Page-owned storage subscription, installed before either asynchronous snapshot. */
@@ -78,8 +77,6 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     const enabled = toggle.checked;
     pendingWrite = pendingWrite.then(async () => {
       try {
-        // Acknowledging first prevents enabling again from resurrecting dismissed badges.
-        if (!enabled) await acknowledgeWhatsNew();
         await chrome.storage.sync.set({ [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: enabled });
       } catch (error) {
         render();

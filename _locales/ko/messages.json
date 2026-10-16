@@ -841,6 +841,15 @@
   "privacyPolicy": {
     "message": "개인정보 처리방침"
   },
+  "privacyPolicyDescription": {
+    "message": "확장 프로그램이 데이터를 처리하는 방식입니다. 전체 정책은 영어로만 제공됩니다."
+  },
+  "privacyPolicyRead": {
+    "message": "개인정보 처리방침 읽기"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "온라인 버전 열기"
+  },
   "aboutLetterFreeHtml": {
     "message": "이 확장 프로그램은 무료이며 여러분에 관한 정보나 시청 내용을 개발자 또는 재생과 무관한 제삼자에게 전송하지 않습니다. 설정은 브라우저 계정을 통해 동기화될 수 있으며 재생 기능은 시청 중인 서비스에 직접 연결할 수 있습니다. 오작동을 발견하면 <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>에 알려 주세요."
   },
@@ -1019,7 +1028,7 @@
     "message": "새 기능 강조 표시"
   },
   "highlightNewFeaturesDescription": {
-    "message": "최근 추가된 기능에 “신규” 배지를 표시합니다. 이 옵션을 끄면 현재 업데이트가 확인한 것으로 표시됩니다."
+    "message": "최근 추가된 기능에 “신규” 배지를 표시합니다."
   },
   "highContrastTitle": {
     "message": "고대비"

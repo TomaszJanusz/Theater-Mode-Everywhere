@@ -841,6 +841,15 @@
   "privacyPolicy": {
     "message": "Polityka prywatności"
   },
+  "privacyPolicyDescription": {
+    "message": "Jak rozszerzenie przetwarza Twoje dane. Pełna polityka jest dostępna po angielsku."
+  },
+  "privacyPolicyRead": {
+    "message": "Przeczytaj politykę prywatności"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "Otwórz wersję online"
+  },
   "aboutLetterFreeHtml": {
     "message": "Rozszerzenie jest darmowe i nie wysyła żadnych informacji o Tobie ani o tym, co oglądasz, do twórcy ani niezwiązanych z odtwarzaniem osób trzecich. Ustawienia mogą być synchronizowane przez Twoje konto przeglądarki, a funkcje odtwarzania mogą łączyć się bezpośrednio z serwisem, w którym oglądasz film. Jeżeli widzisz nieprawidłowe działanie, możesz zgłosić je na <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHubie</a>."
   },
@@ -1019,7 +1028,7 @@
     "message": "Wyróżniaj nowe funkcje"
   },
   "highlightNewFeaturesDescription": {
-    "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach. Wyłączenie oznacza bieżącą aktualizację jako obejrzaną."
+    "message": "Pokazuj oznaczenie „Nowość” przy niedawno dodanych funkcjach."
   },
   "highContrastTitle": {
     "message": "Wysoki kontrast"

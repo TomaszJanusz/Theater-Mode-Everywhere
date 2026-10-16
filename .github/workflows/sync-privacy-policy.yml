@@ -1,0 +1,103 @@
+name: Sync Privacy Policy to Website
+
+# PRIVACY.md is the single source of truth. The published copy at
+# https://theater.tomaszjanusz.dev/privacy-policy/ lives in TomaszJanusz/tomaszjanusz.dev;
+# this workflow opens (or updates) a pull request there so the change is reviewed
+# before Vercel deploys it. Setup: docs/privacy-policy-publishing.md
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "PRIVACY.md"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-privacy-policy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  WEBSITE_REPO: TomaszJanusz/tomaszjanusz.dev
+  WEBSITE_POLICY_PATH: packages/portfolio/content/legal/theater-everywhere-privacy-policy.md
+  SYNC_BRANCH: automation/sync-theater-privacy-policy
+
+jobs:
+  sync-privacy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: automation
+    steps:
+      - name: Require website publishing credentials
+        env:
+          PUBLISH_APP_ID: ${{ vars.PUBLISH_APP_ID }}
+          PUBLISH_APP_PRIVATE_KEY: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+        run: |
+          missing=0
+          if [ -z "$PUBLISH_APP_ID" ]; then
+            echo "::error::Repository variable PUBLISH_APP_ID is not set (environment 'automation')."
+            missing=1
+          fi
+          if [ -z "$PUBLISH_APP_PRIVATE_KEY" ]; then
+            echo "::error::Secret PUBLISH_APP_PRIVATE_KEY is not set (environment 'automation')."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::See docs/privacy-policy-publishing.md for the GitHub App setup."
+            exit 1
+          fi
+
+      - name: Checkout extension repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Mint website app token
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.PUBLISH_APP_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+          owner: TomaszJanusz
+          repositories: tomaszjanusz.dev
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Checkout website repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.WEBSITE_REPO }}
+          token: ${{ steps.app_token.outputs.token }}
+          path: website
+
+      - name: Open or update website pull request
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        working-directory: website
+        run: |
+          set -euo pipefail
+
+          cp ../PRIVACY.md "$WEBSITE_POLICY_PATH"
+          if git diff --quiet -- "$WEBSITE_POLICY_PATH"; then
+            echo "Website already has the current policy; nothing to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -C "$SYNC_BRANCH"
+          git add -- "$WEBSITE_POLICY_PATH"
+          git commit -m "docs(privacy): sync Theater Mode Everywhere policy from ${SOURCE_SHA:0:7}"
+          # The branch is owned by this workflow: rebuild it from the default branch each run.
+          git push --force origin "$SYNC_BRANCH"
+
+          body="Automated sync of \`PRIVACY.md\` from https://github.com/TomaszJanusz/Theater-Mode-Everywhere/commit/${SOURCE_SHA}. Merging deploys the policy to https://theater.tomaszjanusz.dev/privacy-policy/."
+          if [ -n "$(gh pr list --repo "$WEBSITE_REPO" --head "$SYNC_BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr edit "$SYNC_BRANCH" --repo "$WEBSITE_REPO" --body "$body"
+          else
+            gh pr create --repo "$WEBSITE_REPO" --head "$SYNC_BRANCH" \
+              --title "docs(privacy): sync Theater Mode Everywhere policy" --body "$body"
+          fi

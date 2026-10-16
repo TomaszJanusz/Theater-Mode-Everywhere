@@ -1671,6 +1671,75 @@ body.te-dialog-open {
   line-height: 1.45;
 }
 
+.about-privacy-btn {
+  align-self: flex-start;
+}
+
+.te-dialog-privacy {
+  width: min(720px, 100%);
+  max-height: 100%;
+}
+
+.te-dialog-privacy .te-dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.privacy-policy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.privacy-policy-text {
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: 12px;
+  text-align: start;
+  /* The policy is English even in right-to-left interfaces. */
+  direction: ltr;
+}
+
+.privacy-policy-text:focus-visible,
+.privacy-policy-online:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.privacy-policy-text :is(h2, h3, h4, p, ul) {
+  margin: 0 0 10px;
+}
+
+.privacy-policy-text :is(h3, h4) {
+  margin-top: 18px;
+  color: var(--appearance-ink, var(--text-primary));
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.privacy-policy-text ul {
+  padding-inline-start: 20px;
+}
+
+.privacy-policy-text li + li {
+  margin-top: 4px;
+}
+
+.privacy-policy-text strong {
+  color: var(--appearance-ink, var(--text-primary));
+}
+
+.privacy-policy-text code {
+  font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.privacy-policy a {
+  color: var(--accent-color);
+}
+
 .te-dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -1699,13 +1768,15 @@ body.te-dialog-open {
   background: var(--accent-hover);
 }
 
-.te-dialog-btn-secondary {
+.te-dialog-btn-secondary,
+.about-privacy-btn {
   border: 1px solid var(--border-color);
   background: #18181b;
   color: var(--appearance-ink, var(--text-primary));
 }
 
-.te-dialog-btn-secondary:hover {
+.te-dialog-btn-secondary:hover,
+.about-privacy-btn:hover {
   background: #27272a;
   border-color: var(--text-secondary);
 }

@@ -24,7 +24,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   "sponsorBlockCategory_unknown": "SponsorBlock segment",
   badgeNew: "New",
   highlightNewFeaturesTitle: "Highlight new features",
-  highlightNewFeaturesDescription: "Show New badges for recently added features. Turning this off marks the current update as seen.",
+  highlightNewFeaturesDescription: "Show New badges for recently added features.",
 
   languageTitle: "Language",
   languageDescription: "Choose the language for Settings, the popup, and player controls.",
@@ -218,6 +218,9 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   aboutLetterOrigin: "Thank you so much for choosing my extension! Theater Mode Everywhere was born out of my frustration with the many different solutions that were all supposed to provide one thing: a comfortable way to watch video. They don't deliver it. Most players on the internet lack features that should be standard.",
   aboutLetterProduct: "That's why I created Theater Mode Everywhere: a universal player that, in my humble opinion, gives you a comfortable way to watch video everywhere, and can handle the non-standard, unique features of many websites.",
   privacyPolicy: "Privacy policy",
+  privacyPolicyDescription: "How the extension handles your data. The full policy is written in English.",
+  privacyPolicyRead: "Read privacy policy",
+  privacyPolicyOpenOnline: "Open online version",
   aboutLetterFreeHtml: "The extension is free and doesn't send any information about you or what you watch to the developer or unrelated third parties. Settings can sync through your browser account, and playback features can contact the service you are watching directly. If something doesn't work right, you can report it on <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>.",
   aboutLetterStoresHtml: "Theater Mode Everywhere is available on the <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> and <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. I'd be happy if you share your opinion about it.",
   aboutSignoffHtml: 'Happy watching <span class="heart" aria-hidden="true">❤</span>!',

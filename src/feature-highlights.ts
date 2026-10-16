@@ -144,8 +144,8 @@ export function acknowledgeGeneration(state: FeatureHighlights): Generation {
  * id/since pairs present in that profile, independently of the manifest's date-based version.
  * Reloading or rebuilding identical items stays acknowledged; adding an item (even in the same
  * generation) shows it again. Legacy generation-only acknowledgements cannot hide unreleased items.
- * Opening Update highlights (also the automatic Settings prompt) or disabling highlights acknowledges
- * the catalog; merely viewing Settings or using player controls does not.
+ * Opening Update highlights (also the automatic Settings prompt) acknowledges the catalog;
+ * toggling badge visibility, merely viewing Settings or using player controls does not.
  */
 export function featureHighlightsAcknowledgement(state: FeatureHighlights): Record<string, unknown> {
   return {
