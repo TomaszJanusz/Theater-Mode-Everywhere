@@ -1,5 +1,6 @@
 import { createProviderLauncherPlacement, type LauncherPlacement, type LauncherSlot } from '../providers/launcher-placement';
 import { observeProviderWatchPlaybackChanges } from '../providers/watch-playback';
+import { isMotionReduced } from '../appearance-runtime';
 import { DisposableScope } from '../core/disposable-scope';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { mountPlayerUi, peekPlayerUiRoot } from './root';
@@ -61,6 +62,11 @@ function coversPageUi(element: Element, video: HTMLVideoElement, videoBox: Box):
   return false;
 }
 
+const ACCENT = 'var(--accent-color, #6366f1)';
+/** Hover/focus inversion timing for both launcher variants; shadow.css reads it as `var(--launcher-fade)`. */
+const LAUNCHER_FADE = '0.12s ease';
+
+/** `monochrome` is the provider-toolbar variant: a currentColor body with an accent play triangle. */
 function logoMark(monochrome = false): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 1000 1000');
@@ -78,12 +84,35 @@ function logoMark(monochrome = false): SVGSVGElement {
   const body = document.createElementNS(SVG_NS, 'path');
   body.setAttribute('d', 'M564,131.691L564,422.309C564,442.559 547.695,459 527.611,459L239.389,459C219.305,459 203,442.559 203,422.309L203,131.691C203,111.441 219.305,95 239.389,95L527.611,95C547.695,95 564,111.441 564,131.691ZM452.463,207.464L286.575,249.151L411.119,374.731L452.463,207.464Z');
   body.setAttribute('class', 'launcher-body');
-  body.setAttribute('fill', monochrome ? 'currentColor' : 'var(--accent-color, #6366f1)');
+  body.setAttribute('fill', monochrome ? 'currentColor' : ACCENT);
   body.setAttribute('fill-rule', 'evenodd');
-  if (!monochrome) group.append(triangle);
-  group.append(body);
+  if (monochrome) triangle.setAttribute('fill', ACCENT);
+  group.append(triangle, body);
   svg.append(group);
   return svg;
+}
+
+/**
+ * Toolbar buttons live in the host page, outside the shadow stylesheet, so the hover/focus inversion
+ * is applied directly: the body takes the accent and the triangle empties into a true cut-out.
+ * It is instant, so Reduce motion needs no special case; the white-to-accent change keeps its contrast
+ * in High contrast, where the resting white mark is already maximal.
+ */
+function invertMarkOnInteraction(button: HTMLElement, mark: SVGSVGElement): void {
+  const body = mark.querySelector<SVGElement>('.launcher-body')!;
+  const triangle = mark.querySelector<SVGElement>('.launcher-triangle')!;
+  let hovering = false;
+  const sync = () => {
+    const inverted = hovering || button.matches(':focus-visible');
+    body.setAttribute('fill', inverted ? ACCENT : 'currentColor');
+    triangle.setAttribute('fill', inverted ? 'none' : ACCENT);
+  };
+  // Same fade as the overlay, instant under Reduce motion. Applied on change so the first paint never animates.
+  const fade = () => { for (const part of [body, triangle]) part.style.transition = isMotionReduced() ? 'none' : 'fill var(--launcher-fade)'; };
+  button.addEventListener('pointerenter', () => { hovering = true; fade(); sync(); });
+  button.addEventListener('pointerleave', () => { hovering = false; fade(); sync(); });
+  button.addEventListener('focus', () => { fade(); sync(); });
+  button.addEventListener('blur', () => { fade(); sync(); });
 }
 
 /**
@@ -207,8 +236,11 @@ export function createVideoActivator(options: {
     next.className = VIDEO_ACTIVATOR_CLASS;
     next.setAttribute('aria-label', options.label());
     next.title = currentTitle();
-    next.append(logoMark(monochrome));
+    const mark = logoMark(monochrome);
+    next.append(mark);
     options.paint(next);
+    next.style.setProperty('--launcher-fade', LAUNCHER_FADE);
+    if (monochrome) invertMarkOnInteraction(next, mark);
     // Pressing must not move focus out of the page's player or reach host handlers.
     next.addEventListener('mousedown', event => event.preventDefault());
     next.addEventListener('pointerdown', event => event.stopPropagation());

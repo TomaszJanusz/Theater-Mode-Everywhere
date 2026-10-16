@@ -515,9 +515,30 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await native.waitFor();
     assert.deepEqual(await page.locator('.ytp-right-controls > *').evaluateAll(elements => elements.map(el => el.id || el.className)),
       ['sponsorblock', 'theater-video-activator ytp-button', 'ytp-button ytp-autonav-toggle', 'settings']);
-    assert.deepEqual(await native.evaluate(el => ({ background: getComputedStyle(el).backgroundColor, fill: el.querySelector('path')!.getAttribute('fill'), paths: el.querySelectorAll('path').length })),
-      { background: 'rgba(0, 0, 0, 0)', fill: 'currentColor', paths: 1 });
+    const toolbarMark = () => native.evaluate(el => {
+      const fill = (selector: string) => getComputedStyle(el.querySelector(selector)!).fill;
+      return { background: getComputedStyle(el).backgroundColor, color: getComputedStyle(el).color, accent: getComputedStyle(el).getPropertyValue('--accent-color').trim(), body: fill('.launcher-body'), triangle: fill('.launcher-triangle') };
+    });
+    const resting = await toolbarMark();
+    assert.equal(resting.background, 'rgba(0, 0, 0, 0)');
+    assert.equal(resting.body, 'rgb(255, 255, 255)', 'white rhombus at rest');
+    assert.ok(resting.accent, 'the toolbar button keeps the accent token');
+    assert.notEqual(resting.triangle, resting.body, 'accent triangle at rest');
     if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-youtube-toolbar.png' });
+    await native.hover();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.ytp-right-controls .theater-video-activator .launcher-triangle')!).fill === 'none');
+    await native.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)));
+    const inverted = await toolbarMark();
+    assert.equal(inverted.body, resting.triangle, 'hover fills the rhombus with the accent');
+    assert.equal(inverted.triangle, 'none', 'hover cuts the triangle out');
+    assert.equal(await native.evaluate(el => getComputedStyle(el.querySelector('.launcher-body')!).transitionDuration), '0.12s', 'same fade as the overlay');
+    await page.evaluate(() => document.documentElement.setAttribute('data-theater-everywhere-motion', 'reduced'));
+    await page.mouse.move(5, 5);
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.ytp-right-controls .theater-video-activator .launcher-body')!).transitionDuration === '0s');
+    await page.evaluate(() => document.documentElement.removeAttribute('data-theater-everywhere-motion'));
+    await native.hover();
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-youtube-toolbar-hover.png' });
+    await hover(page, 400, 260);
     await page.evaluate(() => document.querySelector('.ytp-autonav-toggle-button')!.closest('button')!.remove());
     await native.waitFor({ state: 'detached' });
     await hover(page, 405, 260);
@@ -702,7 +723,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await launcher(page), null);
     // Geometry: the toolbar mark is centred in the toolbar button.
     const [bx, by, mx, my] = await native.evaluate(element => {
-      const box = element.getBoundingClientRect(); const mark = element.querySelector('path')!.getBoundingClientRect();
+      const box = element.getBoundingClientRect(); const mark = element.querySelector('.launcher-body')!.getBoundingClientRect();
       return [box.left + box.width / 2, box.top + box.height / 2, mark.left + mark.width / 2, mark.top + mark.height / 2];
     });
     assert.ok(Math.abs(bx - mx) <= 0.5 && Math.abs(by - my) <= 0.5, `toolbar mark (${mx},${my}) vs button (${bx},${by})`);

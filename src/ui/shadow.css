@@ -2322,7 +2322,7 @@ button.theater-time-end:hover {
 }
 
 :host(:not([data-motion="reduced"])) .theater-video-activator :is(.launcher-body, .launcher-triangle) {
-  transition: fill 0.12s ease !important;
+  transition: fill var(--launcher-fade) !important;
 }
 
 .theater-video-activator:is(:hover, :focus-visible) .launcher-body {
