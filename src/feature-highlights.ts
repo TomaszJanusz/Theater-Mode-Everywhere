@@ -10,9 +10,7 @@ export const NEW_FEATURE_ITEMS = [
   { id: 'settingsAlwaysShowControls', since: '1.6' },
   { id: 'playerPictureLayout', since: '1.6' },
   { id: 'playerAlwaysShowControls', since: '1.6' },
-  { id: 'playerVoiceBoost', since: '1.6' },
-  { id: 'playerReduceLoudSounds', since: '1.6' },
-  { id: 'playerBass', since: '1.6' }
+  { id: 'playerAudio', since: '1.6' }
 ] as const satisfies readonly { id: string; since: Generation }[];
 export type NewFeatureId = typeof NEW_FEATURE_ITEMS[number]['id'];
 
@@ -25,6 +23,17 @@ export function installedGeneration(version: string): Generation {
   const generation = version.split('.').slice(0, 2).join('.');
   if (!isGeneration(generation)) throw new Error(`Invalid installed version: ${version}`);
   return generation;
+}
+
+/**
+ * Generation the running code behaves as. A development build still carries the previous
+ * manifest version while already containing the next generation's items, so it counts as that
+ * generation; otherwise its New badges could never show (or be acknowledged) locally.
+ */
+export function runningGeneration(version: string): Generation {
+  const manifest = installedGeneration(version);
+  return NEW_FEATURE_ITEMS.reduce<Generation>(
+    (latest, item) => compareGenerations(item.since, latest) > 0 ? item.since : latest, manifest);
 }
 
 export function compareGenerations(left: Generation, right: Generation): number {
@@ -56,7 +65,7 @@ export function resolveFeatureHighlights(
   sync: Record<string, unknown> = {},
   local: Record<string, unknown> = {}
 ): FeatureHighlights {
-  const installed = installedGeneration(version);
+  const installed = runningGeneration(version);
   return {
     installed,
     seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], installed),
@@ -66,7 +75,7 @@ export function resolveFeatureHighlights(
 
 /** Before the acknowledged generation is read nothing counts as new, so a badge never flashes and vanishes. */
 export function pendingFeatureHighlights(version: string): FeatureHighlights {
-  const installed = installedGeneration(version);
+  const installed = runningGeneration(version);
   return { installed, seenThrough: installed, enabled: true };
 }
 

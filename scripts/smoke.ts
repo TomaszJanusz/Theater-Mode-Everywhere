@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import { WHATS_NEW_CONTENT } from '../src/whatsNew-content';
+import { runningGeneration } from '../src/feature-highlights';
 import type { AddressInfo } from 'node:net';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -2033,7 +2034,7 @@ async function assertBadgeWorld(page: Page, context: BrowserContext): Promise<vo
   }
 }
 
-/** Installed storage/world wiring: future badges stay hidden in the shipping 1.5 build. */
+/** Installed storage/world wiring for New badges; a development build on the previous manifest version shows the next generation's. */
 async function assertFeatureHighlights(page: Page, origin: string, context: BrowserContext): Promise<void> {
   const worker = await extensionWorker(context);
   await worker.evaluate(({ key, release }) => chrome.storage.local.set({
@@ -2052,12 +2053,6 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
     await options.goto(url); await second.goto(url);
     await options.locator('#whats-new-btn.has-unseen').waitFor();
     await second.locator('#whats-new-btn.has-unseen').waitFor();
-    const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
-    if (version.startsWith('1.5.')) {
-      if (await options.locator('.te-new-badge').count() || await page.locator('.te-new-badge').count()) {
-        throw new Error('Unshipped 1.6 features were highlighted by a 1.5 build');
-      }
-    }
     await options.locator('label.toggle-switch').filter({ has: options.locator('#highlight-new-features-toggle') }).click();
     await second.waitForFunction(() => !(document.getElementById('highlight-new-features-toggle') as HTMLInputElement).checked);
     await options.locator('#whats-new-btn.has-unseen').waitFor({ state: 'hidden' });
@@ -2100,8 +2095,9 @@ async function assertFeatureHighlights(page: Page, origin: string, context: Brow
       const scrollable = await content.evaluate(el => el.scrollHeight > el.clientHeight);
       if (!scrollable) throw new Error('Long announcement should scroll within the dialog');
     }
+    const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
     const seen = await worker.evaluate(async () => (await chrome.storage.local.get('newFeaturesSeenThrough')).newFeaturesSeenThrough);
-    if (seen !== version.split('.').slice(0, 2).join('.')) throw new Error('Opening Update highlights did not acknowledge the installed generation');
+    if (seen !== runningGeneration(version)) throw new Error('Opening Update highlights did not acknowledge the installed generation');
     console.log('smoke:chromium feature highlights: installed Settings/player wiring, version gate, cross-tab preference and acknowledgement passed');
   } finally {
     await worker.evaluate(() => chrome.storage.sync.remove(['highlightNewFeatures', 'language']));

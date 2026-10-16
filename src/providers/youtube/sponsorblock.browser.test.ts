@@ -4,6 +4,7 @@ import path from 'node:path';
 import { it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
+import { contrastRatio } from '../../contrast';
 import { ownTestBrowser } from '../../test-utils/test-browser';
 import { readStylesheet } from '../../test-utils/styles';
 
@@ -37,6 +38,7 @@ body{margin:0;background:#111}#movie_player{width:960px;height:540px;position:re
       sync: { get: async () => ({ keepControlsVisible: true, sponsorBlockMarkers: enabled, youtubeIntegrationEnabled: false }), set: async () => {} },
       onChanged: { addListener: (listener: (changes: object, area: string) => void) => listeners.push(listener) }
     } }, changeSponsorSetting: (value: boolean) => listeners.forEach(listener => listener({ sponsorBlockMarkers: { newValue: value } }, 'sync')),
+      changeAppearance: (values: Record<string, unknown>) => listeners.forEach(listener => listener(Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }])), 'sync')),
       changeYouTubeIntegration: (value: boolean) => listeners.forEach(listener => listener({ youtubeIntegrationEnabled: { newValue: value } }, 'sync')) });
   }, { enabled });
   await page.addScriptTag({ content: await bundle });
@@ -46,6 +48,44 @@ body{margin:0;background:#111}#movie_player{width:960px;height:540px;position:re
 }
 const markers = (page: Page) => page.locator('.theater-scrubber-segment');
 for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as const) {
+  it(`${name}: marker borders follow resolved accents and appearance without changing SponsorBlock colors`, { timeout: 60000 }, async t => {
+    const browser = await engine.launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await boot(page);
+    await markers(page).first().waitFor();
+    for (const highContrast of ['off', 'on']) {
+      for (const accentColor of ['blue', 'yellow', 'gray', 'system']) {
+        await page.evaluate(values => {
+          (window as unknown as { changeAppearance(values: object): void }).changeAppearance(values);
+        }, { accentColor, highContrast, reduceTransparency: highContrast });
+        await page.waitForFunction(high => document.querySelector<HTMLElement>('#theater-everywhere-ui')!.dataset.contrast === high, highContrast === 'on' ? 'high' : 'normal');
+        // Match the actual resolved progress color, including native and high-contrast accents.
+        const fill = await page.locator('.theater-scrubber-fill').evaluate(el => getComputedStyle(el).backgroundColor);
+        await page.evaluate(color => {
+          document.documentElement.style.setProperty('--sb-category-sponsor', color);
+          const bar = document.querySelector('#previewbar')!;
+          bar.replaceChildren(...Array.from(bar.children).map(child => child.cloneNode(true)));
+        }, fill);
+        await page.waitForFunction(color => getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-scrubber-segment')!).backgroundColor === color, fill);
+        const marker = await markers(page).first().evaluate(el => {
+          const css = getComputedStyle(el);
+          return { border: css.borderTopColor, width: css.borderTopWidth, style: css.borderTopStyle,
+            background: css.backgroundColor, opacity: css.opacity, box: css.boxSizing };
+        });
+        const hex = (rgb: string) => '#' + rgb.match(/\d+/g)!.slice(0, 3).map(value => Number(value).toString(16).padStart(2, '0')).join('');
+        assert.ok(contrastRatio(hex(marker.border), hex(fill)) >= 3,
+          `${accentColor}/${highContrast}: ${marker.border} border must contrast with ${fill} progress by at least 3:1`);
+        assert.equal(marker.width, '1px');
+        assert.equal(marker.style, 'solid');
+        assert.equal(marker.box, 'border-box', 'border must not change timeline geometry');
+        assert.equal(marker.background, fill, 'retain SponsorBlock category color');
+        assert.equal(marker.opacity, '0.6');
+      }
+    }
+    await page.emulateMedia({ forcedColors: 'active' });
+    assert.equal(await markers(page).first().evaluate(el => getComputedStyle(el).borderTopStyle), 'solid');
+    await browser.close();
+  });
   it(`${name}: rendered views, live settings, navigation, notice stacking and cleanup`, { timeout: 60000 }, async t => {
     const browser = await engine.launch({ headless: true }); ownTestBrowser(t, browser);
     try {
