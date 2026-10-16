@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
-import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
+import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { brightestStop, hexRgb, luminance, over } from './rte-colors';
 import { LANGUAGES } from '../src/language';
@@ -250,7 +250,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
         return [getComputedStyle(button).color, getComputedStyle(badge).color];
       }));
       for (const [filter, badge] of capabilityColors) assert.equal(filter, badge, 'filter and tile share capability colors');
-      assert.equal(new Set(capabilityColors.map(([color]) => color)).size, 7);
+      assert.equal(new Set(capabilityColors.map(([color]) => color)).size, MEDIA_CAPABILITIES.length);
       const firstBadge = page.locator('.rte-badge:not(.is-matching)').first();
       const rest = await firstBadge.evaluate(el => getComputedStyle(el).backgroundColor);
       await firstBadge.hover();

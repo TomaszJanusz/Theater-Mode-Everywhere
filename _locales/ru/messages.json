@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Плейлисты"
   },
+  "rteCapabilityLauncher": {
+    "message": "Кнопка кинорежима"
+  },
+  "rteNoteLauncher": {
+    "message": "Размещает кнопку на панели плеера, если доступно место; иначе показывает её поверх видео."
+  },
   "rteCapabilityQuickActions": {
     "message": "Быстрые действия"
   },

@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "قوائم التشغيل"
   },
+  "rteCapabilityLauncher": {
+    "message": "زر وضع المسرح"
+  },
+  "rteNoteLauncher": {
+    "message": "يستخدم شريط أدوات المشغّل الأصلي عند توفر موضع للزر، وإلا يظهر الزر فوق الفيديو."
+  },
   "rteCapabilityQuickActions": {
     "message": "إجراءات سريعة"
   },

@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "재생목록"
   },
+  "rteCapabilityLauncher": {
+    "message": "극장 모드 버튼"
+  },
+  "rteNoteLauncher": {
+    "message": "사용 가능한 위치가 있으면 기본 플레이어 도구 모음에 버튼을 표시하고, 없으면 동영상 위에 표시합니다."
+  },
   "rteCapabilityQuickActions": {
     "message": "빠른 동작"
   },

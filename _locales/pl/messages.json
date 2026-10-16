@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Playlisty"
   },
+  "rteCapabilityLauncher": {
+    "message": "Przycisk kina"
+  },
+  "rteNoteLauncher": {
+    "message": "Korzysta z paska odtwarzacza, gdy dostępne jest miejsce na przycisk; w przeciwnym razie wyświetla przycisk na wideo."
+  },
   "rteCapabilityQuickActions": {
     "message": "Szybkie akcje"
   },

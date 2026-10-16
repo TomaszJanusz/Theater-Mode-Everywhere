@@ -31,6 +31,7 @@ import {
   applyMediaProviderFlagAttrs,
   mediaProviderFlagStorageKeys,
   mediaProviderFlagStorageUpdate,
+  mediaProviderFlagsEqual,
   resolveMediaProviderFlags,
   type MediaProviderFlags
 } from '../media-features/provider-flags';
@@ -839,8 +840,14 @@ function applySubtitleLayout(on: boolean): void {
 }
 
 function applyProviderFlags(next: MediaProviderFlags): void {
+  const changed = !mediaProviderFlagsEqual(refs.providerFlags, next);
   refs.providerFlags = next;
   applyMediaProviderFlagAttrs(document.documentElement, next);
+  if (changed) {
+    videoActivator?.dispose();
+    videoActivator = null;
+    syncVideoActivator();
+  }
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   wrapper?._mediaFeatures?.setProviderFlags(next);
 }

@@ -285,6 +285,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteCapabilityHeatmap: "Heatmap",
   rteCapabilityThumbnails: "Thumbnails",
   rteCapabilityPlaylists: "Playlists",
+  rteCapabilityLauncher: "Video launcher",
+  rteNoteLauncher: "Uses the native player toolbar when its launcher slot is available; otherwise uses the video overlay.",
   rteCapabilityQuickActions: "Quick actions",
   rteEmpty: "No service has all the selected capabilities.",
   rteClear: "Clear filter",

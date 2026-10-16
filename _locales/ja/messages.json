@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "再生リスト"
   },
+  "rteCapabilityLauncher": {
+    "message": "シアターモードボタン"
+  },
+  "rteNoteLauncher": {
+    "message": "対応する配置場所がある場合は標準プレーヤーのツールバーに、ない場合は動画上にボタンを表示します。"
+  },
   "rteCapabilityQuickActions": {
     "message": "クイック操作"
   },

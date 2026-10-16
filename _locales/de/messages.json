@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Wiedergabelisten"
   },
+  "rteCapabilityLauncher": {
+    "message": "Videostartknopf"
+  },
+  "rteNoteLauncher": {
+    "message": "Nutzt die native Playerleiste, wenn dort Platz für den Startknopf verfügbar ist; andernfalls erscheint er über dem Video."
+  },
   "rteCapabilityQuickActions": {
     "message": "Schnellaktionen"
   },

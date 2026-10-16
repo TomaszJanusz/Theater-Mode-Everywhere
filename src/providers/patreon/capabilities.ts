@@ -12,6 +12,7 @@ export const patreonCapabilities = {
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNotePatreon' },
     playlists: { status: 'no' },
+    launcher: { status: 'no' },
     quickActions: { status: 'no' },
   }
 } as const satisfies ProviderCapabilities;

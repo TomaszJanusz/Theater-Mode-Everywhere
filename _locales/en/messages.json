@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Playlists"
   },
+  "rteCapabilityLauncher": {
+    "message": "Video launcher"
+  },
+  "rteNoteLauncher": {
+    "message": "Uses the native player toolbar when its launcher slot is available; otherwise uses the video overlay."
+  },
   "rteCapabilityQuickActions": {
     "message": "Quick actions"
   },

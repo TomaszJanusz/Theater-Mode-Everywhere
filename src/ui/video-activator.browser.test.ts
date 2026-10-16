@@ -43,7 +43,7 @@ const PAGE = `<style>
 <video id="small"></video>
 <p style="position:absolute;top:600px">Outside</p>`;
 
-async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE): Promise<void> {
+async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE, host = 'activator.test'): Promise<void> {
   await page.addInitScript(`window.__name = target => target; window.storageListeners = []; window.pointeroverListeners = 0;
     window.activatorPointerListeners = 0; window.activatorPointerRegistrations = 0;
     const add = EventTarget.prototype.addEventListener;
@@ -61,8 +61,8 @@ async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAG
       sync: { get: async () => (${JSON.stringify({ keepControlsVisible: true, ...stored })}), set: async () => {} },
       local: { get: async () => ({}), set: async () => {} },
       onChanged: { addListener: fn => window.storageListeners.push(fn), removeListener() {} } } };`);
-  await page.route('https://activator.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
-  await page.goto('https://activator.test/');
+  await page.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: html }));
+  await page.goto(`https://${host}/`);
   await page.evaluate(media => {
     for (const video of document.querySelectorAll('video')) video.src = media;
   }, MEDIA);
@@ -92,12 +92,12 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
-  const launch = async (t: Parameters<typeof ownTestBrowser>[0], stored?: Record<string, unknown>, html = PAGE) => {
+  const launch = async (t: Parameters<typeof ownTestBrowser>[0], stored?: Record<string, unknown>, html = PAGE, host = 'activator.test') => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
-    await boot(page, stored, html);
+    await boot(page, stored, html, host);
     return page;
   };
 
@@ -375,6 +375,125 @@ for (const engine of ['chromium', 'firefox'] as const) {
     });
     await page.waitForFunction(() => window.activatorPointerListeners === 0);
     assert.equal(await launcher(page), null);
+  });
+
+
+  it(`${engine}: appearance freezes across chrome mutations; layout invalidation remounts`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await hover(page, 400, 260);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.waitFor();
+    const original = await button.elementHandle();
+    const position = await launcher(page);
+    await page.evaluate(() => {
+      const control = document.createElement('button');
+      control.style.cssText = 'position:absolute;right:0;top:0;width:60px;height:60px';
+      document.getElementById('player')!.append(control);
+    });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.deepEqual(await launcher(page), position);
+    assert.equal(await original!.evaluate(element => element.isConnected), true);
+    await page.evaluate(() => { document.getElementById('player')!.style.left = '120px'; });
+    await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft !== 688);
+    assert.equal(await original!.evaluate(element => element.isConnected), false, 'hard layout change ends the appearance');
+    await page.mouse.move(400, 600);
+    await hover(page, 400, 260);
+    await button.waitFor();
+    assert.equal((await launcher(page))!.x, 132, 'the next appearance avoids the occupied corner');
+  });
+
+  it(`${engine}: native playback hides immediately and pause permits another appearance`, { timeout: 40_000 }, async t => {
+    const page = await launch(t);
+    await hover(page, 400, 260);
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    await button.waitFor();
+    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
+    await button.waitFor({ state: 'detached' });
+    await hover(page, 410, 260);
+    assert.equal(await launcher(page), null);
+    await page.evaluate(() => (document.getElementById('main') as HTMLVideoElement).pause());
+    await hover(page, 420, 260);
+    await button.waitFor();
+  });
+
+  it(`${engine}: YouTube toolbar placement, fallback, RTE gates and cleanup`, { timeout: 40_000 }, async t => {
+    const html = PAGE.replace('id="player"', 'id="player" class="html5-video-player"') + `<style>
+      .ytp-right-controls { position:absolute;right:0;bottom:0;height:40px;display:flex;color:white;background:#222; }
+      .ytp-button { width:40px;height:40px;color:inherit;fill:currentColor; }
+    </style>`;
+    const page = await launch(t, {}, html, 'www.youtube.com');
+    // Add the native cluster after discovery, as on a late player bind.
+    const toolbar = (nested = false) => page.evaluate(nested => {
+      document.querySelector('.ytp-right-controls')?.remove();
+      const cluster = document.createElement('div'); cluster.className = 'ytp-right-controls';
+      cluster.innerHTML = '<button id="sponsorblock" class="ytp-button">SB</button><button class="ytp-button ytp-autonav-toggle" aria-label="Autoplay"><div class="ytp-autonav-toggle-button">A</div></button><button id="settings" class="ytp-button">⚙</button>';
+      if (nested) { const group = document.createElement('div'); group.className = 'ytp-right-controls-left'; group.append(...cluster.childNodes); cluster.append(group); }
+      document.getElementById('player')!.append(cluster);
+    }, nested);
+    await toolbar();
+    await hover(page, 400, 260);
+    const native = page.locator('.ytp-right-controls .theater-video-activator');
+    await native.waitFor();
+    assert.deepEqual(await page.locator('.ytp-right-controls > *').evaluateAll(elements => elements.map(el => el.id || el.className)),
+      ['sponsorblock', 'theater-video-activator ytp-button', 'ytp-button ytp-autonav-toggle', 'settings']);
+    assert.deepEqual(await native.evaluate(el => ({ background: getComputedStyle(el).backgroundColor, fill: el.querySelector('path')!.getAttribute('fill'), paths: el.querySelectorAll('path').length })),
+      { background: 'rgba(0, 0, 0, 0)', fill: 'currentColor', paths: 1 });
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-87-youtube-toolbar.png' });
+    await page.evaluate(() => document.querySelector('.ytp-autonav-toggle-button')!.closest('button')!.remove());
+    await native.waitFor({ state: 'detached' });
+    await page.locator('#theater-everywhere-ui .theater-video-activator').waitFor();
+    await toolbar();
+    await native.waitFor();
+    const old = await native.elementHandle();
+    await toolbar(true);
+    await native.waitFor();
+    assert.equal(await old!.evaluate(el => el.isConnected), false);
+    await old!.evaluate(el => el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);
+    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ youtubeIntegrationEnabled: false })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: false } }, 'sync'); });
+    await native.waitFor({ state: 'detached' });
+    await hover(page, 420, 260);
+    await page.locator('#theater-everywhere-ui .theater-video-activator').waitFor();
+    await page.evaluate(() => { chrome.storage.sync.get = (async () => ({ youtubeIntegrationEnabled: true })) as typeof chrome.storage.sync.get; for (const listener of window.storageListeners) listener({ youtubeIntegrationEnabled: { newValue: true } }, 'sync'); });
+    await hover(page, 430, 260);
+    await native.waitFor();
+    await page.evaluate(async () => { const v = document.getElementById('main') as HTMLVideoElement; v.muted = true; await v.play(); });
+    await native.waitFor({ state: 'detached' });
+    await page.evaluate(() => (document.getElementById('main') as HTMLVideoElement).pause());
+    await hover(page, 440, 260);
+    await native.waitFor();
+    await page.evaluate(() => document.dispatchEvent(new Event('yt-page-data-updated')));
+    await native.waitFor({ state: 'detached' });
+    await hover(page, 450, 260);
+    await native.waitFor();
+    const replaced = await native.elementHandle();
+    await page.evaluate(() => {
+      const video = document.getElementById('main')!;
+      video.replaceWith(video.cloneNode(true));
+    });
+    await page.waitForFunction(() => (document.getElementById('main') as HTMLVideoElement).readyState >= 1);
+    await hover(page, 455, 260);
+    await native.waitFor();
+    assert.equal(await replaced!.evaluate(el => el.isConnected), false);
+    await page.evaluate(() => { for (const listener of window.storageListeners) listener({ videoActivator: { newValue: false } }, 'sync'); });
+    await native.waitFor({ state: 'detached' });
+    await toolbar();
+    assert.equal(await native.count(), 0);
+    await page.evaluate(() => { for (const listener of window.storageListeners) listener({ videoActivator: { newValue: true } }, 'sync'); });
+    await hover(page, 460, 260);
+    await native.waitFor();
+    await native.focus();
+    await page.keyboard.press('Space');
+    await page.waitForSelector('video[data-theater-everywhere]');
+    assert.equal(await native.count(), 0, 'native keyboard activation uses the regular theater path');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('video[data-theater-everywhere]'));
+    await hover(page, 470, 260);
+    await native.waitFor();
+    await page.evaluate(() => document.getElementById('main')!.remove());
+    await native.waitFor({ state: 'detached' });
+    await toolbar();
+    assert.equal(await native.count(), 0, 'disposed source cannot reinject after video removal');
   });
 
   it(`${engine}: the entry notice is opaque with a thinner border`, { timeout: 40_000 }, async t => {

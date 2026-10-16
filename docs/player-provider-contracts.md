@@ -81,6 +81,28 @@ also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Vimeo showcases, live events and OTT pages are also excluded.
 
+## Video launcher
+
+`ProviderDefinition.launcherPlacement` supplies an optional `LauncherPlacement`
+(`providers/launcher-placement.ts`). Its `read()` revalidates the current video,
+player and native insertion anchor; `null` uses the generic overlay. The separate
+RTE `launcher` capability describes this placement support, not automatic entry.
+Disabled integrations never create a placement source. Providers own scoped
+observation, native control styling and idempotent disposal; shared UI owns the
+button, activation, playback gating and removal. Sources are disposed on video
+removal, setting changes and navigation. Provider navigation publications reset
+pointer selection before a new appearance, including YouTube SPA updates.
+
+YouTube inserts immediately before the autoplay control in the right cluster,
+without moving any existing controls, including other extensions' buttons. A
+missing anchor falls back to the overlay. The native `ytp-button` class supplies
+control color and the monochrome mark uses `currentColor` with a transparent
+play cutout and no background. Generic overlay slots remain frozen for each
+appearance despite page chrome mutations. A changed video rectangle or viewport
+removes and remounts the button rather than moving the mounted control. Playback
+hides the launcher; pausing makes it eligible again through the same proximity
+selection. There is no additional polling.
+
 ## Native chat
 
 `chat/types.ts` defines `ChatSurface`, a description of the page's existing chat container, identity, live/replay kind, optional iframe and ancestors needed for presentation. It does not render messages or expose account actions. `chat/detect.ts` owns service detection and identity checks; `ChatController` owns visibility, width, geometry, observation and cleanup. The player runtime starts and stops the chat session on theater entry and exit. `ui/chat.ts` renders one shared toggle, width slider and theme select, and persists visibility, width and theme per service; pending writes flush on session stop and `pagehide`.

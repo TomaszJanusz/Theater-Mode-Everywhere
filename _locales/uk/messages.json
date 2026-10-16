@@ -973,6 +973,12 @@
   "rteCapabilityPlaylists": {
     "message": "Списки відтворення"
   },
+  "rteCapabilityLauncher": {
+    "message": "Кнопка кінорежиму"
+  },
+  "rteNoteLauncher": {
+    "message": "Розміщує кнопку на панелі програвача, якщо доступне місце; інакше показує її поверх відео."
+  },
   "rteCapabilityQuickActions": {
     "message": "Швидкі дії"
   },
