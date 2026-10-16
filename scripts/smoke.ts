@@ -975,13 +975,20 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     await page.keyboard.press('t');
     await waitForChrome(true, true, true);
     await waitForChrome(true, true, false);
+    // Release installs start seen, while date-version builds have unseen development items.
+    // Seed the same unacknowledged state in both builds so this page must auto-open highlights.
+    const highlightKeys = [WHATS_NEW_ACK_STORAGE_KEY, 'newFeaturesSeenThrough', SEEN_ITEMS_STORAGE_KEY];
+    const originalHighlights = await worker.evaluate(keys => chrome.storage.local.get(keys), highlightKeys);
+    await worker.evaluate(key => chrome.storage.local.set({
+      [key]: 'smoke:unacknowledged', newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: []
+    }), WHATS_NEW_ACK_STORAGE_KEY);
     const options = await context.newPage();
     try {
       await options.goto(new URL('options/options.html', worker.url()).href);
-      // Update highlights opens on its own only while the profile has unseen NEW items.
-      await options.waitForSelector('.options-body[aria-busy="false"]');
-      const highlights = options.locator('.te-dialog-btn-primary');
-      if (await highlights.count()) await highlights.click();
+      const highlights = options.getByRole('dialog', { name: 'Update highlights', exact: true });
+      await highlights.waitFor();
+      await highlights.locator('.te-dialog-btn-primary').click();
+      await highlights.waitFor({ state: 'detached' });
       await options.locator('#tab-appearance').click();
       const toggle = options.locator('#keep-controls-visible-toggle');
       await toggle.waitFor({ state: 'attached' });
@@ -1012,6 +1019,10 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       // Removing the saved map restores canonical defaults in the live runtime.
     } finally {
       await options.close();
+      await worker.evaluate(async ({ keys, original }) => {
+        await chrome.storage.local.remove(keys.filter(key => !(key in original)));
+        await chrome.storage.local.set(original);
+      }, { keys: highlightKeys, original: originalHighlights });
     }
   } else {
     await page.keyboard.press('Shift+H');

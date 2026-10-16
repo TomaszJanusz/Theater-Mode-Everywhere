@@ -149,6 +149,27 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   for (const version of [CURRENT_VERSION, '0.26.1016.1512']) {
+    it(`${engine} ${version}: fresh install auto-open requires unseen items, independently of announcement acknowledgement`, { timeout: 30_000 }, async t => {
+      const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.setContent(optionsHtml);
+      await installMock(page, version);
+      await page.evaluate(`(async () => {
+        const lifecycle = BadgeTest.createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
+        await lifecycle.installed({ reason: 'install' }, async () => { throw new Error('Install must not open Settings'); });
+      })()`);
+      assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), version !== CURRENT_VERSION,
+        'release installs start seen; date-version builds still have unreleased items');
+      await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: [] }));
+      assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), true, 'an unacknowledged update with unseen items auto-opens');
+      await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
+      await page.getByRole('dialog', { name: 'Update highlights', exact: true }).waitFor();
+      assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false, 'opening acknowledges the announcement and items');
+      await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: [] }));
+      assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false, 'new items alone do not reopen an acknowledged announcement');
+      await browser.close();
+    });
+
     it(`${engine} ${version}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
       const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
       const page = await browser.newPage();
