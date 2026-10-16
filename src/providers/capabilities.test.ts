@@ -135,7 +135,7 @@ describe('provider capability declarations', () => {
     const veil = Number(/--te-veil:\s*(\d+)%/.exec(css)![1]) / 100;
     const offOpacity = Number(/input:not\(:checked\)\):is\(:hover[^}]*opacity:\s*([\d.]+)/.exec(css)![1]);
     // Title and note on; the dimmer title and secondary text off. Badges sit on dark glass.
-    const text = { on: ['#f4f4f5', '#d4d4d8'], off: ['#d4d4d8', '#a1a1aa'] };
+    const text = { on: ['#f4f4f5', '#b2b2b9'], off: ['#d4d4d8', '#b2b2b9'] };
     const badge = { on: '#e4e4e7', off: '#a1a1aa' };
     for (const state of ['on', 'off'] as const) {
       const check = (surface: readonly number[], label: string) => {
