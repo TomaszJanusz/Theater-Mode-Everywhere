@@ -249,7 +249,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     overlay.innerHTML = `
     <div class="volume-hud-content">
       <div class="volume-hud-icon">${icon}</div>
-      <span class="volume-hud-text ${action === 'play' ? 'zoom-in' : 'zoom-out'}">${text}</span>
+      <span class="volume-hud-text">${text}</span>
     </div>
   `;
 
