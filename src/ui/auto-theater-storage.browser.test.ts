@@ -6,6 +6,7 @@ import { chromium, firefox, type Browser, type Frame, type Page } from 'playwrig
 import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
+import { AUTO_ENTER_NOTICE_MIN_MS } from './auto-theater-intent';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 
 const BUNDLE = buildSync({
@@ -150,6 +151,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
       });
       assert.equal(await active(page), false, 'transition must block the playing trigger');
       await page.clock.runFor(200);
+      assert.equal(await active(page), false, 'entry is announced for the minimum notice time first');
+      await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS);
       await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
     } finally { await browser.close(); }
   });
