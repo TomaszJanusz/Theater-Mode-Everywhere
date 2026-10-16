@@ -224,7 +224,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
             },
             theaterActive: () => probe.active, transitioning: () => probe.transitioning,
             findBestVideo: () => document.querySelector('video'),
-            enter: () => { probe.entries++; probe.active = true; }
+            enter: () => { probe.entries++; probe.active = true; },
+            showNotice: () => () => {}, minNoticeMs: 0
           });
         }, { flags: defaultMediaProviderFlags(), scenario });
         await page.locator('video').evaluate(async (video: HTMLVideoElement, media) => {
