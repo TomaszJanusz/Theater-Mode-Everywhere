@@ -17,6 +17,7 @@ import { resolveChromeVisibility } from './controls-visibility';
 import { renderKbdText } from './kbd-text';
 import { closeMenuPopover } from './menu-popover';
 import { consumePictureDismiss } from './picture-dismiss';
+import { createPictureClickGate } from './picture-click';
 import { closePlayerSettings } from './player-settings';
 import type { ExtendedHTMLDivElement } from './controls';
 import type { PlayerChromeContext } from './runtime-context';
@@ -378,6 +379,28 @@ export function createToolbar(ctx: PlayerChromeContext) {
     return !('button' in event) || (event as MouseEvent).button === 0;
   }
 
+  function togglePictureFullscreen(): void {
+    if (ctx.refs.currentToggleFullscreen) {
+      ctx.refs.currentToggleFullscreen();
+      return;
+    }
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+      return;
+    }
+    document.documentElement.requestFullscreen().catch(console.error);
+  }
+
+  // Theater's picture: click plays/pauses, double-click toggles fullscreen
+  // (theater stays active, so a second double-click returns to plain theater).
+  // The listeners exist only while a theater session owns a <video>.
+  const videoClicks = createPictureClickGate(
+    () => {
+      if (ctx.session.element?.tagName === 'VIDEO') ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
+    },
+    togglePictureFullscreen
+  );
+
   function preventDoubleToggle(e: Event): void {
     if (!ctx.session.element) return;
     if (!isPrimaryPointerEvent(e)) return;
@@ -388,6 +411,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
+      if (ctx.session.element.tagName === 'VIDEO') videoClicks.doubleClick();
       return;
     }
 
@@ -399,47 +423,35 @@ export function createToolbar(ctx: PlayerChromeContext) {
     if (e.type === 'pointerdown') ctx.actions.focusTheaterPage();
 
     if (e.type === 'click' && ctx.session.element.tagName === 'VIDEO' && !consumePictureDismiss()) {
-      ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
+      videoClicks.click();
     }
   }
 
   function bindWasmCatcher(catcher: HTMLElement): () => void {
-    let clickTimer: number | null = null;
-    const clearClick = () => {
-      if (clickTimer == null) return;
-      window.clearTimeout(clickTimer);
-      clickTimer = null;
-    };
+    const clicks = createPictureClickGate(
+      () => ctx.actions.executeCommand({ type: 'PLAY_PAUSE' }),
+      togglePictureFullscreen
+    );
     const onClick = (event: MouseEvent) => {
       if (!isPrimaryPointerEvent(event)) return;
       event.preventDefault();
       event.stopPropagation();
-      clearClick();
-      if (consumePictureDismiss()) return;
-      clickTimer = window.setTimeout(() => {
-        clickTimer = null;
-        ctx.actions.executeCommand({ type: 'PLAY_PAUSE' });
-      }, 280);
+      if (consumePictureDismiss()) {
+        clicks.cancel();
+        return;
+      }
+      clicks.click();
     };
     const onDoubleClick = (event: MouseEvent) => {
       if (!isPrimaryPointerEvent(event)) return;
       event.preventDefault();
       event.stopPropagation();
-      clearClick();
-      if (ctx.refs.currentToggleFullscreen) {
-        ctx.refs.currentToggleFullscreen();
-        return;
-      }
-      if (document.fullscreenElement) {
-        void document.exitFullscreen();
-        return;
-      }
-      void document.documentElement.requestFullscreen();
+      clicks.doubleClick();
     };
     catcher.addEventListener('click', onClick);
     catcher.addEventListener('dblclick', onDoubleClick);
     return () => {
-      clearClick();
+      clicks.cancel();
       catcher.removeEventListener('click', onClick);
       catcher.removeEventListener('dblclick', onDoubleClick);
       catcher.remove();
@@ -470,6 +482,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     closeTheaterPopovers,
     blurMouseToggle,
     preventDoubleToggle,
+    cancelPictureClick: videoClicks.cancel,
     bindWasmCatcher,
     escapeHtml,
     setIcon,
