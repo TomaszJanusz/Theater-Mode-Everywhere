@@ -662,7 +662,16 @@
     "message": "صنع بـ <span class=\"heart\">❤</span> في 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "الدخول إلى وضع المسرح تلقائيًا"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "إمكانية الوصول"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "تخطي العد التنازلي"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "الدخول بمجرد أن يصبح التشغيل جاهزًا، دون إشعار مدته 3 ثوانٍ."
   },
   "autoEnterTheaterOn": {
     "message": "تشغيل"

@@ -7,7 +7,7 @@ import { DEFAULT_LANGUAGE, LANGUAGES, LANGUAGE_STORAGE_KEY, type Language } from
 import { setupFeatureHighlights } from './feature-highlights';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY } from '../src/feature-highlights';
 import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
-import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater } from '../src/ui/auto-theater';
+import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
 import { createShortcutEditor } from './shortcut-editor';
@@ -100,6 +100,7 @@ function safeGetStorage(keys: string | string[]): Promise<any> {
 const FEATURE_TOGGLES = [
   { id: 'sponsorblock-toggle', key: SPONSORBLOCK_STORAGE_KEY, resolve: resolveSponsorBlockMarkers },
   { id: 'auto-enter-theater-toggle', key: AUTO_THEATER_STORAGE_KEY, resolve: resolveAutoEnterTheater },
+  { id: 'auto-theater-skip-countdown-toggle', key: AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolve: resolveAutoTheaterSkipCountdown },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
 ] as const;
@@ -188,21 +189,10 @@ async function init() {
           : selectedPictureAlign();
         renderPictureAlignOptions(align);
       }
-      if (changes[SPONSORBLOCK_STORAGE_KEY]) {
-        const toggle = document.getElementById('sponsorblock-toggle') as HTMLInputElement | null;
-        if (toggle) toggle.checked = resolveSponsorBlockMarkers(changes[SPONSORBLOCK_STORAGE_KEY].newValue);
-      }
-      if (changes[VOLUME_BOOST_STORAGE_KEY]) {
-        const toggle = document.getElementById('volume-boost-toggle') as HTMLInputElement | null;
-        if (toggle) toggle.checked = resolveVolumeBoostEnabled(changes[VOLUME_BOOST_STORAGE_KEY].newValue);
-      }
-      if (changes[AUTO_THEATER_STORAGE_KEY]) {
-        const toggle = document.getElementById('auto-enter-theater-toggle') as HTMLInputElement | null;
-        if (toggle) toggle.checked = resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue);
-      }
-      if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {
-        const toggle = document.getElementById('keep-controls-visible-toggle') as HTMLInputElement | null;
-        if (toggle) toggle.checked = resolveKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
+      for (const feature of FEATURE_TOGGLES) {
+        if (!changes[feature.key]) continue;
+        const toggle = document.getElementById(feature.id) as HTMLInputElement | null;
+        if (toggle) toggle.checked = feature.resolve(changes[feature.key].newValue);
       }
     });
   }

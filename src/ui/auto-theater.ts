@@ -1,5 +1,10 @@
 export const AUTO_THEATER_STORAGE_KEY = 'autoEnterTheater';
 export const DEFAULT_AUTO_ENTER_THEATER = false;
+export const AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY = 'autoTheaterSkipCountdown';
+
+export function resolveAutoTheaterSkipCountdown(value: unknown): boolean {
+  return value === true;
+}
 
 export function resolveAutoEnterTheater(value: unknown): boolean {
   return value === true;

@@ -5,7 +5,7 @@ import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
 import { LANGUAGE_STORAGE_KEY } from '../language';
 import { languageRuntime } from '../i18n-runtime';
 import { subscribePlaylistNavigation as subscribeNavigation } from '../providers/navigation/watch';
-import { AUTO_THEATER_STORAGE_KEY, resolveAutoEnterTheater, type AutoTheaterVisit } from './auto-theater';
+import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, type AutoTheaterVisit } from './auto-theater';
 import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
@@ -1067,6 +1067,7 @@ function syncAutoTheaterRuntime(): void {
   autoTheaterRuntime = createAutoTheaterRuntime({
     visit: autoTheaterVisit,
     enabled: () => ui().autoEnterTheater,
+    skipCountdown: () => ui().autoTheaterSkipCountdown,
     policyAllowed: () => autoTheaterPolicyAllowed,
     providerFlags: () => refs.providerFlags,
     editableFocused: () => editableFieldFocused() || theaterDialogOpen(),
@@ -1122,6 +1123,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       'shortcuts',
       LANGUAGE_STORAGE_KEY,
       AUTO_THEATER_STORAGE_KEY,
+      AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
       SPONSORBLOCK_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
@@ -1150,6 +1152,7 @@ async function checkBlacklistAndInit(): Promise<void> {
             ? resolveHighlightNewFeatures(data[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
             : ui().featureHighlights.enabled },
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
+        autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(data[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
@@ -2360,14 +2363,20 @@ export function bootstrapPlayerRuntime(): void {
       }
 
       const providerFlagsChanged = mediaProviderFlagStorageKeys().some((key) => changes[key]);
-      // Auto-entry eligibility reads only domain policy, opt-in and provider flags.
-      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || providerFlagsChanged;
+      // Refresh only preferences that affect automatic entry.
+      const autoTheaterSettingsChanged = changes.blacklist || changes[AUTO_THEATER_STORAGE_KEY] || changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY] || providerFlagsChanged;
       if (autoTheaterSettingsChanged) {
         void checkBlacklistAndInit();
       }
 
       if (changes[AUTO_THEATER_STORAGE_KEY]) {
         uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: resolveAutoEnterTheater(changes[AUTO_THEATER_STORAGE_KEY].newValue) });
+      }
+
+      if (changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY]) {
+        uiStore.dispatch({ type: 'HYDRATE', value: {
+          autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(changes[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY].newValue)
+        } });
       }
 
       if (changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY]) {

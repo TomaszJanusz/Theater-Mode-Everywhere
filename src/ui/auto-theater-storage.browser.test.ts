@@ -49,7 +49,7 @@ declare global {
   }
 }
 
-async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: boolean; url?: string; iframe?: boolean; body?: string } = {}): Promise<{ page: Page; target: Page | Frame }> {
+async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: boolean; skipCountdown?: boolean; url?: string; iframe?: boolean; body?: string } = {}): Promise<{ page: Page; target: Page | Frame }> {
   const page = await browser.newPage();
   await page.addInitScript('window.__name = target => target;');
   await page.route('**/*', route => route.request().isNavigationRequest()
@@ -68,10 +68,10 @@ async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: 
   }
   await target.evaluate(media => { document.querySelector('video')!.src = media; }, MEDIA);
   await target.waitForFunction(() => document.querySelector('video')!.readyState > 2);
-  await target.evaluate(({ auto, holdReads }) => {
+  await target.evaluate(({ auto, holdReads, skipCountdown }) => {
     const listeners: Array<(changes: Record<string, { newValue: unknown }>, area: string) => void> = [];
     const probe: Window['autoStorageProbe'] = {
-      values: { autoEnterTheater: auto, keepControlsVisible: true },
+      values: { autoEnterTheater: auto, autoTheaterSkipCountdown: skipCountdown, keepControlsVisible: true },
       reads: 0, deepScans: 0, playing: false, shortcutRelays: 0, holdReads, pending: [],
       async change(values, area = 'sync') {
         if (area === 'sync') Object.assign(probe.values, values);
@@ -113,7 +113,7 @@ async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: 
       if (selector === '*') probe.deepScans++;
       return query.call(this, selector) as NodeListOf<T>;
     };
-  }, { auto: options.auto ?? true, holdReads: options.holdReads ?? false });
+  }, { auto: options.auto ?? true, holdReads: options.holdReads ?? false, skipCountdown: options.skipCountdown ?? false });
   await target.addStyleTag({ content: PAGE_CSS });
   await target.addScriptTag({ content: BUNDLE });
   await target.evaluate(css => {
@@ -130,6 +130,52 @@ async function active(target: Page | Frame): Promise<boolean> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  it(`AutoTheater in ${engine} skips the notice only when enabled, preserving playback gates and visit ownership`, { timeout: 60_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const { page, target } = await fixture(browser, { skipCountdown: true });
+      await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 60_000));
+      const notice = page.locator('.theater-auto-notice');
+      assert.equal(await active(target), false, 'skip must still wait for playback');
+      await target.evaluate(() => {
+        window.autoStorageProbe.playing = true;
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+      });
+      assert.equal(await active(target), true, 'stored preference enters synchronously on playback');
+      assert.equal(await notice.count(), 0);
+      await page.keyboard.press('Escape');
+      await target.evaluate(async () => {
+        await window.autoStorageProbe.change({ autoTheaterSkipCountdown: false });
+        await window.autoStorageProbe.change({ autoTheaterSkipCountdown: true });
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+      });
+      assert.equal(await active(target), false, 'preferences cannot reenter an exited visit');
+      await target.evaluate(async () => {
+        await window.autoStorageProbe.change({ autoTheaterSkipCountdown: false });
+        history.replaceState({}, '', '/watch?v=lmnopqrstuv');
+        document.dispatchEvent(new Event('yt-navigate-finish'));
+      });
+      assert.equal(await notice.count(), 1, 'turning skip off restores the notice for new content');
+      await page.clock.runFor(1000);
+      await target.evaluate(() => window.autoStorageProbe.change({ autoTheaterSkipCountdown: true }));
+      assert.equal(await active(target), true, 'live preference clears the pending countdown');
+      assert.equal(await notice.count(), 0);
+      await page.keyboard.press('Escape');
+      await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS);
+      assert.equal(await active(target), false, 'old countdown cannot enter after exit');
+      await target.evaluate(async () => {
+        history.replaceState({}, '', '/watch?v=zyxwvutsrqp');
+        document.getElementById('movie_player')!.classList.add('ad-showing');
+        document.dispatchEvent(new Event('yt-navigate-finish'));
+      });
+      assert.equal(await active(target), false, 'skip cannot bypass the provider ad guard');
+      assert.equal(await notice.count(), 0);
+      await page.close();
+    } finally { await browser.close(); }
+  });
+
   it(`auto-theater in ${engine} retries when the player transition ends`, { timeout: 60_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
@@ -256,7 +302,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
         await window.autoStorageProbe.change({ blacklist: [] });
       });
       assert.ok(await target.evaluate(() => window.autoStorageProbe.deepScans > 0));
-      for (const key of ['autoEnterTheater', ...mediaProviderFlagStorageKeys()]) {
+      for (const key of ['autoEnterTheater', 'autoTheaterSkipCountdown', ...mediaProviderFlagStorageKeys()]) {
         for (const value of [false, true]) {
           const counts = await target.evaluate(async ({ key, value }) => {
             const probe = window.autoStorageProbe;

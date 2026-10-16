@@ -129,7 +129,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       })()`);
       assert.equal(await page.getByRole('tab', { name: 'Appearance New', exact: true }).count(), 1);
       assert.equal(await page.getByLabel('Language New', { exact: true }).count(), 1);
-      for (const name of ['Automatically enter theater mode', 'High contrast', 'Reduce transparency', 'Reduce motion']) {
+      for (const name of ['AutoTheater', 'High contrast', 'Reduce transparency', 'Reduce motion']) {
         assert.equal(await page.getByLabel(`${name} New`, { exact: true }).count(), 1, name);
       }
       assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 1);

@@ -662,7 +662,16 @@
     "message": "ポーランド 🇵🇱 で <span class=\"heart\">❤</span> を込めて制作"
   },
   "autoEnterTheaterTitle": {
-    "message": "シアターモードを自動的に開始"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "アクセシビリティ"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "カウントダウンをスキップ"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "3秒間の通知を表示せず、再生の準備ができ次第シアターモードに切り替えます。"
   },
   "autoEnterTheaterOn": {
     "message": "オン"

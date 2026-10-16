@@ -35,7 +35,7 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     for (const { id } of NEW_FEATURE_ITEMS) {
       const block = document.querySelector(`[data-new-feature="${id}"]`);
       if (!block) continue;
-      const label = block.querySelector('.appearance-block-label, .feature-label, .rte-name') ?? block;
+      const label = block.querySelector('.appearance-block-label, .options-label, .rte-name') ?? block;
       const visible = isNewFeature(id, state);
       setPill(label, visible);
       if (visible) newBlocks.push(block);

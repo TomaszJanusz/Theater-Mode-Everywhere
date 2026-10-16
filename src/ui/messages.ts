@@ -46,7 +46,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   nativeChatThemeUnavailable: "Chat is using the service appearance. The selected theme is unavailable on this page.",
   nativeChatFullscreenUnavailable: "Fullscreen with chat is unavailable. Theater mode remains active.",
   extensionSettingsLabel: "Extension settings",
-  autoEnterTheaterTitle: "Automatically enter theater mode",
+  autoEnterTheaterTitle: "AutoTheater",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
   autoEnterNoticeTitle: "Entering theater mode…",
   autoEnterNoticeHint: "Click or press <kbd>$1</kbd> to cancel",

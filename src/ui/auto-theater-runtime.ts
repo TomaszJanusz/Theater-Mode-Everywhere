@@ -27,6 +27,7 @@ export function createAutoTheaterRuntime(options: {
   /** Shows the entry notice and returns its cleanup. */
   showNotice(cancel: () => void): () => void;
   minNoticeMs?: number;
+  skipCountdown?(): boolean;
 }): AutoTheaterRuntime {
   const scope = new DisposableScope();
   let observedVideo: HTMLVideoElement | null = null;
@@ -95,7 +96,11 @@ export function createAutoTheaterRuntime(options: {
     const loading = !video.paused && !video.ended && !playing;
     const intended = (playing || loading) && shouldAutoEnterTheater(options.visit.current, { ...facts, playing: true })
       && confirmProviderWatchVideo(video);
-    if (!intent.update(intended ? { key: video, ready: playing } : null)) return;
+    if (options.skipCountdown?.()) {
+      // Discard any announced entry before applying the current playback facts.
+      intent.update(null);
+      if (!intended || !playing) return;
+    } else if (!intent.update(intended ? { key: video, ready: playing } : null)) return;
     // Reserve before entry: synchronous host/UI changes cannot reenter this visit.
     options.visit.current.entered = true;
     clearObservedVideo();

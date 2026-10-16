@@ -662,7 +662,16 @@
     "message": "Feito com <span class=\"heart\">❤</span> na 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Ativar o modo teatro automaticamente"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Acessibilidade"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Pular contagem regressiva"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Entrar assim que a reprodução estiver pronta, sem o aviso de 3 segundos."
   },
   "autoEnterTheaterOn": {
     "message": "Sim"

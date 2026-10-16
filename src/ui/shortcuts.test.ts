@@ -248,7 +248,7 @@ describe('shortcut editor paint', () => {
             addEventListener() {}
           })
         },
-        closest: (selector: string) => (selector === '.shortcuts-grid' ? grid : null)
+        closest: (selector: string) => (selector === '.options-body' ? grid : null)
       };
       return input;
     }
