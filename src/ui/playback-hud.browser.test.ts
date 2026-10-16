@@ -252,6 +252,8 @@ describe('playback HUD browser regressions', () => {
         assert.equal(await paused(), false, 'speed dismiss must leave playback running');
 
         await clickPicture();
+        // A plain click waits out the double-click window before pausing.
+        await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
         assert.equal(await paused(), true, 'a later video click still pauses');
         assert.deepEqual(errors, []);
       } finally {
