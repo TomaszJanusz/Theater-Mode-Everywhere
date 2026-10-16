@@ -978,7 +978,10 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
     const options = await context.newPage();
     try {
       await options.goto(new URL('options/options.html', worker.url()).href);
-      await options.locator('.te-dialog-btn-primary').click();
+      // Update highlights opens on its own only while the profile has unseen NEW items.
+      await options.waitForSelector('.options-body[aria-busy="false"]');
+      const highlights = options.locator('.te-dialog-btn-primary');
+      if (await highlights.count()) await highlights.click();
       await options.locator('#tab-appearance').click();
       const toggle = options.locator('#keep-controls-visible-toggle');
       await toggle.waitFor({ state: 'attached' });
