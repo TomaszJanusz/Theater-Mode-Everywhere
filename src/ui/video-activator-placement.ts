@@ -76,3 +76,36 @@ export function chooseActivatorSpot(
   }
   return null;
 }
+
+/** A short approach lead on small players without reaching distant page UI on large ones. */
+export const ACTIVATOR_PROXIMITY = { ratio: 0.1, min: 24, max: 80 } as const;
+
+export function activatorZoneMargin(box: Box): number {
+  return Math.max(ACTIVATOR_PROXIMITY.min,
+    Math.min(ACTIVATOR_PROXIMITY.max, Math.min(box.width, box.height) * ACTIVATOR_PROXIMITY.ratio));
+}
+
+/** Distance to the rectangle (zero inside), rather than its centre: edges are equally approachable. */
+export function activatorDistanceSquared(box: Box, x: number, y: number): number {
+  const dx = Math.max(box.left - x, 0, x - box.left - box.width);
+  const dy = Math.max(box.top - y, 0, y - box.top - box.height);
+  return dx * dx + dy * dy;
+}
+
+export function isInActivatorZone(box: Box, x: number, y: number): boolean {
+  const margin = activatorZoneMargin(box);
+  return x >= box.left - margin && x <= box.left + box.width + margin
+    && y >= box.top - margin && y <= box.top + box.height + margin;
+}
+
+/** Stable input order breaks ties, including overlapping videos; one linear pass, no sorting. */
+export function nearestActivatorVideo<T extends { box: Box }>(videos: Iterable<T>, x: number, y: number): T | null {
+  let nearest: T | null = null;
+  let distance = Infinity;
+  for (const video of videos) {
+    if (!isInActivatorZone(video.box, x, y)) continue;
+    const next = activatorDistanceSquared(video.box, x, y);
+    if (next < distance) { nearest = video; distance = next; }
+  }
+  return nearest;
+}

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  activatorZoneMargin,
+  isInActivatorZone,
+  nearestActivatorVideo,
   ACTIVATOR_MARGIN,
   ACTIVATOR_SIZE,
   chooseActivatorSpot,
@@ -83,5 +86,32 @@ describe('video activator placement', () => {
     const scrolled: Box = { left: 100, top: -250, width: 640, height: 360 };
     assert.equal(chooseActivatorSpot(scrolled, viewport, () => true)?.spot, 'bottom-right');
     assert.equal(chooseActivatorSpot({ left: -700, top: 0, width: 640, height: 360 }, viewport, () => true), null);
+  });
+});
+
+describe('video activator proximity', () => {
+  it('uses the shorter edge with a 24–80px bound', () => {
+    assert.equal(activatorZoneMargin({ ...video, width: 240, height: 135 }), 24);
+    assert.equal(activatorZoneMargin(video), 36);
+    assert.equal(activatorZoneMargin({ ...video, width: 3840, height: 2160 }), 80);
+  });
+  it('includes the video, each expanded edge and corner, but nothing beyond the zone', () => {
+    for (const [x, y] of [[100, 100], [400, 280], [64, 64], [776, 496]]) {
+      assert.equal(isInActivatorZone(video, x, y), true);
+    }
+    for (const [x, y] of [[63, 100], [100, 63], [777, 100], [100, 497]]) {
+      assert.equal(isInActivatorZone(video, x, y), false);
+    }
+  });
+  it('chooses the nearest rectangle, breaks ties by input order, and ignores distant candidates', () => {
+    const a = { id: 'a', box: video };
+    const b = { id: 'b', box: { ...video, left: 780 } };
+    assert.equal(nearestActivatorVideo([a, b], 750, 200), a);
+    assert.equal(nearestActivatorVideo([a, b], 770, 200), b);
+    assert.equal(nearestActivatorVideo([a, b], 760, 200), a);
+    assert.equal(nearestActivatorVideo([b, a], 760, 200), b);
+    assert.equal(nearestActivatorVideo([a, b], 500, 200), a);
+    assert.equal(nearestActivatorVideo([a, b], 0, 0), null);
+    assert.equal(nearestActivatorVideo([], 500, 200), null);
   });
 });
