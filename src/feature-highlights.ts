@@ -25,6 +25,17 @@ export function installedGeneration(version: string): Generation {
   return generation;
 }
 
+/**
+ * Generation the running code behaves as. A development build still carries the previous
+ * manifest version while already containing the next generation's items, so it counts as that
+ * generation; otherwise its New badges could never show (or be acknowledged) locally.
+ */
+function runningGeneration(version: string): Generation {
+  const manifest = installedGeneration(version);
+  return NEW_FEATURE_ITEMS.reduce<Generation>(
+    (latest, item) => compareGenerations(item.since, latest) > 0 ? item.since : latest, manifest);
+}
+
 export function compareGenerations(left: Generation, right: Generation): number {
   const [major, minor] = left.split('.').map(Number);
   const [otherMajor, otherMinor] = right.split('.').map(Number);
@@ -54,7 +65,7 @@ export function resolveFeatureHighlights(
   sync: Record<string, unknown> = {},
   local: Record<string, unknown> = {}
 ): FeatureHighlights {
-  const installed = installedGeneration(version);
+  const installed = runningGeneration(version);
   return {
     installed,
     seenThrough: resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], installed),
@@ -64,7 +75,7 @@ export function resolveFeatureHighlights(
 
 /** Before the acknowledged generation is read nothing counts as new, so a badge never flashes and vanishes. */
 export function pendingFeatureHighlights(version: string): FeatureHighlights {
-  const installed = installedGeneration(version);
+  const installed = runningGeneration(version);
   return { installed, seenThrough: installed, enabled: true };
 }
 
