@@ -683,7 +683,7 @@
     "message": "영상 실행 버튼"
   },
   "videoActivatorDescription": {
-    "message": "영상 위에 포인터를 올리면 빈 모서리에 작은 버튼을 표시합니다. 클릭하면 영화관 모드로 전환합니다. Rich Theater Experience를 켜면 일부 서비스에서는 고정된 위치에 표시됩니다."
+    "message": "영상 위에 포인터를 올리면 빈 모서리에 작은 버튼을 표시합니다. 클릭하면 영화관 모드로 전환합니다. Rich Theater Experience가 통합된 일부 서비스에서는 버튼이 서비스 인터페이스에 내장되어 있습니다."
   },
   "videoActivatorLabel": {
     "message": "영화관 모드로 전환"

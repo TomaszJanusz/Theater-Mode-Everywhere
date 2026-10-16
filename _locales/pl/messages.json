@@ -683,7 +683,7 @@
     "message": "Przycisk na wideo"
   },
   "videoActivatorDescription": {
-    "message": "Pokazuj mały przycisk w wolnym rogu wideo, gdy najedziesz na nie kursorem. Kliknij go, aby włączyć tryb kinowy. Z Rich Theater Experience niektóre serwisy pokazują go w stałym miejscu."
+    "message": "Pokazuj mały przycisk w wolnym rogu wideo, gdy najedziesz na nie kursorem. Kliknij go, aby włączyć tryb kinowy. W niektórych serwisach z Rich Theater Experience przycisk jest wkomponowany w interfejs serwisu."
   },
   "videoActivatorLabel": {
     "message": "Włącz tryb kinowy"

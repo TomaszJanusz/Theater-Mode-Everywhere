@@ -683,7 +683,7 @@
     "message": "Pulsante sul video"
   },
   "videoActivatorDescription": {
-    "message": "Mostra un piccolo pulsante in un angolo libero del video quando ci passi sopra con il cursore. Fai clic per attivare la modalità cinema. Con Rich Theater Experience, alcuni servizi lo mostrano invece in una posizione fissa."
+    "message": "Mostra un piccolo pulsante in un angolo libero del video quando ci passi sopra con il cursore. Fai clic per attivare la modalità cinema. In alcuni servizi con Rich Theater Experience, il pulsante è integrato nell’interfaccia del servizio."
   },
   "videoActivatorLabel": {
     "message": "Attiva la modalità cinema"

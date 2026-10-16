@@ -683,7 +683,7 @@
     "message": "Video-Schaltfläche"
   },
   "videoActivatorDescription": {
-    "message": "Zeigt eine kleine Schaltfläche in einer freien Ecke des Videos, wenn du mit dem Mauszeiger darauf zeigst. Ein Klick darauf startet den Kinomodus. Mit Rich Theater Experience nutzen einige Dienste stattdessen eine feste Position."
+    "message": "Zeigt eine kleine Schaltfläche in einer freien Ecke des Videos, wenn du mit dem Mauszeiger darauf zeigst. Ein Klick darauf startet den Kinomodus. Bei einigen Diensten mit Rich Theater Experience ist die Schaltfläche in die Oberfläche des Dienstes integriert."
   },
   "videoActivatorLabel": {
     "message": "Kinomodus aktivieren"
