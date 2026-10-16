@@ -1104,6 +1104,7 @@ function syncVideoActivator(): void {
   }
   videoActivator ??= createVideoActivator({
     label: () => t('videoActivatorLabel'),
+    shortcut: () => ui().shortcuts.toggle,
     paint: paintOverlay,
     activate: video => {
       // Same state the pointer path leaves behind, then the shortcut's own entry.
@@ -1112,6 +1113,7 @@ function syncVideoActivator(): void {
       toggleTheaterMode();
     }
   });
+  videoActivator.syncTitles();
 }
 
 function toggleAutoTheaterCommand(): void {

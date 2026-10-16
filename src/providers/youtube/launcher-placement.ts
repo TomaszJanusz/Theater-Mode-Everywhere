@@ -20,10 +20,12 @@ export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChan
       if (!before) return null;
       return {
         before,
+        persistent: true,
         mount(button) {
           button.classList.add('ytp-button');
           // YT's control class supplies color (normally white), including theme overrides.
-          button.style.cssText = 'background:transparent;border:0;padding:0;vertical-align:top;cursor:pointer';
+          // Assign, never replace cssText: the shared launcher already set its accent and fade tokens inline.
+          Object.assign(button.style, { background: 'transparent', border: '0', padding: '0', verticalAlign: 'top', cursor: 'pointer' });
           const svg = button.querySelector('svg');
           if (svg) svg.style.cssText = 'width:24px;height:100%;display:block;margin:auto;fill:currentColor;pointer-events:none';
           before.before(button);

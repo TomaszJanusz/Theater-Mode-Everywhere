@@ -93,15 +93,25 @@ button, activation, playback gating and removal. Sources are disposed on video
 removal, setting changes and navigation. Provider navigation publications reset
 pointer selection before a new appearance, including YouTube SPA updates.
 
+A slot may declare `persistent`: the native toolbar then owns when the button is
+visible, and shared UI skips the overlay timing (paused-only eligibility, pointer
+approach, idle hide, hide-on-play). The button stays mounted while the player,
+anchor and the usual gates (setting, RTE, size, picture-in-picture, fullscreen and
+theater exclusions) allow it. Without `persistent`, a slot follows the overlay's
+pointer timing. The tooltip always carries the user's theater shortcut in square
+brackets, whichever surface renders the button.
+
 YouTube inserts immediately before the autoplay control in the right cluster,
-without moving any existing controls, including other extensions' buttons. A
-missing anchor falls back to the overlay. The native `ytp-button` class supplies
+without moving any existing controls, including other extensions' buttons, and
+declares the slot `persistent`. A missing anchor falls back to the overlay. The native `ytp-button` class supplies
 control color and the monochrome mark uses `currentColor` with a transparent
 play cutout and no background. Generic overlay slots remain frozen for each
 appearance despite page chrome mutations. A changed video rectangle or viewport
 removes and remounts the button rather than moving the mounted control. Playback
-hides the launcher; pausing makes it eligible again through the same proximity
-selection. There is no additional polling.
+hides the overlay launcher, except within `ACTIVATOR_PLAY_GRACE_MS` of the page load
+(or of an SPA visit's start) so an autoplaying video still offers it; one timer ends
+that window. Pausing makes it eligible again through the same proximity selection.
+There is no additional polling.
 
 ## Native chat
 

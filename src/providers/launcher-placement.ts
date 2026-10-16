@@ -4,6 +4,12 @@ import { PROVIDER_DEFINITIONS } from './registry';
 /** A native slot is optional; null always falls back to the generic overlay. */
 export type LauncherSlot = {
   before: HTMLElement;
+  /**
+   * The native toolbar owns when the control is visible, so the shared launcher skips its
+   * overlay timing (pause eligibility, approach, idle hide, hide-on-play) and stays mounted
+   * while the player exists.
+   */
+  persistent?: boolean;
   mount(button: HTMLButtonElement): void;
 };
 

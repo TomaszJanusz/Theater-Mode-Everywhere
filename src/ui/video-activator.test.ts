@@ -7,6 +7,9 @@ import {
   ACTIVATOR_MARGIN,
   ACTIVATOR_SIZE,
   chooseActivatorSpot,
+  ACTIVATOR_PLAY_GRACE_MS,
+  activatorPlayGraceRemaining,
+  activatorTitle,
   isActivatorVideoEligible,
   samplePoints,
   spotBox,
@@ -113,5 +116,29 @@ describe('video activator proximity', () => {
     assert.equal(nearestActivatorVideo([a, b], 500, 200), a);
     assert.equal(nearestActivatorVideo([a, b], 0, 0), null);
     assert.equal(nearestActivatorVideo([], 500, 200), null);
+  });
+});
+
+describe('video activator play grace', () => {
+  it('lasts about five seconds from the visit start and then ends', () => {
+    assert.equal(ACTIVATOR_PLAY_GRACE_MS, 5000);
+    assert.equal(activatorPlayGraceRemaining(0), 5000);
+    assert.equal(activatorPlayGraceRemaining(1200), 3800);
+    assert.equal(activatorPlayGraceRemaining(5000), 0);
+    assert.equal(activatorPlayGraceRemaining(60_000), 0);
+  });
+  it('never exceeds the window for a clock that ran backwards', () => {
+    assert.equal(activatorPlayGraceRemaining(-300), 5000);
+  });
+});
+
+describe('video activator title', () => {
+  it('appends the shortcut in square brackets', () => {
+    assert.equal(activatorTitle('Enter theater mode', 'T'), 'Enter theater mode [T]');
+    assert.equal(activatorTitle('Enter theater mode', 'Shift+H'), 'Enter theater mode [Shift+H]');
+    assert.equal(activatorTitle('Enter theater mode', 'Alt++'), 'Enter theater mode [Alt++]');
+  });
+  it('has no suffix while the shortcut is unassigned', () => {
+    assert.equal(activatorTitle('Enter theater mode', ''), 'Enter theater mode');
   });
 });
