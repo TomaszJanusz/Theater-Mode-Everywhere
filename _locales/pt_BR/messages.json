@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Ative o modo teatro quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Ativando o modo teatro…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Clique ou pressione <kbd>$KEY$</kbd> para cancelar",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Sempre mostrar os controles"
   },

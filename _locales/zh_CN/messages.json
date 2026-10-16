@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入剧场模式。"
   },
+  "autoEnterNoticeTitle": {
+    "message": "正在进入剧场模式…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "点击或按 <kbd>$KEY$</kbd> 取消",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "始终显示控件"
   },

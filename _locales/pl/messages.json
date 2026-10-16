@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Włączaj tryb kinowy, gdy główne wideo zaczyna się odtwarzać na stronach oglądania obsługiwanych serwisów z włączoną funkcją Rich Theater Experience."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Włączanie trybu kinowego…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Kliknij lub naciśnij <kbd>$KEY$</kbd>, aby anulować",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Zawsze pokazuj kontrolki"
   },

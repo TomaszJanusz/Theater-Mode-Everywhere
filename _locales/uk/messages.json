@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Вмикати режим кінотеатру, коли основне відео починає відтворюватися на сторінках перегляду підтримуваних сервісів з увімкненим Rich Theater Experience."
   },
+  "autoEnterNoticeTitle": {
+    "message": "Вмикається режим кінотеатру…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Клацніть або натисніть <kbd>$KEY$</kbd>, щоб скасувати",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "Завжди показувати елементи керування"
   },

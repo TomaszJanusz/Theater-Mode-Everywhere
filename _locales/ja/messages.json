@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experienceが有効な場合、対応サービスの視聴ページでメイン動画の再生が始まるとシアターモードに切り替えます。"
   },
+  "autoEnterNoticeTitle": {
+    "message": "シアターモードに切り替えています…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "クリックまたは <kbd>$KEY$</kbd> キーでキャンセル",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "操作バーを常に表示"
   },

@@ -673,6 +673,17 @@
   "autoEnterTheaterDescription": {
     "message": "ادخل إلى وضع المسرح عندما يبدأ تشغيل الفيديو الرئيسي على صفحات المشاهدة في الخدمات المدعومة مع تفعيل Rich Theater Experience."
   },
+  "autoEnterNoticeTitle": {
+    "message": "جارٍ تفعيل وضع المسرح…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "انقر أو اضغط <kbd>$KEY$</kbd> للإلغاء",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
   "keepControlsVisibleTitle": {
     "message": "إظهار عناصر التحكم دائمًا"
   },

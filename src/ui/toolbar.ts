@@ -14,6 +14,7 @@ import { isMotionReduced } from '../appearance-runtime';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
+import { renderKbdText } from './kbd-text';
 import { closeMenuPopover } from './menu-popover';
 import { consumePictureDismiss } from './picture-dismiss';
 import { closePlayerSettings } from './player-settings';
@@ -458,21 +459,6 @@ export function createToolbar(ctx: PlayerChromeContext) {
     el.appendChild(doc.documentElement);
   }
 
-  function setTooltipContent(el: HTMLElement, rawText: string): void {
-    el.textContent = '';
-    const kbdRe = /<kbd>(.*?)<\/kbd>/g;
-    let last = 0;
-    let m: RegExpExecArray | null;
-    while ((m = kbdRe.exec(rawText)) !== null) {
-      if (m.index > last) el.appendChild(document.createTextNode(rawText.slice(last, m.index)));
-      const kbd = document.createElement('kbd');
-      kbd.textContent = m[1];
-      el.appendChild(kbd);
-      last = m.index + m[0].length;
-    }
-    if (last < rawText.length) el.appendChild(document.createTextNode(rawText.slice(last)));
-  }
-
   return {
     scheduleToolbarHide,
     refreshToolbarVisibility,
@@ -487,6 +473,6 @@ export function createToolbar(ctx: PlayerChromeContext) {
     bindWasmCatcher,
     escapeHtml,
     setIcon,
-    setTooltipContent
+    setTooltipContent: renderKbdText
   };
 }
