@@ -6,6 +6,7 @@ import { chromium, firefox, type Browser, type Frame, type Page } from 'playwrig
 import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
+import { AUTO_ENTER_NOTICE_MIN_MS } from './auto-theater-intent';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 
 const BUNDLE = buildSync({
@@ -129,6 +130,33 @@ async function active(target: Page | Frame): Promise<boolean> {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  it(`auto-theater in ${engine} retries when the player transition ends`, { timeout: 60_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const { page } = await fixture(browser);
+      await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 1000));
+      // Start a toggle without an available target, then make playback eligible
+      // while the transition gate still blocks its playing event.
+      const video = await page.locator('video').elementHandle();
+      assert.ok(video);
+      await video.evaluate(video => video.remove());
+      await page.keyboard.press('t');
+      assert.equal(await active(page), false, 'toggle without a target must stay inactive');
+      await video.evaluate(video => {
+        document.getElementById('movie_player')!.append(video);
+        window.autoStorageProbe.playing = true;
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+      });
+      assert.equal(await active(page), false, 'transition must block the playing trigger');
+      await page.clock.runFor(200);
+      assert.equal(await active(page), false, 'entry is announced for the minimum notice time first');
+      await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS);
+      await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
+    } finally { await browser.close(); }
+  });
+
   for (const provider of [
     {
       id: 'netflix', url: 'https://www.netflix.com/watch/70248299', next: '/watch/70248300',

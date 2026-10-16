@@ -1926,7 +1926,10 @@ function claimFullscreenShortcut(): void {
 function toggleTheaterMode(): void {
   if (refs.isTransitioning) return;
   refs.isTransitioning = true;
-  setTimeout(() => { refs.isTransitioning = false; }, 200);
+  setTimeout(() => {
+    refs.isTransitioning = false;
+    autoTheaterRuntime?.refresh();
+  }, 200);
 
   if (session.hasUi) {
     exitTheaterMode('local');

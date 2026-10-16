@@ -8,7 +8,10 @@ export type WatchPlayback = {
   pageIdentity(url: URL): string | null;
   /** Called only in MAIN; reject auxiliary players and validate available host identity. */
   mainVideo(doc: Document, identity: string): HTMLVideoElement | null;
-  observe?(video: HTMLVideoElement, onChange: () => void): () => void;
+  /** Host publications that can make an already-playing watch video ready. */
+  refreshEvents?: readonly string[];
+  /** Null means attachment is not ready; retry on the next refresh. */
+  observe?(video: HTMLVideoElement, onChange: () => void): (() => void) | null;
 };
 
 export type ProviderWatchPage = {
@@ -25,6 +28,17 @@ export function readProviderWatchPage(url: URL): ProviderWatchPage | null {
     if (playback && identity) return { provider: definition.id, identity, playback };
   }
   return null;
+}
+
+export function observeProviderWatchPlaybackChanges(onChange: () => void): () => void {
+  const events = new Set(PROVIDER_DEFINITIONS
+    .filter(definition => definition.matchesHost(window.location.hostname))
+    .flatMap(definition => definition.watchPlayback?.refreshEvents ?? []));
+  // Capture document publications as well as events dispatched on window.
+  for (const event of events) window.addEventListener(event, onChange, true);
+  return () => {
+    for (const event of events) window.removeEventListener(event, onChange, true);
+  };
 }
 
 const WATCH_QUERY = 'theater-everywhere-watch-playback-query';

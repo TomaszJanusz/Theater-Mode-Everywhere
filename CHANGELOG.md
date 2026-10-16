@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- YouTube automatic theater entry resumes when watch-player data catches up, a focused field or fullscreen is left, or the miniplayer expands to the watch page, without waiting for another playback event.
 - Clicking the picture or a control shows the play/pause HUD again, and clicking the picture closes an open player menu without pausing.
 - Disney+ next-episode playback keeps the picture visible and follows the current episode's full timeline, including seeking beyond a shorter reported runtime.
 - Seeking from the progress bar or keyboard shows loading immediately and keeps it visible until the requested position is ready.

@@ -8,6 +8,7 @@ type WatchPlayer = HTMLElement & {
 
 export const youtubeWatchPlayback: WatchPlayback = {
   pageIdentity: youtubeWatchPageId,
+  refreshEvents: ['yt-page-data-updated', 'yt-player-updated'],
   mainVideo(doc, identity) {
     const player = doc.querySelector<WatchPlayer>(YOUTUBE_PLAYER_SELECTOR);
     const watch = player?.closest('ytd-watch-flexy');
@@ -21,8 +22,8 @@ export const youtubeWatchPlayback: WatchPlayback = {
     return videos.length === 1 ? videos[0] : null;
   },
   observe(video, onChange) {
-    const player = video.closest(YOUTUBE_PLAYER_SELECTOR);
-    if (!player) return () => {};
+    const player = video.ownerDocument.querySelector(YOUTUBE_PLAYER_SELECTOR);
+    if (!player) return null;
     // Ads can finish without a second playing event on the reused video. The
     // player also flips classes such as ytp-autohide on every pointer move.
     const showingAd = () => player.matches('.ad-showing, .ad-interrupting');
