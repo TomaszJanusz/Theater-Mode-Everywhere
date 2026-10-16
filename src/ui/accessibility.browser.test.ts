@@ -110,11 +110,11 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await details.press('Enter');
         assert.equal(await details.getAttribute('aria-expanded'), 'true');
         assert.equal(await details.getAttribute('aria-controls'), 'rte-details-netflix');
-        assert.equal(await page.locator('#rte-details-netflix').isVisible(), true);
+        await page.locator('#rte-details-netflix').waitFor({ state: 'visible' }); // Height animates; wait for the settled state.
         assert.equal(await details.evaluate(el => el === document.activeElement), true);
         await details.press('Space');
         assert.equal(await details.getAttribute('aria-expanded'), 'false');
-        assert.equal(await page.locator('#rte-details-netflix').isVisible(), false);
+        await page.locator('#rte-details-netflix').waitFor({ state: 'hidden' });
         await service.getByRole('switch', { name: 'Netflix' }).press('Space');
         assert.match(await page.locator('#rte-section').ariaSnapshot(), /checkbox "All services" \[checked=mixed\]/);
         await page.locator('#tab-exclusions').click();

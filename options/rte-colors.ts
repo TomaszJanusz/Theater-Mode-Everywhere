@@ -13,7 +13,7 @@ export const over = (color: readonly number[], alpha: number, under: readonly nu
 const hex = (rgb: readonly number[]) => `#${rgb.map(value => Math.round(value).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 
 /** Splits a plain palette into roles: near-black colors tint the base, light
- * neutrals become the highlight, and the remaining hues form the orbit. */
+ * neutrals are excluded, and the remaining hues form the orbit. */
 export function brandRoles(colors: readonly string[]) {
   const dark = colors.find(color => luminance(hexRgb(color)) < 0.03);
   const neutral = (color: string) => { const rgb = hexRgb(color); return Math.max(...rgb) - Math.min(...rgb) < 24; };
@@ -22,17 +22,20 @@ export function brandRoles(colors: readonly string[]) {
   return {
     base: dark ? hex(over(hexRgb(dark), 0.45, hexRgb(TILE_BASE))) : TILE_BASE,
     accents,
-    highlight: colors.find(color => color !== dark && neutral(color) && luminance(hexRgb(color)) >= 0.03),
   };
 }
 
-/** The bright head of each comet: the palette's light neutral, else the first hue lifted toward white. */
-const cometHead = (accents: readonly string[], highlight: string | undefined) => highlight ?? hex(over(hexRgb(accents[0]), 0.45, [255, 255, 255]));
+/** Lift the hue while keeping its chroma: neutral brand highlights must not flash white. */
+const cometHead = (accents: readonly string[]) => {
+  const rgb = hexRgb(accents[0]);
+  const low = Math.min(...rgb), high = Math.max(...rgb);
+  return hex(rgb.map(channel => 45 + (channel - low) / (high - low) * 210));
+};
 
 /** The brightest color the orbit shows, which sets the worst case under the veil. */
 export function brightestStop(colors: readonly string[]): number[] {
-  const { accents, highlight } = brandRoles(colors);
-  return [cometHead(accents, highlight), ...accents].map(hexRgb).reduce((best, rgb) => luminance(rgb) > luminance(best) ? rgb : best);
+  const { accents } = brandRoles(colors);
+  return [cometHead(accents), ...accents].map(hexRgb).reduce((best, rgb) => luminance(rgb) > luminance(best) ? rgb : best);
 }
 
 /** Two opposite comets keep a rectangle's long sides alive while it orbits.
@@ -53,10 +56,8 @@ function orbitStops(accents: readonly string[], base: string, head: string): str
   }).join(', ');
 }
 
-/** One palette-to-CSS boundary. TME-48's data-contrast="high" and
- * data-transparency="reduced" hooks can flatten every tile by hiding
- * .te-animated-border::before, without provider selectors. */
+/** One palette-to-CSS boundary; High contrast hides the decoration without provider selectors. */
 export function serviceColorProperties(provider: Pick<ProviderCapabilities, 'brandColors'>): Record<string, string> {
-  const { base, accents, highlight } = brandRoles(provider.brandColors);
-  return { '--te-border-stops': orbitStops(accents, base, cometHead(accents, highlight)) };
+  const { base, accents } = brandRoles(provider.brandColors);
+  return { '--te-border-stops': orbitStops(accents, base, cometHead(accents)) };
 }

@@ -1043,7 +1043,7 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await worker.evaluate(update => chrome.storage.sync.set(update), { ...mediaProviderFlagStorageUpdate(defaultMediaProviderFlags()), language: 'en' });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(new URL('options/options.html#features', worker.url()).href);
-    await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && document.getElementById('rte-count')?.textContent === '10 of 10 on');
+    await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => input.checked));
     await capture('tme60-section.png');
     if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles.png') });
     const netflix = page.locator('[data-provider="netflix"]');
@@ -1061,7 +1061,7 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await settle();
     if ((await ring()).opacity !== '0') fail('The RTE border did not rest after the pointer left.');
     await page.locator('#rte-all').click();
-    await page.waitForFunction(() => document.getElementById('rte-count')?.textContent === '0 of 10 on');
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => !input.checked));
     if (captureDir) {
       await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles-off.png') });
     }

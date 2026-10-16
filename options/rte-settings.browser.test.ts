@@ -16,12 +16,14 @@ const bundle = (empty = false) => buildSync({
     import { setupRteSettings } from './rte-settings';
     import { localizeDocument } from '../src/i18n';
     import { languageRuntime } from '../src/i18n-runtime';
+    import { observeAppearance } from '../src/appearance-runtime';
     import { setupSettingsTabs } from './tabs';
     ${empty ? "import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities'; PROVIDER_CAPABILITIES.splice(0, PROVIDER_CAPABILITIES.length, { ...PROVIDER_CAPABILITIES[0], capabilities: { ...PROVIDER_CAPABILITIES[0].capabilities, heatmap: { status: 'no' } } });" : ''}
     window.setLanguage = async locale => { await languageRuntime.set(locale); localizeDocument(); };
     window.ready = (async () => {
       await window.setLanguage('en');
       setupSettingsTabs(document.getElementById('settings-tabs'));
+      observeAppearance(document.documentElement);
       await setupRteSettings(async () => {});
     })();`, resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts' },
   bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
@@ -57,9 +59,10 @@ async function open(page: Page, empty = false, initial: Record<string, unknown> 
       i18n: { getMessage: (key: string) => key === '@@ui_locale' ? 'en' : key === '@@bidi_dir' ? 'ltr' : '' },
       runtime: { sendMessage: async ({ locale }: { locale: string }) => messages[locale] },
       storage: {
-        sync: { get: async () => {
+        sync: { get: async (_keys: unknown, callback?: (data: Record<string, unknown>) => void) => {
           const snapshot = { ...state.data };
-          if (state.duringRead) { state.external(state.duringRead); state.duringRead = undefined; }
+          if (!callback && state.duringRead) { state.external(state.duringRead); state.duringRead = undefined; }
+          callback?.(snapshot);
           return snapshot;
         }, set: async (update: Record<string, unknown>) => { state.writes.push(update); state.external(update); } },
         onChanged: { addListener: (listener: (changes: Record<string, { newValue: unknown }>, area: string) => void) => listeners.add(listener), removeListener: (listener: (changes: Record<string, { newValue: unknown }>, area: string) => void) => listeners.delete(listener) }
@@ -81,24 +84,24 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await page.locator('[data-provider="netflix"] .rte-control').click();
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), [{ netflixIntegrationEnabled: false }]);
       assert.equal(await page.locator('#rte-all').evaluate((el: HTMLInputElement) => el.indeterminate), true);
-      assert.equal(await page.locator('#rte-count').textContent(), '9 of 10 on');
+
       await page.locator('#rte-all').press('Space');
       assert.equal(await page.locator('#rte-all').isChecked(), true);
       assert.equal(Object.keys(await page.evaluate(() => (window as unknown as Harness).writes.at(-1)!)).length, 10);
       await page.locator('#rte-all').press('Space');
-      assert.equal(await page.locator('#rte-count').textContent(), '0 of 10 on');
+
       await page.locator('#rte-youtube').focus();
       await page.keyboard.press('Space');
       assert.equal(await page.locator('#rte-youtube').isChecked(), true);
       assert.equal(await page.locator('#rte-youtube').evaluate(el => el === document.activeElement), true);
       await page.evaluate(() => (window as unknown as Harness).external({ netflixIntegrationEnabled: true }));
       assert.equal(await page.locator('#rte-netflix').isChecked(), true);
-      assert.equal(await page.locator('#rte-count').textContent(), '2 of 10 on');
+
       assert.ok((await page.locator('#rte-netflix').getAttribute('aria-describedby'))?.includes('rte-note-netflix'));
       const details = page.locator('[data-provider="netflix"] .rte-details-toggle');
       await details.click();
       assert.equal(await details.getAttribute('aria-expanded'), 'true');
-      assert.equal(await page.locator('#rte-details-netflix').isVisible(), true);
+      await page.locator('#rte-details-netflix').waitFor({ state: 'visible' });
       assert.ok((await page.locator('[data-provider="patreon"] .rte-badge').first().boundingBox())!.height < 28, 'expanding a neighboring tile must not stretch badge pills');
       assert.equal(await page.locator('#rte-netflix').isChecked(), true);
       assert.equal(await details.evaluate(el => el === document.activeElement), true);
@@ -115,11 +118,12 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(await details.evaluate(el => el === document.activeElement), true);
       const legacy = await browser.newPage();
       await open(legacy, false, Object.fromEntries(['youtube', 'vimeo', 'patreon', 'twitch', 'disney'].map(id => [MEDIA_PROVIDER_FLAG_KEYS[id as keyof typeof MEDIA_PROVIDER_FLAG_KEYS], false])), { netflixIntegrationEnabled: true });
-      assert.equal(await legacy.locator('#rte-count').textContent(), '1 of 10 on', 'storage events supersede the in-flight initial snapshot');
+
+      assert.equal(await legacy.locator('.rte-tile input:checked').count(), 1, 'storage events supersede the in-flight initial snapshot');
       assert.equal(await legacy.evaluate(() => (window as unknown as Harness).writes.length), 1, 'legacy defaults are materialized once before editing');
       await legacy.evaluate(() => { (window as unknown as Harness).writes = []; });
       await legacy.locator('#rte-youtube').press('Space');
-      assert.equal(await legacy.locator('#rte-count').textContent(), '2 of 10 on');
+
       assert.deepEqual(await legacy.evaluate(() => (window as unknown as Harness).writes), [{ youtubeIntegrationEnabled: true }]);
       assert.equal(await legacy.locator('#rte-netflix').isChecked(), true);
       assert.equal(await legacy.locator('#rte-tencent').isChecked(), false);
@@ -223,7 +227,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     } finally { await browser.close(); }
   });
 
-  it('uses the standard switch, dark-glass badges and a larger title on branded tiles', { timeout: 45000 }, async t => {
+  it('uses the standard switch, colored badges at rest and dark badges on hover with a larger title on branded tiles', { timeout: 45000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);
     try {
@@ -240,7 +244,17 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       const title = await page.locator('.rte-name').first().evaluate(el => ({ size: parseFloat(getComputedStyle(el).fontSize), weight: Number(getComputedStyle(el).fontWeight) }));
       assert.ok(title.size >= 16 && title.size <= 17, `title ${title.size}px`);
       assert.ok(title.weight >= 650 && title.weight <= 700);
-      const badge = await page.locator('.rte-badge:not(.is-matching)').first().evaluate(el => {
+      const capabilityColors = await page.locator('#rte-filter-buttons button').evaluateAll(buttons => buttons.map(button => {
+        const badge = document.querySelector(`.rte-badge[data-capability="${button.getAttribute('data-capability')}"]`)!;
+        return [getComputedStyle(button).color, getComputedStyle(badge).color];
+      }));
+      for (const [filter, badge] of capabilityColors) assert.equal(filter, badge, 'filter and tile share capability colors');
+      assert.equal(new Set(capabilityColors.map(([color]) => color)).size, 7);
+      const firstBadge = page.locator('.rte-badge:not(.is-matching)').first();
+      const rest = await firstBadge.evaluate(el => getComputedStyle(el).backgroundColor);
+      await firstBadge.hover();
+      assert.notEqual(await firstBadge.evaluate(el => getComputedStyle(el).backgroundColor), rest);
+      const badge = await firstBadge.evaluate(el => {
         const context = document.createElement('canvas').getContext('2d')!;
         context.clearRect(0, 0, 1, 1);
         context.fillStyle = getComputedStyle(el).backgroundColor;
@@ -250,6 +264,16 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       // The page black (#09090b) at 70%, never an opaque or neutral grey pill.
       assert.ok(Math.abs(badge[3] - 0.7 * 255) <= 2, `badge alpha ${badge[3]}`);
       assert.ok(badge.slice(0, 3).every((channel, i) => Math.abs(channel - [9, 9, 11][i]) <= 3), `badge color ${badge}`);
+      await page.mouse.move(2, 2);
+      await page.locator('#rte-all').focus();
+      assert.equal(await firstBadge.evaluate(el => getComputedStyle(el).backgroundColor), rest, 'leaving restores the capability color');
+      await page.locator('#rte-bilibili').focus();
+      assert.equal(await page.locator('[data-provider="bilibili"] .rte-badge').first().evaluate(el => getComputedStyle(el).color), 'rgb(228, 228, 231)', 'keyboard focus uses dark badges too');
+      await page.evaluate(() => (window as unknown as Harness).external({ reduceTransparency: 'on', highContrast: 'on' }));
+      const high = await firstBadge.evaluate(el => ({ text: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor }));
+      assert.equal(high.text, 'rgb(255, 255, 255)');
+      assert.equal(high.background, 'rgb(24, 24, 27)');
+
     } finally { await browser.close(); }
   });
 
@@ -358,6 +382,52 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(await clear.isVisible(), false);
       assert.equal(await page.locator('#rte-shown').getAttribute('role'), 'status');
     } finally { await browser.close(); }
+  });
+
+  it('lays out the shown count and master, animates details and respects resolved motion', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await open(page);
+    assert.equal(await page.locator('#rte-count').count(), 0);
+    for (const locale of ['en', 'pl', 'de', 'ar']) {
+      await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
+      const count = (await page.locator('#rte-shown').boundingBox())!;
+      const master = (await page.locator('.rte-master').boundingBox())!;
+      const checkbox = (await page.locator('#rte-all').boundingBox())!;
+      const label = (await page.locator('#rte-all-label').boundingBox())!;
+      assert.ok(Math.abs(count.y + count.height / 2 - master.y - master.height / 2) < 2);
+      if (locale === 'ar') { assert.ok(count.x > master.x); assert.ok(checkbox.x < label.x); }
+      else { assert.ok(count.x < master.x); assert.ok(checkbox.x > label.x); }
+    }
+    await page.evaluate(() => (window as unknown as Harness).setLanguage('en'));
+    const tile = page.locator('[data-provider="bilibili"]');
+    const button = tile.locator('.rte-details-toggle');
+    const region = tile.locator('.rte-details-region');
+    const height = () => tile.evaluate(el => el.getBoundingClientRect().height);
+    const settle = () => region.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    assert.equal(await button.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
+    const collapsed = await height();
+    await button.click();
+    assert.ok(await region.evaluate(el => el.getAnimations().some(animation => animation instanceof CSSTransition && animation.transitionProperty === 'grid-template-rows')));
+    await settle();
+    assert.ok(await height() > collapsed + 20);
+    await button.click();
+    await settle();
+    assert.ok(Math.abs(await height() - collapsed) < 1);
+    assert.equal(await tile.locator('.rte-details').getAttribute('aria-hidden'), 'true');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForFunction(() => document.documentElement.dataset.motion === 'reduced');
+    await button.click();
+    assert.equal(await region.evaluate(el => el.getAnimations().length), 0);
+    assert.ok(await height() > collapsed + 20);
+    await page.evaluate(() => (window as unknown as Harness).external({ reduceMotion: 'off' }));
+    assert.equal(await page.locator('html').getAttribute('data-motion'), 'normal', 'explicit Off overrides the system through the shared resolver');
+    await button.click();
+    await settle();
+    await page.evaluate(() => (window as unknown as Harness).external({ reduceMotion: 'on' }));
+    await button.click();
+    assert.equal(await region.evaluate(el => el.getAnimations().length), 0);
   });
 
   it('announces an empty result and disables its master for a catalog without a matching service', { timeout: 45000 }, async t => {

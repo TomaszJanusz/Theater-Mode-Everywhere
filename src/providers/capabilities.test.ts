@@ -121,6 +121,13 @@ describe('provider capability declarations', () => {
     assert.deepEqual(Object.fromEntries(PROVIDER_CAPABILITIES.map(provider => [provider.id, [...provider.brandColors]])), palettes);
   });
 
+  it('keeps orbit highlights saturated instead of ramping to white', () => {
+    for (const provider of PROVIDER_CAPABILITIES) {
+      const rgb = brightestStop(provider.brandColors);
+      assert.ok(Math.max(...rgb) - Math.min(...rgb) >= 100, `${provider.id}: saturated brightest stop`);
+    }
+  });
+
   it('keeps tile text above 4.5:1 on the resting row and under the veil on every brand', () => {
     const contrast = (a: readonly number[], b: readonly number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
     const pageBlack = hexRgb('#09090b');
