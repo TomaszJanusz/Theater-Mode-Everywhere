@@ -185,11 +185,13 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
           assert.ok(ratio(colors.progress, colors.panel) >= 3, `${label} countdown progress`);
           assert.ok(ratio(colors.text, colors.progress) >= 4.5, `${label} text over countdown progress`);
         }
+        // Reduce transparency alone keeps the ring and its interior (motion has its own setting).
+        if (high) assert.equal(colors.ring, 'none', `${label} RTE ring and gradient interior`);
+        else assert.notEqual(colors.ring, 'none', `${label} keeps the RTE ring`);
         if (high || reduced) {
-          assert.equal(colors.ring, 'none', `${label} RTE ring and gradient interior`);
           assert.ok(ratio(colors.badgeText, colors.badge) >= 4.5, `${label} New badge`);
           hexColor(colors.player); // Opaque independently of the underlying video.
-        } else assert.notEqual(colors.ring, 'none', `${label} restores RTE decorations`);
+        }
         ratios.push({ preset, high, reduced, text: ratio(colors.text, colors.background), secondary: ratio(colors.secondary, colors.panel),
           accent: hexColor(colors.accent), foreground: hexColor(colors.foreground), filled: ratio(colors.foreground, colors.accent),
           hover: ratio(colors.foreground, colors.hover), indicator: ratio(colors.accent, colors.panel), border: ratio(colors.border, colors.panel) });

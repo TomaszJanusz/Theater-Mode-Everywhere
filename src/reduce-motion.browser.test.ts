@@ -10,7 +10,8 @@ const bundle = esbuild.buildSync({ stdin: { contents: `
   window.setMotion = motion => {
     for (const target of [document.documentElement, document.getElementById('host')]) applyAppearanceModes(target, { contrast: false, transparency: false, motion });
   };
-  window.isMotionReduced = () => isMotionReduced(document);`,
+  window.isMotionReduced = () => isMotionReduced(document);
+  window.applyModes = modes => applyAppearanceModes(document.documentElement, modes);`,
   resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts' }, bundle: true, write: false, format: 'iife', target: 'es2022'
 }).outputFiles[0].text;
 const stylesheet = (path: string) => esbuild.buildSync({ entryPoints: [path], bundle: true, write: false, loader: { '.svg': 'dataurl' } }).outputFiles[0].text;
@@ -45,4 +46,32 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion c
   const reduced = await measure();
   assert.ok(reduced.settings < 0.001 && reduced.marquee < 0.001, 'settings transitions and the marquee collapse');
   assert.equal(reduced.reduced, true);
+});
+
+for (const engine of [chromium, firefox]) it(`${engine.name()}: the service tile ring orbits unless motion is reduced; Reduce transparency keeps it`, { timeout: 30000 }, async t => {
+  const browser = await engine.launch({ headless: true });
+  ownTestBrowser(t, browser);
+  const page = await browser.newPage();
+  await page.setContent('<div id="tile" class="rte-tile te-animated-border" style="--te-border-stops: red, blue, red; width: 200px; height: 80px"></div>');
+  await page.addStyleTag({ content: optionsCss });
+  await page.addScriptTag({ content: bundle });
+  await page.hover('#tile');
+  const ring = () => page.evaluate(() => {
+    const style = getComputedStyle(document.getElementById('tile')!, '::before');
+    return { orbit: parseFloat(style.animationDuration), name: style.animationName, content: style.content, opacity: style.opacity };
+  });
+  const modes = (contrast: boolean, transparency: boolean, motion: boolean) => page.evaluate(
+    modes => (window as unknown as { applyModes(m: object): void }).applyModes(modes), { contrast, transparency, motion });
+  await modes(false, false, false);
+  const normal = await ring();
+  assert.ok(normal.name === 'te-border-orbit' && normal.orbit >= 1, 'the ring orbits with normal motion');
+  await modes(false, true, false);
+  const { orbit, name, content } = await ring();
+  assert.deepEqual({ orbit, name, content }, { orbit: normal.orbit, name: normal.name, content: normal.content }, 'Reduce transparency does not remove the ring or its orbit');
+  await modes(false, false, true);
+  const reduced = await ring();
+  assert.equal(reduced.name, 'none', 'Reduce motion stops the orbit');
+  assert.equal(reduced.opacity, '1', 'but leaves the static colored ring');
+  await modes(true, false, false);
+  assert.equal((await ring()).content, 'none', 'High contrast flattens the decoration');
 });

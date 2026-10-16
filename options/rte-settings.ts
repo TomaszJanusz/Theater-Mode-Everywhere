@@ -37,6 +37,7 @@ export async function setupRteSettings(notify: () => Promise<void>): Promise<() 
     label.className = 'rte-control';
     tile.className = 'rte-tile te-animated-border';
     tile.dataset.provider = provider.id;
+    tile.dataset.newFeature = `rte${provider.id[0].toUpperCase()}${provider.id.slice(1)}`;
     for (const [key, value] of Object.entries(serviceColorProperties(provider))) tile.style.setProperty(key, value);
     const name = document.createElement('bdi');
     name.className = 'rte-name';

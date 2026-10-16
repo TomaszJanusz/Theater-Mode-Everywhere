@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import {
   acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
   resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  pendingFeatureHighlights, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
+  pendingFeatureHighlights, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
 } from './feature-highlights';
+import { MEDIA_PROVIDER_IDS } from './media-features/provider-flags';
 
 it('fresh installs start seen; updates keep their existing acknowledgement, including skips', () => {
   const fresh = initialSeenThrough('install', '1.6.3');
@@ -60,4 +62,21 @@ it('shows nothing as new until the acknowledged generation has been read', () =>
   assert.equal(isNewFeature('settingsLanguage', pending), false);
   assert.equal(isNewFeature('playerAudio', pending), false);
   assert.equal(isNewFeature('settingsLanguage', resolveFeatureHighlights('1.6.0')), true, 'an existing install without a stored value still sees the current items');
+});
+
+it('registers every New marker of Settings, and every service tile added since 1.5.0', () => {
+  const html = readFileSync(new URL('../options/options.html', import.meta.url), 'utf8');
+  const ids = new Set<string>(NEW_FEATURE_ITEMS.map(item => item.id));
+  const marked = [...html.matchAll(/data-new-feature="([^"]+)"/g)].map(match => match[1]);
+  for (const id of marked) assert.ok(ids.has(id), `${id} is marked in options.html but not registered`);
+  for (const id of ['settingsAutoEnterTheater', 'settingsHighContrast', 'settingsReduceTransparency', 'settingsReduceMotion']) {
+    assert.ok(marked.includes(id), `${id} has a home in options.html`);
+  }
+  // Tiles are generated from the provider list, named `rte` + the capitalized provider id.
+  const tiles = new Set<string>(MEDIA_PROVIDER_IDS.map(id => `rte${id[0].toUpperCase()}${id.slice(1)}`));
+  for (const id of ['rteBilibili', 'rteBilibiliIntl', 'rteTencent', 'rteCrunchyroll', 'rteNetflix']) {
+    assert.ok(ids.has(id) && tiles.has(id), `${id} is registered for a real service tile`);
+  }
+  const state = resolveFeatureHighlights('1.6.0', {}, { [SEEN_THROUGH_STORAGE_KEY]: '1.5' });
+  for (const item of NEW_FEATURE_ITEMS) assert.equal(isNewFeature(item.id, state), true, item.id);
 });

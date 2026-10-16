@@ -1497,6 +1497,9 @@ section h2 {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 32%, transparent);
 }
 
+/* The dialog scroll lock removes the viewport scrollbar; a reserved gutter keeps the page from shifting. */
+html { scrollbar-gutter: stable; }
+
 body.te-dialog-open {
   overflow: hidden;
 }
