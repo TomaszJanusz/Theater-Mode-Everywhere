@@ -832,6 +832,15 @@
   "privacyPolicy": {
     "message": "سياسة الخصوصية"
   },
+  "privacyPolicyDescription": {
+    "message": "كيف تتعامل الإضافة مع بياناتك. النص الكامل للسياسة متاح بالإنجليزية فقط."
+  },
+  "privacyPolicyRead": {
+    "message": "قراءة سياسة الخصوصية"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "فتح النسخة على الإنترنت"
+  },
   "aboutLetterFreeHtml": {
     "message": "الإضافة مجانية ولا ترسل أي معلومات عنك أو عمّا تشاهده إلى المطوّر أو أطراف ثالثة غير مرتبطة بالتشغيل. يمكن مزامنة الإعدادات عبر حساب المتصفح، ويمكن لميزات التشغيل الاتصال مباشرة بالخدمة التي تشاهد عليها. إذا لاحظت خللاً في العمل فيمكنك الإبلاغ عنه على <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
   },
