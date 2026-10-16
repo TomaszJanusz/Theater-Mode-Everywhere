@@ -1,3 +1,4 @@
+import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
 import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
@@ -116,6 +117,7 @@ import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
 import {
   createHud,
+  TITLE_HUD_CLASS,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
@@ -705,13 +707,8 @@ function picturePositionOptions() {
   };
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 function pictureMoveTransition(): string {
-  return prefersReducedMotion()
+  return isMotionReduced()
     ? 'none'
     : `object-position ${PICTURE_MOVE_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`;
 }
@@ -793,7 +790,7 @@ function applyTheaterPictureLayout(): void {
   const letterbox = horizontalLetterboxPx(frame);
   const root = document.documentElement;
   const previous = root.style.getPropertyValue('--theater-object-position');
-  if (previous !== '' && previous !== position && !prefersReducedMotion()) beginPictureMove();
+  if (previous !== '' && previous !== position && !isMotionReduced()) beginPictureMove();
   root.classList.toggle(
     'theater-everywhere-picture-top',
     raisedCaptionsUseBand(position, letterbox)
@@ -1381,6 +1378,8 @@ function initialize(): void {
       const sliderPanel = activeEl?.closest('.theater-volume-container, .theater-speed-container')
         ?.querySelector<HTMLElement>('.theater-volume-panel, .theater-speed-panel');
       if (sliderPanel && !sliderPanel.inert) return false;
+      // A keyboard-revealed title consumes the first Escape (see dismissTitleReveal in hud.ts).
+      if (activeEl?.matches(`.${TITLE_HUD_CLASS}:focus-visible`)) return false;
     }
     if (activeEl?.matches('.theater-scrubber-container')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;

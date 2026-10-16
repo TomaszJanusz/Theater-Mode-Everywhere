@@ -22,3 +22,7 @@ html.theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions
   bottom: var(--theater-caption-bottom, 48px) !important;
   transition: bottom 0.18s ease !important;
 }
+
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-html-active.theater-everywhere-crunchyroll-host-captions .bitmovinplayer-container > div:last-child:has(> div > ul) > div > ul {
+  transition: none !important;
+}

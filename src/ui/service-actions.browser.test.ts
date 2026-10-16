@@ -9,7 +9,8 @@ import { describe, it } from 'node:test';
 const require = createRequire(import.meta.url);
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
+// This fixture mounts the player UI in the light DOM, where the shadow root's `:host` marker is the document root.
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css')).replaceAll(':host(', ':root(').replaceAll(':root([data-motion="reduced"])', ':root[data-motion="reduced"]');
 
 type Esbuild = {
   buildSync: (options: {
@@ -215,7 +216,7 @@ describe('service action CTA', () => {
       assert.equal(await page.evaluate('window.__unsubscribed'), 1);
       assert.equal(await page.locator('.theater-service-action-host').count(), 0);
 
-      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.evaluate(() => { document.documentElement.dataset.motion = 'reduced'; });
       await page.evaluate(`(() => {
         const scope = new TeServiceActions.DisposableScope();
         window.__actions = [{id:'recap', label:'Skip recap'}];

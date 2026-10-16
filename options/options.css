@@ -1132,13 +1132,6 @@ section h2 {
   cursor: not-allowed;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .choice-combobox,
-  .choice-combobox::after {
-    transition: none;
-  }
-}
-
 .appearance-block {
   display: flex;
   flex-direction: column;
@@ -1781,14 +1774,6 @@ body.te-dialog-open {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .te-dialog-overlay,
-  .te-dialog,
-  .te-dialog-overlay.is-leaving,
-  .te-dialog-overlay.is-leaving .te-dialog {
-    animation: none;
-  }
-}
 .shortcut-input[aria-invalid="true"] {
   border-color: #f59e0b !important;
 }
@@ -1924,9 +1909,14 @@ body.te-dialog-open {
 }
 /* An off service shows the colors at 60%, which capabilities.test.ts counts in its contrast bound. */
 .rte-tile:has(input:not(:checked)):is(:hover, :has(:focus-visible))::before { opacity: .6; }
+:root[data-motion="reduced"] :is(.te-dialog-overlay, .te-dialog, .te-dialog-overlay.is-leaving, .te-dialog-overlay.is-leaving .te-dialog) {
+  /* Fill-both entrances would paint their start keyframe for a frame; skip them entirely. */
+  animation: none;
+}
 @keyframes te-border-orbit { to { --te-border-angle: 360deg; } }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="reduced"] .te-animated-border::before,
+:root[data-motion="reduced"] .te-animated-border:is(:hover, :has(:focus-visible))::before {
   /* Hover shows the static colored ring and interior: no orbit, boost or fade. */
-  .te-animated-border::before, .te-animated-border:is(:hover, :has(:focus-visible))::before { animation: none; transition: none; }
-  .rte-tile .toggle-slider, .rte-tile .toggle-slider::before { transition: none; }
+  animation: none;
+  transition: none;
 }

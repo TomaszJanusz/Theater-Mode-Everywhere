@@ -11,6 +11,18 @@
   --appearance-high-border: #a1a1aa;
 }
 
+/* Reduced motion is one rule for every extension root. Durations collapse instead of
+   becoming `none`, so transitionend/animationend listeners still settle the end state. */
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after,
+:host([data-motion="reduced"]) *, :host([data-motion="reduced"]) *::before, :host([data-motion="reduced"]) *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
 /* Forced colors retains browser ownership, including native form controls. */
 @media (forced-colors: none) {
   /* Both modes replace glass surfaces and decorative layers with opaque tokens. */

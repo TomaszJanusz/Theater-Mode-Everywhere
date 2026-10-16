@@ -19,7 +19,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual sites and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.'],
     [{ strong: 'Audio effects:' }, ' Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.'],
     [{ strong: 'SponsorBlock support:' }, ' See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.'],
-    [{ strong: 'Accessibility:' }, ' Theater Mode Everywhere respects your system preferences for increased contrast and reduced transparency.'],
+    [{ strong: 'Accessibility:' }, ' Theater Mode Everywhere respects your system preferences for increased contrast, reduced transparency and reduced motion.'],
     ['The titles of the videos being played are displayed.'],
     ['You can go to the home page of the service the video is playing on.'],
     ['Theater Mode Everywhere should now use fewer resources.'],

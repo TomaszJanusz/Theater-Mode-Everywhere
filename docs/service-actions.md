@@ -84,7 +84,7 @@ or at the picture corner, whichever is higher. Stacked actions keep a 12px gap.
 A newly rendered action plays one accent sweep across its glass, under the
 label; actions that appear together start 160ms apart. The animation class is
 removed on `animationend`, so a hidden/re-shown host does not replay it and
-nothing keeps animating. `prefers-reduced-motion: reduce` disables it.
+nothing keeps animating. Reduce motion (see [appearance modes](appearance-modes.md)) disables it.
 
 ## Stale controls and validation
 

@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "투명도 줄이기"
   },
+  "reduceMotionTitle": {
+    "message": "동작 줄이기"
+  },
   "appearanceAutoDescription": {
     "message": "자동은 시스템 설정을 따릅니다."
   },

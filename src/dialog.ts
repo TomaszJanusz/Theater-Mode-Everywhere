@@ -1,3 +1,4 @@
+import { isMotionReduced } from './appearance-runtime';
 import { containModalFocus } from './accessibility';
 import { t } from './i18n';
 import { languageRuntime } from './i18n-runtime';
@@ -125,7 +126,7 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
       };
 
       if (immediate) finish();
-      else window.setTimeout(finish, prefersReducedMotion() ? 0 : 160);
+      else window.setTimeout(finish, isMotionReduced() ? 0 : 160);
     };
 
     const onOverlayPointerDown = (event: PointerEvent): void => {
@@ -158,8 +159,4 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
       buttons[index]?.focus();
     });
   });
-}
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }

@@ -312,7 +312,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       const focused = await page.locator('[data-provider="youtube"]').evaluate(el => getComputedStyle(el, '::before').animationPlayState);
       assert.equal(focused, 'running', 'keyboard focus colors and orbits like hover');
       await page.locator('#rte-all').focus();
-      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.evaluate(() => { document.documentElement.dataset.motion = 'reduced'; });
       await netflix.hover();
       const still = await motion();
       assert.equal(still.opacity, '1', 'reduced motion: hover still shows the static colored ring and interior');

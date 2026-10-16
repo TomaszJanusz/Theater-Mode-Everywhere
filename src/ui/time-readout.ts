@@ -3,6 +3,8 @@
  * Glyphs keep the clock color at full opacity; a mask on the slot window does
  * the fading, so the ink never dims or flashes brighter.
  */
+import { isMotionReduced } from '../appearance-runtime';
+
 export const TIME_DIGIT_TRANSITION_MS = 320;
 
 export type TimeShape = {
@@ -78,7 +80,7 @@ function setSlotChar(slot: HTMLElement, next: string, animate: boolean, countsDo
   if (slot.dataset.ch === next && slot.childElementCount > 0) return;
   const doc = slot.ownerDocument;
   const view = doc.defaultView;
-  const reduce = view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const reduce = isMotionReduced(doc);
   const previous = slot.dataset.ch;
   slot.dataset.ch = next;
   const pending = settleTimers.get(slot);

@@ -1,6 +1,6 @@
 import {
-  APPEARANCE_CHOICES, HIGH_CONTRAST_STORAGE_KEY, REDUCE_TRANSPARENCY_STORAGE_KEY,
-  resolveHighContrast, resolveReduceTransparency
+  APPEARANCE_CHOICES, HIGH_CONTRAST_STORAGE_KEY, REDUCE_TRANSPARENCY_STORAGE_KEY, REDUCE_MOTION_STORAGE_KEY,
+  resolveHighContrast, resolveReduceTransparency, resolveReduceMotion
 } from '../src/appearance-preferences';
 import { languageRuntime } from '../src/i18n-runtime';
 import { t } from '../src/i18n';
@@ -11,7 +11,8 @@ export function setupAppearanceChoices(): () => void {
   let disposed = false;
   const bindings = [
     { key: HIGH_CONTRAST_STORAGE_KEY, resolve: resolveHighContrast },
-    { key: REDUCE_TRANSPARENCY_STORAGE_KEY, resolve: resolveReduceTransparency }
+    { key: REDUCE_TRANSPARENCY_STORAGE_KEY, resolve: resolveReduceTransparency },
+    { key: REDUCE_MOTION_STORAGE_KEY, resolve: resolveReduceMotion }
   ].map(binding => ({
     ...binding, value: binding.resolve(undefined), changed: false,
     menu: createCombobox(document.querySelector<HTMLButtonElement>(`#${binding.key}-combobox`)!, APPEARANCE_CHOICES.map(value => ({

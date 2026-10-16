@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { resolveHighContrast, resolveReduceTransparency, effectiveAppearanceMode } from './appearance-preferences';
+import { resolveHighContrast, resolveReduceTransparency, resolveReduceMotion, effectiveAppearanceMode } from './appearance-preferences';
 import { ACCENT_COLOR_OPTIONS } from './accentTheme';
 import { accentForeground, contrastRatio, contrastSafeAccent } from './contrast';
 
@@ -13,7 +13,7 @@ const token = (name: string) => {
 };
 
 describe('appearance choices', () => {
-  for (const resolve of [resolveHighContrast, resolveReduceTransparency]) {
+  for (const resolve of [resolveHighContrast, resolveReduceTransparency, resolveReduceMotion]) {
     it(`${resolve.name} validates stored values and defaults to Auto`, () => {
       for (const value of [undefined, null, true, false, 1, 'yes', {}, 'ON']) assert.equal(resolve(value), 'auto');
       for (const value of ['auto', 'on', 'off'] as const) assert.equal(resolve(value), value);
@@ -26,6 +26,24 @@ describe('appearance choices', () => {
       assert.equal(effectiveAppearanceMode('off', system), false);
     }
     assert.equal(effectiveAppearanceMode('auto'), false);
+  });
+});
+
+describe('reduced motion', () => {
+  it('follows the system only in Auto and lets On/Off override it', () => {
+    assert.equal(effectiveAppearanceMode(resolveReduceMotion(undefined), true), true);
+    assert.equal(effectiveAppearanceMode(resolveReduceMotion('off'), true), false);
+    assert.equal(effectiveAppearanceMode(resolveReduceMotion('on'), false), true);
+  });
+  it('leaves no stylesheet with its own system-only motion query', () => {
+    // A per-component @media block would ignore the Off/On choice; use data-motion instead.
+    const sources = ['content.css', 'ui/shadow.css', 'providers/youtube/presentation.css',
+      'providers/netflix/presentation.css', 'providers/crunchyroll/presentation.css', 'providers/disney/stage.ts',
+      'ui/discovery.ts', '../options/options.css', '../popup/popup.css'];
+    for (const source of sources) {
+      assert.ok(!readFileSync(new URL(`./${source}`, import.meta.url), 'utf8').includes('prefers-reduced-motion'), source);
+    }
+    assert.match(css, /data-motion="reduced"\]/);
   });
 });
 
@@ -85,6 +103,12 @@ describe('appearance listener ownership', () => {
       assert.equal(target.dataset.transparency, 'reduced');
       for (const notify of events) notify({ reduceTransparency: { newValue: 'off' } }, 'sync');
       assert.equal(target.dataset.transparency, 'normal');
+      assert.equal(target.dataset.motion, 'normal');
+      media[2].matches = true;
+      for (const notify of media[2].listeners) notify();
+      assert.equal(target.dataset.motion, 'reduced', 'Auto follows prefers-reduced-motion');
+      for (const notify of events) notify({ reduceMotion: { newValue: 'off' } }, 'sync');
+      assert.equal(target.dataset.motion, 'normal', 'Off overrides the system');
       const lateNotifications = [...media[1].listeners];
       dispose(); dispose();
       hydrate({ highContrast: 'on' });
@@ -92,7 +116,7 @@ describe('appearance listener ownership', () => {
       assert.deepEqual(target.dataset, {});
       assert.equal(events.size, 0);
       assert.equal(media.reduce((n, query) => n + query.listeners.size, 0), 0);
-      assert.equal(remove.mock.callCount(), 2);
+      assert.equal(remove.mock.callCount(), 3);
     } finally {
       if (originalWindow) Object.defineProperty(globalThis, 'window', originalWindow); else Reflect.deleteProperty(globalThis, 'window');
       if (originalChrome) Object.defineProperty(globalThis, 'chrome', originalChrome); else Reflect.deleteProperty(globalThis, 'chrome');

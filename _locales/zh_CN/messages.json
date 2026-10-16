@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "降低透明度"
   },
+  "reduceMotionTitle": {
+    "message": "减少动态效果"
+  },
   "appearanceAutoDescription": {
     "message": "自动模式遵循系统设置。"
   },

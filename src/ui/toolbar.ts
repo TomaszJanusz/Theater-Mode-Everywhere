@@ -10,6 +10,7 @@ import {
   raisedCaptionRowCount,
   type DockRect
 } from '../media-features/caption-dock';
+import { isMotionReduced } from '../appearance-runtime';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
@@ -300,7 +301,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     // A picture move is the exception: captions travel with the video.
     const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
     // Our overlay glides with the control bar; a host renderer owns its own ease.
-    const glide = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const glide = !isMotionReduced();
     applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode, glide);
     applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
     captionDockLifted = lifted;

@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "تقليل الشفافية"
   },
+  "reduceMotionTitle": {
+    "message": "تقليل الحركة"
+  },
   "appearanceAutoDescription": {
     "message": "يتبع الوضع التلقائي إعداد النظام."
   },

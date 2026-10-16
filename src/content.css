@@ -47,11 +47,11 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   transition: object-position 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.theater-everywhere-html-active .theater-everywhere-video-active,
-  html.theater-everywhere-html-active [data-theater-everywhere] {
-    transition: none !important;
-  }
+/* Page-level motion honors the resolved reduce-motion setting (see appearance-runtime.ts). */
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-html-active .theater-everywhere-video-active,
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-html-active [data-theater-everywhere],
+html[data-theater-everywhere-motion="reduced"] video::-webkit-media-text-track-display {
+  transition: none !important;
 }
 
 /* Ancestor override to ensure overflow is visible and no new stacking contexts are created */

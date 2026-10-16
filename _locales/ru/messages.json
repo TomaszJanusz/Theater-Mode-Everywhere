@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "Уменьшить прозрачность"
   },
+  "reduceMotionTitle": {
+    "message": "Уменьшить движение"
+  },
   "appearanceAutoDescription": {
     "message": "Авто следует настройкам системы."
   },

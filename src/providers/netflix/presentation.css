@@ -99,3 +99,7 @@ html.theater-everywhere-netflix-stage:not([data-te-netflix-integration-off]) .pl
 html.theater-everywhere-picture-moving.theater-everywhere-netflix-stage .player-timedtext {
   transition: bottom 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
+
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-netflix-stage .player-timedtext {
+  transition: none !important;
+}
