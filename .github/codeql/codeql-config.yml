@@ -44,6 +44,20 @@ paths-ignore:
 
 # Known intentional patterns. Triage these instead of filtering their queries,
 # so a new instance at a different sink still surfaces:
+# - Local tooling is not automatically harmless. Store ZIP uploads to fixed
+#   vendor APIs and AMO HS256 JWT signing are intentional; trace the source and
+#   destination before dismissing file-to-HTTP or password-hash alerts. The
+#   screenshot renderer's predictable OS-temp video cache is an accepted local
+#   tool risk, not a safe pattern for privileged or untrusted-job execution.
+# - CLI release-note versions come from a validated numeric release tag in the
+#   workflow. Its dot-only regex escaping is not a general input sanitizer.
+# - schema.org VideoObject itemtype matching in providers/native/page-title.ts
+#   selects display metadata, not trusted URL hosts. Titles render as text.
+# - YouTube timedtext message type/body checks select cache operations, not
+#   authorization. Origin, direct-child source, URL and size checks are separate.
+# - MAIN PAGE_FETCH flows reach fetchWithoutHarvest only through fetchPageMedia's
+#   URL policy. Check initial/final URL validation and provider gates; the
+#   harvest helper itself only prevents extension reads re-entering observers.
 # - innerHTML with static SVG markup or bundled locale strings (src/ui/hud.ts,
 #   src/ui/dialog-close-button.ts, options/options.ts, src/i18n.ts
 #   data-i18n-html). Real only if host- or user-supplied text reaches the
