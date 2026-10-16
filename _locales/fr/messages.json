@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Activer le mode cinéma dès que la lecture est prête, sans l’avis de 3 secondes."
   },
+  "videoActivatorTitle": {
+    "message": "Bouton sur la vidéo"
+  },
+  "videoActivatorDescription": {
+    "message": "Affiche un petit bouton dans un coin libre de la vidéo lorsque vous la survolez. Cliquez dessus pour activer le mode cinéma."
+  },
+  "videoActivatorLabel": {
+    "message": "Activer le mode cinéma"
+  },
   "autoEnterTheaterOn": {
     "message": "Oui"
   },

@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Entrar en cuanto la reproducción esté lista, sin el aviso de 3 segundos."
   },
+  "videoActivatorTitle": {
+    "message": "Botón sobre el vídeo"
+  },
+  "videoActivatorDescription": {
+    "message": "Muestra un pequeño botón en una esquina libre del vídeo al apuntar con el cursor. Haz clic para activar el modo teatro."
+  },
+  "videoActivatorLabel": {
+    "message": "Activar el modo teatro"
+  },
   "autoEnterTheaterOn": {
     "message": "Sí"
   },

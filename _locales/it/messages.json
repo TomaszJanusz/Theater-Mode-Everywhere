@@ -673,6 +673,15 @@
   "autoTheaterSkipCountdownDescription": {
     "message": "Attiva la modalità cinema appena la riproduzione è pronta, senza l’avviso di 3 secondi."
   },
+  "videoActivatorTitle": {
+    "message": "Pulsante sul video"
+  },
+  "videoActivatorDescription": {
+    "message": "Mostra un piccolo pulsante in un angolo libero del video quando ci passi sopra con il cursore. Fai clic per attivare la modalità cinema."
+  },
+  "videoActivatorLabel": {
+    "message": "Attiva la modalità cinema"
+  },
   "autoEnterTheaterOn": {
     "message": "Sì"
   },

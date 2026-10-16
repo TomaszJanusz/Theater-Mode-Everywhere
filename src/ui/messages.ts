@@ -50,6 +50,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
   autoEnterNoticeTitle: "Entering theater mode…",
   autoEnterNoticeHint: "Click or press <kbd>$1</kbd> to cancel",
+  videoActivatorLabel: "Enter theater mode",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
   videoFitLabel: "Video fit",

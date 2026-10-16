@@ -15,6 +15,7 @@ import { setupSettingsTabs } from './tabs';
 import licenseText from '../LICENSE?raw';
 import { openPrivacyPolicy } from './privacy-policy';
 import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
+import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from '../src/ui/video-activator-settings';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
   ACCENT_COLOR_OPTIONS,
@@ -101,6 +102,7 @@ const FEATURE_TOGGLES = [
   { id: 'sponsorblock-toggle', key: SPONSORBLOCK_STORAGE_KEY, resolve: resolveSponsorBlockMarkers },
   { id: 'auto-enter-theater-toggle', key: AUTO_THEATER_STORAGE_KEY, resolve: resolveAutoEnterTheater },
   { id: 'auto-theater-skip-countdown-toggle', key: AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolve: resolveAutoTheaterSkipCountdown },
+  { id: 'video-activator-toggle', key: VIDEO_ACTIVATOR_STORAGE_KEY, resolve: resolveVideoActivator },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
   { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
 ] as const;
