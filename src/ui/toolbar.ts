@@ -385,10 +385,10 @@ export function createToolbar(ctx: PlayerChromeContext) {
       return;
     }
     if (document.fullscreenElement) {
-      void document.exitFullscreen();
+      document.exitFullscreen().catch(console.error);
       return;
     }
-    void document.documentElement.requestFullscreen();
+    document.documentElement.requestFullscreen().catch(console.error);
   }
 
   // Theater's picture: click plays/pauses, double-click toggles fullscreen
