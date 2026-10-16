@@ -662,7 +662,16 @@
     "message": "用 <span class=\"heart\">❤</span> 制造于 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "自动进入剧场模式"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "无障碍"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "跳过倒计时"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "播放就绪后立即进入影院模式，不显示 3 秒提示。"
   },
   "autoEnterTheaterOn": {
     "message": "开启"

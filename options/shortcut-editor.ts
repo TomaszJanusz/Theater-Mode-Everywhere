@@ -4,7 +4,7 @@ import { assignShortcut, defaultShortcuts, isReservedShortcut, shortcutConflicts
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
 
 export function createShortcutEditor(onSaved: () => Promise<void>) {
-  const entries = Array.from(document.querySelectorAll<HTMLInputElement>('.shortcut-input')).map(input => {
+  const entries = Array.from(document.querySelectorAll<HTMLInputElement>('.options-input')).map(input => {
     const reset = input.parentElement!.querySelector<HTMLButtonElement>('.reset-single-btn')!;
     const action = reset.dataset.shortcut as keyof Shortcuts;
     const label = document.querySelector<HTMLLabelElement>(`label[for="${input.id}"]`)!.textContent!.trim();
@@ -13,11 +13,11 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   }).filter(entry => Object.hasOwn(defaultShortcuts, entry.action));
   const notice = document.createElement('p');
   notice.id = 'shortcut-conflict-status';
-  notice.className = 'shortcut-conflict-status';
+  notice.className = 'options-conflict-status';
   notice.setAttribute('role', 'status');
   notice.setAttribute('aria-atomic', 'true');
-  entries[0]?.input.closest('.shortcuts-grid')?.before(notice);
-  const grid = entries[0]?.input.closest('.shortcuts-grid');
+  entries[0]?.input.closest('.options-body')?.before(notice);
+  const grid = entries[0]?.input.closest('.options-body');
   grid?.setAttribute('aria-busy', 'true');
   let busy = false;
   let current = { ...defaultShortcuts };

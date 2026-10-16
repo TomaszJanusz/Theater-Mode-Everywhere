@@ -662,7 +662,16 @@
     "message": "Сделано с <span class=\"heart\">❤</span> в 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Автоматически включать режим кинотеатра"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Специальные возможности"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Пропустить обратный отсчёт"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Включить режим кинотеатра, как только воспроизведение будет готово, без 3-секундного уведомления."
   },
   "autoEnterTheaterOn": {
     "message": "Вкл."

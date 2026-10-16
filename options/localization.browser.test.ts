@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { chromium, type Page } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
+import { readStylesheet } from '../src/test-utils/styles';
 import { LANGUAGES } from '../src/language';
 import { WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
@@ -48,9 +49,49 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
     await page.waitForFunction(() => document.getElementById('domain-name')!.textContent !== 'Loading...');
   } else {
-    await page.waitForFunction(() => document.querySelector('.shortcuts-grid')?.getAttribute('aria-busy') === 'false');
+    await page.waitForFunction(() => document.querySelector('#shortcuts .options-body')?.getAttribute('aria-busy') === 'false');
   }
 }
+
+it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { timeout: 30_000 }, async t => {
+  const browser = await chromium.launch({ headless: true });
+  ownTestBrowser(t, browser);
+  try {
+    const page = await browser.newPage();
+    await open(page, 'options', []);
+    await page.addStyleTag({ content: readStylesheet(path.join(root, 'options/options.css')) });
+    await page.locator('#tab-features').click();
+    const group = page.getByRole('group', { name: 'AutoTheater', exact: true });
+    assert.equal(await group.locator('input[type=checkbox]').count(), 2);
+    const skip = page.locator('#auto-theater-skip-countdown-toggle');
+    assert.equal(await skip.isChecked(), false, 'existing settings retain the countdown');
+    await page.locator('label[for=auto-theater-skip-countdown-toggle]').click();
+    assert.equal(await page.evaluate(async () => (await chrome.storage.sync.get('autoTheaterSkipCountdown')).autoTheaterSkipCountdown), true);
+    await page.evaluate(() => chrome.storage.sync.set({ autoTheaterSkipCountdown: false }));
+    assert.equal(await skip.isChecked(), false, 'external changes update the same control');
+    await page.evaluate(() => chrome.storage.sync.set({ autoTheaterSkipCountdown: 'true' }));
+    assert.equal(await skip.isChecked(), false, 'invalid saved values retain the countdown');
+    await page.locator('#tab-appearance').click();
+    assert.equal(await page.locator('#appearance label[for=keep-controls-visible-toggle]').isVisible(), true);
+    assert.equal(await page.getByRole('group', { name: 'Accessibility', exact: true }).locator('.choice-combobox').count(), 3);
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const locale of ['en', 'pl', 'ar']) {
+        await switchTo(page, locale);
+        for (const tab of ['appearance', 'features', 'shortcuts']) {
+          await page.locator(`#tab-${tab}`).click();
+          assert.equal(await page.locator(`#${tab}`).evaluate(panel => {
+            return [...panel.querySelectorAll('.options-row')].every(row => {
+              const bounds = row.getBoundingClientRect();
+              return bounds.width > 0 && bounds.left >= 0 && bounds.right <= innerWidth
+                && row.scrollWidth <= row.clientWidth + 1;
+            });
+          }), true, `${locale} ${tab} at ${width}px keeps rows inside the viewport`);
+        }
+      }
+    }
+  } finally { await browser.close(); }
+});
 
 async function switchTo(page: Page, locale: string): Promise<void> {
   await page.evaluate(locale => chrome.storage.sync.set({ language: locale }), locale);

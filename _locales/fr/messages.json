@@ -662,7 +662,16 @@
     "message": "Fait avec <span class=\"heart\">❤</span> en 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Activer automatiquement le mode cinéma"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Accessibilité"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Ignorer le compte à rebours"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Activer le mode cinéma dès que la lecture est prête, sans l’avis de 3 secondes."
   },
   "autoEnterTheaterOn": {
     "message": "Oui"

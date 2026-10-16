@@ -662,7 +662,16 @@
     "message": "Stworzono z <span class=\"heart\">❤</span> w 🇵🇱"
   },
   "autoEnterTheaterTitle": {
-    "message": "Automatycznie włączaj tryb kinowy"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Ułatwienia dostępu"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Pomiń odliczanie"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Włącz tryb kinowy, gdy odtwarzanie będzie gotowe, bez 3-sekundowego powiadomienia."
   },
   "autoEnterTheaterOn": {
     "message": "Wł."

@@ -86,7 +86,7 @@
             <h2 data-i18n="appearanceTitle">Appearance</h2>
             <p class="card-desc" data-i18n="appearanceDescription">Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights.</p>
           </div></div>
-          <div class="card-body">
+          <div class="card-body options-body">
             <div class="appearance-block" data-new-feature="settingsPictureLayout">
               <p id="picture-align-label" class="appearance-block-label" data-i18n="pictureAlignLabel">Layout</p>
               <div id="picture-align-grid" class="picture-align-grid" role="radiogroup" aria-labelledby="picture-align-label"></div>
@@ -94,16 +94,16 @@
                 id="picture-align-subtitles-row"
                 class="picture-align-subtitles is-disabled"
               >
-                <div class="feature-info">
+                <div class="options-info">
                   <label
                     id="picture-align-subtitles-label"
                     for="picture-align-subtitles-toggle"
-                    class="feature-label"
+                    class="options-label"
                     data-i18n="pictureAlignSubtitlesOnlyTitle"
                   >Raised only with subtitles</label>
                   <p
                     id="picture-align-subtitles-description"
-                    class="feature-desc"
+                    class="options-desc"
                     data-i18n="pictureAlignSubtitlesOnlyDescription"
                   >Use Raised when subtitles are on and Centered when they are off.</p>
                 </div>
@@ -124,38 +124,51 @@
               <p id="accent-color-label" class="appearance-block-label" data-i18n="accentColorLabel">Accent color</p>
               <div id="accent-color-grid" class="choice-grid" role="radiogroup" aria-labelledby="accent-color-label"></div>
             </div>
-            <div class="feature-row" data-new-feature="settingsHighContrast">
-              <div class="feature-info">
-                <label id="highContrast-label" for="highContrast-combobox" class="feature-label" data-i18n="highContrastTitle">High contrast</label>
-                <p id="highContrast-description" class="feature-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+            <div class="options-group" role="group" aria-labelledby="accessibility-title">
+              <h3 id="accessibility-title" data-i18n="accessibilityTitle">Accessibility</h3>
+              <div class="options-row" data-new-feature="settingsHighContrast">
+                <div class="options-info">
+                  <label id="highContrast-label" for="highContrast-combobox" class="options-label" data-i18n="highContrastTitle">High contrast</label>
+                  <p id="highContrast-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+                </div>
+                <button type="button" id="highContrast-combobox" class="choice-combobox" aria-labelledby="highContrast-label" aria-describedby="highContrast-description"></button>
               </div>
-              <button type="button" id="highContrast-combobox" class="choice-combobox" aria-labelledby="highContrast-label" aria-describedby="highContrast-description"></button>
-            </div>
-            <div class="feature-row" data-new-feature="settingsReduceTransparency">
-              <div class="feature-info">
-                <label id="reduceTransparency-label" for="reduceTransparency-combobox" class="feature-label" data-i18n="reduceTransparencyTitle">Reduce transparency</label>
-                <p id="reduceTransparency-description" class="feature-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+              <div class="options-row" data-new-feature="settingsReduceTransparency">
+                <div class="options-info">
+                  <label id="reduceTransparency-label" for="reduceTransparency-combobox" class="options-label" data-i18n="reduceTransparencyTitle">Reduce transparency</label>
+                  <p id="reduceTransparency-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+                </div>
+                <button type="button" id="reduceTransparency-combobox" class="choice-combobox" aria-labelledby="reduceTransparency-label" aria-describedby="reduceTransparency-description"></button>
               </div>
-              <button type="button" id="reduceTransparency-combobox" class="choice-combobox" aria-labelledby="reduceTransparency-label" aria-describedby="reduceTransparency-description"></button>
-            </div>
-            <div class="feature-row" data-new-feature="settingsReduceMotion">
-              <div class="feature-info">
-                <label id="reduceMotion-label" for="reduceMotion-combobox" class="feature-label" data-i18n="reduceMotionTitle">Reduce motion</label>
-                <p id="reduceMotion-description" class="feature-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+              <div class="options-row" data-new-feature="settingsReduceMotion">
+                <div class="options-info">
+                  <label id="reduceMotion-label" for="reduceMotion-combobox" class="options-label" data-i18n="reduceMotionTitle">Reduce motion</label>
+                  <p id="reduceMotion-description" class="options-desc" data-i18n="appearanceAutoDescription">Auto follows your system setting.</p>
+                </div>
+                <button type="button" id="reduceMotion-combobox" class="choice-combobox" aria-labelledby="reduceMotion-label" aria-describedby="reduceMotion-description"></button>
               </div>
-              <button type="button" id="reduceMotion-combobox" class="choice-combobox" aria-labelledby="reduceMotion-label" aria-describedby="reduceMotion-description"></button>
             </div>
-            <div class="feature-row" data-new-feature="settingsLanguage">
-              <div class="feature-info">
-                <label id="language-label" for="language-combobox" class="feature-label" data-i18n="languageTitle">Language</label>
-                <p id="language-description" class="feature-desc" data-i18n="languageDescription">Choose the language for Settings, the popup, and player controls.</p>
+            <div class="options-row">
+              <div class="options-info">
+                <label data-new-feature="settingsAlwaysShowControls" for="keep-controls-visible-toggle" class="options-label" data-i18n="keepControlsVisibleTitle">Always show controls</label>
+                <p class="options-desc" data-i18n="keepControlsVisibleDescription">Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="keep-controls-visible-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="options-row" data-new-feature="settingsLanguage">
+              <div class="options-info">
+                <label id="language-label" for="language-combobox" class="options-label" data-i18n="languageTitle">Language</label>
+                <p id="language-description" class="options-desc" data-i18n="languageDescription">Choose the language for Settings, the popup, and player controls.</p>
               </div>
               <button type="button" id="language-combobox" class="choice-combobox" aria-labelledby="language-label" aria-describedby="language-description"></button>
             </div>
-            <div class="feature-row">
-              <div class="feature-info">
-                <label id="highlight-new-features-label" for="highlight-new-features-toggle" class="feature-label" data-i18n="highlightNewFeaturesTitle">Highlight new features</label>
-                <p id="highlight-new-features-description" class="feature-desc" data-i18n="highlightNewFeaturesDescription">Show New badges for recently added features. Turning this off marks the current update as seen.</p>
+            <div class="options-row">
+              <div class="options-info">
+                <label id="highlight-new-features-label" for="highlight-new-features-toggle" class="options-label" data-i18n="highlightNewFeaturesTitle">Highlight new features</label>
+                <p id="highlight-new-features-description" class="options-desc" data-i18n="highlightNewFeaturesDescription">Show New badges for recently added features. Turning this off marks the current update as seen.</p>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="highlight-new-features-toggle" role="switch" aria-labelledby="highlight-new-features-label" aria-describedby="highlight-new-features-description" checked>
@@ -171,41 +184,44 @@
           <h2 data-i18n="featuresTitle">Features</h2>
           <p class="card-desc" data-i18n="featuresDescription">Turn optional theater mode behavior on or off.</p>
         </div></div>
-        <div class="card-body">
-          <div class="feature-row" data-new-feature="settingsAutoEnterTheater">
-            <div class="feature-info">
-              <label for="auto-enter-theater-toggle" class="feature-label" data-i18n="autoEnterTheaterTitle">Automatically enter theater mode</label>
-              <p class="feature-desc" data-i18n="autoEnterTheaterDescription">Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.</p>
+        <div class="card-body options-body">
+          <div class="options-group" role="group" aria-labelledby="auto-theater-title">
+            <h3 id="auto-theater-title" data-i18n="autoEnterTheaterTitle">AutoTheater</h3>
+            <div class="options-row" data-new-feature="settingsAutoEnterTheater">
+              <div class="options-info">
+                <label id="auto-enter-theater-label" for="auto-enter-theater-toggle" class="options-label" data-i18n="autoEnterTheaterTitle">AutoTheater</label>
+                <p id="auto-enter-theater-description" class="options-desc" data-i18n="autoEnterTheaterDescription">Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-enter-theater-toggle" role="switch" aria-labelledby="auto-enter-theater-label" aria-describedby="auto-enter-theater-description">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="auto-enter-theater-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label data-new-feature="settingsAlwaysShowControls" for="keep-controls-visible-toggle" class="feature-label" data-i18n="keepControlsVisibleTitle">Always show controls</label>
-              <p class="feature-desc" data-i18n="keepControlsVisibleDescription">Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.</p>
+            <div class="options-row">
+              <div class="options-info">
+                <label id="auto-theater-skip-countdown-label" for="auto-theater-skip-countdown-toggle" class="options-label" data-i18n="autoTheaterSkipCountdownTitle">Skip countdown</label>
+                <p id="auto-theater-skip-countdown-description" class="options-desc" data-i18n="autoTheaterSkipCountdownDescription">Enter as soon as playback is ready, without the 3-second notice.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-theater-skip-countdown-toggle" role="switch" aria-labelledby="auto-theater-skip-countdown-label" aria-describedby="auto-theater-skip-countdown-description">
+                <span class="toggle-slider" aria-hidden="true"></span>
+              </label>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="keep-controls-visible-toggle">
-              <span class="toggle-slider"></span>
-            </label>
           </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="volume-boost-toggle" class="feature-label" data-i18n="volumeBoostTitle">Volume Boost</label>
-              <p class="feature-desc" data-i18n="volumeBoostDescription">Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.</p>
+          <div class="options-row">
+            <div class="options-info">
+              <label for="volume-boost-toggle" class="options-label" data-i18n="volumeBoostTitle">Volume Boost</label>
+              <p class="options-desc" data-i18n="volumeBoostDescription">Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled.</p>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="volume-boost-toggle">
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div class="feature-row">
-            <div class="feature-info">
-              <label for="sponsorblock-toggle" class="feature-label" data-i18n="sponsorBlockMarkersTitle">SponsorBlock markers</label>
-              <p id="sponsorblock-description" class="feature-desc" data-i18n="sponsorBlockMarkersDescription">Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors.</p>
+          <div class="options-row">
+            <div class="options-info">
+              <label for="sponsorblock-toggle" class="options-label" data-i18n="sponsorBlockMarkersTitle">SponsorBlock markers</label>
+              <p id="sponsorblock-description" class="options-desc" data-i18n="sponsorBlockMarkersDescription">Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colors.</p>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="sponsorblock-toggle" aria-describedby="sponsorblock-description">
@@ -271,13 +287,13 @@
           <p class="section-desc" data-i18n="keyboardShortcutsDescription">Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported.</p>
         </div></div>
         <div class="card-body">
-          <div class="shortcuts-grid">
-            <div class="shortcut-group">
+          <div class="options-body">
+            <div class="options-group">
               <h3 data-i18n="theaterFullscreenPipTitle">Theater, Fullscreen & PiP</h3>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle" data-i18n="toggleTheaterMode">Toggle Theater Mode</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle" data-i18n="toggleTheaterMode">Toggle Theater Mode</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggle" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -285,10 +301,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-exit" data-i18n="exitTheaterMode">Exit Theater Mode</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-exit" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-exit" data-i18n="exitTheaterMode">Exit Theater Mode</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-exit" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="exit" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -296,10 +312,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle-fullscreen" data-i18n="toggleFullscreen">Toggle Fullscreen</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle-fullscreen" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle-fullscreen" data-i18n="toggleFullscreen">Toggle Fullscreen</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle-fullscreen" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleFullscreen" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -307,10 +323,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle-pip" data-i18n="togglePictureInPicture">Toggle Picture-in-Picture</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle-pip" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle-pip" data-i18n="togglePictureInPicture">Toggle Picture-in-Picture</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle-pip" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="togglePiP" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -320,15 +336,15 @@
               </div>
             </div>
 
-            <div class="shortcut-group">
+            <div class="options-group">
               <h3 data-i18n="playerControlsTitle">Player Controls</h3>
-              <div class="shortcut-row">
-                <div class="shortcut-copy">
-                  <label for="shortcut-cycle" data-i18n="cycleSwitchPlayer">Switch Video on Page</label>
-                  <p class="shortcut-hint" data-i18n="cycleSwitchPlayerDescription">Works only when the page has more than one HTML5 video.</p>
+              <div class="options-row">
+                <div class="options-info">
+                  <label class="options-label" for="shortcut-cycle" data-i18n="cycleSwitchPlayer">Switch Video on Page</label>
+                  <p class="options-desc" data-i18n="cycleSwitchPlayerDescription">Works only when the page has more than one HTML5 video.</p>
                 </div>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-cycle" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-cycle" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycle" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -336,10 +352,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-cycle-fit" data-i18n="cycleVideoFit">Cycle Video Fit</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-cycle-fit" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-cycle-fit" data-i18n="cycleVideoFit">Cycle Video Fit</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-cycle-fit" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycleFit" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -347,10 +363,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-cycle-layout" data-i18n="cyclePictureLayout">Change picture layout</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-cycle-layout" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-cycle-layout" data-i18n="cyclePictureLayout">Change picture layout</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-cycle-layout" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycleLayout" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -358,10 +374,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle-chat" data-i18n="toggleNativeChat">Toggle chat</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle-chat" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle-chat" data-i18n="toggleNativeChat">Toggle chat</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle-chat" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleChat" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -369,10 +385,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle-captions" data-i18n="toggleSubtitles">Toggle Subtitles</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle-captions" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle-captions" data-i18n="toggleSubtitles">Toggle Subtitles</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle-captions" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleCaptions" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -380,10 +396,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-increase-caption-size" data-i18n="increaseSubtitleSize">Increase Subtitle Size</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-increase-caption-size" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-increase-caption-size" data-i18n="increaseSubtitleSize">Increase Subtitle Size</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-increase-caption-size" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="increaseCaptionSize" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -391,10 +407,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-decrease-caption-size" data-i18n="decreaseSubtitleSize">Decrease Subtitle Size</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-decrease-caption-size" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-decrease-caption-size" data-i18n="decreaseSubtitleSize">Decrease Subtitle Size</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-decrease-caption-size" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="decreaseCaptionSize" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -402,10 +418,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-controls-pin" data-i18n="toggleControlsPin">Toggle controls visibility</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-controls-pin" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-controls-pin" data-i18n="toggleControlsPin">Toggle controls visibility</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-controls-pin" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleControlsPin" title="Reset to default" data-i18n-title="resetToDefault" aria-label="Reset to default" data-i18n-aria-label="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -413,10 +429,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-show-help" data-i18n="showHideHelp">Show/Hide Help</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-show-help" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-show-help" data-i18n="showHideHelp">Show/Hide Help</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-show-help" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="showHelp" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -426,12 +442,12 @@
               </div>
             </div>
 
-            <div class="shortcut-group">
+            <div class="options-group">
               <h3 data-i18n="playbackVolumeControlsTitle">Playback & Volume Controls</h3>
-              <div class="shortcut-row">
-                <label for="shortcut-play-pause" data-i18n="playPause">Play / Pause</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-play-pause" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-play-pause" data-i18n="playPause">Play / Pause</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-play-pause" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="playPause" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -439,10 +455,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-previous-video" data-i18n="previousVideo">Previous</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-previous-video" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-previous-video" data-i18n="previousVideo">Previous</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-previous-video" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="previousVideo" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -450,10 +466,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-next-video" data-i18n="nextVideo">Next</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-next-video" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-next-video" data-i18n="nextVideo">Next</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-next-video" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="nextVideo" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -461,10 +477,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-seek-back" data-i18n="seekBackward5">Seek Backward (5s)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-seek-back" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-seek-back" data-i18n="seekBackward5">Seek Backward (5s)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-seek-back" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="seekBack" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -472,10 +488,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-seek-forward" data-i18n="seekForward5">Seek Forward (5s)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-seek-forward" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-seek-forward" data-i18n="seekForward5">Seek Forward (5s)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-seek-forward" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="seekForward" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -483,10 +499,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-frame-back" data-i18n="frameStepBackward004">Frame Step Backward (0.04s)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-frame-back" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-frame-back" data-i18n="frameStepBackward004">Frame Step Backward (0.04s)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-frame-back" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="frameBack" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -494,10 +510,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-frame-forward" data-i18n="frameStepForward004">Frame Step Forward (0.04s)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-frame-forward" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-frame-forward" data-i18n="frameStepForward004">Frame Step Forward (0.04s)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-frame-forward" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="frameForward" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -505,10 +521,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-volume-up" data-i18n="volumeUp5">Volume Up (5%)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-volume-up" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-volume-up" data-i18n="volumeUp5">Volume Up (5%)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-volume-up" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="volumeUp" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -516,10 +532,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-volume-down" data-i18n="volumeDown5">Volume Down (5%)</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-volume-down" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-volume-down" data-i18n="volumeDown5">Volume Down (5%)</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-volume-down" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="volumeDown" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -527,10 +543,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-toggle-mute" data-i18n="toggleMute">Toggle mute</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-toggle-mute" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-toggle-mute" data-i18n="toggleMute">Toggle mute</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-toggle-mute" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleMute" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -540,12 +556,12 @@
               </div>
             </div>
 
-            <div class="shortcut-group">
+            <div class="options-group">
               <h3 data-i18n="settingsSectionAudio">Audio</h3>
-              <div class="shortcut-row">
-                <label for="shortcut-volume-boost" data-i18n="volumeBoostLabel">Volume boost</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-volume-boost" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-volume-boost" data-i18n="volumeBoostLabel">Volume boost</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-volume-boost" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="toggleVolumeBoost" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -553,10 +569,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-voice" data-i18n="voiceBoostLabel">Voice boost</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-voice" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-voice" data-i18n="voiceBoostLabel">Voice boost</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-voice" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycleVoice" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -564,10 +580,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-leveling" data-i18n="volumeLevelingLabel">Reduce loud sounds</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-leveling" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-leveling" data-i18n="volumeLevelingLabel">Reduce loud sounds</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-leveling" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycleLeveling" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
@@ -575,10 +591,10 @@
                   </button>
                 </div>
               </div>
-              <div class="shortcut-row">
-                <label for="shortcut-bass" data-i18n="bassLabel">Bass</label>
-                <div class="shortcut-input-wrapper">
-                  <input type="text" id="shortcut-bass" class="shortcut-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
+              <div class="options-row">
+                <label class="options-label" for="shortcut-bass" data-i18n="bassLabel">Bass</label>
+                <div class="options-input-wrapper">
+                  <input type="text" id="shortcut-bass" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">
                   <button type="button" class="reset-single-btn" data-shortcut="cycleBass" title="Reset to default" data-i18n-title="resetToDefault">
                     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2.5 2v6h6M21.5 22v-6h-6M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>

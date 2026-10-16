@@ -215,7 +215,7 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance acros
         await menu.scrollIntoViewIfNeeded();
         const bounds = await menu.evaluate(el => {
           const row = el.parentElement!.getBoundingClientRect(), control = el.getBoundingClientRect();
-          const info = el.parentElement!.querySelector('.feature-info')!.getBoundingClientRect();
+          const info = el.parentElement!.querySelector('.options-info')!.getBoundingClientRect();
           return { contained: control.left >= row.left && control.right <= row.right, below: control.top >= info.bottom };
         });
         assert.deepEqual(bounds, { contained: true, below: true }, `${key}: narrow ${dir} row keeps the dropdown below its description`);

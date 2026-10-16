@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  resolveAutoEnterTheater, shouldAutoEnterTheater, updateAutoTheaterVisit,
+  resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown, shouldAutoEnterTheater, updateAutoTheaterVisit,
   type AutoTheaterDecision, type AutoTheaterVisit
 } from './auto-theater';
 
@@ -16,8 +16,10 @@ describe('automatic theater entry', () => {
   it('defaults off and only accepts the boolean true', () => {
     for (const value of [undefined, null, false, 0, 1, 'true', {}, []]) {
       assert.equal(resolveAutoEnterTheater(value), false);
+      assert.equal(resolveAutoTheaterSkipCountdown(value), false);
     }
     assert.equal(resolveAutoEnterTheater(true), true);
+    assert.equal(resolveAutoTheaterSkipCountdown(true), true);
   });
 
   it('requires an eligible playing main video on a declared watch page', () => {

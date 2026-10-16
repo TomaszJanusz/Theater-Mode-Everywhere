@@ -986,14 +986,14 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
       await options.waitForFunction(() => (document.getElementById('keep-controls-visible-toggle') as HTMLInputElement)?.checked);
       await waitForChrome(true, true, false);
       await options.locator('#tab-shortcuts').click();
-      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
+      await options.locator('.options-body[aria-busy="false"]').waitFor();
       await options.locator('#shortcut-controls-pin').press('Shift+U');
       await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleControlsPin === 'Shift+U');
       // A storage write can finish before the editor accepts the next recording.
-      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
+      await options.locator('.options-body[aria-busy="false"]').waitFor();
       await options.locator('#shortcut-toggle-mute').press('Control+M');
       await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'Ctrl+M');
-      await options.locator('.shortcuts-grid[aria-busy="false"]').waitFor();
+      await options.locator('.options-body[aria-busy="false"]').waitFor();
       await options.waitForFunction(() => (document.getElementById('shortcut-controls-pin') as HTMLInputElement)?.value === 'Shift+U');
       const shortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
       if (shortcuts.toggleControlsPin !== 'Shift+U' || shortcuts.toggleMute !== 'Ctrl+M') {
@@ -1127,7 +1127,7 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
     await options.goto(new URL('options/options.html#shortcuts', worker.url()).href);
     // The second tab starts in front; visual transitions need an active page.
     await options.bringToFront();
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     // Legacy/synced duplicates must be visibly marked, including while focused.
     const previousShortcuts = await worker.evaluate(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts);
     await worker.evaluate(async shortcuts => {
@@ -1157,7 +1157,7 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
     await options.keyboard.press('Enter'); // Safe initial focus preserves the existing owner.
     await dialog.waitFor({ state: 'detached' });
     if (await options.locator('#shortcut-toggle-mute').inputValue() !== 'M') fail('Cancelling a shortcut conflict changed the assignment.');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#shortcut-toggle-mute').press('f');
     await dialog.locator('.te-dialog-btn-primary').click();
     await options.waitForFunction(async () => {
@@ -1166,41 +1166,41 @@ async function assertShortcutManagement(page: Page, context: BrowserContext): Pr
     });
     await options.waitForFunction(() => (document.getElementById('shortcut-toggle-fullscreen') as HTMLInputElement).value === '');
     await options.reload();
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     if (await options.locator('#shortcut-toggle-fullscreen').inputValue() !== '') fail('Unassigned shortcut reverted to its default on reload.');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('[data-shortcut="toggleFullscreen"]').click();
     await dialog.waitFor();
     await options.keyboard.press('Escape');
     await dialog.waitFor({ state: 'detached' });
     if (await options.locator('#shortcut-toggle-fullscreen').inputValue() !== '') fail('Single reset bypassed conflict validation.');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('[data-shortcut="toggleFullscreen"]').click();
     await dialog.locator('.te-dialog-btn-primary').click();
     await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleFullscreen === 'F');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#shortcut-toggle-fullscreen').press('Tab');
     if (await options.locator('#shortcut-toggle-fullscreen').evaluate(el => el === document.activeElement)) fail('Shortcut recording trapped Tab.');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#shortcut-toggle-mute').press('Escape');
     await dialog.waitFor();
     if (!(await dialog.innerText()).includes('reserved')) fail('Escape was not protected as a safety exit key.');
     await dialog.locator('.te-dialog-btn-primary').click();
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#reset-shortcuts-btn').click();
     await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggleMute === 'M');
     await second.goto(new URL('options/options.html#shortcuts', worker.url()).href);
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
-    await second.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
+    await second.waitForSelector('.options-body[aria-busy="false"]');
     await Promise.all([options.locator('#shortcut-toggle-mute').press('Control+M'), second.locator('#shortcut-controls-pin').press('Shift+U')]);
     await options.waitForFunction(async () => {
       const { shortcuts } = await chrome.storage.sync.get('shortcuts');
       return shortcuts?.toggleMute === 'Ctrl+M' && shortcuts?.toggleControlsPin === 'Shift+U';
     });
     // Live custom entry keys replace their defaults without a reload.
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#shortcut-toggle-fullscreen').press('g');
-    await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+    await options.waitForSelector('.options-body[aria-busy="false"]');
     await options.locator('#shortcut-toggle').press('Shift+T');
     await dialog.locator('.te-dialog-btn-primary').click(); // Move from Cycle video.
     await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggle === 'Shift+T');
@@ -1280,7 +1280,7 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
       await options.goto(new URL('options/options.html', worker.url()).href);
       await options.waitForSelector('[data-picture-align="top"][aria-checked="true"]');
       await options.locator('#tab-shortcuts').click();
-      await options.waitForSelector('.shortcuts-grid[aria-busy="false"]');
+      await options.waitForSelector('.options-body[aria-busy="false"]');
       await options.locator('#shortcut-cycle-layout').press('Shift+K');
       await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn')?.getAttribute('aria-keyshortcuts') === 'Shift+K');
       await page.bringToFront();

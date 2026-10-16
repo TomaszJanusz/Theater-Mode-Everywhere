@@ -662,7 +662,16 @@
     "message": "폴란드 🇵🇱에서 <span class=\"heart\">❤</span>을 담아 제작"
   },
   "autoEnterTheaterTitle": {
-    "message": "자동으로 시어터 모드 시작"
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "접근성"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "카운트다운 건너뛰기"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "3초 알림 없이 재생 준비가 되면 바로 영화관 모드로 전환합니다."
   },
   "autoEnterTheaterOn": {
     "message": "켜짐"
