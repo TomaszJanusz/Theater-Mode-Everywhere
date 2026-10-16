@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "Мініатюри"
   },
+  "rteCapabilityPlaylists": {
+    "message": "Списки відтворення"
+  },
   "rteCapabilityQuickActions": {
     "message": "Швидкі дії"
   },

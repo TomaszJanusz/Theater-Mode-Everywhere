@@ -11,6 +11,7 @@ export const crunchyrollCapabilities = {
     chapters: { status: 'conditional', noteKey: 'rteNoteCrunchyroll' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteCrunchyroll' },
+    playlists: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteCrunchyroll' },
   }
 } as const satisfies ProviderCapabilities;

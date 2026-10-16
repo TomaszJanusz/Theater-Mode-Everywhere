@@ -153,6 +153,30 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     } finally { await browser.close(); }
   });
 
+  it('advertises only registered playlist navigation and localizes its filter and badges', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page);
+      const supported = ['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'vimeo', 'youtube'];
+      assert.deepEqual((await page.locator('.rte-tile:has(.rte-badge[data-capability="playlists"])').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
+      const filter = page.locator('#rte-filter-buttons [data-capability="playlists"]');
+      await filter.click();
+      for (const { locale } of LANGUAGES) {
+        await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
+        assert.equal(await filter.textContent(), `${catalogs[locale].rteCapabilityPlaylists.message} · 7`);
+        assert.deepEqual((await page.locator('.rte-tile:visible').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
+        assert.ok((await page.locator('.rte-badge[data-capability="playlists"]').allTextContents()).every(text => text === catalogs[locale].rteCapabilityPlaylists.message));
+      }
+      await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
+      assert.equal(await page.locator('.rte-tile:visible').count(), 4);
+      await page.locator('#rte-clear').click();
+      assert.equal(await page.locator('.rte-tile:visible').count(), 10);
+      assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), []);
+    } finally { await browser.close(); }
+  });
+
   it('localizes every language live, sorts with its collator and preserves focus and filters in RTL', { timeout: 45000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);

@@ -932,6 +932,9 @@
   "rteCapabilityThumbnails": {
     "message": "미리보기 이미지"
   },
+  "rteCapabilityPlaylists": {
+    "message": "재생목록"
+  },
   "rteCapabilityQuickActions": {
     "message": "빠른 동작"
   },
