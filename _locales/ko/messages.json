@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "최근 추가된 기능에 “신규” 배지를 표시합니다."
   },
+  "highlightNewFeaturesHide": {
+    "message": "다음 버전까지 숨기기"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "배지 복원"
+  },
   "highContrastTitle": {
     "message": "고대비"
   },

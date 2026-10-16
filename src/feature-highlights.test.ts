@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import {
   featureHighlightsAcknowledgement, SEEN_ITEMS_STORAGE_KEY, acknowledgeGeneration, initialSeenThrough, installedGeneration, isNewFeature, isNewSince,
-  resolveFeatureHighlights, resolveHighlightNewFeatures, resolveSeenThrough,
-  pendingFeatureHighlights, previousGeneration, compareGenerations, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
+  resolveFeatureHighlights, resolveHighlightNewFeatures, withFeatureHighlightsLocal, resolveSeenThrough,
+  pendingFeatureHighlights, previousGeneration, HIDDEN_THROUGH_STORAGE_KEY, badgesHiddenUntilNextVersion, compareGenerations, NEW_FEATURE_ITEMS, SEEN_THROUGH_STORAGE_KEY, HIGHLIGHT_NEW_FEATURES_STORAGE_KEY
 } from './feature-highlights';
 import { MEDIA_PROVIDER_IDS } from './media-features/provider-flags';
 import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from './test-utils/release';
@@ -164,5 +164,20 @@ it('normalizes window records to at most two valid adjacent generation clocks', 
   for (const invalid of [{}, { ...previous, generation: '9.0' }, { ...previous, firstShownAt: 101 },
     { ...previous, firstShownAt: -1 }, { ...previous, firstShownAt: Infinity }]) {
     assert.deepEqual(resolveHighlightsWindow({ ...current, previous: invalid }), current);
+  }
+});
+
+it('hide until next version silences badges and unseen state for the running generation only', () => {
+  const hidden = { [HIDDEN_THROUGH_STORAGE_KEY]: CURRENT_GENERATION };
+  const state = resolveFeatureHighlights(CURRENT_VERSION, {}, hidden);
+  assert.equal(badgesHiddenUntilNextVersion(state), true);
+  assert.equal(NEW_FEATURE_ITEMS.some(item => isNewFeature(item.id, state)), false);
+  // Nothing was acknowledged, so restoring (or a newer generation) brings the badges back.
+  assert.equal(state.seenThrough, PREVIOUS_GENERATION);
+  assert.equal(isNewFeature('settingsLanguage', withFeatureHighlightsLocal(state, { [HIDDEN_THROUGH_STORAGE_KEY]: undefined }, 0)), true);
+  const next = `${CURRENT_GENERATION.split('.')[0]}.${Number(CURRENT_GENERATION.split('.')[1]) + 1}.0`;
+  assert.equal(badgesHiddenUntilNextVersion(resolveFeatureHighlights(next, {}, hidden)), false);
+  for (const value of [undefined, null, 5, '2', 'x.y', {}]) {
+    assert.equal(badgesHiddenUntilNextVersion(resolveFeatureHighlights(CURRENT_VERSION, {}, { [HIDDEN_THROUGH_STORAGE_KEY]: value })), false);
   }
 });

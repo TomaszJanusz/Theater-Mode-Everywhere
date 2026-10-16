@@ -1300,6 +1300,40 @@ section h2 {
   gap: 16px;
 }
 
+.options-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Quiet companion to a row's primary control; same shape as the RTE filter's clear button. */
+.ghost-btn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+}
+
+.ghost-btn:hover:not(:disabled) {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.ghost-btn:disabled {
+  opacity: var(--appearance-content-opacity, 0.45);
+  cursor: default;
+}
+
+.ghost-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
 .options-group > .options-row {
   grid-column: 2;
 }

@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Показувати позначку «Новинка» біля нещодавно доданих функцій."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Приховати до наступної версії"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Повернути позначки"
+  },
   "highContrastTitle": {
     "message": "Висока контрастність"
   },

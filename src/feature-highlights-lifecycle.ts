@@ -1,7 +1,7 @@
 import {
-  FEATURE_HIGHLIGHTS_LOCAL_KEYS, HIGHLIGHTS_WINDOW_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY,
+  FEATURE_HIGHLIGHTS_LOCAL_KEYS, HIDDEN_THROUGH_STORAGE_KEY, HIGHLIGHTS_WINDOW_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY,
   featureHighlightsAcknowledgement, initialSeenThrough, resolveFeatureHighlights,
-  resolveHighlightsWindow, resolveSeenItems, runningGeneration, previousGeneration
+  resolveHiddenThrough, resolveHighlightsWindow, resolveSeenItems, runningGeneration, previousGeneration, compareGenerations
 } from './feature-highlights';
 import {
   LEGACY_WHATS_NEW_AUTO_OPEN_PREFIX, WHATS_NEW_AUTO_OPEN_MIGRATION_KEY,
@@ -42,8 +42,15 @@ export function createFeatureHighlightsLifecycle(local: LocalStorage, version: s
     }
     const seen = resolveSeenItems(data[SEEN_ITEMS_STORAGE_KEY]);
     if (JSON.stringify(data[SEEN_ITEMS_STORAGE_KEY]) !== JSON.stringify(seen)) writes[SEEN_ITEMS_STORAGE_KEY] = seen;
+    // Bounded to one generation; a marker from an older generation has expired, so drop it.
+    const hidden = resolveHiddenThrough(data[HIDDEN_THROUGH_STORAGE_KEY]);
+    const stale = data[HIDDEN_THROUGH_STORAGE_KEY] !== undefined
+      && (!hidden || compareGenerations(hidden, generation) < 0);
     if (Object.keys(writes).length) await local.set(writes);
-    return { ...data, ...writes };
+    if (stale) await local.remove([HIDDEN_THROUGH_STORAGE_KEY]);
+    const result: Record<string, unknown> = { ...data, ...writes };
+    if (stale) delete result[HIDDEN_THROUGH_STORAGE_KEY];
+    return result;
   }
 
   async function migrateAutoOpen() {
@@ -69,6 +76,11 @@ export function createFeatureHighlightsLifecycle(local: LocalStorage, version: s
         [WHATS_NEW_ACK_STORAGE_KEY]: WHATS_NEW_RELEASE.id
       });
     }),
+    hideUntilNextVersion: () => enqueue(async () => {
+      await read();
+      await local.set({ [HIDDEN_THROUGH_STORAGE_KEY]: runningGeneration(version) });
+    }),
+    restoreHidden: () => enqueue(async () => { await local.remove([HIDDEN_THROUGH_STORAGE_KEY]); }),
     installed: (details: WhatsNewInstallDetails, openOptions: () => Promise<void>) => enqueue(async () => {
       await migrateAutoOpen();
       await read();

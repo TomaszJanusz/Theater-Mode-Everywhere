@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { createFeatureHighlightsLifecycle } from './feature-highlights-lifecycle';
 import {
-  FEATURE_HIGHLIGHTS_MAX_AGE_MS, HIGHLIGHTS_WINDOW_STORAGE_KEY, NEW_FEATURE_ITEMS,
+  FEATURE_HIGHLIGHTS_MAX_AGE_MS, HIDDEN_THROUGH_STORAGE_KEY, HIGHLIGHTS_WINDOW_STORAGE_KEY, NEW_FEATURE_ITEMS,
   SEEN_ITEMS_STORAGE_KEY, isNewFeature, resolveFeatureHighlights
 } from './feature-highlights';
 import {
@@ -155,4 +155,23 @@ it('carries only the previous generation clock so rollover cannot revive expired
   assert.equal(isNewSince('9.2', resolveFeatureHighlights('9.3.0', {}, { ...rollover, newFeaturesSeenThrough: '9.0' }, nextTime + FEATURE_HIGHLIGHTS_MAX_AGE_MS)), false);
   const skipped = await createFeatureHighlightsLifecycle(db, '9.5.0', () => nextTime + 2).read();
   assert.deepEqual(skipped[HIGHLIGHTS_WINDOW_STORAGE_KEY], { generation: '9.5', firstShownAt: nextTime + 2 });
+});
+
+it('stores one hidden-through generation, drops it on a newer generation and restores on request', async () => {
+  const db = storage();
+  const lifecycle = createFeatureHighlightsLifecycle(db, '9.1.0', () => time);
+  await Promise.all([lifecycle.hideUntilNextVersion(), lifecycle.hideUntilNextVersion()]);
+  assert.equal(db.values[HIDDEN_THROUGH_STORAGE_KEY], '9.1');
+  assert.equal((await lifecycle.read())[HIDDEN_THROUGH_STORAGE_KEY], '9.1');
+  const patch = await createFeatureHighlightsLifecycle(db, '9.1.4', () => time + 1).read();
+  assert.equal(patch[HIDDEN_THROUGH_STORAGE_KEY], '9.1', 'patch builds stay hidden');
+  const next = await createFeatureHighlightsLifecycle(db, '9.2.0', () => time + 2).read();
+  assert.equal(next[HIDDEN_THROUGH_STORAGE_KEY], undefined);
+  assert.ok(!(HIDDEN_THROUGH_STORAGE_KEY in db.values), 'expired marker is removed from storage');
+  await lifecycle.hideUntilNextVersion();
+  await lifecycle.restoreHidden();
+  assert.ok(!(HIDDEN_THROUGH_STORAGE_KEY in db.values));
+  db.values[HIDDEN_THROUGH_STORAGE_KEY] = 'corrupt';
+  await lifecycle.read();
+  assert.ok(!(HIDDEN_THROUGH_STORAGE_KEY in db.values));
 });

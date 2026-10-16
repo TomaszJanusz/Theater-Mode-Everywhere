@@ -1045,6 +1045,12 @@
   "highlightNewFeaturesDescription": {
     "message": "Kürzlich hinzugefügte Funktionen mit „Neu“ kennzeichnen."
   },
+  "highlightNewFeaturesHide": {
+    "message": "Bis zur nächsten Version ausblenden"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Hinweise wiederherstellen"
+  },
   "highContrastTitle": {
     "message": "Hoher Kontrast"
   },

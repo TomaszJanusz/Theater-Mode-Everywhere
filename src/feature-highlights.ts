@@ -4,7 +4,9 @@ export const SEEN_ITEMS_STORAGE_KEY = 'newFeaturesSeenItems';
 export const SEEN_THROUGH_STORAGE_KEY = 'newFeaturesSeenThrough';
 export const HIGHLIGHTS_WINDOW_STORAGE_KEY = 'newFeaturesWindow';
 export const FEATURE_HIGHLIGHTS_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-export const FEATURE_HIGHLIGHTS_LOCAL_KEYS = [SEEN_THROUGH_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY, HIGHLIGHTS_WINDOW_STORAGE_KEY];
+/** One generation: badges stay hidden while the running generation is not newer than it. */
+export const HIDDEN_THROUGH_STORAGE_KEY = 'newFeaturesHiddenThrough';
+export const FEATURE_HIGHLIGHTS_LOCAL_KEYS = [SEEN_THROUGH_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY, HIGHLIGHTS_WINDOW_STORAGE_KEY, HIDDEN_THROUGH_STORAGE_KEY];
 type GenerationWindow = { generation: Generation; firstShownAt: number };
 export type HighlightsWindow = GenerationWindow & { previous?: GenerationWindow };
 
@@ -88,13 +90,17 @@ export function resolveHighlightNewFeatures(value: unknown): boolean {
   return typeof value === 'boolean' ? value : true;
 }
 
+export function resolveHiddenThrough(value: unknown): Generation | undefined {
+  return isGeneration(value) ? value : undefined;
+}
+
 export function resolveSeenThrough(value: unknown, installed: Generation): Generation {
   return isGeneration(value) ? value : previousGeneration(installed);
 }
 
 export type FeatureHighlights = {
   installed: Generation; seenThrough: Generation; enabled: boolean;
-  window?: HighlightsWindow; now: number;
+  window?: HighlightsWindow; now: number; hiddenThrough?: Generation;
   development?: { released: Generation; seenItems: readonly string[] };
 };
 
@@ -114,6 +120,8 @@ export function withFeatureHighlightsLocal(state: FeatureHighlights, local: Reco
   return { ...state, now,
     window: HIGHLIGHTS_WINDOW_STORAGE_KEY in local
       ? resolveHighlightsWindow(local[HIGHLIGHTS_WINDOW_STORAGE_KEY]) : state.window,
+    hiddenThrough: HIDDEN_THROUGH_STORAGE_KEY in local
+      ? resolveHiddenThrough(local[HIDDEN_THROUGH_STORAGE_KEY]) : state.hiddenThrough,
     seenThrough: SEEN_THROUGH_STORAGE_KEY in local
       ? resolveSeenThrough(local[SEEN_THROUGH_STORAGE_KEY], state.installed) : state.seenThrough,
     ...(state.development && SEEN_ITEMS_STORAGE_KEY in local ? {
@@ -153,8 +161,13 @@ function withinHighlightWindow(since: Generation, state: FeatureHighlights): boo
   return state.now - firstShownAt < FEATURE_HIGHLIGHTS_MAX_AGE_MS;
 }
 
+/** "Hide until next version": a newer running generation un-hides without any cleanup write. */
+export function badgesHiddenUntilNextVersion(state: FeatureHighlights): boolean {
+  return state.hiddenThrough !== undefined && compareGenerations(state.hiddenThrough, state.installed) >= 0;
+}
+
 function eligibleSince(since: Generation, state: FeatureHighlights): boolean {
-  return state.enabled && withinHighlightWindow(since, state)
+  return state.enabled && !badgesHiddenUntilNextVersion(state) && withinHighlightWindow(since, state)
     && compareGenerations(since, previousGeneration(state.installed)) >= 0
     && compareGenerations(since, state.installed) <= 0;
 }
@@ -187,7 +200,7 @@ export function acknowledgeGeneration(state: FeatureHighlights): Generation {
  * Reloading or rebuilding identical items stays acknowledged; adding an item (even in the same
  * generation) shows it again. Legacy generation-only acknowledgements cannot hide unreleased items.
  * Opening Update highlights (also the automatic Settings prompt) acknowledges the catalog;
- * toggling badge visibility, merely viewing Settings or using player controls does not.
+ * toggling badge visibility, hiding them until the next version, merely viewing Settings or using player controls does not.
  * Development rebuilds share the running generation’s 30-day profile window; new items do not restart it.
  */
 export function featureHighlightsAcknowledgement(state: FeatureHighlights): Record<string, unknown> {

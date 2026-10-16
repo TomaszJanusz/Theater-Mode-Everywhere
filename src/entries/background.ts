@@ -114,8 +114,12 @@ const highlights = createFeatureHighlightsLifecycle(chrome.storage.local, chrome
 
 chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
   if (message?.action === 'feature-highlights') {
-    if (_sender.id !== chrome.runtime.id || !['read', 'acknowledge'].includes(message.operation)) return false;
-    const operation = message.operation === 'read' ? highlights.read() : highlights.acknowledge();
+    const operations: Record<string, () => Promise<unknown>> = {
+      read: highlights.read, acknowledge: highlights.acknowledge,
+      hide: highlights.hideUntilNextVersion, restore: highlights.restoreHidden
+    };
+    if (_sender.id !== chrome.runtime.id || !Object.hasOwn(operations, message.operation)) return false;
+    const operation = operations[message.operation]();
     operation.then(value => sendResponse(value ?? {})).catch(error => {
       console.error('[Theater Everywhere] Feature highlights storage failed:', error);
       sendResponse(null);
