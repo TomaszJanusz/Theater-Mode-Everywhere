@@ -1,4 +1,4 @@
-import { observeAppearance } from '../appearance-runtime';
+import { observeAppearance, PAGE_MOTION_ATTRIBUTE, type AppearanceModes } from '../appearance-runtime';
 import { ensureNewBadgeStyles } from './new-badge';
 import { applyUiDirection } from './messages';
 
@@ -13,6 +13,13 @@ let hostEl: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
 let playerUiCss = '';
 let stopAppearance: (() => void) | undefined;
+
+/** Page-level extension styles and timing share the player's resolved motion preference. */
+function mirrorMotion(modes: AppearanceModes | null): void {
+  const root = document.documentElement;
+  if (modes) root.setAttribute(PAGE_MOTION_ATTRIBUTE, modes.motion ? 'reduced' : 'normal');
+  else root.removeAttribute(PAGE_MOTION_ATTRIBUTE);
+}
 
 export function setPlayerUiCss(css: string): void {
   playerUiCss = css;
@@ -47,7 +54,7 @@ export function getPlayerUiRoot(): ShadowRoot {
     applyUiDirection(hostEl);
     (document.documentElement || document.body).appendChild(hostEl);
   }
-  stopAppearance = observeAppearance(hostEl);
+  stopAppearance = observeAppearance(hostEl, mirrorMotion);
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
   ensureNewBadgeStyles(shadow);

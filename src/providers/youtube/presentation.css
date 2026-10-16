@@ -76,3 +76,7 @@ html.theater-everywhere-html-active #movie_player .sponsorSkipNoticeParent {
   z-index: 2147483647 !important;
   pointer-events: auto !important;
 }
+
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-picture-moving .ytp-caption-window-container {
+  transition: none !important;
+}

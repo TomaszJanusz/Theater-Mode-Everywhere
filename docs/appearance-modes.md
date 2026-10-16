@@ -1,6 +1,6 @@
 # Appearance modes
 
-Settings → Appearance offers independent High contrast and Reduce transparency dropdowns
+Settings → Appearance offers independent High contrast, Reduce transparency and Reduce motion dropdowns
 in the same labeled Settings rows as Language:
 Auto follows the corresponding system media query; On and Off override it. Missing or
 invalid storage and unsupported queries resolve to Auto/off. See the shared
@@ -32,7 +32,7 @@ Deliberately preserved:
 | Subtitle colors, backgrounds/opacity, swatches, raised-caption background and karaoke word emphasis | Explicit viewer preferences and caption content; modes must not overwrite them. The surrounding subtitle controls/dialog and high-contrast status notification still use readable UI text tokens. |
 | Timeline buffer/progress/heatmap, thumbnails and service countdown progress | Data layered over the track or image, rather than a glass UI surface. Buffer/progress must remain distinguishable. High contrast outlines the enclosing track and uses a visible solid countdown fill (`#71717a`, 3.67:1 against the panel; white text is 4.83:1). |
 | Transparent structural wrappers, notches/masks and the WASM pointer catcher | They expose an owned plate or the video and must not become solid rectangles. |
-| Visibility/fade transitions, loaders, shadows and image/marquee edge masks | They express lifecycle/depth or clip media. Reduce transparency does not change the separate reduced-motion preference. Decorative RTE animation is removed because its layer is removed. |
+| Visibility/fade transitions, loaders, shadows and image/marquee edge masks | They express lifecycle/depth or clip media. Reduce transparency does not change Reduce motion. Decorative RTE animation is removed because its layer is removed. |
 | Native system accent in normal mode, browser themes and forced colors | Browser ownership. Normal system/theme colors cannot promise a fixed contrast on every OS; high contrast replaces these with the checked dark palette and a safe accent. |
 
 ## Contrast evidence
@@ -103,3 +103,24 @@ are unchanged. The full smoke retains its existing iframe checks. Appearance on
 authenticated RTE hosts and an installed Firefox extension still needs live host/
 release qualification; browser fixtures do not establish those paths. Translation
 key parity is tested for all 13 catalogs; native-speaker review is separate.
+
+## Reduce motion
+
+Reduce motion uses the same Auto / On / Off resolution (`reduceMotion`, Auto follows
+`prefers-reduced-motion`). Every observed root gets `data-motion`; one rule in
+[the tokens](../src/appearance-tokens.css) collapses animation and transition durations
+to 0.01ms for all extension content in Settings, the popup and the player shadow root.
+Durations collapse rather than becoming `none`, so `transitionend`/`animationend`
+listeners still settle. Stylesheets must not add their own
+`prefers-reduced-motion` blocks, which would ignore the On/Off override; a test enforces this.
+
+- **Page-level styles and script.** The player mirrors the resolved state to
+  `data-theater-everywhere-motion` on the host `<html>` while it is mounted (removed on
+  destroy). Extension-owned page transitions (picture move, caption dock, provider
+  caption lifts) read it, and script timing uses `isMotionReduced()`. Host animations and
+  native player UI are untouched.
+- **Marquee title.** The overflow layout and `title` tooltip are decided in script
+  regardless of motion; with Reduce motion the CSS stops the scroll, hides the clone and
+  shows a static ellipsis. The tooltip carries the full title; screen readers read the
+  whole text node.
+- **Kept deliberately.** Service-action countdown progress is data, not decoration.

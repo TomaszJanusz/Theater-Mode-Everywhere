@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Choose High contrast and Reduce transparency independently from Auto / On / Off dropdowns in Settings → Appearance, alongside Language in matching settings rows. Auto follows the system; open Settings, the popup and player controls update live. High contrast strengthens text, accents, boundaries, selection and focus; either mode uses solid surfaces and flattens decorative RTE tile borders while preserving your subtitle colors and background preferences.
+- Choose High contrast and Reduce transparency independently from Auto / On / Off dropdowns in Settings → Appearance, alongside Language in matching settings rows. A new Reduce motion choice (Auto / On / Off) in the same section stops decorative animation across Settings, the popup and the theater player: transitions and fades collapse, the RTE tile ring and loaders stay still, and a long scrolling title becomes a single truncated line with the full title on hover. Auto follows the system; open Settings, the popup and player controls update live. High contrast strengthens text, accents, boundaries, selection and focus; either mode uses solid surfaces and flattens decorative RTE tile borders while preserving your subtitle colors and background preferences.
 
 #### Chat, layout and player controls
 

@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "Transparenz reduzieren"
   },
+  "reduceMotionTitle": {
+    "message": "Bewegung reduzieren"
+  },
   "appearanceAutoDescription": {
     "message": "Auto folgt deiner Systemeinstellung."
   },

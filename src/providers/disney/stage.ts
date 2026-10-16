@@ -26,9 +26,7 @@ export const DISNEY_CAPTION_SHADOW_CSS = `
 .timed-text-override-region {
   transition: inset-block-end 0.18s ease !important;
 }
-@media (prefers-reduced-motion: reduce) {
-  .timed-text-override-region { transition: none !important; }
-}
+html[data-theater-everywhere-motion="reduced"] .timed-text-override-region { transition: none !important; }
 .hive-subtitle-renderer-cue-positioning-box:not([style*="writing-mode: vertical-rl"]) {
   height: auto !important;
   top: auto !important;

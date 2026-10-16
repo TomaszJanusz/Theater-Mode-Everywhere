@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "Ogranicz przezroczystość"
   },
+  "reduceMotionTitle": {
+    "message": "Ogranicz animacje"
+  },
   "appearanceAutoDescription": {
     "message": "Tryb Auto korzysta z ustawień systemu."
   },

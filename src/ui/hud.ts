@@ -453,12 +453,15 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     track.querySelector('.theater-title-hud-text-clone')?.remove();
     overlay.style.removeProperty('--theater-title-duration');
 
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    overlay.removeAttribute('title');
     const viewWidth = viewport.clientWidth;
     const textWidth = text.scrollWidth;
-    if (reduceMotion || viewWidth <= 0 || textWidth <= viewWidth + 1) return;
+    if (viewWidth <= 0 || textWidth <= viewWidth + 1) return;
 
+    // Reduced motion shows the same overflowing title as a static ellipsis (see shadow.css),
+    // so the full title stays available on hover. Assistive technology reads the whole text.
     overlay.classList.add('marquee');
+    overlay.title = text.textContent ?? '';
     const clone = text.cloneNode(true) as HTMLElement;
     clone.classList.add('theater-title-hud-text-clone');
     clone.setAttribute('aria-hidden', 'true');

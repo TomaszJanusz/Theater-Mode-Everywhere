@@ -19,7 +19,7 @@ const bundle = esbuild.buildSync({ stdin: { contents: `
   window.palette = (preset, high, reduced) => {
     for (const target of [document.documentElement, document.getElementById('theater-everywhere-ui')]) {
       applyAccentColorPreset(target, preset);
-      applyAppearanceModes(target, high, reduced);
+      applyAppearanceModes(target, { contrast: high, transparency: reduced, motion: false });
     }
   };
   window.start = async (css) => {

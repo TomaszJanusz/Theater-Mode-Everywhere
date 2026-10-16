@@ -46,7 +46,7 @@ it('renders static English semantic content safely and refreshes localized dialo
       'Rich Theater Experience: You can turn RTE on or off for individual sites and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.',
       'Audio effects: Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.',
       'SponsorBlock support: See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.',
-      'Accessibility: Theater Mode Everywhere respects your system preferences for increased contrast and reduced transparency.',
+      'Accessibility: Theater Mode Everywhere respects your system preferences for increased contrast, reduced transparency and reduced motion.',
       'The titles of the videos being played are displayed.',
       'You can go to the home page of the service the video is playing on.',
       'Theater Mode Everywhere should now use fewer resources.',
@@ -92,6 +92,9 @@ for (const browserType of [chromium, firefox]) {
     const page = await browser.newPage({ viewport: { width: 1000, height: 800 }, reducedMotion: 'reduce' });
     await page.setContent('<html><body><button id="opener">Open</button></body></html>');
     await page.addStyleTag({ content: readFileSync(new URL('../options/options.css', import.meta.url), 'utf8').replace(/^@import.*$/m, '') });
+    // Settings marks its root through the shared observer; this harness has no extension runtime.
+    await page.addStyleTag({ content: readFileSync(new URL('../src/appearance-tokens.css', import.meta.url), 'utf8') });
+    await page.evaluate(() => { document.documentElement.dataset.motion = 'reduced'; });
     await page.addScriptTag({ content: bundle });
     await page.locator('#opener').focus();
     await page.evaluate('void Announcement.openWhatsNewDialog()');

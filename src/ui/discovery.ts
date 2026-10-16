@@ -78,11 +78,9 @@ export function createDiscovery(ctx: PlayerChromeContext) {
       transform-style: flat !important;
       transition: object-position 0.32s cubic-bezier(0.25, 1, 0.5, 1) !important;
     }
-    @media (prefers-reduced-motion: reduce) {
-      .theater-everywhere-video-active,
-      [data-theater-everywhere] {
-        transition: none !important;
-      }
+    html[data-theater-everywhere-motion="reduced"] .theater-everywhere-video-active,
+    html[data-theater-everywhere-motion="reduced"] [data-theater-everywhere] {
+      transition: none !important;
     }
     .theater-everywhere-parent-active {
       position: relative !important;

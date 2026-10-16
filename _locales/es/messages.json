@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "Reducir transparencia"
   },
+  "reduceMotionTitle": {
+    "message": "Reducir movimiento"
+  },
   "appearanceAutoDescription": {
     "message": "Auto sigue la configuración del sistema."
   },

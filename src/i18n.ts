@@ -3,6 +3,7 @@ import { translateMessage } from './i18n-runtime';
 export const FALLBACK_MESSAGES: Record<string, string> = {
   highContrastTitle: "High contrast",
   reduceTransparencyTitle: "Reduce transparency",
+  reduceMotionTitle: "Reduce motion",
   appearanceAutoDescription: "Auto follows your system setting.",
   appearanceAuto: "Auto",
 

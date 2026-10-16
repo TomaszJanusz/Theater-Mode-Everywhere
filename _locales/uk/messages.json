@@ -1015,6 +1015,9 @@
   "reduceTransparencyTitle": {
     "message": "Зменшити прозорість"
   },
+  "reduceMotionTitle": {
+    "message": "Зменшити рух"
+  },
   "appearanceAutoDescription": {
     "message": "Авто використовує налаштування системи."
   },

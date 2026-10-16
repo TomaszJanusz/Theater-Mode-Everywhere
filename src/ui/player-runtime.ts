@@ -1,3 +1,4 @@
+import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY, resolveHighlightNewFeatures, resolveSeenThrough } from '../feature-highlights';
 import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
@@ -705,13 +706,8 @@ function picturePositionOptions() {
   };
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 function pictureMoveTransition(): string {
-  return prefersReducedMotion()
+  return isMotionReduced()
     ? 'none'
     : `object-position ${PICTURE_MOVE_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`;
 }
@@ -793,7 +789,7 @@ function applyTheaterPictureLayout(): void {
   const letterbox = horizontalLetterboxPx(frame);
   const root = document.documentElement;
   const previous = root.style.getPropertyValue('--theater-object-position');
-  if (previous !== '' && previous !== position && !prefersReducedMotion()) beginPictureMove();
+  if (previous !== '' && previous !== position && !isMotionReduced()) beginPictureMove();
   root.classList.toggle(
     'theater-everywhere-picture-top',
     raisedCaptionsUseBand(position, letterbox)

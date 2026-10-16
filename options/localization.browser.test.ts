@@ -91,7 +91,7 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
         assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
         assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
-        for (const key of ['highContrast', 'reduceTransparency']) {
+        for (const key of ['highContrast', 'reduceTransparency', 'reduceMotion']) {
           assert.equal(await page.locator(`#${key}-combobox`).textContent(), catalog.appearanceAuto.message);
           assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=auto]`).textContent(), catalog.appearanceAuto.message);
           assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=on]`).textContent(), catalog.controlsVisibilityOn.message);
