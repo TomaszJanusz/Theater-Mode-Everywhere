@@ -13,6 +13,7 @@ import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/v
 import { createShortcutEditor } from './shortcut-editor';
 import { setupSettingsTabs } from './tabs';
 import licenseText from '../LICENSE?raw';
+import { openPrivacyPolicy } from './privacy-policy';
 import { KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from '../src/ui/controls-visibility';
 import { fetchAndApplyTheme } from '../src/themeHelper';
 import {
@@ -118,6 +119,7 @@ async function init() {
   highlights.render();
   setupSettingsTabs(document.getElementById('settings-tabs') as HTMLElement);
   document.getElementById('license-text')!.textContent = licenseText.trim();
+  document.getElementById('privacy-policy-btn')!.addEventListener('click', openPrivacyPolicy);
   const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };
   renderVersion();
   configurePrivacyThingLogo();

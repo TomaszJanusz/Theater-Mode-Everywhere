@@ -832,6 +832,15 @@
   "privacyPolicy": {
     "message": "プライバシーポリシー"
   },
+  "privacyPolicyDescription": {
+    "message": "拡張機能がデータをどのように扱うかを説明します。全文は英語のみです。"
+  },
+  "privacyPolicyRead": {
+    "message": "プライバシーポリシーを読む"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "オンライン版を開く"
+  },
   "aboutLetterFreeHtml": {
     "message": "この拡張機能は無料で、あなたの情報や視聴内容を開発者や無関係の第三者に送信しません。設定はブラウザーのアカウントを通じて同期されることがあり、再生機能は視聴中のサービスに直接アクセスすることがあります。動作がおかしい場合は <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a> で報告できます。"
   },

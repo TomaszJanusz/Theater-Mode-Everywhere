@@ -43,6 +43,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
+  await page.addStyleTag({ content: readFileSync(path.join(root, surface, `${surface}.css`), 'utf8') }).catch(() => undefined);
   await page.addScriptTag({ content: (await bundles)[surface === 'options' ? 0 : 1] });
   if (surface === 'popup') {
     await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
@@ -107,14 +108,39 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
         await assertLocalized(page, locale);
       }
       await page.locator('#tab-about').click();
-      const privacy = page.locator('#about a[data-i18n="privacyPolicy"]');
+      const privacy = page.locator('#privacy-policy-btn');
       for (const locale of ['en', 'pl', 'ar']) {
         await switchTo(page, locale);
-        assert.equal(await privacy.isVisible(), true);
-        assert.equal(await privacy.textContent(), readCatalog(locale).privacyPolicy.message);
-        assert.equal(await privacy.getAttribute('href'), 'https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/main/PRIVACY.md');
-        assert.equal(await privacy.getAttribute('target'), '_blank');
-        assert.equal(await privacy.getAttribute('rel'), 'noopener noreferrer');
+        const catalog = readCatalog(locale);
+        assert.equal(await page.locator('#about .about-privacy h2').textContent(), catalog.privacyPolicy.message);
+        assert.equal(await page.locator('#about .about-privacy p').textContent(), catalog.privacyPolicyDescription.message);
+        assert.equal(await privacy.textContent(), catalog.privacyPolicyRead.message);
+        await privacy.focus();
+        await page.keyboard.press('Enter');
+        const dialog = page.locator('.te-dialog-privacy');
+        await dialog.waitFor();
+        assert.equal(await page.locator('.te-dialog-title').textContent(), catalog.privacyPolicy.message);
+        assert.equal(await dialog.getAttribute('aria-modal'), 'true');
+        assert.equal(await dialog.getAttribute('aria-labelledby'), await page.locator('.te-dialog-title').getAttribute('id'));
+        assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), true);
+        const text = page.locator('.privacy-policy-text');
+        assert.match(await text.textContent() ?? '', /Stored settings/);
+        assert.equal(await text.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
+        const online = page.locator('.privacy-policy-online');
+        assert.equal(await online.textContent(), catalog.privacyPolicyOpenOnline.message);
+        assert.equal(await online.getAttribute('href'), 'https://github.com/TomaszJanusz/Theater-Mode-Everywhere/blob/main/PRIVACY.md');
+        assert.equal(await online.getAttribute('target'), '_blank');
+        assert.equal(await online.getAttribute('rel'), 'noopener noreferrer');
+        assert.equal(await dialog.locator('script, [onclick], a[href^="javascript:"]').count(), 0);
+        // Tab cycles inside the dialog; the page behind it is inert.
+        for (let i = 0; i < 6; i++) {
+          await page.keyboard.press('Tab');
+          assert.equal(await page.evaluate(() => !!document.activeElement?.closest('.te-dialog')), true);
+        }
+        await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'detached' });
+        assert.equal(await privacy.evaluate(el => el === document.activeElement), true);
+        assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), false);
       }
       await page.locator('#tab-features').click();
       // An expanded service description is covered too: its text must follow the language live.

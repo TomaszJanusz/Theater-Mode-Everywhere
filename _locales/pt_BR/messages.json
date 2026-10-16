@@ -832,6 +832,15 @@
   "privacyPolicy": {
     "message": "Política de privacidade"
   },
+  "privacyPolicyDescription": {
+    "message": "Como a extensão trata seus dados. A política completa está escrita em inglês."
+  },
+  "privacyPolicyRead": {
+    "message": "Ler a política de privacidade"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "Abrir a versão online"
+  },
   "aboutLetterFreeHtml": {
     "message": "A extensão é gratuita e não envia informações sobre você ou sobre o que você assiste ao desenvolvedor ou a terceiros alheios à reprodução. As configurações podem ser sincronizadas pela sua conta do navegador, e os recursos de reprodução podem contatar diretamente o serviço em que você está assistindo. Se algo não funcionar direito, você pode avisar no <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
   },
