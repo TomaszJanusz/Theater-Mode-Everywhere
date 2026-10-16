@@ -8,7 +8,7 @@ import { CURRENT_GENERATION, CURRENT_VERSION } from './test-utils/release';
 import {
   WHATS_NEW_RELEASE,
   shouldAutoOpenWhatsNewOnUpdate,
-  whatsNewAutoOpenStorageKey,
+  legacyWhatsNewAutoOpenStorageKey,
   type WhatsNewRelease
 } from './whatsNew-release';
 
@@ -92,10 +92,10 @@ describe('Update highlights release configuration', () => {
     ), false);
   });
 
-  it('uses a release and target-version-specific idempotency key', () => {
-    const key = whatsNewAutoOpenStorageKey('7.0.0', autoOpenRelease);
-    assert.equal(whatsNewAutoOpenStorageKey('7.0.0', autoOpenRelease), key);
-    assert.notEqual(whatsNewAutoOpenStorageKey('7.0.1', autoOpenRelease), key);
-    assert.notEqual(whatsNewAutoOpenStorageKey('7.0.0', { ...autoOpenRelease, id: 'next-release' }), key);
+  it('identifies only exact release/build legacy markers for migration', () => {
+    const key = legacyWhatsNewAutoOpenStorageKey('7.0.0', autoOpenRelease);
+    assert.equal(legacyWhatsNewAutoOpenStorageKey('7.0.0', autoOpenRelease), key);
+    assert.notEqual(legacyWhatsNewAutoOpenStorageKey('7.0.1', autoOpenRelease), key);
+    assert.notEqual(legacyWhatsNewAutoOpenStorageKey('7.0.0', { ...autoOpenRelease, id: 'next-release' }), key);
   });
 });

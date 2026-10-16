@@ -1,4 +1,4 @@
-import { initialSeenThrough } from '../feature-highlights';
+import { createFeatureHighlightsLifecycle } from '../feature-highlights-lifecycle';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -9,11 +9,6 @@ import {
   removeLegacyYoutubeExclusion
 } from '../platform/legacy-youtube-exclusion';
 import { isAllowedBrokerFetchUrl, MAX_CAPTION_BYTES } from '../platform/media-url-policy';
-import {
-  WHATS_NEW_ACK_STORAGE_KEY,
-  shouldAutoOpenWhatsNewOnUpdate,
-  whatsNewAutoOpenStorageKey
-} from '../whatsNew-release';
 
 declare const browser: any;
 
@@ -115,7 +110,18 @@ const shortcutUpdates = createShortcutUpdateQueue({
   write: async shortcuts => { await chrome.storage.sync.set({ shortcuts }); }
 });
 
+const highlights = createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
+
 chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
+  if (message?.action === 'feature-highlights') {
+    if (_sender.id !== chrome.runtime.id || !['read', 'acknowledge'].includes(message.operation)) return false;
+    const operation = message.operation === 'read' ? highlights.read() : highlights.acknowledge();
+    operation.then(value => sendResponse(value ?? {})).catch(error => {
+      console.error('[Theater Everywhere] Feature highlights storage failed:', error);
+      sendResponse(null);
+    });
+    return true;
+  }
   if (message?.action === 'get-language-catalog') {
     loadLanguageCatalog(message.locale).then(sendResponse).catch(() => sendResponse(null));
     return true;
@@ -176,6 +182,13 @@ async function migrateLegacyYoutubeExclusion(): Promise<void> {
 }
 
 chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install' || details.reason === 'update') {
+    try {
+      await highlights.installed(details, () => chrome.runtime.openOptionsPage());
+    } catch (err) {
+      console.error('[Theater Everywhere] Error updating feature highlights:', err);
+    }
+  }
   if (details.reason === 'update') {
     try {
       await migrateLegacyYoutubeExclusion();
@@ -183,23 +196,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       console.error('[Theater Everywhere] Error migrating legacy YouTube exclusion:', err);
     }
 
-    try {
-      const targetVersion = chrome.runtime.getManifest().version;
-      const storageKey = whatsNewAutoOpenStorageKey(targetVersion);
-      const data = await chrome.storage.local.get([WHATS_NEW_ACK_STORAGE_KEY, storageKey]);
-      if (!shouldAutoOpenWhatsNewOnUpdate(details, data[WHATS_NEW_ACK_STORAGE_KEY]) || data[storageKey]) return;
-
-      await chrome.storage.local.set({ [storageKey]: true });
-      await chrome.runtime.openOptionsPage();
-    } catch (err) {
-      console.error('[Theater Everywhere] Error opening Update highlights after update:', err);
-    }
     return;
   }
 
   if (details.reason === 'install') {
     try {
-      await chrome.storage.local.set(initialSeenThrough(details.reason, chrome.runtime.getManifest().version));
       const data = await chrome.storage.sync.get(['shortcuts', 'blacklist']);
       if (!data.shortcuts) {
         await chrome.storage.sync.set({

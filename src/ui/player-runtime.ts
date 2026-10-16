@@ -1126,7 +1126,7 @@ const highlightLocalOverrides: Record<string, unknown> = {};
 
 async function hydrateSeenThrough(): Promise<void> {
   const local = await readFeatureHighlightsLocal();
-  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights, { ...local, ...highlightLocalOverrides }) } });
+  uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights, { ...local, ...highlightLocalOverrides }, Date.now()) } });
 }
 
 async function checkBlacklistAndInit(): Promise<void> {
@@ -1174,7 +1174,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     uiStore.dispatch({
       type: 'HYDRATE',
       value: {
-        featureHighlights: { ...ui().featureHighlights,
+        featureHighlights: { ...ui().featureHighlights, now: Date.now(),
           enabled: syncRevision === highlightSyncRevision
             ? resolveHighlightNewFeatures(data[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY])
             : ui().featureHighlights.enabled },
@@ -2342,12 +2342,12 @@ export function bootstrapPlayerRuntime(): void {
           if (changes[key]) highlightLocalOverrides[key] = changes[key].newValue;
         }
         uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: withFeatureHighlightsLocal(ui().featureHighlights,
-          highlightLocalOverrides) } });
+          highlightLocalOverrides, Date.now()) } });
       }
       if (areaName !== 'sync') return;
       if (changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {
         highlightSyncRevision++;
-        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights,
+        uiStore.dispatch({ type: 'HYDRATE', value: { featureHighlights: { ...ui().featureHighlights, now: Date.now(),
           enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) } } });
       }
       if (changes[LANGUAGE_STORAGE_KEY]) void languageRuntime.set(changes[LANGUAGE_STORAGE_KEY].newValue);

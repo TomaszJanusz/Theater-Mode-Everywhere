@@ -123,3 +123,46 @@ it('development acknowledgements track item identity rather than suppressing a w
   assert.equal(isNewFeature('playerAudio', release), true, 'dev snapshots do not acknowledge a release');
   assert.deepEqual(featureHighlightsAcknowledgement(release), { [SEEN_THROUGH_STORAGE_KEY]: CURRENT_GENERATION });
 });
+
+it('caps current and previous generation badges at exactly 30 days with an injected clock', async () => {
+  const { FEATURE_HIGHLIGHTS_MAX_AGE_MS: age, HIGHLIGHTS_WINDOW_STORAGE_KEY: key } = await import('./feature-highlights');
+  const start = 1_800_000_000_000;
+  const local = { [SEEN_THROUGH_STORAGE_KEY]: '9.0', [key]: { generation: '9.2', firstShownAt: start } };
+  for (const [elapsed, visible] of [[age - 1, true], [age, false], [age + 1, false]] as const) {
+    const state = resolveFeatureHighlights('9.2.0', {}, local, start + elapsed);
+    assert.equal(isNewSince('9.1', state), visible);
+    assert.equal(isNewSince('9.2', state), visible);
+    assert.equal(isNewSince('9.0', state), false);
+    assert.equal(isNewSince('9.3', state), false);
+  }
+  const next = resolveFeatureHighlights('9.3.0', {}, { ...local, [key]: { generation: '9.3', firstShownAt: start + age } }, start + age);
+  assert.equal(isNewSince('9.1', next), false);
+  assert.equal(isNewSince('9.2', next), true);
+});
+
+it('development item acknowledgements and disabled highlights obey the same profile time cap', async () => {
+  const { FEATURE_HIGHLIGHTS_MAX_AGE_MS: age, HIGHLIGHTS_WINDOW_STORAGE_KEY: key } = await import('./feature-highlights');
+  const start = 1_800_000_000_000;
+  const local = { [key]: { generation: ITEMS_SINCE, firstShownAt: start } };
+  const first = resolveFeatureHighlights(DEV_VERSION, {}, local, start);
+  assert.equal(isNewFeature('playerAudio', first), true);
+  for (const version of [DEV_VERSION, '0.26.1017.1200']) {
+    assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(version, {}, local, start + age - 1)), true);
+    assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(version, {}, local, start + age)), false);
+  }
+  assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(DEV_VERSION,
+    { [HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]: false }, local, start)), false);
+  assert.equal(isNewFeature('playerAudio', resolveFeatureHighlights(DEV_VERSION, {},
+    { ...local, ...featureHighlightsAcknowledgement(first) }, start)), false);
+});
+
+it('normalizes window records to at most two valid adjacent generation clocks', async () => {
+  const { resolveHighlightsWindow } = await import('./feature-highlights');
+  const current = { generation: '9.2', firstShownAt: 100 };
+  const previous = { generation: '9.1', firstShownAt: 50 };
+  assert.deepEqual(resolveHighlightsWindow({ ...current, junk: true, previous: { ...previous, previous } }), { ...current, previous });
+  for (const invalid of [{}, { ...previous, generation: '9.0' }, { ...previous, firstShownAt: 101 },
+    { ...previous, firstShownAt: -1 }, { ...previous, firstShownAt: Infinity }]) {
+    assert.deepEqual(resolveHighlightsWindow({ ...current, previous: invalid }), current);
+  }
+});
