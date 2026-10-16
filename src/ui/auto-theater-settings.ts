@@ -5,6 +5,7 @@ import { shouldOfferVideoActivator, VIDEO_ACTIVATOR_PROMPT_ANSWER_STORAGE_KEY, V
 
 const PROMPT_KEYS = [AUTO_THEATER_STORAGE_KEY, VIDEO_ACTIVATOR_STORAGE_KEY, VIDEO_ACTIVATOR_PROMPT_ANSWER_STORAGE_KEY];
 let revision = 0;
+let autoTheaterWrite: Promise<void> = Promise.resolve();
 
 /** Only the initiating settings surface asks; storage observers merely render the saved state. */
 export async function saveAutoTheaterEnabled(
@@ -14,7 +15,13 @@ export async function saveAutoTheaterEnabled(
   const request = ++revision;
   const previous = await chrome.storage.sync.get(AUTO_THEATER_STORAGE_KEY);
   if (request !== revision) return;
-  await chrome.storage.sync.set({ [AUTO_THEATER_STORAGE_KEY]: enabled });
+  const write = autoTheaterWrite.then(async () => {
+    if (request !== revision) return;
+    await chrome.storage.sync.set({ [AUTO_THEATER_STORAGE_KEY]: enabled });
+  });
+  // Keep later writes moving while preserving this caller's storage error.
+  autoTheaterWrite = write.catch(() => {});
+  await write;
   if (enabled || !resolveAutoEnterTheater(previous[AUTO_THEATER_STORAGE_KEY])) return;
 
   const current = () => request === revision && (options.isCurrent?.() ?? true);
