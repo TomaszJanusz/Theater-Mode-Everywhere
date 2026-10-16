@@ -2362,10 +2362,8 @@ button.theater-time-end:hover {
   animation: theater-spin 0.8s linear infinite !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .theater-auto-notice .caption-hud-spinner {
-    animation: none !important;
-  }
+:host([data-motion="reduced"]) .theater-auto-notice .caption-hud-spinner {
+  animation: none !important;
 }
 
 @keyframes volume-hud-zoom-in {
