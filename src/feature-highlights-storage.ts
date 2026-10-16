@@ -1,5 +1,5 @@
 import manifest from '../manifest.json';
-import { resolveFeatureHighlights, featureHighlightsAcknowledgement, FEATURE_HIGHLIGHTS_LOCAL_KEYS, SEEN_ITEMS_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY } from './feature-highlights';
+import { HIGHLIGHTS_WINDOW_STORAGE_KEY, SEEN_ITEMS_STORAGE_KEY, SEEN_THROUGH_STORAGE_KEY } from './feature-highlights';
 
 export function installedVersion(): string {
   return typeof chrome !== 'undefined' && chrome.runtime?.getManifest
@@ -8,9 +8,16 @@ export function installedVersion(): string {
 
 export async function acknowledgeFeatureHighlights(): Promise<void> {
   if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
-  const local = await chrome.storage.local.get(FEATURE_HIGHLIGHTS_LOCAL_KEYS);
-  const state = resolveFeatureHighlights(installedVersion(), {}, local);
-  await chrome.storage.local.set(featureHighlightsAcknowledgement(state));
+  await requestFeatureHighlights('acknowledge');
+}
+
+/** Writes and lazy initialization share the background queue, even across frames and Settings tabs. */
+async function requestFeatureHighlights(operation: 'read' | 'acknowledge'): Promise<Record<string, unknown>> {
+  const result: unknown = await chrome.runtime.sendMessage({ action: 'feature-highlights', operation });
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    throw new Error('Feature highlights storage request failed');
+  }
+  return result as Record<string, unknown>;
 }
 
 /** A failed optional local read must not discard otherwise valid synced player settings. */
@@ -18,10 +25,11 @@ export async function readFeatureHighlightsLocal(): Promise<Record<string, unkno
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
       return { [SEEN_THROUGH_STORAGE_KEY]: undefined, [SEEN_ITEMS_STORAGE_KEY]: undefined,
-        ...await chrome.storage.local.get(FEATURE_HIGHLIGHTS_LOCAL_KEYS) };
+        [HIGHLIGHTS_WINDOW_STORAGE_KEY]: undefined,
+        ...await requestFeatureHighlights('read') };
     }
   } catch (error) {
     console.warn('[Theater Everywhere] Could not read feature highlights:', error);
   }
-  return { [SEEN_THROUGH_STORAGE_KEY]: undefined, [SEEN_ITEMS_STORAGE_KEY]: undefined };
+  return { [SEEN_THROUGH_STORAGE_KEY]: undefined, [SEEN_ITEMS_STORAGE_KEY]: undefined, [HIGHLIGHTS_WINDOW_STORAGE_KEY]: undefined };
 }

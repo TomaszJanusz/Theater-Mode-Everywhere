@@ -4,6 +4,7 @@ import path from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { it } from 'node:test';
 import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import { CURRENT_VERSION, CURRENT_GENERATION, PREVIOUS_GENERATION } from '../test-utils/release';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const require = createRequire(import.meta.url);
@@ -22,7 +23,7 @@ function broker(fetcher: typeof fetch): () => Promise<Reply> {
     fetch: fetcher, URL, AbortController, TextDecoder, Uint8Array, setTimeout, clearTimeout, console,
     chrome: {
       tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore },
-      runtime: { onInstalled: ignore, onMessage: { addListener(fn: typeof listener) { listener = fn; } } }
+      runtime: { getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore, onMessage: { addListener(fn: typeof listener) { listener = fn; } } }
     }
   });
   return () => new Promise(resolve => assert.equal(listener({ action: 'theater-fetch-media', url }, {}, resolve), true));
@@ -64,7 +65,7 @@ it('background broker accepts captions after safe redirects and cancels unsafe r
 it('initializes fresh installs at the installed generation and preserves update acknowledgements', async () => {
   for (const reason of ['install', 'update']) {
     let onInstalled!: (details: { reason: string; previousVersion?: string }) => Promise<void>;
-    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5', whatsNewAcknowledgedId: WHATS_NEW_RELEASE.id };
+    const local: Record<string, unknown> = { newFeaturesSeenThrough: PREVIOUS_GENERATION, whatsNewAcknowledgedId: WHATS_NEW_RELEASE.id };
     const ignore = { addListener() {} };
     runInNewContext(bundle, {
       console,
@@ -73,16 +74,51 @@ it('initializes fresh installs at the installed generation and preserves update 
         storage: {
           onChanged: ignore,
           sync: { async get() { return { shortcuts: {}, blacklist: [] }; } },
-          local: { async get() { return { ...local }; }, async set(values: object) { Object.assign(local, values); } }
+          local: { async get() { return { ...local }; }, async set(values: object) { Object.assign(local, values); }, async remove(keys: string[]) { keys.forEach(key => delete local[key]); } }
         },
         runtime: {
-          getManifest: () => ({ version: '1.7.2' }),
+          getManifest: () => ({ version: CURRENT_VERSION }),
           onInstalled: { addListener(listener: typeof onInstalled) { onInstalled = listener; } },
           onMessage: ignore
         }
       }
     });
-    await onInstalled({ reason, previousVersion: reason === 'update' ? '1.5.0' : undefined });
-    assert.equal(local.newFeaturesSeenThrough, reason === 'install' ? '1.7' : '1.5');
+    await onInstalled({ reason, previousVersion: reason === 'update' ? `${PREVIOUS_GENERATION}.0` : undefined });
+    assert.equal(local.newFeaturesSeenThrough, reason === 'install' ? CURRENT_GENERATION : PREVIOUS_GENERATION);
   }
+});
+
+it('routes badge hydration and acknowledgements through the background and rejects foreign/invalid requests', async () => {
+  let listener!: (message: object, sender: object, reply: (value: unknown) => void) => boolean;
+  const values: Record<string, unknown> = { newFeaturesSeenThrough: PREVIOUS_GENERATION };
+  const ignore = { addListener() {} };
+  runInNewContext(bundle, {
+    console,
+    chrome: {
+      tabs: { onActivated: ignore, onUpdated: ignore },
+      storage: {
+        onChanged: ignore,
+        local: {
+          async get() { return { ...values }; },
+          async set(next: object) { Object.assign(values, next); }
+        }
+      },
+      runtime: {
+        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore,
+        onMessage: { addListener(fn: typeof listener) { listener = fn; } }
+      }
+    }
+  });
+  let replied = false;
+  assert.equal(listener({ action: 'feature-highlights', operation: 'read' }, { id: 'foreign' }, () => { replied = true; }), false);
+  assert.equal(listener({ action: 'feature-highlights', operation: 'erase' }, { id: 'extension' }, () => { replied = true; }), false);
+  assert.equal(replied, false);
+  const request = (operation: string) => new Promise<unknown>(resolve => {
+    assert.equal(listener({ action: 'feature-highlights', operation }, { id: 'extension' }, resolve), true);
+  });
+  const snapshot = await request('read') as Record<string, unknown>;
+  assert.equal(snapshot.newFeaturesSeenThrough, PREVIOUS_GENERATION);
+  assert.equal((snapshot.newFeaturesWindow as { generation: string }).generation, CURRENT_GENERATION);
+  await request('acknowledge');
+  assert.equal(values.newFeaturesSeenThrough, CURRENT_GENERATION);
 });

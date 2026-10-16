@@ -1,5 +1,6 @@
 import { buildWhatsNewContent } from './whatsNew-content';
-import { acknowledgeFeatureHighlights } from './feature-highlights-storage';
+import { isNewFeature, NEW_FEATURE_ITEMS, resolveFeatureHighlights } from './feature-highlights';
+import { installedVersion, readFeatureHighlightsLocal, acknowledgeFeatureHighlights } from './feature-highlights-storage';
 import { openDialog } from './dialog';
 import { t } from './i18n';
 import {
@@ -42,17 +43,18 @@ export async function getAcknowledgedAnnouncementId(): Promise<string | null> {
 
 export async function hasUnseenWhatsNew(): Promise<boolean> {
   const acknowledged = await getAcknowledgedAnnouncementId();
-  return acknowledged !== WHATS_NEW_ANNOUNCEMENT_ID;
+  if (acknowledged === WHATS_NEW_ANNOUNCEMENT_ID) return false;
+  const [sync, local] = await Promise.all([
+    typeof chrome !== 'undefined' && chrome.storage?.sync ? chrome.storage.sync.get('highlightNewFeatures') : {},
+    readFeatureHighlightsLocal()
+  ]);
+  const state = resolveFeatureHighlights(installedVersion(), sync, local, Date.now());
+  return NEW_FEATURE_ITEMS.some(item => isNewFeature(item.id, state));
 }
 
 export async function acknowledgeWhatsNew(): Promise<void> {
   try {
     await acknowledgeFeatureHighlights();
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      await chrome.storage.local.set({
-        [WHATS_NEW_ACK_STORAGE_KEY]: WHATS_NEW_ANNOUNCEMENT_ID
-      });
-    }
   } catch (_) {
     // Fall through to localStorage for the Vite options preview.
   }

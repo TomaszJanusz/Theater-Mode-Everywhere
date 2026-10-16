@@ -10,11 +10,12 @@ import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from '../tes
 const bundle = buildSync({
   stdin: { contents: `
     export * from './src/ui/new-badge';
-    export { NEW_FEATURE_ITEMS } from './src/feature-highlights';
+    export { NEW_FEATURE_ITEMS, HIGHLIGHTS_WINDOW_STORAGE_KEY, FEATURE_HIGHLIGHTS_MAX_AGE_MS } from './src/feature-highlights';
+    export { createFeatureHighlightsLifecycle } from './src/feature-highlights-lifecycle';
     export { setupFeatureHighlights } from './options/feature-highlights';
     export { localizeDocument } from './src/i18n';
     export { languageRuntime } from './src/i18n-runtime';
-    export { openWhatsNewDialog } from './src/whatsNew';
+    export { openWhatsNewDialog, hasUnseenWhatsNew } from './src/whatsNew';
     export { bootstrapPlayerRuntime } from './src/ui/player-runtime';
     export { setPlayerUiCss } from './src/ui/root';`,
   resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts' },
@@ -51,6 +52,12 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
     }, badgeListenerCount: () => listeners.size });
   }, { version, polish });
   await page.addScriptTag({ content: bundle });
+  await page.evaluate(`(() => {
+    const lifecycle = BadgeTest.createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
+    const send = chrome.runtime.sendMessage;
+    chrome.runtime.sendMessage = message => message.action === 'feature-highlights'
+      ? (message.operation === 'read' ? lifecycle.read() : lifecycle.acknowledge().then(() => ({}))) : send(message);
+  })()`);
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
@@ -82,6 +89,31 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
     assert.equal(await page.locator('[data-new-feature=settingsHighContrast] .te-new-badge').count(), 0);
     await page.locator('#whats-new-btn.has-unseen').waitFor();
+    await browser.close();
+  });
+
+  it(`${engine}: expiry hides Settings badges and unseen indication without acknowledging, and live state cannot revive them`, { timeout: 30_000 }, async t => {
+    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await page.setContent(optionsHtml); await installMock(page);
+    await page.evaluate(`(async () => {
+      window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
+      await settingsHighlights.ready;
+    })()`);
+    await page.locator('#whats-new-btn.has-unseen').waitFor();
+    assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), true);
+    await page.evaluate(`chrome.storage.local.set({
+      [BadgeTest.HIGHLIGHTS_WINDOW_STORAGE_KEY]: { generation: '${CURRENT_GENERATION}', firstShownAt: Date.now() - BadgeTest.FEATURE_HIGHLIGHTS_MAX_AGE_MS }
+    })`);
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
+    assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 0);
+    assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false);
+    const saved = await page.evaluate(() => chrome.storage.local.get(null));
+    assert.equal(saved.newFeaturesSeenThrough, undefined, 'viewing Settings and expiry never acknowledge');
+    assert.equal(saved.whatsNewAcknowledgedId, undefined);
+    await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
+    await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
+    assert.equal(await page.locator('.te-new-badge').count(), 0);
     await browser.close();
   });
 
@@ -238,6 +270,15 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.locator('.player-settings-btn .te-new-badge').waitFor();
     await page.evaluate(`BadgeTest.languageRuntime.set('pl')`);
     await page.locator('[data-settings-section=audio] .theater-settings-heading .te-new-badge').filter({ hasText: 'Nowość' }).waitFor({ state: 'attached' });
+    await page.evaluate(`chrome.storage.local.set({
+      [BadgeTest.HIGHLIGHTS_WINDOW_STORAGE_KEY]: { generation: '${CURRENT_GENERATION}', firstShownAt: Date.now() - BadgeTest.FEATURE_HIGHLIGHTS_MAX_AGE_MS }
+    })`);
+    await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
+    assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false, 'expired items cannot auto-open the announcement');
+    await page.evaluate(`chrome.storage.local.set({
+      [BadgeTest.HIGHLIGHTS_WINDOW_STORAGE_KEY]: { generation: '${CURRENT_GENERATION}', firstShownAt: Date.now() }
+    })`);
+    await page.locator('.player-settings-btn .te-new-badge').waitFor();
     await page.evaluate(`void BadgeTest.openWhatsNewDialog()`);
     await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector('.te-new-badge'));
     await page.locator('.te-dialog-btn-primary').click();

@@ -12,7 +12,7 @@ import { createNewBadge, defineNewBadge, ensureNewBadgeStyles } from '../src/ui/
 /** Page-owned storage subscription, installed before either asynchronous snapshot. */
 export function setupFeatureHighlights(initialSync: Promise<Record<string, unknown>>, version = installedVersion()) {
   const scope = new DisposableScope();
-  let state = resolveFeatureHighlights(version);
+  let state = resolveFeatureHighlights(version, {}, {}, Date.now());
   let syncRevision = 0;
   const localOverrides: Record<string, unknown> = {};
   defineNewBadge();
@@ -57,12 +57,12 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area === 'sync' && changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY]) {
         syncRevision++;
-        state = { ...state, enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) };
+        state = { ...state, now: Date.now(), enabled: resolveHighlightNewFeatures(changes[HIGHLIGHT_NEW_FEATURES_STORAGE_KEY].newValue) };
       } else if (area === 'local' && FEATURE_HIGHLIGHTS_LOCAL_KEYS.some(key => changes[key])) {
         for (const key of FEATURE_HIGHLIGHTS_LOCAL_KEYS) {
           if (changes[key]) localOverrides[key] = changes[key].newValue;
         }
-        state = withFeatureHighlightsLocal(state, localOverrides);
+        state = withFeatureHighlightsLocal(state, localOverrides, Date.now());
       } else return;
       render();
     };
@@ -89,10 +89,8 @@ export function setupFeatureHighlights(initialSync: Promise<Record<string, unkno
     readFeatureHighlightsLocal()
   ]).then(([sync, local]) => {
     if (scope.isDisposed) return;
-    const snapshot = resolveFeatureHighlights(version, sync, { ...local, ...localOverrides });
-    state = { ...state,
-      enabled: syncRevision ? state.enabled : snapshot.enabled,
-      seenThrough: snapshot.seenThrough, development: snapshot.development };
+    const snapshot = resolveFeatureHighlights(version, sync, { ...local, ...localOverrides }, Date.now());
+    state = { ...snapshot, enabled: syncRevision ? state.enabled : snapshot.enabled };
     render();
   }).catch(error => { if (!scope.isDisposed) render(); console.error('Error loading feature highlights:', error); });
   scope.listen(window, 'unload', () => scope.dispose(), { once: true });
