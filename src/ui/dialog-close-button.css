@@ -1,0 +1,32 @@
+/* Imported by both Settings and the player shadow skin. Keep control geometry and
+   interaction states here so the surrounding dialog cannot change its treatment. */
+.te-dialog-close {
+  appearance: none !important;
+  box-sizing: border-box !important;
+  flex: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  margin: 0 !important;
+  padding: 4px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: none !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.2s ease, background-color 0.2s ease !important;
+}
+
+.te-dialog-close:hover {
+  color: var(--appearance-ink, #f4f4f5) !important;
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.08)) !important;
+}
+
+.te-dialog-close:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 2px !important;
+}

@@ -1,6 +1,7 @@
 import { isMotionReduced } from './appearance-runtime';
 import { containModalFocus } from './accessibility';
 import { t } from './i18n';
+import { createDialogCloseButton } from './ui/dialog-close-button';
 import { languageRuntime } from './i18n-runtime';
 
 export type DialogActionSet =
@@ -47,11 +48,7 @@ export function openDialog(source: OpenDialogOptions | (() => OpenDialogOptions)
     title.id = titleId;
     title.className = 'te-dialog-title';
     title.textContent = options.title;
-    const closeButton = document.createElement('button');
-    closeButton.type = 'button';
-    closeButton.className = 'te-dialog-close';
-    closeButton.setAttribute('aria-label', t('dialogClose'));
-    closeButton.textContent = '×';
+    const closeButton = createDialogCloseButton(t('dialogClose'));
     closeButton.addEventListener('click', () => close(dismissValue));
     header.append(title, closeButton);
 

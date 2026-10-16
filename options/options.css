@@ -1,3 +1,4 @@
+@import '../src/ui/dialog-close-button.css';
 @import '../src/appearance-tokens.css';
 @import '../src/settings-brand.css';
 
@@ -1519,30 +1520,6 @@ body.te-dialog-open {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-}
-
-.te-dialog-close {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--appearance-muted, var(--text-secondary));
-  font: inherit;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.te-dialog-close:hover {
-  color: var(--appearance-ink, var(--text-primary));
-  background: var(--border-color);
-}
-
-.te-dialog-close:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
 }
 
 .te-dialog-title {

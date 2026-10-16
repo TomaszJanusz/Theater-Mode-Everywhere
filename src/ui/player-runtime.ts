@@ -1438,7 +1438,7 @@ function initialize(): void {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        queryPlayerUi<HTMLElement>('.theater-help-close-btn')?.focus();
+        queryPlayerUi<HTMLElement>('.te-dialog-close')?.focus();
         return true;
       }
       if ((event.key === ' ' || event.key === 'Enter')

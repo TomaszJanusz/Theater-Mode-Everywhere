@@ -1,16 +1,23 @@
-const CLOSE_ICON = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  `;
-
 /** The X button shared by TME dialogs; callers attach the close behavior. */
 export function createDialogCloseButton(label: string): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'theater-help-close-btn';
+  button.className = 'te-dialog-close';
   button.setAttribute('aria-label', label);
-  button.innerHTML = CLOSE_ICON;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M18 6 6 18M6 6l12 12');
+  svg.append(path);
+  button.append(svg);
   return button;
 }
