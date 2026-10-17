@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - シアターモード"
+    "message": "Theater Mode Everywhere — すべてを統べる唯一のプレーヤー"
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - シアターモード"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "HTML5 ビデオをブラウザ ウィンドウに拡大表示します。独自のコントロール、字幕を使用し、人気のある Web サイトと統合します。"
+    "message": "あらゆる HTML5 ビデオをブラウザいっぱいに拡大。独自のコントロール、字幕、オーディオエフェクト、動画サービスとの連携を利用できます。"
   },
   "cwsPromoBeforeLabel": {
     "message": "適用前"

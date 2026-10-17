@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - Режим кінотеатру"
+    "message": "Theater Mode Everywhere — Один плеєр, щоб правити всіма."
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - Режим кінотеатру"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Розгорніть HTML5-відео у вікні браузера. Користуйтеся власними елементами керування, субтитрами та інтеграціями."
+    "message": "Розгортайте будь-яке HTML5-відео на вікно браузера. Власні елементи керування, субтитри, аудіоефекти та інтеграції з відеосервісами."
   },
   "cwsPromoBeforeLabel": {
     "message": "ДО"

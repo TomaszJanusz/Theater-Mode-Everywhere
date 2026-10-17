@@ -44,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The Play and Pause notice in theater mode no longer animates its text.
-- The English extension name in Chromium browsers now carries the tagline “One player to rule them all.”; Firefox keeps the plain name.
+- The extension name in Chromium browsers now carries a translation of the tagline, for example “Theater Mode Everywhere — One player to rule them all.”, in every supported language. Firefox keeps the plain name.
+- Refreshed and fully translated the store listing descriptions, summaries and keywords in all supported languages to cover the 2.0 features.
 - Settings and player dialogs share one layout, close control, scrolling area and keyboard behavior, including High contrast and right-to-left layouts. Update highlights keeps its acknowledgements visible; subtitle options returns focus to the CC button.
 - Updated the privacy policy to explain browser settings sync and direct video-service requests, and linked it from Settings → About.
 

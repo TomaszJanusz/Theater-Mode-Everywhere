@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - 剧场模式"
+    "message": "Theater Mode Everywhere — 一个播放器，统御一切"
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - 剧场模式"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "将任何 HTML5 视频缩放到浏览器窗口中。使用您自己的控件、字幕并与流行网站集成。"
+    "message": "将任意 HTML5 视频放大至整个浏览器窗口。使用自定义控件、字幕、音频效果，并与各类视频服务集成。"
   },
   "cwsPromoBeforeLabel": {
     "message": "之前"

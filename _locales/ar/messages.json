@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - وضع المسرح"
+    "message": "Theater Mode Everywhere — مشغّل واحد يحكمها جميعًا."
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - وضع المسرح"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "تكبير أي فيديو HTML5 في نافذة المتصفح الخاص بك. استخدم عناصر التحكم الخاصة بك والترجمات والتكامل مع مواقع الويب الشهيرة."
+    "message": "كبّر أي فيديو HTML5 ليملأ المتصفح. استخدم عناصر تحكم مخصصة وترجمات ومؤثرات صوتية وتكاملًا مع خدمات الفيديو."
   },
   "cwsPromoBeforeLabel": {
     "message": "قبل"

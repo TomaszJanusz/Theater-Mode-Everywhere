@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - Modo teatro"
+    "message": "Theater Mode Everywhere — Um player para a todos governar."
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - Modo teatro"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Amplie qualquer vídeo HTML5 na janela do seu navegador. Use seus próprios controles, legendas e integração com sites populares."
+    "message": "Expanda qualquer vídeo HTML5 no navegador. Use controles próprios, legendas, efeitos de áudio e integrações com serviços de vídeo."
   },
   "cwsPromoBeforeLabel": {
     "message": "ANTES"

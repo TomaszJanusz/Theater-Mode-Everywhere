@@ -1,1 +1,1 @@
-video, theatermodus, kinomodus, html5 video, vollbild, bild in bild, lautstärkeverstärkung, tastenkürzel, youtube, vimeo, subtitles, streaming, twitch
+video, theatermodus, kinomodus, html5 video, vollbild, bild in bild, lautstärkeverstärkung, tastenkürzel, youtube, vimeo, untertitel, streaming, twitch, netflix, crunchyroll

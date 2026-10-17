@@ -1,1 +1,1 @@
-비디오, 시어터 모드, 극장 모드, html5 비디오, 전체 화면, 화면 속 화면, 음량 부스트, 단축키, youtube, vimeo, subtitles, streaming, twitch
+동영상, 시어터 모드, 영화관 모드, html5 동영상, 전체 화면, 화면 속 화면, 음량 부스트, 키보드 단축키, youtube, vimeo, 자막, 스트리밍, twitch, netflix, crunchyroll

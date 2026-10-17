@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - Tryb kinowy"
+    "message": "Theater Mode Everywhere — Jeden odtwarzacz, by wszystkimi rządzić."
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - Tryb kinowy"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Powiększ dowolne wideo HTML5 do okna przeglądarki. Korzystaj z własnych kontrolek, napisów i integracji z popularnymi serwisami."
+    "message": "Powiększ dowolne wideo HTML5 do rozmiaru okna. Używaj własnych kontrolek, napisów, efektów audio i integracji z serwisami wideo."
   },
   "cwsPromoBeforeLabel": {
     "message": "PRZED"

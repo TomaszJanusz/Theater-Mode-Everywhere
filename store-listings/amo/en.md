@@ -30,14 +30,15 @@ MAIN FEATURES
 - Custom shortcuts and settings: configure keys to toggle theater mode, seek, manage subtitles, resize subtitles, and step frame by frame. Settings warn about conflicting shortcuts, and in-player help helps you check all of them. Choose the language, accent color, High contrast, Reduce transparency and Reduce motion.
 - Exclusion list: exclude specific domains via popup in browser bar or options page to avoid conflicts with native page layout.
 
-OPERATION
+WHERE AND HOW IT WORKS
 - Universal HTML5 Video: Works with standard HTML5 video elements on the web, including players placed in the Shadow DOM.
 - Embedded Players: Detects and enlarges videos embedded in frames, such as YouTube or Vimeo players.
 - HTML5 Subtitles: Displays standard HTML5 subtitle tracks in their own cinema mode overlay so you can customize their appearance.
 - Platform Integrations: Rich Theater Experience can add titles, subtitles, chapters, preview thumbnails, and more on YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll. Available features depend on the service and video.
 - Live broadcasts: recognizes LIVE broadcasts and, if the service provides a DVR window, allows you to rewind the recording and return to the current moment.
 - DRM-protected services: some platforms limit access to the player, so some functions, such as audio effects, may be unavailable on them.
-- Privacy: the extension does not send information about you or what you watch to the developer. Settings can sync through your browser account. The full privacy policy is available in Settings, under About.
+- Privacy: You're not a product. The extension does not send information about you or what you watch to the developer. Settings can sync through your browser account. The full privacy policy is available in Settings, under About.
+- Free and open source: Theater Mode Everywhere is free and always will be, and its source code is open.
 
 HOW TO START
 1. Open a video site, such as a streaming platform, news site, or blog.
