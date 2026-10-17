@@ -198,6 +198,7 @@ const {
   triggerVolumeIndicator,
   triggerStatusIndicator,
   triggerPlaybackIndicator,
+  dismissPlaybackIndicator,
   triggerCaptionHud,
   syncContentTitle
 } = hud;
@@ -457,6 +458,14 @@ function applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void 
   window.dispatchEvent(new CustomEvent('theater-everywhere-boost-event'));
 }
 
+function nextPlaybackAction(): 'play' | 'pause' | null {
+  const surface = sessionSurface();
+  if (!surface) return null;
+  const native = surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null;
+  const willPlay = native ? (!mediaHasSource(native) || native.paused) : surface.paused;
+  return willPlay ? 'play' : 'pause';
+}
+
 function executeCommand(command: PlayerCommand): void {
   if (command.type === 'EXIT') {
     exitTheaterMode(command.origin, command.sessionId, command.from);
@@ -469,7 +478,7 @@ function executeCommand(command: PlayerCommand): void {
       const surface = sessionSurface();
       if (!surface) break;
       const native = surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null;
-      const willPlay = native ? (!mediaHasSource(native) || native.paused) : surface.paused;
+      const willPlay = nextPlaybackAction() === 'play';
       if (native) {
         cancelPendingSeekResume(native);
         toggleVideoPlayback(native);
@@ -643,6 +652,8 @@ function bindChromeActions(): void {
     triggerVolumeIndicator,
     triggerStatusIndicator,
     triggerPlaybackIndicator,
+    dismissPlaybackIndicator,
+    nextPlaybackAction,
     seekHostTime: seekToMediaTime,
     playlistNavigationAvailable,
     subscribePlaylistNavigation(listener: (state: PlaylistNavState) => void) {
