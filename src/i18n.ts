@@ -55,7 +55,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   autoEnterTheaterTitle: "AutoTheater",
   accessibilityTitle: "Accessibility",
   autoTheaterSkipCountdownTitle: "Skip countdown",
-  autoTheaterSkipCountdownDescription: "Enter as soon as playback is ready, without the 3-second notice.",
+  autoTheaterSkipCountdownDescription: "Enter as soon as playback is ready, without the countdown notice.",
   videoActivatorPromptTitle: "Enable the video launcher?",
   videoActivatorPromptDescription: "AutoTheater is now off. Would you like a small button on videos to enter theater mode manually? You can change this later in Settings \u2192 Features \u2192 Video launcher.",
   videoActivatorTitle: "Video launcher",

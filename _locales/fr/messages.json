@@ -674,7 +674,7 @@
     "message": "Ignorer le compte à rebours"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Activer le mode cinéma dès que la lecture est prête, sans l’avis de 3 secondes."
+    "message": "Activer le mode cinéma dès que la lecture est prête, sans l’avis de compte à rebours."
   },
   "videoActivatorPromptTitle": {
     "message": "Activer le bouton sur la vidéo ?"

@@ -674,7 +674,7 @@
     "message": "Skip countdown"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Enter as soon as playback is ready, without the 3-second notice."
+    "message": "Enter as soon as playback is ready, without the countdown notice."
   },
   "videoActivatorPromptTitle": {
     "message": "Enable the video launcher?"

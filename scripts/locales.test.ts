@@ -101,4 +101,15 @@ describe('locale catalogs', () => {
       }
     }
   });
+
+  it('keeps AutoTheater countdown copy free of hard-coded durations', () => {
+    // The countdown length is a code constant; copy must not repeat it.
+    const seconds = /\d\s*-?\s*(?:s\b|sec|sek|second|seconde|secondi|segundo|секунд|秒|초|ثوان|ثانية)/i;
+    for (const locale of locales) {
+      const catalog = readCatalog(locale);
+      for (const key of Object.keys(catalog).filter((name) => /^autoTheater/.test(name))) {
+        assert.doesNotMatch(catalog[key].message, seconds, `${locale}.${key}: hard-codes a duration`);
+      }
+    }
+  });
 });

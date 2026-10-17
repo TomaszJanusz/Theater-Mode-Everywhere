@@ -674,7 +674,7 @@
     "message": "Pular contagem regressiva"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Entrar assim que a reprodução estiver pronta, sem o aviso de 3 segundos."
+    "message": "Entrar assim que a reprodução estiver pronta, sem o aviso de contagem regressiva."
   },
   "videoActivatorPromptTitle": {
     "message": "Ativar o botão no vídeo?"
