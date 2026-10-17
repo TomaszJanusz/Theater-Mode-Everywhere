@@ -92,7 +92,7 @@ async function assertShrinking(page: Page, selector: string) {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
-  it(`${engine}: deadline exit uses the intent clock, holds 1 and cleans up`, { timeout: 40_000 }, async t => {
+  it(`${engine}: deadline exit uses the intent clock, holds 1 until 0.5 s remain, then 0, and cleans up`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
     ownTestBrowser(t, browser);
     const page = await browser.newPage();
@@ -109,26 +109,27 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1);
     assert.equal(await page.evaluate('exits.length'), 1);
     assert.equal(await page.evaluate('exits[0].duration'), 500);
-    assert.equal(await visual.innerText(), '1');
-    assert.equal(await visual.locator('.is-rolling').count(), 0, 'last digit stays still');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '1');
     await capture(page, `${engine}-deadline-start`, 0);
     assert.equal(await page.evaluate('exits[0].element.className'), 'caption-hud-spinner');
-    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
+    // The 2→1 roll is still running here, so the glyph is checked once it settles.
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
     await page.clock.runFor(250);
     await capture(page, `${engine}-deadline-middle`, 250);
     await assertShrinking(page, '.theater-auto-notice .caption-hud-spinner');
-    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
-    assert.equal(await visual.innerText(), '1');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '1');
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
     assert.equal(await spinner.count(), 0, 'removed exactly 500 ms before entry');
     assert.equal(await page.locator('.theater-auto-notice').count(), 1, 'notice timing stays unchanged');
     await capture(page, `${engine}-deadline-end`, 500);
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'digit drops to 0 once 0.5 s remain');
     await page.clock.runFor(250);
     await capture(page, `${engine}-deadline-minus-250`, 500);
-    assert.equal(await visual.innerText(), '1');
-    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the final 0.5 s shows 0');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
     await page.evaluate('hide(); hide()');
     await page.evaluate(`window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); hide(); hide();`);
     await page.clock.runFor(5000);
@@ -439,7 +440,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.evaluate('hud.removeCaptionHud()');
   });
 
-  it(`${engine}: reduced motion removes immediately, including a live preference change`, { timeout: 40_000 }, async t => {
+  it(`${engine}: reduced motion removes immediately, including a live preference change, and the final half second shows 0`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
     ownTestBrowser(t, browser);
     const page = await browser.newPage();
@@ -465,7 +466,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1);
     assert.equal(await page.locator('.theater-auto-notice .caption-hud-spinner').count(), 0);
     await page.clock.runFor(750);
-    assert.equal(await page.locator('.theater-auto-notice-count').innerText(), '1');
+    assert.equal(await page.locator('.theater-auto-notice-count').innerText(), '0');
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.evaluate('hide()');
   });

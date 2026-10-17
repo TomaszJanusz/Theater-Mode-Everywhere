@@ -98,17 +98,22 @@ it('rejects stale intent: lost eligibility, replaced media and disposal', () => 
   assert.equal(log.filter(entry => entry === 'show').length, log.filter(entry => entry === 'hide').length);
 });
 
-it('rounds the notice countdown up and holds the last second until entry', () => {
+it('rounds the notice countdown up and ends on 0 as the ring clears', () => {
   assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 3);
   assert.equal(noticeSecondsRemaining(2001), 3);
   assert.equal(noticeSecondsRemaining(2000), 2);
-  assert.equal(noticeSecondsRemaining(1), 1);
-  assert.equal(noticeSecondsRemaining(0), 1, 'waiting for playback keeps showing 1');
-  assert.equal(noticeSecondsRemaining(-50), 1);
+  assert.equal(noticeSecondsRemaining(1001), 2);
+  assert.equal(noticeSecondsRemaining(1000), 1);
+  assert.equal(noticeSecondsRemaining(501), 1);
+  assert.equal(noticeSecondsRemaining(500), 0);
+  assert.equal(noticeSecondsRemaining(0), 0, 'waiting for playback keeps showing 0');
+  assert.equal(noticeSecondsRemaining(-50), 0);
   assert.equal(msUntilNoticeSecondChanges(3000), 1000);
   assert.equal(msUntilNoticeSecondChanges(2500), 500);
   assert.equal(msUntilNoticeSecondChanges(2000), 1000);
-  assert.equal(msUntilNoticeSecondChanges(1000), null);
+  assert.equal(msUntilNoticeSecondChanges(1000), 500);
+  assert.equal(msUntilNoticeSecondChanges(700), 200);
+  assert.equal(msUntilNoticeSecondChanges(500), null);
   assert.equal(msUntilNoticeSecondChanges(0), null);
 });
 

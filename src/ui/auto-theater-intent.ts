@@ -1,15 +1,22 @@
+import { SPINNER_DEADLINE_END_MS } from './spinner-exit';
+
 /** An announced automatic entry stays visible this long before theater opens. */
 export const AUTO_ENTER_NOTICE_MIN_MS = 3000;
 
-/** Whole seconds shown on the notice: rounded up, and never below 1 while entry is still pending. */
+/**
+ * Whole seconds shown on the notice: rounded up while more than one second remains, 1 until the
+ * ring has finished leaving, then 0 for the final stretch and while entry waits for playback.
+ */
 export function noticeSecondsRemaining(remainingMs: number): number {
-  return Math.max(1, Math.ceil(Math.max(0, remainingMs) / 1000));
+  if (remainingMs <= SPINNER_DEADLINE_END_MS) return 0;
+  return remainingMs <= 1000 ? 1 : Math.ceil(remainingMs / 1000);
 }
 
-/** Time until the displayed seconds next change, or null once the last second is showing. */
+/** Time until the displayed seconds next change, or null once 0 is showing. */
 export function msUntilNoticeSecondChanges(remainingMs: number): number | null {
   const seconds = noticeSecondsRemaining(remainingMs);
-  return seconds <= 1 ? null : remainingMs - (seconds - 1) * 1000;
+  if (seconds === 0) return null;
+  return seconds === 1 ? remainingMs - SPINNER_DEADLINE_END_MS : remainingMs - (seconds - 1) * 1000;
 }
 
 export type AutoEnterTarget<K> = {

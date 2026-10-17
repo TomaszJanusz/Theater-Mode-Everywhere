@@ -19,7 +19,7 @@ const CSS = readStylesheet(new URL('./shadow.css', import.meta.url));
 declare global {
   interface Window {
     NoticeTest: {
-      showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number): () => void;
+      showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number, ringTurn?: 'uniform' | 'per-digit'): () => void;
       setPlayerUiCss(css: string): void;
     };
     noticeHide: () => void;
@@ -27,17 +27,17 @@ declare global {
 }
 
 /** Shows the notice with a 3 s deadline on the page's fake clock. */
-async function mountNotice(page: Page): Promise<void> {
+async function mountNotice(page: Page, ringTurn?: 'uniform' | 'per-digit'): Promise<void> {
   await page.addInitScript('window.__name = target => target;');
   await page.goto('about:blank');
   await page.addScriptTag({ content: BUNDLE });
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 60_000));
-  await page.evaluate(css => {
-    window.NoticeTest.setPlayerUiCss(css);
+  await page.evaluate(([css, mode]) => {
+    window.NoticeTest.setPlayerUiCss(css!);
     const deadline = performance.now() + 3000;
-    window.noticeHide = window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, deadline - performance.now()));
-  }, CSS);
+    window.noticeHide = window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, deadline - performance.now()), mode as 'uniform' | 'per-digit' | undefined);
+  }, [CSS, ringTurn]);
 }
 
 const readout = (page: Page) => page.evaluate(() => {
@@ -49,7 +49,8 @@ const ring = (page: Page) => page.evaluate(() => {
   const spinner = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice .caption-hud-spinner')!;
   // The page clock is faked, but animations keep running on the document timeline, so only the restart is stable.
   const turns = spinner.getAnimations().filter(a => a.effect instanceof KeyframeEffect && a.effect.getKeyframes().some(k => k.rotate));
-  return { turns: turns.length, time: Math.round(Number(turns[0]?.currentTime ?? -1)) };
+  const timing = turns[0]?.effect?.getTiming();
+  return { turns: turns.length, time: Math.round(Number(turns[0]?.currentTime ?? -1)), iterations: timing?.iterations, easing: timing?.easing };
 });
 
 for (const engine of ['chromium', 'firefox'] as const) {
@@ -63,13 +64,16 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal((await readout(page))!.text, '3');
     await page.clock.runFor(1);
     assert.deepEqual(await readout(page), { text: '2', ariaHidden: 'true', rolling: 1 }, 'a changed second rolls through the slot');
-    const restarted = await ring(page);
-    assert.equal(restarted.turns, 1, 'one ring turn per second, replacing the previous one');
-    assert.ok(restarted.time < 250, 'the turn restarts with the digit change');
+    const uniform = await ring(page);
+    assert.deepEqual([uniform.turns, uniform.iterations, uniform.easing], [1, Infinity, 'linear'], 'one continuous linear turn, not restarted by digit changes');
     await page.clock.runFor(1000);
     assert.equal((await readout(page))!.text, '1');
+    await page.clock.runFor(499);
+    assert.equal((await readout(page))!.text, '1');
+    await page.clock.runFor(1);
+    assert.equal((await readout(page))!.text, '0', 'the countdown ends on 0');
     await page.clock.runFor(5000);
-    assert.equal((await readout(page))!.text, '1', 'the last second holds while entry waits for playback');
+    assert.equal((await readout(page))!.text, '0', 'zero holds while entry waits for playback');
     const notice = page.locator('#theater-everywhere-ui .theater-auto-notice');
     assert.equal(await notice.getAttribute('aria-live'), 'polite');
     assert.match((await notice.getAttribute('aria-label'))!, /Entering theater mode/);
@@ -89,5 +93,20 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await readout(page), null);
     await page.clock.runFor(5000);
     assert.equal(await readout(page), null);
+  });
+}
+
+for (const engine of ['chromium', 'firefox'] as const) {
+  it(`${engine}: the per-digit ring mode restarts one eased turn with each digit change`, { timeout: 40_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await mountNotice(page, 'per-digit');
+    await page.clock.runFor(1000);
+    assert.equal((await readout(page))!.text, '2');
+    const restarted = await ring(page);
+    assert.equal(restarted.turns, 1, 'one ring turn per second, replacing the previous one');
+    assert.ok(restarted.time < 250, 'the turn restarts with the digit change');
+    assert.notEqual(restarted.easing, 'linear');
   });
 }
