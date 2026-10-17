@@ -85,10 +85,12 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
 
 const shiftedKeys = '<>?:"{}|_+~!@#$%^&*()';
 
-// macOS Option changes key (Option+R is ®). Use the physical letter for Alt
-// bindings, while leaving ordinary typing and punctuation bindings unchanged.
+// macOS Option changes key (Option+R is ®, Option+1 is ¡). Use the physical
+// letter or digit for Alt bindings, while leaving ordinary typing and
+// punctuation bindings unchanged.
 function altLetter(event: KeyboardEvent): string | null {
-  return event.altKey && /^Key[A-Z]$/.test(event.code) ? event.code.slice(3) : null;
+  const physical = /^(?:Key[A-Z]|Digit[0-9])$/.test(event.code) ? event.code.replace(/^(?:Key|Digit)/, '') : null;
+  return event.altKey ? physical : null;
 }
 
 export function shortcutFromEvent(event: KeyboardEvent): string {
