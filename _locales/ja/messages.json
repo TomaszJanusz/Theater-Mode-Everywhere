@@ -686,7 +686,7 @@
     "message": "動画ランチャー"
   },
   "videoActivatorDescription": {
-    "message": "動画にカーソルを合わせると、左上隅に小さなボタンを表示します。クリックするとシアターモードに切り替わります。Rich Theater Experience に対応する一部のサービスでは、ボタンがサービスのインターフェースに組み込まれています。"
+    "message": "動画にカーソルを合わせると、左端に小さなボタンを表示します。クリックするとシアターモードに切り替わります。Rich Theater Experience に対応する一部のサービスでは、ボタンがサービスのインターフェースに組み込まれています。"
   },
   "videoActivatorLabel": {
     "message": "シアターモードに切り替える"

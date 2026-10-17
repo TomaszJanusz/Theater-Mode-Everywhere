@@ -686,7 +686,7 @@
     "message": "Bouton sur la vidéo"
   },
   "videoActivatorDescription": {
-    "message": "Affiche un petit bouton dans le coin supérieur gauche de la vidéo lorsque vous la survolez. Cliquez dessus pour activer le mode cinéma. Sur certains services avec Rich Theater Experience, le bouton est intégré à l’interface du service."
+    "message": "Affiche un petit bouton sur le bord gauche de la vidéo lorsque vous la survolez. Cliquez dessus pour activer le mode cinéma. Sur certains services avec Rich Theater Experience, le bouton est intégré à l’interface du service."
   },
   "videoActivatorLabel": {
     "message": "Activer le mode cinéma"

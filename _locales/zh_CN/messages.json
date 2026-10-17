@@ -686,7 +686,7 @@
     "message": "视频启动按钮"
   },
   "videoActivatorDescription": {
-    "message": "将指针移到视频上时，在左上角显示一个小按钮。点击即可进入剧场模式。在部分集成 Rich Theater Experience 的服务中，按钮内置于服务界面中。"
+    "message": "将指针移到视频上时，在左边缘显示一个小按钮。点击即可进入剧场模式。在部分集成 Rich Theater Experience 的服务中，按钮内置于服务界面中。"
   },
   "videoActivatorLabel": {
     "message": "进入剧场模式"
