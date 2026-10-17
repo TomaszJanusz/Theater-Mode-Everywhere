@@ -1721,6 +1721,14 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
       && !childVideo?.classList.contains(videoClass)
       && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
   }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  // A frame that reloads while the page is in theater drops its session; the page must not stay pinned around it.
+  await delay(400);
+  await frame.locator('video#player').click({ timeout: 15_000 });
+  await frame.locator('body').press('t');
+  await page.waitForFunction(videoClass => document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  await page.evaluate(() => (document.getElementById('child') as HTMLIFrameElement).contentWindow?.location.reload());
+  await page.waitForFunction((videoClass) => !document.getElementById('child')?.classList.contains(videoClass)
+    && !document.documentElement.classList.contains('theater-everywhere-html-active'), THEATER_VIDEO_CLASS, { timeout: 10_000 });
   console.log('smoke:chromium iframe child T/Escape passed');
 }
 

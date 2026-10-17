@@ -77,12 +77,21 @@ export class FrameCoordinator {
     const envelope = readFrameEnvelope(event.data);
     if (!envelope) return null;
     const iframes = Array.from(document.querySelectorAll('iframe'));
-    const { fromParent, fromChild } = isTrustedFrameSource(event, this.childWindows());
+    const source = isTrustedFrameSource(event, this.childWindows());
+    const { fromParent } = source;
     const hasValidCredentials = Boolean(
       activeSessionId
       && activeNonce
       && envelope.sessionId === activeSessionId
       && envelope.nonce === activeNonce
+    );
+    // A frame that is unloading posts its last message with a null source, so the child window
+    // cannot be matched. Only the session's own exit is accepted that way, by origin and credentials.
+    const fromChild = source.fromChild || Boolean(
+      event.source === null
+      && envelope.type === 'FRAME_EXIT'
+      && hasValidCredentials
+      && iframes.some((item) => originMatchesIframe(event, item))
     );
     let trustedOrigin = false;
     if (fromParent) {

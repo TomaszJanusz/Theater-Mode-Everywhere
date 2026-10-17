@@ -1822,6 +1822,11 @@ function initialize(): void {
     }
   };
   session.runtimeScope.listen(window, 'message', listeners.message!);
+  // A reloaded or navigated frame drops its session without telling the embedding page, which
+  // would stay pinned in theater around a frame that no longer has our UI.
+  session.runtimeScope.listen(window, 'pagehide', () => {
+    if (window !== window.top && session.hasUi && session.id) frames.postToParent('FRAME_EXIT', session.id);
+  });
 
   // 5. SPA navigation listener — auto-exit theater mode when page navigates away
   listeners.navigate = () => {
