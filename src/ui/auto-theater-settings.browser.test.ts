@@ -131,7 +131,11 @@ for (const engine of [chromium, firefox]) {
     const context = await browser.newContext({ reducedMotion: 'reduce' });
     const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
     await storage(context, saved);
-    const page = await context.newPage(); await open(page, 'player');
+    const page = await context.newPage();
+    // The theater shortcut ignores presses for 200 ms after each toggle. A fake clock makes that
+    // window explicit: this test is fast enough to re-enter inside it, so expire it before the re-entry.
+    await page.clock.install();
+    await open(page, 'player');
     await toggle(page, 'player');
     await page.getByRole('dialog').waitFor();
     await page.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: true }));
@@ -149,6 +153,7 @@ for (const engine of [chromium, firefox]) {
     await page.getByRole('dialog').waitFor({ state: 'detached' });
     assert.equal(saved.videoActivatorPromptAnswer, undefined, 'theater exit is not an answer');
     await page.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: true }));
+    await page.clock.runFor(200);
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
     await toggle(page, 'player');
