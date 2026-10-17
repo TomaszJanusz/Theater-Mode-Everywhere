@@ -1,4 +1,4 @@
-import { exitSpinner } from './spinner-exit';
+import { exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { mountPlayerUi } from './root';
 import { HUD_PLATE_CLASS } from './hud';
 import { renderKbdText } from './kbd-text';
@@ -64,16 +64,29 @@ export function showAutoTheaterNotice(
   overlay.addEventListener('mousedown', event => event.preventDefault());
   let timer: number | undefined;
   let stopped = false;
+  let turn: Animation | undefined;
+  // One full ring turn per displayed second, started by the same tick that changes the digit.
+  // A first paint mid-second joins the turn where the clock says it is, so ring and digit never drift.
+  const turnRing = (remaining: number): void => {
+    turn?.cancel();
+    turn = undefined;
+    if (isElementMotionReduced(spinner)) return;
+    const intoSecond = 1000 - (remaining - (noticeSecondsRemaining(remaining) - 1) * 1000);
+    turn = spinner.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 1000, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
+    turn.currentTime = Math.min(1000, Math.max(0, intoSecond));
+  };
   const tick = (animate: boolean): void => {
     if (stopped) return;
     const remaining = remainingMs();
     renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate);
+    turnRing(remaining);
     const wait = msUntilNoticeSecondChanges(remaining);
     // A timer that fires a hair early re-reads the clock and re-arms instead of skipping a digit.
     if (wait !== null) timer = window.setTimeout(() => tick(true), Math.max(1, Math.ceil(wait)));
   };
-  tick(false);
   mountPlayerUi(overlay);
+  // After mounting, so reduced motion is read from the UI host.
+  tick(false);
   const stopExit = exitSpinner(spinner, {
     mode: 'deadline', remainingMs,
     onStart: () => {
@@ -86,6 +99,7 @@ export function showAutoTheaterNotice(
     stopped = true;
     stopExit();
     window.clearTimeout(timer);
+    turn?.cancel();
     // Also settle any digit roll already in flight before discarding its DOM.
     renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
     overlay.remove();

@@ -31,6 +31,8 @@ async function setup(page: Page) {
     Object.assign(window, { exits: [] });
     HTMLElement.prototype.animate = function (frames, options) {
       const animation = native.call(this, frames, options);
+      // The countdown's per-second ring turn is not an exit.
+      if (Array.isArray(frames) && frames.some(frame => 'rotate' in frame)) return animation;
       animation.pause();
       const duration = Number(animation.effect!.getTiming().duration);
       const record = { animation, element: this, started: performance.now(), duration };
