@@ -680,7 +680,7 @@
     "message": "Włączyć przycisk na wideo?"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater jest teraz wyłączony. Czy chcesz wyświetlać na filmach mały przycisk do ręcznego włączania trybu kinowego? Możesz to później zmienić w Ustawienia → Funkcje → Przycisk na wideo."
+    "message": "AutoTheater jest teraz wyłączony. Czy chcesz wyświetlać na filmach mały przycisk do ręcznego włączania trybu kinowego? Możesz to później zmienić w menu „Ustawienia → Funkcje → Przycisk na wideo”."
   },
   "videoActivatorTitle": {
     "message": "Przycisk na wideo"
