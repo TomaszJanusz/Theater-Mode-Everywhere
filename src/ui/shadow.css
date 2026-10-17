@@ -1545,6 +1545,13 @@ button.theater-time-end:hover {
   scrollbar-color: var(--accent-color, #6366f1) transparent !important;
 }
 
+/* The notch cuts its overlap out of the menu's bottom corner. Keep the list at
+   least that tall plus a gap, so a short menu (no tracks) never lets the notch
+   top reach the header divider. */
+.theater-menu-anchored .theater-cc-menu-list {
+  min-height: calc(var(--theater-menu-notch-overlap) + 16px) !important;
+}
+
 .theater-cc-menu-list > .theater-cc-menu-item:first-child {
   margin-top: 4px !important;
 }
