@@ -1,12 +1,3 @@
-# Chrome Web Store Listing - it
-
-## Name
-Theater Mode Everywhere - Modalità cinema
-
-## Short summary
-Espandi i video HTML5 nel browser. Usa controlli personalizzati, sottotitoli e integrazioni con i servizi più popolari.
-
-## Full description
 Theater Mode Everywhere ingrandisce i lettori HTML5 per riempire l'intera finestra del browser, fornendo una comoda esperienza cinematografica senza intestazioni, barre laterali, commenti e consigli.
 
 Guarda tutorial, streaming, video e brevi clip con controlli di riproduzione personalizzati. Sfrutta i sottotitoli, le scorciatoie da tastiera, i controlli immagine e volume e le funzionalità aggiuntive disponibili sulle piattaforme supportate.
@@ -40,6 +31,3 @@ COME INIZIARE
 3. Utilizza i controlli o le scorciatoie del lettore: `C` attiva e disattiva i sottotitoli, `Left` e `Right` spostano la riproduzione e le scorciatoie configurabili avanzano fotogramma per fotogramma.
 4. Sulle piattaforme supportate, abilita Rich Theater Experience nel popup o nelle impostazioni dell'estensione.
 5. Premere nuovamente `Escape` o `T` per uscire dalla modalità teatro.
-
-## Suggested keywords
-video, modalità cinema, modalità teatro, video html5, schermo intero, picture in picture, amplificazione volume, scorciatoie da tastiera, youtube, vimeo, subtitles, streaming, twitch

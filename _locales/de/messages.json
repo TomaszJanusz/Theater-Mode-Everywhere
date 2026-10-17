@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Theatermodus"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Theatermodus"
+  },
   "extensionDescription": {
     "message": "Vergrößere HTML5-Videos im Browserfenster. Nutze eigene Steuerungen, Untertitel und Integrationen mit beliebten Diensten."
   },

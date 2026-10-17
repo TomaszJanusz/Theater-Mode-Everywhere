@@ -1,12 +1,3 @@
-# Chrome Web Store Listing - de
-
-## Name
-Theater Mode Everywhere - Theatermodus
-
-## Short summary
-Vergrößere HTML5-Videos im Browserfenster. Nutze eigene Steuerungen, Untertitel und Integrationen mit beliebten Diensten.
-
-## Full description
 Theater Mode Everywhere vergrößert HTML5-Player so, dass sie das gesamte Browserfenster ausfüllen und so ein komfortables Kinoerlebnis ohne Kopfzeilen, Seitenleisten, Kommentare und Empfehlungen bieten.
 
 Sehen Sie sich Tutorials, Streams, Videos und kurze Clips mit benutzerdefinierten Wiedergabesteuerungen an. Profitieren Sie von Untertiteln, Tastaturkürzeln, Bild- und Lautstärkereglern sowie zusätzlichen Funktionen, die auf unterstützten Plattformen verfügbar sind.
@@ -40,6 +31,3 @@ WIE MAN BEGINNT
 3. Verwenden Sie Player-Steuerelemente oder Verknüpfungen: `C` schaltet Untertitel ein und aus, `Left` und `Right` spulen und die konfigurierbaren Tasten für Einzelbilder gehen Bild für Bild.
 4. Aktivieren Sie auf unterstützten Plattformen Rich Theater Experience im Erweiterungs-Popup oder in den Einstellungen.
 5. Drücken Sie erneut `Escape` oder `T`, um den Kinomodus zu verlassen.
-
-## Suggested keywords
-video, theatermodus, kinomodus, html5 video, vollbild, bild in bild, lautstärkeverstärkung, tastenkürzel, youtube, vimeo, subtitles, streaming, twitch

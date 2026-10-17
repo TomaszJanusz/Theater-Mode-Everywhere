@@ -16,19 +16,22 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Captions under the video:' }, ' Choose a centered or raised picture. If you choose the latter, the video moves to the top and TME tries to use the space below it to display captions.'],
     [{ strong: 'Pinnable TME bar' }, ': Keep the controls visible, go to the previous or next video, and check the title in the player.'],
     [{ strong: 'Rich Theater Experience' }, ': Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;'],
-    [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual sites and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.'],
+    [{ strong: 'Rich Theater Experience' }, ': You can turn RTE on or off for individual services in Settings → Features, where each service tile lights up in its brand colors, and filter services by capability, including playlists. Playlist and queue navigation is available on YouTube, Vimeo Showcase, Netflix, Disney+, Bilibili, Bilibili.tv and Tencent Video / WeTV when the host provides it.'],
     [{ strong: 'Audio effects:' }, ' Adjust dialogue, loud sounds, bass and volume in the player settings. Available for all content that is not protected by DRM.'],
     [{ strong: 'SponsorBlock support:' }, ' See markers from your installed SponsorBlock extension on the YouTube theater timeline, in its own colors, while keeping its notices visible.'],
     [{ strong: 'Automatic theater mode:' }, ' A corner notice counts down the seconds before the entry; click it or press Esc to cancel, or turn the countdown off in Settings → Features.'],
     [{ strong: 'Video launcher:' }, ' Off by default; turn it on in Settings → Features → Video launcher to enter theater mode with a small button in the top-left corner of a paused video. It hides during playback, except for the first five seconds after a page or in-app navigation loads. Its tooltip shows your theater shortcut, such as [T]. With YouTube Rich Theater Experience, a white rhombus with an accent triangle stays in the player toolbar regardless of playback or pointer activity. When you turn AutoTheater off, TME offers to enable it.'],
-    [{ strong: 'Fullscreen in theater mode:' }, ' Double-click the picture to enter or leave fullscreen without leaving theater mode.'],
-    [{ strong: 'Accessibility:' }, ' Theater Mode Everywhere respects your system preferences for increased contrast, reduced transparency and reduced motion.'],
+    [{ strong: 'Fullscreen in theater mode:' }, ' Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.'],
+    [{ strong: 'Accessibility:' }, ' Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.'],
+    [{ strong: 'New feature badges:' }, ' Recently added features are marked with NEW badges until you open these highlights. To silence them until the next version, use Settings → Appearance → Hide until next version.'],
+    ['Settings warn you about conflicting keyboard shortcuts.'],
     ['The titles of the videos being played are displayed.'],
     ['You can go to the home page of the service the video is playing on.'],
     ['Theater Mode Everywhere should now use fewer resources.'],
     ['The player now has a dedicated settings menu.'],
-    ['A clearer layout of the extension\'s settings page; a new "About" page has been added.'],
-    ['You can change the language, and the translations have been improved.']
+    ['A clearer layout of the extension\'s settings page; a new "About" page has been added, with the privacy policy you can read inside the extension.'],
+    ['You can change the language, and the translations have been improved.'],
+    ['And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.']
   ],
   thanks: 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
 };

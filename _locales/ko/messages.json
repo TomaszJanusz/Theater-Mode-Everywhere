@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - 시어터 모드"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - 시어터 모드"
+  },
   "extensionDescription": {
     "message": "HTML5 비디오를 브라우저 창으로 확대하세요. 나만의 컨트롤, 자막 및 인기 웹사이트와의 통합을 사용하세요."
   },

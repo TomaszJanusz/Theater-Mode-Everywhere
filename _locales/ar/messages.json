@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - وضع المسرح"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - وضع المسرح"
+  },
   "extensionDescription": {
     "message": "تكبير أي فيديو HTML5 في نافذة المتصفح الخاص بك. استخدم عناصر التحكم الخاصة بك والترجمات والتكامل مع مواقع الويب الشهيرة."
   },

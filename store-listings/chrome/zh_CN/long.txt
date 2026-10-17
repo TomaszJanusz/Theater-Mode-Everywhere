@@ -1,12 +1,3 @@
-# Chrome Web Store Listing - zh_CN
-
-## Name
-Theater Mode Everywhere - 剧场模式
-
-## Short summary
-将任何 HTML5 视频缩放到浏览器窗口中。使用您自己的控件、字幕并与流行网站集成。
-
-## Full description
 Theater Mode Everywhere 放大 HTML5 播放器以填充整个浏览器窗口，提供便捷的影院体验，无需标题、侧边栏、评论和推荐。
 
 使用自定义播放控件观看教程、直播、视频和短片。利用字幕、键盘快捷键、图像和音量控制以及受支持平台上提供的其他功能。
@@ -40,6 +31,3 @@ Theater Mode Everywhere 放大 HTML5 播放器以填充整个浏览器窗口，�
 3. 使用播放器控件或快捷键：`C` 打开和关闭字幕、`Left` 和 `Right` 快进或快退，可配置的逐帧快捷键用于逐帧移动。
 4. 在支持的平台上，在扩展弹出窗口或设置中启用 Rich Theater Experience。
 5. 再次按 `Escape` 或 `T` 退出影院模式。
-
-## Suggested keywords
-视频, 剧场模式, 影院模式, HTML5 视频, 全屏, 画中画, 音量增强, 键盘快捷键, youtube, vimeo, subtitles, streaming, twitch

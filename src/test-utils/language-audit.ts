@@ -13,7 +13,8 @@ export async function assertLocalized(page: Page, locale: string, selector = 'ht
   const english = compileCatalog(readCatalog('en'));
   const translated = compileCatalog(readCatalog(locale));
   // Manifest store metadata is localized separately; the UI keeps the product's brand name.
-  const table = [...english].filter(([key, message]) => key !== 'extensionname' && key !== 'extensiondescription' && message !== translated.get(key));
+  const manifestKeys = new Set(['extensionname', 'extensionnamecompact', 'extensiondescription']);
+  const table = [...english].filter(([key, message]) => !manifestKeys.has(key) && message !== translated.get(key));
   const collect = ({ table, selector }: { table: [string, string][]; selector: string }) => {
     const normalize = (text: string) => text.replace(/\s+/g, ' ').trim();
     const patterns = table.map(([key, message]) => {

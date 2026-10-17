@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Tryb kinowy"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Tryb kinowy"
+  },
   "extensionDescription": {
     "message": "Powiększ dowolne wideo HTML5 do okna przeglądarki. Korzystaj z własnych kontrolek, napisów i integracji z popularnymi serwisami."
   },

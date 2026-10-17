@@ -42,3 +42,10 @@ Publishing is opt-in per store through repository variables. Keep a store disabl
 - Chrome Web Store publishing uses the official v2 API: refresh OAuth token, upload package, then publish the item for review.
 - Microsoft Edge Add-ons publishing uses the v1.1 API: upload package, poll upload status, publish draft submission, then poll publish status.
 - Chrome and Edge listing metadata still has to be maintained manually in their dashboards; their package update APIs do not update store descriptions.
+
+## Listing copy
+
+- `store-listings/chrome/<locale>/` holds the Chrome Web Store and Edge copy in separate files so each section can be copied on its own: `name.txt`, `short.txt` (the short description), `long.txt`, `keywords.txt`. English is the source; keep other languages factually aligned with it.
+- `short.txt` is also the `extensionDescription` locale message, which feeds the manifest `description` (132-character limit). `scripts/store-listings.test.ts` keeps the two equal.
+- `name.txt` mirrors `extensionName`, the manifest name used by Chrome and Edge (Chrome Web Store limit: 75 characters). Firefox packages use `extensionNameCompact` instead (see `scripts/build.ts`), because AMO limits names to 50 characters; the AMO listing name is that compact name.
+- `store-listings/amo/<locale>.md` keeps the single-file format read by `scripts/update-amo-listings.ts`; its summary and description must match `short.txt` and `long.txt`.
