@@ -18,7 +18,7 @@ import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { isChatDocument, isNativeChatEvent } from '../chat';
-import { isBilibiliHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -239,8 +239,8 @@ export function installMainWorldRuntime(): void {
     });
   }
 
-  if (harvestHost || isBilibiliHost(window.location.hostname)) installWatchPlaybackQueries();
-  if (isBilibiliHost(window.location.hostname)) installBilibiliNavigation();
+  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installWatchPlaybackQueries();
+  if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
 
   if (harvestHost) {
     installYoutubeMain();

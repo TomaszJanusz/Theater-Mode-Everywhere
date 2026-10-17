@@ -99,7 +99,8 @@ top-level document, active playback, no fullscreen and no focused editable field
 
 YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>`,
 Disney+ `/play/<uuid>` (with an optional locale prefix), Bilibili `/video/BV…`
-(with `p` identifying each part), and Patreon posts
+(with `p` identifying each part), Bilibili.tv `/<locale>/video/<id>` and
+`/<locale>/play/<series>/<episode>`, and Patreon posts
 (`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
 Netflix requires its watch-page player; Disney+ requires the primary Hive video
 inside `disney-web-player` and excludes the auxiliary BTM media client. Catalog
@@ -111,8 +112,7 @@ they hold exactly one non-live `<video>`; galleries, related-post players and em
 manual, and identity is the URL's post id only. Patreon is a pushState SPA whose route changes fire
 no `popstate`, so its MAIN-world hook (`providers/patreon/navigation.ts`) publishes one window event
 per `pushState`/`replaceState` for the runtime to refresh on. Twitch uses
-stitched ads; Bilibili.tv needs qualified main-player/content identity
-and ad guards; Tencent
+stitched ads; Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Bilibili confirms the live bpx player manifest (upload kind, BV id and part) and
@@ -123,6 +123,13 @@ after an ad). Missing or throwing player APIs also fail closed.
 Its MAIN-world history hook publishes route changes, including part changes;
 stale manifests fail closed during SPA transitions. The preparing confirmation
 uses the same identity checks while allowing the content video to load.
+Bilibili.tv uses a separate provider for its top-document `.bstar-player`: the
+live DASH instance must own the exact primary video, and its static manifest
+watch URL must match the current content identity. Locale and tracking changes
+do not create new visits. Mini-player modes and visible/loading in-stream ad
+surfaces fail closed; their mode/style changes refresh eligibility. Missing DASH
+state, iframe players and season-only URLs remain manual. Both Bilibili providers
+reuse the history publication and shared countdown runtime.
 Vimeo showcases, live events and OTT pages are also excluded.
 
 ## Video launcher
