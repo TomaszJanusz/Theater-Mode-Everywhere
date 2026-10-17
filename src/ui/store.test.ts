@@ -3,6 +3,12 @@ import { describe, it } from 'node:test';
 import { PlayerUiStore } from './store';
 
 describe('PlayerUiStore', () => {
+  it('starts in Raised only with subtitles for a fresh install', () => {
+    const { pictureAlign, raiseOnlyWithSubtitles } = new PlayerUiStore().getState();
+    assert.equal(pictureAlign, 'top');
+    assert.equal(raiseOnlyWithSubtitles, true);
+  });
+
   it('retains the pin preference across sessions and ignores duplicate storage notifications', () => {
     const store = new PlayerUiStore();
     let changes = 0;

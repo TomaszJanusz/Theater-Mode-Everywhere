@@ -29,7 +29,7 @@ const OPTIONS = build({
 async function mockStorage(page: Page): Promise<void> {
   await page.addInitScript({ content: `
     localStorage.setItem('whatsNewAcknowledgedId', '${WHATS_NEW_RELEASE.id}');
-    const saved = { keepControlsVisible: true, blacklist: ['example.com', 'second.com'] };
+    const saved = { keepControlsVisible: true, pictureAlign: 'center', blacklist: ['example.com', 'second.com'] };
     const changed = [];
     const storage = {
       get: (keys, callback) => { callback?.(saved); return Promise.resolve(saved); },

@@ -1289,6 +1289,25 @@ async function assertPictureLayout(page: Page, context?: BrowserContext): Promis
   const waitPosition = async (position: string) => {
     await page.waitForFunction(position => getComputedStyle(document.querySelector('video#player')!).objectPosition === position, position, { timeout: 5000 });
   };
+  if (!context) {
+    // The injected fallback has no storage to seed, and the Raised default only rises with subtitles.
+    console.log('smoke layout: skipped without an installed extension (needs seeded storage)');
+    await page.keyboard.press('Escape');
+    return;
+  }
+  // A fresh profile defaults to Raised only with subtitles, which sits centered until subtitles are on.
+  if (await row.locator('.theater-settings-detail').innerText() !== 'Raised') fail('Layout did not default to Raised.');
+  await waitPosition('50% 50%');
+  const layoutWorker = await extensionWorker(context);
+  const fresh = await context.newPage();
+  try {
+    await fresh.goto(new URL('options/options.html', layoutWorker.url()).href);
+    await fresh.waitForSelector('[data-picture-align="top"][aria-checked="true"]');
+    if (!await fresh.locator('#picture-align-subtitles-toggle').isChecked()) fail('Settings did not default to Raised only with subtitles.');
+  } finally { await fresh.close(); }
+  await page.bringToFront();
+  await layoutWorker.evaluate(() => chrome.storage.sync.set({ pictureAlign: 'center', raiseOnlyWithSubtitles: false }));
+  await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.picture-layout-btn .theater-settings-detail')?.textContent === 'Centered');
   await row.click();
   await waitPosition('50% 0%');
   if (await row.locator('.theater-settings-detail').innerText() !== 'Raised') fail('Layout row did not update after a click.');
