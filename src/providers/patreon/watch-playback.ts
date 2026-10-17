@@ -30,13 +30,27 @@ function singleMuxVideo(doc: Document): HTMLVideoElement | null {
   return videos[0];
 }
 
+/**
+ * Patreon's own player (no `mux-player`): a plain `<video>` inside its VideoPlayer root. Same
+ * fail-closed rule as Mux: the post page must hold exactly one video, and it must not be live.
+ */
+function singleNativeVideo(doc: Document): HTMLVideoElement | null {
+  if (doc.querySelector('mux-player')) return null;
+  const videos = deepVideos(doc);
+  return videos.length === 1 && videos[0].duration !== Infinity ? videos[0] : null;
+}
+
+function singlePostVideo(doc: Document): HTMLVideoElement | null {
+  return singleMuxVideo(doc) ?? singleNativeVideo(doc);
+}
+
 export const patreonWatchPlayback: WatchPlayback = {
   pageIdentity: patreonPostId,
   // Identity is URL-only: Mux Player exposes no cheap, synchronous post id to confirm against.
-  mainVideo: singleMuxVideo,
+  mainVideo: singlePostVideo,
   // The same single-player test already tolerates a hidden or unsized video; the bridge adds
   // the sized, sourced check that entry alone requires.
-  preparingVideo: singleMuxVideo,
+  preparingVideo: singlePostVideo,
   refreshEvents: [PATREON_NAVIGATE_EVENT],
   observe(video, onChange) {
     // Media events inside Mux Player's shadow trees do not reach document capture listeners.

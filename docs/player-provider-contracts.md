@@ -105,7 +105,8 @@ inside `disney-web-player` and excludes the auxiliary BTM media client. Catalog
 pages stay ineligible, even when previews are playing. Vimeo pages whose video
 lives in an iframe remain ineligible. A Patreon post qualifies only when its page holds
 exactly one `mux-player` whose single `<video>` (reached through open shadow roots) is not a live
-stream and no other video is playing; galleries, related-post players and embedded iframes stay
+stream and no other video is playing. Pages without `mux-player` (Patreon's own player) qualify when
+they hold exactly one non-live `<video>`; galleries, related-post players and embedded iframes stay
 manual, and identity is the URL's post id only. Patreon is a pushState SPA whose route changes fire
 no `popstate`, so its MAIN-world hook (`providers/patreon/navigation.ts`) publishes one window event
 per `pushState`/`replaceState` for the runtime to refresh on. Twitch uses

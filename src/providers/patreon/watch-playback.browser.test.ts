@@ -120,6 +120,25 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.evaluate(() => document.querySelector('mux-player')!.setAttribute('stream-type', 'on-demand'));
       assert.equal(await confirmed(page), true, 'on-demand');
 
+      // Patreon's own player is a bare <video> with no mux-player around it.
+      await page.evaluate(media => {
+        const root = document.getElementById('root')!;
+        root.innerHTML = '';
+        const video = document.createElement('video');
+        video.id = 'bare'; video.muted = true; video.src = media; video.style.cssText = 'width:640px;height:360px';
+        root.append(video);
+        return new Promise(resolve => video.addEventListener('loadeddata', resolve, { once: true }));
+      }, MEDIA);
+      const bareConfirmed = () => page.evaluate(() => window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement));
+      assert.equal(await bareConfirmed(), true, 'bare video without mux-player');
+      await page.evaluate(() => document.getElementById('root')!.append(document.createElement('video')));
+      assert.equal(await bareConfirmed(), false, 'bare video next to another video');
+      await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
+      assert.equal(await page.evaluate(() => { document.getElementById('root')!.innerHTML = '<mux-player></mux-player><video id="bare"></video>'; return window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement); }), false, 'a bare video beside an empty mux-player stays ambiguous');
+
+      await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
+      await addPlayer(page);
+
       // Non-post routes never confirm, even with a perfect player.
       await page.evaluate(() => history.pushState({}, '', '/creator'));
       assert.equal(await confirmed(page), false, 'creator page');
