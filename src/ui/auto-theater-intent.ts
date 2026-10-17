@@ -2,6 +2,13 @@
 export const AUTO_ENTER_NOTICE_MIN_MS = 5000;
 
 /**
+ * A pending notice survives this long without qualifying facts before it is torn down. YouTube's
+ * loading phase flips pause/readyState/confirmation/ad facts and fires refresh events in bursts;
+ * the countdown keeps running through such blips, and only a lapse longer than this restarts it.
+ */
+export const AUTO_ENTER_CANCEL_GRACE_MS = 700;
+
+/**
  * Whole seconds shown on the notice: the full seconds left, so 0 is the last second (the ring exits
  * and entry happens at its end). The first frame shows 4 rather than flashing 5 for an instant.
  */
@@ -24,11 +31,13 @@ export type AutoEnterTarget<K> = {
 
 export type AutoEnterIntent<K> = {
   /**
-   * Feed the latest facts; `null` means nothing qualifies (also rejects stale intent).
-   * Returns true once, when the notice has been visible long enough and the target is ready.
+   * Feed the latest facts. `null` means nothing qualifies right now: a pending notice keeps
+   * counting down for `cancelGraceMs` and is dropped only if that lapses without qualifying facts.
+   * A different key replaces the notice at once. Returns true once, when the notice has been
+   * visible long enough and the target is ready.
    */
   update(target: AutoEnterTarget<K> | null): boolean;
-  /** Stops the pending notice. Returns whether one was pending. */
+  /** Stops the pending notice immediately, skipping the grace. Returns whether one was pending. */
   cancel(): boolean;
   dispose(): void;
 };
@@ -40,6 +49,7 @@ export type AutoEnterIntent<K> = {
  */
 export function createAutoEnterIntent<K>(options: {
   minVisibleMs: number;
+  cancelGraceMs?: number;
   /** `remainingMs` reads the notice's remaining minimum time from the same clock as the timer. */
   show(remainingMs: () => number): void;
   hide(): void;
@@ -51,11 +61,18 @@ export function createAutoEnterIntent<K>(options: {
   const now = options.now ?? (() => performance.now());
   const setTimer = options.setTimer ?? ((callback, ms) => setTimeout(callback, ms));
   const clearTimer = options.clearTimer ?? ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
-  let pending: { key: K; elapsed: boolean; timer: unknown } | null = null;
+  const cancelGraceMs = options.cancelGraceMs ?? AUTO_ENTER_CANCEL_GRACE_MS;
+  let pending: { key: K; elapsed: boolean; timer: unknown; grace: unknown } | null = null;
 
+  const endGrace = (): void => {
+    if (pending?.grace === undefined) return;
+    clearTimer(pending.grace);
+    pending.grace = undefined;
+  };
   const stop = (): boolean => {
     if (!pending) return false;
     clearTimer(pending.timer);
+    endGrace();
     pending = null;
     options.hide();
     return true;
@@ -64,13 +81,20 @@ export function createAutoEnterIntent<K>(options: {
   return {
     update(target) {
       if (!target) {
-        stop();
+        const state = pending;
+        // The first lapse starts the grace; repeats must not extend it.
+        if (state && state.grace === undefined) {
+          state.grace = setTimer(() => {
+            if (pending === state) stop();
+          }, cancelGraceMs);
+        }
         return false;
       }
+      endGrace();
       if (pending && !Object.is(pending.key, target.key)) stop();
       if (!pending) {
         const deadline = now() + options.minVisibleMs;
-        const state = { key: target.key, elapsed: false, timer: undefined as unknown };
+        const state = { key: target.key, elapsed: false, timer: undefined as unknown, grace: undefined as unknown };
         pending = state;
         state.timer = setTimer(() => {
           if (pending !== state) return;

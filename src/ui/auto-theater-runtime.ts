@@ -40,7 +40,7 @@ export function createAutoTheaterRuntime(options: {
   };
   scope.add(clearObservedVideo);
   let hideNotice: (() => void) | undefined;
-  const intent = createAutoEnterIntent<HTMLVideoElement>({
+  const intent = createAutoEnterIntent<string>({
     minVisibleMs: options.minNoticeMs ?? AUTO_ENTER_NOTICE_MIN_MS,
     show: remainingMs => { hideNotice = options.showNotice(cancelPending, remainingMs); },
     hide: () => { hideNotice?.(); hideNotice = undefined; },
@@ -62,10 +62,10 @@ export function createAutoTheaterRuntime(options: {
     options.visit.current = updateAutoTheaterVisit(options.visit.current,
       page ? `${page.provider}:${page.identity}` : null);
     // The player element is often reused across videos; a new identity restarts the countdown.
-    if (options.visit.current.identity !== previousIdentity) intent.update(null);
+    if (options.visit.current.identity !== previousIdentity) intent.cancel();
     if (!page || !options.enabled() || window !== window.top || !options.policyAllowed()
         || !options.providerFlags()[page.provider] || options.visit.current.entered) {
-      intent.update(null);
+      intent.cancel();
       clearObservedVideo();
       return;
     }
@@ -73,7 +73,7 @@ export function createAutoTheaterRuntime(options: {
       // Navigation may keep theater open on the next video. Respect a later exit
       // on that video as well as an explicitly entered theater session.
       options.visit.current.entered = true;
-      intent.update(null);
+      intent.cancel();
       clearObservedVideo();
       return;
     }
@@ -106,14 +106,16 @@ export function createAutoTheaterRuntime(options: {
     const loading = requested && video.readyState <= 2 && (video.networkState === HTMLMediaElement.NETWORK_LOADING
       || video.networkState === HTMLMediaElement.NETWORK_IDLE
       || (hostPreparing && video.networkState === HTMLMediaElement.NETWORK_EMPTY && !mediaHasSource(video)));
+    // Fullscreen and an in-flight transition are definitive; other gates may be loading blips.
+    if (facts.fullscreen || facts.transitioning) intent.cancel();
     const announced = shouldAutoEnterTheater(options.visit.current, facts)
       && (confirmed || hostPreparing) && (playing || loading);
     const intended = announced && confirmed;
     if (options.skipCountdown?.()) {
       // Discard any announced entry before applying the current playback facts.
-      intent.update(null);
+      intent.cancel();
       if (!intended || !playing) return;
-    } else if (!intent.update(announced ? { key: video, ready: intended && playing } : null)) return;
+    } else if (!intent.update(announced ? { key: options.visit.current.identity ?? '', ready: intended && playing } : null)) return;
     // Reserve before entry: synchronous host/UI changes cannot reenter this visit.
     options.visit.current.entered = true;
     clearObservedVideo();

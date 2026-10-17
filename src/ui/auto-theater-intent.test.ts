@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent, msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
+import { AUTO_ENTER_CANCEL_GRACE_MS, AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent, msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
 
 function harness() {
   let now = 0;
@@ -135,4 +135,62 @@ it('hands the notice a remaining time read from the intent clock', () => {
 it('counts 4, 3, 2, 1, 0 over the 5 s minimum, one second each', () => {
   assert.equal(AUTO_ENTER_NOTICE_MIN_MS, 5000);
   assert.deepEqual([5000, 4500, 4000, 3000, 2000, 1001, 1000, 500, 0].map(noticeSecondsRemaining), [4, 4, 3, 2, 1, 1, 0, 0, 0]);
+});
+
+it('keeps the same notice and countdown when facts return within the cancel grace', () => {
+  const { intent, log, advance, onRecheck } = harness();
+  const key = {};
+  let entered = 0;
+  const refresh = () => { if (intent.update({ key, ready: true })) entered++; };
+  onRecheck(refresh);
+  refresh();
+  advance(1000);
+  for (let flap = 0; flap < 3; flap++) {
+    intent.update(null);
+    intent.update(null); // Repeated lapses must not extend the grace.
+    advance(AUTO_ENTER_CANCEL_GRACE_MS - 1);
+    refresh();
+    advance(1);
+  }
+  assert.deepEqual(log, ['show'], 'one notice, never rebuilt');
+  advance(AUTO_ENTER_NOTICE_MIN_MS - 1000 - 3 * AUTO_ENTER_CANCEL_GRACE_MS);
+  assert.equal(entered, 1, 'the original deadline still decides entry');
+  assert.deepEqual(log, ['show', 'hide']);
+});
+
+it('drops the notice when facts stay lost beyond the grace and restarts in full', () => {
+  const { intent, log, advance } = harness();
+  const key = {};
+  intent.update({ key, ready: true });
+  advance(2000);
+  intent.update(null);
+  advance(AUTO_ENTER_CANCEL_GRACE_MS - 1);
+  assert.deepEqual(log, ['show']);
+  advance(1);
+  assert.deepEqual(log, ['show', 'hide']);
+  intent.update({ key, ready: true });
+  advance(AUTO_ENTER_NOTICE_MIN_MS - 1);
+  assert.equal(intent.update({ key, ready: true }), false, 'the restarted countdown is the full minimum');
+  advance(1);
+  assert.equal(intent.update({ key, ready: true }), true);
+});
+
+it('cancel and a different key skip the grace; no grace timer fires after them or disposal', () => {
+  const { intent, log, advance } = harness();
+  const first = {};
+  const second = {};
+  intent.update({ key: first, ready: true });
+  intent.update(null);
+  assert.equal(intent.cancel(), true);
+  assert.deepEqual(log, ['show', 'hide']);
+  intent.update({ key: first, ready: true });
+  intent.update(null);
+  intent.update({ key: second, ready: true });
+  assert.deepEqual(log, ['show', 'hide', 'show', 'hide', 'show'], 'replacement is immediate');
+  advance(AUTO_ENTER_CANCEL_GRACE_MS * 2);
+  assert.equal(log.length, 5, 'the old grace timer was cleared by the replacement');
+  intent.update(null);
+  intent.dispose();
+  advance(AUTO_ENTER_CANCEL_GRACE_MS * 2);
+  assert.deepEqual(log.slice(5), ['hide']);
 });
