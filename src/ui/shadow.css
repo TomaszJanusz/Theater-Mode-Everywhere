@@ -2404,6 +2404,8 @@ button.theater-time-end:hover {
   width: 28px !important;
   height: 28px !important;
   box-sizing: border-box !important;
+  /* The countdown turns the ring once per second from its own tick (auto-theater-notice.ts). */
+  animation: none !important;
 }
 
 .theater-auto-notice-count {
@@ -2423,10 +2425,6 @@ button.theater-time-end:hover {
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
-}
-
-:host([data-motion="reduced"]) .theater-auto-notice .caption-hud-spinner {
-  animation: none !important;
 }
 
 @keyframes volume-hud-zoom-in {
