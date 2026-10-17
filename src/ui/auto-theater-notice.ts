@@ -8,18 +8,23 @@ import { renderTimeReadout } from './time-readout';
 
 export const AUTO_THEATER_NOTICE_CLASS = 'theater-auto-notice';
 
+/** `uniform` turns the ring at a constant speed; `per-digit` makes one eased turn per displayed second. */
+export type CountdownRingTurn = 'uniform' | 'per-digit';
+export const DEFAULT_COUNTDOWN_RING_TURN: CountdownRingTurn = 'uniform';
+
 /**
  * Corner notice for a pending automatic theater entry. It reuses the caption
  * loading plate and spinner; unlike HUDs it takes clicks, but never focus.
  * The role=status region announces itself on insertion; the seconds counter inside the
  * spinner is decorative (aria-hidden), so ticks are never announced. The counter is
  * derived from `remainingMs`, the intent's own clock, and re-armed only at each change
- * of the displayed second. Returns idempotent cleanup.
+ * of the displayed second (ending on 0). Returns idempotent cleanup.
  */
 export function showAutoTheaterNotice(
   paintOverlay: (element: HTMLElement) => void,
   onCancel: () => void,
-  remainingMs: () => number
+  remainingMs: () => number,
+  ringTurn: CountdownRingTurn = DEFAULT_COUNTDOWN_RING_TURN
 ): () => void {
   const hint = t('autoEnterNoticeHint', 'Esc');
   const title = t('autoEnterNoticeTitle');
@@ -65,12 +70,20 @@ export function showAutoTheaterNotice(
   let timer: number | undefined;
   let stopped = false;
   let turn: Animation | undefined;
-  // One full ring turn per displayed second, started by the same tick that changes the digit.
-  // A first paint mid-second joins the turn where the clock says it is, so ring and digit never drift.
+  // Both modes join where the clock says the countdown is, so ring and digit never drift.
   const turnRing = (remaining: number): void => {
+    if (ringTurn === 'uniform' && turn) return;
     turn?.cancel();
     turn = undefined;
     if (isElementMotionReduced(spinner)) return;
+    if (ringTurn === 'uniform') {
+      // One turn per second, phased so each turn completes as the digit changes. Created once: it keeps
+      // its own constant speed and is never restarted by digit ticks.
+      turn = spinner.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 1000, iterations: Infinity, easing: 'linear' });
+      turn.currentTime = (1000 - (remaining % 1000)) % 1000;
+      return;
+    }
+    // One eased turn per displayed second, started by the tick that changes the digit.
     const intoSecond = 1000 - (remaining - (noticeSecondsRemaining(remaining) - 1) * 1000);
     turn = spinner.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 1000, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
     turn.currentTime = Math.min(1000, Math.max(0, intoSecond));
@@ -87,14 +100,8 @@ export function showAutoTheaterNotice(
   mountPlayerUi(overlay);
   // After mounting, so reduced motion is read from the UI host.
   tick(false);
-  const stopExit = exitSpinner(spinner, {
-    mode: 'deadline', remainingMs,
-    onStart: () => {
-      window.clearTimeout(timer);
-      // Hold the final digit throughout the shrink, without starting another roll.
-      renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
-    }
-  });
+  // The ring leaves while the digit keeps ticking; 0 appears as it clears.
+  const stopExit = exitSpinner(spinner, { mode: 'deadline', remainingMs });
   return () => {
     stopped = true;
     stopExit();

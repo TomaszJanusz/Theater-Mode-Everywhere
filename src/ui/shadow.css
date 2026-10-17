@@ -2404,7 +2404,7 @@ button.theater-time-end:hover {
   width: 28px !important;
   height: 28px !important;
   box-sizing: border-box !important;
-  /* The countdown turns the ring once per second from its own tick (auto-theater-notice.ts). */
+  /* The countdown drives the ring from the notice's own clock (auto-theater-notice.ts). */
   animation: none !important;
 }
 
