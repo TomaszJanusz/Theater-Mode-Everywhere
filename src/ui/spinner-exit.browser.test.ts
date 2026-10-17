@@ -274,6 +274,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await spinner.count(), 1, 'a later stall creates a fresh ring');
     await event('canplay');
     await page.clock.runFor(100);
+    // A replacement load while playing: the bare element is paused, so make it report playback.
+    const setPaused = (paused: boolean) => page.evaluate(`Object.defineProperty(document.querySelector('video'), 'paused', { configurable: true, value: ${paused} })`);
+    await setPaused(false);
     await event('emptied');
     await page.clock.runFor(400);
     assert.equal(await spinner.count(), 1, 'a replacement load cancels the old exit');
@@ -282,6 +285,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await event('canplay');
     assert.equal(await spinner.count(), 0, 'buffering also disappears instantly with reduced motion');
     assert.equal(await page.locator('.theater-loading-indicator.exiting').count(), 0);
+    await setPaused(true);
+    await event('emptied');
+    assert.equal(await spinner.count(), 0, 'a paused reset shows no spinner');
     await page.evaluate(`document.getElementById('theater-everywhere-ui').dataset.motion = 'normal'`);
     await event('waiting');
     await page.clock.runFor(1000);
