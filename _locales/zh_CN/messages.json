@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "关闭"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "此网站不可用"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "不可用：此服务的 Rich Theater Experience 已关闭"
+  },
   "autoEnterTheaterDescription": {
     "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入剧场模式。"
   },

@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "꺼짐"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "이 사이트에서는 사용할 수 없음"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "사용할 수 없음: 이 서비스에서 Rich Theater Experience가 꺼져 있음"
+  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experience가 활성화되어 있으면 지원되는 서비스의 시청 페이지에서 주요 동영상 재생이 시작될 때 시어터 모드로 전환합니다."
   },

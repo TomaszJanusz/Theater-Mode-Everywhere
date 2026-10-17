@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readProviderWatchPage } from './watch-playback';
+import { autoTheaterAvailability, readProviderWatchPage } from './watch-playback';
 import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { providerDefinition, shouldAttachProvider } from './registry';
 
@@ -60,5 +60,17 @@ describe('positive provider watch declarations', () => {
     for (const path of ['/pl-pl/browse', `/pl-pl/browse/entity-${id}`, `/video/${id}`, '/pl-pl/play', '/play/not-a-uuid', `/play/${id}a`, `/play/${id}/extra`, `/browse/play/${id}`]) {
       assert.equal(read(`https://www.disneyplus.com${path}`), null, path);
     }
+  });
+});
+
+describe('AutoTheater availability', () => {
+  const flags = defaultMediaProviderFlags();
+  it('is available only on hosts whose provider declares watch playback and has its integration on', () => {
+    assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
+    assert.equal(autoTheaterAvailability('example.com', { ...flags, youtube: false }, true), 'unsupported');
   });
 });

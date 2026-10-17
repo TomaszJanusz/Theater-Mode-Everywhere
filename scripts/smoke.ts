@@ -379,7 +379,7 @@ async function declineVideoActivatorPrompt(page: Page): Promise<void> {
   await page.locator('.auto-theater-btn').focus();
 }
 
-async function assertControlsPin(page: Page, context?: BrowserContext, installed = !!context): Promise<void> {
+async function assertControlsPin(page: Page, context?: BrowserContext): Promise<void> {
   const pin = page.locator('.controls-visibility-toggle');
   const controls = page.locator('.theater-controls-wrapper');
   const waitForChrome = async (pinned: boolean, visible: boolean, headerVisible: boolean) => {
@@ -615,15 +615,13 @@ async function assertControlsPin(page: Page, context?: BrowserContext, installed
   await page.keyboard.press('Tab');
   const autoTheater = menu.locator('.auto-theater-btn');
   if (!await autoTheater.evaluate(button => button.matches(':focus'))) fail('Tab skipped automatic theater entry.');
+  // The generic fixture has no watch-page support, so the row stays focusable but
+  // reads unavailable and Space/Enter leave it untouched (toggling is covered by assertAutoTheater).
+  if (await autoTheater.getAttribute('aria-disabled') !== 'true') fail('AutoTheater was not unavailable on a generic player.');
   const autoBefore = await autoTheater.getAttribute('aria-pressed');
   await page.keyboard.press('Space');
-  if (await autoTheater.getAttribute('aria-pressed') === autoBefore) fail('Space did not toggle automatic theater entry.');
   await page.keyboard.press('Enter');
-  // Turning AutoTheater off now offers the default-off launcher in installed builds.
-  // Answer it before checking menu navigation; the modal owns focus until dismissed.
-  if (installed) await declineVideoActivatorPrompt(page);
-  await page.waitForFunction(before => document.getElementById('theater-everywhere-ui')?.shadowRoot
-    ?.querySelector('.auto-theater-btn')?.getAttribute('aria-pressed') === before, autoBefore);
+  if (await autoTheater.getAttribute('aria-pressed') !== autoBefore) fail('Unavailable automatic theater entry toggled.');
   if (await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused) !== pausedBeforeSettings) {
     fail('Auto theater keyboard activation changed playback.');
   }
@@ -2436,7 +2434,7 @@ async function tryFirefoxSideload(origin: string): Promise<boolean> {
     sideloadVerified = true;
     await page.keyboard.press('Escape');
     await delay(500);
-    await assertControlsPin(page, undefined, true);
+    await assertControlsPin(page);
     console.log('smoke:firefox passed (sideloaded MV3 xpi)');
     return true;
   } catch (error) {

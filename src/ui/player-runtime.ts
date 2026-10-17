@@ -10,6 +10,7 @@ import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, reso
 import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
+import { autoTheaterAvailability } from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -866,6 +867,7 @@ function applyProviderFlags(next: MediaProviderFlags): void {
   }
   const wrapper = queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null;
   wrapper?._mediaFeatures?.setProviderFlags(next);
+  if (changed) wrapper?._syncAutoTheaterAvailability?.();
 }
 
 function persistCaptionPreference(pref: CaptionLanguagePreference): void {
@@ -1131,6 +1133,7 @@ function syncVideoActivator(): void {
 }
 
 function toggleAutoTheaterCommand(): void {
+  if (autoTheaterAvailability(window.location.hostname, refs.providerFlags, window === window.top) !== 'available') return;
   const next = !ui().autoEnterTheater;
   uiStore.dispatch({ type: 'SET_AUTO_ENTER_THEATER', value: next });
   syncAutoTheaterRuntime();

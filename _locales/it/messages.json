@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "No"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "Non disponibile su questo sito"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "Non disponibile: Rich Theater Experience è disattivato per questo servizio"
+  },
   "autoEnterTheaterDescription": {
     "message": "Attiva la modalità cinema quando il video principale inizia la riproduzione nelle pagine di visione dei servizi supportati con Rich Theater Experience attivo."
   },

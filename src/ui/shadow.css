@@ -1278,6 +1278,10 @@ button.theater-time-end:hover {
   line-height: 1.35 !important;
 }
 
+.theater-settings-row[aria-disabled="true"] {
+  color: var(--appearance-muted, #94a3b8) !important;
+  cursor: default !important;
+}
 .theater-settings-row svg { flex: 0 0 18px !important; }
 .theater-settings-main {
   flex: 1 1 auto !important;

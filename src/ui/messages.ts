@@ -53,6 +53,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   videoActivatorLabel: "Enter theater mode",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
+  autoEnterTheaterUnsupported: "Unavailable on this site",
+  autoEnterTheaterIntegrationOff: "Unavailable: Rich Theater Experience is off for this service",
   videoFitLabel: "Video fit",
   pictureAlignLabel: 'Layout',
   pictureAlignCenter: 'Centered',
