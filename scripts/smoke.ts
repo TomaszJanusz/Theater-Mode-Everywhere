@@ -16,6 +16,7 @@ type SmokeBrowser = 'chromium' | 'firefox';
 const ROOT = path.resolve(__dirname, '..');
 const PLAYER_FIXTURE = path.join(ROOT, 'test/fixtures/local-player.html');
 const IFRAME_FIXTURE = path.join(ROOT, 'test/fixtures/iframe-player.html');
+const IFRAME_KEY_CAPTURE_FIXTURE = path.join(ROOT, 'test/fixtures/iframe-key-capture.html');
 const YOUTUBE_EMBED_FIXTURE = path.join(ROOT, 'test/fixtures/youtube-embed.html');
 // Two seconds of neutral 160x90 VP8 frames, with real finite-duration WebM metadata.
 const VOD_FIXTURE = path.join(ROOT, 'test/fixtures/vod.webm');
@@ -68,6 +69,7 @@ function delay(ms: number): Promise<void> {
 function startFixtureServer(): Promise<{ origin: string; close: () => Promise<void> }> {
   const player = readFileSync(PLAYER_FIXTURE);
   const iframe = readFileSync(IFRAME_FIXTURE);
+  const iframeKeyCapture = readFileSync(IFRAME_KEY_CAPTURE_FIXTURE);
   const youtubeEmbed = readFileSync(YOUTUBE_EMBED_FIXTURE);
   const vod = readFileSync(VOD_FIXTURE);
   const server = createServer((req, res) => {
@@ -79,9 +81,11 @@ function startFixtureServer(): Promise<{ origin: string; close: () => Promise<vo
     }
     const body = url.startsWith('/youtube-embed')
       ? youtubeEmbed
-      : url.startsWith('/iframe')
-        ? iframe
-        : player;
+      : url.startsWith('/iframe-key-capture')
+        ? iframeKeyCapture
+        : url.startsWith('/iframe')
+          ? iframe
+          : player;
     res.writeHead(200, {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store'
@@ -1614,6 +1618,42 @@ async function assertBlacklistBlocksTheater(page: Page): Promise<void> {
   if (await page.evaluate(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'))) fail('Blacklisting retained the early shortcut configuration.');
 }
 
+async function assertEmbeddedKeysAndFullscreen(page: Page, origin: string): Promise<void> {
+  await page.goto(`${origin}/iframe-key-capture`, { waitUntil: 'domcontentloaded' });
+  const frame = page.frameLocator('#child');
+  const fullscreen = () => page.evaluate(() => document.fullscreenElement?.tagName ?? null);
+  const theater = () => page.evaluate((videoClass) => document.getElementById('child')?.classList.contains(videoClass) === true, THEATER_VIDEO_CLASS);
+  await frame.locator('video#player').click({ timeout: 15_000 });
+  await page.locator('body').evaluate(body => { body.tabIndex = -1; });
+  await page.locator('body').focus();
+  await page.keyboard.press('t');
+  await page.waitForFunction((videoClass) => document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  // Entered from the embedding page, left from the frame: a frame must not stack fullscreen on its parent.
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
+  await frame.locator('video#player').click();
+  await frame.locator('body').press('f');
+  await page.waitForFunction(() => !document.fullscreenElement, undefined, { timeout: 5_000 }).catch(async () => {
+    fail(`Fullscreen left from the frame stacked instead (top ${await fullscreen()}).`);
+  });
+  // Entered from the frame, left from the embedding page.
+  await frame.locator('body').press('f');
+  await page.waitForFunction(() => Boolean(document.fullscreenElement), undefined, { timeout: 5_000 });
+  await page.locator('body').focus();
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => !document.fullscreenElement, undefined, { timeout: 5_000 });
+  // The framed player enters fullscreen by itself; the shortcut still leaves it.
+  await frame.locator('body').evaluate(() => document.documentElement.requestFullscreen());
+  await page.waitForFunction(() => document.fullscreenElement?.id === 'child');
+  await page.locator('body').focus();
+  await page.keyboard.press('f');
+  await page.waitForFunction(() => !document.fullscreenElement, undefined, { timeout: 5_000 });
+  // Escape reaches the session although the host claimed it first.
+  await page.keyboard.press('Escape');
+  await page.waitForFunction((videoClass) => !document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 10_000 });
+  if (await theater()) fail('Escape did not leave theater after the host claimed it.');
+}
+
 async function assertIframeHandshake(page: Page, origin: string): Promise<void> {
   await page.goto(`${origin}/iframe`, { waitUntil: 'domcontentloaded' });
   const frame = page.frameLocator('#child');
@@ -2390,6 +2430,8 @@ async function smokeChromium(origin: string, unpackedDir: string): Promise<void>
 
     await assertIframeHandshake(page, origin);
     console.log('smoke:chromium same-origin iframe handshake passed');
+    await assertEmbeddedKeysAndFullscreen(page, origin);
+    console.log('smoke:chromium host-claimed keys and embedded fullscreen ownership passed');
 
     await assertAutoTheater(page, context);
     await assertParentBlacklist(page, origin, context);

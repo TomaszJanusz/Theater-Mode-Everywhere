@@ -280,11 +280,13 @@ export function installMainWorldRuntime(): void {
     }
     if (event.isComposing || event.composedPath().some(isEditableKeyboardTarget)
         || document.querySelector('.te-dialog-overlay') || queryPlayerUi('.te-dialog-overlay')) return;
-    let config: { toggle?: unknown; fullscreen?: unknown };
+    let config: { toggle?: unknown; fullscreen?: unknown; exit?: unknown };
     try { config = JSON.parse(document.documentElement.getAttribute(ENTRY_SHORTCUT_ATTRIBUTE) || '{}'); }
     catch { return; }
+    // Exit is relayed too: the content world only claims it while a session is open.
     if (!config || !(typeof config.toggle === 'string' && matchesShortcut(event, config.toggle))
-        && !(typeof config.fullscreen === 'string' && matchesShortcut(event, config.fullscreen))) return;
+        && !(typeof config.fullscreen === 'string' && matchesShortcut(event, config.fullscreen))
+        && !(typeof config.exit === 'string' && matchesShortcut(event, config.exit))) return;
     const relay = new CustomEvent(ENTRY_SHORTCUT_EVENT, { cancelable: true, detail: JSON.stringify({
       key: event.key, code: event.code, ctrlKey: event.ctrlKey, altKey: event.altKey,
       shiftKey: event.shiftKey, metaKey: event.metaKey, repeat: event.repeat

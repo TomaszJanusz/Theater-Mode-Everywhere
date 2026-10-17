@@ -573,6 +573,12 @@ function requestParentPlaylistNav(snapshot?: PlaylistNavState): void {
   frames.postToParent('PLAYLIST_NAV_QUERY', session.id, available);
 }
 
+function requestEmbedderFullscreen(): boolean {
+  if (window === window.top || !refs.embedderLinked || !session.id) return false;
+  frames.postToParent('FRAME_FULLSCREEN', session.id);
+  return true;
+}
+
 function activatePlaylistStep(direction: PlaylistDirection): void {
   const local = localPlaylistActions().find((action) => action.direction === direction);
   if (local) {
@@ -665,6 +671,7 @@ function bindChromeActions(): void {
       return subscribeNavigation(root instanceof ShadowRoot ? root : document, playlistNavigationAvailable, listener);
     },
     requestParentPlaylistNav,
+    requestEmbedderFullscreen,
     activatePlaylistStep
   });
 }
@@ -1408,6 +1415,7 @@ function initialize(): void {
     const config = JSON.stringify({
       toggle: shortcuts.toggle,
       fullscreen: shortcuts.toggleFullscreen,
+      exit: shortcuts.exit,
       playPause: shortcuts.playPause,
       seekBack: shortcuts.seekBack,
       seekForward: shortcuts.seekForward
@@ -1651,7 +1659,8 @@ function initialize(): void {
       if (!data || typeof data.key !== 'string' || typeof data.code !== 'string'
           || !['ctrlKey', 'altKey', 'shiftKey', 'metaKey', 'repeat'].every(key => typeof data[key] === 'boolean')) return;
       const key = new KeyboardEvent('keydown', { ...data, cancelable: true });
-      if (!matchesShortcut(key, ui().shortcuts.toggle) && !matchesShortcut(key, ui().shortcuts.toggleFullscreen)) return;
+      if (!matchesShortcut(key, ui().shortcuts.toggle) && !matchesShortcut(key, ui().shortcuts.toggleFullscreen)
+          && !matchesShortcut(key, ui().shortcuts.exit)) return;
       listeners.keydown?.(key);
       if (key.defaultPrevented) event.preventDefault();
     } catch { /* Ignore malformed page events. */ }
@@ -1771,7 +1780,15 @@ function initialize(): void {
       claimFullscreenShortcut();
     } else if (envelope.type === 'FRAME_ENTER' && fromChild) {
       const iframe = iframes.find((item) => item.contentWindow === event.source);
-      if (iframe) enterTheaterMode(iframe, envelope.sessionId, envelope.nonce);
+      if (iframe) {
+        enterTheaterMode(iframe, envelope.sessionId, envelope.nonce);
+        // Tells the frame this page mirrors its session, so its fullscreen requests come here.
+        if (session.element === iframe && session.id === envelope.sessionId) {
+          frames.postToChildIframe(iframe, 'FRAME_ENTER', envelope.sessionId, {}, envelope.nonce);
+        }
+      }
+    } else if (envelope.type === 'FRAME_ENTER' && fromParent) {
+      if (session.hasUi && envelope.sessionId === session.id) refs.embedderLinked = true;
     } else if (envelope.type === 'FRAME_EXIT') {
       exitTheaterMode('network', envelope.sessionId, fromParent ? 'parent' : 'child');
     } else if (envelope.type === 'FRAME_EXITED') {
@@ -1875,6 +1892,7 @@ function toggleDocumentFullscreen(): void {
     document.exitFullscreen().catch(() => {});
     return;
   }
+  if (requestEmbedderFullscreen()) return;
   document.documentElement.requestFullscreen().catch(() => {});
 }
 
@@ -2320,6 +2338,7 @@ function exitTheaterMode(
 
   refs.parentPlaylistNav = emptyPlaylistNav();
   refs.childPlaylistNav = emptyPlaylistNav();
+  refs.embedderLinked = false;
   session.finishExit();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: false });
   updateCaptionDock();

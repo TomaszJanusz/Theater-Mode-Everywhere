@@ -49,6 +49,8 @@ export type ChromeRefs = {
   helpOverlay: HTMLElement | null;
   parentPlaylistNav: PlaylistNavState;
   childPlaylistNav: PlaylistNavState;
+  /** The embedding page confirmed it mirrors this frame's session and owns its fullscreen. */
+  embedderLinked: boolean;
 };
 
 export type PlayerChromeActions = {
@@ -105,6 +107,8 @@ export type PlayerChromeActions = {
   playlistNavigationAvailable(): PlaylistNavState;
   subscribePlaylistNavigation(listener: (state: PlaylistNavState) => void): () => void;
   requestParentPlaylistNav(snapshot?: PlaylistNavState): void;
+  /** Hands a fullscreen request to the embedding page when it owns the session's fullscreen. */
+  requestEmbedderFullscreen(): boolean;
   activatePlaylistStep(direction: PlaylistDirection): void;
 };
 
@@ -160,7 +164,8 @@ export function createChromeRefs(): ChromeRefs {
     providerFlags: defaultMediaProviderFlags(),
     helpOverlay: null,
     parentPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null },
-    childPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null }
+    childPlaylistNav: { previous: false, next: false, previousRestarts: false, previousPreview: null, nextPreview: null },
+    embedderLinked: false
   };
 }
 
