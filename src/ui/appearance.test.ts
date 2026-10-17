@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { raisedCaptionRestBottom } from '../media-features/caption-dock';
-import { effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureEdgeInsets, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
+import { DEFAULT_PICTURE_ALIGN, DEFAULT_RAISE_ONLY_WITH_SUBTITLES, effectivePictureAlign, horizontalLetterboxPx, objectPositionForPicture, pictureEdgeInsets, pictureHasLetterbox, raisedCaptionsUseBand, resolvePictureAlign, resolveRaiseOnlyWithSubtitles, type PictureFrame } from './appearance';
 
 const widescreen: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1200 };
 const matched: PictureFrame = { videoWidth: 1920, videoHeight: 1080, viewportWidth: 1920, viewportHeight: 1080 };
@@ -130,14 +130,16 @@ describe('picture align', () => {
     assert.equal(objectPositionForPicture('contain', 'top', sliver, shown), 'center center');
     assert.equal(resolveRaiseOnlyWithSubtitles(true), true);
     assert.equal(resolveRaiseOnlyWithSubtitles(false), false);
-    assert.equal(resolveRaiseOnlyWithSubtitles(undefined), false);
-    assert.equal(resolveRaiseOnlyWithSubtitles('true'), false);
+    assert.equal(resolveRaiseOnlyWithSubtitles(undefined), true);
+    assert.equal(resolveRaiseOnlyWithSubtitles('false'), true);
   });
 
-  it('falls back to centered alignment', () => {
-    assert.equal(resolvePictureAlign('top'), 'top');
+  it('defaults a fresh install to Raised only with subtitles and keeps saved choices', () => {
+    assert.equal(DEFAULT_PICTURE_ALIGN, 'top');
+    assert.equal(DEFAULT_RAISE_ONLY_WITH_SUBTITLES, true);
+    assert.equal(resolvePictureAlign(undefined), 'top');
+    assert.equal(resolvePictureAlign('nope'), 'top');
     assert.equal(resolvePictureAlign('center'), 'center');
-    assert.equal(resolvePictureAlign('nope'), 'center');
-    assert.equal(resolvePictureAlign(undefined), 'center');
+    assert.equal(resolvePictureAlign('top'), 'top');
   });
 });

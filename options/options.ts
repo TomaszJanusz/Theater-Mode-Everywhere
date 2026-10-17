@@ -28,6 +28,7 @@ import {
 } from '../src/accentTheme';
 import {
   DEFAULT_PICTURE_ALIGN,
+  DEFAULT_RAISE_ONLY_WITH_SUBTITLES,
   PICTURE_ALIGN_STORAGE_KEY,
   PICTURE_ALIGNS,
   RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
@@ -127,7 +128,7 @@ async function init() {
   const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };
   renderVersion();
   configurePrivacyThingLogo();
-  let raiseOnlyWithSubtitles = false;
+  let raiseOnlyWithSubtitles = DEFAULT_RAISE_ONLY_WITH_SUBTITLES;
 
   const form = document.getElementById('add-domain-form') as HTMLFormElement;
   const input = document.getElementById('domain-input') as HTMLInputElement;

@@ -5,6 +5,7 @@ import { resolveCaptionStyle, type CaptionStyle } from '../media-features/captio
 import {
   DEFAULT_ACCENT_COLOR,
   DEFAULT_PICTURE_ALIGN,
+  DEFAULT_RAISE_ONLY_WITH_SUBTITLES,
   DEFAULT_VIDEO_FIT,
   type AccentColorPreset,
   type PictureAlign,
@@ -61,7 +62,7 @@ const defaultState = (): PlayerUiState => ({
   keepControlsVisible: false,
   videoFit: DEFAULT_VIDEO_FIT,
   pictureAlign: DEFAULT_PICTURE_ALIGN,
-  raiseOnlyWithSubtitles: false,
+  raiseOnlyWithSubtitles: DEFAULT_RAISE_ONLY_WITH_SUBTITLES,
   audio: DEFAULT_AUDIO_SETTINGS,
   volumeBoost: DEFAULT_VOLUME_BOOST_ENABLED,
   autoEnterTheater: DEFAULT_AUTO_ENTER_THEATER,
