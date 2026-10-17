@@ -322,7 +322,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.keyboard.press('t');
     await page.locator('.player-settings-btn .te-new-badge[data-variant="dot"]').waitFor();
     await page.locator('.player-settings-btn').click();
-    assert.equal(await page.getByRole('button', { name: /^Layout: Centered, New$/ }).count(), 1);
+    assert.equal(await page.getByRole('button', { name: /^Layout: Raised, New$/ }).count(), 1);
     const gear = await page.locator('.player-settings-btn svg').boundingBox();
     const dot = await page.locator('.player-settings-btn .te-new-badge').boundingBox();
     assert.ok(gear && dot && Math.abs(dot.y - gear.y) < 8 && Math.abs(dot.x - gear.x) < 22,
