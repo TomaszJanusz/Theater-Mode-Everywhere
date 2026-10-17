@@ -5,7 +5,9 @@ import { DisposableScope } from '../core/disposable-scope';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { mountPlayerUi, peekPlayerUiRoot } from './root';
 import {
+  ACTIVATOR_PRESS_WINDOW_MS,
   ACTIVATOR_SIZE,
+  activatorDistanceSquared,
   activatorPlayGraceRemaining,
   activatorTitle,
   chooseActivatorSpot,
@@ -152,6 +154,10 @@ export function createVideoActivator(options: {
   const persistentButtons = new Map<HTMLVideoElement, { button: HTMLButtonElement; before: HTMLElement }>();
   /** performance.now() is measured from the page load; an SPA visit restarts the window. */
   let visitStartedAt = 0;
+  /** Videos currently playing because the page started them; the viewer's own play still hides the launcher. */
+  const selfStarted = new WeakSet<HTMLVideoElement>();
+  /** The latest press, kept only to tell the viewer's play from the page's. `target` is its innermost node. */
+  let lastPress: { at: number; x: number; y: number; target: Node | null; pointer: boolean } | null = null;
   let shownBox: string | null = null;
   let lastActivity = 0;
   let idleHidden = false;
@@ -165,6 +171,23 @@ export function createVideoActivator(options: {
   const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
 
   const playGraceRemaining = () => activatorPlayGraceRemaining(performance.now() - visitStartedAt);
+
+  /** A recent pointer press on the video, or key press inside its container, started this playback. */
+  function pressedToPlay(video: HTMLVideoElement): boolean {
+    const press = lastPress;
+    if (!press || performance.now() - press.at > ACTIVATOR_PRESS_WINDOW_MS) return false;
+    if (press.pointer) return activatorDistanceSquared(video.getBoundingClientRect(), press.x, press.y) === 0;
+    return Boolean(press.target && video.parentElement?.contains(press.target));
+  }
+
+  /**
+   * Autoplay can begin long after the load (consent banners, lazy players, ad-to-content swaps), so a
+   * start is the page's own unless the viewer pressed the player just before it and the visit is not fresh.
+   */
+  function classifyPlayback(video: HTMLVideoElement): void {
+    if (!video.paused && (playGraceRemaining() > 0 || !pressedToPlay(video))) selfStarted.add(video);
+    else selfStarted.delete(video);
+  }
 
   /** Whether the video could host a launcher at all, whether or not it is paused. */
   function launchable(video: HTMLVideoElement, box: Box): boolean {
@@ -181,9 +204,9 @@ export function createVideoActivator(options: {
     });
   }
 
-  /** Overlay eligibility: paused, or playing within the page-load grace window. */
+  /** Overlay eligibility: paused, or playing on its own (autoplay) rather than because the viewer pressed play. */
   function eligible(video: HTMLVideoElement, box: Box): boolean {
-    return (video.paused || playGraceRemaining() > 0) && launchable(video, box);
+    return (video.paused || selfStarted.has(video)) && launchable(video, box);
   }
 
   function isFree(video: HTMLVideoElement, box: Box, x: number, y: number): boolean {
@@ -196,7 +219,7 @@ export function createVideoActivator(options: {
   }
 
   function place(video: HTMLVideoElement, box: Box) {
-    if (!ACTIVATOR_DYNAMIC_PLACEMENT) return spotBox(box, 'top-left');
+    if (!ACTIVATOR_DYNAMIC_PLACEMENT) return spotBox(box, 'left-third');
     const view = viewport();
     return chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
       { bottomBlocked: video.controls })?.box ?? null;
@@ -421,14 +444,14 @@ export function createVideoActivator(options: {
       geometryDirty = true;
       if (!frame) frame = owned.raf(() => { frame = 0; measure(); });
     };
-    // One timer ends the grace window: playback then removes a launcher that autoplay had spared.
-    let graceTimer: ReturnType<typeof setTimeout> | undefined;
-    const armGrace = (): void => {
-      clearTimeout(graceTimer);
-      const remaining = playGraceRemaining();
-      if (remaining > 0) graceTimer = setTimeout(schedule, remaining);
-    };
-    owned.add(() => clearTimeout(graceTimer));
+    owned.add(() => { lastPress = null; });
+    for (const type of ['pointerdown', 'keydown'] as const) {
+      owned.listen(window, type, (event: Event) => {
+        const point = event instanceof PointerEvent ? event : null;
+        lastPress = { at: performance.now(), x: point?.clientX ?? 0, y: point?.clientY ?? 0,
+          target: (event.composedPath()[0] as Node | undefined) ?? null, pointer: Boolean(point) };
+      }, { passive: true, capture: true });
+    }
     const resize = new ResizeObserver(schedule);
     const intersection = new IntersectionObserver(schedule);
     owned.add(() => resize.disconnect());
@@ -487,9 +510,11 @@ export function createVideoActivator(options: {
           providerPlacements.set(node, providerPlacement);
           videoScope.add(() => { providerPlacement.dispose(); providerPlacements.delete(node); });
         }
+        classifyPlayback(node);
         for (const event of ['play', 'playing', 'pause', 'loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
           videoScope.listen(node, event, () => {
-            if (!node.paused && hovered === node && playGraceRemaining() <= 0) leave();
+            if (event === 'play') classifyPlayback(node);
+            if (!node.paused && hovered === node && !selfStarted.has(node)) leave();
             schedule();
           });
         }
@@ -531,7 +556,6 @@ export function createVideoActivator(options: {
       for (const entry of persistentButtons.values()) entry.button.remove();
       persistentButtons.clear();
     });
-    armGrace();
     discover(document);
     measure();
   }

@@ -122,17 +122,22 @@ YouTube inserts immediately before the autoplay control in the right cluster,
 without moving any existing controls, including other extensions' buttons, and
 declares the slot `persistent`. A missing anchor falls back to the overlay. The native `ytp-button` class supplies
 control color and the monochrome mark uses `currentColor` with a transparent
-play cutout and no background. Generic overlays use the top-left slot with a 12 px
-inset, regardless of page overlays or native controls. Dynamic placement is
+play cutout and no background. Generic overlays use the `left-third` slot: a 12 px inset from the left edge and
+one third of the video height down (clamped inside the margins for tiny videos),
+regardless of page overlays or native controls. Dynamic placement is
 intentionally retained behind `ACTIVATOR_DYNAMIC_PLACEMENT` in
 `ui/video-activator.ts` for possible reuse; it is disabled by default and the pure
 placement algorithm remains independent of that runtime flag. Provider slots
 still take precedence. Generic overlay slots remain frozen for each
 appearance despite page chrome mutations. A changed video rectangle or viewport
 removes and remounts the button rather than moving the mounted control. Playback
-hides the overlay launcher, except within `ACTIVATOR_PLAY_GRACE_MS` of the page load
-(or of an SPA visit's start) so an autoplaying video still offers it; one timer ends
-that window. Pausing makes it eligible again through the same proximity selection.
+hides the overlay launcher only when the viewer started it: a pointer press on the video, or a
+key press inside its container, within `ACTIVATOR_PRESS_WINDOW_MS` before `play`. Any other
+start is autoplay and leaves the launcher available, however long after the load (a press
+elsewhere, such as accepting a consent banner, does not count; nor does `userActivation`, which
+that click would also satisfy), as does any start within `ACTIVATOR_PLAY_GRACE_MS` of the page load
+(or of an SPA visit's start, when the navigation click still lands on the page). The classification
+is latched per video at `play` and discovery; no timer ends it. Pausing makes it eligible again through the same proximity selection.
 There is no additional polling.
 
 ## Native chat
