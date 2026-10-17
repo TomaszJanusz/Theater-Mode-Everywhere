@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A page embedding a player in a frame leaves theater when that frame reloads or navigates, instead of staying pinned around a frame without controls.
 - YouTube automatic theater entry resumes when watch-player data catches up, a focused field or fullscreen is left, or the miniplayer expands to the watch page, without waiting for another playback event.
 - Clicking the picture or a control shows the play/pause HUD again, and clicking the picture closes an open player menu without pausing.
 - Disney+ next-episode playback keeps the picture visible and follows the current episode's full timeline, including seeking beyond a shorter reported runtime.
