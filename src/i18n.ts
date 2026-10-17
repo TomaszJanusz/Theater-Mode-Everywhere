@@ -59,7 +59,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   videoActivatorPromptTitle: "Enable the video launcher?",
   videoActivatorPromptDescription: "AutoTheater is now off. Would you like a small button on videos to enter theater mode manually? You can change this later in Settings \u2192 Features \u2192 Video launcher.",
   videoActivatorTitle: "Video launcher",
-  videoActivatorDescription: "Show a small button in a free corner of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface.",
+  videoActivatorDescription: "Show a small button in the top-left corner of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface.",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
