@@ -1,1 +1,1 @@
-Powiększ dowolne wideo HTML5 do okna przeglądarki. Korzystaj z własnych kontrolek, napisów i integracji z popularnymi serwisami.
+Powiększ dowolne wideo HTML5 do rozmiaru okna. Używaj własnych kontrolek, napisów, efektów audio i integracji z serwisami wideo.

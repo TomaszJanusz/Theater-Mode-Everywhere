@@ -1,1 +1,1 @@
-Espandi i video HTML5 nel browser. Usa controlli personalizzati, sottotitoli e integrazioni con i servizi più popolari.
+Espandi ogni video HTML5 nel browser. Usa controlli, sottotitoli, effetti audio e integrazioni con i servizi video.

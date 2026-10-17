@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - Modalità cinema"
+    "message": "Theater Mode Everywhere"
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - Modalità cinema"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Espandi i video HTML5 nel browser. Usa controlli personalizzati, sottotitoli e integrazioni con i servizi più popolari."
+    "message": "Espandi ogni video HTML5 nel browser. Usa controlli, sottotitoli, effetti audio e integrazioni con i servizi video."
   },
   "cwsPromoBeforeLabel": {
     "message": "PRIMA"

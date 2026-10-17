@@ -1,33 +1,38 @@
-Theater Mode Everywhere agrandit les lecteurs HTML5 pour remplir toute la fenêtre du navigateur, offrant ainsi une expérience cinématographique pratique sans en-têtes, barres latérales, commentaires et recommandations.
+Theater Mode Everywhere agrandit les lecteurs HTML5 pour qu'ils remplissent toute la fenêtre du navigateur et offre une expérience cinéma confortable, sans en-têtes, barres latérales, commentaires ni recommandations.
 
-Regardez des didacticiels, des flux, des vidéos et de courts clips avec des commandes de lecture personnalisées. Profitez des sous-titres, des raccourcis clavier, des commandes d'image et de volume, ainsi que des fonctionnalités supplémentaires disponibles sur les plates-formes prises en charge.
+Regardez tutoriels, directs, vidéos et clips courts avec des commandes de lecture personnalisées. Utilisez les sous-titres, les raccourcis clavier, l'ajustement de la vidéo, les effets audio et les commandes de volume, ainsi que des fonctions supplémentaires sur les plateformes prises en charge.
 
-Rich Theater Experience en option ajoute des intégrations plus approfondies avec YouTube, Vimeo, Patreon, Twitch et Disney+. Selon le site, l'extension peut afficher des sous-titres, des chapitres, des aperçus miniatures et des informations supplémentaires sur la chronologie. La fonctionnalité est encore expérimentale, ses capacités varient donc selon les plates-formes.
+La fonction facultative Rich Theater Experience ajoute des intégrations plus poussées avec YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV et Crunchyroll. Selon le service, l'extension peut afficher les titres, les sous-titres, les chapitres, les miniatures d'aperçu, les boutons pour passer, la navigation vers l'épisode suivant et des informations supplémentaires sur la chronologie. Cette fonction est encore expérimentale : ses capacités varient selon les plateformes.
 
-CARACTÉRISTIQUES PRINCIPALES
-- Mode immersif à une touche : appuyez sur `T` pour agrandir instantanément la vidéo active dans la vue du navigateur. Appuyez à nouveau sur ou sur `Escape` pour revenir. S'il y a plusieurs vidéos sur la page, utilisez `Shift+T` pour les changer.
-- Meilleure prise en charge des sous-titres : sélectionnez une piste directement en mode cinéma, activez et désactivez les sous-titres avec la touche `C` et ajustez la police, la taille, la couleur, l'ombre, l'arrière-plan et l'opacité. L'extension mémorise votre langue préférée séparément pour chaque site Web.
-- Rich Theater Experience (expérimental) : activez des intégrations supplémentaires avec YouTube, Vimeo, Patreon, Twitch et Disney+. Les fonctionnalités disponibles dépendent du site Web et peuvent être gérées dans la fenêtre contextuelle de l'extension ou dans les paramètres.
-- Une chronologie plus riche : passez d'un chapitre à l'autre, affichez les vignettes avant de vous déplacer dans la vidéo, et sur YouTube, consultez également les passages les plus rejoués de la vidéo.
-- Ajustement vidéo : appuyez sur `Z` ou utilisez le bouton du lecteur pour basculer entre Ajuster, Remplir et Étirer et supprimer les barres noires sans extension supplémentaire.
-- Commandes personnalisées élégantes : barre de contrôle moderne avec panneaux verticaux de volume et de vitesse de lecture, info-bulles semi-transparentes et indicateurs de temps restant et de lecture.
-- Volume Boost (jusqu'à 300 %) : Augmente l'audio des vidéos au volume faible jusqu'à 300 % à l'aide de l'API Web Audio, avec un curseur non linéaire pour des réglages précis et une bascule dans les options.
-- Visual HUD : superpositions animées élégantes pour modifier le volume, naviguer dans la vidéo et basculer lecture/pause.
-- Prise en charge de Shadow DOM : recherche et agrandit les lecteurs cachés dans les racines fantômes modernes, améliorant ainsi la compatibilité avec davantage de sites.
-- Raccourcis et paramètres personnalisés : configurez les touches pour activer le mode cinéma, naviguer dans la vidéo et gérer les sous-titres, redimensionner les sous-titres et avancer image par image. L'aide dans le lecteur vous aide à vérifier tous les raccourcis.
-- Liste d'exclusion : excluez des domaines spécifiques via une fenêtre contextuelle dans la barre du navigateur ou sur la page d'options pour éviter les conflits avec la mise en page native.
+FONCTIONS PRINCIPALES
+- Mode immersif en une touche : appuyez sur `T` pour agrandir aussitôt la vidéo active à la taille du navigateur. Appuyez de nouveau ou sur `Escape` pour revenir. Si la page contient plusieurs vidéos, utilisez `Shift+T` pour passer de l'une à l'autre. Double-cliquez sur l'image pour entrer en plein écran ou le quitter sans sortir du mode cinéma.
+- Meilleure prise en charge des sous-titres : sélectionnez une piste directement en mode cinéma, activez ou désactivez les sous-titres avec la touche `C` et réglez la police, la taille, la couleur, l'ombre, l'arrière-plan et l'opacité. L'extension mémorise votre langue préférée séparément pour chaque site Web.
+- Rich Theater Experience (expérimental) : activez des intégrations supplémentaires avec les services pris en charge, comme YouTube, Netflix, Disney+, Crunchyroll et d'autres. Les fonctions disponibles dépendent du service et se gèrent avec un interrupteur par service dans la fenêtre contextuelle de l'extension ou dans les paramètres.
+- Chat à côté de l'image : sur Twitch et YouTube avec Rich Theater Experience, gardez le chat en direct ou la rediffusion du chat à côté de la vidéo ou en dessous, et affichez-le ou masquez-le avec `Alt+R`.
+- Une chronologie enrichie : passez d'un chapitre à l'autre, prévisualisez des miniatures avant de vous déplacer et repérez les passages les plus relus de YouTube (« Most Replayed »). Les marqueurs de SponsorBlock, s'il est installé, peuvent s'afficher sur la chronologie YouTube.
+- Boutons pour passer et épisodes suivants : lorsque le service les propose, passez les génériques d'ouverture et de fin et les résumés ou les publicités YouTube, et allez à la vidéo ou à l'épisode précédent ou suivant.
+- Ajustement de la vidéo et disposition surélevée : appuyez sur `Z` ou utilisez le bouton du lecteur pour alterner entre Ajuster, Remplir et Étirer et supprimer les bandes noires sans extension supplémentaire. Choisissez la disposition surélevée (`Shift+L`) pour déplacer l'image vers le haut et utiliser l'espace en dessous pour les sous-titres.
+- Commandes personnalisées élégantes : barre de contrôle moderne avec le titre de la vidéo, panneaux verticaux de volume et de vitesse de lecture, infobulles semi-transparentes et indicateurs de temps écoulé et restant. Gardez les commandes toujours visibles avec `Shift+H`.
+- Effets audio : Amplificateur de volume (jusqu'à 300 %), Amplification des voix, Réduire les sons forts et Basses dans les paramètres du lecteur, traités avec l'API Web Audio uniquement lorsqu'un effet est activé. Indisponibles pour les contenus protégés par DRM.
+- Indicateurs visuels (HUD) : des incrustations animées et élégantes lors du réglage du volume, des déplacements dans la vidéo et du passage de la lecture à la pause.
+- AutoTheater (Rich Theater Experience) : entre automatiquement en mode cinéma au démarrage d'une vidéo prise en charge, avec un bref compte à rebours que vous pouvez annuler d'un clic ou avec `Esc`.
+- Bouton sur la vidéo (BÊTA, désactivé par défaut) : un petit bouton sur une vidéo en pause pour entrer en mode cinéma en un clic. Sur YouTube avec Rich Theater Experience, il se trouve dans la barre d'outils du lecteur.
+- Prise en charge du Shadow DOM : trouve et agrandit les lecteurs cachés dans les shadow roots modernes, ce qui améliore la compatibilité avec davantage de sites.
+- Raccourcis et paramètres personnalisés : configurez des touches pour activer le mode cinéma, avancer ou reculer, gérer les sous-titres, modifier leur taille et avancer image par image. Les paramètres signalent les raccourcis en conflit et l'aide du lecteur permet de tous les vérifier. Choisissez la langue, la couleur d'accentuation, le contraste élevé, la réduction de la transparence et la réduction des animations.
+- Liste d'exclusions : excluez des domaines précis depuis la fenêtre contextuelle de la barre du navigateur ou la page d'options pour éviter les conflits avec la mise en page native.
 
 FONCTIONNEMENT
-- Vidéo HTML5 universelle : fonctionne avec les éléments vidéo HTML5 standard sur le Web, y compris les lecteurs placés dans le Shadow DOM.
-- Lecteurs intégrés : détecte et agrandit les vidéos intégrées dans des cadres, telles que les lecteurs YouTube ou Vimeo.
-- Sous-titres HTML5 : affiche les pistes de sous-titres HTML5 standard dans leur propre superposition de mode cinéma afin que vous puissiez personnaliser leur apparence.
-- Intégrations de plateforme : Rich Theater Experience peut ajouter des sous-titres, des chapitres, des vignettes d'aperçu et bien plus encore sur YouTube, Vimeo, Patreon, Twitch et Disney+. L'éventail des fonctions dépend du service et de la vidéo.
-- Diffusions en direct : reconnaît les diffusions LIVE et, si le service propose une fenêtre DVR, permet de rembobiner l'enregistrement et de revenir au moment actuel.
-- Services protégés par DRM : certaines plateformes limitent l'accès au lecteur, certaines fonctions peuvent donc y être indisponibles.
+- Vidéo HTML5 universelle : fonctionne avec les éléments vidéo HTML5 standard du Web, y compris les lecteurs placés dans le Shadow DOM.
+- Lecteurs intégrés : détecte et agrandit les vidéos intégrées dans des cadres, comme les lecteurs YouTube ou Vimeo.
+- Sous-titres HTML5 : affiche les pistes de sous-titres HTML5 standard dans leur propre calque du mode cinéma pour que vous puissiez personnaliser leur apparence.
+- Intégrations de plateformes : Rich Theater Experience peut ajouter titres, sous-titres, chapitres, miniatures d'aperçu et plus encore sur YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV et Crunchyroll. Les fonctions disponibles dépendent du service et de la vidéo.
+- Diffusions en direct : reconnaît les diffusions EN DIRECT et, si le service fournit une fenêtre DVR, vous permet de revenir en arrière dans l'enregistrement puis de retourner au moment présent.
+- Services protégés par DRM : certaines plateformes limitent l'accès au lecteur ; certaines fonctions, comme les effets audio, peuvent donc y être indisponibles.
+- Confidentialité : l'extension n'envoie au développeur aucune information sur vous ni sur ce que vous regardez. Les paramètres peuvent être synchronisés via votre compte de navigateur. La politique de confidentialité complète est disponible dans les paramètres, sous À propos.
 
-COMMENT COMMENCER
-1. Ouvrez un site vidéo, tel qu'une plateforme de streaming, un site d'actualités ou un blog.
-2. Appuyez sur `T` pour accéder au mode cinéma. Assurez-vous de ne pas écrire dans la zone de texte.
-3. Utilisez les commandes ou les raccourcis du lecteur : `C` active et désactive les sous-titres, `Left` et `Right` permettent de naviguer, et les raccourcis configurables d'avancer image par image.
-4. Sur les plates-formes prises en charge, activez Rich Theater Experience dans la fenêtre contextuelle ou les paramètres de l'extension.
-5. Appuyez à nouveau sur `Escape` ou `T` pour quitter le mode cinéma.
+POUR COMMENCER
+1. Ouvrez un site vidéo, comme une plateforme de streaming, un site d'actualités ou un blog.
+2. Appuyez sur `T` pour passer en mode cinéma. Assurez-vous de ne pas être en train d'écrire dans un champ de texte.
+3. Utilisez les commandes du lecteur ou les raccourcis : `C` active ou désactive les sous-titres, `Left` et `Right` avancent et reculent, et les raccourcis configurables de déplacement image par image avancent d'une image à la fois.
+4. Sur les plateformes prises en charge, activez Rich Theater Experience dans la fenêtre contextuelle de l'extension ou dans les paramètres.
+5. Appuyez de nouveau sur `Escape` ou `T` pour quitter le mode cinéma.

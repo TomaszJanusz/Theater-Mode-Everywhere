@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - 시어터 모드"
+    "message": "Theater Mode Everywhere — 모든 것을 지배하는 하나의 플레이어"
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - 시어터 모드"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "HTML5 비디오를 브라우저 창으로 확대하세요. 나만의 컨트롤, 자막 및 인기 웹사이트와의 통합을 사용하세요."
+    "message": "모든 HTML5 영상을 브라우저 가득 확대합니다. 맞춤 컨트롤, 자막, 오디오 효과, 동영상 서비스 연동을 사용해 보세요."
   },
   "cwsPromoBeforeLabel": {
     "message": "적용 전"

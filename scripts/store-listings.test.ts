@@ -98,7 +98,8 @@ describe('store listings', () => {
         `${locale}: chrome name differs from extensionName`);
       assert.equal(amoSection(readAmo(locale), 'Name'), messages.extensionNameCompact?.message,
         `${locale}: AMO name differs from extensionNameCompact`);
-      assert.ok(messages.extensionName!.message!.length <= 75, `${locale}: extensionName exceeds the Chrome limit`);
+      assert.ok(messages.extensionName!.message!.length <= 45,
+        `${locale}: extensionName exceeds the 45-character limit (Edge shares the manifest name; Chrome allows 75)`);
       assert.ok(messages.extensionNameCompact!.message!.length <= 50, `${locale}: extensionNameCompact exceeds the AMO limit`);
     }
   });

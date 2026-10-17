@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "Theater Mode Everywhere - Theatermodus"
+    "message": "Theater Mode Everywhere"
   },
   "extensionNameCompact": {
-    "message": "Theater Mode Everywhere - Theatermodus"
+    "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Vergrößere HTML5-Videos im Browserfenster. Nutze eigene Steuerungen, Untertitel und Integrationen mit beliebten Diensten."
+    "message": "Vergrößere HTML5-Videos im Browserfenster. Nutze eigene Steuerungen, Untertitel, Audioeffekte und Integrationen mit Videodiensten."
   },
   "cwsPromoBeforeLabel": {
     "message": "VORHER"
