@@ -6,9 +6,16 @@ type WatchPlayer = HTMLElement & {
   getVideoData?: () => { video_id?: unknown };
 };
 
+function singleMainVideo(player: HTMLElement): HTMLVideoElement | null {
+  const videos = player.querySelectorAll<HTMLVideoElement>('video.html5-main-video');
+  return videos.length === 1 ? videos[0] : null;
+}
+
 export const youtubeWatchPlayback: WatchPlayback = {
   pageIdentity: youtubeWatchPageId,
-  refreshEvents: ['yt-page-data-updated', 'yt-player-updated'],
+  // Navigation start and page-type change precede the reveal when entering a watch page from
+  // Home, search or a channel; the later events alone start the countdown late.
+  refreshEvents: ['yt-navigate-start', 'yt-page-type-changed', 'yt-page-data-updated', 'yt-player-updated'],
   mainVideo(doc, identity) {
     const player = doc.querySelector<WatchPlayer>(YOUTUBE_PLAYER_SELECTOR);
     const watch = player?.closest('ytd-watch-flexy');
@@ -18,8 +25,16 @@ export const youtubeWatchPlayback: WatchPlayback = {
     // getPlayerState() can still report buffering during the video's playing
     // event. The shared bridge checks the media's actual playback state.
     if (player.getVideoData?.().video_id !== identity) return null;
-    const videos = player.querySelectorAll<HTMLVideoElement>('video.html5-main-video');
-    return videos.length === 1 ? videos[0] : null;
+    return singleMainVideo(player);
+  },
+  preparingVideo(doc, identity) {
+    // The watch page stays [hidden] and its player has no media or loaded video data until
+    // YouTube finishes loading after an SPA entry. Only a different loaded video is stale.
+    const player = doc.querySelector<WatchPlayer>(YOUTUBE_PLAYER_SELECTOR);
+    if (!player?.closest('ytd-watch-flexy') || player.matches('.ad-showing, .ad-interrupting')) return null;
+    const reported = player.getVideoData?.().video_id;
+    if (reported !== undefined && reported !== '' && reported !== identity) return null;
+    return singleMainVideo(player);
   },
   observe(video, onChange) {
     const player = video.ownerDocument.querySelector(YOUTUBE_PLAYER_SELECTOR);

@@ -1,7 +1,8 @@
 import { DisposableScope } from '../core/disposable-scope';
 import type { MediaProviderFlags } from '../media-features/provider-flags';
 import { observeProviderMediaChanges } from '../providers/media-events';
-import { confirmProviderWatchVideo, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
+import { confirmProviderPreparingVideo, confirmProviderWatchVideo, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
+import { mediaHasSource } from '../host-play';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
 import { shouldAutoEnterTheater, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
@@ -88,24 +89,31 @@ export function createAutoTheaterRuntime(options: {
     }
     const eligible = video.isConnected && isSwitchableTheaterVideo(video);
     const playing = !video.paused && !video.ended && video.readyState > 2;
+    const requested = !video.paused && !video.ended && !video.error;
+    // The provider may recognise its content video before the host reveals, sources or sizes
+    // it. That starts or keeps the countdown only; entry below still needs full eligibility.
+    const confirmed = eligible && confirmProviderWatchVideo(video);
+    const hostPreparing = !confirmed && requested && confirmProviderPreparingVideo(video);
     const facts = {
       enabled: options.enabled(), topLevel: window === window.top, policyAllowed: options.policyAllowed(),
       providerEnabled: options.providerFlags()[page.provider], fullscreen: Boolean(document.fullscreenElement),
       editableFocused: options.editableFocused(), theaterActive: options.theaterActive(),
-      transitioning: options.transitioning(), eligibleVideo: eligible, playing,
+      transitioning: options.transitioning(), eligibleVideo: true, playing: true,
       mainVideo: true
     };
     // Playback was requested and the stream is not failing or finished: still loading counts as
     // intent, so the countdown runs while the player buffers. Pausing or an error cancels it.
-    const preparing = !video.paused && !video.ended && !video.error && video.readyState <= 2
-      && (video.networkState === HTMLMediaElement.NETWORK_LOADING || video.networkState === HTMLMediaElement.NETWORK_IDLE);
-    const intended = (playing || preparing) && shouldAutoEnterTheater(options.visit.current, { ...facts, playing: true })
-      && confirmProviderWatchVideo(video);
+    const loading = requested && video.readyState <= 2 && (video.networkState === HTMLMediaElement.NETWORK_LOADING
+      || video.networkState === HTMLMediaElement.NETWORK_IDLE
+      || (hostPreparing && video.networkState === HTMLMediaElement.NETWORK_EMPTY && !mediaHasSource(video)));
+    const announced = shouldAutoEnterTheater(options.visit.current, facts)
+      && (confirmed || hostPreparing) && (playing || loading);
+    const intended = announced && confirmed;
     if (options.skipCountdown?.()) {
       // Discard any announced entry before applying the current playback facts.
       intent.update(null);
       if (!intended || !playing) return;
-    } else if (!intent.update(intended ? { key: video, ready: playing } : null)) return;
+    } else if (!intent.update(announced ? { key: video, ready: intended && playing } : null)) return;
     // Reserve before entry: synchronous host/UI changes cannot reenter this visit.
     options.visit.current.entered = true;
     clearObservedVideo();

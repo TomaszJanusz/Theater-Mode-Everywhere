@@ -66,7 +66,19 @@ playback has been requested (not paused or ended, no media error, a source loadi
 even before the stream can play (`ui/auto-theater-intent.ts`) — a corner notice shows for at
 least 5 s from that moment, and entry waits for both that time and actual playback; a
 stream still loading when the time ends is simply awaited. The provider bridge confirms identity only;
-the runtime decides playing versus loading. Pause, end, media error/abort/emptied, a replaced
+the runtime decides playing versus loading.
+
+A provider may also declare the optional `WatchPlayback.preparingVideo`, a looser,
+countdown-only confirmation for the window after an SPA entry when the host has not yet
+revealed, sourced or sized its player. It may return a hidden, sourceless or unsized
+content video (a requested play on a sourceless one counts as loading), but never an ad,
+an auxiliary player or one whose loaded identity differs from the URL's. It only starts or
+keeps the notice; entry at the end of the timer still needs `mainVideo` plus the
+switchable-video checks and actual playback, and leaving the watch URL cancels without
+consuming the visit. YouTube declares it and also refreshes on `yt-navigate-start` and
+`yt-page-type-changed`, because the later publications arrive only once the watch page is
+revealed when entering from Home or search. It is a separate bridge query (same
+string-only, top-frame, href-checked protocol as `mainVideo`). Pause, end, media error/abort/emptied, a replaced
 video element, a new content identity or a YouTube ad cancel the notice without consuming the visit,
 and the countdown restarts from the full 5 s when playback resumes. The digit is the full seconds left (4, 3, 2, 1, 0; the first frame shows 4), so 0 is the last second, in which the ring exits before entry. Click or Escape cancels it and consumes the visit.
 The optional AutoTheater Skip countdown preference bypasses the notice and its timer;
