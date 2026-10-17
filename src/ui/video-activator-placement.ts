@@ -7,7 +7,7 @@ import { shortcutDisplayParts } from './shortcuts';
 
 export type Box = { left: number; top: number; width: number; height: number };
 export type Viewport = { width: number; height: number };
-export type ActivatorSpot = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+export type ActivatorSpot = 'top-right' | 'top-left' | 'left-third' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
 
 export const ACTIVATOR_SIZE = 40;
 export const ACTIVATOR_MARGIN = 12;
@@ -19,10 +19,16 @@ export const ACTIVATOR_MIN_HEIGHT = 135;
 const SPOT_ORDER: readonly ActivatorSpot[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'];
 
 /**
- * A video that starts playing this soon after the page (or SPA visit) began is still a fresh
- * arrival, so the launcher is not hidden by its autoplay; normal hide-on-play applies afterwards.
+ * A page (or SPA visit) this young is still arriving, so any playback it starts, even one that
+ * follows the viewer's navigation click, counts as autoplay and does not hide the launcher.
  */
 export const ACTIVATOR_PLAY_GRACE_MS = 5000;
+
+/**
+ * A press on the video (or key press in its player) this soon before playback began is what started it.
+ * Presses elsewhere, such as dismissing a consent banner just before the player autoplays, are not.
+ */
+export const ACTIVATOR_PRESS_WINDOW_MS = 1000;
 
 /** Milliseconds of the grace window left, `sinceVisitMs` after the visit began; zero once it has passed. */
 export function activatorPlayGraceRemaining(sinceVisitMs: number): number {
@@ -55,6 +61,11 @@ export function isActivatorVideoEligible(facts: ActivatorVideoFacts): boolean {
 }
 
 export function spotBox(video: Box, spot: ActivatorSpot, size = ACTIVATOR_SIZE, margin = ACTIVATOR_MARGIN): Box {
+  if (spot === 'left-third') {
+    // One third down clears the host's title strip and bottom controls; tiny videos keep it inside the margins.
+    const offset = Math.max(margin, Math.min(video.height / 3, video.height - margin - size));
+    return { left: video.left + margin, top: video.top + offset, width: size, height: size };
+  }
   if (spot.endsWith('center')) {
     // Centre the button at one-third / two-thirds of the video height.
     return {

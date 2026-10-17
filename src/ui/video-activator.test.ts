@@ -55,6 +55,13 @@ describe('video activator placement', () => {
     assert.deepEqual(spotBox(video, 'bottom-right'),
       { left: 100 + 640 - ACTIVATOR_MARGIN - ACTIVATOR_SIZE, top: 100 + 360 - ACTIVATOR_MARGIN - ACTIVATOR_SIZE, width: ACTIVATOR_SIZE, height: ACTIVATOR_SIZE });
   });
+  it('places the fixed launcher one third down the video, inside the margins for tiny videos', () => {
+    assert.deepEqual(spotBox(video, 'left-third'), { left: 112, top: 100 + 120, width: ACTIVATOR_SIZE, height: ACTIVATOR_SIZE });
+    const small = { left: 0, top: 0, width: 240, height: 135 };
+    assert.equal(spotBox(small, 'left-third').top, 45);
+    const box = spotBox({ ...small, height: 60 }, 'left-third');
+    assert.equal(box.top, ACTIVATOR_MARGIN, 'a box too short for one third keeps the top margin');
+  });
   it('samples a 3x3 grid inside the box', () => {
     const points = samplePoints(spotBox(video, 'top-left'));
     assert.equal(points.length, 9);
@@ -119,7 +126,7 @@ describe('video activator proximity', () => {
   });
 });
 
-describe('video activator play grace', () => {
+describe('video activator fresh-visit window', () => {
   it('lasts about five seconds from the visit start and then ends', () => {
     assert.equal(ACTIVATOR_PLAY_GRACE_MS, 5000);
     assert.equal(activatorPlayGraceRemaining(0), 5000);

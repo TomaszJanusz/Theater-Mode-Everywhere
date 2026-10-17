@@ -105,7 +105,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
-    // Most scenarios predate the five-second load window; fresh-page tests pass pageAge: 0.
+    // Most scenarios predate the five-second load window; fresh-page tests pass a negative pageAge.
     await page.addInitScript(`window.perfOffset = ${pageAge};`);
     if (freezeClock) {
       // Install before runtime startup so no native timer/frame survives the switch.
@@ -118,7 +118,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     return page;
   };
 
-  it(`${engine}: activator appears in the top-left corner on hover and leaves with the pointer`, { timeout: 40_000 }, async t => {
+  it(`${engine}: activator appears one third down the left edge on hover and leaves with the pointer`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
     assert.equal(await launcher(page), null);
     await hover(page, 400, 260);
@@ -126,12 +126,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
     const box = (await launcher(page))!;
     assert.equal(box.label, 'Enter theater mode');
     assert.equal(box.x, 100 + 12);
-    assert.equal(box.y, 80 + 12);
+    assert.equal(box.y, 80 + 120, 'one third of the 360px video height from its top');
     await page.mouse.move(400, 600);
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
   });
 
-  it(`${engine}: fixed top-left ignores overlays and native controls without occlusion probes`, { timeout: 40_000 }, async t => {
+  it(`${engine}: fixed left-third ignores overlays and native controls without occlusion probes`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
     await page.evaluate(() => {
       // Any occlusion sampling would fail this test, even if its result were ignored.
@@ -147,10 +147,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.evaluate(controls => { (document.getElementById('main') as HTMLVideoElement).controls = controls; }, controls);
       await hover(page, 400, 260);
       await button.waitFor();
-      assert.deepEqual(await launcher(page), { x: 112, y: 92, width: 40, label: 'Enter theater mode' });
+      assert.deepEqual(await launcher(page), { x: 112, y: 200, width: 40, label: 'Enter theater mode' });
       if (engine === 'chromium' && controls) {
         await button.evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
-        await page.screenshot({ path: '/tmp/tme-launcher-fixed-top-left-chromium.png' });
+        await page.screenshot({ path: '/tmp/tme-launcher-fixed-left-third-chromium.png' });
       }
       await page.mouse.move(400, 600);
       await button.waitFor({ state: 'detached' });
@@ -514,7 +514,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await hover(page, 400, 260);
     const button = page.locator('#theater-everywhere-ui .theater-video-activator');
     await button.waitFor();
-    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
+    await page.evaluate(() => {
+      const video = document.getElementById('main') as HTMLVideoElement;
+      video.muted = true;
+      document.addEventListener('pointerdown', () => { void video.play(); }, { once: true });
+    });
+    await page.mouse.down();
+    await page.mouse.up();
     await button.waitFor({ state: 'detached' });
     await hover(page, 410, 260);
     assert.equal(await launcher(page), null);
@@ -691,34 +697,64 @@ for (const engine of ['chromium', 'firefox'] as const) {
     if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-launcher-high-contrast-reduced-motion.png' });
   });
 
-  it(`${engine}: a video that starts playing right after load keeps the launcher until the window ends`, { timeout: 40_000 }, async t => {
-    const page = await launch(t, { pageAge: -1_000_000 });
+  it(`${engine}: a video the page starts playing keeps the launcher, however late after load`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { pageAge: 60_000 });
     await hover(page, 400, 260);
     const button = page.locator('#theater-everywhere-ui .theater-video-activator');
     await button.waitFor();
+    // A press elsewhere (a consent banner) moments before the player autoplays is not the viewer's play.
+    await page.mouse.click(10, 650);
+    await hover(page, 400, 260);
+    await button.waitFor();
     await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.equal(await button.count(), 1, 'autoplay within the window does not hide the launcher');
-    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-launcher-autoplay.png' });
+    assert.equal(await button.count(), 1, 'autoplay long after load does not hide the launcher');
+    if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-launcher-late-autoplay.png' });
   });
 
-  it(`${engine}: the play window ends on one timer and an SPA visit restarts it`, { timeout: 40_000 }, async t => {
+  it(`${engine}: the viewer's own play hides the launcher, and a fresh visit still counts it as autoplay`, { timeout: 40_000 }, async t => {
     const page = await launch(t, { freezeClock: true });
-    await page.evaluate(async () => { const video = document.getElementById('main') as HTMLVideoElement; video.muted = true; await video.play(); });
-    await hover(page, 400, 260);
-    await page.clock.runFor(50);
-    assert.equal(await launcher(page), null, 'a long-loaded page hides the launcher during playback');
+    type Counted = { playEvents: number };
+    // 'play' is a queued task; the launcher reacts in an earlier listener, so a later count means it has.
+    const played = async (before: number) => {
+      await page.waitForFunction(count => (window as unknown as Counted).playEvents > count, before);
+      await page.clock.runFor(50);
+    };
+    await page.evaluate(() => {
+      const video = document.getElementById('main') as HTMLVideoElement;
+      video.muted = true;
+      (window as unknown as Counted).playEvents = 0;
+      video.addEventListener('play', () => { (window as unknown as Counted).playEvents++; });
+      const player = document.getElementById('player')!;
+      player.tabIndex = 0;
+      // Like a host player: the press, not the load, starts playback.
+      player.addEventListener('pointerdown', () => { void video.play(); });
+      player.addEventListener('keydown', event => { if (event.key === ' ') void video.play(); });
+    });
+    const pause = () => page.evaluate(() => (document.getElementById('main') as HTMLVideoElement).pause());
+    const reapproach = async () => {
+      await page.mouse.move(2, 590);
+      await hover(page, 410, 260);
+      await page.clock.runFor(50);
+      await page.mouse.move(415, 262); // The pause refreshes geometry first; the next movement selects the video.
+      await page.clock.runFor(50);
+    };
+    await page.mouse.click(400, 260);
+    await played(0);
+    assert.equal(await launcher(page), null, 'a press on the video starts playback and hides the launcher');
+    await pause();
+    await reapproach();
+    assert.ok(await launcher(page), 'pausing offers it again');
+    await page.locator('#player').focus();
+    const beforeKey = await page.evaluate(() => (window as unknown as Counted).playEvents);
+    await page.keyboard.press('Space');
+    await played(beforeKey);
+    assert.equal(await launcher(page), null, 'a key press in the player starts playback and hides the launcher');
+    await pause();
     await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
-    await page.mouse.move(2, 590);
-    await hover(page, 410, 260);
-    await page.clock.runFor(50);
-    assert.ok(await launcher(page), 'a new visit reopens the window for a playing video');
-    await page.clock.runFor(2400);
-    await page.mouse.move(412, 262);
-    await page.clock.runFor(2400);
-    assert.ok(await launcher(page), 'still inside the window');
-    await page.clock.runFor(500);
-    assert.equal(await launcher(page), null, 'the window ended and playback hides the launcher');
+    await page.mouse.click(400, 260);
+    await reapproach();
+    assert.ok(await launcher(page), 'playback right after a navigation is autoplay even with a press on the video');
   });
 
   it(`${engine}: the tooltip carries the configured theater shortcut in both surfaces`, { timeout: 40_000 }, async t => {
