@@ -20,7 +20,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon']);
     assert.ok(providerDefinition('youtube').watchPlayback?.refreshEvents?.includes('yt-navigate-start'));
   });
 
@@ -33,11 +33,25 @@ describe('positive provider watch declarations', () => {
     }
   });
 
+  it('declares Patreon post pages only, excluding creator pages, feeds, collections and community routes', () => {
+    const expected = { provider: 'patreon', identity: '12345678' };
+    for (const href of ['https://www.patreon.com/posts/my-post-12345678', 'https://www.patreon.com/posts/12345678', 'https://www.patreon.com/creator/posts/my-post-12345678/',
+      'https://patreon.com/posts/my-post-12345678?utm_source=x&utm_medium=y#comments', 'https://www.patreon.com/posts/12345678/']) {
+      assert.deepEqual(read(href), expected, href);
+    }
+    for (const href of ['https://www.patreon.com/', 'https://www.patreon.com/home', 'https://www.patreon.com/creator', 'https://www.patreon.com/creator/posts', 'https://www.patreon.com/creator/collections',
+      'https://www.patreon.com/collection/123', 'https://www.patreon.com/c/creator/posts/my-post-12345678', 'https://www.patreon.com/c/posts/my-post-12345678', 'https://www.patreon.com/posts/my-post',
+      'https://www.patreon.com/posts/my-post-12345678/extra', 'https://www.patreon.com/a/b/posts/1', 'https://www.patreon.com/settings', 'https://www.patreon.com/messages/posts/abc123',
+      'https://patreon.com.evil.test/posts/my-post-12345678', 'https://creator.patreon.com/posts/my-post-12345678']) {
+      assert.equal(read(href), null, href);
+    }
+  });
+
   it('never declares arbitrary sites, spoofed hosts, or unqualified providers', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://www.twitch.tv/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'disney', 'netflix']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'disney', 'netflix']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -68,6 +82,8 @@ describe('AutoTheater availability', () => {
   it('is available only on hosts whose provider declares watch playback and has its integration on', () => {
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.patreon.com', { ...flags, patreon: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
