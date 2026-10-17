@@ -403,6 +403,40 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.evaluate('hud.removeCaptionHud()');
   });
 
+  it(`${engine}: notice text keeps its inline-end edge through the width morph in both directions`, { timeout: 40_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch();
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await setup(page);
+    const off = `hud.triggerCaptionHud({kind:'status',title:'Subtitles off',duration:4000})`;
+    const on = `hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English (United Kingdom)',duration:4000})`;
+    // Gap between the title's right edge and the notice's inner right edge (border and padding included).
+    const gap = () => page.evaluate<number>(`(() => { const root = document.getElementById('theater-everywhere-ui').shadowRoot;
+      const hud = root.querySelector('.theater-everywhere-caption-hud'); const title = root.querySelector('.volume-hud-text');
+      return hud.getBoundingClientRect().right - title.getBoundingClientRect().right; })()`);
+    const seek = (ms: number) => page.evaluate(`exits.filter(r => r.element.classList.contains('theater-everywhere-caption-hud')).at(-1).animation.currentTime = ${ms}`);
+    for (const [from, to] of [[on, off], [off, on]]) {
+      await page.evaluate(from);
+      await page.clock.runFor(300);
+      const settled = await gap();
+      await page.evaluate(to);
+      for (const ms of [0, 112, 225]) {
+        await seek(ms);
+        assert.ok(Math.abs((await gap()) - settled) < 0.5, `title stays on the inline end at ${ms} ms`);
+      }
+      await page.clock.runFor(500);
+      assert.ok(Math.abs((await gap()) - settled) < 0.5, 'settled position matches');
+      await page.evaluate('hud.removeCaptionHud()');
+    }
+
+    await page.evaluate(`document.getElementById('theater-everywhere-ui').dataset.motion = 'reduced'`);
+    await page.evaluate(on);
+    const reduced = await gap();
+    await page.evaluate(off);
+    assert.ok(Math.abs((await gap()) - reduced) < 0.5, 'reduced motion keeps the same alignment');
+    await page.evaluate('hud.removeCaptionHud()');
+  });
+
   it(`${engine}: reduced motion removes immediately, including a live preference change`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
     ownTestBrowser(t, browser);
