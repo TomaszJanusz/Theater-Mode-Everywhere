@@ -14,5 +14,6 @@ export const disneyCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteDisney' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteDisney' },
+    autoTheater: { status: 'yes' }
   }
 } as const satisfies ProviderCapabilities;

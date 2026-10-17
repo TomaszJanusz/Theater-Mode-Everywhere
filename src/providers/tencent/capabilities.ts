@@ -14,5 +14,6 @@ export const tencentCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteTencent' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteTencent' },
+    autoTheater: { status: 'no' }
   }
 } as const satisfies ProviderCapabilities;

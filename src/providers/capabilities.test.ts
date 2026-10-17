@@ -68,6 +68,7 @@ describe('provider capability declarations', () => {
   for (const provider of PROVIDER_CAPABILITIES) {
     it(`${provider.id}: adapter methods and registered actions match the declaration`, () => {
       assert.equal(Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no');
+      assert.equal(Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
       const folder = folders[provider.id] ?? provider.id;
       const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
       const implemented = methods(source);

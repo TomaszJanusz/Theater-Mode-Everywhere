@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "빠른 동작"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "선택한 모든 기능을 제공하는 서비스가 없습니다."
   },

@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "Schnellaktionen"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "Kein Dienst bietet alle ausgewählten Funktionen."
   },

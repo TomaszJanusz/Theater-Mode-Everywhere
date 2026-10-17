@@ -14,5 +14,6 @@ export const patreonCapabilities = {
     playlists: { status: 'no' },
     launcher: { status: 'no' },
     quickActions: { status: 'no' },
+    autoTheater: { status: 'no' }
   }
 } as const satisfies ProviderCapabilities;

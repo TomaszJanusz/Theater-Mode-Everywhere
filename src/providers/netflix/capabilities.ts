@@ -14,5 +14,6 @@ export const netflixCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteNetflix' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteNetflix' },
+    autoTheater: { status: 'yes' }
   }
 } as const satisfies ProviderCapabilities;

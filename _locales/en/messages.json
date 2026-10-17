@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "Quick actions"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "No service has all the selected capabilities."
   },

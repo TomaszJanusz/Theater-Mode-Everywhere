@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "クイック操作"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "選択した機能をすべて備えたサービスはありません。"
   },
