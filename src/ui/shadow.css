@@ -955,7 +955,8 @@ button.theater-time-end:hover {
   position: fixed !important;
   top: var(--theater-hud-center-y, 50vh) !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  /* The translate property, not transform: the exit's scale then pivots on the plate's own centre. */
+  translate: -50% -50% !important;
   box-sizing: border-box !important;
   width: 76px !important;
   height: 76px !important;
