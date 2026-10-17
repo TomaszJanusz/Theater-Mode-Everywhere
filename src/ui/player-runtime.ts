@@ -159,7 +159,7 @@ import {
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
 import { closeMenuPopover } from './menu-popover';
-import { isChatDocument, isNativeChatEvent } from '../chat';
+import { installChatShortcutRelay, isChatDocument, isChatShortcutMessage, isNativeChatEvent } from '../chat';
 import { CHAT_PREFERENCES_STORAGE_KEY, hydrateChatPreferences, nativeChatState, startNativeChatSession, stopNativeChatSession, toggleNativeChat } from './chat';
 
 const session = new PlayerSession();
@@ -1754,6 +1754,15 @@ function initialize(): void {
 
   // 4. Cross-iframe postMessage listener
   listeners.message = (event: MessageEvent) => {
+    if (isChatShortcutMessage(event.data)) {
+      // Only the chat frame this page embeds may drive the toggle, like its own key.
+      const chat = nativeChatState();
+      if (session.element && chat?.available && chat.surface?.iframe?.contentWindow === event.source
+          && event.origin === window.location.origin && !ui().helpOpen && !theaterDialogOpen()) {
+        executeCommand({ type: 'TOGGLE_CHAT' });
+      }
+      return;
+    }
     const hostToggle = readProviderHostToggle(event, {
       hostname: window.location.hostname,
       href: window.location.href,
@@ -2379,7 +2388,10 @@ function refreshHostPlayerLayout(): void {
 }
 
 export function bootstrapPlayerRuntime(): void {
-  if (isChatDocument(window.location.href)) return;
+  if (isChatDocument(window.location.href)) {
+    installChatShortcutRelay();
+    return;
+  }
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.action === 'statusChanged') {

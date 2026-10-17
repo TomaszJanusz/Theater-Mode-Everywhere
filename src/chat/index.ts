@@ -16,6 +16,7 @@ export { detectChatActivation } from './activation';
 export { isNativeChatEvent } from './events';
 export { normalizeChatTheme } from './theme';
 export { isChatDocument } from './url';
+export { installChatShortcutRelay, isChatShortcutMessage } from './shortcut-relay';
 export {
   CHAT_DOCK_BREAKPOINT_PX,
   DEFAULT_CHAT_WIDTH_PX,
