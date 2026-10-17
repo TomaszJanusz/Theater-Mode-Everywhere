@@ -74,7 +74,7 @@ export function showAutoTheaterNotice(
   };
   tick(false);
   mountPlayerUi(overlay);
-  const stopExit = exitSpinner(visual, {
+  const stopExit = exitSpinner(spinner, {
     mode: 'deadline', remainingMs,
     onStart: () => {
       window.clearTimeout(timer);
