@@ -669,7 +669,7 @@ export class MediaFeaturesController {
     if (this.tracks.length === 0) {
       const item = document.createElement('div');
       item.className = 'theater-cc-menu-item';
-      item.textContent = this.t('noSubtitles');
+      item.append(this.menuLabel(this.t('noSubtitles')));
       item.style.opacity = '0.5';
       item.style.cursor = 'default';
       list.appendChild(item);
@@ -743,18 +743,27 @@ export class MediaFeaturesController {
     });
   }
 
+  /** Host track names can be long; the label truncates and keeps the full name in its title. */
+  private menuLabel(text: string): HTMLSpanElement {
+    const label = document.createElement('span');
+    label.className = 'theater-cc-menu-label';
+    label.textContent = text;
+    label.title = text;
+    return label;
+  }
+
   private menuItem(label: string, active: boolean, onClick: () => void): HTMLButtonElement {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'theater-cc-menu-item';
-    item.textContent = label;
+    item.append(this.menuLabel(label));
     item.setAttribute('aria-pressed', String(active));
     if (active) {
       item.classList.add('active');
       const checkIcon = document.createElement('span');
       checkIcon.textContent = '✓';
+      checkIcon.className = 'theater-cc-menu-check';
       checkIcon.setAttribute('aria-hidden', 'true');
-      checkIcon.style.marginLeft = '8px';
       item.appendChild(checkIcon);
     }
     item.addEventListener('click', () => {
