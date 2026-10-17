@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "Non"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "Indisponible sur ce site"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "Indisponible : Rich Theater Experience est désactivé pour ce service"
-  },
   "autoEnterTheaterDescription": {
     "message": "Active le mode cinéma lorsque la vidéo principale démarre sur les pages de lecture des services pris en charge avec Rich Theater Experience activé."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "Toujours afficher les commandes"
+    "message": "Épingler les commandes"
   },
   "keepControlsVisibleDescription": {
-    "message": "Gardez les commandes de lecture et la barre de progression visibles en mode cinéma. Le titre et le curseur se masquent toujours en cas d’inactivité."
+    "message": "Épinglez les commandes de lecture et la barre de progression en mode cinéma pour les garder visibles. Le titre et le curseur se masquent toujours en cas d’inactivité."
   },
   "toggleControlsPin": {
-    "message": "Basculer la visibilité des commandes"
+    "message": "Épingler ou détacher les commandes"
   },
   "controlsPinnedHud": {
-    "message": "Commandes toujours visibles"
+    "message": "Commandes épinglées"
   },
   "controlsUnpinnedHud": {
     "message": "Masquage automatique des commandes"

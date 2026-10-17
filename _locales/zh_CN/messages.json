@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "关闭"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "此网站不可用"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "不可用：此服务的 Rich Theater Experience 已关闭"
-  },
   "autoEnterTheaterDescription": {
     "message": "启用 Rich Theater Experience 后，在受支持服务的观看页面上开始播放主视频时自动进入剧场模式。"
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "始终显示控件"
+    "message": "固定控件"
   },
   "keepControlsVisibleDescription": {
-    "message": "在剧场模式下保持播放控件和进度条可见。空闲时标题和光标仍会自动隐藏。"
+    "message": "在剧场模式下固定播放控件和进度条，使其保持可见。空闲时标题和光标仍会自动隐藏。"
   },
   "toggleControlsPin": {
-    "message": "切换控件可见性"
+    "message": "切换控件固定状态"
   },
   "controlsPinnedHud": {
-    "message": "控件始终可见"
+    "message": "控件已固定"
   },
   "controlsUnpinnedHud": {
     "message": "控件自动隐藏"

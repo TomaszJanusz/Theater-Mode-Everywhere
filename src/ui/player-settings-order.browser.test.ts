@@ -214,7 +214,7 @@ describe('player settings action order', () => {
             return row;
           };
           settings.addRow(button('picture-layout-btn'), 'Layout');
-          settings.addRow(button('controls-visibility-toggle'), 'Always show controls');
+          settings.addRow(button('controls-visibility-toggle'), 'Pin controls');
           settings.addRow(button('help-btn'), 'Keyboard Shortcuts', 'shortcuts');
           settings.addRow(button('switch-video-btn'), 'Switch player');
           settings.addRow(button('extension-settings-btn'), 'Extension settings', 'footer');

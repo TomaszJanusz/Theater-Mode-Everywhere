@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "No"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "No disponible en este sitio"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "No disponible: Rich Theater Experience está desactivado para este servicio"
-  },
   "autoEnterTheaterDescription": {
     "message": "Activa el modo cine cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "Mostrar siempre los controles"
+    "message": "Fijar controles"
   },
   "keepControlsVisibleDescription": {
-    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
+    "message": "Fija los controles de reproducción y la barra de progreso en modo cine para mantenerlos visibles. El título y el cursor siguen ocultándose durante la inactividad."
   },
   "toggleControlsPin": {
-    "message": "Alternar visibilidad de los controles"
+    "message": "Alternar fijación de controles"
   },
   "controlsPinnedHud": {
-    "message": "Controles siempre visibles"
+    "message": "Controles fijados"
   },
   "controlsUnpinnedHud": {
     "message": "Los controles se ocultan automáticamente"

@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "Off"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "Unavailable on this site"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "Unavailable: Rich Theater Experience is off for this service"
-  },
   "autoEnterTheaterDescription": {
     "message": "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "Always show controls"
+    "message": "Pin controls"
   },
   "keepControlsVisibleDescription": {
-    "message": "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle."
+    "message": "Pin the playback controls and progress bar in theater mode to keep them visible. The title and cursor still hide when idle."
   },
   "toggleControlsPin": {
-    "message": "Toggle controls visibility"
+    "message": "Toggle controls pinning"
   },
   "controlsPinnedHud": {
-    "message": "Controls always visible"
+    "message": "Controls pinned"
   },
   "controlsUnpinnedHud": {
     "message": "Controls auto-hide"

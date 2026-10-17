@@ -1115,9 +1115,9 @@ export function createControls(
       autoTheaterBtn.setAttribute('aria-pressed', String(on));
       autoTheaterBtn.setAttribute('aria-disabled', String(unavailable));
       autoTheaterRow.update('', t(unavailable
-        ? (availability === 'integrationOff' ? 'autoEnterTheaterIntegrationOff' : 'autoEnterTheaterUnsupported')
+        ? 'statusUnavailable'
         : ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'),
-        ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'autoEnterTheaterIntegrationOff', 'autoEnterTheaterUnsupported'].map(key => t(key)));
+        ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'].map(key => t(key)));
     };
     updateAutoTheaterRow();
     wrapper._syncAutoTheaterAvailability = updateAutoTheaterRow;

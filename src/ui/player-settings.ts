@@ -98,7 +98,7 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  const newItems = new Map<HTMLElement, { id: NewFeatureId; text: HTMLElement; label: string; visible: boolean; badgeAfterText: boolean }>();
+  const newItems = new Map<HTMLElement, { id: NewFeatureId; target: HTMLElement; label: string; visible: boolean; dot: boolean }>();
   let lastHighlights: FeatureHighlights | undefined;
   let gearDot: HTMLElement | null = null;
   function refreshHighlights(force = false) {
@@ -109,13 +109,8 @@ export function createPlayerSettings(
       const visible = isNewFeature(item.id, state);
       if (visible !== item.visible) {
         item.visible = visible;
-        (item.badgeAfterText ? item.text.parentElement : item.text)?.querySelector('.te-new-badge')?.remove();
-        // Row badges sit beside the label, not inside it, so only the label truncates.
-        if (visible) {
-          const badge = createNewBadge();
-          if (item.badgeAfterText) item.text.after(badge);
-          else item.text.append(badge);
-        }
+        item.target.querySelector('.te-new-badge')?.remove();
+        if (visible) item.target.append(createNewBadge(item.dot ? 'dot' : 'pill'));
       }
       row.setAttribute('aria-label', item.label + (visible ? `, ${ctx.t('badgeNew')}` : ''));
     }
@@ -126,9 +121,9 @@ export function createPlayerSettings(
     else button.removeAttribute('aria-description');
   }
 
-  function highlight(element: HTMLElement, text: HTMLElement, label: string, id: NewFeatureId, badgeAfterText = false) {
+  function highlight(element: HTMLElement, target: HTMLElement, label: string, id: NewFeatureId, dot = false) {
     if (!newItems.size) scope.add(ctx.uiStore.subscribe(() => refreshHighlights()));
-    newItems.set(element, { id, text, label, visible: false, badgeAfterText });
+    newItems.set(element, { id, target, label, visible: false, dot });
     refreshHighlights(true);
   }
 
@@ -137,7 +132,11 @@ export function createPlayerSettings(
     row.type = 'button';
     row.setAttribute('aria-label', label);
     row.classList.add('theater-settings-row');
-    row.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    const icon = document.createElement('span');
+    icon.className = 'theater-settings-row-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.append(...row.childNodes);
+    row.append(icon);
     const main = document.createElement('span');
     main.className = 'theater-settings-main';
     const text = document.createElement('span');
@@ -166,7 +165,7 @@ export function createPlayerSettings(
     } else {
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
-    if (newItem) highlight(row, text, label, newItem, true);
+    if (newItem) highlight(row, icon, label, newItem, true);
     return {
       /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
       update(shortcut: string, value?: string, values: readonly string[] = []) {

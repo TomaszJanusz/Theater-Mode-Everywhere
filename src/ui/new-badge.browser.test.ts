@@ -323,6 +323,11 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.locator('.player-settings-btn .te-new-badge[data-variant="dot"]').waitFor();
     await page.locator('.player-settings-btn').click();
     assert.equal(await page.getByRole('button', { name: /^Layout: Raised, New$/ }).count(), 1);
+    const layoutDot = page.locator('.picture-layout-btn .theater-settings-row-icon .te-new-badge[data-variant="dot"]');
+    assert.equal(await layoutDot.count(), 1, 'new menu rows put the shared dot on their icon');
+    assert.equal(await layoutDot.getAttribute('aria-hidden'), 'true');
+    assert.equal(await page.locator('.theater-settings-row .te-new-badge:not([data-variant="dot"])').count(), 0);
+    assert.equal(await page.getByRole('button', { name: /^Pin controls: On, New$/ }).count(), 1);
     const gear = await page.locator('.player-settings-btn svg').boundingBox();
     const dot = await page.locator('.player-settings-btn .te-new-badge').boundingBox();
     assert.ok(gear && dot && Math.abs(dot.y - gear.y) < 8 && Math.abs(dot.x - gear.x) < 22,

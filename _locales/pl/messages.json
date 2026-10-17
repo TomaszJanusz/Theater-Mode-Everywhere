@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "Wył."
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "Niedostępne w tej witrynie"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "Niedostępne: Rich Theater Experience jest wyłączone dla tej usługi"
-  },
   "autoEnterTheaterDescription": {
     "message": "Włączaj tryb kinowy, gdy główne wideo zaczyna się odtwarzać na stronach oglądania obsługiwanych serwisów z włączoną funkcją Rich Theater Experience."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "Zawsze pokazuj kontrolki"
+    "message": "Przypnij sterowanie"
   },
   "keepControlsVisibleDescription": {
-    "message": "Zachowaj widoczność kontrolek odtwarzania i paska postępu w trybie kinowym. Tytuł i kursor nadal chowają się przy bezczynności."
+    "message": "Przypnij sterowanie odtwarzaniem i pasek postępu w trybie kinowym, aby pozostały widoczne. Tytuł i kursor nadal chowają się przy bezczynności."
   },
   "toggleControlsPin": {
-    "message": "Przełącz widoczność kontrolek"
+    "message": "Przełącz przypięcie sterowania"
   },
   "controlsPinnedHud": {
-    "message": "Kontrolki zawsze widoczne"
+    "message": "Sterowanie przypięte"
   },
   "controlsUnpinnedHud": {
     "message": "Kontrolki chowają się automatycznie"

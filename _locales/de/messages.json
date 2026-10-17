@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "Aus"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "Auf dieser Website nicht verfügbar"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "Nicht verfügbar: Rich Theater Experience ist für diesen Dienst aus"
-  },
   "autoEnterTheaterDescription": {
     "message": "Aktiviere den Kinomodus, wenn das Hauptvideo auf einer Wiedergabeseite eines unterstützten Dienstes bei aktiviertem Rich Theater Experience startet."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "Steuerelemente immer anzeigen"
+    "message": "Steuerung anheften"
   },
   "keepControlsVisibleDescription": {
-    "message": "Wiedergabesteuerung und Fortschrittsbalken im Kinomodus sichtbar halten. Titel und Mauszeiger werden bei Inaktivität weiterhin ausgeblendet."
+    "message": "Wiedergabesteuerung und Fortschrittsbalken im Kinomodus anheften, damit sie sichtbar bleiben. Titel und Mauszeiger werden bei Inaktivität weiterhin ausgeblendet."
   },
   "toggleControlsPin": {
-    "message": "Sichtbarkeit der Steuerelemente umschalten"
+    "message": "Anheften der Steuerung umschalten"
   },
   "controlsPinnedHud": {
-    "message": "Steuerelemente immer sichtbar"
+    "message": "Steuerung angeheftet"
   },
   "controlsUnpinnedHud": {
     "message": "Steuerelemente werden automatisch ausgeblendet"
