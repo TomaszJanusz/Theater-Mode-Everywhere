@@ -1041,6 +1041,9 @@
   "rteDetails": {
     "message": "Detalles"
   },
+  "badgeBetaDescription": {
+    "message": "Beta, función experimental"
+  },
   "badgeNew": {
     "message": "Novedad",
     "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."

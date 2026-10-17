@@ -1,10 +1,10 @@
 import { t } from './messages';
 
-export type NewBadgeVariant = 'pill' | 'dot';
+export type NewBadgeVariant = 'pill' | 'dot' | 'beta';
 const TAG = 'te-new-badge';
 
 export const NEW_BADGE_CSS = `
-.te-new-badge {
+.te-new-badge, .te-beta-badge {
   display: inline-flex; align-items: center; flex: 0 0 auto;
   vertical-align: middle; pointer-events: none;
   font: 800 9.5px/1 system-ui, sans-serif; letter-spacing: .07em;
@@ -13,6 +13,12 @@ export const NEW_BADGE_CSS = `
   background: var(--appearance-tint, color-mix(in srgb, var(--accent-color) 18%, transparent));
   border: 1px solid var(--appearance-badge-border, color-mix(in srgb, var(--accent-color) 55%, transparent));
   border-radius: 999px; padding: 3px 7px; margin-inline-start: 8px;
+}
+.te-beta-badge {
+  color: var(--appearance-muted, var(--text-secondary, #b3b3b3));
+  background: var(--appearance-surface, transparent);
+  border-color: currentColor;
+  pointer-events: auto;
 }
 .te-new-badge[data-variant="dot"] {
   position: absolute; inset-block-start: var(--new-badge-inset-block-start, 2px); inset-inline-end: var(--new-badge-inset-inline-end, 2px);
@@ -32,9 +38,10 @@ export function ensureNewBadgeStyles(root: Document | ShadowRoot): void {
 }
 
 function renderBadge(badge: HTMLElement, variant: NewBadgeVariant): void {
-  badge.className = 'te-new-badge';
+  // Experimental status is persistent; NEW highlight queries must not own it.
+  badge.className = variant === 'beta' ? 'te-beta-badge' : 'te-new-badge';
   badge.dataset.variant = variant;
-  badge.textContent = variant === 'pill' ? t('badgeNew') : '';
+  badge.textContent = variant === 'beta' ? 'BETA' : variant === 'pill' ? t('badgeNew') : '';
   if (variant === 'dot') badge.setAttribute('aria-hidden', 'true');
   else badge.removeAttribute('aria-hidden');
 }
@@ -43,7 +50,7 @@ function renderBadge(badge: HTMLElement, variant: NewBadgeVariant): void {
 export function defineNewBadge(): void {
   if (!globalThis.customElements || customElements.get(TAG)) return;
   customElements.define(TAG, class extends HTMLElement {
-    connectedCallback() { renderBadge(this, this.dataset.variant === 'dot' ? 'dot' : 'pill'); }
+    connectedCallback() { renderBadge(this, this.dataset.variant === 'beta' ? 'beta' : this.dataset.variant === 'dot' ? 'dot' : 'pill'); }
   });
 }
 

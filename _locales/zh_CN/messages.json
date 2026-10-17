@@ -1041,6 +1041,9 @@
   "rteDetails": {
     "message": "详情"
   },
+  "badgeBetaDescription": {
+    "message": "Beta，实验性功能"
+  },
   "badgeNew": {
     "message": "新",
     "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."

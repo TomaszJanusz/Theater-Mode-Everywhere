@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
 import { build } from 'esbuild';
-import { chromium, type Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../src/test-utils/test-browser';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
 import { readStylesheet } from '../src/test-utils/styles';
@@ -40,7 +40,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     } });
   };
   // tsx names nested callbacks with __name; keep that helper inside the fixture.
-  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: { en: readCatalog('en'), pl: readCatalog('pl'), ar: readCatalog('ar') }, blacklist, url, release: WHATS_NEW_RELEASE.id })});` });
+  await page.addInitScript({ content: `window.__name = fn => fn; (${initialize.toString()})(${JSON.stringify({ catalogs: Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, readCatalog(locale)])), blacklist, url, release: WHATS_NEW_RELEASE.id })});` });
   const html = readFileSync(path.join(root, surface, `${surface}.html`), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
   await page.route('http://localization.test/**', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://localization.test/');
@@ -96,7 +96,7 @@ it('Settings groups AutoTheater and accessibility, persists countdown choices, a
 
 async function switchTo(page: Page, locale: string): Promise<void> {
   await page.evaluate(locale => chrome.storage.sync.set({ language: locale }), locale);
-  await page.waitForFunction(locale => document.documentElement.lang === locale, locale);
+  await page.waitForFunction(locale => document.documentElement.lang === locale, locale.replace('_', '-'));
 }
 
 for (const blacklist of [[], ['example.com', 'second.com']]) {
@@ -236,6 +236,53 @@ for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'http
         await assertLocalized(page, locale);
       }
       assert.deepEqual(errors, []);
+    } finally { await browser.close(); }
+  });
+}
+
+for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
+  it(`${engine}: Video launcher keeps its localized BETA badge beside NEW across appearance and language changes`, { timeout: 30_000 }, async t => {
+    const browser = await browserType.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page, 'options', []);
+      await page.locator('#tab-features').click();
+      const row = page.locator('[data-new-feature=settingsVideoActivator]');
+      const beta = row.getByRole('img');
+      for (const { locale } of LANGUAGES) {
+        await switchTo(page, locale);
+        const name = readCatalog(locale).badgeBetaDescription.message;
+        assert.equal(await beta.getAttribute('aria-label'), name);
+        assert.equal(await beta.getAttribute('title'), name);
+        assert.equal(await beta.textContent(), 'BETA');
+        assert.equal(await row.locator('.te-new-badge').textContent(), readCatalog(locale).badgeNew.message);
+        assert.equal(await row.locator('.options-label').evaluate(label => {
+          const beta = label.querySelector('.te-beta-badge')!;
+          const recent = label.querySelector('.te-new-badge')!;
+          return !!(beta.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING);
+        }), true, 'BETA precedes NEW in reading order');
+        await page.setViewportSize({ width: 390, height: 900 });
+        await page.evaluate(() => chrome.storage.sync.set({ highContrast: 'on', reduceMotion: 'on' }));
+        await page.waitForFunction(() => document.documentElement.dataset.contrast === 'high' && document.documentElement.dataset.motion === 'reduced');
+        assert.equal(await row.evaluate(row => row.scrollWidth <= row.clientWidth + 1), true);
+        const boxes = await row.locator('.te-beta-badge, .te-new-badge').evaluateAll(badges => badges.map(badge => {
+          const { x, y, width, height } = badge.getBoundingClientRect();
+          return { x, y, width, height };
+        }));
+        const [a, b] = boxes;
+        assert.ok(a.width > 0 && b.width > 0);
+        assert.ok(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y, 'badges do not overlap');
+      }
+      await switchTo(page, 'en');
+      await page.evaluate(() => chrome.storage.sync.set({ highContrast: 'auto', reduceMotion: 'auto' }));
+      await page.setViewportSize({ width: 1280, height: 900 });
+      if (engine === 'chromium' && process.env.TE_BETA_SCREENSHOT) {
+        await row.screenshot({ path: process.env.TE_BETA_SCREENSHOT });
+      }
+      await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
+      await row.locator('.te-new-badge').waitFor({ state: 'detached' });
+      assert.equal(await beta.isVisible(), true, 'experimental status persists when NEW highlights are hidden');
     } finally { await browser.close(); }
   });
 }

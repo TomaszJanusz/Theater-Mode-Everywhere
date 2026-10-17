@@ -23,6 +23,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   "sponsorBlockCategory_chapter": "Chapter",
   "sponsorBlockCategory_unknown": "SponsorBlock segment",
   badgeNew: "New",
+  badgeBetaDescription: "Beta, experimental feature",
   highlightNewFeaturesTitle: "Highlight new features",
   highlightNewFeaturesDescription: "Show New badges for recently added features.",
   highlightNewFeaturesHide: "Hide until next version",

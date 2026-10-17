@@ -1041,6 +1041,9 @@
   "rteDetails": {
     "message": "詳細"
   },
+  "badgeBetaDescription": {
+    "message": "ベータ、試験的な機能"
+  },
   "badgeNew": {
     "message": "新機能",
     "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
