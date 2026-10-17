@@ -750,6 +750,8 @@ export function createControls(
       () => refs.playbackDecisionRevision);
 
     const toggleFullscreen = () => {
+      // The embedding page fullscreens the whole document, so a frame must not stack its own on top.
+      if (!document.fullscreenElement && ctx.actions.requestEmbedderFullscreen()) return;
       const operation = fullscreenRecovery.begin();
       if (!operation.isCurrent()) return;
       ctx.actions.suppressToolbarActivity();

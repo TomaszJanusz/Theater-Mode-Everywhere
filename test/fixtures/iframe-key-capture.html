@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Theater Everywhere key capture fixture</title>
+  <style>
+    html, body { margin: 0; background: #111; }
+    iframe { width: 640px; height: 360px; border: 0; background: #000; }
+  </style>
+  <script>
+    // A host that claims plain T, F and Escape in the window capture phase before any extension script.
+    for (const type of ['keydown', 'keyup', 'keypress']) {
+      window.addEventListener(type, (event) => {
+        if (['t', 'f', 'Escape'].includes(event.key)) {
+          event.stopImmediatePropagation();
+        }
+      }, true);
+    }
+  </script>
+</head>
+<body>
+  <iframe id="child" src="/player" allow="fullscreen" title="Local player"></iframe>
+</body>
+</html>
