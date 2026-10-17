@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import type { BrowserType } from 'playwright';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
@@ -50,4 +51,61 @@ describe('player bar notch', () => {
       await browser.close();
     }
   });
+});
+
+describe('caption menu notch', () => {
+  const html = (dir: string, tracks: number) => `<div class="theater-controls-wrapper visible" dir="${dir}" style="position:fixed;left:40px;bottom:40px;width:640px">
+    <div class="theater-controls-row"><div class="theater-controls-right" style="margin-left:300px">
+      <div class="theater-cc-menu-host theater-menu-anchored theater-menu is-open">
+        <button class="theater-control-btn" id="btn" type="button"><span>CC</span></button>
+        <div class="theater-cc-menu visible" id="menu">
+          <div class="theater-cc-menu-header"><span class="theater-cc-menu-title">Subtitles</span><button type="button" class="theater-cc-menu-options">Options</button></div>
+          <div class="theater-cc-menu-list">${tracks === 0
+            ? '<div class="theater-cc-menu-item">No subtitles</div>'
+            : Array.from({ length: tracks }, (_, i) => `<button type="button" class="theater-cc-menu-item">Track ${i}</button>`).join('')}</div>
+        </div>
+      </div>
+    </div></div></div>`;
+
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`keeps the notch clear of the header and flush with the menu for any row count (${engine})`, async (t) => {
+      const playwright = await import('playwright');
+      const type = playwright[engine] as BrowserType;
+      let executable = '';
+      try {
+        executable = type.executablePath();
+      } catch {
+        t.skip(`${engine} module or browser path is unavailable`);
+        return;
+      }
+      if (!existsSync(executable)) { t.skip(`${engine} is not installed`); return; }
+      const browser = await type.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 900, height: 500 } });
+        for (const dir of ['ltr', 'rtl']) {
+          for (const tracks of [0, 1, 30]) {
+            await page.setContent(html(dir, tracks));
+            await page.addStyleTag({ content: UI_CSS });
+            const r = await page.evaluate(`(() => {
+              const rect = (s) => document.querySelector(s).getBoundingClientRect();
+              const menu = rect('#menu'), btn = rect('#btn'), header = rect('.theater-cc-menu-header');
+              const overlap = parseFloat(getComputedStyle(document.querySelector('#menu')).getPropertyValue('--theater-menu-notch-overlap')) || 32;
+              return {
+                notchAboveMenuBottom: menu.bottom - btn.top,
+                overlap,
+                clearOfHeader: btn.top - header.bottom,
+                edgeDelta: ${dir === 'rtl' ? 'Math.abs(menu.left - btn.left)' : 'Math.abs(menu.right - btn.right)'}
+              };
+            })()`) as { notchAboveMenuBottom: number; overlap: number; clearOfHeader: number; edgeDelta: number };
+            const label = `${engine} ${dir} ${tracks}: ${JSON.stringify(r)}`;
+            assert.ok(r.notchAboveMenuBottom <= r.overlap + 1, label);
+            assert.ok(r.clearOfHeader >= 4, label);
+            assert.ok(r.edgeDelta <= 1, label);
+          }
+        }
+      } finally {
+        await browser.close();
+      }
+    });
+  }
 });
