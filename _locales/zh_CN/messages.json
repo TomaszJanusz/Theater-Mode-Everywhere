@@ -130,7 +130,7 @@
     }
   },
   "volumeLevelingLabel": {
-    "message": "降低响亮声音"
+    "message": "减弱过响的声音"
   },
   "volumeLevelingOff": {
     "message": "关"
@@ -142,7 +142,7 @@
     "message": "强力"
   },
   "volumeLevelingHud": {
-    "message": "降低响亮声音：$1",
+    "message": "减弱过响的声音：$1",
     "placeholders": {
       "level": {
         "content": "$1"
@@ -662,7 +662,7 @@
     "message": "主页"
   },
   "madeInPoland": {
-    "message": "用 <span class=\"heart\">❤</span> 制造于 🇵🇱"
+    "message": "在 🇵🇱 用 <span class=\"heart\">❤</span> 制作"
   },
   "autoEnterTheaterTitle": {
     "message": "AutoTheater"
@@ -674,13 +674,13 @@
     "message": "跳过倒计时"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "播放就绪后立即进入影院模式，不显示倒计时提示。"
+    "message": "播放就绪后立即进入剧场模式，不显示倒计时提示。"
   },
   "videoActivatorPromptTitle": {
     "message": "启用视频启动按钮？"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater 已关闭。是否在视频上显示一个小按钮，以便手动进入影院模式？你可以稍后在「设置 → 功能 → 视频启动按钮」中更改此选项。"
+    "message": "AutoTheater 已关闭。是否在视频上显示一个小按钮，以便手动进入剧场模式？你可以稍后在「设置 → 功能 → 视频启动按钮」中更改此选项。"
   },
   "videoActivatorTitle": {
     "message": "视频启动按钮"
@@ -843,7 +843,7 @@
     "message": "关于"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "一个播放器，统御一切。"
   },
   "aboutVersion": {
     "message": "版本：$version$",
@@ -914,7 +914,7 @@
     "message": "SponsorBlock 支持"
   },
   "sponsorBlockMarkersDescription": {
-    "message": "在 YouTube 影院模式时间轴上显示已安装的 SponsorBlock 扩展程序的标记，并使用其配色。"
+    "message": "在 YouTube 剧场模式时间轴上显示已安装的 SponsorBlock 扩展程序的标记，并使用其配色。"
   },
   "sponsorBlockCategory_sponsor": {
     "message": "赞助"
@@ -959,7 +959,7 @@
     "message": "Rich Theater Experience"
   },
   "rteSectionDescription": {
-    "message": "选择服务集成，了解它们为影院模式添加的功能。可用功能取决于视频和服务。"
+    "message": "选择服务集成，了解它们为剧场模式添加的功能。可用功能取决于视频和服务。"
   },
   "rteAll": {
     "message": "所有服务"
@@ -989,7 +989,7 @@
     "message": "播放列表"
   },
   "rteCapabilityLauncher": {
-    "message": "影院模式按钮"
+    "message": "视频启动按钮"
   },
   "rteNoteLauncher": {
     "message": "原生播放器工具栏提供可用位置时，将按钮放在工具栏中；否则显示在视频上方。"

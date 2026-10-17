@@ -510,7 +510,7 @@
     "message": "إعادة التعيين إلى الافتراضي"
   },
   "resetToDefaults": {
-    "message": "إعادة تعيين الإعدادات الافتراضية"
+    "message": "استعادة الإعدادات الافتراضية"
   },
   "copyrightHtml": {
     "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. صادر بموجب <a href=\"#about\">ترخيص MIT</a>."
@@ -612,7 +612,7 @@
     "message": "الخلفية"
   },
   "subtitleOpacity": {
-    "message": "التعتيم"
+    "message": "العتامة"
   },
   "subtitlePreviewSample": {
     "message": "نموذج ترجمة"
@@ -680,7 +680,7 @@
     "message": "هل تريد تفعيل الزر على الفيديو؟"
   },
   "videoActivatorPromptDescription": {
-    "message": "تم إيقاف AutoTheater. هل تريد إظهار زر صغير على الفيديوهات للدخول إلى وضع السينما يدويًا؟ يمكنك تغيير ذلك لاحقًا من الإعدادات ← الميزات ← زر على الفيديو."
+    "message": "تم إيقاف AutoTheater. هل تريد إظهار زر صغير على الفيديوهات للدخول إلى وضع المسرح يدويًا؟ يمكنك تغيير ذلك لاحقًا من الإعدادات ← الميزات ← زر على الفيديو."
   },
   "videoActivatorTitle": {
     "message": "زر على الفيديو"
@@ -843,7 +843,7 @@
     "message": "حول"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "مشغّل واحد يحكمها جميعًا."
   },
   "aboutVersion": {
     "message": "الإصدار: $version$",
@@ -989,7 +989,7 @@
     "message": "قوائم التشغيل"
   },
   "rteCapabilityLauncher": {
-    "message": "زر وضع المسرح"
+    "message": "زر على الفيديو"
   },
   "rteNoteLauncher": {
     "message": "يستخدم شريط أدوات المشغّل الأصلي عند توفر موضع للزر، وإلا يظهر الزر فوق الفيديو."
@@ -1007,7 +1007,7 @@
     "message": "مسح عامل التصفية"
   },
   "rteShown": {
-    "message": "عرض $count$ من $total$ خدمات",
+    "message": "الخدمات المعروضة: $count$ من $total$",
     "placeholders": {
       "count": {
         "content": "$1"

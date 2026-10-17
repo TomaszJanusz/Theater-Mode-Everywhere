@@ -220,7 +220,7 @@
     "message": "Szary"
   },
   "useAccentColor": {
-    "message": "Użyj koloru $COLOR$ jako akcentu",
+    "message": "Ustaw kolor akcentu: $COLOR$",
     "placeholders": {
       "color": {
         "content": "$1"
@@ -843,7 +843,7 @@
     "message": "O rozszerzeniu"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "Jeden odtwarzacz, by wszystkimi rządzić."
   },
   "aboutVersion": {
     "message": "wersja: $version$",
@@ -989,7 +989,7 @@
     "message": "Playlisty"
   },
   "rteCapabilityLauncher": {
-    "message": "Przycisk kina"
+    "message": "Przycisk na wideo"
   },
   "rteNoteLauncher": {
     "message": "Korzysta z paska odtwarzacza, gdy dostępne jest miejsce na przycisk; w przeciwnym razie wyświetla przycisk na wideo."
