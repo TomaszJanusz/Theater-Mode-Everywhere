@@ -317,7 +317,9 @@
   top: 0 !important;
   width: 2px !important;
   height: 100% !important;
-  background: var(--appearance-marker, rgba(255, 255, 255, 0.85)) !important;
+  /* Cuts the track in the bar's own colour. Normal mode's plate is translucent, so its solid
+     base color stands in; reduced-transparency and high contrast already make it opaque. */
+  background: var(--appearance-surface, var(--bg-color, #09090b)) !important;
   transform: translateX(-50%) !important;
 }
 
@@ -2895,9 +2897,11 @@ button.theater-time-end:hover {
 
 .theater-scrubber-segment {
   /* The shared accent foreground separates even an exact color match with played progress.
-     A border also survives forced colors, where box shadows are removed. */
+     A border also survives forced colors, where box shadows are removed. Only the inline edges
+     are drawn so the bar keeps exactly the scrubber track's height. */
   box-sizing: border-box;
-  border: 1px solid var(--accent-text, #ffffff);
+  border: 0 solid var(--accent-text, #ffffff);
+  border-inline-width: 1px;
   position: absolute;
   top: 0;
   height: 100%;
