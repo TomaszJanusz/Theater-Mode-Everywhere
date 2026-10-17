@@ -19,7 +19,7 @@
     "resource:audit": "tsx tools/cpu-suite/resource-suite.ts"
   },
   "author": "Tomasz Janusz",
-  "license": "ISC",
+  "license": "MIT",
   "packageManager": "pnpm@11.5.1",
   "devDependencies": {
     "@types/archiver": "^6.0.2",
