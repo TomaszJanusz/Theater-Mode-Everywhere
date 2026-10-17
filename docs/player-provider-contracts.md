@@ -87,8 +87,8 @@ repeated refreshes, which therefore need no coalescing. Once it lapses the notic
 consuming the visit and the countdown restarts from the full 5 s when playback resumes. Definitive
 changes skip the grace: Click/Escape, a new content identity or leaving the watch URL, a disabled
 setting or blocked policy, theater active, fullscreen, a transition, Skip countdown and disposal.
-While the notice shows, the same UI layer mounts a non-interactive scrim (`ui/auto-theater-scrim.ts`)
-that dims the loading host page around the video's box. It is owned by the notice's lifecycle, so the
+The notice can also mount a non-interactive scrim (`ui/auto-theater-scrim.ts`; currently switched off by
+`AUTO_THEATER_SCRIM_ENABLED`, so the page is not dimmed). When enabled it dims the loading host page around the video's box. It is owned by the notice's lifecycle, so the
 grace keeps it and every close removes it: cancellation fades it out, entry drops it in the same task
 (the theater video already covers the viewport), and Reduce motion removes it without a fade. The cut-out
 is re-read only on resize, scroll and video resize. The digit is the full seconds left (4, 3, 2, 1, 0; the first frame shows 4), so 0 is the last second, in which the ring exits before entry. Click or Escape cancels it and consumes the visit.

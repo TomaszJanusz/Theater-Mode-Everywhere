@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
-    contents: "export { showAutoTheaterNotice } from './ui/auto-theater-notice'; export { setPlayerUiCss } from './ui/root';",
+    contents: "export { showAutoTheaterNotice } from './ui/auto-theater-notice'; export { setAutoTheaterScrimEnabledForTests } from './ui/auto-theater-scrim'; export { setPlayerUiCss } from './ui/root';",
     resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
   },
   bundle: true, write: false, format: 'iife', globalName: 'ScrimTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
@@ -22,6 +22,7 @@ declare global {
       showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number, ringTurn: undefined,
         scrim: { video(): HTMLVideoElement | null; theaterActive(): boolean }): () => void;
       setPlayerUiCss(css: string): void;
+      setAutoTheaterScrimEnabledForTests(enabled: boolean): void;
     };
     scrimHide: () => void;
     scrimTheater: boolean;
@@ -37,6 +38,7 @@ async function mountScrim(page: Page): Promise<void> {
     + '<video id="v" style="position:absolute;left:100px;top:80px;width:320px;height:180px"></video></body>');
   await page.addScriptTag({ content: BUNDLE });
   await page.evaluate(css => {
+    window.ScrimTest.setAutoTheaterScrimEnabledForTests(true);
     window.ScrimTest.setPlayerUiCss(css);
     window.scrimTheater = false;
     window.cancelled = 0;
