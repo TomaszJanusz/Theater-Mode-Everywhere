@@ -1,0 +1,41 @@
+import { execFileSync } from 'node:child_process';
+import { appendFileSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+
+// Only reviewed prose is exempt. LICENSE and PRIVACY.md are bundled into Options;
+// CHANGELOG.md and docs/building.md are release inputs. Unknown paths run CI.
+export function shouldRunChecks(files) {
+  if (!Array.isArray(files) || files.length === 0) return true;
+  return files.some(file => {
+    if (typeof file !== 'string' || !file || file.split('/').some(part => !part || part === '.' || part === '..')) return true;
+    if (['README.md', 'AGENTS.md', 'CLAUDE.md'].includes(file)) return false;
+    return !(file.startsWith('docs/') && file.endsWith('.md') && file !== 'docs/building.md');
+  });
+}
+
+export function checksForEvent(eventName, event, git = execFileSync) {
+  if (eventName !== 'pull_request') return true;
+  try {
+    const base = event?.pull_request?.base?.sha;
+    if (typeof base !== 'string' || !/^[a-f0-9]{40}$/.test(base)) return true;
+    // Checkout fetches full history, including the PR merge commit and base.
+    // Disable rename detection so moving a code input into docs cannot hide it.
+    const diff = git('git', ['diff', '--name-only', '--no-renames', '-z', `${base}...HEAD`, '--'], { encoding: 'utf8' });
+    if (typeof diff !== 'string' || !diff.endsWith('\0')) return true;
+    return shouldRunChecks(diff.slice(0, -1).split('\0'));
+  } catch {
+    return true;
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  let run = true;
+  try {
+    const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+    run = checksForEvent(process.env.GITHUB_EVENT_NAME, event);
+  } catch {
+    console.warn('Could not determine changed files; running all checks.');
+  }
+  console.log(run ? 'Running all CI checks.' : 'Only reviewed documentation changed; skipping expensive CI steps.');
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `run=${run}\n`);
+}

@@ -37,3 +37,11 @@ CI=true TME_BUILD=diagnostic pnpm build
 ## Source archive
 
 `node_modules/` and `dist/` are gitignored, so they are not in the archive. Install dependencies from `pnpm-lock.yaml`. The release workflow refuses to upload the archive when this file is missing.
+
+## CI for documentation changes
+
+The `check` job always reports on pull requests. [The classifier](../scripts/ci-changes.mjs) skips dependency installation, typechecking, tests, builds and smoke checks only when every changed path is `README.md`, `AGENTS.md`, `CLAUDE.md`, or Markdown under `docs/` except this file. Other root Markdown files and non-Markdown documentation assets conservatively run everything. Keep the allowlist in sync if tests or build scripts start reading an exempt document.
+
+`LICENSE` and `PRIVACY.md` are bundled into Options; `CHANGELOG.md` feeds release notes; this file is checked before the Mozilla source upload. They always run full CI, as do store listings (validated against extension locales), locales, manifests, scripts, workflow files, dependency files and unknown paths. The PR diff uses full Git history and includes both paths of renames. Missing metadata, empty diffs or classification errors run everything. Pushes to `main` always run everything.
+
+Do not filter the entire CI workflow by path: required checks would remain pending. CodeQL retains its existing advisory workflow and path filters: a no-op `Analyze` job cannot establish that the aggregate code-scanning result succeeds without uploaded analysis. The current repository rulesets require no status checks. Revisit those filters before requiring CodeQL checks. Release and privacy publishing workflows retain their existing triggers.
