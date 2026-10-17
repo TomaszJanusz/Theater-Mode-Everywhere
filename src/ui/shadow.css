@@ -2251,6 +2251,12 @@ button.theater-time-end:hover {
   text-align: right !important;
 }
 
+/* The box is anchored to the corner and its width morphs, so the content hugs the same inline end its
+   text aligns to. Left at flex-start it would sit at the opposite edge mid-morph and jump when it settles. */
+.theater-everywhere-caption-hud.status-hud:not(.theater-auto-notice) {
+  justify-content: flex-end !important;
+}
+
 .caption-hud-content {
   display: inline-flex !important;
   width: fit-content !important;
