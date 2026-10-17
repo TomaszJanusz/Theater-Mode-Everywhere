@@ -1586,7 +1586,14 @@ export function createControls(
       mediaFeatures.setHeatmapHover(null);
       updatePlaybackChrome();
       updateCaptionDock();
-      setBuffering(true, true);
+      // A paused video that was just reset is not loading anything the viewer
+      // asked for; a spinner would hang until the next play.
+      if (video.paused) {
+        setBuffering(false);
+      } else {
+        setBuffering(true, true);
+        armBufferingFailsafe();
+      }
     };
     const onPageMediaChange = () => {
       fullscreenRecovery.invalidate();
@@ -1621,7 +1628,9 @@ export function createControls(
       if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
       bufferingFailsafe = window.setTimeout(() => {
         bufferingFailsafe = null;
-        if (requestedSeek !== null || !video.paused || readProviderClock(native) !== null) {
+        // A paused native seek still in flight is real loading; otherwise nothing is left to wait for.
+        const pausedSeeking = requestedSeek === null && video.paused && video.seeking && readProviderClock(native) === null;
+        if (!pausedSeeking) {
           requestedSeek = null;
           setBuffering(false);
         }
