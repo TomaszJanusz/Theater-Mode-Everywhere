@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "オフ"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "このサイトでは利用できません"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "利用できません: このサービスでは Rich Theater Experience がオフです"
+  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experienceが有効な場合、対応サービスの視聴ページでメイン動画の再生が始まるとシアターモードに切り替えます。"
   },

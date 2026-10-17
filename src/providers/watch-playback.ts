@@ -1,5 +1,5 @@
 import { createSessionId } from '../protocol/frame-messages';
-import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
+import { mediaProviderIntegrationEnabled, type MediaProviderFlags, type MediaProviderId } from '../media-features/provider-flags';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { PROVIDER_DEFINITIONS } from './registry';
 
@@ -35,6 +35,17 @@ export function readProviderWatchPage(url: URL): ProviderWatchPage | null {
     if (playback && identity) return { provider: definition.id, identity, playback };
   }
   return null;
+}
+
+export type AutoTheaterAvailability = 'available' | 'unsupported' | 'integrationOff';
+
+/** Mirrors the gates `readProviderWatchPage` and the runtime apply, without needing a watch URL, so menus can explain them. */
+export function autoTheaterAvailability(hostname: string, flags: MediaProviderFlags, topLevel: boolean): AutoTheaterAvailability {
+  if (!topLevel) return 'unsupported';
+  const providers = PROVIDER_DEFINITIONS.filter(definition =>
+    definition.id !== 'native' && definition.watchPlayback && definition.matchesHost(hostname));
+  if (!providers.length) return 'unsupported';
+  return providers.some(definition => flags[definition.id as MediaProviderId]) ? 'available' : 'integrationOff';
 }
 
 export function observeProviderWatchPlaybackChanges(onChange: () => void): () => void {

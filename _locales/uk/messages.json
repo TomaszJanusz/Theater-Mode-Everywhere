@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "Вимк."
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "Недоступно на цьому сайті"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "Недоступно: Rich Theater Experience вимкнено для цього сервісу"
+  },
   "autoEnterTheaterDescription": {
     "message": "Вмикати режим кінотеатру, коли основне відео починає відтворюватися на сторінках перегляду підтримуваних сервісів з увімкненим Rich Theater Experience."
   },

@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "Aus"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "Auf dieser Website nicht verfügbar"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "Nicht verfügbar: Rich Theater Experience ist für diesen Dienst aus"
+  },
   "autoEnterTheaterDescription": {
     "message": "Aktiviere den Kinomodus, wenn das Hauptvideo auf einer Wiedergabeseite eines unterstützten Dienstes bei aktiviertem Rich Theater Experience startet."
   },

@@ -43,15 +43,16 @@ async function storage(context: BrowserContext, saved: Saved): Promise<void> {
     localStorage.setItem('whatsNewAcknowledgedId', ${JSON.stringify(WHATS_NEW_RELEASE.id)});` });
 }
 
-async function open(page: Page, surface: 'options' | 'player'): Promise<void> {
+// AutoTheater is only available where a provider declares watch playback.
+async function open(page: Page, surface: 'options' | 'player', host = surface === 'player' ? 'vimeo.com' : 'settings.test'): Promise<void> {
   page.setDefaultTimeout(8_000);
   const html = surface === 'options'
     ? readFileSync(path.join(ROOT, 'options/options.html'), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '')
     : '<html><body><video src="/vod.webm" muted style="width:640px;height:360px"></video></body></html>';
-  await page.route('http://settings.test/**', route => route.fulfill(route.request().url().endsWith('.webm')
+  await page.route(`https://${host}/**`, route => route.fulfill(route.request().url().endsWith('.webm')
     ? { contentType: 'video/webm', body: readFileSync(path.join(ROOT, 'test/fixtures/vod.webm')) }
     : { contentType: 'text/html', body: html }));
-  await page.goto('http://settings.test/');
+  await page.goto(`https://${host}/`);
   await page.addStyleTag({ content: readStylesheet(path.join(ROOT, surface === 'options' ? 'options/options.css' : 'src/content.css')) });
   await page.addScriptTag({ content: (await bundles)[surface === 'options' ? 0 : 1] });
   if (surface === 'options') {
@@ -67,7 +68,7 @@ async function open(page: Page, surface: 'options' | 'player'): Promise<void> {
     await page.locator('video').evaluate(async (video: HTMLVideoElement) => { await video.play(); video.pause(); });
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
-    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.auto-theater-btn')?.getAttribute('aria-pressed') === 'true');
+    await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.auto-theater-btn')?.matches('[aria-pressed="true"], [aria-disabled="true"]'));
   }
 }
 
@@ -80,7 +81,7 @@ for (const engine of [chromium, firefox]) {
   for (const surface of ['options', 'player'] as const) {
     it(`${engine.name()}: ${surface} offers the launcher once, respects No and updates other tabs after Yes`, { timeout: 60_000 }, async t => {
       const browser = await engine.launch(); ownTestBrowser(t, browser);
-      const context = await browser.newContext({ reducedMotion: 'reduce' });
+      const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
       const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
       await storage(context, saved);
       const page = await context.newPage();
@@ -128,7 +129,7 @@ for (const engine of [chromium, firefox]) {
 
   it(`${engine.name()}: cancels stale offers and treats Escape as a remembered No`, { timeout: 60_000 }, async t => {
     const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
     const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
     await storage(context, saved);
     const page = await context.newPage();
@@ -161,6 +162,43 @@ for (const engine of [chromium, firefox]) {
     await page.keyboard.press('Escape');
     await page.waitForFunction(async () => (await chrome.storage.sync.get('videoActivatorPromptAnswer')).videoActivatorPromptAnswer === false);
     assert.equal(saved.videoActivator, false);
+    await browser.close();
+  });
+}
+
+for (const engine of [chromium, firefox]) {
+  it(`${engine.name()}: player menu shows AutoTheater unavailable off supported services and live when Rich Theater Experience toggles`, { timeout: 60_000 }, async t => {
+    const browser = await engine.launch(); ownTestBrowser(t, browser);
+    const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
+    const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
+    await storage(context, saved);
+    const row = (page: Page) => page.locator('.auto-theater-btn');
+    const state = (page: Page) => row(page).evaluate((button: HTMLElement) => ({
+      disabled: button.getAttribute('aria-disabled'), pressed: button.getAttribute('aria-pressed'), label: button.getAttribute('aria-label') }));
+
+    const generic = await context.newPage();
+    await open(generic, 'player', 'generic.test');
+    await generic.locator('.player-settings-btn').click();
+    await generic.screenshot({ path: `/tmp/te-autotheater-unsupported-${engine.name()}.png` });
+    assert.deepEqual(await state(generic), { disabled: 'true', pressed: 'false', label: 'AutoTheater: Unavailable on this site' });
+    // Visible and focusable, but activating it neither changes the saved preference nor prompts.
+    await row(generic).focus();
+    await row(generic).evaluate((button: HTMLElement) => button.click());
+    assert.equal(await generic.locator('.te-dialog-btn-primary').count(), 0);
+    assert.equal(saved.autoEnterTheater, true);
+
+    const supported = await context.newPage();
+    await open(supported, 'player');
+    assert.equal((await state(supported)).disabled, 'false');
+    await supported.locator('.player-settings-btn').click();
+    await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: false }));
+    await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.auto-theater-btn')?.getAttribute('aria-disabled') === 'true');
+    assert.match((await state(supported)).label!, /Rich Theater Experience is off/);
+    await supported.screenshot({ path: `/tmp/te-autotheater-integration-off-${engine.name()}.png` });
+    await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: true }));
+    await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.auto-theater-btn')?.getAttribute('aria-disabled') === 'false');
     await browser.close();
   });
 }

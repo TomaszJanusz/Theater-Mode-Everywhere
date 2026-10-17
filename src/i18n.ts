@@ -62,6 +62,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   videoActivatorDescription: "Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface.",
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
+  autoEnterTheaterUnsupported: "Unavailable on this site",
+  autoEnterTheaterIntegrationOff: "Unavailable: Rich Theater Experience is off for this service",
   autoEnterTheaterDescription: "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.",
   keepControlsVisibleTitle: "Always show controls",
   keepControlsVisibleDescription: "Keep the playback controls and progress bar visible in theater mode. The title and cursor still hide when idle.",

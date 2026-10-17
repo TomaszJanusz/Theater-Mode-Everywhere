@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "إيقاف"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "غير متاح على هذا الموقع"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "غير متاح: Rich Theater Experience متوقف لهذه الخدمة"
+  },
   "autoEnterTheaterDescription": {
     "message": "ادخل إلى وضع المسرح عندما يبدأ تشغيل الفيديو الرئيسي على صفحات المشاهدة في الخدمات المدعومة مع تفعيل Rich Theater Experience."
   },

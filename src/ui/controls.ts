@@ -6,6 +6,7 @@ import { observeProviderClock, readProviderClock } from '../providers/timeline';
 import { captionPreferenceHost } from '../media-features/caption-preference';
 import { MediaFeaturesController } from '../media-features/controller';
 import { observeProviderMediaChanges, refreshProviderAfterElementReset } from '../providers/media-events';
+import { autoTheaterAvailability } from '../providers/watch-playback';
 import { createServiceActions } from '../providers/service-actions';
 import { PREVIEW_DISPLAY_WIDTH } from '../media-features/preview-display';
 import { DisposableScope } from '../core/disposable-scope';
@@ -48,6 +49,8 @@ export interface ExtendedHTMLDivElement extends HTMLDivElement {
   /** Called as the bar becomes visible, to present the current playback state. */
   _syncPlaybackChrome?: () => void;
   _mediaFeatures?: MediaFeaturesController;
+  /** Re-reads provider availability for the AutoTheater row after Rich Theater Experience flags change. */
+  _syncAutoTheaterAvailability?: () => void;
 }
 
 export function createControls(
@@ -1092,15 +1095,25 @@ export function createControls(
     setIcon(autoTheaterBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="m10 8 6 4-6 4z"/></svg>`);
     autoTheaterBtn.addEventListener('click', event => {
       event.stopPropagation();
+      // aria-disabled keeps the row focusable so its reason stays discoverable.
+      if (autoTheaterBtn.getAttribute('aria-disabled') === 'true') return;
       executeCommand({ type: 'TOGGLE_AUTO_THEATER' });
     });
     const autoTheaterRow = settings.addRow(autoTheaterBtn, t('autoEnterTheaterTitle'));
     const updateAutoTheaterRow = () => {
-      autoTheaterBtn.classList.toggle('active', ui().autoEnterTheater);
-      autoTheaterBtn.setAttribute('aria-pressed', String(ui().autoEnterTheater));
-      autoTheaterRow.update('', t(ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'));
+      const availability = autoTheaterAvailability(window.location.hostname, refs.providerFlags, window === window.top);
+      const unavailable = availability !== 'available';
+      const on = ui().autoEnterTheater && !unavailable;
+      autoTheaterBtn.classList.toggle('active', on);
+      autoTheaterBtn.classList.toggle('is-unavailable', unavailable);
+      autoTheaterBtn.setAttribute('aria-pressed', String(on));
+      autoTheaterBtn.setAttribute('aria-disabled', String(unavailable));
+      autoTheaterRow.update('', t(unavailable
+        ? (availability === 'integrationOff' ? 'autoEnterTheaterIntegrationOff' : 'autoEnterTheaterUnsupported')
+        : ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'));
     };
     updateAutoTheaterRow();
+    wrapper._syncAutoTheaterAvailability = updateAutoTheaterRow;
     controlsScope.add(ctx.uiStore.subscribe(updateAutoTheaterRow));
 
     const extensionSettingsBtn = document.createElement('button');

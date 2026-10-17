@@ -697,6 +697,12 @@
   "autoEnterTheaterOff": {
     "message": "Não"
   },
+  "autoEnterTheaterUnsupported": {
+    "message": "Indisponível neste site"
+  },
+  "autoEnterTheaterIntegrationOff": {
+    "message": "Indisponível: o Rich Theater Experience está desativado para este serviço"
+  },
   "autoEnterTheaterDescription": {
     "message": "Ative o modo teatro quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
   },
