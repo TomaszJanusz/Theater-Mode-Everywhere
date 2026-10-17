@@ -190,7 +190,8 @@ export function createPlayerSettings(
             const reserve = document.createElement('span');
             reserve.className = 'theater-settings-reserve';
             reserve.setAttribute('aria-hidden', 'true');
-            reserve.textContent = other;
+            // Painted from the attribute so the reserve never joins the value's text content.
+            reserve.dataset.reserve = other;
             detail.append(reserve);
           }
         }

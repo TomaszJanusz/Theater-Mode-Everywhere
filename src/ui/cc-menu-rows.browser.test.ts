@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import type { Browser } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
 
+const require = createRequire(import.meta.url);
+const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
+const BUNDLE = esbuild.buildSync({
+  stdin: { contents: "export { MediaFeaturesController } from './media-features/controller';", resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts' },
+  bundle: true, write: false, format: 'iife', globalName: 'CcMenu', platform: 'browser', target: 'es2022', logLevel: 'silent'
+}).outputFiles[0].text;
 const SRC = new URL('../', import.meta.url).pathname;
 const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const LOCALES_DIR = path.join(SRC, '../_locales');
@@ -95,6 +102,54 @@ describe('caption menu rows stay on one line', () => {
           }
           await page.close();
         }
+      });
+    });
+  }
+
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`truncates long host track names rendered by the controller in ${engine}`, { timeout: 120_000 }, async () => {
+      await withBrowser(engine, async browser => {
+        const page = await browser.newPage({ viewport: { width: 360, height: 640 } });
+        await page.setContent('<body style="margin:0"></body>');
+        await page.addStyleTag({ content: UI_CSS });
+        await page.evaluate('window.__name = value => value');
+        await page.addScriptTag({ content: BUNDLE });
+        const rows = await page.evaluate(({ tracks, messages }) => {
+          document.body.innerHTML = '<div class="theater-controls-wrapper"><div style="display:flex;justify-content:flex-end"><div class="theater-cc-menu-host theater-menu-anchored is-open"><div class="theater-cc-menu visible"></div></div></div></div><div id="track"></div>';
+          const noop = () => {};
+          const controller = new (window as any).CcMenu.MediaFeaturesController({
+            video: document.createElement('video'),
+            ccBtn: document.createElement('button'),
+            ccMenu: document.querySelector('.theater-cc-menu'),
+            scrubberTrack: document.getElementById('track'),
+            t: (key: string, ...subs: string[]) => (messages[key] ?? key).replace('$1', subs[0] ?? ''),
+            renderer: { setCues: noop, update: noop, setStyle: noop, setMaxLines: () => false, dispose: noop },
+            adapter: {
+              probe: async () => ({ captions: true, chapters: false, previews: false }),
+              listCaptionTracks: async () => [], getChapters: async () => [], dispose: noop,
+              activateCaptionTrack: async () => ({ status: 'off', delivery: 'none', cues: [] })
+            }
+          });
+          controller.tracks = tracks.map((label: string, index: number) => ({ id: `t${index}`, label, language: 'en', delivery: 'host' }));
+          controller.renderCcMenu();
+          return [...document.querySelectorAll<HTMLElement>('.theater-cc-menu-label')].map(label => ({
+            text: label.textContent, title: label.title,
+            overflowing: label.scrollWidth > label.clientWidth,
+            ellipsis: getComputedStyle(label).textOverflow === 'ellipsis',
+            height: Math.round(label.getBoundingClientRect().height)
+          }));
+        }, { tracks: TRACKS, messages: english });
+        assert.equal(rows.length, TRACKS.length + 1);
+        for (const row of rows) {
+          assert.equal(row.title, row.text);
+          assert.ok(row.ellipsis, `"${row.text}" lacks text-overflow: ellipsis`);
+        }
+        for (const long of rows.filter(row => TRACKS.slice(1).includes(row.text ?? ''))) {
+          assert.ok(long.overflowing, `"${long.text}" is not truncated`);
+          assert.ok(long.height <= 30, `"${long.text}" wraps`);
+        }
+        assert.equal(rows.find(row => row.text === 'English')?.overflowing, false);
+        await page.close();
       });
     });
   }

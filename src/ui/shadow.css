@@ -1341,6 +1341,7 @@ button.theater-time-end:hover {
 .theater-settings-detail > * { grid-area: 1 / 1 !important; }
 /* Hidden twins of the row's other values: the widest one fixes the width, so a toggle never resizes the menu. */
 .theater-settings-reserve { visibility: hidden !important; }
+.theater-settings-reserve::after { content: attr(data-reserve); }
 .theater-settings-row.extension-settings-btn {
   position: relative !important;
   margin-top: 8px !important;

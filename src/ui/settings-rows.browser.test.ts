@@ -14,6 +14,9 @@ const BUNDLE = esbuild.buildSync({
   stdin: {
     contents: [
       "export { createPlayerSettings } from './ui/player-settings';",
+      "export { createControls } from './ui/controls';",
+      "export { PlayerUiStore } from './ui/store';",
+      "export { createChromeRefs, createPlayerChromeContext } from './ui/runtime-context';",
       "export { DisposableScope } from './core/disposable-scope';",
       "export { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from './audio-settings';"
     ].join('\n'),
@@ -133,61 +136,75 @@ describe('settings menu rows stay on one line', () => {
   }
 
   for (const engine of ['chromium', 'firefox'] as const) {
-    it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 120_000 }, async () => {
+    it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 180_000 }, async () => {
       await withBrowser(engine, async browser => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
           const page = await browser.newPage({ viewport });
+          const errors: string[] = [];
+          page.on('pageerror', error => errors.push(error.message));
           await page.setContent('<body style="margin:0"></body>');
           await page.addStyleTag({ content: UI_CSS });
           await page.evaluate('window.__name = value => value');
           await page.addScriptTag({ content: BUNDLE });
           for (const locale of LOCALES) {
             const messages = { ...english, ...catalog(locale) };
-            // Each toggleable row with every state it can show, as controls.ts wires them.
-            const toggles = [
-              ...ROWS.filter(row => row.values.length > 1 || row.label === 'keepControlsVisibleTitle'),
-              { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff'] },
-              { label: 'volumeBoostLabel', values: ['volumeBoostOn', 'volumeBoostOff'] },
-              { label: 'voiceBoostLabel', values: ['voiceBoostOff', 'voiceBoostLight', 'voiceBoostStrong'] },
-              { label: 'volumeLevelingLabel', values: ['volumeLevelingOff', 'volumeLevelingLight', 'volumeLevelingStrong'] },
-              { label: 'bassLabel', values: ['bassLess', 'bassOriginal', 'bassMore'] }
-            ].map(row => row.label === 'keepControlsVisibleTitle'
-              ? { ...row, values: ['controlsVisibilityOn', 'controlsVisibilityOff'] }
-              : row).map(row => ({ text: messages[row.label], values: row.values.map(key => messages[key]) }));
-            const widths = await page.evaluate(({ toggles, messages, dir }) => {
+            // Real createControls wiring: the store actions below drive each toggle row's own update.
+            const widths = await page.evaluate(({ messages, dir }) => {
               document.body.replaceChildren();
               document.body.dir = dir;
               const mount = document.createElement('div');
               mount.style.cssText = 'position:fixed;inset-inline-end:12px;bottom:80px;width:32px';
               document.body.append(mount);
               const api = (window as any).SettingsRows;
-              const settings = api.createPlayerSettings({
-                t: (key: string) => messages[key] ?? key,
-                ui: () => ({ featureHighlights: { installed: '2.0', seenThrough: '1.0', enabled: true, now: 0 } }),
-                uiStore: { subscribe: () => () => {} },
-                actions: { setIcon(element: HTMLElement, svg: string) { element.innerHTML = svg; }, showToolbar() {}, updateCaptionDock() {} },
-                paintOverlay() {}
-              }, new api.DisposableScope());
-              mount.append(settings.container);
-              const rows = toggles.map((toggle: { text: string; values: string[] }) => {
-                const button = document.createElement('button');
-                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
-                return { row: settings.addRow(button, toggle.text, 'player'), values: toggle.values };
-              });
-              settings.button.click();
-              const menu = settings.panel as HTMLElement;
-              const widths: number[] = [];
-              for (const { row, values } of rows) {
-                for (const value of values) {
-                  row.update('Shift+A', value, values);
-                  widths.push(Math.round(menu.getBoundingClientRect().width * 100) / 100);
-                }
+              const video = document.createElement('video');
+              document.body.append(video);
+              const store = new api.PlayerUiStore();
+              const refs = api.createChromeRefs();
+              const noop = () => {};
+              const actions = new Proxy({
+                setIcon(element: HTMLElement, svg: string) { element.innerHTML = svg; },
+                escapeHtml: (value: string) => value,
+                findAllVideosDeep: () => []
+              } as Record<string, unknown>, { get: (target, key: string) => target[key] ?? noop });
+              const ctx = {
+                session: { element: video, currentEpoch: 1, isExiting: false, isIdle: false, publishSnapshot: noop },
+                uiStore: store, frames: {}, refs, ui: () => store.getState(),
+                t: (key: string, ...subs: string[]) => (messages[key] ?? key).replace('$1', subs[0] ?? ''),
+                queryPlayerUi: (selector: string) => document.querySelector(selector),
+                queryPlayerUiAll: (selector: string) => [...document.querySelectorAll(selector)],
+                mountPlayerUi: (element: HTMLElement) => mount.appendChild(element),
+                destroyPlayerUi: noop,
+                eventPathIncludes: (event: Event, node: Node | null) => !!node && event.composedPath().includes(node),
+                eventPathMatches: () => false,
+                paintOverlay: noop,
+                mediaHasSource: () => true,
+                requestVideoPlay: noop,
+                actions
+              };
+              const controls = api.createControls(ctx, noop);
+              controls.createCustomControls(video);
+              const menu = document.querySelector<HTMLElement>('#theater-player-settings')!;
+              (menu.parentElement!.querySelector('button') as HTMLElement).click();
+              const states = (action: string, values: unknown[]) => values.map(value => ({ type: action, value }));
+              const sequence = [
+                ...states('SET_VIDEO_FIT', ['contain', 'cover', 'fill', 'contain']),
+                ...states('SET_PICTURE_ALIGN', ['top', 'center']),
+                ...states('SET_KEEP_CONTROLS_VISIBLE', [true, false]),
+                ...states('SET_AUTO_ENTER_THEATER', [true, false]),
+                ...states('SET_VOLUME_BOOST', [true, false]),
+                ...['light', 'strong', 'off'].map(level => ({ type: 'SET_AUDIO', value: { voice: level, leveling: level, bass: level === 'light' ? 'less' : level === 'strong' ? 'more' : 'original' } }))
+              ];
+              const widths = [Math.round(menu.getBoundingClientRect().width * 100) / 100];
+              for (const action of sequence) {
+                store.dispatch(action);
+                widths.push(Math.round(menu.getBoundingClientRect().width * 100) / 100);
               }
               return widths;
-            }, { toggles, messages, dir: locale === 'ar' ? 'rtl' : 'ltr' });
+            }, { messages, dir: locale === 'ar' ? 'rtl' : 'ltr' });
             assert.ok(widths.length > 10);
             assert.deepEqual([...new Set(widths)].length, 1, `${engine} ${locale} ${viewport.width}px: menu width changed ${[...new Set(widths)]}`);
           }
+          assert.deepEqual(errors, []);
           await page.close();
         }
       });
