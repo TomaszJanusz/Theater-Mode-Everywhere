@@ -105,7 +105,12 @@ YouTube inserts immediately before the autoplay control in the right cluster,
 without moving any existing controls, including other extensions' buttons, and
 declares the slot `persistent`. A missing anchor falls back to the overlay. The native `ytp-button` class supplies
 control color and the monochrome mark uses `currentColor` with a transparent
-play cutout and no background. Generic overlay slots remain frozen for each
+play cutout and no background. Generic overlays use the top-left slot with a 12 px
+inset, regardless of page overlays or native controls. Dynamic placement is
+intentionally retained behind `ACTIVATOR_DYNAMIC_PLACEMENT` in
+`ui/video-activator.ts` for possible reuse; it is disabled by default and the pure
+placement algorithm remains independent of that runtime flag. Provider slots
+still take precedence. Generic overlay slots remain frozen for each
 appearance despite page chrome mutations. A changed video rectangle or viewport
 removes and remounts the button rather than moving the mounted control. Playback
 hides the overlay launcher, except within `ACTIVATOR_PLAY_GRACE_MS` of the page load

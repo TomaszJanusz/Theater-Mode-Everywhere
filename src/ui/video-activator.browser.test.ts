@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
-    contents: "export { bootstrapPlayerRuntime } from './ui/player-runtime'; export { setPlayerUiCss } from './ui/root'; export { showAutoTheaterNotice } from './ui/auto-theater-notice';",
+    contents: "export { setActivatorDynamicPlacementForTests } from './ui/video-activator'; export { bootstrapPlayerRuntime } from './ui/player-runtime'; export { setPlayerUiCss } from './ui/root'; export { showAutoTheaterNotice } from './ui/auto-theater-notice';",
     resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
   },
   bundle: true, write: false, format: 'iife', globalName: 'ActivatorTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
@@ -22,6 +22,7 @@ declare global {
   interface Window {
     ActivatorTest: {
       bootstrapPlayerRuntime(): void;
+      setActivatorDynamicPlacementForTests(enabled: boolean): void;
       setPlayerUiCss(css: string): void;
       showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number): () => void;
     };
@@ -45,7 +46,7 @@ const PAGE = `<style>
 <video id="small"></video>
 <p style="position:absolute;top:600px">Outside</p>`;
 
-async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE, host = 'activator.test'): Promise<void> {
+async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAGE, host = 'activator.test', dynamicPlacement = false): Promise<void> {
   await page.addInitScript(`window.__name = target => target; window.storageListeners = []; window.pointeroverListeners = 0;
     window.activatorPointerListeners = 0; window.activatorPointerRegistrations = 0;
     const perfNow = performance.now.bind(performance);
@@ -72,10 +73,11 @@ async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAG
   }, MEDIA);
   await page.waitForFunction(() => Array.from(document.querySelectorAll('video')).every(video => video.readyState >= 1));
   await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(css => {
+  await page.evaluate(({ css, dynamicPlacement }) => {
+    if (dynamicPlacement) window.ActivatorTest.setActivatorDynamicPlacementForTests(true);
     window.ActivatorTest.setPlayerUiCss(css);
     window.ActivatorTest.bootstrapPlayerRuntime();
-  }, CSS);
+  }, { css: CSS, dynamicPlacement });
   await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
 }
 
@@ -97,8 +99,8 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 
 for (const engine of ['chromium', 'firefox'] as const) {
   const launch = async (t: Parameters<typeof ownTestBrowser>[0], {
-    stored, html = PAGE, host = 'activator.test', freezeClock = false, pageAge = 60_000
-  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; pageAge?: number } = {}) => {
+    stored, html = PAGE, host = 'activator.test', freezeClock = false, pageAge = 60_000, dynamicPlacement = false
+  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; pageAge?: number; dynamicPlacement?: boolean } = {}) => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
@@ -112,25 +114,51 @@ for (const engine of ['chromium', 'firefox'] as const) {
       // install() alone still advances with wall time between Playwright commands.
       await page.clock.pauseAt(new Date(time.getTime() + 60_000));
     }
-    await boot(page, stored, html, host);
+    await boot(page, stored, html, host, dynamicPlacement);
     return page;
   };
 
-  it(`${engine}: activator appears in the top-right corner on hover and leaves with the pointer`, { timeout: 40_000 }, async t => {
+  it(`${engine}: activator appears in the top-left corner on hover and leaves with the pointer`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
     assert.equal(await launcher(page), null);
     await hover(page, 400, 260);
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     const box = (await launcher(page))!;
     assert.equal(box.label, 'Enter theater mode');
-    assert.equal(box.x, 100 + 640 - 12 - 40);
+    assert.equal(box.x, 100 + 12);
     assert.equal(box.y, 80 + 12);
     await page.mouse.move(400, 600);
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
   });
 
-  it(`${engine}: activator avoids page UI and covered corners, and appears nowhere when all are covered`, { timeout: 40_000 }, async t => {
+  it(`${engine}: fixed top-left ignores overlays and native controls without occlusion probes`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
+    await page.evaluate(() => {
+      // Any occlusion sampling would fail this test, even if its result were ignored.
+      document.elementsFromPoint = () => { throw new Error('fixed placement must not sample occlusion'); };
+      ShadowRoot.prototype.elementsFromPoint = () => { throw new Error('fixed placement must not sample shadow occlusion'); };
+      const overlay = document.createElement('button');
+      overlay.textContent = 'Host overlay';
+      overlay.style.cssText = 'position:absolute;left:0;top:0;width:180px;height:64px';
+      document.getElementById('player')!.append(overlay);
+    });
+    const button = page.locator('#theater-everywhere-ui .theater-video-activator');
+    for (const controls of [false, true]) {
+      await page.evaluate(controls => { (document.getElementById('main') as HTMLVideoElement).controls = controls; }, controls);
+      await hover(page, 400, 260);
+      await button.waitFor();
+      assert.deepEqual(await launcher(page), { x: 112, y: 92, width: 40, label: 'Enter theater mode' });
+      if (engine === 'chromium' && controls) {
+        await button.evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+        await page.screenshot({ path: '/tmp/tme-launcher-fixed-top-left-chromium.png' });
+      }
+      await page.mouse.move(400, 600);
+      await button.waitFor({ state: 'detached' });
+    }
+  });
+
+  it(`${engine}: activator avoids page UI and covered corners, and appears nowhere when all are covered`, { timeout: 40_000 }, async t => {
+    const page = await launch(t, { dynamicPlacement: true });
     await page.evaluate(() => {
       const share = document.createElement('button');
       share.className = 'ui'; share.id = 'share'; share.textContent = 'Share';
@@ -163,7 +191,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: centre slots avoid occupied corners and stay frozen for each appearance`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
+    const page = await launch(t, { dynamicPlacement: true });
     await page.evaluate(() => {
       for (const css of ['left:0;top:0', 'right:0;top:0', 'left:0;bottom:0', 'right:0;bottom:0']) {
         const ui = document.createElement('button');
@@ -302,7 +330,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     });
     await hover(page, 80, 250); // 20px outside the video; its zone margin is 36px.
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
-    assert.equal((await launcher(page))!.x, 688);
+    assert.equal((await launcher(page))!.x, 112);
     await page.mouse.click(80, 250);
     assert.equal(await page.locator('#nearby').getAttribute('data-clicked'), 'yes');
     await page.mouse.move(63, 250);
@@ -339,12 +367,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.waitForFunction(() => (document.getElementById('second') as HTMLVideoElement).readyState >= 1);
     await hover(page, 750, 250);
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
-    assert.equal((await launcher(page))!.x, 688);
+    assert.equal((await launcher(page))!.x, 112);
     await page.mouse.move(770, 250);
     await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft === 792);
     assert.equal(await page.locator('#theater-everywhere-ui .theater-video-activator').count(), 1);
     await page.evaluate(() => { document.getElementById('second')!.style.left = '1500px'; });
-    await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft === 688);
+    await page.waitForFunction(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator') as HTMLElement)?.offsetLeft === 112);
     await page.evaluate(() => { document.getElementById('player')!.style.top = '900px'; });
     await page.waitForFunction(() => window.activatorPointerListeners === 0);
     assert.equal(await launcher(page), null);
@@ -458,7 +486,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
 
 
   it(`${engine}: appearance freezes across chrome mutations; layout invalidation remounts`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
+    const page = await launch(t, { dynamicPlacement: true });
     await hover(page, 400, 260);
     const button = page.locator('#theater-everywhere-ui .theater-video-activator');
     await button.waitFor();

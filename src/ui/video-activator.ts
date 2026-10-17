@@ -11,8 +11,17 @@ import {
   chooseActivatorSpot,
   isActivatorVideoEligible,
   nearestActivatorVideo,
+  spotBox,
   type Box
 } from './video-activator-placement';
+
+// Pin the overlay for predictable placement; retain dynamic placement intentionally for possible reuse.
+let ACTIVATOR_DYNAMIC_PLACEMENT = false;
+
+/** Test seam for exercising the retained dynamic runtime path; call before creating an activator. */
+export function setActivatorDynamicPlacementForTests(enabled: boolean): void {
+  ACTIVATOR_DYNAMIC_PLACEMENT = enabled;
+}
 
 export const VIDEO_ACTIVATOR_CLASS = 'theater-video-activator';
 const EXTENSION_UI_HOST_ID = 'theater-everywhere-ui';
@@ -187,6 +196,7 @@ export function createVideoActivator(options: {
   }
 
   function place(video: HTMLVideoElement, box: Box) {
+    if (!ACTIVATOR_DYNAMIC_PLACEMENT) return spotBox(box, 'top-left');
     const view = viewport();
     return chooseActivatorSpot(box, view, (x, y) => isFree(video, box, x, y),
       { bottomBlocked: video.controls })?.box ?? null;
