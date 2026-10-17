@@ -246,7 +246,7 @@
     "message": "Integrazione YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Disponibili se forniti dal video o dal lettore: Titolo, Sottotitoli, Capitoli, Mappa di popolarità, Miniature. Azioni rapide: salta annunci e video successivo nella coda."
+    "message": "Disponibili se forniti dal video o dal lettore: Titolo, Sottotitoli, Capitoli, Mappa di popolarità, Miniature. Azioni rapide: salta annunci e video successivo nella coda. Con Rich Theater Experience per YouTube e Pulsante sul video attivi, cerca il pulsante nella barra del lettore, subito a sinistra dell’interruttore della riproduzione automatica."
   },
   "vimeoIntegrationTitle": {
     "message": "Integrazione Vimeo"
@@ -683,7 +683,7 @@
     "message": "Pulsante sul video"
   },
   "videoActivatorDescription": {
-    "message": "Mostra un piccolo pulsante in un angolo libero del video quando ci passi sopra con il cursore. Fai clic per attivare la modalità cinema."
+    "message": "Mostra un piccolo pulsante in un angolo libero del video quando ci passi sopra con il cursore. Fai clic per attivare la modalità cinema. In alcuni servizi con Rich Theater Experience, il pulsante è integrato nell’interfaccia del servizio."
   },
   "videoActivatorLabel": {
     "message": "Attiva la modalità cinema"

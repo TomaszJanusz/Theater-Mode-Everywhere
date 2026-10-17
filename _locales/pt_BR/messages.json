@@ -246,7 +246,7 @@
     "message": "Integração com o YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Capítulos, Mapa de popularidade, Miniaturas. Ações rápidas: pular anúncios e próximo vídeo da fila."
+    "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, Capítulos, Mapa de popularidade, Miniaturas. Ações rápidas: pular anúncios e próximo vídeo da fila. Com Rich Theater Experience para YouTube e Botão no vídeo ativados, procure o botão na barra do player, logo à esquerda do interruptor de reprodução automática."
   },
   "vimeoIntegrationTitle": {
     "message": "Integração com o Vimeo"
@@ -683,7 +683,7 @@
     "message": "Botão no vídeo"
   },
   "videoActivatorDescription": {
-    "message": "Mostra um pequeno botão em um canto livre do vídeo quando você passa o cursor sobre ele. Clique nele para ativar o modo teatro."
+    "message": "Mostra um pequeno botão em um canto livre do vídeo quando você passa o cursor sobre ele. Clique nele para ativar o modo teatro. Em alguns serviços com Rich Theater Experience, o botão é integrado à interface do serviço."
   },
   "videoActivatorLabel": {
     "message": "Ativar o modo teatro"

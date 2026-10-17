@@ -246,7 +246,7 @@
     "message": "YouTube連携"
   },
   "youtubeIntegrationDescription": {
-    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：広告スキップとキュー内の次の動画。"
+    "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, チャプター, ヒートマップ, サムネイル。 クイック操作：広告スキップとキュー内の次の動画。YouTube の Rich Theater Experience と動画ランチャーが有効な場合、ボタンはプレーヤーのツールバー内、自動再生スイッチのすぐ左にあります。"
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo連携"
@@ -683,7 +683,7 @@
     "message": "動画ランチャー"
   },
   "videoActivatorDescription": {
-    "message": "動画にカーソルを合わせると、空いている隅に小さなボタンを表示します。クリックするとシアターモードに切り替わります。"
+    "message": "動画にカーソルを合わせると、空いている隅に小さなボタンを表示します。クリックするとシアターモードに切り替わります。Rich Theater Experience に対応する一部のサービスでは、ボタンがサービスのインターフェースに組み込まれています。"
   },
   "videoActivatorLabel": {
     "message": "シアターモードに切り替える"
