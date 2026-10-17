@@ -1,3 +1,4 @@
+import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
 import { emptyPlaylistNav, type PlaylistNavState } from '../playlist-nav';
@@ -108,10 +109,20 @@ export function createControls(
     loadingIndicator.className = 'theater-loading-indicator';
     paintOverlay(loadingIndicator);
   
-    const loadingSpinner = document.createElement('div');
-    loadingSpinner.className = 'theater-loading-spinner';
-  
-    loadingIndicator.appendChild(loadingSpinner);
+    let stopLoadingExit: (() => void) | null = null;
+    const showLoadingSpinner = () => {
+      stopLoadingExit?.();
+      stopLoadingExit = null;
+      loadingIndicator.classList.remove('exiting');
+      if (!loadingIndicator.firstElementChild) {
+        const spinner = document.createElement('div');
+        spinner.className = 'theater-loading-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        loadingIndicator.appendChild(spinner);
+      }
+      loadingIndicator.classList.add('visible');
+    };
+    controlsScope.add(() => { stopLoadingExit?.(); });
   
     mountPlayerUi(loadingIndicator);
 
@@ -1448,13 +1459,13 @@ export function createControls(
             clearTimeout(bufferingTimeout);
             bufferingTimeout = null;
           }
-          loadingIndicator.classList.add('visible');
+          showLoadingSpinner();
           scrubberContainer.classList.add('buffering');
           return;
         }
         if (bufferingTimeout || loadingIndicator.classList.contains('visible')) return;
         bufferingTimeout = window.setTimeout(() => {
-          loadingIndicator.classList.add('visible');
+          showLoadingSpinner();
           scrubberContainer.classList.add('buffering');
           bufferingTimeout = null;
         }, 1000);
@@ -1474,7 +1485,17 @@ export function createControls(
           clearTimeout(bufferingTimeout);
           bufferingTimeout = null;
         }
+        const wasVisible = loadingIndicator.classList.contains('visible');
         loadingIndicator.classList.remove('visible');
+        const spinner = loadingIndicator.querySelector<HTMLElement>('.theater-loading-spinner');
+        if (wasVisible && spinner) {
+          loadingIndicator.classList.add('exiting');
+          stopLoadingExit = exitSpinner(spinner, {
+            mode: 'passive',
+            isCurrent: () => !controlsScope.isDisposed && session.element === video.element,
+            onFinish: () => { loadingIndicator.classList.remove('exiting'); stopLoadingExit = null; }
+          });
+        }
         scrubberContainer.classList.remove('buffering');
       }
     };

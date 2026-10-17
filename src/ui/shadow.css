@@ -951,7 +951,8 @@ button.theater-time-end:hover {
   transition: opacity 0.2s ease !important;
 }
 
-.theater-loading-indicator.visible {
+.theater-loading-indicator.visible,
+.theater-loading-indicator.exiting {
   opacity: 1 !important;
 }
 
@@ -2352,7 +2353,14 @@ button.theater-time-end:hover {
 
 /* Seconds until entry, centered in the notice's spinner. The shared time display supplies the digit roll. */
 .theater-auto-notice .volume-hud-icon {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.theater-auto-notice-visual {
   position: relative !important;
+  width: 28px !important;
+  height: 28px !important;
 }
 
 .theater-auto-notice .caption-hud-spinner {
@@ -2870,4 +2878,11 @@ button.theater-time-end:hover {
   --new-badge-inset-block-start: -4px;
   --new-badge-inset-inline-end: -5px;
   --new-badge-surrounding-color: var(--bg-color, #09090b);
+}
+
+/* Preserve the loading slot during caption confirmation so the copy never jumps. */
+.caption-hud-spinner-slot {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
 }

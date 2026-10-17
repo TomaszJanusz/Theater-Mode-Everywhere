@@ -191,7 +191,10 @@ const hud = createHud(ctx, buttonTooltip.bind);
 const toolbar = createToolbar(ctx);
 const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
-const controls = createControls(ctx, buttonTooltip.bind, toolbar.resetCaptionDock);
+const controls = createControls(ctx, buttonTooltip.bind, () => {
+  hud.removeCaptionHud();
+  toolbar.resetCaptionDock();
+});
 
 const {
   triggerSeekIndicator,

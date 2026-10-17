@@ -195,7 +195,7 @@ describe('caption loading browser regressions', () => {
       await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.cc-btn')!.getAttribute('aria-busy') === 'false');
       assert.match(await hud.innerText(), /Subtitles on\s+English/);
       assert.equal(await page.locator('.cc-btn.active').count(), 1);
-      assert.equal(await page.locator('.caption-hud-spinner').count(), 0);
+      await page.locator('.caption-hud-spinner').waitFor({ state: 'detached' });
       await screenshot(page, 'restore-complete.png');
       await button.click();
       await page.getByRole('button', { name: 'Polish', exact: true }).click();

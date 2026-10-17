@@ -1,3 +1,4 @@
+import { exitSpinner } from './spinner-exit';
 import { isMotionReduced } from '../appearance-runtime';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
@@ -270,6 +271,8 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     ctx.queryPlayerUi('.theater-everywhere-volume-overlay[data-playback-action]')?.remove();
   }
 
+  let stopCaptionExit: (() => void) | null = null;
+  let captionIdentity: { element: Element; epoch: number } | null = null;
   let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
   let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
   let captionHudShowTimer: ReturnType<typeof setTimeout> | null = null;
@@ -291,10 +294,20 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
   function removeCaptionHud(): void {
     clearCaptionHudTimers();
+    stopCaptionExit?.();
+    stopCaptionExit = null;
+    captionIdentity = null;
     ctx.queryPlayerUi('.theater-everywhere-caption-hud')?.remove();
   }
 
   function triggerCaptionHud(view: CaptionHudView): void {
+    const existing = ctx.queryPlayerUi<HTMLElement>('.theater-everywhere-caption-hud.loading');
+    if (view.kind === 'status' && existing && captionIdentity?.element === ctx.session.element
+      && captionIdentity.epoch === ctx.session.currentEpoch) {
+      clearCaptionHudTimers();
+      renderCaptionHud(view, existing);
+      return;
+    }
     removeCaptionHud();
     if (view.kind === 'dismiss') {
       return;
@@ -316,14 +329,18 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     renderCaptionHud(view);
   }
 
-  function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>): void {
+  function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>, existing?: HTMLElement): void {
+    const element = ctx.session.element;
+    if (!element) return;
     announcePlayerStatus(view.kind === 'status' && view.detail ? `${view.title}: ${view.detail}` : view.title);
-    const overlay = document.createElement('div');
+    const overlay = existing ?? document.createElement('div');
+    const identity = { element, epoch: ctx.session.currentEpoch };
+    captionIdentity = identity;
     overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
     ctx.paintOverlay(overlay);
     overlay.setAttribute('aria-hidden', 'true');
 
-    const content = document.createElement('div');
+    const content = existing?.querySelector<HTMLElement>('.volume-hud-content') ?? document.createElement('div');
     content.className = view.kind === 'status'
       ? 'volume-hud-content caption-hud-content'
       : 'volume-hud-content';
@@ -331,38 +348,52 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     let iconEl: HTMLDivElement | null = null;
     if (view.kind === 'loading') {
       iconEl = document.createElement('div');
-      iconEl.className = 'volume-hud-icon';
+      iconEl.className = 'volume-hud-icon caption-hud-spinner-slot';
       const spinner = document.createElement('div');
       spinner.className = 'caption-hud-spinner';
       spinner.setAttribute('aria-hidden', 'true');
       iconEl.appendChild(spinner);
     }
 
-    const copy = document.createElement('div');
+    const copy = existing?.querySelector<HTMLElement>('.volume-hud-copy') ?? document.createElement('div');
     copy.className = 'volume-hud-copy';
-    const textEl = document.createElement('span');
+    const textEl = copy.querySelector<HTMLElement>('.volume-hud-text') ?? document.createElement('span');
     textEl.className = 'volume-hud-text';
     textEl.textContent = view.title;
-    copy.appendChild(textEl);
+    if (!textEl.parentNode) copy.appendChild(textEl);
+    let detail: HTMLElement | undefined;
     if (view.kind === 'status' && view.detail) {
       const detailEl = document.createElement('span');
       detailEl.className = 'volume-hud-detail';
       detailEl.textContent = view.detail;
       copy.appendChild(detailEl);
+      detail = detailEl;
     }
 
-    if (iconEl) content.appendChild(iconEl);
-    content.appendChild(copy);
-    overlay.appendChild(content);
-    ctx.mountPlayerUi(overlay);
+    if (!existing) {
+      if (iconEl) content.appendChild(iconEl);
+      content.appendChild(copy);
+      overlay.appendChild(content);
+      ctx.mountPlayerUi(overlay);
+    }
+    const spinner = existing?.querySelector<HTMLElement>('.caption-hud-spinner');
+    if (spinner) {
+      stopCaptionExit = exitSpinner(spinner, {
+        mode: 'passive', reveal: detail,
+        isCurrent: () => captionIdentity === identity && ctx.session.element === identity.element
+          && ctx.session.currentEpoch === identity.epoch
+      });
+    }
 
     if (view.kind === 'loading') return;
 
     const displayDuration = view.kind === 'status' ? (view.duration ?? 800) : 800;
     captionHudHideTimer = setTimeout(() => {
+      if (captionIdentity !== identity || ctx.session.element !== identity.element
+        || ctx.session.currentEpoch !== identity.epoch) return;
       overlay.classList.add('fade-out');
       captionHudRemoveTimer = setTimeout(() => {
-        if (overlay.parentNode) overlay.remove();
+        if (captionIdentity === identity) removeCaptionHud();
       }, 200);
     }, displayDuration);
   }
@@ -559,6 +590,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     triggerPlaybackIndicator,
     dismissPlaybackIndicator,
     triggerCaptionHud,
+    removeCaptionHud,
     createPlayerHeader,
     syncContentTitle
   };
