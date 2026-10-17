@@ -64,6 +64,11 @@ it('Settings groups AutoTheater and accessibility, persists countdown choices, a
     await page.locator('#tab-features').click();
     const group = page.getByRole('group', { name: 'AutoTheater', exact: true });
     assert.equal(await group.locator('input[type=checkbox]').count(), 2);
+    assert.equal(await page.evaluate(() => {
+      const section = document.getElementById('rte-section')!;
+      const auto = document.getElementById('auto-theater-title')!.closest('.options-group')!;
+      return section.contains(auto) && !!(auto.compareDocumentPosition(document.getElementById('rte-tiles')!) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }), true, 'AutoTheater settings sit in Rich Theater Experience above the service tiles');
     const skip = page.locator('#auto-theater-skip-countdown-toggle');
     assert.equal(await skip.isChecked(), false, 'existing settings retain the countdown');
     await page.locator('label[for=auto-theater-skip-countdown-toggle]').click();

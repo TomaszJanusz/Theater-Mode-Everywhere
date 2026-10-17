@@ -188,29 +188,6 @@
           <p class="card-desc" data-i18n="featuresDescription">Turn optional theater mode behavior on or off.</p>
         </div></div>
         <div class="card-body options-body">
-          <div class="options-group" role="group" aria-labelledby="auto-theater-title">
-            <h3 id="auto-theater-title" data-i18n="autoEnterTheaterTitle">AutoTheater</h3>
-            <div class="options-row" data-new-feature="settingsAutoEnterTheater">
-              <div class="options-info">
-                <label id="auto-enter-theater-label" for="auto-enter-theater-toggle" class="options-label" data-i18n="autoEnterTheaterTitle">AutoTheater</label>
-                <p id="auto-enter-theater-description" class="options-desc" data-i18n="autoEnterTheaterDescription">Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="auto-enter-theater-toggle" role="switch" aria-labelledby="auto-enter-theater-label" aria-describedby="auto-enter-theater-description">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="options-row">
-              <div class="options-info">
-                <label id="auto-theater-skip-countdown-label" for="auto-theater-skip-countdown-toggle" class="options-label" data-i18n="autoTheaterSkipCountdownTitle">Skip countdown</label>
-                <p id="auto-theater-skip-countdown-description" class="options-desc" data-i18n="autoTheaterSkipCountdownDescription">Enter as soon as playback is ready, without the 3-second notice.</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="auto-theater-skip-countdown-toggle" role="switch" aria-labelledby="auto-theater-skip-countdown-label" aria-describedby="auto-theater-skip-countdown-description">
-                <span class="toggle-slider" aria-hidden="true"></span>
-              </label>
-            </div>
-          </div>
           <div class="options-row" data-new-feature="settingsVideoActivator">
             <div class="options-info">
               <label id="video-activator-label" for="video-activator-toggle" class="options-label"><span data-i18n="videoActivatorTitle">Video launcher</span> <te-new-badge data-variant="beta" role="img" data-i18n-aria-label="badgeBetaDescription" data-i18n-title="badgeBetaDescription" aria-label="Beta, experimental feature" title="Beta, experimental feature">BETA</te-new-badge></label>
@@ -256,6 +233,29 @@
             </div>
           </div></div>
           <div class="card-body">
+            <div class="options-group" role="group" aria-labelledby="auto-theater-title">
+              <h3 id="auto-theater-title" data-i18n="autoEnterTheaterTitle">AutoTheater</h3>
+              <div class="options-row" data-new-feature="settingsAutoEnterTheater">
+                <div class="options-info">
+                  <label id="auto-enter-theater-label" for="auto-enter-theater-toggle" class="options-label" data-i18n="autoEnterTheaterTitle">AutoTheater</label>
+                  <p id="auto-enter-theater-description" class="options-desc" data-i18n="autoEnterTheaterDescription">Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-enter-theater-toggle" role="switch" aria-labelledby="auto-enter-theater-label" aria-describedby="auto-enter-theater-description">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="options-row">
+                <div class="options-info">
+                  <label id="auto-theater-skip-countdown-label" for="auto-theater-skip-countdown-toggle" class="options-label" data-i18n="autoTheaterSkipCountdownTitle">Skip countdown</label>
+                  <p id="auto-theater-skip-countdown-description" class="options-desc" data-i18n="autoTheaterSkipCountdownDescription">Enter as soon as playback is ready, without the 3-second notice.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-theater-skip-countdown-toggle" role="switch" aria-labelledby="auto-theater-skip-countdown-label" aria-describedby="auto-theater-skip-countdown-description">
+                  <span class="toggle-slider" aria-hidden="true"></span>
+                </label>
+              </div>
+            </div>
             <div class="rte-master-row">
               <p id="rte-shown" role="status" aria-atomic="true"></p>
               <label class="rte-master"><span id="rte-all-label"></span><input type="checkbox" id="rte-all"></label>
