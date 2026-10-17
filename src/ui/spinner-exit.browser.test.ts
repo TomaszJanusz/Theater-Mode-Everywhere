@@ -249,13 +249,20 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.ok(geometry.offset.every(value => Math.abs(value) < 0.5), 'ring is centred in the plate');
     assert.ok(geometry.center.every(value => Math.abs(value) < 1), 'plate is centred on the picture');
     await event('canplay');
+    const centerOf = () => plate.evaluate(e => { const b = e.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+    const centerBefore = await centerOf();
     await capture(page, `${engine}-buffer-start`, 0);
     assert.equal(await page.locator('.theater-loading-indicator.exiting').count(), 1);
     await page.clock.runFor(250);
     await capture(page, `${engine}-buffer-middle`, 250);
-    await assertShrinking(page, '.theater-loading-spinner');
-    await assertUnscaled(page, '.theater-loading-indicator', true);
-    assert.equal(await page.evaluate("exits.every(record => record.element.classList.contains('theater-loading-spinner'))"), true);
+    // One motion: the plate carries the only exit animation and the ring zooms inside it.
+    await assertShrinking(page, '.theater-loading-indicator');
+    const centerDuring = await centerOf();
+    assert.ok(centerDuring.every((value, i) => Math.abs(value - centerBefore[i]) < 0.5), 'the plate zooms about its own centre');
+    assert.equal(await spinner.evaluate(e => getComputedStyle(e).scale), 'none');
+    assert.equal(await page.evaluate("exits.length === 1 && exits[0].element.classList.contains('theater-loading-indicator')"), true);
+    const timing = await page.evaluate(`(() => { const t = exits[0].animation.effect.getTiming(); return [t.duration, t.easing, t.fill]; })()`);
+    assert.deepEqual(timing, [500, 'cubic-bezier(0.4, 0, 0.2, 1)', 'both']);
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);

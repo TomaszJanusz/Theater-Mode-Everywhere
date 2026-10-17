@@ -950,12 +950,13 @@ button.theater-time-end:hover {
 }
 
 /* Center loading spinner: a round plate in the HUD family, centred on the picture like the volume HUD.
-   Only the ring animates out (spinner-exit.ts); the plate stays solid until the ring is gone, then leaves at once. */
+   The plate and its ring zoom out as one (spinner-exit.ts), then the plate leaves at once. */
 .theater-loading-indicator {
   position: fixed !important;
   top: var(--theater-hud-center-y, 50vh) !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  /* The translate property, not transform: the exit's scale then pivots on the plate's own centre. */
+  translate: -50% -50% !important;
   box-sizing: border-box !important;
   width: 76px !important;
   height: 76px !important;
@@ -970,12 +971,13 @@ button.theater-time-end:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
-  opacity: 0 !important;
+  /* Not !important: the exit animation has to animate it. */
+  opacity: 0;
 }
 
 .theater-loading-indicator.visible,
 .theater-loading-indicator.exiting {
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 .theater-loading-indicator.visible {
