@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { clockLabels, formatClock, TIME_DIGIT_TRANSITION_MS, timeShape } from './time-readout';
+import { clockLabels, formatClock, planDigitRolls, TIME_DIGIT_STAGGER_MS, TIME_DIGIT_TRANSITION_MS, timeShape } from './time-readout';
 
 describe('clock labels', () => {
   it('keeps one width for every position in a title', () => {
@@ -51,5 +51,24 @@ describe('clock labels', () => {
       assert.ok(keyframes, name);
       assert.doesNotMatch(keyframes, /color|opacity|text-shadow/, `${name} keeps the ink as it is`);
     }
+  });
+
+  it('starts the leftmost changing digit first and skips unchanged ones', () => {
+    const plan = planDigitRolls('0:39', '0:40');
+    assert.deepEqual(plan.map((roll) => roll?.delayMs ?? null), [null, null, 0, TIME_DIGIT_STAGGER_MS]);
+    assert.deepEqual(planDigitRolls('0:41', '0:42').map((roll) => roll?.delayMs ?? null), [null, null, null, 0]);
+  });
+
+  it('rolls every digit of a readout one way, carries included', () => {
+    assert.ok(planDigitRolls('0:59', '1:00').every((roll) => roll === null || !roll.countsDown));
+    assert.ok(planDigitRolls('1:00', '0:59').every((roll) => roll === null || roll.countsDown));
+    assert.ok(planDigitRolls('0:41', '0:40')[3]?.countsDown);
+  });
+
+  it('caps the stagger and leaves non-digits undelayed', () => {
+    const plan = planDigitRolls('0:00:00', '1:11:11');
+    const delays = plan.map((roll) => roll?.delayMs);
+    assert.deepEqual(delays, [0, undefined, TIME_DIGIT_STAGGER_MS, 2 * TIME_DIGIT_STAGGER_MS, undefined, 3 * TIME_DIGIT_STAGGER_MS, 3 * TIME_DIGIT_STAGGER_MS]);
+    assert.equal(planDigitRolls('-0:10', ' 0:10')[0]?.delayMs, 0);
   });
 });

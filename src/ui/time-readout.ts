@@ -6,6 +6,29 @@
 import { isMotionReduced } from '../appearance-runtime';
 
 export const TIME_DIGIT_TRANSITION_MS = 320;
+/** Each changing digit starts this much after the one to its left. */
+export const TIME_DIGIT_STAGGER_MS = 30;
+/** Ranks beyond this share one delay, so a wide change stays inside the tick. */
+const TIME_DIGIT_STAGGER_RANKS = 3;
+
+export type DigitRoll = { delayMs: number; countsDown: boolean };
+
+/**
+ * Which slots roll between two readouts of the same shape, and how. Direction
+ * is one per readout, from comparing the strings like the times they show, so
+ * a carry (59 -> 00, 9 -> 0) rolls every digit the way the clock moves instead
+ * of flipping the carried digit against its neighbours. The leftmost changing
+ * digit starts first; each one to its right starts a stagger later.
+ */
+export function planDigitRolls(previous: string, next: string): Array<DigitRoll | null> {
+  const countsDown = next < previous;
+  let rank = 0;
+  return [...next].map((ch, i) => {
+    if (previous[i] === ch) return null;
+    const delayMs = slotKind(ch) === 'digit' ? Math.min(rank++, TIME_DIGIT_STAGGER_RANKS) * TIME_DIGIT_STAGGER_MS : 0;
+    return { delayMs, countsDown };
+  });
+}
 
 export type TimeShape = {
   hourDigits: number;
@@ -76,7 +99,7 @@ function slotWindow(slot: HTMLElement): HTMLElement | null {
   return slot.querySelector<HTMLElement>(':scope > .theater-time-roll');
 }
 
-function setSlotChar(slot: HTMLElement, next: string, animate: boolean, countsDown: boolean): void {
+function setSlotChar(slot: HTMLElement, next: string, animate: boolean, roll: DigitRoll | null): void {
   if (slot.dataset.ch === next && slot.childElementCount > 0) return;
   const doc = slot.ownerDocument;
   const view = doc.defaultView;
@@ -85,28 +108,35 @@ function setSlotChar(slot: HTMLElement, next: string, animate: boolean, countsDo
   slot.dataset.ch = next;
   const pending = settleTimers.get(slot);
   if (pending !== undefined) view?.clearTimeout(pending);
-  const roll = slotWindow(slot);
-  const current = roll?.querySelector<HTMLElement>(':scope > .theater-time-glyph:not(.is-leaving)');
-  if (!animate || reduce || previous === undefined || !roll || !current) {
-    (roll ?? slot).replaceChildren(makeGlyph(doc, next));
+  const rollWindow = slotWindow(slot);
+  const current = rollWindow?.querySelector<HTMLElement>(':scope > .theater-time-glyph:not(.is-leaving)');
+  const interrupting = slot.classList.contains('is-rolling');
+  if (!animate || reduce || previous === undefined || !rollWindow || !current || !roll) {
+    (rollWindow ?? slot).replaceChildren(makeGlyph(doc, next));
     slot.classList.remove('is-rolling');
+    slot.style.removeProperty('--theater-time-roll-delay');
     return;
   }
 
-  for (const stale of roll.querySelectorAll(':scope > .is-leaving')) stale.remove();
+  for (const stale of rollWindow.querySelectorAll(':scope > .is-leaving')) stale.remove();
   current.classList.remove('is-entering');
   current.classList.add('is-leaving');
   const entering = makeGlyph(doc, next);
   entering.classList.add('is-entering');
-  roll.append(entering);
-  slot.classList.toggle('is-counting-down', countsDown);
+  rollWindow.append(entering);
+  slot.classList.toggle('is-counting-down', roll.countsDown);
+  // A tick landing on a roll in flight answers at once; waiting out a stagger
+  // would leave the old digit on screen while newer values pile up.
+  const delayMs = interrupting ? 0 : roll.delayMs;
+  slot.style.setProperty('--theater-time-roll-delay', `${delayMs}ms`);
   slot.classList.add('is-rolling');
   const settle = () => {
     current.remove();
     entering.classList.remove('is-entering');
     slot.classList.remove('is-rolling');
+    slot.style.removeProperty('--theater-time-roll-delay');
   };
-  const timer = view?.setTimeout(settle, TIME_DIGIT_TRANSITION_MS + 80);
+  const timer = view?.setTimeout(settle, delayMs + TIME_DIGIT_TRANSITION_MS + 80);
   if (timer !== undefined) settleTimers.set(slot, timer);
 }
 
@@ -127,16 +157,16 @@ export function renderTimeReadout(host: HTMLElement, value: string, animate: boo
         slot.appendChild(roll);
       }
       host.appendChild(slot);
-      setSlotChar(slot, ch, false, false);
+      setSlotChar(slot, ch, false, null);
     }
     return;
   }
   const slots = [...host.querySelectorAll<HTMLElement>('.theater-time-slot')];
   // Same mask, so the strings compare like the times they show.
-  const countsDown = value < slots.map((slot) => slot.dataset.ch ?? '').join('');
+  const plan = planDigitRolls(slots.map((slot) => slot.dataset.ch ?? '').join(''), value);
   for (let i = 0; i < value.length; i += 1) {
     const slot = slots[i];
-    if (slot) setSlotChar(slot, value[i], animate, countsDown);
+    if (slot) setSlotChar(slot, value[i], animate, plan[i]);
   }
 }
 

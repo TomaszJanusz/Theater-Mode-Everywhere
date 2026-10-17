@@ -174,3 +174,132 @@ describe('split time readout', () => {
     }
   });
 });
+
+for (const engineName of ['chromium', 'firefox'] as const) {
+  describe(`${engineName}: digit roll stagger and overshoot`, () => {
+    type Probe = { text: string; slot: number; delay: number; y: number; leaving: boolean };
+
+    async function withBar(run: (page: Page) => Promise<void>): Promise<void> {
+      const playwright = await import('playwright');
+      const engine = playwright[engineName];
+      if (!existsSync(engine.executablePath())) return;
+      const browser = await engine.launch({ headless: true });
+      try {
+        const page = await browser.newPage({ viewport: { width: 900, height: 400 } });
+        await mountBar(page);
+        await run(page);
+      } finally {
+        await browser.close();
+      }
+    }
+
+    /** Freezes every animation `offset` ms after its own delay and reads the glyph transforms. */
+    const sampleAt = (page: Page, offset: number) => page.evaluate(`(() => {
+      const shadow = document.querySelector('#theater-everywhere-ui').shadowRoot;
+      for (const animation of shadow.getAnimations()) {
+        animation.pause();
+        animation.currentTime = animation.effect.getTiming().delay + ${offset};
+      }
+      return [...shadow.querySelectorAll('#elapsed .theater-time-glyph')].map((glyph) => {
+        const slot = glyph.closest('.theater-time-slot');
+        const animations = glyph.getAnimations();
+        return {
+          text: glyph.textContent,
+          slot: [...slot.parentElement.children].indexOf(slot),
+          delay: animations.length ? animations[0].effect.getTiming().delay : -1,
+          y: new DOMMatrixReadOnly(getComputedStyle(glyph).transform).m42,
+          leaving: glyph.classList.contains('is-leaving')
+        };
+      });
+    })()`) as Promise<Probe[]>;
+
+    it('starts the left digit before the right one', async () => {
+      await withBar(async (page) => {
+        await page.evaluate(`window.paint('0:39', '-0:21', false)`);
+        await page.evaluate(`window.paint('0:40', '-0:20', true)`);
+        const probes = await sampleAt(page, 0);
+        const entering = probes.filter((probe) => !probe.leaving);
+        const tens = entering.find((probe) => probe.text === '4');
+        const ones = entering.find((probe) => probe.text === '0' && probe.slot === 3);
+        assert.ok(tens && ones, JSON.stringify(probes));
+        assert.equal(tens.delay, 0);
+        assert.ok(ones.delay > tens.delay && ones.delay <= 60, JSON.stringify(probes));
+        // The old right digit holds its place until its own turn.
+        assert.ok(probes.some((probe) => probe.leaving && probe.slot === 3 && probe.text === '9' && probe.y === 0), JSON.stringify(probes));
+      });
+    });
+
+    it('overshoots past the rest line in the travel direction and ends at rest', async () => {
+      await withBar(async (page) => {
+        await page.evaluate(`window.paint('0:41', '-0:21', false)`);
+        await page.evaluate(`window.paint('0:42', '-0:21', true)`);
+        const climbing = (await sampleAt(page, 320 * 0.65)).find((probe) => probe.text === '2' && !probe.leaving);
+        assert.ok(climbing && climbing.y < -0.2 && climbing.y > -2, `climbing digit passes above: ${JSON.stringify(climbing)}`);
+        const climbed = (await sampleAt(page, 320)).find((probe) => probe.text === '2' && !probe.leaving);
+        assert.equal(climbed?.y, 0);
+
+        await page.evaluate(`window.paint('0:42', '-0:21', false)`);
+        await page.evaluate(`window.paint('0:41', '-0:21', true)`);
+        const falling = (await sampleAt(page, 320 * 0.65)).find((probe) => probe.text === '1' && !probe.leaving);
+        assert.ok(falling && falling.y > 0.2 && falling.y < 2, `falling digit passes below: ${JSON.stringify(falling)}`);
+        const fell = (await sampleAt(page, 320)).find((probe) => probe.text === '1' && !probe.leaving);
+        assert.equal(fell?.y, 0);
+      });
+    });
+
+    it('rolls a carry the way the clock moves', async () => {
+      await withBar(async (page) => {
+        await page.evaluate(`window.paint('0:59', '-0:21', false)`);
+        await page.evaluate(`window.paint('1:00', '-0:21', true)`);
+        const probes = await sampleAt(page, 320 * 0.65);
+        for (const probe of probes.filter((candidate) => !candidate.leaving && candidate.delay >= 0)) {
+          assert.ok(probe.y < 0, `every carried digit climbs: ${JSON.stringify(probes)}`);
+        }
+      });
+    });
+
+    it('reduced motion swaps digits with no animation or delay', async () => {
+      await withBar(async (page) => {
+        await page.evaluate(`(() => {
+          document.documentElement.dataset.motion = 'reduced';
+          document.querySelector('#theater-everywhere-ui').setAttribute('data-motion', 'reduced');
+        })()`);
+        await page.evaluate(`window.paint('0:39', '-0:21', false)`);
+        await page.evaluate(`window.paint('0:40', '-0:20', true)`);
+        const state = await page.evaluate(`(() => {
+          const shadow = document.querySelector('#theater-everywhere-ui').shadowRoot;
+          return {
+            animations: shadow.getAnimations().length,
+            rolling: shadow.querySelectorAll('.is-rolling, .is-entering, .is-leaving').length,
+            delays: [...shadow.querySelectorAll('#elapsed .theater-time-slot')].map((slot) => slot.style.getPropertyValue('--theater-time-roll-delay')),
+            text: shadow.querySelector('#elapsed').textContent
+          };
+        })()`) as { animations: number; rolling: number; delays: string[]; text: string };
+        assert.deepEqual(state, { animations: 0, rolling: 0, delays: ['', '', '', ''], text: '0:40' });
+      });
+    });
+
+    it('leaves no stale transform after rapid successive updates', async () => {
+      await withBar(async (page) => {
+        await page.evaluate(`window.paint('0:30', '-0:21', false)`);
+        await page.evaluate(`(async () => {
+          for (let second = 31; second <= 45; second += 1) {
+            window.paint('0:' + second, '-0:21', true);
+            await new Promise((resolve) => setTimeout(resolve, 70));
+          }
+        })()`);
+        await page.waitForFunction(`!document.querySelector('#theater-everywhere-ui').shadowRoot
+          .querySelector('.is-rolling, .is-entering, .is-leaving')`);
+        const settled = await page.evaluate(`(() => {
+          const shadow = document.querySelector('#theater-everywhere-ui').shadowRoot;
+          return {
+            glyphs: [...shadow.querySelectorAll('#elapsed .theater-time-glyph')].map((glyph) => glyph.textContent + getComputedStyle(glyph).transform),
+            animations: shadow.getAnimations().length,
+            delays: [...shadow.querySelectorAll('#elapsed .theater-time-slot')].map((slot) => slot.style.getPropertyValue('--theater-time-roll-delay'))
+          };
+        })()`) as { glyphs: string[]; animations: number; delays: string[] };
+        assert.deepEqual(settled, { glyphs: ['0none', ':none', '4none', '5none'], animations: 0, delays: ['', '', '', ''] });
+      });
+    });
+  });
+}

@@ -768,21 +768,29 @@ button.theater-time-end:hover {
 }
 
 /* Motion lands early; the blur clears on its own slower curve so the new
-   digit reads soft through the middle of the tick and sharp by its end. */
+   digit reads soft through the middle of the tick and sharp by its end. The
+   slot's stagger delay (set by time-readout.ts, left digit first) holds both
+   glyphs of a slot at their first frame, so the old digit stays until its turn. */
 .theater-time-glyph.is-entering {
   animation:
-    theater-time-roll-in 320ms cubic-bezier(0.25, 1, 0.5, 1) both,
-    theater-time-sharpen 320ms cubic-bezier(0.45, 0, 0.55, 1) both !important;
+    theater-time-roll-in 320ms cubic-bezier(0.25, 1, 0.5, 1) var(--theater-time-roll-delay, 0ms) both,
+    theater-time-sharpen 320ms cubic-bezier(0.45, 0, 0.55, 1) var(--theater-time-roll-delay, 0ms) both !important;
 }
 
 .theater-time-glyph.is-leaving {
   animation:
-    theater-time-roll-out 320ms cubic-bezier(0.25, 1, 0.5, 1) both,
-    theater-time-soften 320ms cubic-bezier(0.25, 1, 0.5, 1) both !important;
+    theater-time-roll-out 320ms cubic-bezier(0.25, 1, 0.5, 1) var(--theater-time-roll-delay, 0ms) both,
+    theater-time-soften 320ms cubic-bezier(0.25, 1, 0.5, 1) var(--theater-time-roll-delay, 0ms) both !important;
 }
 
+/* The entering digit travels past its rest line by ~6% of the roll distance
+   (below when falling, above when climbing) and settles back. */
 @keyframes theater-time-roll-in {
   from { transform: translateY(var(--theater-time-roll-from)); }
+  65% {
+    transform: translateY(calc(var(--theater-time-roll-from) * -0.06));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
   to { transform: none; }
 }
 
