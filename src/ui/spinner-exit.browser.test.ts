@@ -92,7 +92,7 @@ async function assertShrinking(page: Page, selector: string) {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
-  it(`${engine}: deadline exit uses the intent clock, holds 1 until 0.5 s remain, then 0, and cleans up`, { timeout: 40_000 }, async t => {
+  it(`${engine}: deadline exit uses the intent clock, runs during the final 0 stage, and cleans up`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
     ownTestBrowser(t, browser);
     const page = await browser.newPage();
@@ -109,26 +109,26 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1);
     assert.equal(await page.evaluate('exits.length'), 1);
     assert.equal(await page.evaluate('exits[0].duration'), 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '1');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the exit starts as the digit reaches 0');
     await capture(page, `${engine}-deadline-start`, 0);
     assert.equal(await page.evaluate('exits[0].element.className'), 'caption-hud-spinner');
-    // The 2→1 roll is still running here, so the glyph is checked once it settles.
+    // The 1→0 roll is still running here, so the glyph is checked once it settles.
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
     await page.clock.runFor(250);
     await capture(page, `${engine}-deadline-middle`, 250);
     await assertShrinking(page, '.theater-auto-notice .caption-hud-spinner');
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '1');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0');
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
     assert.equal(await spinner.count(), 0, 'removed exactly 500 ms before entry');
     assert.equal(await page.locator('.theater-auto-notice').count(), 1, 'notice timing stays unchanged');
     await capture(page, `${engine}-deadline-end`, 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'digit drops to 0 once 0.5 s remain');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the digit stays 0 as the ring clears');
     await page.clock.runFor(250);
     await capture(page, `${engine}-deadline-minus-250`, 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the final 0.5 s shows 0');
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the final stretch shows 0');
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
     await page.evaluate('hide(); hide()');
     await page.evaluate(`window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); hide(); hide();`);

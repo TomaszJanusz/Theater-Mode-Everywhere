@@ -59,16 +59,14 @@ for (const engine of ['chromium', 'firefox'] as const) {
     ownTestBrowser(t, browser);
     const page = await browser.newPage();
     await mountNotice(page);
-    assert.deepEqual(await readout(page), { text: '3', ariaHidden: 'true', rolling: 0 });
+    assert.deepEqual(await readout(page), { text: '2', ariaHidden: 'true', rolling: 0 });
     await page.clock.runFor(999);
-    assert.equal((await readout(page))!.text, '3');
+    assert.equal((await readout(page))!.text, '2');
     await page.clock.runFor(1);
-    assert.deepEqual(await readout(page), { text: '2', ariaHidden: 'true', rolling: 1 }, 'a changed second rolls through the slot');
+    assert.deepEqual(await readout(page), { text: '1', ariaHidden: 'true', rolling: 1 }, 'a changed second rolls through the slot');
     const uniform = await ring(page);
     assert.deepEqual([uniform.turns, uniform.iterations, uniform.easing], [1, Infinity, 'linear'], 'one continuous linear turn, not restarted by digit changes');
-    await page.clock.runFor(1000);
-    assert.equal((await readout(page))!.text, '1');
-    await page.clock.runFor(499);
+    await page.clock.runFor(999);
     assert.equal((await readout(page))!.text, '1');
     await page.clock.runFor(1);
     assert.equal((await readout(page))!.text, '0', 'the countdown ends on 0');
@@ -85,7 +83,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       window.noticeHide = window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, end - performance.now()));
     });
     await page.clock.runFor(1000);
-    assert.deepEqual(await readout(page), { text: '2', ariaHidden: 'true', rolling: 0 });
+    assert.deepEqual(await readout(page), { text: '1', ariaHidden: 'true', rolling: 0 });
     assert.equal((await ring(page)).turns, 0, 'reduced motion leaves the ring still');
 
     // Cleanup removes the notice and leaves no timer to touch it again.
@@ -103,7 +101,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     const page = await browser.newPage();
     await mountNotice(page, 'per-digit');
     await page.clock.runFor(1000);
-    assert.equal((await readout(page))!.text, '2');
+    assert.equal((await readout(page))!.text, '1');
     const restarted = await ring(page);
     assert.equal(restarted.turns, 1, 'one ring turn per second, replacing the previous one');
     assert.ok(restarted.time < 250, 'the turn restarts with the digit change');
