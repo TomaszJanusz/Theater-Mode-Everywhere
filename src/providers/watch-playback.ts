@@ -71,9 +71,10 @@ function confirmThroughBridge(video: HTMLVideoElement, query: string, responseAt
   const href = view.location.href;
   const requestId = createSessionId();
   view.dispatchEvent(new CustomEvent(query, { detail: requestId }));
-  const confirmed = doc.querySelector<HTMLVideoElement>(`video[${responseAttribute}="${requestId}"]`);
-  confirmed?.removeAttribute(responseAttribute);
-  return confirmed === video && video.isConnected && view.location.href === href;
+  // Read the attribute on this element: a document query cannot see videos in shadow roots.
+  const confirmed = video.getAttribute(responseAttribute) === requestId;
+  video.removeAttribute(responseAttribute);
+  return confirmed && video.isConnected && view.location.href === href;
 }
 
 /** Identity only, never playback state. Synchronous, string-only bridge, like queue navigation, including Firefox. */

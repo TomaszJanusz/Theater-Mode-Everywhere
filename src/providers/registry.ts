@@ -2,6 +2,7 @@ import { youtubeLauncherPlacement } from './youtube/launcher-placement';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
+import { patreonWatchPlayback } from './patreon/watch-playback';
 import { disneyWatchPlayback } from './disney/watch-playback';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import type { WatchPlayback } from './watch-playback';
@@ -24,7 +25,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
   { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname), watchPlayback: youtubeWatchPlayback, launcherPlacement: youtubeLauncherPlacement },
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
-  { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname) },
+  { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname), watchPlayback: patreonWatchPlayback },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },

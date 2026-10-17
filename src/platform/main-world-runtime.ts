@@ -17,7 +17,7 @@ import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { isChatDocument, isNativeChatEvent } from '../chat';
-import { isTwitchHost } from '../providers/hosts';
+import { isPatreonHost, isTwitchHost } from '../providers/hosts';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -38,6 +38,7 @@ import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../pro
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
+import { installPatreonNavigation } from '../providers/patreon/navigation';
 import {
   harvestTwitchResponseJson,
   harvestTwitchResponseText,
@@ -245,6 +246,7 @@ export function installMainWorldRuntime(): void {
     installNetflixMain();
     installTencentMain();
     installCrunchyrollMain();
+    if (isPatreonHost(window.location.hostname)) installPatreonNavigation();
   }
 
   installMediaAudioRuntime();

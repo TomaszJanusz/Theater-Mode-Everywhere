@@ -97,12 +97,18 @@ it still waits for active playback and revalidates every entry condition. Changi
 this preference clears a pending notice without consuming the visit. Automatic entry requires an enabled provider, an allowed domain, a
 top-level document, active playback, no fullscreen and no focused editable field.
 
-YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>` and
-Disney+ `/play/<uuid>` (with an optional locale prefix) declare this capability.
+YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>`,
+Disney+ `/play/<uuid>` (with an optional locale prefix) and Patreon posts
+(`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
 Netflix requires its watch-page player; Disney+ requires the primary Hive video
 inside `disney-web-player` and excludes the auxiliary BTM media client. Catalog
 pages stay ineligible, even when previews are playing. Vimeo pages whose video
-lives in an iframe remain ineligible. Patreon posts mix inline media; Twitch uses
+lives in an iframe remain ineligible. A Patreon post qualifies only when its page holds
+exactly one `mux-player` whose single `<video>` (reached through open shadow roots) is not a live
+stream and no other video is playing; galleries, related-post players and embedded iframes stay
+manual, and identity is the URL's post id only. Patreon is a pushState SPA whose route changes fire
+no `popstate`, so its MAIN-world hook (`providers/patreon/navigation.ts`) publishes one window event
+per `pushState`/`replaceState` for the runtime to refresh on. Twitch uses
 stitched ads; Bilibili and Bilibili.tv need qualified main-player/content identity
 and ad guards; Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.

@@ -138,13 +138,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       const page = await browser.newPage();
       await open(page);
       const chip = page.locator('#rte-filter-buttons [data-capability="autoTheater"]');
-      assert.equal(await chip.textContent(), 'AutoTheater · 4');
+      assert.equal(await chip.textContent(), 'AutoTheater · 5');
       assert.equal(await chip.getAttribute('aria-pressed'), 'false');
       const names = () => page.locator('.rte-tile:visible .rte-name').allTextContents();
       await chip.press('Space');
       assert.equal(await chip.getAttribute('aria-pressed'), 'true');
-      assert.deepEqual((await names()).sort(), ['Disney+', 'Netflix', 'Vimeo', 'YouTube']);
-      assert.equal(await page.locator('#rte-shown').textContent(), '4 of 10 services shown');
+      assert.deepEqual((await names()).sort(), ['Disney+', 'Netflix', 'Patreon', 'Vimeo', 'YouTube']);
+      assert.equal(await page.locator('#rte-shown').textContent(), '5 of 10 services shown');
       await page.locator('#rte-filter-buttons [data-capability="heatmap"]').click();
       assert.deepEqual(await names(), ['YouTube']);
       assert.equal(await page.locator('#rte-shown').textContent(), '1 of 10 services shown');
