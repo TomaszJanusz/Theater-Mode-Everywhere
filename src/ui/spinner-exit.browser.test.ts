@@ -68,6 +68,27 @@ async function capture(page: Page, name: string, elapsed: number) {
   }
 }
 
+async function assertUnscaled(page: Page, selector: string, translated = false) {
+  const styles = await page.locator(selector).evaluateAll(elements => elements.map(element => {
+    const style = getComputedStyle(element);
+    return { opacity: style.opacity, transform: style.transform, scale: style.scale };
+  }));
+  assert.ok(styles.length > 0);
+  for (const style of styles) {
+    assert.equal(style.opacity, '1');
+    assert.ok(style.transform === 'none' || style.transform === 'matrix(1, 0, 0, 1, 0, 0)' || translated && /^matrix\(1, 0, 0, 1, [^,]+, [^)]+\)$/.test(style.transform));
+    assert.ok(style.scale === 'none' || style.scale === '1');
+  }
+}
+
+async function assertShrinking(page: Page, selector: string) {
+  const style = await page.locator(selector).evaluate(element => {
+    const style = getComputedStyle(element);
+    return { scale: Number(style.scale), opacity: Number(style.opacity) };
+  });
+  assert.ok(style.scale > 0 && style.scale < 1 && style.opacity > 0 && style.opacity < 1);
+}
+
 for (const engine of ['chromium', 'firefox'] as const) {
   it(`${engine}: deadline exit uses the intent clock, holds 1 and cleans up`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
@@ -78,7 +99,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
       window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => deadline - performance.now());`);
     const visual = page.locator('.theater-auto-notice-visual');
     const spinner = page.locator('.theater-auto-notice .caption-hud-spinner');
-    await page.clock.runFor(1999);
+    await page.clock.runFor(1500);
+    await capture(page, `${engine}-deadline-minus-1500`, 0);
+    await page.clock.runFor(499);
     assert.equal(await page.evaluate('exits.length'), 0);
     await capture(page, `${engine}-deadline-before`, 0);
     await page.clock.runFor(1);
@@ -87,8 +110,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await visual.innerText(), '1');
     assert.equal(await visual.locator('.is-rolling').count(), 0, 'last digit stays still');
     await capture(page, `${engine}-deadline-start`, 0);
+    assert.equal(await page.evaluate('exits[0].element.className'), 'caption-hud-spinner');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.clock.runFor(250);
     await capture(page, `${engine}-deadline-middle`, 250);
+    await assertShrinking(page, '.theater-auto-notice .caption-hud-spinner');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     assert.equal(await visual.innerText(), '1');
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
@@ -96,6 +123,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await spinner.count(), 0, 'removed exactly 500 ms before entry');
     assert.equal(await page.locator('.theater-auto-notice').count(), 1, 'notice timing stays unchanged');
     await capture(page, `${engine}-deadline-end`, 500);
+    await page.clock.runFor(250);
+    await capture(page, `${engine}-deadline-minus-250`, 500);
+    assert.equal(await visual.innerText(), '1');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.evaluate('hide(); hide()');
     await page.evaluate(`window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); hide(); hide();`);
     await page.clock.runFor(5000);
@@ -138,6 +169,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await detail.evaluate(e => getComputedStyle(e).opacity), '0');
     await page.clock.runFor(250);
     await capture(page, `${engine}-caption-middle`, 250);
+    await assertUnscaled(page, '.caption-hud-spinner-slot, .volume-hud-text, .volume-hud-copy');
+    assert.equal(await page.evaluate("exits.filter(record => record.element.classList.contains('caption-hud-spinner')).length"), 1);
     const shrinking = await page.locator('.caption-hud-spinner').evaluate(e => {
       const style = getComputedStyle(e);
       return { scale: Number(style.scale), opacity: Number(style.opacity) };
@@ -195,6 +228,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await page.locator('.theater-loading-indicator.exiting').count(), 1);
     await page.clock.runFor(250);
     await capture(page, `${engine}-buffer-middle`, 250);
+    await assertShrinking(page, '.theater-loading-spinner');
+    await assertUnscaled(page, '.theater-loading-indicator', true);
+    assert.equal(await page.evaluate("exits.every(record => record.element.classList.contains('theater-loading-spinner'))"), true);
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
@@ -248,6 +284,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await page.locator('.theater-auto-notice .caption-hud-spinner').count(), 1);
     await page.clock.runFor(1);
     assert.equal(await page.locator('.theater-auto-notice .caption-hud-spinner').count(), 0);
+    await page.clock.runFor(750);
+    assert.equal(await page.locator('.theater-auto-notice-count').innerText(), '1');
+    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.evaluate('hide()');
   });
 }
