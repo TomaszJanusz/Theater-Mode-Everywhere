@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "꺼짐"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "이 사이트에서는 사용할 수 없음"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "사용할 수 없음: 이 서비스에서 Rich Theater Experience가 꺼져 있음"
-  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experience가 활성화되어 있으면 지원되는 서비스의 시청 페이지에서 주요 동영상 재생이 시작될 때 영화관 모드로 전환합니다."
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "컨트롤 항상 표시"
+    "message": "컨트롤 고정"
   },
   "keepControlsVisibleDescription": {
-    "message": "영화관 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
+    "message": "영화관 모드에서 재생 컨트롤과 진행 표시줄을 고정해 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
   },
   "toggleControlsPin": {
-    "message": "컨트롤 표시 전환"
+    "message": "컨트롤 고정 전환"
   },
   "controlsPinnedHud": {
-    "message": "컨트롤 항상 표시"
+    "message": "컨트롤 고정됨"
   },
   "controlsUnpinnedHud": {
     "message": "컨트롤 자동 숨김"

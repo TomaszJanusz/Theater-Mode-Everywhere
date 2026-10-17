@@ -697,12 +697,6 @@
   "autoEnterTheaterOff": {
     "message": "オフ"
   },
-  "autoEnterTheaterUnsupported": {
-    "message": "このサイトでは利用できません"
-  },
-  "autoEnterTheaterIntegrationOff": {
-    "message": "利用できません: このサービスでは Rich Theater Experience がオフです"
-  },
   "autoEnterTheaterDescription": {
     "message": "Rich Theater Experienceが有効な場合、対応サービスの視聴ページでメイン動画の再生が始まるとシアターモードに切り替えます。"
   },
@@ -718,16 +712,16 @@
     }
   },
   "keepControlsVisibleTitle": {
-    "message": "操作バーを常に表示"
+    "message": "操作バーを固定"
   },
   "keepControlsVisibleDescription": {
-    "message": "シアターモードで再生コントロールと進行状況バーを常に表示します。操作がないとタイトルとカーソルは引き続き非表示になります。"
+    "message": "シアターモードで再生コントロールと進行状況バーを固定して表示し続けます。操作がないとタイトルとカーソルは引き続き非表示になります。"
   },
   "toggleControlsPin": {
-    "message": "コントロールの表示を切り替え"
+    "message": "操作バーの固定を切り替え"
   },
   "controlsPinnedHud": {
-    "message": "コントロールを常に表示"
+    "message": "操作バーを固定しました"
   },
   "controlsUnpinnedHud": {
     "message": "操作バーを自動的に非表示にします"

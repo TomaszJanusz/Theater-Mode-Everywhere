@@ -180,7 +180,7 @@ for (const engine of [chromium, firefox]) {
     await open(generic, 'player', 'generic.test');
     await generic.locator('.player-settings-btn').click();
     await generic.screenshot({ path: `/tmp/te-autotheater-unsupported-${engine.name()}.png` });
-    assert.deepEqual(await state(generic), { disabled: 'true', pressed: 'false', label: 'AutoTheater: Unavailable on this site' });
+    assert.deepEqual(await state(generic), { disabled: 'true', pressed: 'false', label: 'AutoTheater: Unavailable' });
     // Visible and focusable, but activating it neither changes the saved preference nor prompts.
     await row(generic).focus();
     await row(generic).evaluate((button: HTMLElement) => button.click());
@@ -194,7 +194,7 @@ for (const engine of [chromium, firefox]) {
     await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: false }));
     await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
       ?.querySelector('.auto-theater-btn')?.getAttribute('aria-disabled') === 'true');
-    assert.match((await state(supported)).label!, /Rich Theater Experience is off/);
+    assert.equal((await state(supported)).label, 'AutoTheater: Unavailable');
     await supported.screenshot({ path: `/tmp/te-autotheater-integration-off-${engine.name()}.png` });
     await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: true }));
     await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot

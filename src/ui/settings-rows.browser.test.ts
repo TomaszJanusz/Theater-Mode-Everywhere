@@ -5,10 +5,11 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 import type { Browser } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
+import { NEW_BADGE_CSS } from './new-badge';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
+const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css')) + NEW_BADGE_CSS;
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
@@ -39,14 +40,14 @@ const catalog = (locale: string): Record<string, string> => Object.fromEntries(
     .map(([key, entry]) => [key, entry.message]));
 const english = catalog('en');
 
-// Rows as controls.ts adds them, with the longest realistic chrome: NEW badges, a
+// Rows as controls.ts adds them, with the longest realistic chrome: icon dots, a
 // two-chip shortcut and the longest value the row can show.
 const ROWS = [
   { label: 'videoFitLabel', values: ['videoFitContain', 'videoFitCover', 'videoFitFill'], shortcut: 'Shift+Z' },
   { label: 'pictureAlignLabel', values: ['pictureAlignTop', 'pictureAlignCenter'], shortcut: 'Shift+L', isNew: 'playerPictureLayout' },
-  { label: 'keepControlsVisibleTitle', values: ['badgeNew'], shortcut: 'Shift+H', isNew: 'playerAlwaysShowControls' },
+  { label: 'keepControlsVisibleTitle', values: ['controlsVisibilityOn', 'controlsVisibilityOff'], shortcut: 'Shift+H', isNew: 'playerAlwaysShowControls' },
   { label: 'cycleSwitchVideo', values: [], shortcut: 'Shift+V' },
-  { label: 'autoEnterTheaterTitle', values: [], shortcut: 'Shift+A' },
+  { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'statusUnavailable'], shortcut: 'Shift+A' },
   { label: 'keyboardShortcutsTitle', values: [], shortcut: 'H', section: 'shortcuts' },
   { label: 'extensionSettingsLabel', values: [], shortcut: '', section: 'footer' }
 ];
@@ -124,8 +125,9 @@ describe('settings menu rows stay on one line', () => {
               assert.ok(row.overflow <= 0, `${context}: "${row.text}" overflows its row by ${row.overflow}px`);
               assert.ok(row.titled, `${context}: "${row.text}" lacks its full-text title`);
               // Truncation is the last resort: only when the menu has reached its cap.
-              if (row.truncated) assert.ok(result.width >= Math.min(520, result.viewport - 48) - 1, `${context}: "${row.text}" truncated in a menu below its cap`);
+              if (row.truncated) assert.ok(result.width >= Math.min(340, result.viewport - 48) - 1, `${context}: "${row.text}" truncated in a menu below its cap`);
             }
+            assert.ok(result.width <= Math.min(340, result.viewport - 48) + 1, `${context}: menu exceeds its compact width`);
             assert.ok(result.left >= 0 && result.right <= result.viewport, `${context}: menu leaves the viewport`);
           }
           assert.deepEqual(errors, []);
@@ -149,7 +151,7 @@ describe('settings menu rows stay on one line', () => {
           for (const locale of LOCALES) {
             const messages = { ...english, ...catalog(locale) };
             // Real createControls wiring: the store actions below drive each toggle row's own update.
-            const widths = await page.evaluate(({ messages, dir }) => {
+            const { widths, detailWidths } = await page.evaluate(({ messages, dir }) => {
               document.body.replaceChildren();
               document.body.dir = dir;
               const mount = document.createElement('div');
@@ -194,14 +196,20 @@ describe('settings menu rows stay on one line', () => {
                 ...states('SET_VOLUME_BOOST', [true, false]),
                 ...['light', 'strong', 'off'].map(level => ({ type: 'SET_AUDIO', value: { voice: level, leveling: level, bass: level === 'light' ? 'less' : level === 'strong' ? 'more' : 'original' } }))
               ];
+              const valueWidths = () => [...menu.querySelectorAll<HTMLElement>('.theater-settings-detail')]
+                .map(detail => Math.round(detail.getBoundingClientRect().width * 100) / 100);
               const widths = [Math.round(menu.getBoundingClientRect().width * 100) / 100];
+              const detailWidths = [valueWidths()];
               for (const action of sequence) {
                 store.dispatch(action);
                 widths.push(Math.round(menu.getBoundingClientRect().width * 100) / 100);
+                detailWidths.push(valueWidths());
               }
-              return widths;
+              return { widths, detailWidths };
             }, { messages, dir: locale === 'ar' ? 'rtl' : 'ltr' });
             assert.ok(widths.length > 10);
+            for (const values of detailWidths) assert.deepEqual(values, detailWidths[0],
+              `${engine} ${locale}: reserved value widths changed`);
             assert.deepEqual([...new Set(widths)].length, 1, `${engine} ${locale} ${viewport.width}px: menu width changed ${[...new Set(widths)]}`);
           }
           assert.deepEqual(errors, []);
