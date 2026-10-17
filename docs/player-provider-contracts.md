@@ -61,9 +61,14 @@ refresh. YouTube observes only the main player's ad-state classes, since ad
 completion need not emit another playing event. The opt-in preference defaults
 off; a visit records entry so exiting or changing preferences cannot reenter the
 same content. New content identities reset
-that record. Entry is announced first: once every condition except finished loading holds
-(`ui/auto-theater-intent.ts`), a corner notice shows for at least 3 s from that moment, and
-entry waits for both that time and playback. Click or Escape cancels it and consumes the visit.
+Entry is announced first: once the provider confirms the main video's identity and
+playback has been requested (not paused or ended, no media error, a source loading) —
+even before the stream can play (`ui/auto-theater-intent.ts`) — a corner notice shows for at
+least 5 s from that moment, and entry waits for both that time and actual playback; a
+stream still loading when the time ends is simply awaited. The provider bridge confirms identity only;
+the runtime decides playing versus loading. Pause, end, media error/abort/emptied, a replaced
+video element, a new content identity or a YouTube ad cancel the notice without consuming the visit,
+and the countdown restarts from the full 5 s when playback resumes. Click or Escape cancels it and consumes the visit.
 The optional AutoTheater Skip countdown preference bypasses the notice and its timer;
 it still waits for active playback and revalidates every entry condition. Changing
 this preference clears a pending notice without consuming the visit. Automatic entry requires an enabled provider, an allowed domain, a

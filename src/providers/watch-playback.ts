@@ -44,7 +44,7 @@ export function observeProviderWatchPlaybackChanges(onChange: () => void): () =>
 const WATCH_QUERY = 'theater-everywhere-watch-playback-query';
 const WATCH_RESPONSE = 'data-te-watch-playback-response';
 
-/** Synchronous, string-only bridge, like queue navigation, including Firefox. */
+/** Identity only, never playback state. Synchronous, string-only bridge, like queue navigation, including Firefox. */
 export function confirmProviderWatchVideo(video: HTMLVideoElement): boolean {
   const doc = video.ownerDocument;
   const view = doc.defaultView;
@@ -65,8 +65,8 @@ export function installWatchPlaybackQueries(): void {
     if (!page || !mediaProviderIntegrationEnabled(page.provider)) return;
     try {
       const video = page.playback.mainVideo(document, page.identity);
-      if (!video?.isConnected || !isSwitchableTheaterVideo(video)
-          || video.paused || video.ended || video.readyState <= 2) return;
+      // Identity only: whether the video is playing or still loading is the caller's decision.
+      if (!video?.isConnected || !isSwitchableTheaterVideo(video)) return;
       video.setAttribute(WATCH_RESPONSE, requestId);
     } catch {
       // Host APIs can disappear or throw during navigation; fail closed.

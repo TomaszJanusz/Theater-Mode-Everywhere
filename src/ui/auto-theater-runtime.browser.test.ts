@@ -145,7 +145,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await start('first');
       await page.locator('video').evaluate((video: HTMLVideoElement) => video.play());
       assert.deepEqual(await probe(), { entries: 0, active: false, shown: 1, hidden: 0 }, 'ready media is announced before entry');
-      await page.clock.runFor(2999);
+      await page.clock.runFor(4999);
       assert.equal((await probe()).entries, 0);
       await page.clock.runFor(1);
       assert.deepEqual(await probe(), { entries: 1, active: true, shown: 1, hidden: 1 });
@@ -170,6 +170,144 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.evaluate(() => window.autoTheaterRuntime.dispose());
       await page.clock.runFor(10_000);
       assert.deepEqual(await probe(), { entries: 0, active: false, shown: 2, hidden: 2 }, 'disposal removes the notice and entry');
+    } finally {
+      await browser.close();
+    }
+  });
+
+  it(`AutoTheater countdown in ${engine} starts while loading and restarts or cancels on host state changes`, { timeout: 90_000 }, async t => {
+    const browserType = (await import('playwright'))[engine];
+    assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+    const browser = await browserType.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await page.addInitScript('window.__name = target => target;');
+      await page.route('https://www.youtube.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
+      }));
+      await page.goto('https://www.youtube.com/watch?v=abcdefghijk');
+      await page.evaluate(media => {
+        document.querySelector('video')!.src = media;
+        Object.assign(document.getElementById('movie_player')!, {
+          getVideoData: () => ({ video_id: new URL(location.href).searchParams.get('v') }),
+          getPlayerState: () => 3
+        });
+      }, MEDIA);
+      await page.waitForFunction(() => document.querySelector('video')!.readyState > 2);
+      await page.addScriptTag({ content: BUNDLE });
+      await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 60_000));
+      await page.evaluate(() => {
+        // Host-controlled media facts, so loading states are deterministic.
+        (window as unknown as { fake(patch: object, event?: string): void }).fake = (patch, event) => {
+          const video = document.querySelector('video')!;
+          const state = Object.assign((video as unknown as { facts?: object }).facts ?? { paused: true, ended: false, readyState: 0, networkState: 2, error: null }, patch);
+          (video as unknown as { facts?: object }).facts = state;
+          for (const key of Object.keys(state)) Object.defineProperty(video, key, { get: () => (state as Record<string, unknown>)[key], configurable: true });
+          if (event) video.dispatchEvent(new Event(event));
+        };
+      });
+      const start = () => page.evaluate(flags => {
+        window.AutoTheaterTest.installWatchPlaybackQueries();
+        const probe: Window['autoTheaterProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
+        window.autoTheaterProbe = probe;
+        window.autoTheaterRuntime?.dispose();
+        window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+          visit: { current: { identity: null, entered: false } },
+          enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+          editableFocused: () => false, theaterActive: () => probe.active,
+          transitioning: () => false, findBestVideo: () => document.querySelector('video'),
+          enter: () => { probe.entries++; probe.active = true; },
+          showNotice: cancel => { probe.shown++; probe.cancel = cancel; return () => { probe.hidden++; }; }
+        });
+      }, defaultMediaProviderFlags());
+      const fake = (patch: object, event?: string) => page.evaluate(([p, e]) => (window as unknown as { fake(patch: object, event?: string): void }).fake(p as object, e as string | undefined), [patch, event] as const);
+      const probe = () => page.evaluate(() => { const { entries, shown, hidden } = window.autoTheaterProbe; return { entries, shown, hidden }; });
+      const reset = async () => {
+        await page.evaluate(() => { window.autoTheaterProbe.active = false; });
+        await fake({ paused: true, ended: false, readyState: 0, networkState: 2, error: null }, 'pause');
+        await start();
+      };
+
+      await start();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'a loading main video starts the notice');
+
+      // Pause cancels without consuming the visit; resume restarts the full countdown.
+      await page.clock.runFor(3000);
+      await fake({ paused: true }, 'pause');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
+      await fake({ paused: false }, 'play');
+      assert.equal((await probe()).shown, 2);
+      await page.clock.runFor(4999);
+      await fake({ readyState: 4 }, 'playing'); // Playback before 5 s waits for the timer.
+      assert.equal((await probe()).entries, 0);
+      await page.clock.runFor(1);
+      assert.equal((await probe()).entries, 1);
+
+      await reset();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      await page.clock.runFor(10_000);
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'still loading at 5 s keeps waiting');
+      await fake({ readyState: 4 }, 'playing');
+      assert.equal((await probe()).entries, 1, 'enters on playing');
+
+      for (const [name, patch] of [['error', { error: {} }], ['abort', { networkState: 0 }], ['emptied', { networkState: 0, readyState: 0 }], ['ended', { ended: true }]] as const) {
+        await reset();
+        await fake({ paused: false, readyState: 1 }, 'loadstart');
+        await page.clock.runFor(1000);
+        await fake(patch, name);
+        assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, `${name} cancels`);
+        await page.clock.runFor(10_000);
+        assert.equal((await probe()).entries, 0);
+        await fake({ error: null, ended: false, networkState: 2, readyState: 1 }, 'loadstart');
+        assert.equal((await probe()).shown, 2, `recovery after ${name} announces again`);
+      }
+
+      await reset();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      assert.equal(await page.evaluate(() => window.autoTheaterRuntime.cancelPending()), true);
+      await fake({ readyState: 1 }, 'loadstart');
+      await page.clock.runFor(10_000);
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'Esc/click consumes the visit');
+
+      // A replaced media element drops the old notice; the stale timer cannot enter.
+      await reset();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      await page.clock.runFor(2000);
+      await page.evaluate(() => {
+        const old = document.querySelector('video')!;
+        const next = old.cloneNode() as HTMLVideoElement;
+        old.replaceWith(next);
+        window.autoTheaterRuntime.refresh();
+      });
+      assert.equal((await probe()).shown, 1, 'a fresh unstarted element is not announced');
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      assert.deepEqual(await probe(), { entries: 0, shown: 2, hidden: 1 });
+      await page.clock.runFor(3000);
+      await fake({ readyState: 4 }, 'playing');
+      assert.equal((await probe()).entries, 0, 'the old timer does not carry over');
+      await page.clock.runFor(2000);
+      assert.equal((await probe()).entries, 1);
+
+      // YouTube ads and identity changes cancel; the countdown restarts in full.
+      await reset();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      await page.clock.runFor(3000);
+      await page.evaluate(() => { document.getElementById('movie_player')!.classList.add('ad-showing'); window.autoTheaterRuntime.refresh(); });
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'ad start cancels');
+      await page.evaluate(() => { document.getElementById('movie_player')!.classList.remove('ad-showing'); window.autoTheaterRuntime.refresh(); });
+      assert.equal((await probe()).shown, 2, 'ad end restarts');
+      await page.clock.runFor(3000);
+      assert.equal((await probe()).hidden, 1);
+      await page.evaluate(() => { history.replaceState({}, '', '/watch?v=lmnopqrstuv'); window.autoTheaterRuntime.refresh(); });
+      assert.deepEqual(await probe(), { entries: 0, shown: 3, hidden: 2 }, 'identity change restarts the countdown');
+      await fake({ readyState: 4 }, 'playing');
+      await page.clock.runFor(4999);
+      assert.equal((await probe()).entries, 0, 'the earlier progress does not carry over');
+      await page.clock.runFor(1);
+      assert.equal((await probe()).entries, 1);
     } finally {
       await browser.close();
     }
