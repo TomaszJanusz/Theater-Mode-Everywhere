@@ -137,21 +137,27 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     try {
       const page = await browser.newPage();
       await open(page);
+      const total = PROVIDER_CAPABILITIES.length;
+      const automatic = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no');
+      const combined = automatic.filter(provider => provider.capabilities.heatmap.status !== 'no');
+      const expectedNames = (providers: typeof PROVIDER_CAPABILITIES) => providers.map(provider => provider.name).sort();
       const chip = page.locator('#rte-filter-buttons [data-capability="autoTheater"]');
-      assert.equal(await chip.textContent(), 'AutoTheater · 5');
+      assert.equal(await chip.textContent(), `AutoTheater · ${automatic.length}`);
       assert.equal(await chip.getAttribute('aria-pressed'), 'false');
       const names = () => page.locator('.rte-tile:visible .rte-name').allTextContents();
       await chip.press('Space');
       assert.equal(await chip.getAttribute('aria-pressed'), 'true');
-      assert.deepEqual((await names()).sort(), ['Disney+', 'Netflix', 'Patreon', 'Vimeo', 'YouTube']);
-      assert.equal(await page.locator('#rte-shown').textContent(), '5 of 10 services shown');
+      assert.deepEqual((await names()).sort(), expectedNames(automatic));
+      assert.equal(await page.locator('#rte-shown').textContent(), `${automatic.length} of ${total} services shown`);
       await page.locator('#rte-filter-buttons [data-capability="heatmap"]').click();
-      assert.deepEqual(await names(), ['YouTube']);
-      assert.equal(await page.locator('#rte-shown').textContent(), '1 of 10 services shown');
+      assert.deepEqual((await names()).sort(), expectedNames(combined));
+      assert.equal(await page.locator('#rte-shown').textContent(), `${combined.length} of ${total} services shown`);
       await page.locator('#rte-clear').click();
       assert.equal(await chip.getAttribute('aria-pressed'), 'false');
-      assert.equal(await page.locator('.rte-tile:visible').count(), 10);
-      assert.equal(await page.locator('#rte-shown').textContent(), '10 of 10 services shown');
+      assert.equal(await page.locator('.rte-tile:visible').count(), total);
+      assert.deepEqual((await names()).sort(), expectedNames(PROVIDER_CAPABILITIES));
+      assert.equal(await page.locator('#rte-filter-buttons [aria-pressed="true"]').count(), 0);
+      assert.equal(await page.locator('#rte-shown').textContent(), `${total} of ${total} services shown`);
     } finally { await browser.close(); }
   });
 

@@ -1,3 +1,4 @@
+import { installBilibiliNavigation } from '../providers/bilibili/navigation';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
@@ -17,7 +18,7 @@ import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import { matchesShortcut } from '../ui/shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { isChatDocument, isNativeChatEvent } from '../chat';
-import { isPatreonHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -238,8 +239,10 @@ export function installMainWorldRuntime(): void {
     });
   }
 
+  if (harvestHost || isBilibiliHost(window.location.hostname)) installWatchPlaybackQueries();
+  if (isBilibiliHost(window.location.hostname)) installBilibiliNavigation();
+
   if (harvestHost) {
-    installWatchPlaybackQueries();
     installYoutubeMain();
     installTwitchMain();
     installDisneyMain();
