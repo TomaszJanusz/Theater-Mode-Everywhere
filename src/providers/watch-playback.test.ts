@@ -20,7 +20,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon', 'bilibili']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon', 'bilibili', 'bilibiliIntl']);
     assert.ok(providerDefinition('youtube').watchPlayback?.refreshEvents?.includes('yt-navigate-start'));
   });
 
@@ -51,7 +51,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://www.twitch.tv/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'disney', 'netflix', 'bilibili']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'disney', 'netflix', 'bilibili', 'bilibiliIntl']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -82,6 +82,9 @@ describe('AutoTheater availability', () => {
   it('is available only on hosts whose provider declares watch playback and has its integration on', () => {
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.bilibili.tv', { ...flags, bilibiliIntl: false }, true), 'integrationOff');
+    assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('www.bilibili.com', { ...flags, bilibili: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');

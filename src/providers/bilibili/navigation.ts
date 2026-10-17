@@ -4,7 +4,7 @@ export const BILIBILI_NAVIGATE_EVENT = 'theater-everywhere-bilibili-navigate';
 const HISTORY_HOOKED = Symbol.for('theater-everywhere.bilibili-history');
 
 /**
- * Bilibili is a pushState SPA: `popstate` and `hashchange` never fire when links switch videos or parts,
+ * Both Bilibili sites use pushState routing: `popstate` and `hashchange` never fire when links switch videos or parts,
  * and the isolated world cannot see page-world history calls. Publishes one event per route change.
  */
 export function installBilibiliNavigation(): void {
