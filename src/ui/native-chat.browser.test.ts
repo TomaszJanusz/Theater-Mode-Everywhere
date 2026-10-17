@@ -411,7 +411,8 @@ async function installStorage(page: Page, seed: Record<string, unknown> = {}, na
             await (window as unknown as { __tmeStorageSet(patch: Record<string, unknown>): Promise<void> }).__tmeStorageSet(snapshot);
           },
           onChanged: { addListener() {} }
-        }
+        },
+        onChanged: { addListener() {} }
       }
     };
     Object.defineProperty(window, 'chrome', { configurable: true, writable: true, value: chromeMock });
