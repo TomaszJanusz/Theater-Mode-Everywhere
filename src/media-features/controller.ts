@@ -620,7 +620,6 @@ export class MediaFeaturesController {
   private updateCcState(): void {
     const hasTracks = this.tracks.length > 0;
     this.ccBtn.classList.toggle('disabled', !hasTracks);
-    this.ccBtn.style.opacity = hasTracks ? '' : '0.35';
     this.ccBtn.style.pointerEvents = hasTracks ? '' : 'none';
     this.ccBtn.classList.toggle('active', this.captionsAreOn());
     const loading = this.captionState === 'loading';

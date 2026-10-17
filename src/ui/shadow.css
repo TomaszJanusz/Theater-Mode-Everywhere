@@ -1153,6 +1153,12 @@ button.theater-time-end:hover {
   color: var(--theater-volume-boost-color) !important;
 }
 
+/* Dim only the icon. Dimming the button would also thin the open menu's notch
+   fill and let the video show through where it joins the menu. */
+.theater-control-btn.cc-btn.disabled svg {
+  opacity: 0.35 !important;
+}
+
 /* Animate the icon, whose currentColor stroke follows the shared load state. */
 .theater-control-btn.cc-btn.loading svg {
   animation: theater-caption-loading-pulse 1.2s ease-in-out infinite !important;
