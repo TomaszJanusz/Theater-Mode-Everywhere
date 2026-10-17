@@ -25,12 +25,14 @@ type ExitMode = { mode: 'passive' } | { mode: 'deadline'; remainingMs: () => num
 
 /** Owns one exit, including its deadline alarm, motion subscription and reveal.
  * Scale is independent of transform so the existing rotating ring keeps spinning.
+ * `plate` is a container that holds only the ring: it takes the exit instead, so the two zoom out as one.
  * Callers cancel before dismissing/replacing their UI; cancelled finishes do nothing.
  */
 export function exitSpinner(element: HTMLElement, options: ExitMode & {
   isCurrent?: () => boolean;
   onStart?: () => void;
   onFinish?: () => void;
+  plate?: HTMLElement;
   reveal?: HTMLElement;
 }): () => void {
   let stopped = false;
@@ -84,7 +86,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
     const duration = options.mode === 'deadline'
       ? SPINNER_DEADLINE_START_MS - SPINNER_DEADLINE_END_MS : SPINNER_PASSIVE_EXIT_MS;
     const elapsed = options.mode === 'deadline' ? SPINNER_DEADLINE_START_MS - remaining : 0;
-    const animation = element.animate([
+    const animation = (options.plate ?? element).animate([
       { scale: '1', opacity: 1 }, { scale: '0', opacity: 0 }
     ], { duration, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
     animations.push(animation);

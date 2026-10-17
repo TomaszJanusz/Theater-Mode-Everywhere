@@ -1506,7 +1506,7 @@ export function createControls(
         if (wasVisible && spinner) {
           loadingIndicator.classList.add('exiting');
           stopLoadingExit = exitSpinner(spinner, {
-            mode: 'passive',
+            mode: 'passive', plate: loadingIndicator,
             isCurrent: () => !controlsScope.isDisposed && session.element === video.element,
             onFinish: () => { loadingIndicator.classList.remove('exiting'); stopLoadingExit = null; }
           });

@@ -253,9 +253,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await page.locator('.theater-loading-indicator.exiting').count(), 1);
     await page.clock.runFor(250);
     await capture(page, `${engine}-buffer-middle`, 250);
-    await assertShrinking(page, '.theater-loading-spinner');
-    await assertUnscaled(page, '.theater-loading-indicator', true);
-    assert.equal(await page.evaluate("exits.every(record => record.element.classList.contains('theater-loading-spinner'))"), true);
+    // One motion: the plate carries the only exit animation and the ring zooms inside it.
+    await assertShrinking(page, '.theater-loading-indicator');
+    assert.equal(await spinner.evaluate(e => getComputedStyle(e).scale), 'none');
+    assert.equal(await page.evaluate("exits.length === 1 && exits[0].element.classList.contains('theater-loading-indicator')"), true);
+    const timing = await page.evaluate(`(() => { const t = exits[0].animation.effect.getTiming(); return [t.duration, t.easing, t.fill]; })()`);
+    assert.deepEqual(timing, [500, 'cubic-bezier(0.4, 0, 0.2, 1)', 'both']);
     await page.clock.runFor(249);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
