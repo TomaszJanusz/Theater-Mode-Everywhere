@@ -168,7 +168,8 @@ export function createPlayerSettings(
     }
     if (newItem) highlight(row, text, label, newItem, true);
     return {
-      update(shortcut: string, value?: string) {
+      /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
+      update(shortcut: string, value?: string, values: readonly string[] = []) {
         const name = value ? `${label}: ${value}` : label;
         const item = newItems.get(row);
         if (item) item.label = name;
@@ -181,7 +182,18 @@ export function createPlayerSettings(
           keys.append(key);
         });
         detail.replaceChildren();
-        if (value) detail.textContent = value;
+        if (value) {
+          const current = document.createElement('span');
+          current.textContent = value;
+          detail.append(current);
+          for (const other of values) {
+            const reserve = document.createElement('span');
+            reserve.className = 'theater-settings-reserve';
+            reserve.setAttribute('aria-hidden', 'true');
+            reserve.textContent = other;
+            detail.append(reserve);
+          }
+        }
         if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
         else row.removeAttribute('aria-keyshortcuts');
       }

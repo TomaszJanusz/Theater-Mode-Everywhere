@@ -33,7 +33,7 @@ import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
-import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -968,7 +968,7 @@ export function createControls(
     const fitRow = video.capabilities.objectFit ? settings.addRow(fitBtn, t('videoFitLabel')) : null;
     const updateFitRow = () => fitRow?.update(ui().shortcuts.cycleFit, t(
       ui().videoFit === 'cover' ? 'videoFitCover' : ui().videoFit === 'fill' ? 'videoFitFill' : 'videoFitContain'
-    ));
+    ), ['videoFitContain', 'videoFitCover', 'videoFitFill'].map(key => t(key)));
     updateFitRow();
     controlsScope.add(ctx.uiStore.subscribe(updateFitRow));
 
@@ -981,7 +981,8 @@ export function createControls(
     });
     const layoutRow = settings.addRow(layoutBtn, t('pictureAlignLabel'), 'player', 'playerPictureLayout');
     const updateLayoutRow = () => layoutRow.update(ui().shortcuts.cycleLayout,
-      t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'));
+      t(ui().pictureAlign === 'top' ? 'pictureAlignTop' : 'pictureAlignCenter'),
+      ['pictureAlignTop', 'pictureAlignCenter'].map(key => t(key)));
     updateLayoutRow();
     controlsScope.add(ctx.uiStore.subscribe(updateLayoutRow));
 
@@ -1010,10 +1011,12 @@ export function createControls(
         if (block) return;
         if (boost) {
           boost.button.setAttribute('aria-pressed', String(ui().volumeBoost));
-          boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'));
+          boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'),
+            ['volumeBoostOn', 'volumeBoostOff'].map(key => t(key)));
         }
         for (const { name, row } of audioRows) {
-          row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)));
+          row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)),
+            audioLevelLabelKeys(name).map(key => t(key)));
         }
       };
       updateAudioRows();
@@ -1063,7 +1066,8 @@ export function createControls(
       pinBtn.setAttribute('aria-pressed', String(pinned));
       pinBtn.setAttribute('aria-label', t('keepControlsVisibleTitle'));
       pinBtn.setAttribute('aria-keyshortcuts', ui().shortcuts.toggleControlsPin);
-      pinRow.update(ui().shortcuts.toggleControlsPin, t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'));
+      pinRow.update(ui().shortcuts.toggleControlsPin, t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'),
+        ['controlsVisibilityOn', 'controlsVisibilityOff'].map(key => t(key)));
     };
     pinBtn.addEventListener('click', (event) => {
       blurMouseToggle(event, pinBtn);
@@ -1112,7 +1116,8 @@ export function createControls(
       autoTheaterBtn.setAttribute('aria-disabled', String(unavailable));
       autoTheaterRow.update('', t(unavailable
         ? (availability === 'integrationOff' ? 'autoEnterTheaterIntegrationOff' : 'autoEnterTheaterUnsupported')
-        : ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'));
+        : ui().autoEnterTheater ? 'autoEnterTheaterOn' : 'autoEnterTheaterOff'),
+        ['autoEnterTheaterOn', 'autoEnterTheaterOff', 'autoEnterTheaterIntegrationOff', 'autoEnterTheaterUnsupported'].map(key => t(key)));
     };
     updateAutoTheaterRow();
     wrapper._syncAutoTheaterAvailability = updateAutoTheaterRow;

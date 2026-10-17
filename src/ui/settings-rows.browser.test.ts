@@ -131,4 +131,66 @@ describe('settings menu rows stay on one line', () => {
       });
     });
   }
+
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 120_000 }, async () => {
+      await withBrowser(engine, async browser => {
+        for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
+          const page = await browser.newPage({ viewport });
+          await page.setContent('<body style="margin:0"></body>');
+          await page.addStyleTag({ content: UI_CSS });
+          await page.evaluate('window.__name = value => value');
+          await page.addScriptTag({ content: BUNDLE });
+          for (const locale of LOCALES) {
+            const messages = { ...english, ...catalog(locale) };
+            // Each toggleable row with every state it can show, as controls.ts wires them.
+            const toggles = [
+              ...ROWS.filter(row => row.values.length > 1 || row.label === 'keepControlsVisibleTitle'),
+              { label: 'autoEnterTheaterTitle', values: ['autoEnterTheaterOn', 'autoEnterTheaterOff'] },
+              { label: 'volumeBoostLabel', values: ['volumeBoostOn', 'volumeBoostOff'] },
+              { label: 'voiceBoostLabel', values: ['voiceBoostOff', 'voiceBoostLight', 'voiceBoostStrong'] },
+              { label: 'volumeLevelingLabel', values: ['volumeLevelingOff', 'volumeLevelingLight', 'volumeLevelingStrong'] },
+              { label: 'bassLabel', values: ['bassLess', 'bassOriginal', 'bassMore'] }
+            ].map(row => row.label === 'keepControlsVisibleTitle'
+              ? { ...row, values: ['controlsVisibilityOn', 'controlsVisibilityOff'] }
+              : row).map(row => ({ text: messages[row.label], values: row.values.map(key => messages[key]) }));
+            const widths = await page.evaluate(({ toggles, messages, dir }) => {
+              document.body.replaceChildren();
+              document.body.dir = dir;
+              const mount = document.createElement('div');
+              mount.style.cssText = 'position:fixed;inset-inline-end:12px;bottom:80px;width:32px';
+              document.body.append(mount);
+              const api = (window as any).SettingsRows;
+              const settings = api.createPlayerSettings({
+                t: (key: string) => messages[key] ?? key,
+                ui: () => ({ featureHighlights: { installed: '2.0', seenThrough: '1.0', enabled: true, now: 0 } }),
+                uiStore: { subscribe: () => () => {} },
+                actions: { setIcon(element: HTMLElement, svg: string) { element.innerHTML = svg; }, showToolbar() {}, updateCaptionDock() {} },
+                paintOverlay() {}
+              }, new api.DisposableScope());
+              mount.append(settings.container);
+              const rows = toggles.map((toggle: { text: string; values: string[] }) => {
+                const button = document.createElement('button');
+                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
+                return { row: settings.addRow(button, toggle.text, 'player'), values: toggle.values };
+              });
+              settings.button.click();
+              const menu = settings.panel as HTMLElement;
+              const widths: number[] = [];
+              for (const { row, values } of rows) {
+                for (const value of values) {
+                  row.update('Shift+A', value, values);
+                  widths.push(Math.round(menu.getBoundingClientRect().width * 100) / 100);
+                }
+              }
+              return widths;
+            }, { toggles, messages, dir: locale === 'ar' ? 'rtl' : 'ltr' });
+            assert.ok(widths.length > 10);
+            assert.deepEqual([...new Set(widths)].length, 1, `${engine} ${locale} ${viewport.width}px: menu width changed ${[...new Set(widths)]}`);
+          }
+          await page.close();
+        }
+      });
+    });
+  }
 });

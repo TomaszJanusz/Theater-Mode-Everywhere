@@ -31,6 +31,11 @@ const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], stri
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
   bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore' }
 };
+/** Every label a row can show, so a menu can reserve room for the widest. */
+export function audioLevelLabelKeys(name: AudioSettingName): string[] {
+  return Object.values(LEVEL_LABEL_KEYS[name]);
+}
+
 /** Why audio settings cannot apply to a video, with the message that explains it. */
 export type AudioBlock = 'protected' | 'refused';
 export const AUDIO_BLOCK_KEYS: Record<AudioBlock, string> = {
