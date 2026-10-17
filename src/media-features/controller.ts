@@ -1,3 +1,4 @@
+import { timelineTickPositions } from './timeline-ticks';
 import { createTimelineMarkerSource } from '../providers/timeline/markers';
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
 import { contentTitle, type ContentTitle } from './content-title';
@@ -476,12 +477,12 @@ export class MediaFeaturesController {
       mark.title = this.t(marker.labelKey);
       this.chapterLayer.appendChild(mark);
     }
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    for (const chapter of this.chapters) {
-      if (chapter.start <= 0) continue;
+    const durationKnown = Number.isFinite(duration) && duration > 0;
+    const chapterStarts = durationKnown ? this.chapters.map(chapter => chapter.start / duration) : [];
+    for (const position of timelineTickPositions(this.markers, chapterStarts)) {
       const mark = document.createElement('div');
       mark.className = 'theater-scrubber-chapter-mark';
-      mark.style.left = `${(chapter.start / duration) * 100}%`;
+      mark.style.left = `${position * 100}%`;
       this.chapterLayer.appendChild(mark);
     }
   }

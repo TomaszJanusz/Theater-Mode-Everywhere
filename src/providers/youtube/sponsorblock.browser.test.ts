@@ -70,12 +70,14 @@ for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as c
         await page.waitForFunction(color => getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-scrubber-segment')!).backgroundColor === color, fill);
         const marker = await markers(page).first().evaluate(el => {
           const css = getComputedStyle(el);
-          return { border: css.borderTopColor, width: css.borderTopWidth, style: css.borderTopStyle,
+          return { border: css.borderLeftColor, width: css.borderLeftWidth, style: css.borderLeftStyle,
             background: css.backgroundColor, opacity: css.opacity, box: css.boxSizing };
         });
         const hex = (rgb: string) => '#' + rgb.match(/\d+/g)!.slice(0, 3).map(value => Number(value).toString(16).padStart(2, '0')).join('');
         assert.ok(contrastRatio(hex(marker.border), hex(fill)) >= 3,
           `${accentColor}/${highContrast}: ${marker.border} border must contrast with ${fill} progress by at least 3:1`);
+        const tick = await page.locator('.theater-scrubber-chapter-mark').first().evaluate(el => getComputedStyle(el).backgroundColor);
+        assert.ok(contrastRatio(hex(tick), hex(fill)) >= 3, `${accentColor}/${highContrast}: bar-colored tick ${tick} must contrast with ${fill} progress`);
         assert.equal(marker.width, '1px');
         assert.equal(marker.style, 'solid');
         assert.equal(marker.box, 'border-box', 'border must not change timeline geometry');
@@ -84,7 +86,7 @@ for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as c
       }
     }
     await page.emulateMedia({ forcedColors: 'active' });
-    assert.equal(await markers(page).first().evaluate(el => getComputedStyle(el).borderTopStyle), 'solid');
+    assert.equal(await markers(page).first().evaluate(el => getComputedStyle(el).borderLeftStyle), 'solid');
     await browser.close();
   });
   it(`${name}: rendered views, live settings, navigation, notice stacking and cleanup`, { timeout: 60000 }, async t => {
@@ -282,3 +284,43 @@ it('supports the existing YouTube embed player surface', { timeout: 30000 }, asy
     await page.keyboard.press('Escape');
   } finally { await browser.close(); }
 });
+
+for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as const) {
+  it(`${name}: segment bars match the scrubber track height and boundaries get bar-colored ticks`, { timeout: 60000 }, async t => {
+    const browser = await engine.launch(); ownTestBrowser(t, browser);
+    const page = await browser.newPage({ viewport: { width: 1200, height: 800 }, deviceScaleFactor: 3 });
+    await boot(page);
+    await markers(page).first().waitFor();
+    const measure = () => page.evaluate(() => {
+      const root = document.querySelector('#theater-everywhere-ui')!.shadowRoot!;
+      const rect = (el: Element) => el.getBoundingClientRect();
+      const track = rect(root.querySelector('.theater-scrubber-track')!);
+      return {
+        track: { top: track.top, height: track.height },
+        segments: Array.from(root.querySelectorAll('.theater-scrubber-segment')).map(el => ({ top: rect(el).top, height: rect(el).height })),
+        ticks: Array.from(root.querySelectorAll<HTMLElement>('.theater-scrubber-chapter-mark')).map(el => el.style.left),
+        tickColor: getComputedStyle(root.querySelector('.theater-scrubber-chapter-mark')!).backgroundColor,
+        barColor: getComputedStyle(root.host).getPropertyValue('--appearance-surface') || getComputedStyle(root.querySelector('.theater-controls-wrapper')!, '::before').backgroundColor
+      };
+    });
+    const expectEqualHeights = (m: Awaited<ReturnType<typeof measure>>, state: string) => {
+      for (const segment of m.segments) {
+        assert.ok(Math.abs(segment.height - m.track.height) < 0.5, `${state}: segment ${segment.height}px vs track ${m.track.height}px`);
+        assert.ok(Math.abs(segment.top - m.track.top) < 0.5, `${state}: segment top ${segment.top} vs track ${m.track.top}`);
+      }
+    };
+    if (name === 'Chromium' && process.env.SB_SHOT) await page.screenshot({ path: process.env.SB_SHOT, clip: { x: 170, y: 735, width: 450, height: 30 } });
+    const rest = await measure();
+    expectEqualHeights(rest, 'rest');
+    assert.equal(await markers(page).first().evaluate(el => getComputedStyle(el).borderTopWidth), '0px', 'border must not add visible height');
+    // Fixture boundaries: 2-8%, 10-35%, 60% point. Distinct positions only.
+    assert.deepEqual(rest.ticks.map(left => Number.parseFloat(left)).map(value => Math.round(value * 100) / 100), [2, 8, 10, 35, 60]);
+    await page.locator('.theater-scrubber-container').hover();
+    await page.waitForFunction(() => {
+      const track = document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-scrubber-track')!;
+      return track.getBoundingClientRect().height === 6;
+    });
+    expectEqualHeights(await measure(), 'hover');
+    await browser.close();
+  });
+}
