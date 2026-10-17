@@ -26,7 +26,7 @@ export function createAutoTheaterRuntime(options: {
   findBestVideo(): HTMLVideoElement | null;
   enter(video: HTMLVideoElement): void;
   /** Shows the entry notice and returns its cleanup. */
-  showNotice(cancel: () => void, remainingMs: () => number): () => void;
+  showNotice(cancel: () => void, remainingMs: () => number, video: () => HTMLVideoElement | null): () => void;
   minNoticeMs?: number;
   skipCountdown?(): boolean;
 }): AutoTheaterRuntime {
@@ -39,10 +39,11 @@ export function createAutoTheaterRuntime(options: {
     observedVideo = null;
   };
   scope.add(clearObservedVideo);
+  let latestVideo: HTMLVideoElement | null = null;
   let hideNotice: (() => void) | undefined;
   const intent = createAutoEnterIntent<string>({
     minVisibleMs: options.minNoticeMs ?? AUTO_ENTER_NOTICE_MIN_MS,
-    show: remainingMs => { hideNotice = options.showNotice(cancelPending, remainingMs); },
+    show: remainingMs => { hideNotice = options.showNotice(cancelPending, remainingMs, () => latestVideo); },
     hide: () => { hideNotice?.(); hideNotice = undefined; },
     recheck: () => refresh()
   });
@@ -78,6 +79,7 @@ export function createAutoTheaterRuntime(options: {
       return;
     }
     const video = options.findBestVideo();
+    latestVideo = video;
     if (video !== observedVideo) {
       stopObserving?.();
       stopObserving = video ? page.playback.observe?.(video, refresh) ?? undefined : undefined;

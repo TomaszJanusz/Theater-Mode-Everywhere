@@ -1103,7 +1103,8 @@ function syncAutoTheaterRuntime(): void {
     transitioning: () => refs.isTransitioning,
     findBestVideo,
     enter: enterTheaterMode,
-    showNotice: (cancel, remainingMs) => showAutoTheaterNotice(paintOverlay, cancel, remainingMs)
+    showNotice: (cancel, remainingMs, video) => showAutoTheaterNotice(paintOverlay, cancel, remainingMs, undefined,
+      { video, theaterActive: () => session.hasUi })
   });
 }
 

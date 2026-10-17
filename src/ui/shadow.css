@@ -2302,6 +2302,25 @@ button.theater-time-end:hover {
   white-space: normal !important;
 }
 
+/* Dims the half-loaded host page behind the countdown, sparing the video's box (clip-path is set by
+   auto-theater-scrim.ts). Same surface token as the dialog backdrop, so Reduce transparency makes it
+   opaque; Reduce motion collapses the fade through the shared token rule. */
+.theater-auto-scrim {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483640 !important;
+  pointer-events: none !important;
+  background: var(--appearance-surface, rgba(9, 9, 11, 0.9)) !important;
+  opacity: 1;
+  transition: opacity 0.18s ease !important;
+  /* Backwards fill: a held end state would override the leaving opacity. */
+  animation: te-modal-fade-in 0.18s ease backwards;
+}
+
+.theater-auto-scrim.leaving {
+  opacity: 0;
+}
+
 /* The automatic-entry notice is the one corner HUD that accepts a click. */
 .theater-everywhere-caption-hud.theater-auto-notice {
   pointer-events: auto !important;

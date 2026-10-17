@@ -5,6 +5,7 @@ import { renderKbdText } from './kbd-text';
 import { t } from './messages';
 import { msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
 import { renderTimeReadout } from './time-readout';
+import { showAutoTheaterScrim, type AutoTheaterScrimOptions } from './auto-theater-scrim';
 
 export const AUTO_THEATER_NOTICE_CLASS = 'theater-auto-notice';
 
@@ -18,13 +19,15 @@ export const DEFAULT_COUNTDOWN_RING_TURN: CountdownRingTurn = 'uniform';
  * The role=status region announces itself on insertion; the seconds counter inside the
  * spinner is decorative (aria-hidden), so ticks are never announced. The counter is
  * derived from `remainingMs`, the intent's own clock, and re-armed only at each change
- * of the displayed second (ending on 0). Returns idempotent cleanup.
+ * of the displayed second (ending on 0). With `scrim`, a backdrop dims the loading page behind it for
+ * the same lifetime. Returns idempotent cleanup.
  */
 export function showAutoTheaterNotice(
   paintOverlay: (element: HTMLElement) => void,
   onCancel: () => void,
   remainingMs: () => number,
-  ringTurn: CountdownRingTurn = DEFAULT_COUNTDOWN_RING_TURN
+  ringTurn: CountdownRingTurn = DEFAULT_COUNTDOWN_RING_TURN,
+  scrim?: AutoTheaterScrimOptions
 ): () => void {
   const hint = t('autoEnterNoticeHint', 'Esc');
   const title = t('autoEnterNoticeTitle');
@@ -97,6 +100,8 @@ export function showAutoTheaterNotice(
     // A timer that fires a hair early re-reads the clock and re-arms instead of skipping a digit.
     if (wait !== null) timer = window.setTimeout(() => tick(true), Math.max(1, Math.ceil(wait)));
   };
+  // Mounted first, so the notice paints above it.
+  const stopScrim = scrim?.video ? showAutoTheaterScrim(scrim) : undefined;
   mountPlayerUi(overlay);
   // After mounting, so reduced motion is read from the UI host.
   tick(false);
@@ -110,5 +115,6 @@ export function showAutoTheaterNotice(
     // Also settle any digit roll already in flight before discarding its DOM.
     renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
     overlay.remove();
+    stopScrim?.();
   };
 }

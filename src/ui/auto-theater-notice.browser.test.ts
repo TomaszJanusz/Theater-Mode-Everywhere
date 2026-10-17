@@ -108,3 +108,55 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.notEqual(restarted.easing, 'linear');
   });
 }
+
+/** Plate facts sampled on the page itself, so no frame between two samples can hide a transparent moment. */
+const SAMPLER = `(${(() => {
+  const samples: Array<Record<string, string | number>> = [];
+  const overlay = () => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector<HTMLElement>('.theater-auto-notice');
+  const timer = setInterval(() => {
+    const el = overlay();
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const alpha = /rgba?\(([^)]*)\)/.exec(style.backgroundColor)?.[1].split(/[ ,/]+/).filter(Boolean)[3];
+    samples.push({
+      t: Math.round(performance.now()), alpha: alpha === undefined ? 1 : Number(alpha), opacity: Number(style.opacity),
+      width: el.getBoundingClientRect().width
+    });
+  }, 40);
+  (window as unknown as { stopSamples: () => typeof samples }).stopSamples = () => { clearInterval(timer); return samples; };
+}).toString()})()`;
+
+for (const engine of ['chromium', 'firefox'] as const) {
+  for (const mode of ['normal', 'reduced transparency', 'high contrast', 'reduced motion'] as const) {
+    it(`${engine}: the notice plate stays opaque through appear, countdown, ring exit and 0 (${mode})`, { timeout: 40_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await page.addInitScript('window.__name = target => target;');
+      await page.goto('about:blank');
+      await page.setContent('<body style="margin:0;background:#fff;height:900px"></body>');
+      await page.addScriptTag({ content: BUNDLE });
+      await page.evaluate(([css, how]) => {
+        window.NoticeTest.setPlayerUiCss(css!);
+        const host = document.getElementById('theater-everywhere-ui') ?? (() => { window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => 0)(); return document.getElementById('theater-everywhere-ui')!; })();
+        if (how === 'reduced transparency') host.setAttribute('data-transparency', 'reduced');
+        if (how === 'high contrast') host.setAttribute('data-contrast', 'high');
+        if (how === 'reduced motion') host.setAttribute('data-motion', 'reduced');
+      }, [CSS, mode]);
+      await page.evaluate(SAMPLER);
+      await page.evaluate(() => {
+        const deadline = performance.now() + 2200;
+        window.noticeHide = window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, deadline - performance.now()));
+      });
+      await page.waitForTimeout(2900);
+      const samples = await page.evaluate(() => (window as unknown as { stopSamples(): Array<Record<string, number | string>> }).stopSamples());
+      assert.ok(samples.length > 40, 'sampled across the whole countdown');
+      for (const s of samples) {
+        assert.equal(s.alpha, 1, `plate background opaque at ${JSON.stringify(s)}`);
+        assert.equal(s.opacity, 1, `notice opaque at ${JSON.stringify(s)}`);
+      }
+      const widths = new Set(samples.map(s => s.width));
+      assert.equal(widths.size, 1, 'the plate never morphs its width during the countdown');
+    });
+  }
+}
