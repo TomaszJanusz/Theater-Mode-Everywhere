@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Режим кінотеатру"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Режим кінотеатру"
+  },
   "extensionDescription": {
     "message": "Розгорніть HTML5-відео у вікні браузера. Користуйтеся власними елементами керування, субтитрами та інтеграціями."
   },

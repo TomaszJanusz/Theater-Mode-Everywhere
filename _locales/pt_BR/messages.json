@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Modo teatro"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Modo teatro"
+  },
   "extensionDescription": {
     "message": "Amplie qualquer vídeo HTML5 na janela do seu navegador. Use seus próprios controles, legendas e integração com sites populares."
   },

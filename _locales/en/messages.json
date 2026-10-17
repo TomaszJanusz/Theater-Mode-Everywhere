@@ -1,9 +1,12 @@
 {
   "extensionName": {
+    "message": "Theater Mode Everywhere — One player to rule them all."
+  },
+  "extensionNameCompact": {
     "message": "Theater Mode Everywhere"
   },
   "extensionDescription": {
-    "message": "Expand any HTML5 video to fill the browser. Use custom controls, subtitles, and integrations with popular video services."
+    "message": "Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services."
   },
   "cwsPromoBeforeLabel": {
     "message": "BEFORE"

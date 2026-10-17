@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Modalità cinema"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Modalità cinema"
+  },
   "extensionDescription": {
     "message": "Espandi i video HTML5 nel browser. Usa controlli personalizzati, sottotitoli e integrazioni con i servizi più popolari."
   },

@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - 剧场模式"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - 剧场模式"
+  },
   "extensionDescription": {
     "message": "将任何 HTML5 视频缩放到浏览器窗口中。使用您自己的控件、字幕并与流行网站集成。"
   },

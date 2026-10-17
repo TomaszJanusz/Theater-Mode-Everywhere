@@ -1,12 +1,3 @@
-# Chrome Web Store Listing - pl
-
-## Name
-Theater Mode Everywhere - Tryb kinowy
-
-## Short summary
-Powiększ dowolne wideo HTML5 do okna przeglądarki. Korzystaj z własnych kontrolek, napisów i integracji z popularnymi serwisami.
-
-## Full description
 Theater Mode Everywhere powiększa odtwarzacze HTML5 tak, aby wypełniały całe okno przeglądarki, zapewniając wygodny tryb kinowy bez nagłówków, pasków bocznych, komentarzy i rekomendacji.
 
 Oglądaj tutoriale, transmisje, filmy i krótkie klipy z własnymi kontrolkami odtwarzania. Korzystaj z napisów, skrótów klawiszowych, regulacji obrazu i głośności oraz dodatkowych funkcji dostępnych na obsługiwanych platformach.
@@ -40,6 +31,3 @@ JAK ZACZĄĆ
 3. Korzystaj z kontrolek odtwarzacza lub skrótów: `C` włącza i wyłącza napisy, `Left` i `Right` przewijają, a konfigurowalne skróty klatka po klatce pozwalają przechodzić po klatkach.
 4. Na obsługiwanych platformach włącz Rich Theater Experience w popupie rozszerzenia lub w ustawieniach.
 5. Naciśnij `Escape` albo ponownie `T`, aby wyjść z trybu kinowego.
-
-## Suggested keywords
-wideo, tryb kinowy, kino, html5 video, napisy, subtitles, pełny ekran, streaming, wzmocnienie głośności, skróty klawiszowe, youtube, vimeo, twitch

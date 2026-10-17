@@ -217,6 +217,8 @@ async function run() {
         }
       }
     };
+    // AMO limits names to 50 characters, so Firefox keeps the name without the store slogan.
+    firefoxManifest.name = '__MSG_extensionNameCompact__';
     // Replace service_worker with scripts[] for Firefox (service_worker is unsupported)
     if (firefoxManifest.background) {
       const sw = firefoxManifest.background.service_worker;

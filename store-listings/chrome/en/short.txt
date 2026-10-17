@@ -1,0 +1,1 @@
+Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services.

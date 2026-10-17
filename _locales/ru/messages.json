@@ -2,6 +2,9 @@
   "extensionName": {
     "message": "Theater Mode Everywhere - Режим кино"
   },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere - Режим кино"
+  },
   "extensionDescription": {
     "message": "Разверните HTML5-видео в окне браузера. Используйте свои элементы управления, субтитры и интеграции."
   },
