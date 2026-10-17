@@ -674,7 +674,7 @@
     "message": "跳过倒计时"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "播放就绪后立即进入影院模式，不显示 3 秒提示。"
+    "message": "播放就绪后立即进入影院模式，不显示倒计时提示。"
   },
   "videoActivatorPromptTitle": {
     "message": "启用视频启动按钮？"

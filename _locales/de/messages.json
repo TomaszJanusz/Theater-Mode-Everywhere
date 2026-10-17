@@ -674,7 +674,7 @@
     "message": "Countdown überspringen"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Sobald die Wiedergabe bereit ist, ohne den 3-sekündigen Hinweis in den Kinomodus wechseln."
+    "message": "Sobald die Wiedergabe bereit ist, ohne den Countdown-Hinweis in den Kinomodus wechseln."
   },
   "videoActivatorPromptTitle": {
     "message": "Video-Schaltfläche aktivieren?"

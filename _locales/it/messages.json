@@ -674,7 +674,7 @@
     "message": "Salta il conto alla rovescia"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Attiva la modalità cinema appena la riproduzione è pronta, senza l’avviso di 3 secondi."
+    "message": "Attiva la modalità cinema appena la riproduzione è pronta, senza l’avviso con il conto alla rovescia."
   },
   "videoActivatorPromptTitle": {
     "message": "Attivare il pulsante sul video?"

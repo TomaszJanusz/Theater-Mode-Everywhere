@@ -674,7 +674,7 @@
     "message": "카운트다운 건너뛰기"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "3초 알림 없이 재생 준비가 되면 바로 영화관 모드로 전환합니다."
+    "message": "카운트다운 알림 없이 재생 준비가 되면 바로 영화관 모드로 전환합니다."
   },
   "videoActivatorPromptTitle": {
     "message": "영상 실행 버튼을 켤까요?"

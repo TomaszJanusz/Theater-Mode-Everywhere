@@ -674,7 +674,7 @@
     "message": "تخطي العد التنازلي"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "الدخول بمجرد أن يصبح التشغيل جاهزًا، دون إشعار مدته 3 ثوانٍ."
+    "message": "الدخول بمجرد أن يصبح التشغيل جاهزًا، دون إشعار العد التنازلي."
   },
   "videoActivatorPromptTitle": {
     "message": "هل تريد تفعيل الزر على الفيديو؟"

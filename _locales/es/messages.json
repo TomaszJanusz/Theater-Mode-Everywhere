@@ -674,7 +674,7 @@
     "message": "Omitir cuenta atrás"
   },
   "autoTheaterSkipCountdownDescription": {
-    "message": "Entrar en cuanto la reproducción esté lista, sin el aviso de 3 segundos."
+    "message": "Entrar en cuanto la reproducción esté lista, sin el aviso de cuenta atrás."
   },
   "videoActivatorPromptTitle": {
     "message": "¿Activar el botón sobre el vídeo?"
