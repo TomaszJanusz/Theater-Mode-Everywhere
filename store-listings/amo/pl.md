@@ -30,14 +30,15 @@ GŁÓWNE FUNKCJE
 - Własne skróty i ustawienia: skonfiguruj klawisze do przełączania trybu kinowego, przewijania, zarządzania napisami, zmiany ich rozmiaru i przechodzenia klatka po klatce. Ustawienia ostrzegają o konfliktach skrótów, a pomoc w odtwarzaczu pozwala sprawdzić je wszystkie. Wybierz język, kolor akcentu, wysoki kontrast, ograniczenie przezroczystości i ograniczenie animacji.
 - Lista wykluczeń: wykluczaj wybrane domeny z poziomu okna w pasku przeglądarki lub strony opcji, aby uniknąć konfliktów z natywnym układem strony.
 
-JAK TO DZIAŁA
+GDZIE I JAK TO DZIAŁA
 - Uniwersalne wideo HTML5: działa ze standardowymi elementami wideo HTML5 w sieci, także z odtwarzaczami umieszczonymi w Shadow DOM.
 - Osadzone odtwarzacze: wykrywa i powiększa filmy osadzone w ramkach, takie jak odtwarzacze YouTube czy Vimeo.
 - Napisy HTML5: wyświetla standardowe ścieżki napisów HTML5 we własnej nakładce trybu kinowego, dzięki czemu możesz dostosować ich wygląd.
 - Integracje z platformami: Rich Theater Experience może dodawać tytuły, napisy, rozdziały, miniatury podglądu i więcej w serwisach YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV i Crunchyroll. Dostępne funkcje zależą od serwisu i wideo.
 - Transmisje na żywo: rozpoznaje transmisje NA ŻYWO i, jeśli serwis udostępnia okno DVR, pozwala przewinąć nagranie i wrócić do bieżącego momentu.
 - Serwisy chronione DRM: niektóre platformy ograniczają dostęp do odtwarzacza, więc część funkcji, np. efekty audio, może być tam niedostępna.
-- Prywatność: rozszerzenie nie wysyła deweloperowi informacji o Tobie ani o tym, co oglądasz. Ustawienia mogą się synchronizować przez konto przeglądarki. Pełna polityka prywatności jest dostępna w Ustawieniach, w sekcji „O rozszerzeniu”.
+- Prywatność: Nie jesteś produktem. Rozszerzenie nie wysyła deweloperowi informacji o Tobie ani o tym, co oglądasz. Ustawienia mogą się synchronizować przez konto przeglądarki. Pełna polityka prywatności jest dostępna w Ustawieniach, w sekcji „O rozszerzeniu”.
+- Bezpłatne i open source: Theater Mode Everywhere jest bezpłatne i zawsze takie będzie, a jego kod źródłowy jest otwarty.
 
 JAK ZACZĄĆ
 1. Otwórz witrynę z wideo, np. platformę streamingową, serwis informacyjny lub blog.

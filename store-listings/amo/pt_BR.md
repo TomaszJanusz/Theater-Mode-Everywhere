@@ -30,14 +30,15 @@ PRINCIPAIS RECURSOS
 - Atalhos e configurações personalizados: configure teclas para alternar o modo teatro, avançar ou voltar, gerenciar legendas, redimensioná-las e avançar quadro a quadro. As configurações avisam sobre atalhos em conflito e a ajuda no player permite conferir todos eles. Escolha o idioma, a cor de destaque, Alto contraste, Reduzir transparência e Reduzir movimento.
 - Lista de exclusões: exclua domínios específicos pelo pop-up na barra do navegador ou pela página de opções para evitar conflitos com o layout nativo da página.
 
-COMO FUNCIONA
+ONDE E COMO FUNCIONA
 - Vídeo HTML5 universal: funciona com os elementos de vídeo HTML5 padrão da web, inclusive players colocados no Shadow DOM.
 - Players incorporados: detecta e amplia vídeos incorporados em frames, como os players do YouTube ou do Vimeo.
 - Legendas HTML5: exibe as faixas de legendas HTML5 padrão em uma sobreposição própria do modo cinema, para que você personalize a aparência.
 - Integrações com plataformas: a Rich Theater Experience pode adicionar títulos, legendas, capítulos, miniaturas de pré-visualização e mais no YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV e Crunchyroll. Os recursos disponíveis dependem do serviço e do vídeo.
 - Transmissões ao vivo: reconhece transmissões AO VIVO e, se o serviço oferecer uma janela de DVR, permite voltar na gravação e retornar ao momento atual.
 - Serviços protegidos por DRM: algumas plataformas limitam o acesso ao player, então alguns recursos, como os efeitos de áudio, podem não estar disponíveis.
-- Privacidade: a extensão não envia ao desenvolvedor informações sobre você nem sobre o que você assiste. As configurações podem ser sincronizadas pela conta do navegador. A política de privacidade completa está em Configurações, em Sobre.
+- Privacidade: Você não é o produto. A extensão não envia ao desenvolvedor informações sobre você nem sobre o que você assiste. As configurações podem ser sincronizadas pela conta do navegador. A política de privacidade completa está em Configurações, em Sobre.
+- Gratuito e de código aberto: o Theater Mode Everywhere é gratuito e sempre será, e seu código-fonte é aberto.
 
 COMO COMEÇAR
 1. Abra um site de vídeo, como uma plataforma de streaming, um site de notícias ou um blog.

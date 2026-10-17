@@ -21,14 +21,15 @@ FONCTIONS PRINCIPALES
 - Raccourcis et paramètres personnalisés : configurez des touches pour activer le mode cinéma, avancer ou reculer, gérer les sous-titres, modifier leur taille et avancer image par image. Les paramètres signalent les raccourcis en conflit et l'aide du lecteur permet de tous les vérifier. Choisissez la langue, la couleur d'accentuation, le contraste élevé, la réduction de la transparence et la réduction des animations.
 - Liste d'exclusions : excluez des domaines précis depuis la fenêtre contextuelle de la barre du navigateur ou la page d'options pour éviter les conflits avec la mise en page native.
 
-FONCTIONNEMENT
+OÙ ET COMMENT ÇA FONCTIONNE
 - Vidéo HTML5 universelle : fonctionne avec les éléments vidéo HTML5 standard du Web, y compris les lecteurs placés dans le Shadow DOM.
 - Lecteurs intégrés : détecte et agrandit les vidéos intégrées dans des cadres, comme les lecteurs YouTube ou Vimeo.
 - Sous-titres HTML5 : affiche les pistes de sous-titres HTML5 standard dans leur propre calque du mode cinéma pour que vous puissiez personnaliser leur apparence.
 - Intégrations de plateformes : Rich Theater Experience peut ajouter titres, sous-titres, chapitres, miniatures d'aperçu et plus encore sur YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV et Crunchyroll. Les fonctions disponibles dépendent du service et de la vidéo.
 - Diffusions en direct : reconnaît les diffusions EN DIRECT et, si le service fournit une fenêtre DVR, vous permet de revenir en arrière dans l'enregistrement puis de retourner au moment présent.
 - Services protégés par DRM : certaines plateformes limitent l'accès au lecteur ; certaines fonctions, comme les effets audio, peuvent donc y être indisponibles.
-- Confidentialité : l'extension n'envoie au développeur aucune information sur vous ni sur ce que vous regardez. Les paramètres peuvent être synchronisés via votre compte de navigateur. La politique de confidentialité complète est disponible dans les paramètres, sous À propos.
+- Confidentialité : Vous n'êtes pas le produit. L'extension n'envoie au développeur aucune information sur vous ni sur ce que vous regardez. Les paramètres peuvent être synchronisés via votre compte de navigateur. La politique de confidentialité complète est disponible dans les paramètres, sous À propos.
+- Gratuit et open source : Theater Mode Everywhere est gratuit et le restera toujours, et son code source est ouvert.
 
 POUR COMMENCER
 1. Ouvrez un site vidéo, comme une plateforme de streaming, un site d'actualités ou un blog.
