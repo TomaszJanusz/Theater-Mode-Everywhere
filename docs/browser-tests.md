@@ -7,8 +7,10 @@ pnpm install
 pnpm exec playwright install chromium firefox
 ```
 
-Browser tests run through `pnpm test` or individually with
-`pnpm exec tsx --test <test-file>`. Build before running `pnpm smoke:firefox`
+Browser tests (`*.browser.test.ts`) run through `pnpm test` or individually with
+`pnpm exec tsx --test <test-file>`. `pnpm test` discovers test files by name
+(`scripts/run-tests.mjs`); `pnpm test <path-or-substring> [--test-name-pattern=…]`
+runs a subset. Build before running `pnpm smoke:firefox`
 or `pnpm smoke:chromium`. The [Firefox smoke script](../scripts/smoke.ts) reports
 whether it exercised a sideloaded extension or its fallback diagnostic with
 injected bundles. A fallback pass verifies bundled player behavior, but does
