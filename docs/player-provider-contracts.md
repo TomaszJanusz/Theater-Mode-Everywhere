@@ -78,9 +78,15 @@ switchable-video checks and actual playback, and leaving the watch URL cancels w
 consuming the visit. YouTube declares it and also refreshes on `yt-navigate-start` and
 `yt-page-type-changed`, because the later publications arrive only once the watch page is
 revealed when entering from Home or search. It is a separate bridge query (same
-string-only, top-frame, href-checked protocol as `mainVideo`). Pause, end, media error/abort/emptied, a replaced
-video element, a new content identity or a YouTube ad cancel the notice without consuming the visit,
-and the countdown restarts from the full 5 s when playback resumes. The digit is the full seconds left (4, 3, 2, 1, 0; the first frame shows 4), so 0 is the last second, in which the ring exits before entry. Click or Escape cancels it and consumes the visit.
+string-only, top-frame, href-checked protocol as `mainVideo`). The notice is keyed by content identity.
+Transient losses — pause, end, media error/abort/emptied, `mainVideo`/`preparing` confirmation, a
+replaced video element, a YouTube ad — only start a grace (`AUTO_ENTER_CANCEL_GRACE_MS`, one timer
+owned by the intent and cleared on dispose). If eligibility returns within it, the same notice and
+original deadline continue and the appear animation does not replay; the grace is not extended by
+repeated refreshes, which therefore need no coalescing. Once it lapses the notice closes without
+consuming the visit and the countdown restarts from the full 5 s when playback resumes. Definitive
+changes skip the grace: Click/Escape, a new content identity or leaving the watch URL, a disabled
+setting or blocked policy, theater active, fullscreen, a transition, Skip countdown and disposal. The digit is the full seconds left (4, 3, 2, 1, 0; the first frame shows 4), so 0 is the last second, in which the ring exits before entry. Click or Escape cancels it and consumes the visit.
 The optional AutoTheater Skip countdown preference bypasses the notice and its timer;
 it still waits for active playback and revalidates every entry condition. Changing
 this preference clears a pending notice without consuming the visit. Automatic entry requires an enabled provider, an allowed domain, a

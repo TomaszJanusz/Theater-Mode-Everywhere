@@ -5,6 +5,7 @@ import { it } from 'node:test';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import type { AutoTheaterRuntime } from './auto-theater-runtime';
+import { AUTO_ENTER_CANCEL_GRACE_MS as GRACE_MS } from './auto-theater-intent';
 
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
@@ -239,6 +240,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
       // Pause cancels without consuming the visit; resume restarts the full countdown.
       await page.clock.runFor(3000);
       await fake({ paused: true }, 'pause');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'a pause keeps the notice through the grace');
+      await page.clock.runFor(GRACE_MS);
       assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
       await fake({ paused: false }, 'play');
       assert.equal((await probe()).shown, 2);
@@ -260,19 +263,42 @@ for (const engine of ['chromium', 'firefox'] as const) {
         await fake({ paused: false, readyState: 1 }, 'loadstart');
         await page.clock.runFor(1000);
         await fake(patch, name);
-        assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, `${name} cancels`);
+        assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, `${name} keeps the notice through the grace`);
+        await page.clock.runFor(GRACE_MS);
+        assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, `${name} cancels after the grace`);
         await page.clock.runFor(10_000);
         assert.equal((await probe()).entries, 0);
         await fake({ error: null, ended: false, networkState: 2, readyState: 1 }, 'loadstart');
         assert.equal((await probe()).shown, 2, `recovery after ${name} announces again`);
       }
 
+      // Loading blips shorter than the grace keep one notice and the original deadline.
+      await reset();
+      await fake({ paused: false, readyState: 1 }, 'loadstart');
+      await page.clock.runFor(1000);
+      for (let flap = 0; flap < 3; flap++) {
+        await fake({ paused: true }, 'pause');
+        await fake({ readyState: 0, networkState: 0 }, 'emptied');
+        await page.evaluate(() => { document.getElementById('movie_player')!.classList.add('ad-showing'); window.autoTheaterRuntime.refresh(); });
+        await page.clock.runFor(GRACE_MS - 100);
+        await page.evaluate(() => { document.getElementById('movie_player')!.classList.remove('ad-showing'); });
+        await fake({ paused: false, readyState: 1, networkState: 2 }, 'loadstart');
+        await page.clock.runFor(100);
+      }
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'flapping within the grace never rebuilds the notice');
+      await page.clock.runFor(5000 - 1000 - 3 * GRACE_MS - 1);
+      await fake({ readyState: 4 }, 'playing');
+      assert.equal((await probe()).entries, 0);
+      await page.clock.runFor(1);
+      assert.equal((await probe()).entries, 1, 'the original deadline still decides entry');
+
+      // Definitive cancels skip the grace.
       await reset();
       await fake({ paused: false, readyState: 1 }, 'loadstart');
       assert.equal(await page.evaluate(() => window.autoTheaterRuntime.cancelPending()), true);
       await fake({ readyState: 1 }, 'loadstart');
       await page.clock.runFor(10_000);
-      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'Esc/click consumes the visit');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'Esc/click consumes the visit immediately');
 
       // A replaced media element drops the old notice; the stale timer cannot enter.
       await reset();
@@ -284,7 +310,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
         old.replaceWith(next);
         window.autoTheaterRuntime.refresh();
       });
-      assert.equal((await probe()).shown, 1, 'a fresh unstarted element is not announced');
+      await page.clock.runFor(GRACE_MS);
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'a fresh unstarted element is not announced');
       await fake({ paused: false, readyState: 1 }, 'loadstart');
       assert.deepEqual(await probe(), { entries: 0, shown: 2, hidden: 1 });
       await page.clock.runFor(3000);
@@ -298,7 +325,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await fake({ paused: false, readyState: 1 }, 'loadstart');
       await page.clock.runFor(3000);
       await page.evaluate(() => { document.getElementById('movie_player')!.classList.add('ad-showing'); window.autoTheaterRuntime.refresh(); });
-      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'ad start cancels');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'ad start keeps the notice through the grace');
+      await page.clock.runFor(GRACE_MS);
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 }, 'a lasting ad cancels');
       await page.evaluate(() => { document.getElementById('movie_player')!.classList.remove('ad-showing'); window.autoTheaterRuntime.refresh(); });
       assert.equal((await probe()).shown, 2, 'ad end restarts');
       await page.clock.runFor(3000);
@@ -428,6 +457,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
         Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'lmnopqrstuv' }) });
         window.autoTheaterRuntime.refresh();
       });
+      await page.clock.runFor(GRACE_MS);
       assert.deepEqual(await delta(), { entries: 0, shown: 2, hidden: 2 }, 'a different loaded video is stale');
       assert.deepEqual(await bridge(), { main: false, preparing: false });
       await page.evaluate(() => {
@@ -437,10 +467,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
       assert.equal((await delta()).shown, 3, 'identity catching up restarts');
 
       await page.evaluate(() => { document.getElementById('movie_player')!.classList.add('ad-showing'); window.autoTheaterRuntime.refresh(); });
+      await page.clock.runFor(GRACE_MS);
       assert.equal((await delta()).hidden, 3, 'an ad cancels');
       assert.deepEqual(await bridge(), { main: false, preparing: false });
       await page.evaluate(() => { document.getElementById('movie_player')!.classList.remove('ad-showing'); window.autoTheaterRuntime.refresh(); });
       await fake({ paused: true }, 'pause');
+      await page.clock.runFor(GRACE_MS);
       assert.deepEqual(await delta(), { entries: 0, shown: 4, hidden: 4 }, 'pausing cancels');
       await page.clock.runFor(10_000);
       assert.equal((await delta()).entries, 0);
@@ -462,12 +494,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.evaluate(() => { window.autoTheaterProbe.active = false; });
       await navigate('/watch?v=lmnopqrstuv');
       const stale = await delta();
-      assert.equal(stale.shown, 1, 'reused element reporting the old video does not announce the new one');
+      // The abcdefghijk notice survived the reveal within the grace, so nothing new was shown for it.
+      assert.equal(stale.shown, 0, 'reused element reporting the old video does not announce the new one');
       await page.evaluate(() => {
         Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'lmnopqrstuv' }) });
         window.autoTheaterRuntime.refresh();
       });
-      assert.equal((await delta()).shown, 2, 'announces once the new identity is reported');
+      assert.equal((await delta()).shown, 1, 'announces once the new identity is reported');
     } finally {
       await browser.close();
     }
