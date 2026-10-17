@@ -12,7 +12,7 @@ const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild'
 };
 const BUNDLE = esbuild.buildSync({
   stdin: {
-    contents: "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries } from './providers/watch-playback';",
+    contents: "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo, confirmProviderPreparingVideo } from './providers/watch-playback';",
     resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
   },
   bundle: true, write: false, format: 'iife', globalName: 'AutoTheaterTest',
@@ -25,6 +25,8 @@ declare global {
     AutoTheaterTest: {
       createAutoTheaterRuntime: typeof import('./auto-theater-runtime').createAutoTheaterRuntime;
       installWatchPlaybackQueries(): void;
+      confirmProviderWatchVideo(video: HTMLVideoElement): boolean;
+      confirmProviderPreparingVideo(video: HTMLVideoElement): boolean;
     };
     autoTheaterProbe: { entries: number; active: boolean; shown: number; hidden: number; cancel?: () => void };
     autoTheaterRuntime: AutoTheaterRuntime;
@@ -308,6 +310,164 @@ for (const engine of ['chromium', 'firefox'] as const) {
       assert.equal((await probe()).entries, 0, 'the earlier progress does not carry over');
       await page.clock.runFor(1);
       assert.equal((await probe()).entries, 1);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  it(`AutoTheater countdown in ${engine} starts on SPA entry before YouTube reveals the watch page, but enters only when fully eligible`, { timeout: 90_000 }, async t => {
+    const browserType = (await import('playwright'))[engine];
+    assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+    const browser = await browserType.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await page.addInitScript('window.__name = target => target;');
+      await page.route('https://www.youtube.com/**', route => route.fulfill({
+        contentType: 'text/html', body: '<ytd-watch-flexy hidden><div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
+      }));
+      await page.goto('https://www.youtube.com/');
+      await page.addScriptTag({ content: BUNDLE });
+      await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 60_000));
+      await page.evaluate(flags => {
+        (window as unknown as { fake(patch: object, event?: string): void }).fake = (patch, event) => {
+          const video = document.querySelector('video')!;
+          const state = Object.assign((video as unknown as { facts?: object }).facts ?? { paused: true, ended: false, readyState: 0, networkState: 0, error: null }, patch);
+          (video as unknown as { facts?: object }).facts = state;
+          for (const key of Object.keys(state)) Object.defineProperty(video, key, { get: () => (state as Record<string, unknown>)[key], configurable: true });
+          if (event) video.dispatchEvent(new Event(event));
+        };
+        window.AutoTheaterTest.installWatchPlaybackQueries();
+        const probe: Window['autoTheaterProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
+        window.autoTheaterProbe = probe;
+        window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+          visit: { current: { identity: null, entered: false } },
+          enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+          editableFocused: () => false, theaterActive: () => probe.active,
+          transitioning: () => false, findBestVideo: () => document.querySelector('video'),
+          enter: () => { probe.entries++; probe.active = true; },
+          showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }
+        });
+      }, defaultMediaProviderFlags());
+      const fake = (patch: object, event?: string) => page.evaluate(([p, e]) => (window as unknown as { fake(patch: object, event?: string): void }).fake(p as object, e as string | undefined), [patch, event] as const);
+      const probe = () => page.evaluate(() => { const { entries, shown, hidden } = window.autoTheaterProbe; return { entries, shown, hidden }; });
+      const navigate = (path: string, event = 'yt-navigate-start') => page.evaluate(([p, e]) => {
+        history.pushState({}, '', p);
+        document.dispatchEvent(new Event(e));
+      }, [path, event] as const);
+      const bridge = () => page.evaluate(() => {
+        const video = document.querySelector('video')!;
+        return {
+          main: window.AutoTheaterTest.confirmProviderWatchVideo(video),
+          preparing: window.AutoTheaterTest.confirmProviderPreparingVideo(video)
+        };
+      });
+
+      // Home: a play request on the hidden, sourceless player is not a watch visit.
+      await fake({ paused: false }, 'play');
+      assert.deepEqual(await probe(), { entries: 0, shown: 0, hidden: 0 });
+
+      // SPA entry: still hidden, no source, no video data. The countdown starts, entry waits.
+      await navigate('/watch?v=abcdefghijk');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'notice starts before the reveal');
+      assert.deepEqual(await bridge(), { main: false, preparing: true });
+      await page.clock.runFor(6000);
+      await fake({ readyState: 4 }, 'playing');
+      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'hidden page never enters, nor drops the notice');
+
+      // Reveal with source and matching identity: enters immediately, the timer has elapsed.
+      await page.evaluate(media => {
+        document.querySelector('ytd-watch-flexy')!.removeAttribute('hidden');
+        document.querySelector('video')!.src = media;
+        Object.assign(document.getElementById('movie_player')!, {
+          getVideoData: () => ({ video_id: new URL(location.href).searchParams.get('v') })
+        });
+        document.dispatchEvent(new Event('yt-page-data-updated'));
+      }, MEDIA);
+      assert.deepEqual(await probe(), { entries: 1, shown: 1, hidden: 1 }, 'enters once fully eligible');
+      assert.deepEqual(await bridge(), { main: true, preparing: true });
+
+      // Cancellation paths do not consume the visit and restart in full.
+      const rearm = async (path: string) => {
+        await page.evaluate(() => {
+          window.autoTheaterProbe.active = false;
+          document.querySelector('ytd-watch-flexy')!.setAttribute('hidden', '');
+          document.getElementById('movie_player')!.className = '';
+          Object.assign(document.getElementById('movie_player')!, { getVideoData: undefined });
+          document.querySelector('video')!.removeAttribute('src');
+        });
+        await fake({ paused: true, readyState: 0, networkState: 0, currentSrc: '' }, 'pause'); // currentSrc outlives the attribute until a reload.
+        await navigate('/');
+        await page.evaluate(() => { window.autoTheaterRuntime.dispose(); });
+        await page.evaluate(flags => {
+          const probe = window.autoTheaterProbe;
+          window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+            visit: { current: { identity: null, entered: false } },
+            enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+            editableFocused: () => false, theaterActive: () => probe.active,
+            transitioning: () => false, findBestVideo: () => document.querySelector('video'),
+            enter: () => { probe.entries++; probe.active = true; },
+            showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }
+          });
+        }, defaultMediaProviderFlags());
+        await fake({ paused: false, readyState: 0, networkState: 0 }, 'play');
+        await navigate(path);
+      };
+      let base = await probe();
+      const delta = async () => { const now = await probe(); return { entries: now.entries - base.entries, shown: now.shown - base.shown, hidden: now.hidden - base.hidden }; };
+
+      await rearm('/watch?v=abcdefghijk');
+      assert.deepEqual(await delta(), { entries: 0, shown: 1, hidden: 0 });
+      await navigate('/results?search_query=x'); // Not a watch page after all.
+      assert.deepEqual(await delta(), { entries: 0, shown: 1, hidden: 1 }, 'leaving the watch URL cancels');
+      await navigate('/watch?v=abcdefghijk');
+      assert.deepEqual(await delta(), { entries: 0, shown: 2, hidden: 1 }, 'the visit was not consumed');
+
+      await page.evaluate(() => {
+        Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'lmnopqrstuv' }) });
+        window.autoTheaterRuntime.refresh();
+      });
+      assert.deepEqual(await delta(), { entries: 0, shown: 2, hidden: 2 }, 'a different loaded video is stale');
+      assert.deepEqual(await bridge(), { main: false, preparing: false });
+      await page.evaluate(() => {
+        Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'abcdefghijk' }) });
+        window.autoTheaterRuntime.refresh();
+      });
+      assert.equal((await delta()).shown, 3, 'identity catching up restarts');
+
+      await page.evaluate(() => { document.getElementById('movie_player')!.classList.add('ad-showing'); window.autoTheaterRuntime.refresh(); });
+      assert.equal((await delta()).hidden, 3, 'an ad cancels');
+      assert.deepEqual(await bridge(), { main: false, preparing: false });
+      await page.evaluate(() => { document.getElementById('movie_player')!.classList.remove('ad-showing'); window.autoTheaterRuntime.refresh(); });
+      await fake({ paused: true }, 'pause');
+      assert.deepEqual(await delta(), { entries: 0, shown: 4, hidden: 4 }, 'pausing cancels');
+      await page.clock.runFor(10_000);
+      assert.equal((await delta()).entries, 0);
+
+      // A reused, visible player element with the previous video still loaded: stays quiet
+      // until the player reports the new identity, then announces without waiting for sizing.
+      await rearm('/watch?v=abcdefghijk');
+      base = await probe();
+      await page.evaluate(media => {
+        document.querySelector('ytd-watch-flexy')!.removeAttribute('hidden');
+        document.querySelector('video')!.src = media;
+        (window as unknown as { fake(patch: object): void }).fake({ currentSrc: media });
+        Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'abcdefghijk' }) });
+        window.autoTheaterRuntime.refresh();
+      }, MEDIA);
+      await fake({ readyState: 4, networkState: 1 }, 'playing');
+      await page.clock.runFor(5000);
+      assert.equal((await delta()).entries, 1, 'ordinary eligible player still enters after the timer');
+      await page.evaluate(() => { window.autoTheaterProbe.active = false; });
+      await navigate('/watch?v=lmnopqrstuv');
+      const stale = await delta();
+      assert.equal(stale.shown, 1, 'reused element reporting the old video does not announce the new one');
+      await page.evaluate(() => {
+        Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'lmnopqrstuv' }) });
+        window.autoTheaterRuntime.refresh();
+      });
+      assert.equal((await delta()).shown, 2, 'announces once the new identity is reported');
     } finally {
       await browser.close();
     }

@@ -19,6 +19,11 @@ describe('positive provider watch declarations', () => {
     }
   });
 
+  it('limits the countdown-only preparing confirmation to providers that declare it', () => {
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube']);
+    assert.ok(providerDefinition('youtube').watchPlayback?.refreshEvents?.includes('yt-navigate-start'));
+  });
+
   it('declares individual Vimeo clips, excluding feeds, showcases and OTT/live pages', () => {
     for (const href of ['https://vimeo.com/123456', 'https://vimeo.com/123456/abc123', 'https://player.vimeo.com/video/123456']) {
       assert.deepEqual(read(href), { provider: 'vimeo', identity: '123456' });
