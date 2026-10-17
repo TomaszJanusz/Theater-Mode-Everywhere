@@ -632,6 +632,22 @@
   padding: 0 !important;
 }
 
+/* The whole interactive volume gesture area advertises vertical scrolling. */
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])),
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])) :is(.volume-btn, .theater-volume-slider) {
+  cursor: ns-resize !important;
+}
+
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])) .theater-volume-slider::-webkit-slider-runnable-track,
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])) .theater-volume-slider::-webkit-slider-thumb {
+  cursor: ns-resize !important;
+}
+
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])) .theater-volume-slider::-moz-range-track,
+.theater-volume-container:not([hidden], [aria-disabled="true"]):not(:has(:disabled, [hidden], [aria-disabled="true"])) .theater-volume-slider::-moz-range-thumb {
+  cursor: ns-resize !important;
+}
+
 .theater-volume-slider.boosted::-webkit-slider-thumb {
   background: var(--theater-volume-boost-color) !important;
 }

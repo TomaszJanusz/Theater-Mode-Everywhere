@@ -70,6 +70,7 @@ export type PlayerChromeActions = {
   hideHelpOverlay(restoreFocus?: boolean): void;
   showHelpOverlay(): void;
   toggleHelpOverlay(): void;
+  adjustVolume(video: PlaybackSurface, direction: 'up' | 'down'): void;
   applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void;
   rememberAudibleVolume(video: PlaybackSurface, volume: number): void;
   restoreAudibleVolume(video: PlaybackSurface): number;

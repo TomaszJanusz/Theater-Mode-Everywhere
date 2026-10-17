@@ -447,6 +447,33 @@ export function createControls(
       updateVolumeTooltip();
     });
 
+    // A wheel notch is roughly 100 CSS pixels (or three lines). Share the
+    // remainder across the speaker, slider and gap, but discard old gestures.
+    let wheelRemainder = 0;
+    let lastWheelTime = -Infinity;
+    const onVolumeWheel = (event: WheelEvent) => {
+      if (volumeBtn.disabled || volumeSlider.disabled || volumeBtn.hidden || volumeSlider.hidden || volumeContainer.hidden
+        || volumeContainer.getAttribute('aria-disabled') === 'true') return;
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
+        || !Number.isFinite(event.deltaY) || event.deltaY === 0
+        || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const now = performance.now();
+      if (now - lastWheelTime > 250) wheelRemainder = 0;
+      lastWheelTime = now;
+      const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 100 / 3
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? 100 : 1;
+      // Bound momentum/large device deltas to one volume step per event.
+      wheelRemainder += Math.max(-100, Math.min(100, event.deltaY * scale));
+      const steps = Math.trunc(wheelRemainder / 100);
+      wheelRemainder -= steps * 100;
+      if (steps !== 0) ctx.actions.adjustVolume(video, steps < 0 ? 'up' : 'down');
+    };
+    for (const target of [volumeBtn, volumeSlider, volumeContainer]) {
+      controlsScope.listen(target, 'wheel', onVolumeWheel, { passive: false });
+    }
+
     volumeContainer.appendChild(volumeBtn);
     volumeContainer.appendChild(volumePanel);
     bindSliderPopover(volumeContainer, volumePanel, controlsScope);

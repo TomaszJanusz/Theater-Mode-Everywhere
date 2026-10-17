@@ -439,6 +439,18 @@ function toggleVideoMute(video: PlaybackSurface): void {
   refs.onVolumeAdjustedCallback?.();
 }
 
+function adjustVolume(video: PlaybackSurface, direction: 'up' | 'down'): void {
+  const current = video.logicalVolume ?? (video.muted ? 0 : video.volume);
+  video.logicalVolume = direction === 'up'
+    ? Math.min(volumeCeiling(video, ui().volumeBoost), current + 0.05)
+    : Math.max(0, current - 0.05);
+  if (direction === 'up' && video.muted) video.muted = false;
+  applyVolumeAndBoost(video, video.logicalVolume);
+  rememberAudibleVolume(video, video.logicalVolume);
+  triggerVolumeIndicator(video.logicalVolume, video.muted, direction);
+  refs.onVolumeAdjustedCallback?.();
+}
+
 function applyVolumeAndBoost(video: PlaybackSurface, sliderValue: number): void {
   if (!video.element.hasAttribute(THEATER_VIDEO_ATTR)) {
     video.element.setAttribute(THEATER_VIDEO_ATTR, '');
@@ -633,6 +645,7 @@ function bindChromeActions(): void {
     showHelpOverlay,
     toggleHelpOverlay,
     applyVolumeAndBoost,
+    adjustVolume,
     rememberAudibleVolume,
     restoreAudibleVolume,
     isVideoSilent,
@@ -1339,34 +1352,12 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    if (video.logicalVolume === undefined) {
-      video.logicalVolume = video.muted ? 0 : video.volume;
-    }
-    const maxVol = volumeCeiling(video, ui().volumeBoost);
-    video.logicalVolume = Math.min(maxVol, video.logicalVolume + 0.05);
-    if (video.muted) {
-      video.muted = false;
-    }
-    applyVolumeAndBoost(video, video.logicalVolume);
-    rememberAudibleVolume(video, video.logicalVolume);
-    triggerVolumeIndicator(video.logicalVolume, video.muted, 'up');
-    if (refs.onVolumeAdjustedCallback) {
-      refs.onVolumeAdjustedCallback();
-    }
+    adjustVolume(video, 'up');
   } else if (matchesShortcut(e, shortcuts.volumeDown)) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    if (video.logicalVolume === undefined) {
-      video.logicalVolume = video.muted ? 0 : video.volume;
-    }
-    video.logicalVolume = Math.max(0, video.logicalVolume - 0.05);
-    applyVolumeAndBoost(video, video.logicalVolume);
-    rememberAudibleVolume(video, video.logicalVolume);
-    triggerVolumeIndicator(video.logicalVolume, video.muted, 'down');
-    if (refs.onVolumeAdjustedCallback) {
-      refs.onVolumeAdjustedCallback();
-    }
+    adjustVolume(video, 'down');
   } else if (matchesShortcut(e, shortcuts.toggleMute)) {
     e.preventDefault();
     e.stopPropagation();
