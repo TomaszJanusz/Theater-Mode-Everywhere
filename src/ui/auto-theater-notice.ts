@@ -84,7 +84,7 @@ export function showAutoTheaterNotice(
       return;
     }
     // One eased turn per displayed second, started by the tick that changes the digit.
-    const intoSecond = 1000 - (remaining - (noticeSecondsRemaining(remaining) - 1) * 1000);
+    const intoSecond = 1000 - (remaining - noticeSecondsRemaining(remaining) * 1000);
     turn = spinner.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 1000, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
     turn.currentTime = Math.min(1000, Math.max(0, intoSecond));
   };
@@ -100,7 +100,7 @@ export function showAutoTheaterNotice(
   mountPlayerUi(overlay);
   // After mounting, so reduced motion is read from the UI host.
   tick(false);
-  // The ring leaves while the digit keeps ticking; 0 appears as it clears.
+  // The ring leaves while the digit keeps ticking; 0 is the last second, during which the ring clears.
   const stopExit = exitSpinner(spinner, { mode: 'deadline', remainingMs });
   return () => {
     stopped = true;

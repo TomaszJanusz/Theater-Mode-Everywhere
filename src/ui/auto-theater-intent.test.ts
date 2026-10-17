@@ -98,22 +98,21 @@ it('rejects stale intent: lost eligibility, replaced media and disposal', () => 
   assert.equal(log.filter(entry => entry === 'show').length, log.filter(entry => entry === 'hide').length);
 });
 
-it('rounds the notice countdown up and ends on 0 as the ring clears', () => {
-  assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 5);
-  assert.equal(noticeSecondsRemaining(2001), 3);
-  assert.equal(noticeSecondsRemaining(2000), 2);
-  assert.equal(noticeSecondsRemaining(1001), 2);
-  assert.equal(noticeSecondsRemaining(1000), 1);
-  assert.equal(noticeSecondsRemaining(501), 1);
-  assert.equal(noticeSecondsRemaining(500), 0);
+it('floors the notice countdown so 0 is the last second', () => {
+  assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 4, 'the first frame shows 4, not an instant of 5');
+  assert.equal(noticeSecondsRemaining(4001), 4);
+  assert.equal(noticeSecondsRemaining(4000), 3);
+  assert.equal(noticeSecondsRemaining(2500), 2);
+  assert.equal(noticeSecondsRemaining(1001), 1);
+  assert.equal(noticeSecondsRemaining(1000), 0);
+  assert.equal(noticeSecondsRemaining(700), 0, '0.7 s remaining shows 0');
   assert.equal(noticeSecondsRemaining(0), 0, 'waiting for playback keeps showing 0');
   assert.equal(noticeSecondsRemaining(-50), 0);
-  assert.equal(msUntilNoticeSecondChanges(3000), 1000);
-  assert.equal(msUntilNoticeSecondChanges(2500), 500);
+  assert.equal(msUntilNoticeSecondChanges(AUTO_ENTER_NOTICE_MIN_MS), 1000);
+  assert.equal(msUntilNoticeSecondChanges(3500), 500);
   assert.equal(msUntilNoticeSecondChanges(2000), 1000);
-  assert.equal(msUntilNoticeSecondChanges(1000), 500);
-  assert.equal(msUntilNoticeSecondChanges(700), 200);
-  assert.equal(msUntilNoticeSecondChanges(500), null);
+  assert.equal(msUntilNoticeSecondChanges(1001), 1);
+  assert.equal(msUntilNoticeSecondChanges(1000), null);
   assert.equal(msUntilNoticeSecondChanges(0), null);
 });
 
@@ -133,8 +132,7 @@ it('hands the notice a remaining time read from the intent clock', () => {
   assert.equal(remaining!(), 0);
 });
 
-it('counts down from 5 and the ring finishes leaving 0.5 s before the end', () => {
+it('counts 4, 3, 2, 1, 0 over the 5 s minimum, one second each', () => {
   assert.equal(AUTO_ENTER_NOTICE_MIN_MS, 5000);
-  assert.deepEqual([5000, 4500, 4000, 1001, 1000, 501, 500, 0].map(noticeSecondsRemaining), [5, 5, 4, 2, 1, 1, 0, 0]);
-  assert.equal(msUntilNoticeSecondChanges(AUTO_ENTER_NOTICE_MIN_MS), 1000);
+  assert.deepEqual([5000, 4500, 4000, 3000, 2000, 1001, 1000, 500, 0].map(noticeSecondsRemaining), [4, 4, 3, 2, 1, 1, 0, 0, 0]);
 });

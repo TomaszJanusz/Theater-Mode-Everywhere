@@ -68,7 +68,7 @@ least 5 s from that moment, and entry waits for both that time and actual playba
 stream still loading when the time ends is simply awaited. The provider bridge confirms identity only;
 the runtime decides playing versus loading. Pause, end, media error/abort/emptied, a replaced
 video element, a new content identity or a YouTube ad cancel the notice without consuming the visit,
-and the countdown restarts from the full 5 s when playback resumes. Click or Escape cancels it and consumes the visit.
+and the countdown restarts from the full 5 s when playback resumes. The digit is the full seconds left (4, 3, 2, 1, 0; the first frame shows 4), so 0 is the last second, in which the ring exits before entry. Click or Escape cancels it and consumes the visit.
 The optional AutoTheater Skip countdown preference bypasses the notice and its timer;
 it still waits for active playback and revalidates every entry condition. Changing
 this preference clears a pending notice without consuming the visit. Automatic entry requires an enabled provider, an allowed domain, a
