@@ -27,7 +27,7 @@
     "message": "Theater Mode Everywhere - Configurações"
   },
   "settingsSubtitle": {
-    "message": "Configure exclusões de sites, aparência e atalhos de teclado do modo teatro."
+    "message": "Configure exclusões de sites, aparência e atalhos de teclado do modo cinema."
   },
   "websiteLabel": {
     "message": "Site"
@@ -65,7 +65,7 @@
     "message": "Indisponível"
   },
   "toggleTheaterModeLower": {
-    "message": "alternar modo teatro"
+    "message": "alternar modo cinema"
   },
   "createdBy": {
     "message": "Criado por Tomasz Janusz"
@@ -231,7 +231,7 @@
     "message": "Recursos"
   },
   "featuresDescription": {
-    "message": "Ative ou desative o comportamento opcional do modo teatro."
+    "message": "Ative ou desative o comportamento opcional do modo cinema."
   },
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
@@ -243,7 +243,7 @@
     "message": "Amplificação de Volume"
   },
   "volumeBoostDescription": {
-    "message": "Amplifique o volume em até 300% usando a Web Audio API. Um breve indicador de carregamento pode aparecer na primeira vez que você entrar no modo teatro com esta opção ativada."
+    "message": "Amplifique o volume até 300% usando a Web Audio API. Um breve indicador de carregamento pode aparecer na primeira vez que você entrar no modo cinema com esta opção ativada."
   },
   "youtubeIntegrationTitle": {
     "message": "Integração com o YouTube"
@@ -309,7 +309,7 @@
     "message": "Exclusões de Sites"
   },
   "websiteExclusionsDescription": {
-    "message": "Exclua sites onde você não deseja que o modo teatro seja ativado automaticamente."
+    "message": "Exclua sites onde você não deseja que o modo cinema seja ativado automaticamente."
   },
   "domainInputPlaceholder": {
     "message": "ex: youtube.com ou cole uma URL"
@@ -333,7 +333,7 @@
     "message": "Nenhuma exclusão ainda"
   },
   "noExclusionsDescription": {
-    "message": "O modo teatro será ativado automaticamente em todas as páginas de vídeo."
+    "message": "O modo cinema será ativado automaticamente em todas as páginas de vídeo."
   },
   "removeExclusion": {
     "message": "Remover exclusão"
@@ -351,10 +351,10 @@
     "message": "Controles do Player"
   },
   "toggleTheaterMode": {
-    "message": "Alternar Modo Teatro"
+    "message": "Alternar Modo Cinema"
   },
   "exitTheaterMode": {
-    "message": "Sair do Modo Teatro"
+    "message": "Sair do Modo Cinema"
   },
   "cycleSwitchPlayer": {
     "message": "Alternar vídeo na página"
@@ -483,7 +483,7 @@
     "message": "Alternar mudo"
   },
   "theaterFullscreenPipTitle": {
-    "message": "Modo Teatro, Tela Cheia e PiP"
+    "message": "Modo Cinema, Tela Cheia e PiP"
   },
   "frameStepBackward": {
     "message": "Voltar um Quadro"
@@ -562,7 +562,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Sair do Modo Teatro <kbd>$TOGGLE$</kbd> ou <kbd>$EXIT$</kbd>",
+    "message": "Sair do Modo Cinema <kbd>$TOGGLE$</kbd> ou <kbd>$EXIT$</kbd>",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -686,10 +686,10 @@
     "message": "Botão no vídeo"
   },
   "videoActivatorDescription": {
-    "message": "Mostra um pequeno botão na borda esquerda do vídeo quando você passa o cursor sobre ele. Clique nele para ativar o modo teatro. Em alguns serviços com Rich Theater Experience, o botão é integrado à interface do serviço."
+    "message": "Mostra um pequeno botão na borda esquerda do vídeo quando você passa o cursor sobre ele. Clique nele para ativar o modo cinema. Em alguns serviços com Rich Theater Experience, o botão é integrado à interface do serviço."
   },
   "videoActivatorLabel": {
-    "message": "Ativar o modo teatro"
+    "message": "Ativar o modo cinema"
   },
   "autoEnterTheaterOn": {
     "message": "Sim"
@@ -704,10 +704,10 @@
     "message": "Indisponível: o Rich Theater Experience está desativado para este serviço"
   },
   "autoEnterTheaterDescription": {
-    "message": "Ative o modo teatro quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
+    "message": "Ative o modo cinema quando o vídeo principal começar a ser reproduzido nas páginas de exibição dos serviços compatíveis com o Rich Theater Experience ativado."
   },
   "autoEnterNoticeTitle": {
-    "message": "Ativando o modo teatro…"
+    "message": "Ativando o modo cinema…"
   },
   "autoEnterNoticeHint": {
     "message": "Clique ou pressione <kbd>$KEY$</kbd> para cancelar",
@@ -721,7 +721,7 @@
     "message": "Sempre mostrar os controles"
   },
   "keepControlsVisibleDescription": {
-    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo teatro. O título e o cursor continuam se ocultando durante a inatividade."
+    "message": "Mantenha os controles de reprodução e a barra de progresso visíveis no modo cinema. O título e o cursor continuam se ocultando durante a inatividade."
   },
   "toggleControlsPin": {
     "message": "Alternar visibilidade dos controles"
@@ -769,7 +769,7 @@
     "message": "Escuro"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "A tela cheia com chat não está disponível. O modo teatro permanece ativo."
+    "message": "A tela cheia com chat não está disponível. O modo cinema permanece ativo."
   },
   "playerSettingsLabel": {
     "message": "Configurações do player"
@@ -816,7 +816,7 @@
     "message": "Mover atalho"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape é reservado para fechar diálogos e sair do modo teatro. Escolha outro atalho."
+    "message": "Escape é reservado para fechar diálogos e sair do modo cinema. Escolha outro atalho."
   },
   "shortcutSaveError": {
     "message": "Não foi possível salvar o atalho"
@@ -843,7 +843,7 @@
     "message": "Sobre"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "Um player para a todos governar."
   },
   "aboutVersion": {
     "message": "versão: $version$",
@@ -989,7 +989,7 @@
     "message": "Listas de reprodução"
   },
   "rteCapabilityLauncher": {
-    "message": "Botão do modo cinema"
+    "message": "Botão no vídeo"
   },
   "rteNoteLauncher": {
     "message": "Usa a barra do player nativo quando há um local disponível; caso contrário, o botão aparece sobre o vídeo."

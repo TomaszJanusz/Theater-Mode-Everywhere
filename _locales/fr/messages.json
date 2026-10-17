@@ -843,7 +843,7 @@
     "message": "À propos"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "Un lecteur pour les gouverner tous."
   },
   "aboutVersion": {
     "message": "version : $version$",
@@ -989,7 +989,7 @@
     "message": "Listes de lecture"
   },
   "rteCapabilityLauncher": {
-    "message": "Bouton du mode cinéma"
+    "message": "Bouton sur la vidéo"
   },
   "rteNoteLauncher": {
     "message": "Utilise la barre du lecteur natif si un emplacement est disponible ; sinon, le bouton apparaît sur la vidéo."
@@ -1007,7 +1007,7 @@
     "message": "Effacer le filtre"
   },
   "rteShown": {
-    "message": "$count$ services sur $total$ affichés",
+    "message": "Services affichés : $count$ sur $total$",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -1018,7 +1018,7 @@
     }
   },
   "rteNoteYoutube": {
-    "message": "Selon la vidéo ; publicité et file de lecture si disponibles."
+    "message": "Selon la vidéo ; saut des publicités et navigation dans la file de lecture si disponibles."
   },
   "rteNoteVimeo": {
     "message": "Chapitres et aperçus si disponibles ; vidéo suivante dans les collections."

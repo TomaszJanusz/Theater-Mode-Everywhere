@@ -27,7 +27,7 @@
     "message": "Theater Mode Everywhere - 설정"
   },
   "settingsSubtitle": {
-    "message": "웹사이트 예외, 외관 및 시어터 모드 키보드 단축키를 설정합니다."
+    "message": "웹사이트 예외, 외관 및 영화관 모드 키보드 단축키를 설정합니다."
   },
   "websiteLabel": {
     "message": "웹사이트"
@@ -65,7 +65,7 @@
     "message": "사용 불가"
   },
   "toggleTheaterModeLower": {
-    "message": "시어터 모드 전환"
+    "message": "영화관 모드 전환"
   },
   "createdBy": {
     "message": "제작자: Tomasz Janusz"
@@ -231,7 +231,7 @@
     "message": "기능"
   },
   "featuresDescription": {
-    "message": "시어터 모드의 선택적 기능을 켜거나 끕니다."
+    "message": "영화관 모드의 선택적 기능을 켜거나 끕니다."
   },
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience(실험적 기능)"
@@ -243,13 +243,13 @@
     "message": "음량 부스트"
   },
   "volumeBoostDescription": {
-    "message": "Web Audio API를 사용하여 음량을 최대 300%까지 증폭합니다. 이 기능을 활성화한 상태에서 처음 시어터 모드에 진입하면 로딩 표시가 잠시 나타날 수 있습니다."
+    "message": "Web Audio API를 사용하여 음량을 최대 300%까지 증폭합니다. 이 기능을 활성화한 상태에서 처음 영화관 모드에 진입하면 로딩 표시가 잠시 나타날 수 있습니다."
   },
   "youtubeIntegrationTitle": {
     "message": "YouTube 연동"
   },
   "youtubeIntegrationDescription": {
-    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 광고 건너뛰기 및 대기열의 다음 동영상. YouTube의 Rich Theater Experience와 영상 실행 버튼을 켜면 플레이어 도구 모음의 자동 재생 스위치 바로 왼쪽에 버튼이 표시됩니다."
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 챕터, 인기 구간, 미리보기 이미지. 빠른 동작: 광고 건너뛰기 및 대기열의 다음 동영상. YouTube의 Rich Theater Experience와 영화관 모드 버튼을 켜면 플레이어 도구 모음의 자동 재생 스위치 바로 왼쪽에 버튼이 표시됩니다."
   },
   "vimeoIntegrationTitle": {
     "message": "Vimeo 연동"
@@ -309,7 +309,7 @@
     "message": "웹사이트 예외"
   },
   "websiteExclusionsDescription": {
-    "message": "시어터 모드가 자동으로 활성화되지 않을 웹사이트를 추가합니다."
+    "message": "영화관 모드가 자동으로 활성화되지 않을 웹사이트를 추가합니다."
   },
   "domainInputPlaceholder": {
     "message": "예: youtube.com 또는 URL 붙여넣기"
@@ -333,7 +333,7 @@
     "message": "아직 예외 없음"
   },
   "noExclusionsDescription": {
-    "message": "시어터 모드가 모든 비디오 페이지에서 자동으로 활성화됩니다."
+    "message": "영화관 모드가 모든 비디오 페이지에서 자동으로 활성화됩니다."
   },
   "removeExclusion": {
     "message": "예외 삭제"
@@ -351,10 +351,10 @@
     "message": "플레이어 컨트롤"
   },
   "toggleTheaterMode": {
-    "message": "시어터 모드 전환"
+    "message": "영화관 모드 전환"
   },
   "exitTheaterMode": {
-    "message": "시어터 모드 종료"
+    "message": "영화관 모드 종료"
   },
   "cycleSwitchPlayer": {
     "message": "페이지의 동영상 전환"
@@ -483,7 +483,7 @@
     "message": "음소거 전환"
   },
   "theaterFullscreenPipTitle": {
-    "message": "시어터 모드, 전체 화면 및 PiP"
+    "message": "영화관 모드, 전체 화면 및 PiP"
   },
   "frameStepBackward": {
     "message": "이전 프레임"
@@ -562,7 +562,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "시어터 모드 종료 <kbd>$TOGGLE$</kbd> 또는 <kbd>$EXIT$</kbd>",
+    "message": "영화관 모드 종료 <kbd>$TOGGLE$</kbd> 또는 <kbd>$EXIT$</kbd>",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -677,13 +677,13 @@
     "message": "카운트다운 알림 없이 재생 준비가 되면 바로 영화관 모드로 전환합니다."
   },
   "videoActivatorPromptTitle": {
-    "message": "영상 실행 버튼을 켤까요?"
+    "message": "영화관 모드 버튼을 켤까요?"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater가 꺼졌습니다. 동영상에 작은 버튼을 표시하여 수동으로 영화관 모드를 켤 수 있도록 할까요? 나중에 설정 → 기능 → 영상 실행 버튼에서 변경할 수 있습니다."
+    "message": "AutoTheater가 꺼졌습니다. 동영상에 작은 버튼을 표시하여 수동으로 영화관 모드를 켤 수 있도록 할까요? 나중에 설정 → 기능 → 영화관 모드 버튼에서 변경할 수 있습니다."
   },
   "videoActivatorTitle": {
-    "message": "영상 실행 버튼"
+    "message": "영화관 모드 버튼"
   },
   "videoActivatorDescription": {
     "message": "영상 위에 포인터를 올리면 왼쪽 가장자리에 작은 버튼을 표시합니다. 클릭하면 영화관 모드로 전환합니다. Rich Theater Experience가 통합된 일부 서비스에서는 버튼이 서비스 인터페이스에 내장되어 있습니다."
@@ -704,10 +704,10 @@
     "message": "사용할 수 없음: 이 서비스에서 Rich Theater Experience가 꺼져 있음"
   },
   "autoEnterTheaterDescription": {
-    "message": "Rich Theater Experience가 활성화되어 있으면 지원되는 서비스의 시청 페이지에서 주요 동영상 재생이 시작될 때 시어터 모드로 전환합니다."
+    "message": "Rich Theater Experience가 활성화되어 있으면 지원되는 서비스의 시청 페이지에서 주요 동영상 재생이 시작될 때 영화관 모드로 전환합니다."
   },
   "autoEnterNoticeTitle": {
-    "message": "극장 모드로 전환 중…"
+    "message": "영화관 모드로 전환 중…"
   },
   "autoEnterNoticeHint": {
     "message": "클릭하거나 <kbd>$KEY$</kbd> 키를 눌러 취소",
@@ -721,7 +721,7 @@
     "message": "컨트롤 항상 표시"
   },
   "keepControlsVisibleDescription": {
-    "message": "시어터 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
+    "message": "영화관 모드에서 재생 컨트롤과 진행 표시줄을 계속 표시합니다. 활동이 없으면 제목과 커서는 계속 숨겨집니다."
   },
   "toggleControlsPin": {
     "message": "컨트롤 표시 전환"
@@ -769,7 +769,7 @@
     "message": "어두움"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "채팅이 포함된 전체 화면을 사용할 수 없습니다. 시어터 모드는 계속 활성화됩니다."
+    "message": "채팅이 포함된 전체 화면을 사용할 수 없습니다. 영화관 모드는 계속 활성화됩니다."
   },
   "playerSettingsLabel": {
     "message": "플레이어 설정"
@@ -816,7 +816,7 @@
     "message": "단축키 이동"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape는 대화상자 닫기와 시어터 모드 종료에 사용됩니다. 다른 단축키를 선택하세요."
+    "message": "Escape는 대화상자 닫기와 영화관 모드 종료에 사용됩니다. 다른 단축키를 선택하세요."
   },
   "shortcutSaveError": {
     "message": "단축키를 저장할 수 없습니다"
@@ -843,7 +843,7 @@
     "message": "소개"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "모든 것을 지배하는 하나의 플레이어."
   },
   "aboutVersion": {
     "message": "버전: $version$",
@@ -959,7 +959,7 @@
     "message": "Rich Theater Experience"
   },
   "rteSectionDescription": {
-    "message": "서비스 연동을 선택하고 극장 모드에 추가되는 기능을 살펴보세요. 기능은 동영상과 서비스에 따라 달라집니다."
+    "message": "서비스 연동을 선택하고 영화관 모드에 추가되는 기능을 살펴보세요. 기능은 동영상과 서비스에 따라 달라집니다."
   },
   "rteAll": {
     "message": "모든 서비스"
@@ -989,7 +989,7 @@
     "message": "재생목록"
   },
   "rteCapabilityLauncher": {
-    "message": "극장 모드 버튼"
+    "message": "영화관 모드 버튼"
   },
   "rteNoteLauncher": {
     "message": "사용 가능한 위치가 있으면 기본 플레이어 도구 모음에 버튼을 표시하고, 없으면 동영상 위에 표시합니다."
@@ -1079,7 +1079,7 @@
     "message": "투명도 줄이기"
   },
   "reduceMotionTitle": {
-    "message": "동작 줄이기"
+    "message": "애니메이션 줄이기"
   },
   "appearanceAutoDescription": {
     "message": "자동은 시스템 설정을 따릅니다."

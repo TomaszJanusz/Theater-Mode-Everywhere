@@ -27,7 +27,7 @@
     "message": "Theater Mode Everywhere - Configuración"
   },
   "settingsSubtitle": {
-    "message": "Configura exclusiones de sitios web, apariencia y atajos de teclado del modo teatro."
+    "message": "Configura exclusiones de sitios web, apariencia y atajos de teclado del modo cine."
   },
   "websiteLabel": {
     "message": "Sitio web"
@@ -65,7 +65,7 @@
     "message": "No disponible"
   },
   "toggleTheaterModeLower": {
-    "message": "Activar/desactivar modo teatro"
+    "message": "Activar/desactivar modo cine"
   },
   "createdBy": {
     "message": "Creado por Tomasz Janusz"
@@ -231,7 +231,7 @@
     "message": "Funciones"
   },
   "featuresDescription": {
-    "message": "Activa o desactiva funciones opcionales del modo teatro."
+    "message": "Activa o desactiva funciones opcionales del modo cine."
   },
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimental)"
@@ -243,7 +243,7 @@
     "message": "Amplificación de volumen"
   },
   "volumeBoostDescription": {
-    "message": "Amplifica el volumen hasta 300% con Web Audio API. Puede aparecer un breve indicador de carga la primera vez que entres en modo teatro con esta opción activa."
+    "message": "Amplifica el volumen hasta 300% con Web Audio API. Puede aparecer un breve indicador de carga la primera vez que entres en modo cine con esta opción activa."
   },
   "youtubeIntegrationTitle": {
     "message": "Integración de YouTube"
@@ -309,7 +309,7 @@
     "message": "Exclusiones de sitios web"
   },
   "websiteExclusionsDescription": {
-    "message": "Excluye sitios donde no quieres que el modo teatro se active automáticamente."
+    "message": "Excluye sitios donde no quieres que el modo cine se active automáticamente."
   },
   "domainInputPlaceholder": {
     "message": "p. ej., youtube.com o pega una URL"
@@ -333,7 +333,7 @@
     "message": "Aún no hay exclusiones"
   },
   "noExclusionsDescription": {
-    "message": "El modo teatro se activará automáticamente en todas las páginas con vídeo."
+    "message": "El modo cine se activará automáticamente en todas las páginas con vídeo."
   },
   "removeExclusion": {
     "message": "Eliminar exclusión"
@@ -351,10 +351,10 @@
     "message": "Controles del reproductor"
   },
   "toggleTheaterMode": {
-    "message": "Activar/desactivar modo teatro"
+    "message": "Activar/desactivar modo cine"
   },
   "exitTheaterMode": {
-    "message": "Salir del modo teatro"
+    "message": "Salir del modo cine"
   },
   "cycleSwitchPlayer": {
     "message": "Cambiar vídeo de la página"
@@ -483,7 +483,7 @@
     "message": "Alternar silencio"
   },
   "theaterFullscreenPipTitle": {
-    "message": "Modo teatro, pantalla completa y PiP"
+    "message": "Modo cine, pantalla completa y PiP"
   },
   "frameStepBackward": {
     "message": "Retroceder un fotograma"
@@ -562,7 +562,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Salir del modo teatro <kbd>$TOGGLE$</kbd> o <kbd>$EXIT$</kbd>",
+    "message": "Salir del modo cine <kbd>$TOGGLE$</kbd> o <kbd>$EXIT$</kbd>",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -680,16 +680,16 @@
     "message": "¿Activar el botón sobre el vídeo?"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater está desactivado. ¿Quieres mostrar un pequeño botón sobre los vídeos para entrar en el modo cine manualmente? Puedes cambiarlo más tarde en Ajustes → Funciones → Botón sobre el vídeo."
+    "message": "AutoTheater está desactivado. ¿Quieres mostrar un pequeño botón sobre los vídeos para entrar en el modo cine manualmente? Puedes cambiarlo más tarde en Configuración → Funciones → Botón sobre el vídeo."
   },
   "videoActivatorTitle": {
     "message": "Botón sobre el vídeo"
   },
   "videoActivatorDescription": {
-    "message": "Muestra un pequeño botón en el borde izquierdo del vídeo al apuntar con el cursor. Haz clic para activar el modo teatro. En algunos servicios con Rich Theater Experience, el botón está integrado en la interfaz del servicio."
+    "message": "Muestra un pequeño botón en el borde izquierdo del vídeo al apuntar con el cursor. Haz clic para activar el modo cine. En algunos servicios con Rich Theater Experience, el botón está integrado en la interfaz del servicio."
   },
   "videoActivatorLabel": {
-    "message": "Activar el modo teatro"
+    "message": "Activar el modo cine"
   },
   "autoEnterTheaterOn": {
     "message": "Sí"
@@ -704,7 +704,7 @@
     "message": "No disponible: Rich Theater Experience está desactivado para este servicio"
   },
   "autoEnterTheaterDescription": {
-    "message": "Activa el modo teatro cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
+    "message": "Activa el modo cine cuando el vídeo principal comience a reproducirse en las páginas de reproducción de los servicios compatibles con Rich Theater Experience activado."
   },
   "autoEnterNoticeTitle": {
     "message": "Activando el modo cine…"
@@ -721,7 +721,7 @@
     "message": "Mostrar siempre los controles"
   },
   "keepControlsVisibleDescription": {
-    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo teatro. El título y el cursor siguen ocultándose durante la inactividad."
+    "message": "Mantén visibles los controles de reproducción y la barra de progreso en modo cine. El título y el cursor siguen ocultándose durante la inactividad."
   },
   "toggleControlsPin": {
     "message": "Alternar visibilidad de los controles"
@@ -769,7 +769,7 @@
     "message": "Oscuro"
   },
   "nativeChatFullscreenUnavailable": {
-    "message": "La pantalla completa con chat no está disponible. El modo teatro sigue activo."
+    "message": "La pantalla completa con chat no está disponible. El modo cine sigue activo."
   },
   "playerSettingsLabel": {
     "message": "Ajustes del reproductor"
@@ -816,7 +816,7 @@
     "message": "Mover atajo"
   },
   "shortcutEscapeReserved": {
-    "message": "Escape está reservado para cerrar diálogos y salir del modo teatro. Elige otro atajo."
+    "message": "Escape está reservado para cerrar diálogos y salir del modo cine. Elige otro atajo."
   },
   "shortcutSaveError": {
     "message": "No se pudo guardar el atajo"
@@ -843,7 +843,7 @@
     "message": "Acerca de"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "Un reproductor para gobernarlos a todos."
   },
   "aboutVersion": {
     "message": "versión: $version$",
@@ -989,7 +989,7 @@
     "message": "Listas de reproducción"
   },
   "rteCapabilityLauncher": {
-    "message": "Botón de modo cine"
+    "message": "Botón sobre el vídeo"
   },
   "rteNoteLauncher": {
     "message": "Usa la barra del reproductor nativo cuando hay un lugar disponible; de lo contrario, aparece sobre el vídeo."

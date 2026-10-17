@@ -420,13 +420,13 @@
     }
   },
   "videoFitContain": {
-    "message": "フィット"
+    "message": "全体を表示"
   },
   "videoFitCover": {
-    "message": "フィル"
+    "message": "画面いっぱい"
   },
   "videoFitFill": {
-    "message": "ストレッチ"
+    "message": "引き伸ばし"
   },
   "reportABug": {
     "message": "バグを報告"
@@ -680,7 +680,7 @@
     "message": "動画ランチャーを有効にしますか？"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater はオフになりました。動画に小さなボタンを表示して、手動でシアターモードに切り替えられるようにしますか？後から「設定 → 機能 → 動画ランチャー」で変更できます。"
+    "message": "AutoTheater はオフになりました。動画に小さなボタンを表示して、手動でシアターモードに切り替えられるようにしますか？後から「設定 → 機能設定 → 動画ランチャー」で変更できます。"
   },
   "videoActivatorTitle": {
     "message": "動画ランチャー"
@@ -843,7 +843,7 @@
     "message": "このツールについて"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "すべてを統べる唯一のプレーヤー。"
   },
   "aboutVersion": {
     "message": "バージョン: $version$",
@@ -989,7 +989,7 @@
     "message": "再生リスト"
   },
   "rteCapabilityLauncher": {
-    "message": "シアターモードボタン"
+    "message": "動画ランチャー"
   },
   "rteNoteLauncher": {
     "message": "対応する配置場所がある場合は標準プレーヤーのツールバーに、ない場合は動画上にボタンを表示します。"

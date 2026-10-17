@@ -27,7 +27,7 @@
     "message": "Theater Mode Everywhere - Einstellungen"
   },
   "settingsSubtitle": {
-    "message": "Konfiguriere Website-Ausschlüsse, Darstellung und Tastenkürzel für den Theatermodus."
+    "message": "Konfiguriere Website-Ausschlüsse, Darstellung und Tastenkürzel für den Kinomodus."
   },
   "websiteLabel": {
     "message": "Website"
@@ -65,7 +65,7 @@
     "message": "Nicht verfügbar"
   },
   "toggleTheaterModeLower": {
-    "message": "Theatermodus umschalten"
+    "message": "Kinomodus umschalten"
   },
   "createdBy": {
     "message": "Erstellt von Tomasz Janusz"
@@ -231,7 +231,7 @@
     "message": "Funktionen"
   },
   "featuresDescription": {
-    "message": "Schalte optionale Funktionen des Theatermodus ein oder aus."
+    "message": "Schalte optionale Funktionen des Kinomodus ein oder aus."
   },
   "richTheaterExperienceTitle": {
     "message": "Rich Theater Experience (Experimentell)"
@@ -243,7 +243,7 @@
     "message": "Lautstärkeverstärkung"
   },
   "volumeBoostDescription": {
-    "message": "Verstärke die Lautstärke mit der Web Audio API auf bis zu 300%. Beim ersten Aktivieren des Theatermodus kann kurz eine Ladeanzeige erscheinen."
+    "message": "Verstärke die Lautstärke mit der Web Audio API auf bis zu 300%. Beim ersten Aktivieren des Kinomodus kann kurz eine Ladeanzeige erscheinen."
   },
   "youtubeIntegrationTitle": {
     "message": "YouTube-Integration"
@@ -309,7 +309,7 @@
     "message": "Website-Ausschlüsse"
   },
   "websiteExclusionsDescription": {
-    "message": "Schließe Websites aus, auf denen der Theatermodus nicht automatisch aktiviert werden soll."
+    "message": "Schließe Websites aus, auf denen der Kinomodus nicht automatisch aktiviert werden soll."
   },
   "domainInputPlaceholder": {
     "message": "z. B. youtube.com oder eine URL einfügen"
@@ -333,7 +333,7 @@
     "message": "Noch keine Ausschlüsse"
   },
   "noExclusionsDescription": {
-    "message": "Der Theatermodus wird auf allen Videoseiten automatisch aktiviert."
+    "message": "Der Kinomodus wird auf allen Videoseiten automatisch aktiviert."
   },
   "removeExclusion": {
     "message": "Ausschluss entfernen"
@@ -351,10 +351,10 @@
     "message": "Player-Steuerung"
   },
   "toggleTheaterMode": {
-    "message": "Theatermodus umschalten"
+    "message": "Kinomodus umschalten"
   },
   "exitTheaterMode": {
-    "message": "Theatermodus verlassen"
+    "message": "Kinomodus verlassen"
   },
   "cycleSwitchPlayer": {
     "message": "Video auf der Seite wechseln"
@@ -483,7 +483,7 @@
     "message": "Stummschaltung umschalten"
   },
   "theaterFullscreenPipTitle": {
-    "message": "Theatermodus, Vollbild und PiP"
+    "message": "Kinomodus, Vollbild und PiP"
   },
   "frameStepBackward": {
     "message": "Ein Bild zurück"
@@ -562,7 +562,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Theatermodus verlassen <kbd>$TOGGLE$</kbd> oder <kbd>$EXIT$</kbd>",
+    "message": "Kinomodus verlassen <kbd>$TOGGLE$</kbd> oder <kbd>$EXIT$</kbd>",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -843,7 +843,7 @@
     "message": "Über"
   },
   "aboutTagline": {
-    "message": "One player to rule them all."
+    "message": "Ein Player, der sie alle beherrscht."
   },
   "aboutVersion": {
     "message": "Version: $version$",
@@ -899,7 +899,7 @@
     "message": "Automatisch (Browsersprache)"
   },
   "addExclusion": {
-    "message": "Website-Ausnahme hinzufügen"
+    "message": "Website-Ausschluss hinzufügen"
   },
   "playbackPosition": {
     "message": "Wiedergabeposition"
@@ -989,10 +989,10 @@
     "message": "Wiedergabelisten"
   },
   "rteCapabilityLauncher": {
-    "message": "Videostartknopf"
+    "message": "Video-Schaltfläche"
   },
   "rteNoteLauncher": {
-    "message": "Nutzt die native Playerleiste, wenn dort Platz für den Startknopf verfügbar ist; andernfalls erscheint er über dem Video."
+    "message": "Nutzt die native Playerleiste, wenn dort Platz für die Video-Schaltfläche verfügbar ist; andernfalls erscheint sie über dem Video."
   },
   "rteCapabilityQuickActions": {
     "message": "Schnellaktionen"
