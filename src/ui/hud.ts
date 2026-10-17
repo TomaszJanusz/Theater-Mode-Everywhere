@@ -1,4 +1,4 @@
-import { exitSpinner } from './spinner-exit';
+import { animateReveal, exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { isMotionReduced } from '../appearance-runtime';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
@@ -12,6 +12,7 @@ import type { AudioSettingName } from '../audio-settings';
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
 const CAPTION_LOADING_HUD_DELAY_MS = 400;
+const CAPTION_WIDTH_MORPH_MS = 225;
 export const HUD_PLATE_CLASS = 'theater-hud-plate';
 
 export const STATUS_HUD_SWITCH_ICON = `
@@ -272,6 +273,8 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
   }
 
   let stopCaptionExit: (() => void) | null = null;
+  let captionWidthMorph: Animation | null = null;
+  let captionReveal: Animation | null = null;
   let captionIdentity: { element: Element; epoch: number } | null = null;
   let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
   let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -292,16 +295,25 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     }
   }
 
-  function removeCaptionHud(): void {
-    clearCaptionHudTimers();
+  /** Stops every animation the current notice owns; safe to repeat. */
+  function cancelCaptionMotion(): void {
     stopCaptionExit?.();
     stopCaptionExit = null;
+    captionWidthMorph?.cancel();
+    captionWidthMorph = null;
+    captionReveal?.cancel();
+    captionReveal = null;
+  }
+
+  function removeCaptionHud(): void {
+    clearCaptionHudTimers();
+    cancelCaptionMotion();
     captionIdentity = null;
     ctx.queryPlayerUi('.theater-everywhere-caption-hud')?.remove();
   }
 
   function triggerCaptionHud(view: CaptionHudView): void {
-    const existing = ctx.queryPlayerUi<HTMLElement>('.theater-everywhere-caption-hud.loading');
+    const existing = ctx.queryPlayerUi<HTMLElement>('.theater-everywhere-caption-hud:not(.theater-auto-notice):not(.fade-out)');
     if (view.kind === 'status' && existing && captionIdentity?.element === ctx.session.element
       && captionIdentity.epoch === ctx.session.currentEpoch) {
       clearCaptionHudTimers();
@@ -334,6 +346,9 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (!element) return;
     announcePlayerStatus(view.kind === 'status' && view.detail ? `${view.title}: ${view.detail}` : view.title);
     const overlay = existing ?? document.createElement('div');
+    // One read per update: the text swap below would otherwise snap the right-anchored width.
+    cancelCaptionMotion();
+    const widthBefore = existing?.getBoundingClientRect().width ?? 0;
     const identity = { element, epoch: ctx.session.currentEpoch };
     captionIdentity = identity;
     overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
@@ -362,6 +377,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     textEl.textContent = view.title;
     if (!textEl.parentNode) copy.appendChild(textEl);
     let detail: HTMLElement | undefined;
+    copy.querySelector('.volume-hud-detail')?.remove();
     if (view.kind === 'status' && view.detail) {
       const detailEl = document.createElement('span');
       detailEl.className = 'volume-hud-detail';
@@ -383,6 +399,17 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
         isCurrent: () => captionIdentity === identity && ctx.session.element === identity.element
           && ctx.session.currentEpoch === identity.epoch
       });
+    } else if (detail && !isElementMotionReduced(overlay)) captionReveal = animateReveal(detail);
+
+    if (existing && !isElementMotionReduced(overlay)) {
+      const widthAfter = overlay.getBoundingClientRect().width;
+      if (Math.abs(widthAfter - widthBefore) > 0.5) {
+        // The overlay clips its overflow, so the content keeps its place while the box eases to the new width.
+        captionWidthMorph = overlay.animate(
+          [{ width: `${widthBefore}px` }, { width: `${widthAfter}px` }],
+          { duration: CAPTION_WIDTH_MORPH_MS, easing: 'ease' }
+        );
+      }
     }
 
     if (view.kind === 'loading') return;

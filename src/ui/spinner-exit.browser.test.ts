@@ -185,14 +185,15 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1);
     assert.equal(await page.locator('.caption-hud-spinner').count(), 0);
     assert.equal(await detail.evaluate(e => getComputedStyle(e).opacity), '1');
-    assert.deepEqual(await slot.boundingBox(), before, 'spinner slot does not collapse');
+    const after = await slot.boundingBox();
+    assert.deepEqual({ width: after!.width, height: after!.height, y: after!.y }, { width: before!.width, height: before!.height, y: before!.y }, 'spinner slot does not collapse');
     await capture(page, `${engine}-caption-end`, 500);
 
     // Cancel while exiting, then publish a replacement; old completions must not remove it.
     await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading'})`);
     await page.clock.runFor(400);
     await page.evaluate(`hud.triggerCaptionHud({kind:'status',title:'Old',detail:'English'});
-      window.oldFinish = exits[exits.length - 2].animation.onfinish;
+      window.oldFinish = exits.filter(record => record.element.classList.contains('caption-hud-spinner')).at(-1).animation.onfinish;
       hud.removeCaptionHud(); hud.removeCaptionHud(); oldFinish(new Event('finish'));
       hud.triggerCaptionHud({kind:'loading',title:'Replacement'})`);
     await page.clock.runFor(500);
@@ -223,6 +224,27 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1000);
     assert.equal(await spinner.count(), 1);
     await page.locator('.theater-loading-indicator').evaluate(e => { for (const animation of e.getAnimations()) animation.finish(); });
+    // The plate is a circle in the HUD family, centred over the picture with the ring centred inside.
+    const plate = page.locator('.theater-loading-indicator');
+    const geometry = await plate.evaluate(plate => {
+      const box = plate.getBoundingClientRect();
+      const ring = plate.querySelector('.theater-loading-spinner')!.getBoundingClientRect();
+      const picture = document.querySelector('video')!.getBoundingClientRect();
+      const style = getComputedStyle(plate);
+      return {
+        width: box.width, height: box.height, radius: style.borderRadius, plate: plate.classList.contains('theater-hud-plate'),
+        offset: [box.left + box.width / 2 - ring.left - ring.width / 2, box.top + box.height / 2 - ring.top - ring.height / 2],
+        center: [box.left + box.width / 2 - (picture.left + picture.width / 2), box.top + box.height / 2 - (picture.top + picture.height / 2)],
+        background: style.backgroundColor, ring: (plate.querySelector('.theater-loading-spinner') as HTMLElement).offsetWidth
+      };
+    });
+    assert.equal(geometry.width, geometry.height, 'round plate');
+    assert.ok(geometry.width > geometry.ring + 16, 'padding around the ring');
+    assert.equal(geometry.radius, '50%');
+    assert.equal(geometry.plate, true);
+    assert.notEqual(geometry.background, 'rgba(0, 0, 0, 0)');
+    assert.ok(geometry.offset.every(value => Math.abs(value) < 0.5), 'ring is centred in the plate');
+    assert.ok(geometry.center.every(value => Math.abs(value) < 1), 'plate is centred on the picture');
     await event('canplay');
     await capture(page, `${engine}-buffer-start`, 0);
     assert.equal(await page.locator('.theater-loading-indicator.exiting').count(), 1);
@@ -235,6 +257,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
     assert.equal(await spinner.count(), 0);
+    assert.equal(await plate.evaluate(e => getComputedStyle(e).opacity), '0', 'the empty plate leaves with the ring');
     await capture(page, `${engine}-buffer-end`, 500);
     await event('waiting');
     await page.clock.runFor(1000);
@@ -257,6 +280,127 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.clock.runFor(1000);
     assert.equal(await page.locator('.theater-loading-indicator').count(), 0);
     assert.equal(await page.evaluate('exits.every(record => record.animation.playState === "idle")'), true, 'all owned effects are cancelled');
+  });
+
+  it(`${engine}: caption notice width morphs between states without jumping and cleans up`, { timeout: 40_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch();
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await setup(page);
+    const hudBox = () => page.locator('.theater-everywhere-caption-hud').evaluate(e => {
+      const box = e.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: box.width };
+    });
+    const morphs = () => page.evaluate(`exits.filter(record => record.element.classList.contains('theater-everywhere-caption-hud')).length`);
+    await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading subtitles…'})`);
+    await page.clock.runFor(400);
+    const loading = await hudBox();
+    await page.evaluate(`hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English (United Kingdom)',duration:4000})`);
+    assert.equal(await morphs(), 1);
+    const timing = await page.evaluate<{ duration: number; from: string; to: string; easing: string }>(`(() => { const record = exits.find(r => r.element.classList.contains('theater-everywhere-caption-hud'));
+      const frames = record.animation.effect.getKeyframes(); return { duration: record.duration, from: frames[0].width, to: frames[1].width,
+        easing: record.animation.effect.getTiming().easing }; })()`);
+    assert.equal(timing.duration, 225);
+    assert.equal(timing.easing, 'ease');
+    assert.ok(Math.abs(Number.parseFloat(timing.from) - loading.width) < 0.01, 'starts from the pre-update width: no jump');
+    const target = Number.parseFloat(timing.to);
+    assert.notEqual(Math.round(target), Math.round(loading.width));
+    const start = await hudBox();
+    assert.ok(Math.abs(start.width - loading.width) < 1, 'first frame keeps the old width');
+    assert.ok(Math.abs(start.right - loading.right) < 0.5, 'right anchor holds');
+    await capture(page, `${engine}-morph-start`, 0);
+    await page.evaluate(`exits.find(r => r.element.classList.contains('theater-everywhere-caption-hud')).animation.currentTime = 112`);
+    const middle = await hudBox();
+    assert.ok(middle.width > Math.min(loading.width, target) && middle.width < Math.max(loading.width, target), 'width is between the states');
+    assert.ok(Math.abs(middle.right - loading.right) < 0.5);
+    await capture(page, `${engine}-morph-middle`, 112);
+    await page.evaluate(`exits.find(r => r.element.classList.contains('theater-everywhere-caption-hud')).animation.currentTime = 225`);
+    await capture(page, `${engine}-morph-end`, 225);
+    await page.clock.runFor(225);
+    assert.ok(Math.abs((await hudBox()).width - target) < 1, 'settles on the natural width');
+    assert.equal(await page.evaluate(`getComputedStyle(document.getElementById('theater-everywhere-ui').shadowRoot.querySelector('.theater-everywhere-caption-hud')).width`), `${target}px`);
+
+    // Same-width updates start nothing; a replacement or removal cancels the running morph.
+    await page.evaluate(`hud.removeCaptionHud(); hud.triggerCaptionHud({kind:'loading',title:'Loading subtitles…'})`);
+    await page.clock.runFor(400);
+    await page.evaluate(`hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English',duration:4000});
+      window.record = exits.filter(r => r.element.classList.contains('theater-everywhere-caption-hud')).at(-1);`);
+    assert.equal(await page.evaluate('record.animation.playState'), 'paused');
+    await page.evaluate(`hud.removeCaptionHud(); hud.removeCaptionHud()`);
+    assert.equal(await page.evaluate('record.animation.playState'), 'idle', 'removal cancels the morph');
+    await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading subtitles…'})`);
+    await page.clock.runFor(400);
+    await page.evaluate(`hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English',duration:4000});
+      window.stale = exits.filter(r => r.element.classList.contains('theater-everywhere-caption-hud')).at(-1);
+      hud.triggerCaptionHud({kind:'loading',title:'Replacement'})`);
+    assert.equal(await page.evaluate('stale.animation.playState'), 'idle', 'replacement cancels the old morph');
+    await page.evaluate('hud.removeCaptionHud()');
+
+    // Reduce motion changes the width at once.
+    await page.evaluate(`document.getElementById('theater-everywhere-ui').dataset.motion = 'reduced';
+      hud.triggerCaptionHud({kind:'loading',title:'Loading subtitles…'})`);
+    await page.clock.runFor(400);
+    const before = await page.evaluate('exits.length');
+    await page.evaluate(`hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English (United Kingdom)',duration:4000})`);
+    assert.equal(await page.evaluate('exits.length'), before, 'no animation under reduced motion');
+    await page.evaluate('hud.removeCaptionHud()');
+  });
+
+  it(`${engine}: off then on reveals the track name and morphs the width; rapid toggles leave nothing stale`, { timeout: 40_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch();
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage();
+    await setup(page);
+    const live = (selector: string) => page.evaluate(`exits.filter(r => r.element.matches('${selector}') && r.element.isConnected && r.animation.playState !== 'idle').length`);
+    const off = `hud.triggerCaptionHud({kind:'status',title:'Subtitles off',duration:4000})`;
+    const on = `hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English',duration:4000})`;
+    await page.evaluate(off);
+    assert.equal(await page.locator('.volume-hud-detail').count(), 0);
+    await page.clock.runFor(300);
+    await page.evaluate(`window.title = document.getElementById('theater-everywhere-ui').shadowRoot.querySelector('.volume-hud-text'); ${on}`);
+    assert.equal(await page.evaluate(`title === document.getElementById('theater-everywhere-ui').shadowRoot.querySelector('.volume-hud-text')`), true, 'same notice updated in place');
+    const detail = page.locator('.volume-hud-detail');
+    assert.equal(await detail.innerText(), 'English');
+    assert.equal(await page.evaluate(`exits.find(r => r.element.classList.contains('volume-hud-detail')).duration`), 500, 'same reveal as Loading to Loaded');
+    assert.equal(await live('.theater-everywhere-caption-hud'), 1, 'width morph covers the content change');
+    assert.equal(await detail.evaluate(e => getComputedStyle(e).opacity), '0');
+    await capture(page, `${engine}-off-on-start`, 0);
+    await capture(page, `${engine}-off-on-middle`, 300);
+    assert.equal(await detail.evaluate(e => getComputedStyle(e).opacity !== '0' && getComputedStyle(e).opacity !== '1'), true);
+    await capture(page, `${engine}-off-on-end`, 500);
+    assert.equal(await detail.evaluate(e => getComputedStyle(e).opacity), '1');
+
+    // Rapid on/off/on/off: only the latest content survives and no animation outlives its node.
+    for (let i = 0; i < 2; i++) {
+      await page.evaluate(off);
+      await page.clock.runFor(40);
+      await page.evaluate(on);
+      await page.clock.runFor(40);
+    }
+    await page.evaluate(off);
+    assert.equal(await page.locator('.volume-hud-detail').count(), 0, 'no leftover track name');
+    assert.equal(await live('.volume-hud-detail'), 0, 'no reveal outlives its node');
+    assert.equal(await live('.theater-everywhere-caption-hud'), 1, 'one morph at a time');
+    assert.equal(await page.locator('.theater-everywhere-caption-hud').count(), 1);
+    await page.clock.runFor(4300);
+    assert.equal(await page.locator('.theater-everywhere-caption-hud').count(), 0);
+
+    // A fresh "on" after the notice left still reveals the name; removal cancels it.
+    await page.evaluate(on);
+    assert.equal(await live('.volume-hud-detail'), 1);
+    await page.evaluate('hud.removeCaptionHud(); hud.removeCaptionHud()');
+    assert.equal(await page.evaluate("exits.filter(r => r.animation.playState !== 'idle' && r.animation.playState !== 'finished' && r.element.isConnected).length"), 0);
+    assert.equal(await page.evaluate("exits.filter(r => r.element.classList.contains('volume-hud-detail')).at(-1).animation.playState"), 'idle');
+
+    // Reduce motion: instant, nothing animates.
+    await page.evaluate(`document.getElementById('theater-everywhere-ui').dataset.motion = 'reduced'`);
+    const before = await page.evaluate('exits.length');
+    await page.evaluate(off);
+    await page.clock.runFor(100);
+    await page.evaluate(on);
+    assert.equal(await page.evaluate('exits.length'), before);
+    assert.equal(await page.locator('.volume-hud-detail').evaluate(e => getComputedStyle(e).opacity), '1');
+    await page.evaluate('hud.removeCaptionHud()');
   });
 
   it(`${engine}: reduced motion removes immediately, including a live preference change`, { timeout: 40_000 }, async t => {
