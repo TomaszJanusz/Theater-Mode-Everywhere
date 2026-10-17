@@ -151,7 +151,7 @@ OS crash cannot run cleanup; keep the experiment directory for diagnosis.
 
 Run `pnpm typecheck` and
 `pnpm exec tsx --test tools/cpu-suite/suite.test.ts tools/cpu-suite/browser.test.ts`.
-The tests are also registered in `pnpm test`. They check pure logic, persistence,
+`pnpm test` also discovers these tests. They check pure logic, persistence,
 pair retries and fixture-based browser instrumentation/transitions/cleanup.
 Fixtures do not establish real YouTube availability or installed-extension
 behavior. For that, build first, run `probe`, then a real A/B experiment, and

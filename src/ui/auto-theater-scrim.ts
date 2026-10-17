@@ -4,6 +4,15 @@ import { isElementMotionReduced } from './spinner-exit';
 export const AUTO_THEATER_SCRIM_CLASS = 'theater-auto-scrim';
 const FADE_MS = 180;
 
+// The experiment is switched off for now: the notice shows without dimming the page. The implementation
+// stays so it can be re-enabled by flipping this flag.
+let AUTO_THEATER_SCRIM_ENABLED = false;
+
+/** Test seam for exercising the retained scrim; call before showing the notice. */
+export function setAutoTheaterScrimEnabledForTests(enabled: boolean): void {
+  AUTO_THEATER_SCRIM_ENABLED = enabled;
+}
+
 export type AutoTheaterScrimOptions = {
   /** The content video the countdown is about; its box stays uncovered. */
   video(): HTMLVideoElement | null;
@@ -19,6 +28,7 @@ export type AutoTheaterScrimOptions = {
  * at once so nothing is darkened twice.
  */
 export function showAutoTheaterScrim(options: AutoTheaterScrimOptions): () => void {
+  if (!AUTO_THEATER_SCRIM_ENABLED) return () => {};
   const scrim = document.createElement('div');
   scrim.className = AUTO_THEATER_SCRIM_CLASS;
   scrim.setAttribute('aria-hidden', 'true');

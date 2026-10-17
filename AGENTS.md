@@ -55,7 +55,7 @@ This is an impact check, not a demand to run every browser or smoke test. Verify
 Use the smallest useful proof. Broaden checks when risk crosses shared contracts, browser targets or packaging. Preserve CI gates.
 
 - **Docs only:** check content, links, symlinks and whitespace. Skip application tests and builds.
-- **TypeScript:** run `pnpm typecheck` and relevant tests with `pnpm exec tsx --test <test-file> [...]`. `pnpm test` lists files explicitly in `package.json`; register new tests there when needed.
+- **TypeScript:** run `pnpm typecheck` and relevant tests with `pnpm exec tsx --test <test-file> [...]`. `pnpm test` discovers every `*.test.ts`/`*.test.mjs` through `scripts/run-tests.mjs`; name new tests that way and do not register them. Narrow a run with `pnpm test <path-or-substring>`.
 - **Regressions:** cover meaningful behavior and failure modes, including stale results and cleanup where relevant. Tests should catch a plausible bug, not mirror implementation. Simple reversible changes do not automatically need new tests.
 - **Determinism:** wait for observable state. Use fake timers or an injected clock for time semantics. Avoid arbitrary sleeps and retries that mask races; do not assert exact GPU-dependent output.
 - **Builds:** bundling, entrypoint, manifest and packaging changes warrant `pnpm build` and `pnpm verify:bundles`. A build does not establish type safety.
