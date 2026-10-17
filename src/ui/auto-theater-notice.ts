@@ -1,3 +1,4 @@
+import { exitSpinner } from './spinner-exit';
 import { mountPlayerUi } from './root';
 import { HUD_PLATE_CLASS } from './hud';
 import { renderKbdText } from './kbd-text';
@@ -39,7 +40,10 @@ export function showAutoTheaterNotice(
   const count = document.createElement('span');
   count.className = 'theater-time-display theater-auto-notice-count';
   count.setAttribute('aria-hidden', 'true');
-  icon.append(spinner, count);
+  const visual = document.createElement('div');
+  visual.className = 'theater-auto-notice-visual';
+  visual.append(spinner, count);
+  icon.appendChild(visual);
   const copy = document.createElement('div');
   copy.className = 'volume-hud-copy';
   const titleEl = document.createElement('span');
@@ -70,9 +74,20 @@ export function showAutoTheaterNotice(
   };
   tick(false);
   mountPlayerUi(overlay);
+  const stopExit = exitSpinner(visual, {
+    mode: 'deadline', remainingMs,
+    onStart: () => {
+      window.clearTimeout(timer);
+      // Hold the final digit throughout the shrink, without starting another roll.
+      renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
+    }
+  });
   return () => {
     stopped = true;
+    stopExit();
     window.clearTimeout(timer);
+    // Also settle any digit roll already in flight before discarding its DOM.
+    renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
     overlay.remove();
   };
 }
