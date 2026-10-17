@@ -1007,7 +1007,7 @@
     "message": "Effacer le filtre"
   },
   "rteShown": {
-    "message": "$count$ services sur $total$ affichés",
+    "message": "Services affichés : $count$ sur $total$",
     "placeholders": {
       "count": {
         "content": "$1"
