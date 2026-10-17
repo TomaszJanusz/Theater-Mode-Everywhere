@@ -1,3 +1,4 @@
+import { bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { youtubeLauncherPlacement } from './youtube/launcher-placement';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
@@ -29,7 +30,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname) },
   { id: 'disney', matchesHost: (hostname) => isDisneyHost(hostname), watchPlayback: disneyWatchPlayback },
   { id: 'netflix', matchesHost: (hostname) => isNetflixHost(hostname), watchPlayback: netflixWatchPlayback },
-  { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname) },
+  { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname), watchPlayback: bilibiliWatchPlayback },
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname) },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) }
