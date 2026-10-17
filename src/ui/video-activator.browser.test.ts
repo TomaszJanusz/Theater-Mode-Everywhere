@@ -497,8 +497,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
 
   it(`${engine}: YouTube toolbar placement, fallback, RTE gates and cleanup`, { timeout: 40_000 }, async t => {
     const html = PAGE.replace('id="player"', 'id="player" class="html5-video-player"') + `<style>
-      .ytp-right-controls { position:absolute;right:0;bottom:0;height:40px;display:flex;color:white;background:#222; }
-      .ytp-button { width:40px;height:40px;color:inherit;fill:currentColor; }
+      /* Mirrors youtube.com: a flex-end, line-height:56px row of display:block 48x100% buttons whose colour is #eee. */
+      .ytp-right-controls, .ytp-right-controls-left { position:absolute;right:0;bottom:0;height:40px;display:flex;align-items:flex-end;line-height:56px;color:#eee;background:#222; }
+      .ytp-right-controls-left { position:static;background:none; }
+      .ytp-button { display:block;width:48px;height:100%;padding:0;border:0;color:#eee;background:none;overflow:hidden; }
     </style>`;
     const page = await launch(t, { html, host: 'www.youtube.com' });
     // Add the native cluster after discovery, as on a late player bind.
@@ -521,7 +523,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
     });
     const resting = await toolbarMark();
     assert.equal(resting.background, 'rgba(0, 0, 0, 0)');
-    assert.equal(resting.body, 'rgb(255, 255, 255)', 'white rhombus at rest');
+    assert.equal(resting.body, 'rgb(255, 255, 255)', 'white rhombus at rest, not the toolbar #eee');
+    const centres = await page.evaluate(() => {
+      const centre = (el: Element) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+      const own = document.querySelector('.ytp-right-controls .theater-video-activator')!;
+      return { own: centre(own), mark: centre(own.querySelector('svg')!), sibling: centre(document.getElementById('settings')!) };
+    });
+    assert.ok(Math.abs(centres.own - centres.sibling) <= 1 && Math.abs(centres.mark - centres.sibling) <= 1, `launcher centre ${JSON.stringify(centres)}`);
     assert.ok(resting.accent, 'the toolbar button keeps the accent token');
     assert.notEqual(resting.triangle, resting.body, 'accent triangle at rest');
     if (engine === 'chromium') await page.screenshot({ path: '/tmp/tme-91-youtube-toolbar.png' });
