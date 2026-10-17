@@ -686,7 +686,7 @@
     "message": "Video launcher"
   },
   "videoActivatorDescription": {
-    "message": "Show a small button in the top-left corner of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface."
+    "message": "Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface."
   },
   "videoActivatorLabel": {
     "message": "Enter theater mode"

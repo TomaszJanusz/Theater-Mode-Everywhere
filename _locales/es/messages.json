@@ -686,7 +686,7 @@
     "message": "Botón sobre el vídeo"
   },
   "videoActivatorDescription": {
-    "message": "Muestra un pequeño botón en la esquina superior izquierda del vídeo al apuntar con el cursor. Haz clic para activar el modo teatro. En algunos servicios con Rich Theater Experience, el botón está integrado en la interfaz del servicio."
+    "message": "Muestra un pequeño botón en el borde izquierdo del vídeo al apuntar con el cursor. Haz clic para activar el modo teatro. En algunos servicios con Rich Theater Experience, el botón está integrado en la interfaz del servicio."
   },
   "videoActivatorLabel": {
     "message": "Activar el modo teatro"
