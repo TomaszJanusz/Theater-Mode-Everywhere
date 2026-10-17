@@ -1179,8 +1179,10 @@ button.theater-time-end:hover {
   bottom: 100% !important;
   display: none !important;
   flex-direction: column !important;
-  width: 340px !important;
-  max-width: calc(100vw - 48px) !important;
+  /* Grow to the widest row so labels stay whole; truncate only past the cap. */
+  width: max-content !important;
+  min-width: min(340px, calc(100vw - 48px)) !important;
+  max-width: min(520px, calc(100vw - 48px)) !important;
   max-height: calc(100vh - 110px) !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
@@ -1284,7 +1286,16 @@ button.theater-time-end:hover {
   gap: 6px !important;
   min-width: 0 !important;
 }
-.theater-settings-label { flex: 0 1 auto !important; min-width: 0 !important; overflow-wrap: anywhere !important; }
+.theater-settings-label {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+/* Badge, keys and value keep their size; a tight row shrinks only the label. */
+.theater-settings-main > .te-new-badge,
+.theater-settings-main > .te-beta-badge { margin-inline-start: 0 !important; }
 .theater-settings-keys {
   flex: 0 0 auto !important;
   display: flex !important;

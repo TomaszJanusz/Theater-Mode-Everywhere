@@ -98,7 +98,7 @@ export function createPlayerSettings(
   });
   const close = popover.close;
 
-  const newItems = new Map<HTMLElement, { id: NewFeatureId; text: HTMLElement; label: string; visible: boolean }>();
+  const newItems = new Map<HTMLElement, { id: NewFeatureId; text: HTMLElement; label: string; visible: boolean; badgeAfterText: boolean }>();
   let lastHighlights: FeatureHighlights | undefined;
   let gearDot: HTMLElement | null = null;
   function refreshHighlights(force = false) {
@@ -109,8 +109,13 @@ export function createPlayerSettings(
       const visible = isNewFeature(item.id, state);
       if (visible !== item.visible) {
         item.visible = visible;
-        item.text.querySelector('.te-new-badge')?.remove();
-        if (visible) item.text.append(createNewBadge());
+        (item.badgeAfterText ? item.text.parentElement : item.text)?.querySelector('.te-new-badge')?.remove();
+        // Row badges sit beside the label, not inside it, so only the label truncates.
+        if (visible) {
+          const badge = createNewBadge();
+          if (item.badgeAfterText) item.text.after(badge);
+          else item.text.append(badge);
+        }
       }
       row.setAttribute('aria-label', item.label + (visible ? `, ${ctx.t('badgeNew')}` : ''));
     }
@@ -121,9 +126,9 @@ export function createPlayerSettings(
     else button.removeAttribute('aria-description');
   }
 
-  function highlight(element: HTMLElement, text: HTMLElement, label: string, id: NewFeatureId) {
+  function highlight(element: HTMLElement, text: HTMLElement, label: string, id: NewFeatureId, badgeAfterText = false) {
     if (!newItems.size) scope.add(ctx.uiStore.subscribe(() => refreshHighlights()));
-    newItems.set(element, { id, text, label, visible: false });
+    newItems.set(element, { id, text, label, visible: false, badgeAfterText });
     refreshHighlights(true);
   }
 
@@ -138,6 +143,7 @@ export function createPlayerSettings(
     const text = document.createElement('span');
     text.className = 'theater-settings-label';
     text.textContent = label;
+    text.title = label;
     const keys = document.createElement('span');
     keys.className = 'theater-settings-keys';
     keys.dir = 'ltr';
@@ -160,7 +166,7 @@ export function createPlayerSettings(
     } else {
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
-    if (newItem) highlight(row, text, label, newItem);
+    if (newItem) highlight(row, text, label, newItem, true);
     return {
       update(shortcut: string, value?: string) {
         const name = value ? `${label}: ${value}` : label;
