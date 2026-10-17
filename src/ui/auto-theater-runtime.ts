@@ -57,8 +57,11 @@ export function createAutoTheaterRuntime(options: {
   const refresh = (): void => {
     if (scope.isDisposed) return;
     const page = readProviderWatchPage(new URL(window.location.href));
+    const previousIdentity = options.visit.current.identity;
     options.visit.current = updateAutoTheaterVisit(options.visit.current,
       page ? `${page.provider}:${page.identity}` : null);
+    // The player element is often reused across videos; a new identity restarts the countdown.
+    if (options.visit.current.identity !== previousIdentity) intent.update(null);
     if (!page || !options.enabled() || window !== window.top || !options.policyAllowed()
         || !options.providerFlags()[page.provider] || options.visit.current.entered) {
       intent.update(null);
@@ -92,9 +95,11 @@ export function createAutoTheaterRuntime(options: {
       transitioning: options.transitioning(), eligibleVideo: eligible, playing,
       mainVideo: true
     };
-    // A player that was asked to play but is still loading its stream already counts as intent.
-    const loading = !video.paused && !video.ended && !playing;
-    const intended = (playing || loading) && shouldAutoEnterTheater(options.visit.current, { ...facts, playing: true })
+    // Playback was requested and the stream is not failing or finished: still loading counts as
+    // intent, so the countdown runs while the player buffers. Pausing or an error cancels it.
+    const preparing = !video.paused && !video.ended && !video.error && video.readyState <= 2
+      && (video.networkState === HTMLMediaElement.NETWORK_LOADING || video.networkState === HTMLMediaElement.NETWORK_IDLE);
+    const intended = (playing || preparing) && shouldAutoEnterTheater(options.visit.current, { ...facts, playing: true })
       && confirmProviderWatchVideo(video);
     if (options.skipCountdown?.()) {
       // Discard any announced entry before applying the current playback facts.
@@ -109,7 +114,9 @@ export function createAutoTheaterRuntime(options: {
   };
 
   // Capture non-bubbling media events; no playback or discovery polling.
-  scope.listen(document, 'play', refresh, true);
+  for (const type of ['loadstart', 'waiting', 'play', 'error', 'abort', 'emptied', 'pause', 'ended']) {
+    scope.listen(document, type, refresh, true);
+  }
   scope.listen(document, 'playing', refresh, true);
   scope.listen(document, 'loadeddata', refresh, true);
   scope.listen(document, 'fullscreenchange', refresh);

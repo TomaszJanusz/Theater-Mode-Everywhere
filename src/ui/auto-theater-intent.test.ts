@@ -99,7 +99,7 @@ it('rejects stale intent: lost eligibility, replaced media and disposal', () => 
 });
 
 it('rounds the notice countdown up and ends on 0 as the ring clears', () => {
-  assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 3);
+  assert.equal(noticeSecondsRemaining(AUTO_ENTER_NOTICE_MIN_MS), 5);
   assert.equal(noticeSecondsRemaining(2001), 3);
   assert.equal(noticeSecondsRemaining(2000), 2);
   assert.equal(noticeSecondsRemaining(1001), 2);
@@ -131,4 +131,10 @@ it('hands the notice a remaining time read from the intent clock', () => {
   assert.equal(remaining!(), 1750);
   now += 5000;
   assert.equal(remaining!(), 0);
+});
+
+it('counts down from 5 and the ring finishes leaving 0.5 s before the end', () => {
+  assert.equal(AUTO_ENTER_NOTICE_MIN_MS, 5000);
+  assert.deepEqual([5000, 4500, 4000, 1001, 1000, 501, 500, 0].map(noticeSecondsRemaining), [5, 5, 4, 2, 1, 1, 0, 0]);
+  assert.equal(msUntilNoticeSecondChanges(AUTO_ENTER_NOTICE_MIN_MS), 1000);
 });

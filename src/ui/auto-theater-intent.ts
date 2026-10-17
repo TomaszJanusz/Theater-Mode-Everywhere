@@ -1,7 +1,7 @@
 import { SPINNER_DEADLINE_END_MS } from './spinner-exit';
 
 /** An announced automatic entry stays visible this long before theater opens. */
-export const AUTO_ENTER_NOTICE_MIN_MS = 3000;
+export const AUTO_ENTER_NOTICE_MIN_MS = 5000;
 
 /**
  * Whole seconds shown on the notice: rounded up while more than one second remains, 1 until the

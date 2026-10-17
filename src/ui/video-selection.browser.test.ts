@@ -44,9 +44,9 @@ async function point(frame: Page | Frame, selector: string): Promise<void> {
   await frame.locator(selector).dispatchEvent('mousemove', { bubbles: true, composed: true });
 }
 
-async function selected(frame: Page | Frame): Promise<string> {
+async function selected(frame: Page | Frame, timeout = 5000): Promise<string> {
   const video = frame.locator('video[data-theater-everywhere]');
-  await video.waitFor({ state: 'attached' });
+  await video.waitFor({ state: 'attached', timeout });
   return video.evaluate(video => video.id);
 }
 
@@ -426,7 +426,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
         }
         document.getElementById('pointed')!.dispatchEvent(new Event('playing'));
       });
-      assert.equal(await selected(page), 'pointed');
+      assert.equal(await selected(page, 15_000), 'pointed'); // Waits out the AutoTheater countdown.
       await page.close();
     });
   });
