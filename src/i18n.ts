@@ -293,6 +293,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteCapabilityLauncher: "Video launcher",
   rteNoteLauncher: "Uses the native player toolbar when its launcher slot is available; otherwise uses the video overlay.",
   rteCapabilityQuickActions: "Quick actions",
+  rteCapabilityAutoTheater: "AutoTheater",
   rteEmpty: "No service has all the selected capabilities.",
   rteClear: "Clear filter",
   rteShown: "$1 of $2 services shown",

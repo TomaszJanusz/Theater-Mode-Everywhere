@@ -131,6 +131,30 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     } finally { await browser.close(); }
   });
 
+  it('filters AutoTheater services, combines with another chip and clears', { timeout: 45000 }, async t => {
+    const browser = await engine.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    try {
+      const page = await browser.newPage();
+      await open(page);
+      const chip = page.locator('#rte-filter-buttons [data-capability="autoTheater"]');
+      assert.equal(await chip.textContent(), 'AutoTheater · 4');
+      assert.equal(await chip.getAttribute('aria-pressed'), 'false');
+      const names = () => page.locator('.rte-tile:visible .rte-name').allTextContents();
+      await chip.press('Space');
+      assert.equal(await chip.getAttribute('aria-pressed'), 'true');
+      assert.deepEqual((await names()).sort(), ['Disney+', 'Netflix', 'Vimeo', 'YouTube']);
+      assert.equal(await page.locator('#rte-shown').textContent(), '4 of 10 services shown');
+      await page.locator('#rte-filter-buttons [data-capability="heatmap"]').click();
+      assert.deepEqual(await names(), ['YouTube']);
+      assert.equal(await page.locator('#rte-shown').textContent(), '1 of 10 services shown');
+      await page.locator('#rte-clear').click();
+      assert.equal(await chip.getAttribute('aria-pressed'), 'false');
+      assert.equal(await page.locator('.rte-tile:visible').count(), 10);
+      assert.equal(await page.locator('#rte-shown').textContent(), '10 of 10 services shown');
+    } finally { await browser.close(); }
+  });
+
   it('filters with AND logic, highlights matches, scopes master writes and clears without saving', { timeout: 45000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);

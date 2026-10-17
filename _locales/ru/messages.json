@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "Быстрые действия"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "Ни один сервис не поддерживает все выбранные функции."
   },

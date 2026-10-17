@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "快捷操作"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "没有服务具备所有选定功能。"
   },

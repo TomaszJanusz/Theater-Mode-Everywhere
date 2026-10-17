@@ -14,5 +14,6 @@ export const crunchyrollCapabilities = {
     playlists: { status: 'no' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteCrunchyroll' },
+    autoTheater: { status: 'no' }
   }
 } as const satisfies ProviderCapabilities;

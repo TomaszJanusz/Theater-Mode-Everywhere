@@ -991,6 +991,9 @@
   "rteCapabilityQuickActions": {
     "message": "Acciones rápidas"
   },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
   "rteEmpty": {
     "message": "Ningún servicio tiene todas las funciones seleccionadas."
   },

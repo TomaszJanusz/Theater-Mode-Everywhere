@@ -14,5 +14,6 @@ export const youtubeCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteYoutube' },
     launcher: { status: 'conditional', noteKey: 'rteNoteLauncher' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteYoutube' },
+    autoTheater: { status: 'yes' }
   }
 } as const satisfies ProviderCapabilities;

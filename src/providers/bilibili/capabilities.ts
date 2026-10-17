@@ -14,5 +14,6 @@ export const bilibiliCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteBilibili' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteBilibili' },
+    autoTheater: { status: 'no' }
   }
 } as const satisfies ProviderCapabilities;

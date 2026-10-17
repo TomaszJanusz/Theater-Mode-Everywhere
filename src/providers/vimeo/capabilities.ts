@@ -14,5 +14,6 @@ export const vimeoCapabilities = {
     playlists: { status: 'conditional', noteKey: 'rteNoteVimeo' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteVimeo' },
+    autoTheater: { status: 'yes' }
   }
 } as const satisfies ProviderCapabilities;

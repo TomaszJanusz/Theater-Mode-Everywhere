@@ -1679,6 +1679,7 @@ html { scrollbar-gutter: stable; }
 [data-capability="playlists"] { --rte-capability-color: #86efac; }
 [data-capability="launcher"] { --rte-capability-color: #a5b4fc; }
 [data-capability="quickActions"] { --rte-capability-color: #fdba74; }
+[data-capability="autoTheater"] { --rte-capability-color: #f0abfc; }
 .rte-badge, .rte-filter-buttons button {
   --rte-badge-color: var(--appearance-ink, var(--rte-capability-color));
   --rte-badge-background: color-mix(in srgb, var(--rte-capability-color) 16%, var(--appearance-normal-background));
