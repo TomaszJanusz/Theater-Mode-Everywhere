@@ -4,6 +4,23 @@ export const SPINNER_DEADLINE_START_MS = 1000;
 export const SPINNER_DEADLINE_END_MS = 500;
 export const SPINNER_PASSIVE_EXIT_MS = 500;
 
+/** Reduce motion as seen by a shadow-hosted element: the UI host's marker, else the page's. */
+export function isElementMotionReduced(element: HTMLElement): boolean {
+  const doc = element.ownerDocument;
+  const root = element.getRootNode();
+  const host = root instanceof ShadowRoot ? root.host : doc.documentElement;
+  return host.getAttribute('data-motion') === 'reduced' || isMotionReduced(doc);
+}
+
+/** The gentle fade/slide-in for text that joins a notice (the language after Loading, or after Off). */
+export function animateReveal(element: HTMLElement, duration = SPINNER_PASSIVE_EXIT_MS): Animation {
+  return element.animate([
+    { opacity: 0, translate: '0 3px', offset: 0 },
+    { opacity: 0, translate: '0 3px', offset: 0.6 },
+    { opacity: 1, translate: '0 0', offset: 1 }
+  ], { duration, easing: 'ease-out', fill: 'both' });
+}
+
 type ExitMode = { mode: 'passive' } | { mode: 'deadline'; remainingMs: () => number };
 
 /** Owns one exit, including its deadline alarm, motion subscription and reveal.
@@ -23,7 +40,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
   const doc = element.ownerDocument;
   const root = element.getRootNode();
   const host = root instanceof ShadowRoot ? root.host : doc.documentElement;
-  const reduced = () => host.getAttribute('data-motion') === 'reduced' || isMotionReduced(doc);
+  const reduced = () => isElementMotionReduced(element);
   const current = () => element.isConnected && (options.isCurrent?.() ?? true);
   const dispose = () => {
     if (stopped) return;
@@ -75,11 +92,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
     animation.onfinish = finish;
     if (options.reveal) {
       // Keep the language's final width from the start; reveal it as the ring clears.
-      const reveal = options.reveal.animate([
-        { opacity: 0, translate: '0 3px', offset: 0 },
-        { opacity: 0, translate: '0 3px', offset: 0.6 },
-        { opacity: 1, translate: '0 0', offset: 1 }
-      ], { duration, easing: 'ease-out', fill: 'both' });
+      const reveal = animateReveal(options.reveal, duration);
       animations.push(reveal);
       reveal.currentTime = elapsed;
     }

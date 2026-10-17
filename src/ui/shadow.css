@@ -947,16 +947,28 @@ button.theater-time-end:hover {
   100% { opacity: 1; }
 }
 
-/* Center loading spinner */
+/* Center loading spinner: a round plate in the HUD family, centred on the picture like the volume HUD.
+   Only the ring animates out (spinner-exit.ts); the plate stays solid until the ring is gone, then leaves at once. */
 .theater-loading-indicator {
   position: fixed !important;
-  top: 50% !important;
+  top: var(--theater-hud-center-y, 50vh) !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
+  box-sizing: border-box !important;
+  width: 76px !important;
+  height: 76px !important;
+  padding: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid transparent !important;
+  outline: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.12)) !important;
+  outline-offset: 1px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
   z-index: 2147483647 !important;
   pointer-events: none !important;
   opacity: 0 !important;
-  transition: opacity 0.2s ease !important;
 }
 
 .theater-loading-indicator.visible,
@@ -964,15 +976,24 @@ button.theater-time-end:hover {
   opacity: 1 !important;
 }
 
+.theater-loading-indicator.visible {
+  transition: opacity 0.2s ease !important;
+}
+
+:host([data-motion="reduced"]) .theater-loading-indicator {
+  transition: none !important;
+}
+
 .theater-loading-spinner {
+  flex: none !important;
   width: 48px !important;
   height: 48px !important;
+  box-sizing: border-box !important;
   /* Neutral grey keeps the track readable over dark and bright frames alike. */
   border: 4px solid var(--appearance-border, rgba(150, 150, 150, 0.6)) !important;
   border-top-color: var(--accent-color, #6366f1) !important;
   border-radius: 50% !important;
   animation: theater-spin 0.8s linear infinite !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 @keyframes theater-spin {
@@ -1871,6 +1892,8 @@ button.theater-time-end:hover {
 }
 
 .theater-everywhere-caption-hud {
+  /* Border-box so the width morph in hud.ts animates the measured box. */
+  box-sizing: border-box !important;
   position: fixed !important;
   top: var(--theater-hud-inset) !important;
   right: var(--theater-hud-inset) !important;

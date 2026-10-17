@@ -30,7 +30,7 @@ import { selectSwitchableVideos } from '../switchable-videos';
 import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
-import { AUDIO_SETTING_ICONS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
+import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
@@ -106,7 +106,7 @@ export function createControls(
 
     // Create loading indicator
     const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'theater-loading-indicator';
+    loadingIndicator.className = `theater-loading-indicator ${HUD_PLATE_CLASS}`;
     paintOverlay(loadingIndicator);
   
     let stopLoadingExit: (() => void) | null = null;
