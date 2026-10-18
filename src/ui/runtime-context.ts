@@ -99,7 +99,7 @@ export type PlayerChromeActions = {
   escapeHtml(value: string): string;
   triggerSeekIndicator(direction: 'left' | 'right'): void;
   triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: 'up' | 'down'): void;
-  triggerStatusIndicator(text: string, icon: string): void;
+  triggerStatusIndicator(text: string, icon: string, level?: string): void;
   triggerPlaybackIndicator(action: 'play' | 'pause'): void;
   dismissPlaybackIndicator(): void;
   /** The action a PLAY_PAUSE command would perform now, or null without a playable surface. */

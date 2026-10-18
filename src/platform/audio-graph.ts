@@ -30,10 +30,33 @@ const LEVELING_PRESETS: Record<Exclude<AudioSettings['leveling'], 'off'>, Leveli
 };
 
 /**
- * "MOAAARR" is the highest lift that keeps a near-full-scale bass tone under the
- * limiter (+10 dB overshoots 0 dBFS); light voice lifts speech by +6 dB, strong by up to +10.9 dB.
+ * "MOAAR" (+9 dB) is the highest lift a near-full-scale bass tone survives under the limiter alone:
+ * its 2 ms attack lets a 60 Hz peak through from +10 dB. "MOAAARR!" (+12 dB) therefore adds a
+ * soft ceiling after the limiter (see `ceilingStage`). Past +10 the shared limiter ducks speech under a hard 60 Hz kick (about 2 dB at +12 on a moderate kick); +12 is the value under listening test. Light voice lifts speech by +6 dB, strong by up to +10.9 dB.
  */
-const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6, moar: 9 };
+const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6, moar: 9, moaaarr: 12 };
+
+/** Linear up to the knee, then a tanh roll-off that approaches but never reaches full scale. */
+const CEILING_KNEE = 0.85;
+// The return type is inferred: WaveShaperNode.curve wants Float32Array<ArrayBuffer> on TypeScript 5.7+, plain Float32Array before.
+function ceilingCurve() {
+  const size = 2049;
+  const curve = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    const x = (i / (size - 1)) * 2 - 1;
+    const over = Math.abs(x) - CEILING_KNEE;
+    curve[i] = over <= 0 ? x : Math.sign(x) * (CEILING_KNEE + (1 - CEILING_KNEE) * Math.tanh(over / (1 - CEILING_KNEE)));
+  }
+  return curve;
+}
+
+/** Catches the limiter's attack overshoot. Disconnected, like every effect, unless MOAAARR! is selected. */
+function ceilingStage(ctx: BaseAudioContext) {
+  const shaper = ctx.createWaveShaper();
+  shaper.curve = ceilingCurve();
+  shaper.oversample = '2x';
+  return createAudioCrossfade(ctx, { input: shaper, output: shaper });
+}
 
 export type AudioChain = {
   readonly input: AudioNode;
@@ -187,21 +210,25 @@ export function createAudioChain(ctx: BaseAudioContext): AudioChain {
   voice.output.connect(bass.input);
   bass.output.connect(leveling.input);
   leveling.output.connect(guard.input);
+  const ceiling = ceilingStage(ctx);
+  guard.output.connect(ceiling.input);
 
   return {
     input: voice.input,
-    output: guard.output,
+    output: ceiling.output,
     apply(settings) {
       voice.set(settings.voice);
       bass.set(settings.bass);
       leveling.set(settings.leveling);
       guard.setActive(!isNeutralAudio(settings));
+      ceiling.setActive(settings.bass === 'moaaarr');
     },
     dispose() {
       voice.dispose();
       bass.dispose();
       leveling.dispose();
       guard.dispose();
+      ceiling.dispose();
     }
   };
 }

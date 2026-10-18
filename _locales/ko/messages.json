@@ -162,7 +162,10 @@
     "message": "많이"
   },
   "bassMoar": {
-    "message": "MOAAARR"
+    "message": "MOAAR"
+  },
+  "bassMoaaarr": {
+    "message": "MOAAARR!"
   },
   "bassHud": {
     "message": "저음: $1",

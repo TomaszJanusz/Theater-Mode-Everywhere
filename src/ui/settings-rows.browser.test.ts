@@ -101,7 +101,7 @@ describe('settings menu rows stay on one line', () => {
                 settings.addRow(button, label, section, isNew).update(shortcut, value);
               };
               // The Bass row shows one of four levels; reserve room for the longest.
-            const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
+            const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar', 'bassMoaaarr'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
             for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.badgeNew);
               for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew);
               settings.button.click();
@@ -219,5 +219,102 @@ describe('settings menu rows stay on one line', () => {
         }
       });
     });
+  }
+});
+
+describe('Bass row sweep', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`sweeps once when the level rises into a red level in ${engine}`, { timeout: 60_000 }, async () => {
+      await withBrowser(engine, async browser => {
+        const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
+        await page.setContent('<body style="margin:0"></body>');
+        await page.addStyleTag({ content: UI_CSS });
+        await page.evaluate('window.__name = value => value');
+        await page.addScriptTag({ content: BUNDLE });
+        const result = await page.evaluate(async () => {
+          const mount = document.createElement('div');
+          mount.style.cssText = 'position:fixed;inset-inline-start:20px;top:20px;width:340px';
+          document.body.append(mount);
+          const api = (window as any).SettingsRows;
+          const video = document.createElement('video');
+          document.body.append(video);
+          const store = new api.PlayerUiStore();
+          const noop = () => {};
+          const actions = new Proxy({ setIcon(el: HTMLElement, svg: string) { el.innerHTML = svg; }, escapeHtml: (v: string) => v, findAllVideosDeep: () => [] } as Record<string, unknown>, { get: (t, k: string) => t[k] ?? noop });
+          const ctx = { session: { element: video, currentEpoch: 1, isExiting: false, isIdle: false, publishSnapshot: noop }, uiStore: store, frames: {}, refs: api.createChromeRefs(), ui: () => store.getState(),
+            t: (key: string) => key, queryPlayerUi: (s: string) => document.querySelector(s), queryPlayerUiAll: (s: string) => [...document.querySelectorAll(s)],
+            mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
+          api.createControls(ctx, noop).createCustomControls(video);
+          const row = document.querySelector<HTMLElement>('.audio-bass-btn')!;
+          const set = (bass: string) => store.dispatch({ type: 'SET_AUDIO', value: { voice: 'off', leveling: 'off', bass } });
+          const swept = () => row.classList.contains('is-sweeping');
+          const seen: Record<string, boolean> = {};
+          // A closed menu never fires animationend, so it must not be left carrying the marker.
+          set('moar');
+          seen.closed = swept();
+          set('less');
+          document.querySelector('.theater-settings-container')!.classList.add('is-open');
+          // The wrapper is idle-hidden, so only the transitions are asserted here, not the painted sweep.
+          for (const [name, bass] of [['less', 'less'], ['original', 'original'], ['more', 'more'], ['moar', 'moar'], ['moaaarr', 'moaaarr'], ['wrap', 'less'], ['moar again', 'moar']]) {
+            set(bass);
+            seen[name] = swept();
+            row.classList.remove('is-sweeping');
+          }
+          return seen;
+        });
+        assert.deepEqual(result, { closed: false, less: false, original: false, more: false, moar: true, moaaarr: true, wrap: false, 'moar again': true });
+        await page.close();
+      });
+    });
+  }
+});
+
+describe('Settings row vertical alignment', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    for (const scale of [1, 2]) {
+      it(`centres icon, label, keycaps and value on one line at ${scale}x in ${engine}`, { timeout: 60_000 }, async () => {
+        await withBrowser(engine, async browser => {
+          const page = await browser.newPage({ viewport: { width: 420, height: 900 }, deviceScaleFactor: scale });
+          await page.setContent('<body style="margin:0"></body>');
+          await page.addStyleTag({ content: UI_CSS });
+          await page.evaluate('window.__name = value => value');
+          await page.addScriptTag({ content: BUNDLE });
+          const rows = await page.evaluate((messages) => {
+            const mount = document.createElement('div');
+            mount.style.cssText = 'position:fixed;inset-inline-start:20px;top:20px;width:340px';
+            document.body.append(mount);
+            const api = (window as any).SettingsRows;
+            const video = document.createElement('video');
+            document.body.append(video);
+            const store = new api.PlayerUiStore();
+            const noop = () => {};
+            const actions = new Proxy({ setIcon(el: HTMLElement, svg: string) { el.innerHTML = svg; }, escapeHtml: (v: string) => v, findAllVideosDeep: () => [] } as Record<string, unknown>, { get: (t, k: string) => t[k] ?? noop });
+            const ctx = { session: { element: video, currentEpoch: 1, isExiting: false, isIdle: false, publishSnapshot: noop }, uiStore: store, frames: {}, refs: api.createChromeRefs(), ui: () => store.getState(),
+              t: (key: string, ...subs: string[]) => (messages[key] ?? key).replace('$1', subs[0] ?? ''), queryPlayerUi: (s: string) => document.querySelector(s), queryPlayerUiAll: (s: string) => [...document.querySelectorAll(s)],
+              mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
+            api.createControls(ctx, noop).createCustomControls(video);
+            document.querySelector('.theater-settings-container')!.classList.add('is-open');
+            store.dispatch({ type: 'SET_AUDIO', value: { voice: 'light', leveling: 'off', bass: 'moaaarr' } });
+            const centre = (element: Element | null) => { const box = element?.getBoundingClientRect(); return box ? box.top + box.height / 2 : null; };
+            return [...document.querySelectorAll('.theater-settings-row')].filter(row => (row as HTMLElement).offsetParent).map(row => ({
+              row: row.className.split(' ').find(name => name.endsWith('-btn')) ?? row.className,
+              height: row.getBoundingClientRect().height,
+              icon: centre(row.querySelector('.theater-settings-row-icon svg')),
+              label: centre(row.querySelector('.theater-settings-label')),
+              keys: [...row.querySelectorAll('kbd')].map(centre),
+              detail: centre(row.querySelector('.theater-settings-detail > :not(.theater-settings-reserve)'))
+            }));
+          }, english);
+          assert.ok(rows.length >= 6, `${engine}: rows found`);
+          for (const row of rows) {
+            if (row.icon === null || row.label === null) continue;
+            assert.ok(Math.abs(row.icon - row.label) <= 0.5, `${engine} ${scale}x ${row.row}: icon centre ${row.icon} vs label centre ${row.label}`);
+            for (const key of row.keys) assert.ok(Math.abs((key as number) - row.label) <= 1, `${engine} ${row.row}: keycap centre ${key} vs ${row.label}`);
+            if (row.detail !== null) assert.ok(Math.abs(row.detail - row.label) <= 0.5, `${engine} ${row.row}: value centre ${row.detail} vs ${row.label}`);
+          }
+          await page.close();
+        });
+      });
+    }
   }
 });

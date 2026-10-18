@@ -7,7 +7,7 @@ import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
 import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
-import type { AudioSettingName } from '../audio-settings';
+import type { AudioSettingName, AudioSettings } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
@@ -40,14 +40,25 @@ const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/>
 export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
 export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
 
+/**
+ * A subwoofer seen front-on: an outlined square cabinet (its width equals its height) on two feet, centred in the 24 box like the sibling icons, and a filled membrane ring with the dust
+ * cap cut out (even-odd, so any background shows through). The waves radiate on both sides as mirror images about the box centre and overhang the box (the svg is overflow: visible), so they never move the cabinet and the icon needs no RTL mirroring. They show by the svg's `data-level` (see
+ * shadow.css), so the settings row, HUD and any later surface share one shape. `bass-hop` carries the
+ * MOAAR rocking and `bass-cone` its jitter; their pivots are the feet at x 8.5 and 15.5, y 20.
+ */
+const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect class="bass-cabinet" x="5" y="2.5" width="14" height="14" rx="2"/><path d="M8.5 16.5V20M15.5 16.5V20"/><path class="bass-cone" fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 4.8a4.7 4.7 0 1 0 0 9.4a4.7 4.7 0 1 0 0-9.4zM12 7.8a1.7 1.7 0 1 0 0 3.4a1.7 1.7 0 1 0 0-3.4z"/></g><path class="bass-wave bass-wave-1" data-side="right" d="M22.2 7a3 3 0 0 1 0 5"/><path class="bass-wave bass-wave-2" data-side="right" d="M24.2 5.5a5 5 0 0 1 0 8"/><path class="bass-wave bass-wave-3" data-side="right" d="M26.4 4a8.5 8.5 0 0 1 0 11"/><path class="bass-wave bass-wave-1" data-side="left" d="M1.8 7a3 3 0 0 0 0 5"/><path class="bass-wave bass-wave-2" data-side="left" d="M-0.2 5.5a5 5 0 0 0 0 8"/><path class="bass-wave bass-wave-3" data-side="left" d="M-2.4 4a8.5 8.5 0 0 0 0 11"/></g>';
+
 const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   // A speaking head.
   voice: '<path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.16-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.66 3.05 1 4.55a5.77 5.77 0 0 1 .03 2.76L2 20"/><path d="M19.8 17.8a7.5 7.5 0 0 0 0-10.6"/><path d="M17 15a3.5 3.5 0 0 0 0-5"/>',
   // Even level bars held between two limits.
   leveling: '<path d="M3 4h18"/><path d="M3 20h18"/><path d="M6 9v6"/><path d="M10 8v8"/><path d="M14 9v6"/><path d="M18 8v8"/>',
-  // A loudspeaker with its woofer.
-  bass: '<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/>'
+  bass: BASS_SHAPES
 };
+/** Menu and HUD size of the bass icon; `level` is also updated in place on the settings row. */
+function bassIcon(size: number, level: AudioSettings['bass']): string {
+  return strokeIcon(BASS_SHAPES, size).replace('<svg ', `<svg class="bass-icon" data-level="${level}" `);
+}
 const audioIcons = (name: AudioSettingName) => ({
   menu: strokeIcon(AUDIO_SETTING_SHAPES[name], 16),
   hud: strokeIcon(AUDIO_SETTING_SHAPES[name], 28)
@@ -55,8 +66,12 @@ const audioIcons = (name: AudioSettingName) => ({
 export const AUDIO_SETTING_ICONS: Record<AudioSettingName, { menu: string; hud: string }> = {
   voice: audioIcons('voice'),
   leveling: audioIcons('leveling'),
-  bass: audioIcons('bass')
+  bass: { menu: bassIcon(16, 'original'), hud: bassIcon(28, 'original') }
 };
+/** The confirmation HUD shows the level just chosen. */
+export function audioHudIcon(name: AudioSettingName, settings: AudioSettings): string {
+  return name === 'bass' ? bassIcon(28, settings.bass) : AUDIO_SETTING_ICONS[name].hud;
+}
 // A speaker with a plus.
 const VOLUME_BOOST_SHAPE = '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M19 9v6"/><path d="M16 12h6"/>';
 export const VOLUME_BOOST_ICONS = {
@@ -185,7 +200,8 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     }, 800);
   }
 
-  function triggerStatusIndicator(text: string, icon: string): void {
+  /** `level` is the confirmed setting's level; the stylesheet recolours the HUD for the red bass levels. */
+  function triggerStatusIndicator(text: string, icon: string, level?: string): void {
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
@@ -195,6 +211,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
     const overlay = document.createElement('div');
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS} status-hud`;
+    if (level) overlay.dataset.level = level;
     ctx.paintOverlay(overlay);
     overlay.setAttribute('aria-hidden', 'true');
 

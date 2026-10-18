@@ -8,6 +8,7 @@
 #theater-everywhere-ui,
 :host {
   --theater-volume-boost-color: #f59e0b;
+  --theater-bass-moar-color: #ef4444;
   all: initial !important;
   position: fixed !important;
   inset: 0 !important;

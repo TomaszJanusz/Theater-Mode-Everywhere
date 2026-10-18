@@ -5,6 +5,10 @@ import {
   BASS_LEVELS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  bassLevels,
+  bassRowSweeps,
+  isAudioSettingActive,
+  resolveBassLevel,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
   LEVELING_LEVELS,
@@ -40,8 +44,11 @@ describe('audio settings', () => {
     }
     let bass = DEFAULT_AUDIO_SETTINGS;
     const order = [];
-    for (let step = 0; step < 4; step++) { bass = cycleAudioSetting(bass, 'bass'); order.push(bass.bass); }
-    assert.deepEqual(order, ['more', 'moar', 'less', 'original']);
+    // Cycling starts at 'original' and wraps, whichever top levels are configured.
+    const originalIndex = BASS_LEVELS.indexOf('original');
+    const expected = [...BASS_LEVELS.slice(originalIndex + 1), ...BASS_LEVELS.slice(0, originalIndex + 1)];
+    for (let step = 0; step < BASS_LEVELS.length; step++) { bass = cycleAudioSetting(bass, 'bass'); order.push(bass.bass); }
+    assert.deepEqual(order, expected);
   });
 
   it('round-trips through the media element dataset and reports only real changes', () => {
@@ -53,5 +60,29 @@ describe('audio settings', () => {
     assert.deepEqual(readAudioDataset(dataset), boosted);
     assert.equal(isNeutralAudio(boosted), false);
     assert.equal(isNeutralAudio(DEFAULT_AUDIO_SETTINGS), true);
+  });
+
+  it('marks only non-default levels as active', () => {
+    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(DEFAULT_AUDIO_SETTINGS, name)), []);
+    const tuned = { voice: 'light', leveling: 'off', bass: 'less' } as const;
+    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(tuned, name)), ['voice', 'bass']);
+  });
+
+  it('gates the top bass level behind one flag', () => {
+    assert.deepEqual(bassLevels(false), ['less', 'original', 'more', 'moar']);
+    assert.deepEqual(bassLevels(true), ['less', 'original', 'more', 'moar', 'moaaarr']);
+    assert.equal(resolveBassLevel('moaaarr', false), 'moar', 'a saved top level falls back to MOAAR');
+    assert.equal(resolveBassLevel('moaaarr', true), 'moaaarr');
+    assert.equal(resolveBassLevel('bogus', false), 'original');
+  });
+
+  it('sweeps the Bass row only when the level rises into a red level', () => {
+    assert.equal(bassRowSweeps('more', 'moar'), true);
+    assert.equal(bassRowSweeps('original', 'moar'), true);
+    assert.equal(bassRowSweeps('moar', 'moaaarr'), true);
+    assert.equal(bassRowSweeps('moaaarr', 'less'), false, 'the wrap down to Less is silent');
+    assert.equal(bassRowSweeps('original', 'more'), false);
+    assert.equal(bassRowSweeps('moaaarr', 'moar'), false);
+    assert.equal(bassRowSweeps(undefined, 'moaaarr'), false, 'the first state never sweeps');
   });
 });

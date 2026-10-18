@@ -162,7 +162,10 @@
     "message": "أكثر"
   },
   "bassMoar": {
-    "message": "MOAAARR"
+    "message": "MOAAR"
+  },
+  "bassMoaaarr": {
+    "message": "MOAAARR!"
   },
   "bassHud": {
     "message": "الجهير: $1",

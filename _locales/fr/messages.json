@@ -162,7 +162,10 @@
     "message": "Plus"
   },
   "bassMoar": {
-    "message": "MOAAARR"
+    "message": "MOAAR"
+  },
+  "bassMoaaarr": {
+    "message": "MOAAARR!"
   },
   "bassHud": {
     "message": "Basses : $1",

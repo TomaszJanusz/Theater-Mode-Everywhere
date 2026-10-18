@@ -129,7 +129,7 @@ import {
   STATUS_HUD_LAYOUT_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
-  AUDIO_SETTING_ICONS,
+  audioHudIcon,
   VOLUME_BOOST_ICONS
 } from './hud';
 import {
@@ -348,14 +348,15 @@ function applyAudioSettings(settings: AudioSettings): void {
 
 function cycleAudioSettingCommand(name: AudioSettingName): void {
   const video = sessionNativeVideo();
-  const icon = AUDIO_SETTING_ICONS[name].hud;
+  const icon = audioHudIcon(name, ui().audio);
   if (!video || audioBlock(video)) {
     triggerStatusIndicator(audioBlockedMessage(video), icon);
     return;
   }
   const next = cycleAudioSetting(ui().audio, name);
   applyAudioSettings(next);
-  triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), icon);
+  triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), audioHudIcon(name, next),
+    name === 'bass' ? next.bass : undefined);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
       void chrome.storage.sync.set({ [AUDIO_STORAGE_KEYS[name]]: next[name] }).catch(error => {

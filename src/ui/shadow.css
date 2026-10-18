@@ -2971,9 +2971,11 @@ button.theater-time-end:hover {
   outline-offset: 3px !important;
 }
 
-/* One accent sweep across the glass, under the label, when the action appears.
+/* The Bass row reuses this sweep (red through its --accent-color) while is-sweeping, clipped to the row.
+   One accent sweep across the glass, under the label, when the action appears.
    The class goes away on animationend so nothing keeps animating. */
-.theater-service-action.is-entering::after {
+.theater-service-action.is-entering::after,
+.theater-settings-row.is-sweeping::after {
   content: "" !important;
   position: absolute !important;
   inset: 0 !important;
@@ -2989,12 +2991,14 @@ button.theater-time-end:hover {
   animation: theater-service-action-sweep 800ms cubic-bezier(0.4, 0, 0.3, 1) var(--theater-service-action-sweep-delay, 0ms) 1 both !important;
 }
 
+.theater-settings-row.is-sweeping { position: relative !important; overflow: hidden !important; }
+
 @keyframes theater-service-action-sweep {
   from { transform: translateX(-70%); }
   to { transform: translateX(70%); }
 }
 
-:host([data-motion="reduced"]) .theater-service-action.is-entering::after {
+:host([data-motion="reduced"]) :is(.theater-service-action.is-entering, .theater-settings-row.is-sweeping)::after {
   content: none !important;
   animation: none !important;
 }
@@ -3016,6 +3020,9 @@ button.theater-time-end:hover {
 .theater-settings-row-icon {
   position: relative;
   display: inline-flex;
+  /* A 16px icon in the 18px box sat on its top edge, one pixel above the label's centre. */
+  align-items: center;
+  justify-content: center;
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
@@ -3030,3 +3037,72 @@ button.theater-time-end:hover {
   min-width: 28px !important;
   height: 28px !important;
 }
+
+/* Audio rows: a non-default level (or boost on) takes the accent, as the CC menu's active item does. */
+.theater-settings-row[data-active="true"] :is(.theater-settings-row-icon, .theater-settings-detail) {
+  color: var(--accent-color, #6366f1) !important;
+}
+
+/* Bass subwoofer: the level, set on the svg, picks the sound waves. */
+.bass-icon { overflow: visible; } /* the mirrored waves overhang the box on both sides, and the rock tilts past it */
+.volume-hud-icon .bass-icon { margin-inline: 4px; } /* room for the side waves next to the HUD text */
+.bass-icon .bass-wave { display: none; }
+.bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-1,
+.bass-icon:is([data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-2,
+.bass-icon[data-level="moaaarr"] .bass-wave-3 { display: inline; }
+.bass-icon:is([data-level="moar"], [data-level="moaaarr"]) { color: var(--theater-bass-moar-color, #ef4444) !important; }
+
+/* The two red levels recolour the whole Bass row, and its confirmation HUD, in --theater-bass-moar-color.
+   The row also swaps the accent its active rule and focus ring read. The HUD cannot: paintOverlay sets
+   --accent-color inline on it, which would beat any stylesheet override, so its parts take the token directly. */
+.theater-settings-row:is([data-level="moar"], [data-level="moaaarr"]) {
+  --accent-color: var(--theater-bass-moar-color, #ef4444);
+}
+:is(.theater-settings-row, .theater-everywhere-volume-overlay):is([data-level="moar"], [data-level="moaaarr"]) :is(.theater-settings-label, .volume-hud-text, .volume-hud-icon) {
+  color: var(--theater-bass-moar-color, #ef4444) !important;
+}
+.theater-everywhere-volume-overlay:is([data-level="moar"], [data-level="moaaarr"]) {
+  outline-color: color-mix(in srgb, var(--theater-bass-moar-color, #ef4444) 40%, transparent) !important;
+}
+
+/* MOAAR: a rock from one foot onto the other every 5 s (10 s cycle) and a constant tiny cone jitter.
+   MOAAARR! is the same motion turned up: a bigger rock every 2.5 s (5 s cycle) and a faster, wider jitter.
+   Transform-only, so neither animation lays out or repaints; a closed menu is display:none and a HUD is
+   removed, which stops both. Pivots are the feet, spelled in the keyframes so the box needs no sizing. */
+.bass-icon[data-level="moar"] .bass-hop { animation: bass-hop 10s ease-in-out infinite; }
+.bass-icon[data-level="moaaarr"] .bass-hop { animation: bass-hop-hard 5s ease-in-out infinite; }
+.bass-icon[data-level="moar"] .bass-cone { animation: bass-jitter 90ms steps(1, end) infinite; }
+.bass-icon[data-level="moaaarr"] .bass-cone { animation: bass-jitter-hard 60ms steps(1, end) infinite; }
+.bass-icon:is([data-level="moar"], [data-level="moaaarr"]) .bass-body { animation: bass-jitter-body 130ms steps(1, end) infinite; }
+@keyframes bass-hop {
+  0%, 8%, 50%, 58%, 100% { transform: none; }
+  2.5% { transform: translateY(-0.7px) translate(8.5px, 20px) rotate(-6deg) translate(-8.5px, -20px); }
+  5% { transform: translate(8.5px, 20px) rotate(1.5deg) translate(-8.5px, -20px); }
+  52.5% { transform: translateY(-0.7px) translate(15.5px, 20px) rotate(6deg) translate(-15.5px, -20px); }
+  55% { transform: translate(15.5px, 20px) rotate(-1.5deg) translate(-15.5px, -20px); }
+}
+@keyframes bass-hop-hard {
+  0%, 16%, 50%, 66%, 100% { transform: none; }
+  5% { transform: translateY(-1.2px) translate(8.5px, 20px) rotate(-9deg) translate(-8.5px, -20px); }
+  11% { transform: translate(8.5px, 20px) rotate(2.5deg) translate(-8.5px, -20px); }
+  55% { transform: translateY(-1.2px) translate(15.5px, 20px) rotate(9deg) translate(-15.5px, -20px); }
+  61% { transform: translate(15.5px, 20px) rotate(-2.5deg) translate(-15.5px, -20px); }
+}
+@keyframes bass-jitter {
+  0% { transform: translate(0.25px, 0); }
+  25% { transform: translate(-0.2px, 0.2px); }
+  50% { transform: translate(0.1px, -0.25px); }
+  75% { transform: translate(-0.25px, -0.1px); }
+}
+@keyframes bass-jitter-hard {
+  0% { transform: translate(0.45px, 0.1px); }
+  25% { transform: translate(-0.4px, 0.35px); }
+  50% { transform: translate(0.2px, -0.45px); }
+  75% { transform: translate(-0.45px, -0.2px); }
+}
+@keyframes bass-jitter-body {
+  0% { transform: translate(0.1px, 0); }
+  33% { transform: translate(-0.1px, 0.1px); }
+  66% { transform: translate(0, -0.1px); }
+}
+:host([data-motion="reduced"]) .bass-icon :is(.bass-hop, .bass-cone, .bass-body) { animation: none !important; }
