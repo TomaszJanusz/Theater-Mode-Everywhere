@@ -1,0 +1,29 @@
+name: PR title
+
+# PR titles become squash-merge commit subjects, so they follow Conventional Commits.
+# This only warns (no failure, no comment), so first-time contributors on forks are not blocked.
+# To enforce it, replace `exit 0` below with `exit 1` and mark the check required.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check title format
+        env:
+          # Passed through the environment so the title is never interpolated into the script.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|perf|test|chore|build|ci|copy|revert)(\([a-z0-9._/-]+\))?!?: .+'
+          if [[ "$PR_TITLE" =~ $pattern ]]; then
+            echo "Title OK: $PR_TITLE"
+            exit 0
+          fi
+          echo "::warning title=PR title::Use 'type(scope): description', for example 'fix(player): keep subtitles anchored'. Types: feat, fix, docs, refactor, perf, test, chore, build, ci, copy, revert."
+          exit 0
