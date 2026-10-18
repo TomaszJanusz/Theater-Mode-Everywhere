@@ -14,6 +14,7 @@ import { autoTheaterAvailability } from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
+import { probeMediaCors } from '../platform/media-cors-probe';
 import { reloadForWebAudio } from '../platform/web-audio-reload';
 import {
   CAPTION_STYLE_STORAGE_KEY,
@@ -273,18 +274,35 @@ function sessionNativeVideo(): HTMLVideoElement | null {
 
 const webAudioCorsTried = new WeakSet<HTMLVideoElement>();
 
-/** Reload once with CORS so Web Audio can hear cross-origin media. */
+/**
+ * Reload once with CORS so Web Audio can hear cross-origin media. The CORS request is probed on a
+ * detached element first: a refused load on the host's own element reaches the host player as a
+ * fatal source error, so a refusing server leaves it untouched.
+ */
 function prepareWebAudio(video: HTMLVideoElement): void {
   if (webAudioCorsTried.has(video) || mediaAudioAccess(video, window.location.origin) !== 'needs-cors') return;
   webAudioCorsTried.add(video);
   cancelAudioReload?.();
+  const url = video.currentSrc || video.src;
+  if (!url) return;
   const epoch = session.currentEpoch;
   const revision = refs.playbackDecisionRevision;
-  cancelAudioReload = reloadForWebAudio(video, {
-    pageOrigin: window.location.origin,
-    signal: session.signal,
-    isCurrent: () => sessionNativeVideo() === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle,
-    canResume: () => refs.playbackDecisionRevision === revision
+  const isCurrent = () => sessionNativeVideo() === video && session.currentEpoch === epoch && !session.isExiting && !session.isIdle;
+  const probing = new AbortController();
+  const stopProbe = () => probing.abort();
+  session.signal.addEventListener('abort', stopProbe, { once: true });
+  let reload: (() => void) | null = null;
+  cancelAudioReload = () => { stopProbe(); reload?.(); };
+  void probeMediaCors(url, probing.signal).then((ok) => {
+    session.signal.removeEventListener('abort', stopProbe);
+    // The source may have been replaced while probing; a new source gets its own preparation.
+    if (!ok || probing.signal.aborted || !isCurrent() || (video.currentSrc || video.src) !== url) return;
+    reload = reloadForWebAudio(video, {
+      pageOrigin: window.location.origin,
+      signal: session.signal,
+      isCurrent,
+      canResume: () => refs.playbackDecisionRevision === revision
+    });
   });
 }
 
