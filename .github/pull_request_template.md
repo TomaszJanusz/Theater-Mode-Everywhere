@@ -25,6 +25,6 @@
 <!-- Say what you could not verify. Please add screenshots or a short video for visual changes. -->
 
 ## Checklist
-
 - [ ] `CHANGELOG.md` `## [Unreleased]` updated, or no user-visible change
+- [ ] `Update Highlights` update (optional)
 - [ ] No generated `dist/` output or packages committed
