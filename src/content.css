@@ -18,11 +18,11 @@ html.theater-everywhere-html-active [data-theater-everywhere] {
   top: 0 !important;
   left: 0 !important;
   width: var(--theater-video-width, 100vw) !important;
-  height: var(--theater-video-height, 100vh) !important;
+  height: calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px)) !important;
   max-width: var(--theater-video-width, 100vw) !important;
-  max-height: var(--theater-video-height, 100vh) !important;
+  max-height: calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px)) !important;
   min-width: var(--theater-video-width, 100vw) !important;
-  min-height: var(--theater-video-height, 100vh) !important;
+  min-height: calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px)) !important;
   z-index: 2147483647 !important;
   background: #000000 !important;
   background-color: #000000 !important;

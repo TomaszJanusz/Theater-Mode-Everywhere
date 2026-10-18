@@ -32,10 +32,10 @@ const FIXTURE = `<!doctype html><html><head><title>Playback chrome fixture</titl
   </body></html>`;
 
 /** Boots theater on the paused VOD clip; `keepControlsVisible: false` lets the bar auto-hide. */
-async function boot(page: Page, keepControlsVisible: boolean): Promise<void> {
+async function boot(page: Page, keepControlsVisible: boolean, dockGeometry = false): Promise<void> {
   await page.evaluate(`window.chrome = { storage: {
     sync: {
-      get: async () => ({ keepControlsVisible: ${keepControlsVisible}, shortcuts: { playPause: 'k' } }),
+      get: async () => ({ keepControlsVisible: ${keepControlsVisible}, ...${dockGeometry ? JSON.stringify({ pictureAlign: 'center', raiseOnlyWithSubtitles: false }) : '{}'}, shortcuts: { playPause: 'k' } }),
       set: async () => {}
     },
     onChanged: { addListener() {} }
@@ -99,6 +99,95 @@ async function snapshot(page: Page, name: string): Promise<void> {
   mkdirSync(dir, { recursive: true });
   await page.screenshot({ path: path.join(dir, `${name}.png`) });
 }
+
+describe('pinned controls geometry', () => {
+  it('docks to the view and reserves the measured height across fit, caption, direction and fullscreen states in chromium', { timeout: 60_000 }, async t => {
+    const { chromium } = await import('playwright');
+    const browser = await chromium.launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.route('http://playback-chrome.test/**', route => route.fulfill(
+      new URL(route.request().url()).pathname === '/en.vtt'
+        ? { contentType: 'text/vtt', body: 'WEBVTT\n\n00:00:00.000 --> 00:01:00.000\nCaptions above the player controls\n' }
+        : { contentType: 'text/html', body: FIXTURE.replace('</video>', '<track kind="subtitles" label="English" srclang="en" src="/en.vtt"></video>') }
+    ));
+    await page.goto('http://playback-chrome.test/');
+    await boot(page, true, true);
+    for (const size of [{ width: 1280, height: 900 }, { width: 640, height: 480 }]) {
+      await page.setViewportSize(size);
+      for (const fullscreen of [false, true]) {
+        if (fullscreen) {
+          await page.keyboard.press('f');
+          await page.waitForFunction(() => Boolean(document.fullscreenElement));
+        }
+        for (const raised of [false, true]) {
+          if (raised) await page.keyboard.press('Shift+L');
+          for (const fit of ['contain', 'cover', 'fill']) {
+            if (fit !== 'contain') await page.locator('.video-fit-btn').evaluate((e: HTMLButtonElement) => e.click());
+            for (const captions of [false, true]) {
+              if (captions) await page.keyboard.press('c');
+              await page.waitForFunction(captions => {
+                const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+                return root.querySelector('.theater-caption-overlay')!.classList.contains('visible') === captions;
+              }, captions);
+              for (const rtl of [false, true]) {
+                await page.locator('.theater-controls-wrapper').evaluate((e, rtl) => e.setAttribute('dir', rtl ? 'rtl' : 'ltr'), rtl);
+                for (const pinned of [false, true]) {
+                  await page.keyboard.press('Shift+H');
+                  await page.waitForFunction(pinned => {
+                    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+                    const bar = root.querySelector('.theater-controls-wrapper')!;
+                    const box = bar.getBoundingClientRect();
+                    const video = document.querySelector('video')!.getBoundingClientRect();
+                    const host = document.getElementById('theater-everywhere-ui')!.getBoundingClientRect();
+                    return bar.classList.contains('pinned') === pinned
+                      && Math.abs(video.bottom - (pinned ? box.top : host.bottom)) < 1
+                      && Math.abs(box.bottom - host.bottom + (pinned ? 0 : 24)) < 1;
+                  }, pinned);
+                  const geometry = await page.evaluate(() => {
+                    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+                    const bar = root.querySelector('.theater-controls-wrapper')!;
+                    const box = bar.getBoundingClientRect();
+                    const plate = getComputedStyle(bar, '::before');
+                    const host = document.getElementById('theater-everywhere-ui')!.getBoundingClientRect();
+                    return { left: box.left - host.left, right: host.right - box.right,
+                      radius: plate.borderTopLeftRadius, leftBorder: plate.borderLeftWidth, rightBorder: plate.borderRightWidth };
+                  });
+                  assert.equal(geometry.left, pinned ? 0 : 24);
+                  assert.equal(geometry.right, pinned ? 0 : 24);
+                  assert.equal(geometry.radius, pinned ? '0px' : '12px');
+                  assert.equal(geometry.leftBorder, pinned ? '0px' : '1px');
+                  assert.equal(geometry.rightBorder, pinned ? '0px' : '1px');
+                  if (captions) {
+                    await page.waitForFunction(() => {
+                      const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+                      return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
+                        <= root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
+                    });
+                  }
+                  if (size.width === 1280 && fit === 'contain' && captions && !rtl) {
+                    await snapshot(page, `dock-${pinned ? 'pinned' : 'floating'}-${fullscreen ? 'fullscreen' : 'theater'}-${raised ? 'raised' : 'centered'}`);
+                  }
+                }
+              }
+              if (captions) await page.keyboard.press('c');
+            }
+          }
+          // Restore Fit and Centered for the next layout / fullscreen pass.
+          await page.locator('.video-fit-btn').evaluate((e: HTMLButtonElement) => e.click());
+          if (raised) await page.keyboard.press('Shift+L');
+        }
+        if (fullscreen) {
+          await page.keyboard.press('f');
+          await page.waitForFunction(() => !document.fullscreenElement);
+        }
+      }
+    }
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--theater-controls-reserved-height')), '');
+    assert.equal(await page.locator('video').evaluate(e => e.style.height), '');
+  });
+});
 
 describe('playback chrome updates', () => {
   for (const engine of ['chromium', 'firefox'] as const) {
