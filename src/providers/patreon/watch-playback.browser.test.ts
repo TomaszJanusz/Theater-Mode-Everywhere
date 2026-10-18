@@ -167,7 +167,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
           transitioning: () => false,
           findBestVideo: () => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0] ?? null,
           enter: () => { probe.entries++; probe.active = true; },
-          showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }
+          showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }, noticeDelayMs: 0
         });
         window.patreonRuntime = create();
       }, defaultMediaProviderFlags());
