@@ -100,6 +100,24 @@ export const STATUS_HUD_UNMUTE_ICON = `
 `;
 
 export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBinder) {
+  function mountConfirmation(overlay: HTMLElement): void {
+    ctx.mountPlayerUi(overlay);
+    const svg = overlay.querySelector<SVGSVGElement>('.volume-hud-icon > svg');
+    if (!svg || !svg.viewBox.baseVal.width) return;
+
+    // SVG viewports contain unequal whitespace (and may have visible overhang).
+    // Fit the existing icon wrapper to the ink once, before the first paint; CSS
+    // owns the plate padding and gap. Keep the drawing's scale and animations.
+    const box = svg.getBBox();
+    const view = svg.viewBox.baseVal;
+    const scale = svg.width.baseVal.value / view.width;
+    const style = getComputedStyle(svg);
+    const stroke = style.stroke === 'none' ? 0 : parseFloat(style.strokeWidth) / 2;
+    svg.style.setProperty('--hud-icon-left', `${-(box.x - stroke - view.x) * scale}px`);
+    svg.style.setProperty('--hud-icon-right', `${-(view.x + view.width - box.x - box.width - stroke) * scale}px`);
+    svg.style.setProperty('--hud-icon-y', `${(view.y + view.height / 2 - box.y - box.height / 2) * scale}px`);
+  }
+
   function triggerSeekIndicator(direction: 'left' | 'right'): void {
     if (!ctx.session.element) return;
 
@@ -190,7 +208,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     </div>
   `;
 
-    ctx.mountPlayerUi(overlay);
+    mountConfirmation(overlay);
 
     setTimeout(() => {
       overlay.classList.add('fade-out');
@@ -227,7 +245,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     content.append(iconEl, textEl);
     overlay.appendChild(content);
 
-    ctx.mountPlayerUi(overlay);
+    mountConfirmation(overlay);
 
     setTimeout(() => {
       overlay.classList.add('fade-out');
@@ -274,7 +292,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     </div>
   `;
 
-    ctx.mountPlayerUi(overlay);
+    mountConfirmation(overlay);
 
     setTimeout(() => {
       overlay.classList.add('fade-out');
