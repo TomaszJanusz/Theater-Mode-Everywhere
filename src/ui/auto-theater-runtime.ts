@@ -7,6 +7,14 @@ import { isSwitchableTheaterVideo } from '../switchable-videos';
 import { AUTO_ENTER_NOTICE_MIN_MS, createAutoEnterIntent } from './auto-theater-intent';
 import { shouldAutoEnterTheater, updateAutoTheaterVisit, type AutoTheaterVisit } from './auto-theater';
 
+/**
+ * The notice waits this long after the countdown starts. Hosts often do heavy main-thread work
+ * right then (ad-to-content swaps, SPA navigation), and a notice first painted in such a stalled
+ * frame shows up half-drawn. Material that is skipped or replaced within this window never gets one.
+ * The countdown itself is unaffected: the notice joins it where the intent's clock says it is.
+ */
+export const AUTO_ENTER_NOTICE_DELAY_MS = 250;
+
 export type AutoTheaterRuntime = {
   refresh(): void;
   /** Cancels an announced entry for this visit. Returns whether one was pending. */
@@ -28,6 +36,8 @@ export function createAutoTheaterRuntime(options: {
   /** Shows the entry notice and returns its cleanup. */
   showNotice(cancel: () => void, remainingMs: () => number, video: () => HTMLVideoElement | null): () => void;
   minNoticeMs?: number;
+  /** Defaults to `AUTO_ENTER_NOTICE_DELAY_MS`; 0 shows synchronously. */
+  noticeDelayMs?: number;
   skipCountdown?(): boolean;
 }): AutoTheaterRuntime {
   const scope = new DisposableScope();
@@ -41,10 +51,25 @@ export function createAutoTheaterRuntime(options: {
   scope.add(clearObservedVideo);
   let latestVideo: HTMLVideoElement | null = null;
   let hideNotice: (() => void) | undefined;
+  let showTimer: ReturnType<typeof setTimeout> | undefined;
+  const noticeDelayMs = options.noticeDelayMs ?? AUTO_ENTER_NOTICE_DELAY_MS;
   const intent = createAutoEnterIntent<string>({
     minVisibleMs: options.minNoticeMs ?? AUTO_ENTER_NOTICE_MIN_MS,
-    show: remainingMs => { hideNotice = options.showNotice(cancelPending, remainingMs, () => latestVideo); },
-    hide: () => { hideNotice?.(); hideNotice = undefined; },
+    show: remainingMs => {
+      const mount = (): void => {
+        showTimer = undefined;
+        hideNotice = options.showNotice(cancelPending, remainingMs, () => latestVideo);
+      };
+      // The intent hides before showing again, so at most one mount is ever scheduled.
+      if (noticeDelayMs > 0) showTimer = scope.timeout(mount, noticeDelayMs);
+      else mount();
+    },
+    hide: () => {
+      clearTimeout(showTimer);
+      showTimer = undefined;
+      hideNotice?.();
+      hideNotice = undefined;
+    },
     recheck: () => refresh()
   });
   scope.add(() => intent.dispose());
