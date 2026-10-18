@@ -7,6 +7,7 @@ import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { AUTO_ENTER_NOTICE_MIN_MS } from './auto-theater-intent';
+import { AUTO_ENTER_NOTICE_DELAY_MS } from './auto-theater-runtime';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 
 const BUNDLE = buildSync({
@@ -157,6 +158,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
         history.replaceState({}, '', '/watch?v=lmnopqrstuv');
         document.dispatchEvent(new Event('yt-navigate-finish'));
       });
+      assert.equal(await notice.count(), 0, 'the restored notice waits out its mount delay');
+      await page.clock.runFor(AUTO_ENTER_NOTICE_DELAY_MS);
       assert.equal(await notice.count(), 1, 'turning skip off restores the notice for new content');
       await page.clock.runFor(1000);
       await target.evaluate(() => window.autoStorageProbe.change({ autoTheaterSkipCountdown: true }));
