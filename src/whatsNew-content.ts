@@ -12,7 +12,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
   paragraph: ["I'm delighted to announce that this is the ", { strong: 'biggest update' }, ' of this extension so far. The new version brings a more comfortable theater mode, new controls, more supported services within Rich Theater Experience, and performance improvements.'],
   items: [
     [{ strong: 'New services in Rich Theater Experience' }, ': Support for the unique features of Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix 🥳'],
-    [{ strong: 'RTE chat support' }, ': Using Theater Mode Everywhere no longer means saying goodbye to the YouTube and Twitch chats. You can show them beside the video or below it, and slide the chat panel out or hide it. Alt+R toggles it even while the YouTube chat has focus.'],
+    [{ strong: 'RTE chat support' }, ': Using Theater Mode Everywhere no longer means saying goodbye to the YouTube and Twitch chats. You can show them beside the video or below it, and slide the chat panel out or hide it.'],
     [{ strong: 'Captions under the video:' }, ' The picture is raised by default while subtitles are on; you can switch to a centered picture or raise it always. In a raised layout the video moves to the top and TME tries to use the space below it to display captions.'],
     [{ strong: 'Pin controls' }, ': Keep the controls docked flush to the player edges, go to the previous or next video, and check the title in the player.'],
     [{ strong: 'Rich Theater Experience' }, ': Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;'],

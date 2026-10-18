@@ -41,7 +41,7 @@ it('renders static English semantic content safely and refreshes localized dialo
     assert.equal(await root.locator(':scope > p strong').textContent(), 'biggest update');
     assert.deepEqual(await root.locator('ul > li').allTextContents(), [
       'New services in Rich Theater Experience: Support for the unique features of Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and Netflix 🥳',
-      'RTE chat support: Using Theater Mode Everywhere no longer means saying goodbye to the YouTube and Twitch chats. You can show them beside the video or below it, and slide the chat panel out or hide it. Alt+R toggles it even while the YouTube chat has focus.',
+      'RTE chat support: Using Theater Mode Everywhere no longer means saying goodbye to the YouTube and Twitch chats. You can show them beside the video or below it, and slide the chat panel out or hide it.',
       'Captions under the video: The picture is raised by default while subtitles are on; you can switch to a centered picture or raise it always. In a raised layout the video moves to the top and TME tries to use the space below it to display captions.',
       'Pin controls: Keep the controls docked flush to the player edges, go to the previous or next video, and check the title in the player.',
       'Rich Theater Experience: Support for skip buttons, playing the next episodes and skipping ads on YouTube, Vimeo, Netflix, Disney+, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll;',
