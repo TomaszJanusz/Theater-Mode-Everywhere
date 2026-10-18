@@ -1454,6 +1454,8 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   await cycleTo('leveling', 'Reduce loud sounds', 'Strong');
   await cycleTo('bass', 'Bass', 'More');
   await page.keyboard.press('b');
+  await hud.filter({ hasText: 'Bass: MOAAARR' }).waitFor();
+  await page.keyboard.press('b');
   await hud.filter({ hasText: 'Bass: Less' }).waitFor();
   await page.keyboard.press('b');
   await hud.filter({ hasText: 'Bass: Original' }).waitFor();
@@ -1549,6 +1551,7 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
     await cycleTo('voice', 'Voice boost', 'Strong');
     await cycleTo('voice', 'Voice boost', 'Off');
     await cycleTo('leveling', 'Reduce loud sounds', 'Off');
+    await cycleTo('bass', 'Bass', 'MOAAARR');
     await cycleTo('bass', 'Bass', 'Less');
     await cycleTo('bass', 'Bass', 'Original');
     await page.keyboard.press('Escape');

@@ -100,7 +100,9 @@ describe('settings menu rows stay on one line', () => {
                 button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"></svg>';
                 settings.addRow(button, label, section, isNew).update(shortcut, value);
               };
-              for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', messages.badgeNew);
+              // The Bass row shows one of four levels; reserve room for the longest.
+            const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
+            for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.badgeNew);
               for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew);
               settings.button.click();
               const menu = settings.panel as HTMLElement;

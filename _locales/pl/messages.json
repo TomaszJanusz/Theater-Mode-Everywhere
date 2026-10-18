@@ -161,6 +161,9 @@
   "bassMore": {
     "message": "Więcej"
   },
+  "bassMoar": {
+    "message": "MOAAARR"
+  },
   "bassHud": {
     "message": "Bas: $1",
     "placeholders": {

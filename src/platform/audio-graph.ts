@@ -30,10 +30,10 @@ const LEVELING_PRESETS: Record<Exclude<AudioSettings['leveling'], 'off'>, Leveli
 };
 
 /**
- * "More" is the highest lift that keeps a near-full-scale bass tone under the
+ * "MOAAARR" is the highest lift that keeps a near-full-scale bass tone under the
  * limiter (+10 dB overshoots 0 dBFS); light voice lifts speech by +6 dB, strong by up to +10.9 dB.
  */
-const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 9 };
+const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6, moar: 9 };
 
 export type AudioChain = {
   readonly input: AudioNode;

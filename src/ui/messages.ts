@@ -76,6 +76,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   bassLess: 'Less',
   bassOriginal: 'Original',
   bassMore: 'More',
+  bassMoar: 'MOAAARR',
   bassHud: 'Bass: $1',
   volumeBoostLabel: 'Volume boost',
   volumeBoostOff: 'Off',

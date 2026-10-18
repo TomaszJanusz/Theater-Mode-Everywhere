@@ -1,6 +1,6 @@
 export const VOICE_LEVELS = ['off', 'light', 'strong'] as const;
 export const LEVELING_LEVELS = ['off', 'light', 'strong'] as const;
-export const BASS_LEVELS = ['less', 'original', 'more'] as const;
+export const BASS_LEVELS = ['less', 'original', 'more', 'moar'] as const;
 
 export type AudioSettings = {
   voice: typeof VOICE_LEVELS[number];
@@ -29,7 +29,7 @@ const DATASET_KEYS: Record<AudioSettingName, string> = {
 const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], string> } = {
   voice: { off: 'voiceBoostOff', light: 'voiceBoostLight', strong: 'voiceBoostStrong' },
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
-  bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore' }
+  bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore', moar: 'bassMoar' }
 };
 /** Every label a row can show, so a menu can reserve room for the widest. */
 export function audioLevelLabelKeys(name: AudioSettingName): string[] {

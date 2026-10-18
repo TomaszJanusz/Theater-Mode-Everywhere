@@ -161,6 +161,9 @@
   "bassMore": {
     "message": "增强"
   },
+  "bassMoar": {
+    "message": "MOAAARR"
+  },
   "bassHud": {
     "message": "低音：$1",
     "placeholders": {
