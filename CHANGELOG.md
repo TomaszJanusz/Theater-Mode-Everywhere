@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Play/Pause notices no longer animate their text; theater entry notices have a solid appearance.
+- Centred playback, volume and status confirmations stay visible two seconds longer; Play/Pause notices no longer animate their text, and theater entry notices have a solid appearance.
 - Chromium extension names include the translated tagline; Firefox keeps the plain name.
 - Store descriptions, summaries and keywords are translated and updated for 2.0.
 - Settings and player dialogs share accessible keyboard behavior, High contrast and right-to-left support; subtitle options returns focus to CC.

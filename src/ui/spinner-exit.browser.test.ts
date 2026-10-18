@@ -55,6 +55,7 @@ async function setup(page: Page) {
         if (!root) { const host = document.createElement('div'); host.id = 'theater-everywhere-ui'; host.dataset.motion = 'normal';
           document.body.append(host); root = host.attachShadow({mode:'open'}); const style = document.createElement('style');
           style.textContent = ${JSON.stringify(css)}; root.append(style); } root.append(overlay); },
+      t: key => key,
       paintOverlay() {}
     });`);
 }
@@ -92,6 +93,55 @@ async function assertShrinking(page: Page, selector: string) {
 }
 
 for (const engine of ['chromium', 'firefox'] as const) {
+  for (const motion of ['normal', 'reduced', 'system'] as const) {
+    it(`${engine}: centred confirmations reset their extra two seconds and clean up (${motion})`, { timeout: 40_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch();
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage();
+      await setup(page);
+      if (motion === 'system') await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.evaluate(`hud.triggerVolumeIndicator(0.5, false, 'up');
+        document.getElementById('theater-everywhere-ui').dataset.motion = '${motion === 'reduced' ? 'reduced' : 'normal'}';
+        window.originalHud = document.getElementById('theater-everywhere-ui').shadowRoot.querySelector('.theater-everywhere-volume-overlay');`);
+      const plate = page.locator('.theater-everywhere-volume-overlay');
+      const triggers = [
+        "hud.triggerVolumeIndicator(0.6, false, 'up')",
+        "hud.triggerStatusIndicator('Bass: More', '')",
+        "hud.triggerPlaybackIndicator('play')",
+        "hud.triggerPlaybackIndicator('play')"
+      ];
+      for (const [index, trigger] of triggers.entries()) {
+        await page.clock.runFor(index === 0 ? 800 : 599);
+        assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false, 'old hide deadline stays visible');
+        await page.clock.runFor(1999);
+        assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false, 'visible for the extra two seconds');
+        await page.evaluate(trigger);
+        await page.clock.runFor(201);
+        assert.equal(await plate.evaluate(e => e === (window as unknown as { originalHud: Element }).originalHud), true, 'retrigger keeps the same plate past stale hide/removal deadlines');
+        assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false);
+        assert.equal(await plate.locator('.volume-hud-content').count(), 1);
+      }
+      await page.clock.runFor(2599);
+      assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), true);
+      await page.evaluate("hud.triggerStatusIndicator('Replacement', '')");
+      await page.clock.runFor(200);
+      assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false, 'retrigger cancels an in-flight removal');
+      await page.clock.runFor(2600);
+      assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), true);
+      await page.clock.runFor(199);
+      assert.equal(await plate.count(), 1);
+      await page.clock.runFor(1);
+      assert.equal(await plate.count(), 0, 'existing 200 ms fade removal is preserved');
+      await page.evaluate("hud.triggerPlaybackIndicator('pause'); hud.removeCenteredHud(); hud.removeCenteredHud(); hud.triggerVolumeIndicator(0.5, false, 'up')");
+      await page.clock.runFor(100);
+      await page.evaluate('session.currentEpoch++; session.element = document.createElement("video")');
+      await page.clock.runFor(2900);
+      assert.equal(await plate.evaluate(e => e.classList.contains('fade-out')), false, 'old session cannot mutate a newer session');
+      await page.evaluate('hud.removeCenteredHud()');
+      assert.equal(await plate.count(), 0);
+    });
+  }
+
   it(`${engine}: deadline exit uses the intent clock, runs during the final 0 stage, and cleans up`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch();
     ownTestBrowser(t, browser);
@@ -223,6 +273,8 @@ for (const engine of ['chromium', 'firefox'] as const) {
     await page.locator('.theater-controls-wrapper').waitFor();
     const spinner = page.locator('.theater-loading-spinner');
     const event = (name: string) => page.locator('video').dispatchEvent(name);
+    await page.keyboard.press('ArrowUp');
+    const confirmation = page.locator('.theater-everywhere-volume-overlay');
     await event('waiting');
     await page.clock.runFor(1000);
     assert.equal(await spinner.count(), 1);
@@ -269,6 +321,14 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await spinner.count(), 0);
     assert.equal(await plate.evaluate(e => getComputedStyle(e).opacity), '0', 'the empty plate leaves with the ring');
     await capture(page, `${engine}-buffer-end`, 500);
+    assert.equal(await confirmation.evaluate(e => e.classList.contains('fade-out')), false, 'confirmation outlasts its former 800 ms delay while buffering still exits in 500 ms');
+    await page.clock.runFor(1299);
+    assert.equal(await confirmation.evaluate(e => e.classList.contains('fade-out')), false);
+    await page.clock.runFor(1);
+    assert.equal(await confirmation.evaluate(e => e.classList.contains('fade-out')), true, 'confirmation hides at 800 + 2000 ms');
+    await page.clock.runFor(200);
+    assert.equal(await confirmation.count(), 0);
+
     await event('waiting');
     await page.clock.runFor(1000);
     assert.equal(await spinner.count(), 1, 'a later stall creates a fresh ring');

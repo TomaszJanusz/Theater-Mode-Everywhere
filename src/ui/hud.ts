@@ -11,6 +11,8 @@ import type { AudioSettingName, AudioSettings } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
+// Keep centred confirmations readable for two extra seconds; loading and corner notices own their timing.
+const CENTERED_HUD_VISIBLE_MS = 800 + 2000;
 const CAPTION_LOADING_HUD_DELAY_MS = 400;
 const CAPTION_WIDTH_MORPH_MS = 225;
 export const HUD_PLATE_CLASS = 'theater-hud-plate';
@@ -101,7 +103,7 @@ export const STATUS_HUD_UNMUTE_ICON = `
 
 export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBinder) {
   function mountConfirmation(overlay: HTMLElement): void {
-    ctx.mountPlayerUi(overlay);
+    if (!overlay.isConnected) ctx.mountPlayerUi(overlay);
     const svg = overlay.querySelector<SVGSVGElement>('.volume-hud-icon > svg');
     if (!svg || !svg.viewBox.baseVal.width) return;
 
@@ -116,6 +118,41 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     svg.style.setProperty('--hud-icon-left', `${-(box.x - stroke - view.x) * scale}px`);
     svg.style.setProperty('--hud-icon-right', `${-(view.x + view.width - box.x - box.width - stroke) * scale}px`);
     svg.style.setProperty('--hud-icon-y', `${(view.y + view.height / 2 - box.y - box.height / 2) * scale}px`);
+  }
+
+  let centeredHideTimer: ReturnType<typeof setTimeout> | null = null;
+  let centeredRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+  let centeredIdentity: object | null = null;
+
+  function clearCenteredTimers(): void {
+    if (centeredHideTimer !== null) clearTimeout(centeredHideTimer);
+    if (centeredRemoveTimer !== null) clearTimeout(centeredRemoveTimer);
+    centeredHideTimer = centeredRemoveTimer = null;
+    centeredIdentity = null;
+  }
+
+  function removeCenteredHud(): void {
+    clearCenteredTimers();
+    ctx.queryPlayerUi('.theater-everywhere-volume-overlay')?.remove();
+  }
+
+  function restartCenteredHud(overlay: HTMLElement): void {
+    clearCenteredTimers();
+    overlay.classList.remove('fade-out');
+    const identity = {};
+    centeredIdentity = identity;
+    const element = ctx.session.element;
+    const epoch = ctx.session.currentEpoch;
+    const isCurrent = () => centeredIdentity === identity && ctx.session.element === element
+      && ctx.session.currentEpoch === epoch;
+    centeredHideTimer = setTimeout(() => {
+      if (!isCurrent()) return;
+      centeredHideTimer = null;
+      overlay.classList.add('fade-out');
+      centeredRemoveTimer = setTimeout(() => {
+        if (isCurrent()) removeCenteredHud();
+      }, 200);
+    }, CENTERED_HUD_VISIBLE_MS);
   }
 
   function triggerSeekIndicator(direction: 'left' | 'right'): void {
@@ -168,11 +205,9 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
-    if (existing) {
-      existing.remove();
-    }
-
-    const overlay = document.createElement('div');
+    const overlay = existing ?? document.createElement('div');
+    delete overlay.dataset.playbackAction;
+    delete overlay.dataset.level;
     // Hover discovery may point elsewhere; boost belongs to the theater player.
     const isBoosted = !muted && logicalVolume > 1.0 && ctx.session.element.dataset.theaterBoostReady === 'true';
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}` + (isBoosted ? ' boosted' : '');
@@ -210,12 +245,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
     mountConfirmation(overlay);
 
-    setTimeout(() => {
-      overlay.classList.add('fade-out');
-      setTimeout(() => {
-        overlay.remove();
-      }, 200);
-    }, 800);
+    restartCenteredHud(overlay);
   }
 
   /** `level` is the confirmed setting's level; the stylesheet recolours the HUD for the red bass levels. */
@@ -223,11 +253,9 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (!ctx.session.element) return;
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
-    if (existing) {
-      existing.remove();
-    }
-
-    const overlay = document.createElement('div');
+    const overlay = existing ?? document.createElement('div');
+    delete overlay.dataset.playbackAction;
+    delete overlay.dataset.level;
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS} status-hud`;
     if (level) overlay.dataset.level = level;
     ctx.paintOverlay(overlay);
@@ -243,16 +271,11 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     textEl.textContent = text;
     announcePlayerStatus(text);
     content.append(iconEl, textEl);
-    overlay.appendChild(content);
+    overlay.replaceChildren(content);
 
     mountConfirmation(overlay);
 
-    setTimeout(() => {
-      overlay.classList.add('fade-out');
-      setTimeout(() => {
-        overlay.remove();
-      }, 200);
-    }, 800);
+    restartCenteredHud(overlay);
   }
 
   function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
@@ -261,10 +284,13 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
     // A click previews its action before the command runs; the command then
     // reports the same action and must not flash a second icon.
-    if (existing?.dataset.playbackAction === action && !existing.classList.contains('fade-out')) return;
-    existing?.remove();
+    if (existing?.dataset.playbackAction === action) {
+      restartCenteredHud(existing);
+      return;
+    }
 
-    const overlay = document.createElement('div');
+    const overlay = existing ?? document.createElement('div');
+    delete overlay.dataset.level;
     overlay.className = `theater-everywhere-volume-overlay ${HUD_PLATE_CLASS}`;
     overlay.dataset.playbackAction = action;
     ctx.paintOverlay(overlay);
@@ -294,17 +320,12 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
     mountConfirmation(overlay);
 
-    setTimeout(() => {
-      overlay.classList.add('fade-out');
-      setTimeout(() => {
-        overlay.remove();
-      }, 200);
-    }, 800);
+    restartCenteredHud(overlay);
   }
 
   /** Withdraws a previewed play/pause icon whose click was cancelled. */
   function dismissPlaybackIndicator(): void {
-    ctx.queryPlayerUi('.theater-everywhere-volume-overlay[data-playback-action]')?.remove();
+    if (ctx.queryPlayerUi('.theater-everywhere-volume-overlay[data-playback-action]')) removeCenteredHud();
   }
 
   let stopCaptionExit: (() => void) | null = null;
@@ -653,6 +674,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     dismissPlaybackIndicator,
     triggerCaptionHud,
     removeCaptionHud,
+    removeCenteredHud,
     createPlayerHeader,
     syncContentTitle
   };

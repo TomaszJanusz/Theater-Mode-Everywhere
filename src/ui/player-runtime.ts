@@ -194,6 +194,7 @@ const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
 const controls = createControls(ctx, buttonTooltip.bind, () => {
   hud.removeCaptionHud();
+  hud.removeCenteredHud();
   toolbar.resetCaptionDock();
 });
 
