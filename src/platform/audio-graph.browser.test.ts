@@ -162,7 +162,7 @@ describe('audio graph', () => {
       const less = await render(settings({ bass: 'less' }), options);
       const more = await render(settings({ bass: 'more' }), options);
       assert.ok(db(less.low, ref.low) < -4, 'less cuts bass');
-      assert.ok(db(more.low, ref.low) > 4, 'more lifts bass');
+      assert.ok(db(more.low, ref.low) > 8, 'more lifts bass clearly');
       for (const levels of [less, more]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
     });
   });
