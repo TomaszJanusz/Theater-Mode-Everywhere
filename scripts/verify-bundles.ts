@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { assertSelfContainedBundles } from './bundle-integrity';
+import { assertBackgroundScriptLoading, assertSelfContainedBundles } from './bundle-integrity';
 
 const roots = process.argv.slice(2);
 const dirs = roots.length > 0
@@ -10,6 +10,7 @@ for (const dir of dirs) {
   const resolved = path.resolve(dir);
   console.log(`Verifying self-contained bundles in ${resolved}`);
   assertSelfContainedBundles(resolved);
+  assertBackgroundScriptLoading(resolved);
 }
 
 console.log('Bundle integrity check passed.');

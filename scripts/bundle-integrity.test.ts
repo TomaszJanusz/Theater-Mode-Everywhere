@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { assertSelfContainedScript } from './bundle-integrity';
+import { assertBackgroundScriptLoading, assertSelfContainedScript } from './bundle-integrity';
 
 const requireFromVite = createRequire(path.resolve(__dirname, '../node_modules/vite/package.json'));
 
@@ -71,5 +71,16 @@ describe('bundle integrity gate', () => {
     withScript(reexport, (filePath) => {
       assert.throws(() => assertSelfContainedScript(filePath), /ESM/);
     });
+  });
+});
+
+it('requires module loading for packaged Firefox background imports', () => {
+  withScript('import "./shared.js";', filePath => {
+    const dir = path.dirname(filePath);
+    const manifest = path.join(dir, 'manifest.json');
+    writeFileSync(manifest, JSON.stringify({ background: { scripts: ['content.js'] } }));
+    assert.throws(() => assertBackgroundScriptLoading(dir), /ESM/);
+    writeFileSync(manifest, JSON.stringify({ background: { scripts: ['content.js'], type: 'module' } }));
+    assert.doesNotThrow(() => assertBackgroundScriptLoading(dir));
   });
 });
