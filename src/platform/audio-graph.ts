@@ -38,7 +38,8 @@ const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, origina
 
 /** Linear up to the knee, then a tanh roll-off that approaches but never reaches full scale. */
 const CEILING_KNEE = 0.85;
-function ceilingCurve(): Float32Array<ArrayBuffer> {
+// The return type is inferred: WaveShaperNode.curve wants Float32Array<ArrayBuffer> on TypeScript 5.7+, plain Float32Array before.
+function ceilingCurve() {
   const size = 2049;
   const curve = new Float32Array(size);
   for (let i = 0; i < size; i++) {

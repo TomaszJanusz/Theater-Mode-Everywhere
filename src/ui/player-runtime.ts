@@ -355,7 +355,8 @@ function cycleAudioSettingCommand(name: AudioSettingName): void {
   }
   const next = cycleAudioSetting(ui().audio, name);
   applyAudioSettings(next);
-  triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), audioHudIcon(name, next));
+  triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), audioHudIcon(name, next),
+    name === 'bass' ? next.bass : undefined);
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.sync) {
       void chrome.storage.sync.set({ [AUDIO_STORAGE_KEYS[name]]: next[name] }).catch(error => {

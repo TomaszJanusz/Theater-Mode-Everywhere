@@ -33,7 +33,8 @@ import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
-import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, isAudioSettingActive } from '../audio-settings';
+import type { AudioSettings } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -1036,6 +1037,8 @@ export function createControls(
         name,
         ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
       }));
+      const SWEEP_CLASS = 'is-sweeping';
+      let lastBassLevel: AudioSettings['bass'] | undefined;
       const updateAudioRows = () => {
         const block = ctx.actions.audioBlock(native);
         const shortcuts = ui().shortcuts;
@@ -1049,13 +1052,27 @@ export function createControls(
         }
         for (const { name, button, row } of audioRows) {
           button.dataset.active = String(isAudioSettingActive(ui().audio, name));
-          if (name === 'bass') button.querySelector('.bass-icon')?.setAttribute('data-level', ui().audio.bass);
+          if (name === 'bass') {
+            const level = ui().audio.bass;
+            button.querySelector('.bass-icon')?.setAttribute('data-level', level);
+            button.dataset.level = level;
+            // Sweep only a visible row: a hidden one never fires animationend and would sweep on opening.
+            if (bassRowSweeps(lastBassLevel, level) && button.offsetParent) {
+              button.classList.remove(SWEEP_CLASS);
+              void button.offsetWidth; // restart the sweep when levels change in quick succession
+              button.classList.add(SWEEP_CLASS);
+            }
+            lastBassLevel = level;
+          }
           row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)),
             audioLevelLabelKeys(name).map(key => t(key)));
         }
       };
       updateAudioRows();
       controlsScope.add(ctx.uiStore.subscribe(updateAudioRows));
+      for (const { button } of audioRows) {
+        controlsScope.listen(button, 'animationend', () => button.classList.remove(SWEEP_CLASS));
+      }
       // DRM and a refused CORS reload only become visible once the media loads.
       controlsScope.listen(native, 'encrypted', updateAudioRows);
       controlsScope.listen(native, 'loadedmetadata', updateAudioRows);

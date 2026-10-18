@@ -221,3 +221,50 @@ describe('settings menu rows stay on one line', () => {
     });
   }
 });
+
+describe('Bass row sweep', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    it(`sweeps once when the level rises into a red level in ${engine}`, { timeout: 60_000 }, async () => {
+      await withBrowser(engine, async browser => {
+        const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
+        await page.setContent('<body style="margin:0"></body>');
+        await page.addStyleTag({ content: UI_CSS });
+        await page.evaluate('window.__name = value => value');
+        await page.addScriptTag({ content: BUNDLE });
+        const result = await page.evaluate(async () => {
+          const mount = document.createElement('div');
+          mount.style.cssText = 'position:fixed;inset-inline-start:20px;top:20px;width:340px';
+          document.body.append(mount);
+          const api = (window as any).SettingsRows;
+          const video = document.createElement('video');
+          document.body.append(video);
+          const store = new api.PlayerUiStore();
+          const noop = () => {};
+          const actions = new Proxy({ setIcon(el: HTMLElement, svg: string) { el.innerHTML = svg; }, escapeHtml: (v: string) => v, findAllVideosDeep: () => [] } as Record<string, unknown>, { get: (t, k: string) => t[k] ?? noop });
+          const ctx = { session: { element: video, currentEpoch: 1, isExiting: false, isIdle: false, publishSnapshot: noop }, uiStore: store, frames: {}, refs: api.createChromeRefs(), ui: () => store.getState(),
+            t: (key: string) => key, queryPlayerUi: (s: string) => document.querySelector(s), queryPlayerUiAll: (s: string) => [...document.querySelectorAll(s)],
+            mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
+          api.createControls(ctx, noop).createCustomControls(video);
+          const row = document.querySelector<HTMLElement>('.audio-bass-btn')!;
+          const set = (bass: string) => store.dispatch({ type: 'SET_AUDIO', value: { voice: 'off', leveling: 'off', bass } });
+          const swept = () => row.classList.contains('is-sweeping');
+          const seen: Record<string, boolean> = {};
+          // A closed menu never fires animationend, so it must not be left carrying the marker.
+          set('moar');
+          seen.closed = swept();
+          set('less');
+          document.querySelector('.theater-settings-container')!.classList.add('is-open');
+          // The wrapper is idle-hidden, so only the transitions are asserted here, not the painted sweep.
+          for (const [name, bass] of [['less', 'less'], ['original', 'original'], ['more', 'more'], ['moar', 'moar'], ['moaaarr', 'moaaarr'], ['wrap', 'less'], ['moar again', 'moar']]) {
+            set(bass);
+            seen[name] = swept();
+            row.classList.remove('is-sweeping');
+          }
+          return seen;
+        });
+        assert.deepEqual(result, { closed: false, less: false, original: false, more: false, moar: true, moaaarr: true, wrap: false, 'moar again': true });
+        await page.close();
+      });
+    });
+  }
+});

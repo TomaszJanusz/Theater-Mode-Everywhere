@@ -1,5 +1,6 @@
 import { defaultMediaProviderFlags, mediaProviderFlagStorageKeys, mediaProviderFlagStorageUpdate } from '../src/media-features/provider-flags';
 import { createServer } from 'node:http';
+import { BASS_LEVELS } from '../src/audio-settings';
 import { assertLocalized } from '../src/test-utils/language-audit';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import { WHATS_NEW_CONTENT } from '../src/whatsNew-content';
@@ -10,6 +11,13 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync 
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { chromium, firefox, type BrowserContext, type Locator, type Page } from 'playwright';
+
+const BASS_LABELS: Record<typeof BASS_LEVELS[number], string> = { less: 'Less', original: 'Original', more: 'More', moar: 'MOAAR', moaaarr: 'MOAAARR!' };
+/** The configured bass levels in shortcut order, starting after `from` and ending on it. */
+const bassLapFrom = (from: typeof BASS_LEVELS[number]) => {
+  const start = BASS_LEVELS.indexOf(from);
+  return [...BASS_LEVELS.slice(start + 1), ...BASS_LEVELS.slice(0, start + 1)];
+};
 
 type SmokeBrowser = 'chromium' | 'firefox';
 
@@ -1470,16 +1478,12 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   await cycleTo('leveling', 'Reduce loud sounds', 'Light');
   await cycleTo('leveling', 'Reduce loud sounds', 'Strong');
   await cycleTo('bass', 'Bass', 'More');
-  await page.keyboard.press('b');
-  await hud.filter({ hasText: 'Bass: MOAAR' }).waitFor();
-  await page.keyboard.press('b');
-  await hud.filter({ hasText: 'Bass: MOAAARR!' }).waitFor();
-  await page.keyboard.press('b');
-  await hud.filter({ hasText: 'Bass: Less' }).waitFor();
-  await page.keyboard.press('b');
-  await hud.filter({ hasText: 'Bass: Original' }).waitFor();
-  await page.keyboard.press('b');
-  await hud.filter({ hasText: 'Bass: More' }).waitFor();
+  // One full lap of the configured levels from More, ending on More again.
+  for (const level of bassLapFrom('more')) {
+    await page.keyboard.press('b');
+    await hud.filter({ hasText: `Bass: ${BASS_LABELS[level]}` }).waitFor();
+    if (level === 'moaaarr' && await hud.getAttribute('data-level') !== 'moaaarr') fail('The MOAAARR! HUD did not carry its level for the red styling.');
+  }
   for (const [key, name, label] of [['v', 'voice', 'Voice boost'], ['r', 'leveling', 'Reduce loud sounds']] as const) {
     const initial = (await media())[name];
     for (let step = 0; step < 3; step++) {
@@ -1570,10 +1574,8 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
     await cycleTo('voice', 'Voice boost', 'Strong');
     await cycleTo('voice', 'Voice boost', 'Off');
     await cycleTo('leveling', 'Reduce loud sounds', 'Off');
-    await cycleTo('bass', 'Bass', 'MOAAR');
-    await cycleTo('bass', 'Bass', 'MOAAARR!');
-    await cycleTo('bass', 'Bass', 'Less');
-    await cycleTo('bass', 'Bass', 'Original');
+    const lap = bassLapFrom('more');
+    for (const level of lap.slice(0, lap.indexOf('original') + 1)) await cycleTo('bass', 'Bass', BASS_LABELS[level]);
     await page.keyboard.press('Escape');
   }
   if (await video.getAttribute('data-smoke-audio-emptied') !== '0') fail('An audio setting unnecessarily reloaded the same-origin video.');

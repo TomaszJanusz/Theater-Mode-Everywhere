@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { DEFAULT_AUDIO_SETTINGS } from '../audio-settings';
+import { BASS_MOAAARR_ENABLED, DEFAULT_AUDIO_SETTINGS } from '../audio-settings';
 import { createAudioChain } from './audio-graph';
 
 it('only connects requested DSP stages, including the neutral path used by boost alone', () => {
@@ -48,8 +48,10 @@ it('only connects requested DSP stages, including the neutral path used by boost
     assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0, shaper: 0 });
     chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moar' });
     assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 0 }, 'the soft ceiling stays out below MOAAARR!');
-    chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moaaarr' });
-    assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 1 });
+    if (BASS_MOAAARR_ENABLED) {
+      chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moaaarr' });
+      assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 1 });
+    }
     chain.apply({ voice: 'strong', leveling: 'strong', bass: 'more' });
     assert.deepEqual(reachable(), { filter: 2, compressor: 3, splitter: 1, shaper: 0 });
   } finally { chain.dispose(); }

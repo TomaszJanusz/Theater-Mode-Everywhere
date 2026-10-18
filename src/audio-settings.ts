@@ -123,6 +123,12 @@ export function audioLevelLabelKey(settings: AudioSettings, name: AudioSettingNa
   }
 }
 
+/** The Bass row sweeps in red when the level rises into or within the red levels (MOAAR, MOAAARR!). */
+export function bassRowSweeps(previous: AudioSettings['bass'] | undefined, next: AudioSettings['bass']): boolean {
+  if (previous === undefined || (next !== 'moar' && next !== 'moaaarr')) return false;
+  return BASS_LEVELS.indexOf(next) > BASS_LEVELS.indexOf(previous);
+}
+
 /** A level other than the default is what the settings rows highlight. */
 export function isAudioSettingActive(settings: AudioSettings, name: AudioSettingName): boolean {
   return settings[name] !== DEFAULT_AUDIO_SETTINGS[name];
