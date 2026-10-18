@@ -3030,3 +3030,41 @@ button.theater-time-end:hover {
   min-width: 28px !important;
   height: 28px !important;
 }
+
+/* Audio rows: a non-default level (or boost on) takes the accent, as the CC menu's active item does. */
+.theater-settings-row[data-active="true"] :is(.theater-settings-row-icon, .theater-settings-detail) {
+  color: var(--accent-color, #6366f1) !important;
+}
+
+/* Bass subwoofer: the level, set on the svg, picks the sound waves. */
+.bass-icon { overflow: visible; } /* the rock tilts past the 24px box */
+.bass-icon .bass-wave { display: none; }
+.bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"]) .bass-wave-1,
+.bass-icon:is([data-level="more"], [data-level="moar"]) .bass-wave-2 { display: inline; }
+.bass-icon[data-level="moar"] { color: var(--theater-bass-moar-color, #ef4444) !important; }
+
+/* MOAAARR: a rock from one foot onto the other every 5 s (10 s cycle) and a constant tiny cone jitter.
+   Transform-only, so neither animation lays out or repaints; a closed menu is display:none and a HUD is
+   removed, which stops both. Origins are the feet, spelled in the keyframes so the box needs no sizing. */
+.bass-icon[data-level="moar"] .bass-hop { animation: bass-hop 10s ease-in-out infinite; }
+.bass-icon[data-level="moar"] .bass-cone { animation: bass-jitter 90ms steps(1, end) infinite; }
+.bass-icon[data-level="moar"] .bass-body { animation: bass-jitter-body 130ms steps(1, end) infinite; }
+@keyframes bass-hop {
+  0%, 8%, 50%, 58%, 100% { transform: none; }
+  2.5% { transform: translateY(-0.7px) translate(6px, 22px) rotate(-6deg) translate(-6px, -22px); }
+  5% { transform: translate(6px, 22px) rotate(1.5deg) translate(-6px, -22px); }
+  52.5% { transform: translateY(-0.7px) translate(13px, 22px) rotate(6deg) translate(-13px, -22px); }
+  55% { transform: translate(13px, 22px) rotate(-1.5deg) translate(-13px, -22px); }
+}
+@keyframes bass-jitter {
+  0% { transform: translate(0.25px, 0); }
+  25% { transform: translate(-0.2px, 0.2px); }
+  50% { transform: translate(0.1px, -0.25px); }
+  75% { transform: translate(-0.25px, -0.1px); }
+}
+@keyframes bass-jitter-body {
+  0% { transform: translate(0.1px, 0); }
+  33% { transform: translate(-0.1px, 0.1px); }
+  66% { transform: translate(0, -0.1px); }
+}
+:host([data-motion="reduced"]) .bass-icon :is(.bass-hop, .bass-cone, .bass-body) { animation: none !important; }

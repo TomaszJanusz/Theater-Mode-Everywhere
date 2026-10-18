@@ -5,6 +5,7 @@ import {
   BASS_LEVELS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  isAudioSettingActive,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
   LEVELING_LEVELS,
@@ -53,5 +54,11 @@ describe('audio settings', () => {
     assert.deepEqual(readAudioDataset(dataset), boosted);
     assert.equal(isNeutralAudio(boosted), false);
     assert.equal(isNeutralAudio(DEFAULT_AUDIO_SETTINGS), true);
+  });
+
+  it('marks only non-default levels as active', () => {
+    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(DEFAULT_AUDIO_SETTINGS, name)), []);
+    const tuned = { voice: 'light', leveling: 'off', bass: 'less' } as const;
+    assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(tuned, name)), ['voice', 'bass']);
   });
 });

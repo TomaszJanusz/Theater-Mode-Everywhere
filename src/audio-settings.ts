@@ -106,6 +106,11 @@ export function audioLevelLabelKey(settings: AudioSettings, name: AudioSettingNa
   }
 }
 
+/** A level other than the default is what the settings rows highlight. */
+export function isAudioSettingActive(settings: AudioSettings, name: AudioSettingName): boolean {
+  return settings[name] !== DEFAULT_AUDIO_SETTINGS[name];
+}
+
 /** Untouched audio needs no Web Audio graph at all. */
 export function isNeutralAudio(settings: AudioSettings): boolean {
   return AUDIO_SETTING_NAMES.every((name) => settings[name] === DEFAULT_AUDIO_SETTINGS[name]);

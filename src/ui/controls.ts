@@ -33,7 +33,7 @@ import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
-import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -1043,10 +1043,13 @@ export function createControls(
         if (block) return;
         if (boost) {
           boost.button.setAttribute('aria-pressed', String(ui().volumeBoost));
+          boost.button.dataset.active = String(ui().volumeBoost);
           boost.row.update(shortcuts.toggleVolumeBoost, t(ui().volumeBoost ? 'volumeBoostOn' : 'volumeBoostOff'),
             ['volumeBoostOn', 'volumeBoostOff'].map(key => t(key)));
         }
-        for (const { name, row } of audioRows) {
+        for (const { name, button, row } of audioRows) {
+          button.dataset.active = String(isAudioSettingActive(ui().audio, name));
+          if (name === 'bass') button.querySelector('.bass-icon')?.setAttribute('data-level', ui().audio.bass);
           row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)),
             audioLevelLabelKeys(name).map(key => t(key)));
         }
