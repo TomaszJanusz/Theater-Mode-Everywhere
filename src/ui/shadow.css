@@ -3020,6 +3020,9 @@ button.theater-time-end:hover {
 .theater-settings-row-icon {
   position: relative;
   display: inline-flex;
+  /* A 16px icon in the 18px box sat on its top edge, one pixel above the label's centre. */
+  align-items: center;
+  justify-content: center;
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
@@ -3049,16 +3052,17 @@ button.theater-time-end:hover {
 .bass-icon[data-level="moaaarr"] .bass-wave-3 { display: inline; }
 .bass-icon:is([data-level="moar"], [data-level="moaaarr"]) { color: var(--theater-bass-moar-color, #ef4444) !important; }
 
-/* The two red levels recolour the whole Bass row, and its confirmation HUD, through the accent that the
-   active rule, focus ring and HUD icon use. */
-:is(.theater-settings-row, .theater-everywhere-volume-overlay):is([data-level="moar"], [data-level="moaaarr"]) {
+/* The two red levels recolour the whole Bass row, and its confirmation HUD, in --theater-bass-moar-color.
+   The row also swaps the accent its active rule and focus ring read. The HUD cannot: paintOverlay sets
+   --accent-color inline on it, which would beat any stylesheet override, so its parts take the token directly. */
+.theater-settings-row:is([data-level="moar"], [data-level="moaaarr"]) {
   --accent-color: var(--theater-bass-moar-color, #ef4444);
 }
-:is(.theater-settings-row, .theater-everywhere-volume-overlay):is([data-level="moar"], [data-level="moaaarr"]) :is(.theater-settings-label, .volume-hud-text) {
-  color: var(--accent-color) !important;
+:is(.theater-settings-row, .theater-everywhere-volume-overlay):is([data-level="moar"], [data-level="moaaarr"]) :is(.theater-settings-label, .volume-hud-text, .volume-hud-icon) {
+  color: var(--theater-bass-moar-color, #ef4444) !important;
 }
 .theater-everywhere-volume-overlay:is([data-level="moar"], [data-level="moaaarr"]) {
-  outline-color: color-mix(in srgb, var(--accent-color) 40%, transparent) !important;
+  outline-color: color-mix(in srgb, var(--theater-bass-moar-color, #ef4444) 40%, transparent) !important;
 }
 
 /* MOAAR: a rock from one foot onto the other every 5 s (10 s cycle) and a constant tiny cone jitter.

@@ -30,7 +30,7 @@ describe('bass subwoofer icon', () => {
         await page.evaluate('window.__name = value => value');
         await page.addScriptTag({ content: BUNDLE });
         // The stylesheet targets :host, so the fixture lives in a shadow root like the player chrome.
-        const { out: result, huds, sweepNormal, sweepReduced } = await page.evaluate(({ css, levels }) => {
+        const { out: result, sweepNormal, sweepReduced } = await page.evaluate(({ css, levels }) => {
           const host = document.createElement('div');
           document.body.append(host);
           const root = host.attachShadow({ mode: 'open' });
@@ -63,21 +63,8 @@ describe('bass subwoofer icon', () => {
               hopPeriod: style('.bass-hop').animationDuration
             };
           };
-          const hud = (level: string) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'theater-everywhere-volume-overlay status-hud';
-            if (level === 'moar' || level === 'moaaarr') overlay.dataset.level = level;
-            overlay.innerHTML = `<div class="volume-hud-content"><div class="volume-hud-icon">${(window as any).Hud.audioHudIcon('bass', { voice: 'off', leveling: 'off', bass: level })}</div><span class="volume-hud-text">Bass</span></div>`;
-            root.append(overlay);
-            return {
-              text: getComputedStyle(overlay.querySelector('.volume-hud-text')!).color,
-              icon: getComputedStyle(overlay.querySelector('.volume-hud-icon')!).color,
-              outline: getComputedStyle(overlay).outlineColor
-            };
-          };
           const out: Record<string, ReturnType<typeof read> & { reduced?: { hop: string; jitter: string; color: string } }> = {};
           for (const level of levels) out[level] = read(level);
-          const huds = Object.fromEntries(levels.map(level => [level, hud(level)]));
           host.setAttribute('data-motion', 'reduced');
           const icons = root.querySelectorAll('.bass-icon');
           for (const level of levels.filter(candidate => candidate === 'moar' || candidate === 'moaaarr')) {
@@ -98,7 +85,7 @@ describe('bass subwoofer icon', () => {
           const sweepNormal = sweepAfter();
           host.setAttribute('data-motion', 'reduced');
           const sweepReduced = sweepAfter();
-          return { out, huds, sweepNormal, sweepReduced };
+          return { out, sweepNormal, sweepReduced };
         }, { css: UI_CSS, levels: [...BASS_LEVELS] });
 
         const arcs = { less: 0, original: 1, more: 2, moar: 2, moaaarr: 3 };
@@ -139,15 +126,6 @@ describe('bass subwoofer icon', () => {
           assert.notEqual(result[level].label, red);
         }
         assert.equal(result.original.focus.trim(), '', 'the default level leaves the accent alone');
-        // The confirmation HUD follows the same rule: red text, icon and outline at the top two levels only.
-        for (const level of redLevels) {
-          assert.deepEqual([huds[level].text, huds[level].icon], [red, red], `${level} HUD text and icon are red`);
-          assert.notEqual(huds[level].outline, huds.more.outline, `${level} HUD outline is tinted red`);
-        }
-        for (const level of ['less', 'original', 'more'] as const) {
-          assert.notEqual(huds[level].text, red, `${level} HUD text keeps its styling`);
-          assert.notEqual(huds[level].icon, red, `${level} HUD icon keeps the accent`);
-        }
         assert.equal(sweepNormal.animation, 'theater-service-action-sweep', 'the Bass row reuses the CTA sweep');
         assert.notEqual(sweepNormal.content, 'none');
         assert.deepEqual([sweepReduced.content, sweepReduced.animation], ['none', 'none'], 'reduced motion removes the sweep');

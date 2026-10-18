@@ -1482,7 +1482,13 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   for (const level of bassLapFrom('more')) {
     await page.keyboard.press('b');
     await hud.filter({ hasText: `Bass: ${BASS_LABELS[level]}` }).waitFor();
-    if (level === 'moaaarr' && await hud.getAttribute('data-level') !== 'moaaarr') fail('The MOAAARR! HUD did not carry its level for the red styling.');
+    if (level === 'moar' || level === 'moaaarr') {
+      // The shortcut's real HUD, painted with the user's accent inline, must still show the red.
+      const colors = await hud.evaluate((overlay: HTMLElement) => ['.volume-hud-text', '.volume-hud-icon'].map(selector => getComputedStyle(overlay.querySelector(selector)!).color));
+      if (await hud.getAttribute('data-level') !== level || colors.some(color => color !== 'rgb(239, 68, 68)')) {
+        fail(`The ${level} Bass HUD is not red: level ${await hud.getAttribute('data-level')}, colours ${colors.join(' / ')}.`);
+      }
+    }
   }
   for (const [key, name, label] of [['v', 'voice', 'Voice boost'], ['r', 'leveling', 'Reduce loud sounds']] as const) {
     const initial = (await media())[name];

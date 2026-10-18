@@ -268,3 +268,53 @@ describe('Bass row sweep', () => {
     });
   }
 });
+
+describe('Settings row vertical alignment', () => {
+  for (const engine of ['chromium', 'firefox'] as const) {
+    for (const scale of [1, 2]) {
+      it(`centres icon, label, keycaps and value on one line at ${scale}x in ${engine}`, { timeout: 60_000 }, async () => {
+        await withBrowser(engine, async browser => {
+          const page = await browser.newPage({ viewport: { width: 420, height: 900 }, deviceScaleFactor: scale });
+          await page.setContent('<body style="margin:0"></body>');
+          await page.addStyleTag({ content: UI_CSS });
+          await page.evaluate('window.__name = value => value');
+          await page.addScriptTag({ content: BUNDLE });
+          const rows = await page.evaluate((messages) => {
+            const mount = document.createElement('div');
+            mount.style.cssText = 'position:fixed;inset-inline-start:20px;top:20px;width:340px';
+            document.body.append(mount);
+            const api = (window as any).SettingsRows;
+            const video = document.createElement('video');
+            document.body.append(video);
+            const store = new api.PlayerUiStore();
+            const noop = () => {};
+            const actions = new Proxy({ setIcon(el: HTMLElement, svg: string) { el.innerHTML = svg; }, escapeHtml: (v: string) => v, findAllVideosDeep: () => [] } as Record<string, unknown>, { get: (t, k: string) => t[k] ?? noop });
+            const ctx = { session: { element: video, currentEpoch: 1, isExiting: false, isIdle: false, publishSnapshot: noop }, uiStore: store, frames: {}, refs: api.createChromeRefs(), ui: () => store.getState(),
+              t: (key: string, ...subs: string[]) => (messages[key] ?? key).replace('$1', subs[0] ?? ''), queryPlayerUi: (s: string) => document.querySelector(s), queryPlayerUiAll: (s: string) => [...document.querySelectorAll(s)],
+              mountPlayerUi: (el: HTMLElement) => mount.appendChild(el), destroyPlayerUi: noop, eventPathIncludes: (e: Event, n: Node | null) => !!n && e.composedPath().includes(n), eventPathMatches: () => false, paintOverlay: noop, mediaHasSource: () => true, requestVideoPlay: noop, actions };
+            api.createControls(ctx, noop).createCustomControls(video);
+            document.querySelector('.theater-settings-container')!.classList.add('is-open');
+            store.dispatch({ type: 'SET_AUDIO', value: { voice: 'light', leveling: 'off', bass: 'moaaarr' } });
+            const centre = (element: Element | null) => { const box = element?.getBoundingClientRect(); return box ? box.top + box.height / 2 : null; };
+            return [...document.querySelectorAll('.theater-settings-row')].filter(row => (row as HTMLElement).offsetParent).map(row => ({
+              row: row.className.split(' ').find(name => name.endsWith('-btn')) ?? row.className,
+              height: row.getBoundingClientRect().height,
+              icon: centre(row.querySelector('.theater-settings-row-icon svg')),
+              label: centre(row.querySelector('.theater-settings-label')),
+              keys: [...row.querySelectorAll('kbd')].map(centre),
+              detail: centre(row.querySelector('.theater-settings-detail > :not(.theater-settings-reserve)'))
+            }));
+          }, english);
+          assert.ok(rows.length >= 6, `${engine}: rows found`);
+          for (const row of rows) {
+            if (row.icon === null || row.label === null) continue;
+            assert.ok(Math.abs(row.icon - row.label) <= 0.5, `${engine} ${scale}x ${row.row}: icon centre ${row.icon} vs label centre ${row.label}`);
+            for (const key of row.keys) assert.ok(Math.abs((key as number) - row.label) <= 1, `${engine} ${row.row}: keycap centre ${key} vs ${row.label}`);
+            if (row.detail !== null) assert.ok(Math.abs(row.detail - row.label) <= 0.5, `${engine} ${row.row}: value centre ${row.detail} vs ${row.label}`);
+          }
+          await page.close();
+        });
+      });
+    }
+  }
+});
