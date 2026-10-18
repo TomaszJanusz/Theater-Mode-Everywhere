@@ -1120,7 +1120,10 @@ button.theater-time-end:hover {
   left: 50% !important;
   bottom: var(--theater-caption-bottom, 48px) !important;
   transform: translateX(-50%) !important;
-  max-width: min(80vw, 960px) !important;
+  /* left: 50% leaves a shrink-to-fit box only half the frame to wrap in; size it by its text instead.
+   * The frame (the host) is the video, so the percentage cap follows the video, not the viewport. */
+  width: max-content !important;
+  max-width: min(80%, 960px) !important;
   text-align: center !important;
   pointer-events: none !important;
   z-index: 2147483647 !important;
