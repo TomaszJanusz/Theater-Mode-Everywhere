@@ -88,3 +88,12 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - Stop only processes or browser sessions you started for the task, using their recorded identity. Preserve the developer's running sessions and settings.
 - Never create a branch, commit or gist just to host screenshots, videos or other PR media. Upload them with `gh pr create|edit|comment --attach './file.png#alt text'` and reference them from the PR body; commit an asset only when it is durable project documentation under `docs/`.
 - Report the resulting behavior, important choices, checks actually run and remaining gaps. Distinguish source/test evidence from live runtime evidence.
+
+## Pull requests
+
+- **Link the Linear issue when there is one.** Linear is the maintainer's tracker; outside contributors have no access, so a Linear key is never required of them and its absence never blocks a PR. For maintainer and agent work, remote branches stay `feature/*`, so Linear cannot match a PR by branch name. Put the issue key in the PR description (or title) with a magic word: `Closes TME-123` when merging completes the issue, `Part of TME-123` when it only advances it. Use the issue's acceptance criteria to choose. If the task has an issue, never leave the PR unlinked; if it is unclear which issue applies, ask. Reference public GitHub issues with `Fixes #123` as usual.
+- **Let Linear move status.** Do not edit issue status by hand to mirror the PR; the GitHub integration handles open, review and merge transitions. Add a Linear comment only for facts the PR cannot show, such as live-host verification.
+- **Title in Conventional Commits form.** `type(scope): description` with `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `build`, `ci`, `copy` or `revert`; the squash-merge keeps it as the commit subject. `.github/workflows/pr-title.yml` warns when it does not match.
+- **Use the PR template.** Structure the PR body with `.github/pull_request_template.md`; `gh pr create --body` does not apply it automatically.
+- **Describe the PR for a reviewer.** State the user-visible outcome, why, the checks run and remaining gaps (see Verification and Delivery). Attach screenshots or video with `--attach`.
+- **Keep one outcome per PR.** For stacked work, target the parent branch, say so in the description, and link every layer to its issue.
