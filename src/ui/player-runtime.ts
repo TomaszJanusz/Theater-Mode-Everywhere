@@ -189,7 +189,7 @@ const ctx = createPlayerChromeContext({
 
 const buttonTooltip = createButtonTooltip(ctx);
 const hud = createHud(ctx, buttonTooltip.bind);
-const toolbar = createToolbar(ctx);
+const toolbar = createToolbar(ctx, applyTheaterPictureLayout);
 const help = createHelp(ctx);
 const discovery = createDiscovery(ctx);
 const controls = createControls(ctx, buttonTooltip.bind, () => {
@@ -695,11 +695,11 @@ const THEATER_ELEMENT_INLINE_STYLES: Record<string, string> = {
   top: '0',
   left: '0',
   width: 'var(--theater-video-width, 100vw)',
-  height: 'var(--theater-video-height, 100vh)',
+  height: 'calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px))',
   'max-width': 'var(--theater-video-width, 100vw)',
-  'max-height': 'var(--theater-video-height, 100vh)',
+  'max-height': 'calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px))',
   'min-width': 'var(--theater-video-width, 100vw)',
-  'min-height': 'var(--theater-video-height, 100vh)',
+  'min-height': 'calc(var(--theater-video-height, 100vh) - var(--theater-controls-reserved-height, 0px))',
   'z-index': 'var(--theater-video-z, 2147483647)',
   opacity: '1',
   'pointer-events': 'auto',

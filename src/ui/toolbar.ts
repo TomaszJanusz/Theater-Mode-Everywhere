@@ -52,7 +52,7 @@ function applyCaptionDockMotion(
   modes.set(el, { mode: motion, transition: el.style.getPropertyValue('transition') });
 }
 
-export function createToolbar(ctx: PlayerChromeContext) {
+export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: () => void = () => {}) {
   function scheduleToolbarHide(): void {
     if (ctx.refs.toolbarTimer) clearTimeout(ctx.refs.toolbarTimer);
 
@@ -127,6 +127,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
     candidates = [];
     candidatesDirty = true;
     captionDockLifted = false;
+    document.documentElement.style.removeProperty('--theater-controls-reserved-height');
   }
 
   function refreshDockElements(): void {
@@ -220,15 +221,24 @@ export function createToolbar(ctx: PlayerChromeContext) {
 
   function measureCaptionDock(element: HTMLElement): void {
     refreshDockElements();
+    // The UI keeps the full player viewport; only the media box loses the dock's height.
+    const controlsHeight = controlsCache?.classList.contains('pinned') ? controlsCache.offsetHeight : 0;
+    const root = document.documentElement;
+    const reservedHeight = `${controlsHeight}px`;
+    if (root.style.getPropertyValue('--theater-controls-reserved-height') !== reservedHeight) {
+      root.style.setProperty('--theater-controls-reserved-height', reservedHeight);
+      pictureGeometryChanged();
+    }
     const mediaRect = element.getBoundingClientRect();
     const viewportWidth = mediaRect.width || window.innerWidth;
-    const viewportHeight = mediaRect.height || window.innerHeight;
+    const pictureHeight = mediaRect.height || window.innerHeight;
+    const viewportHeight = pictureHeight + controlsHeight;
     const raised = document.documentElement.classList.contains('theater-everywhere-picture-top');
     const video = element instanceof HTMLVideoElement ? element : null;
     const band = raised ? horizontalLetterboxPx({
       videoWidth: video?.videoWidth ?? 0,
       videoHeight: video?.videoHeight ?? 0,
-      viewportWidth, viewportHeight
+      viewportWidth, viewportHeight: pictureHeight
     }) : 0;
     const placeInBand = raised && band > 0;
     const overlay = dockOverlayCache?.classList.contains('visible') ? dockOverlayCache : null;
@@ -260,7 +270,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       const rect = controls.getBoundingClientRect();
       if (rect.width > 1 && rect.height > 1) {
         const bottomOffset = Number.parseFloat(getComputedStyle(controls).bottom) || 0;
-        const bottom = mediaRect.bottom - bottomOffset;
+        const bottom = mediaRect.bottom + controlsHeight - bottomOffset;
         obstacles.push({ left: rect.left, right: rect.right, top: bottom - controls.offsetHeight, bottom });
       }
     }
@@ -280,15 +290,15 @@ export function createToolbar(ctx: PlayerChromeContext) {
         ? hostCaption.rows
         : (captionSize ? raisedCaptionRowCount(captionSize.height, lineHeight) : 2);
     const restBottom = placeInBand
-      ? raisedCaptionRestBottom(
+      ? controlsHeight + raisedCaptionRestBottom(
         band,
         captionSize?.height ?? 0,
-        viewportHeight,
+        pictureHeight,
         CAPTION_DOCK_RAISED_EDGE,
         CAPTION_DOCK_RAISED_CENTER_GAP,
         rows
       )
-      : undefined;
+      : controlsHeight > 0 ? controlsHeight + CAPTION_DOCK_REST_BOTTOM : undefined;
     const bottom = computeCaptionDockBottom({
       captionSize,
       obstacles,
@@ -333,6 +343,7 @@ export function createToolbar(ctx: PlayerChromeContext) {
       closeTheaterPopovers();
       ctx.queryPlayerUi('.theater-button-tooltip')?.classList.remove('visible');
     }
+    controls.classList.toggle('pinned', ctx.ui().keepControlsVisible);
     const wasVisible = controls.classList.contains('visible');
     controls.classList.toggle('visible', visibility.controlsVisible);
     if (visibility.controlsVisible && !wasVisible) (controls as ExtendedHTMLDivElement)._syncPlaybackChrome?.();

@@ -309,11 +309,14 @@ function assertSharedGeometry(layout: Layout, label: string): void {
   const host = layout.host;
   const bar = layout.bar;
   assert.ok(/\blayout\b|^strict$/.test(layout.contain), detail);
-  assert.ok(near(host.width, video.width) && near(host.height, video.height), detail);
+  assert.ok(near(host.width, video.width) && near(host.height, video.height + bar.height), detail);
   assert.ok(near(host.left, video.left) && near(host.top, video.top), detail);
-  assert.ok(inside(bar, video), detail);
+  assert.ok(inside(bar, host), detail);
+  assert.ok(near(bar.top, video.bottom, 1), detail);
+  assert.ok(near(bar.left, host.left, 1) && near(bar.right, host.right, 1)
+    && near(bar.bottom, host.bottom, 1), detail);
   assert.ok(near(pixels(layout.vars.videoWidth), video.width), detail);
-  assert.ok(near(pixels(layout.vars.videoHeight), video.height), detail);
+  assert.ok(near(pixels(layout.vars.videoHeight), host.height), detail);
   assert.ok(near(pixels(layout.vars.chatLeft), chat.left), detail);
   assert.ok(near(pixels(layout.vars.chatTop), chat.top), detail);
   assert.ok(near(pixels(layout.vars.chatWidth), chat.width), detail);
@@ -343,20 +346,22 @@ function assertBottomDock(layout: Layout, label: string): void {
   assert.ok(layout.viewport.width < 900, detail);
   assert.ok(layout.video && layout.chat, detail);
   assert.ok(!overlaps(layout.video, layout.chat), detail);
-  assert.ok(near(layout.chat.top, layout.video.bottom, 2), detail);
+  assert.ok(near(layout.chat.top, layout.host!.bottom, 2), detail);
   assert.ok(layout.video.width >= layout.viewport.width - 8, detail);
   assert.ok(layout.chat.width >= layout.viewport.width - 8, detail);
   assert.ok(layout.video.height >= 80 && layout.chat.height >= 80, detail);
   assert.equal(layout.hitChat, true, detail);
-  assert.ok(inside(layout.bar!, layout.video), detail);
+  assert.ok(inside(layout.bar!, layout.host!), detail);
+  assert.ok(near(layout.bar!.top, layout.video.bottom, 1), detail);
 }
 
 function assertFullVideo(layout: Layout, label: string): void {
   const detail = `${label} ${JSON.stringify(layout)}`;
-  assert.ok(layout.video, detail);
+  assert.ok(layout.video && layout.host && layout.bar, detail);
   assert.ok(layout.video.width >= layout.viewport.width - 8, detail);
-  assert.ok(layout.video.height >= layout.viewport.height - 8, detail);
-  assert.ok(layout.bar && inside(layout.bar, layout.video), detail);
+  assert.ok(layout.host.height >= layout.viewport.height - 8, detail);
+  assert.ok(near(layout.video.height + layout.bar.height, layout.host.height, 1), detail);
+  assert.ok(inside(layout.bar, layout.host), detail);
 }
 
 async function fulfillMedia(route: Route): Promise<void> {

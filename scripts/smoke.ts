@@ -786,6 +786,23 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   const timeAfter = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.currentTime);
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT });
   if (timeAfter <= timeBefore) fail('Playback stopped while controls were pinned.');
+  const dock = await page.evaluate(() => {
+    const host = document.getElementById('theater-everywhere-ui')!;
+    const bar = host.shadowRoot!.querySelector('.theater-controls-wrapper')!;
+    const view = host.getBoundingClientRect();
+    const box = bar.getBoundingClientRect();
+    const video = document.querySelector('video#player')!.getBoundingClientRect();
+    const plate = getComputedStyle(bar, '::before');
+    return { left: box.left - view.left, right: view.right - box.right, bottom: view.bottom - box.bottom,
+      pictureGap: box.top - video.bottom, radius: plate.borderTopLeftRadius,
+      leftBorder: plate.borderLeftWidth, rightBorder: plate.borderRightWidth };
+  });
+  if (Math.abs(dock.left) > 1 || Math.abs(dock.right) > 1 || Math.abs(dock.bottom) > 1
+      || Math.abs(dock.pictureGap) > 1 || dock.radius !== '0px'
+      || dock.leftBorder !== '0px' || dock.rightBorder !== '0px') {
+    fail(`Pinned controls did not dock and reserve picture space: ${JSON.stringify(dock)}`);
+  }
+
   const idle = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
     const header = root?.querySelector('.theater-everywhere-header-hud');
