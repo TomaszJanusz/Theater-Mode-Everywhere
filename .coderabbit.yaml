@@ -1,0 +1,109 @@
+# Schema: https://coderabbit.ai/integrations/schema.v2.json
+---
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  # Append to the description; replace only this placeholder when present.
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  high_level_summary_in_walkthrough: false
+  poem: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  collapse_walkthrough: true
+  changed_files_summary: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  review_status: false
+  review_info: false
+  review_details: false
+  review_progress: false
+  commit_status: false
+  in_progress_fortune: false
+  enable_prompt_for_ai_agents: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # Review once automatically; request later passes with @coderabbitai review.
+    auto_incremental_review: false
+    # The default branch (main) is included; do not add stacked branch targets.
+    base_branches: []
+    ignore_title_keywords:
+      - WIP
+      - "[skip review]"
+      - docs(github)
+      - docs(whats-new)
+      - chore(i18n)
+  path_filters:
+    - "!dist/**"
+    - "!**/*.zip"
+    - "!pnpm-lock.yaml"
+    - "!_locales/**"
+    - "!docs/research/**"
+    - "!CHANGELOG.md"
+  path_instructions:
+    - path: "src/**"
+      instructions: >-
+        Report only real defects, including stale async results after session
+        or media changes, missing listener/timer/observer cleanup, Chromium or
+        Firefox incompatibilities, broken capability fallbacks, and
+        accessibility regressions. Follow docs/player-provider-contracts.md.
+        Do not suggest style or naming changes, defensive checks ruled out
+        by those contracts,
+        or adding tests unless a plausible bug is untested. Keep useful defect
+        findings inline.
+    - path: "**/*.test.{ts,mjs}"
+      instructions: >-
+        For test code, flag only tests that cannot fail or are nondeterministic.
+        Do not request stylistic changes or additional coverage without a
+        plausible untested bug.
+    - path: "scripts/**"
+      instructions: >-
+        Report only CI-breaking defects or cross-platform problems.
+        Do not suggest style or naming changes.
+  # These warnings duplicate repository policy or add non-defect commentary.
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+  tools:
+    eslint:
+      enabled: false
+    biome:
+      enabled: false
+    markdownlint:
+      enabled: false
+    languagetool:
+      enabled: false
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+    # The current schema retains this key for the Betterleaks secret scanner.
+    gitleaks:
+      enabled: true
+chat:
+  auto_reply: false
+  art: false
