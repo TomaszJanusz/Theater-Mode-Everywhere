@@ -1,5 +1,27 @@
+# Share one dependency tree across worktrees; pnpm turns this off in CI.
+virtualStoreType: global
+
+# Skip versions younger than 3 days (minutes) so a hijacked release is usually pulled before we install it.
+minimumReleaseAge: 4320
+
+# Refuse a version whose publish trust evidence is weaker than an earlier release's.
+trustPolicy: no-downgrade
+# Types-only dependency of @types/node 20; this release has no publish attestation. Drop when @types/node moves past it.
+trustPolicyExclude:
+  - undici-types@6.21.0
+
+# Transitive dependencies must come from the registry, not git or tarball URLs.
+blockExoticSubdeps: true
+
+# Fail the install when a dependency has an unreviewed build script.
+strictDepBuilds: true
+
+# esbuild is the only package allowed to run a build script.
 allowBuilds:
   esbuild: true
+
+# A stale node_modules warns instead of silently reinstalling.
+verifyDepsBeforeRun: warn
 
 overrides:
   brace-expansion: 2.1.7
