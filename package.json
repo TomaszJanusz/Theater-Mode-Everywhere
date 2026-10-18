@@ -20,7 +20,7 @@
   },
   "author": "Tomasz Janusz",
   "license": "MIT",
-  "packageManager": "pnpm@11.5.1",
+  "packageManager": "pnpm@12.14.0",
   "devDependencies": {
     "@types/archiver": "^6.0.2",
     "@types/chrome": "^0.0.268",
