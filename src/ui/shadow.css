@@ -2570,6 +2570,16 @@ button.theater-time-end:hover {
   justify-content: center !important;
 }
 
+/* The shared confirmation slot follows painted bounds, not SVG viewport whitespace.
+   Like settings-row icons, waves can extend past the SVG on both sides. */
+.theater-everywhere-volume-overlay .volume-hud-icon > svg {
+  flex: none !important;
+  overflow: visible !important;
+  margin-left: var(--hud-icon-left, 0px) !important;
+  margin-right: var(--hud-icon-right, 0px) !important;
+  translate: 0 var(--hud-icon-y, 0px) !important;
+}
+
 .volume-hud-text {
   user-select: none !important;
 }
@@ -3045,7 +3055,6 @@ button.theater-time-end:hover {
 
 /* Bass subwoofer: the level, set on the svg, picks the sound waves. */
 .bass-icon { overflow: visible; } /* the mirrored waves overhang the box on both sides, and the rock tilts past it */
-.volume-hud-icon .bass-icon { margin-inline: 4px; } /* room for the side waves next to the HUD text */
 .bass-icon .bass-wave { display: none; }
 .bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-1,
 .bass-icon:is([data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-2,
