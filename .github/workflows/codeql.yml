@@ -33,9 +33,10 @@ on:
 permissions:
   contents: read
 
+# Same policy as CI: cancel superseded PR runs only; main pushes and the weekly scan always finish.
 concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:

@@ -9,9 +9,11 @@ on:
 permissions:
   contents: read
 
+# Only a newer push to the same PR cancels an older run. Pushes to main get a unique group so every
+# merge keeps its own result.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
