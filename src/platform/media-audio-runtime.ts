@@ -152,7 +152,10 @@ export function installMediaAudioRuntime(): void {
     if (isNeutralAudio(settings) && boost === 1) return;
     if (retiredVideos.has(video) || currentVideo() !== video) return;
     clearMetadata();
-    if (mediaAudioAccess(video, window.location.origin) !== 'open' || !(userGesture || navigator.userActivation?.isActive)) {
+    const activated = userGesture || navigator.userActivation?.isActive === true;
+    // Automatic theater entry has no activation, but media already playing
+    // audibly shows that the autoplay policy admitted sound for this page.
+    if (mediaAudioAccess(video, window.location.origin) !== 'open' || !(activated || (!video.paused && !video.muted))) {
       if (video.readyState === 0) waitForMetadata(video);
       return;
     }
@@ -164,6 +167,14 @@ export function installMediaAudioRuntime(): void {
         || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       context = new AudioCtx();
+      // A context the policy holds suspended would silence the captured
+      // element; leave it alone until a gesture. Chromium starts an allowed
+      // context synchronously; Firefox reports its policy instead.
+      const policy = (navigator as Navigator & { getAutoplayPolicy?(type: 'audiocontext'): string }).getAutoplayPolicy?.('audiocontext');
+      if (!activated && context.state !== 'running' && policy !== 'allowed') {
+        void context.close().catch(console.error);
+        return;
+      }
       chain = createAudioChain(context);
       const gain = context.createGain();
       chain.apply(settings);

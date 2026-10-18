@@ -24,6 +24,7 @@ declare global {
     audioRuntimeProbe: {
       contexts: AudioContext[]; sources: string[]; gains: GainNode[]; ready: number;
       delayNextResume: boolean; resumeCalls: number; suspendCalls: number;
+      startState: AudioContextState; autoplayPolicy?: string;
       releaseResume?: () => void;
       autoResume?: () => void;
     };
@@ -47,12 +48,15 @@ async function boot(page: Page, controlledState = false): Promise<void> {
     const probe = window.audioRuntimeProbe = {
       contexts: [] as AudioContext[], sources: [] as string[], gains: [] as GainNode[], ready: 0,
       delayNextResume: false, resumeCalls: 0, suspendCalls: 0,
+      startState: 'suspended' as AudioContextState, autoplayPolicy: undefined as string | undefined,
       releaseResume: undefined as (() => void) | undefined,
       autoResume: undefined as (() => void) | undefined
     };
+    // Firefox reports whether a context may start; Chromium has no such API.
+    if (controlledState) Object.defineProperty(navigator, 'getAutoplayPolicy', { value: () => probe.autoplayPolicy, configurable: true });
     const NativeAudioContext = window.AudioContext;
     window.AudioContext = class extends NativeAudioContext {
-      private simulatedState: AudioContextState = 'suspended';
+      private simulatedState: AudioContextState = probe.startState;
       constructor() {
         super();
         probe.contexts.push(this);
@@ -308,6 +312,50 @@ for (const engine of ['chromium', 'firefox'] as const) {
         assert.deepEqual(await page.evaluate(() => ({
           resumes: window.audioRuntimeProbe.resumeCalls, suspends: window.audioRuntimeProbe.suspendCalls
         })), { resumes: 2, suspends: 2 }, 'auto-resume and late completion suspend paused media and do no work after retirement');
+      } finally { await browser.close(); }
+    });
+
+    it('starts saved effects on audible autoplay without activation only when the context may run', { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const browser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, browser);
+      try {
+        const page = await browser.newPage();
+        await boot(page, true);
+        const applySaved = (id: string) => page.evaluate(id => {
+          const video = document.querySelector<HTMLVideoElement>(`#${id}`)!;
+          video.dataset.theaterVoice = 'strong';
+          video.dispatchEvent(new CustomEvent('theater-everywhere-audio', { bubbles: true, composed: true }));
+        }, id);
+        // Automatic theater entry: playback started without a gesture.
+        await page.evaluate(async () => {
+          const video = document.querySelector<HTMLVideoElement>('#first')!;
+          video.loop = true;
+          await video.play();
+        });
+        await applySaved('first');
+        assert.deepEqual(await page.evaluate(() => ({
+          contexts: window.audioRuntimeProbe.contexts.map(context => context.state), sources: window.audioRuntimeProbe.sources
+        })), { contexts: ['closed'], sources: [] }, 'a context the policy holds suspended does not capture the media');
+        await page.evaluate(() => { window.audioRuntimeProbe.startState = 'running'; });
+        await applySaved('first');
+        assert.deepEqual(await page.evaluate(() => window.audioRuntimeProbe.sources), ['first'], 'an allowed context starts with the saved settings');
+        assert.equal(await page.locator('#first').getAttribute('data-theater-boost-ready'), 'true');
+
+        await page.evaluate(async () => {
+          const probe = window.audioRuntimeProbe;
+          probe.startState = 'suspended';
+          probe.autoplayPolicy = 'allowed';
+          document.querySelector('#first')!.classList.remove('theater-everywhere-video-active');
+          const second = document.querySelector<HTMLVideoElement>('#second')!;
+          second.classList.add('theater-everywhere-video-active');
+          second.loop = true;
+          await second.play();
+        });
+        await applySaved('second');
+        await page.waitForFunction(() => window.audioRuntimeProbe.contexts.at(-1)!.state === 'running');
+        assert.deepEqual(await page.evaluate(() => window.audioRuntimeProbe.sources), ['first', 'second'], 'a reported policy allows a context that starts suspended');
       } finally { await browser.close(); }
     });
 
