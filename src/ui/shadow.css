@@ -2379,6 +2379,11 @@ button.theater-time-end:hover {
   background: var(--appearance-normal-panel) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  /* EXPERIMENT: promote the notice to its own compositor layer from its first painted frame. On
+     Chromium/macOS GPU a freshly promoted layer was seen painted beneath host content (e.g. a sticky
+     chip row) for a few frames before snapping on top. Computed `transform` stays none, so there is
+     no fractional offset to blur text and no new containing block for fixed descendants. */
+  will-change: transform, opacity !important;
 }
 
 .theater-everywhere-caption-hud.theater-auto-notice::before {
