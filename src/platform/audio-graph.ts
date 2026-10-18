@@ -31,10 +31,10 @@ const LEVELING_PRESETS: Record<Exclude<AudioSettings['leveling'], 'off'>, Leveli
 
 /**
  * "MOAAR" (+9 dB) is the highest lift a near-full-scale bass tone survives under the limiter alone:
- * its 2 ms attack lets a 60 Hz peak through from +10 dB. "MOAAARR!" (+11 dB) therefore adds a
- * soft ceiling after the limiter (see `ceilingStage`). It stops at +11: a hard 60 Hz kick at +12 ducks speech by about 2 dB through the shared limiter, at +11 by about 1.6 dB. Light voice lifts speech by +6 dB, strong by up to +10.9 dB.
+ * its 2 ms attack lets a 60 Hz peak through from +10 dB. "MOAAARR!" (+12 dB) therefore adds a
+ * soft ceiling after the limiter (see `ceilingStage`). Past +10 the shared limiter ducks speech under a hard 60 Hz kick (about 2 dB at +12 on a moderate kick); +12 is the value under listening test. Light voice lifts speech by +6 dB, strong by up to +10.9 dB.
  */
-const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6, moar: 9, moaaarr: 11 };
+const BASS_SHELF_DB: Record<AudioSettings['bass'], number> = { less: -6, original: 0, more: 6, moar: 9, moaaarr: 12 };
 
 /** Linear up to the knee, then a tanh roll-off that approaches but never reaches full scale. */
 const CEILING_KNEE = 0.85;

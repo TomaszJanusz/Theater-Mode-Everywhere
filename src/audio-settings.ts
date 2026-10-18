@@ -3,7 +3,7 @@ export const LEVELING_LEVELS = ['off', 'light', 'strong'] as const;
 const ALL_BASS_LEVELS = ['less', 'original', 'more', 'moar', 'moaaarr'] as const;
 
 /**
- * Gates the top bass level (MOAAARR!, about +11 dB) pending real-world listening: it is a candidate to ship
+ * Gates the top bass level (MOAAARR!, about +12 dB) pending real-world listening: it is a candidate to ship
  * in a later release. Off removes it from the settings row, shortcut cycle and HUD, and a stored 'moaaarr'
  * resolves to 'moar'. The rest of the chain keeps it, so turning this on is the only change needed.
  */

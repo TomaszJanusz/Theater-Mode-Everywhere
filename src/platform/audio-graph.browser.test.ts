@@ -166,7 +166,7 @@ describe('audio graph', () => {
       assert.ok(db(less.low, ref.low) < -4, 'less cuts bass');
       assert.ok(Math.abs(db(more.low, ref.low) - 6) < 1.5, `more lifts bass by about 6 dB (${db(more.low, ref.low).toFixed(1)})`);
       assert.ok(Math.abs(db(moar.low, ref.low) - 9) < 1.5, `moar lifts bass by about 9 dB (${db(moar.low, ref.low).toFixed(1)})`);
-      assert.ok(Math.abs(db(moaaarr.low, ref.low) - 11) < 1.5, `moaaarr lifts bass by about 11 dB (${db(moaaarr.low, ref.low).toFixed(1)})`);
+      assert.ok(Math.abs(db(moaaarr.low, ref.low) - 12) < 1.5, `moaaarr lifts bass by about 12 dB (${db(moaaarr.low, ref.low).toFixed(1)})`);
       for (const levels of [less, more, moar, moaaarr]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
     });
   });

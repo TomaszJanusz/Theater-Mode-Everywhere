@@ -41,11 +41,12 @@ export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
 export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
 
 /**
- * A subwoofer seen front-on: cabinet, tweeter ring, cone with dust cap, two feet. The waves show by
- * the svg's `data-level` (see shadow.css), so the settings row, HUD and any later surface share one shape.
- * `bass-hop` carries the MOAAARR rocking and `bass-cone` its jitter.
+ * A subwoofer seen front-on: an outlined square cabinet on two feet, and a filled membrane ring with the dust
+ * cap cut out (even-odd, so any background shows through). The waves show by the svg's `data-level` (see
+ * shadow.css), so the settings row, HUD and any later surface share one shape. `bass-hop` carries the
+ * MOAAR rocking and `bass-cone` its jitter; their pivots are the feet at x 4.5 and 11.5, y 21.
  */
-const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect x="2" y="2" width="13" height="18" rx="2"/><circle cx="8.5" cy="5.8" r="0.9"/><g class="bass-cone"><circle cx="8.5" cy="13.5" r="4"/><circle cx="8.5" cy="13.5" r="1.2"/></g><path d="M5.5 20v2M11.5 20v2"/></g><path class="bass-wave bass-wave-1" d="M17 10.5a4 4 0 0 1 0 6"/><path class="bass-wave bass-wave-2" d="M19 8.5a7 7 0 0 1 0 10"/><path class="bass-wave bass-wave-3" d="M21.2 6.5a9 9 0 0 1 0 14"/></g>';
+const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect x="2" y="3" width="12" height="15" rx="2"/><path d="M4.5 18v3M11.5 18v3"/><path class="bass-cone" fill="currentColor" stroke="none" fill-rule="evenodd" d="M8 6.5a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM8 9a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3z"/></g><path class="bass-wave bass-wave-1" d="M17 8a3 3 0 0 1 0 5"/><path class="bass-wave bass-wave-2" d="M19 6a6 6 0 0 1 0 9"/><path class="bass-wave bass-wave-3" d="M21.3 4.5a9 9 0 0 1 0 12"/></g>';
 
 const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   // A speaking head.

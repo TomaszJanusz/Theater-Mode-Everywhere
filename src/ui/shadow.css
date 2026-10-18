@@ -3055,17 +3055,17 @@ button.theater-time-end:hover {
 .bass-icon:is([data-level="moar"], [data-level="moaaarr"]) .bass-body { animation: bass-jitter-body 130ms steps(1, end) infinite; }
 @keyframes bass-hop {
   0%, 8%, 50%, 58%, 100% { transform: none; }
-  2.5% { transform: translateY(-0.7px) translate(5.5px, 22px) rotate(-6deg) translate(-5.5px, -22px); }
-  5% { transform: translate(5.5px, 22px) rotate(1.5deg) translate(-5.5px, -22px); }
-  52.5% { transform: translateY(-0.7px) translate(12.5px, 22px) rotate(6deg) translate(-12.5px, -22px); }
-  55% { transform: translate(12.5px, 22px) rotate(-1.5deg) translate(-12.5px, -22px); }
+  2.5% { transform: translateY(-0.7px) translate(4.5px, 21px) rotate(-6deg) translate(-4.5px, -21px); }
+  5% { transform: translate(4.5px, 21px) rotate(1.5deg) translate(-4.5px, -21px); }
+  52.5% { transform: translateY(-0.7px) translate(11.5px, 21px) rotate(6deg) translate(-11.5px, -21px); }
+  55% { transform: translate(11.5px, 21px) rotate(-1.5deg) translate(-11.5px, -21px); }
 }
 @keyframes bass-hop-hard {
   0%, 16%, 50%, 66%, 100% { transform: none; }
-  5% { transform: translateY(-1.2px) translate(5.5px, 22px) rotate(-9deg) translate(-5.5px, -22px); }
-  11% { transform: translate(5.5px, 22px) rotate(2.5deg) translate(-5.5px, -22px); }
-  55% { transform: translateY(-1.2px) translate(12.5px, 22px) rotate(9deg) translate(-12.5px, -22px); }
-  61% { transform: translate(12.5px, 22px) rotate(-2.5deg) translate(-12.5px, -22px); }
+  5% { transform: translateY(-1.2px) translate(4.5px, 21px) rotate(-9deg) translate(-4.5px, -21px); }
+  11% { transform: translate(4.5px, 21px) rotate(2.5deg) translate(-4.5px, -21px); }
+  55% { transform: translateY(-1.2px) translate(11.5px, 21px) rotate(9deg) translate(-11.5px, -21px); }
+  61% { transform: translate(11.5px, 21px) rotate(-2.5deg) translate(-11.5px, -21px); }
 }
 @keyframes bass-jitter {
   0% { transform: translate(0.25px, 0); }
