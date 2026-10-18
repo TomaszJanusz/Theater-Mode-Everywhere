@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { checksForEvent, shouldRunChecks } from './ci-changes.mjs';
 
-for (const files of [['README.md'], ['docs/browser-tests.md', 'docs/research/notes.md'], ['AGENTS.md', 'CLAUDE.md']]) {
+for (const files of [['README.md'], ['docs/browser-tests.md', 'docs/research/notes.md'], ['AGENTS.md', 'CLAUDE.md'],
+  ['.coderabbit.yaml', '.github/pull_request_template.md', '.github/ISSUE_TEMPLATE/bug_report.yml', '.github/ISSUE_TEMPLATE/config.yml']]) {
   test(`skips prose: ${files.join(', ')}`, () => assert.equal(shouldRunChecks(files), false));
 }
 for (const file of [
@@ -11,7 +12,7 @@ for (const file of [
   'store-listings/amo/en.md', 'store-listings/assets/cws-promo/README.md',
   '_locales/en/messages.json', 'CHANGELOG.md', 'PRIVACY.md', 'LICENSE',
   'docs/building.md', 'docs/research/prototype.mjs', 'test/fixtures/vod.md',
-  'scripts/ci-changes.mjs', 'UNKNOWN.md', 'docs/../src/code.md', '',
+  'scripts/ci-changes.mjs', '.github/ISSUE_TEMPLATE/translation-issue.yml', '.github/CODEOWNERS', 'UNKNOWN.md', 'docs/../src/code.md', '',
 ]) {
   test(`runs for input or unknown: ${file}`, () => assert.equal(shouldRunChecks([file]), true));
   test(`runs mixed README and ${file}`, () => assert.equal(shouldRunChecks(['README.md', file]), true));

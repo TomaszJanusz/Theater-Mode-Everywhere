@@ -2,13 +2,19 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-// Only reviewed prose is exempt. LICENSE and PRIVACY.md are bundled into Options;
-// CHANGELOG.md and docs/building.md are release inputs. Unknown paths run CI.
+// Only reviewed prose and repo-hosting config are exempt. LICENSE and PRIVACY.md are bundled into
+// Options; CHANGELOG.md and docs/building.md are release inputs; translation-issue.yml is read by a
+// test. Unknown paths run CI.
+const EXEMPT_FILES = new Set([
+  'README.md', 'AGENTS.md', 'CLAUDE.md', '.coderabbit.yaml', '.github/pull_request_template.md',
+  '.github/ISSUE_TEMPLATE/bug_report.yml', '.github/ISSUE_TEMPLATE/feature_request.yml', '.github/ISSUE_TEMPLATE/config.yml',
+]);
+
 export function shouldRunChecks(files) {
   if (!Array.isArray(files) || files.length === 0) return true;
   return files.some(file => {
     if (typeof file !== 'string' || !file || file.split('/').some(part => !part || part === '.' || part === '..')) return true;
-    if (['README.md', 'AGENTS.md', 'CLAUDE.md'].includes(file)) return false;
+    if (EXEMPT_FILES.has(file)) return false;
     return !(file.startsWith('docs/') && file.endsWith('.md') && file !== 'docs/building.md');
   });
 }
