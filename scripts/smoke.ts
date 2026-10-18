@@ -2048,6 +2048,16 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await options.waitForFunction(() => document.querySelectorAll('#language-combobox-listbox [role=option]').length === 14);
     const combo = options.locator('#language-combobox');
     const list = options.locator('#language-combobox-listbox');
+    const openLanguageMenu = async () => {
+      await options.bringToFront();
+      await combo.scrollIntoViewIfNeeded();
+      // Playwright can click before its automatic scroll event is dispatched.
+      // Drain that event before opening: the combobox closes on document scroll.
+      await options.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+      await combo.click();
+      await options.locator('#language-combobox[aria-expanded="true"]').waitFor();
+      await list.waitFor();
+    };
     // Diagnostic captures only; they follow the same THEATER_SMOKE_SCREENSHOT gate as the other smoke screenshots.
     const languageScreenshot = async (name: string) => {
       if (process.env.THEATER_SMOKE_SCREENSHOT) {
@@ -2057,8 +2067,7 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     if (await options.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value') !== 'automatic') throw new Error('Language must default to Automatic');
     const before = await page.locator('video#player').evaluate((v: HTMLVideoElement) => ({ paused: v.paused, source: v.currentSrc }));
     await languageScreenshot('lang-dropdown-en');
-    await combo.click();
-    await list.waitFor();
+    await openLanguageMenu();
     await languageScreenshot('lang-combobox-open');
     await options.keyboard.press('End');
     await options.keyboard.press('Escape');
@@ -2072,7 +2081,7 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await languageScreenshot('lang-dropdown-green');
     await options.locator('#accent-color-grid [data-choice=system]').click();
     await options.locator('#accent-color-grid [data-choice=system].selected').waitFor();
-    await combo.click();
+    await openLanguageMenu();
     await options.getByRole('option', { name: 'Polski', exact: true }).click();
     await options.locator('#tab-appearance').filter({ hasText: polish.appearanceTitle.message }).waitFor();
     await otherOptions.waitForFunction(() => document.querySelector('#language-combobox-listbox [aria-selected=true]')?.getAttribute('data-value') === 'pl');
@@ -2097,7 +2106,7 @@ async function assertLanguageMenu(page: Page, origin: string, context: BrowserCo
     await assertLocalized(popup, 'ar');
     await assertLocalized(page, 'ar', '#theater-everywhere-ui');
     await languageScreenshot('lang-dropdown-ar');
-    await combo.click();
+    await openLanguageMenu();
     await languageScreenshot('lang-combobox-open-ar');
     await options.keyboard.press('Escape');
     if (process.env.THEATER_SMOKE_SCREENSHOT) {
