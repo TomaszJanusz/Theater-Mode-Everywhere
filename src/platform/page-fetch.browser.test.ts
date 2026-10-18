@@ -164,24 +164,24 @@ it('chromium: installed MAIN broker replies privately to the extension isolated 
     contentType: 'text/vtt', body: 'genuine', headers: {'access-control-allow-origin':'*'}
   }));
   const cdp = await context.newCDPSession(page);
-  const worlds: Array<{ id: number; name: string; auxData?: { isDefault?: boolean } }> = [];
-  cdp.on('Runtime.executionContextCreated', event => worlds.push(event.context));
-  cdp.on('Runtime.executionContextDestroyed', event => {
-    const index = worlds.findIndex(world => world.id === event.executionContextId);
-    if (index >= 0) worlds.splice(index, 1);
+  // Navigation can finish before Chromium creates the extension's isolated
+  // world. Subscribe before navigating instead of scanning a one-time snapshot.
+  const extensionWorld = new Promise<{ id: number }>(resolve => {
+    cdp.on('Runtime.executionContextCreated', ({ context: world }) => {
+      const isDefault: unknown = world.auxData?.isDefault;
+      if (isDefault === false && world.origin.startsWith('chrome-extension://')) {
+        resolve(world);
+      }
+    });
   });
-  cdp.on('Runtime.executionContextsCleared', () => { worlds.length = 0; });
   await cdp.send('Runtime.enable');
   await page.goto('https://www.patreon.com/posts/123');
-  let content: typeof worlds[number] | undefined;
-  for (const world of worlds.filter(world => !world.auxData?.isDefault)) {
-    const probe = await cdp.send('Runtime.evaluate', {
-      contextId: world.id, returnByValue: true,
-      expression: 'typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id'
-    });
-    if (typeof probe.result.value === 'string') { content = world; break; }
-  }
-  assert.ok(content, `installed extension isolated world exists: ${JSON.stringify(worlds)}`);
+  const content = await extensionWorld;
+  const probe = await cdp.send('Runtime.evaluate', {
+    contextId: content.id, returnByValue: true,
+    expression: 'typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id'
+  });
+  assert.equal(typeof probe.result.value, 'string', 'isolated world belongs to the installed extension');
   // Diagnostic interception supplies the exact envelope to the forgery, while
   // retaining the installed extension's isolated-world MessagePorts and XHRs.
   const result = await cdp.send('Runtime.evaluate', {
