@@ -128,3 +128,41 @@ it('routes badge hydration and acknowledgements through the background and rejec
   await request('restore');
   assert.equal('newFeaturesHiddenThrough' in values, false);
 });
+
+it('opens only the manifest options page for valid requests from this extension', async () => {
+  let listener!: (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
+  let opened = 0;
+  let fail = false;
+  const ignore = { addListener() {} };
+  runInNewContext(bundle, {
+    console: { error() {} },
+    chrome: {
+      tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore },
+      runtime: {
+        id: 'extension', getManifest: () => ({ version: CURRENT_VERSION }), onInstalled: ignore,
+        onMessage: { addListener(fn: typeof listener) { listener = fn; } },
+        async openOptionsPage() { opened++; if (fail) throw new Error('unavailable'); }
+      }
+    }
+  });
+  const request = { action: 'open-options-page' };
+  for (const sender of [{}, { id: 'foreign' }]) {
+    assert.equal(listener(request, sender, () => assert.fail('replied to unknown sender')), false);
+  }
+  for (const payload of [null, {}, { action: 'other' }, { ...request, url: 'https://evil.test' },
+    { ...request, hash: '#unknown' }, { ...request, extra: true }]) {
+    assert.equal(listener(payload, { id: 'extension' }, () => assert.fail('replied to invalid payload')), false);
+  }
+  assert.equal(opened, 0);
+  const send = (sender: object) => new Promise<unknown>(resolve => {
+    assert.equal(listener(request, sender, resolve), true);
+  });
+  for (const frameId of [0, 4]) {
+    const reply = await send({ id: 'extension', tab: { id: 1 }, frameId, url: 'https://player.test/' });
+    assert.equal((reply as { ok: boolean }).ok, true);
+  }
+  fail = true;
+  const reply = await send({ id: 'extension' });
+  assert.equal((reply as { ok: boolean }).ok, false);
+  assert.equal(opened, 3);
+});

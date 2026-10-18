@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
+import { ownTestBrowser } from '../test-utils/test-browser';
 import type { Browser, Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
 
@@ -29,6 +30,11 @@ const BUNDLE = esbuild.buildSync({
   platform: 'browser',
   target: 'es2022',
   logLevel: 'silent'
+}).outputFiles[0].text;
+
+const BACKGROUND_BUNDLE = esbuild.buildSync({
+  entryPoints: [path.join(SRC, 'entries/background.ts')],
+  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
 type MenuCase = {
@@ -132,10 +138,11 @@ async function assertTabFollowsDom(page: Page): Promise<void> {
   assert.equal(after, true, 'Tab from Keyboard Shortcuts must reach Extension settings');
 }
 
-async function withBrowser(engine: 'chromium' | 'firefox', run: (page: Page) => Promise<void>): Promise<void> {
+async function withBrowser(test: TestContext, engine: 'chromium' | 'firefox', run: (page: Page) => Promise<void>): Promise<void> {
   const browserType = (await import('playwright'))[engine];
   assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
   const browser: Browser = await browserType.launch({ headless: true });
+  ownTestBrowser(test, browser);
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const errors: string[] = [];
@@ -149,8 +156,47 @@ async function withBrowser(engine: 'chromium' | 'firefox', run: (page: Page) => 
 
 describe('player settings action order', () => {
   for (const engine of ['chromium', 'firefox'] as const) {
-    it(`keeps Keyboard Shortcuts last when auto theater is present in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async page => {
+    it(`opens Extension settings through the background in ${engine}`, { timeout: 60_000 }, async test => {
+      await withBrowser(test, engine, async page => {
+        await boot(page, fixture({ secondVideo: false, playlist: false }));
+        await page.evaluate(`(() => {
+          let listener;
+          const ignore = { addListener() {} };
+          const calls = [];
+          const runtime = {
+            id: 'extension', getManifest: () => ({ version: '2.0.0' }), onInstalled: ignore,
+            onMessage: { addListener(fn) { listener = fn; } },
+            async openOptionsPage() { calls.push('openOptionsPage'); }
+          };
+          // Background APIs live in a separate scope; content scripts only get messaging.
+          new Function('chrome', ${JSON.stringify(BACKGROUND_BUNDLE)})({
+            runtime, tabs: { onActivated: ignore, onUpdated: ignore }, storage: { onChanged: ignore }
+          });
+          Object.assign(chrome, { runtime: {
+            sendMessage(message, reply) {
+              calls.push(message);
+              listener(message, { id: 'extension', tab: { id: 1 }, frameId: 0 }, reply);
+            }
+          } });
+          Object.assign(window, { optionsCalls: calls });
+        })()`);
+        for (const activation of ['pointer', 'keyboard']) {
+          const button = page.locator('.extension-settings-btn');
+          assert.equal(await button.getAttribute('aria-label'), 'Extension settings');
+          if (activation === 'pointer') await button.click();
+          else { await button.focus(); await page.keyboard.press('Enter'); }
+          await page.locator('.theater-settings-menu').waitFor({ state: 'hidden' });
+          await page.locator('.player-settings-btn').click();
+        }
+        assert.deepEqual(await page.evaluate('window.optionsCalls'), [
+          { action: 'open-options-page' }, 'openOptionsPage',
+          { action: 'open-options-page' }, 'openOptionsPage'
+        ]);
+      });
+    });
+
+    it(`keeps Keyboard Shortcuts last when auto theater is present in ${engine}`, { timeout: 60_000 }, async test => {
+      await withBrowser(test, engine, async page => {
         await boot(page, fixture({ secondVideo: false, playlist: false }));
         const order = await menuOrder(page);
         assert.equal(order.includes('switch-video-btn'), false, JSON.stringify(order));
@@ -159,8 +205,8 @@ describe('player settings action order', () => {
       });
     });
 
-    it(`keeps Keyboard Shortcuts last when playlist and player switching are present in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async page => {
+    it(`keeps Keyboard Shortcuts last when playlist and player switching are present in ${engine}`, { timeout: 60_000 }, async test => {
+      await withBrowser(test, engine, async page => {
         await boot(page, fixture({ secondVideo: true, playlist: true }));
         await page.locator('.switch-video-btn').waitFor();
         await page.locator('.playlist-prev-btn').waitFor();
@@ -193,8 +239,8 @@ describe('player settings action order', () => {
       });
     });
 
-    it(`keeps Keyboard Shortcuts last when auto theater is absent and a later action arrives in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async page => {
+    it(`keeps Keyboard Shortcuts last when auto theater is absent and a later action arrives in ${engine}`, { timeout: 60_000 }, async test => {
+      await withBrowser(test, engine, async page => {
         await page.setContent('<div id="mount" style="position:fixed;left:40px;bottom:80px;width:640px"></div>');
         await page.addStyleTag({ content: UI_CSS });
         await page.addScriptTag({ content: BUNDLE });

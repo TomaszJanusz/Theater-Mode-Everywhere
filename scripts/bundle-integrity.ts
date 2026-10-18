@@ -9,7 +9,7 @@ const ESM_IMPORT_RE = /(?:^|[\n;])\s*(?:import\s*(?:['"`]|\*|\{|\w)|export\s*(?:
 export function assertSelfContainedScript(filePath: string): void {
   const source = fs.readFileSync(filePath, 'utf8');
   if (ESM_IMPORT_RE.test(source)) {
-    throw new Error(`${path.basename(filePath)} contains ESM imports; MV3 content/MAIN scripts must stay self-contained.`);
+    throw new Error(`${path.basename(filePath)} contains ESM imports; classic extension scripts must stay self-contained.`);
   }
 }
 
@@ -17,4 +17,13 @@ export function assertSelfContainedBundles(dir: string): void {
   for (const name of ['content.js', 'mainWorld.js'] as const) {
     assertSelfContainedScript(path.join(dir, name));
   }
+}
+
+/** Packaged background imports require module loading in either browser. */
+export function assertBackgroundScriptLoading(dir: string): void {
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+  const background = manifest.background;
+  if (background.type === 'module') return;
+  const scripts: string[] = background.scripts ?? [background.service_worker];
+  for (const script of scripts) assertSelfContainedScript(path.join(dir, script));
 }

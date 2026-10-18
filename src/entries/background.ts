@@ -1,3 +1,4 @@
+import { isOpenOptionsRequest } from '../protocol/options-page';
 import { createFeatureHighlightsLifecycle } from '../feature-highlights-lifecycle';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
@@ -148,6 +149,7 @@ chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.Mess
     return true;
   }
   if (message && message.action === 'open-options-page') {
+    if (_sender.id !== chrome.runtime.id || !isOpenOptionsRequest(message)) return false;
     chrome.runtime.openOptionsPage()
       .then(() => sendResponse({ ok: true }))
       .catch((error: unknown) => {

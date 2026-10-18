@@ -222,7 +222,8 @@ async function run() {
     // Replace service_worker with scripts[] for Firefox (service_worker is unsupported)
     if (firefoxManifest.background) {
       const sw = firefoxManifest.background.service_worker;
-      firefoxManifest.background = { scripts: [sw] };
+      // Vite shares ESM chunks with the options and popup entries.
+      firefoxManifest.background = { scripts: [sw], type: manifest.background.type };
     }
     if (!firefoxManifest.permissions) {
       firefoxManifest.permissions = [];
