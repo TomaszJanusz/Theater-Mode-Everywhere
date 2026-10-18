@@ -44,6 +44,7 @@ import { localizeDocument, t } from '../src/i18n';
 import { installedVersion } from '../src/feature-highlights-storage';
 import { hasUnseenWhatsNew, openWhatsNewDialog } from '../src/whatsNew';
 import { setupRteSettings } from './rte-settings';
+import { translationIssueUrl } from '../src/translation-issue';
 
 definePrivacyThingLogo();
 
@@ -127,6 +128,11 @@ async function init() {
   document.getElementById('privacy-policy-btn')!.addEventListener('click', openPrivacyPolicy);
   const renderVersion = () => { document.getElementById('about-version')!.textContent = t('aboutVersion', installedVersion()); };
   renderVersion();
+  const renderTranslationIssueLink = () => {
+    const locale = languageRuntime.language === DEFAULT_LANGUAGE ? t('@@ui_locale') : languageRuntime.language;
+    (document.getElementById('translation-issue-link') as HTMLAnchorElement).href = translationIssueUrl(locale, installedVersion());
+  };
+  renderTranslationIssueLink();
   configurePrivacyThingLogo();
   let raiseOnlyWithSubtitles = DEFAULT_RAISE_ONLY_WITH_SUBTITLES;
 
@@ -163,6 +169,7 @@ async function init() {
   const stopLanguageRendering = languageRuntime.subscribe(() => {
     localizeDocument();
     renderVersion();
+    renderTranslationIssueLink();
     languageMenu.render(languageRuntime.language);
     accentGrid.render();
     renderPictureAlignOptions(selectedPictureAlign());

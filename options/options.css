@@ -1271,7 +1271,31 @@ section h2 {
   color: var(--appearance-ink, #ffffff);
 }
 
-.picture-align-card:has(.picture-align-btn.selected) .picture-align-subtitles .options-desc {
+.picture-align-card:has(.picture-align-btn.selected) .picture-align-subtitles .options-label-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+}
+
+.options-inline-link {
+  font-size: 12px;
+  color: var(--appearance-muted, var(--text-secondary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.options-inline-link:hover {
+  color: var(--accent-color);
+}
+
+.options-inline-link:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.options-desc {
   color: var(--appearance-ink, #d4d4d8);
 }
 

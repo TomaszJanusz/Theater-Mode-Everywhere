@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Scegli la lingua delle impostazioni, della finestra popup e dei controlli del lettore."
   },
+  "reportTranslationIssue": {
+    "message": "Segnala un errore di traduzione"
+  },
   "languageAutomatic": {
     "message": "Automatico (lingua del browser)"
   },

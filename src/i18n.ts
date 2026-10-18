@@ -31,6 +31,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
 
   languageTitle: "Language",
   languageDescription: "Choose the language for Settings, the popup, and player controls.",
+  reportTranslationIssue: "Report a translation issue",
   languageAutomatic: "Automatic (browser language)",
   addExclusion: "Add website exclusion",
   playbackPosition: "Playback position",

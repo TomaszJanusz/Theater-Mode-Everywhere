@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Choose the language for Settings, the popup, and player controls."
   },
+  "reportTranslationIssue": {
+    "message": "Report a translation issue"
+  },
   "languageAutomatic": {
     "message": "Automatic (browser language)"
   },

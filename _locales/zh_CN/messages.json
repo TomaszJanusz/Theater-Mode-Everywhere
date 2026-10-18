@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "选择设置页面、扩展弹出窗口和播放器控件的显示语言。"
   },
+  "reportTranslationIssue": {
+    "message": "报告翻译问题"
+  },
   "languageAutomatic": {
     "message": "自动（浏览器语言）"
   },

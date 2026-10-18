@@ -227,6 +227,24 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
   });
 }
 
+it('Settings Language row links to the translation issue form for the selected language', { timeout: 30_000 }, async t => {
+  const browser = await chromium.launch({ headless: true });
+  ownTestBrowser(t, browser);
+  try {
+    const page = await browser.newPage();
+    await open(page, 'options', []);
+    await page.locator('#tab-appearance').click();
+    const link = page.locator('#translation-issue-link');
+    assert.equal(await link.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(await link.getAttribute('target'), '_blank');
+    await switchTo(page, 'pl');
+    const url = new URL((await link.getAttribute('href'))!);
+    assert.equal(url.searchParams.get('template'), 'translation-issue.yml');
+    assert.equal(url.searchParams.get('language'), 'Polski');
+    assert.equal(await link.textContent(), 'Zgłoś błąd w tłumaczeniu');
+  } finally { await browser.close(); }
+});
+
 for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'https://child.example.com/watch', 'https://youtube.com/watch']) {
   it(`popup catalog audit refreshes dynamic domain/status (${url || 'no tab'})`, { timeout: 30_000 }, async t => {
     const browser = await chromium.launch({ headless: true });

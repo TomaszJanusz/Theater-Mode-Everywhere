@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Выберите язык настроек, всплывающего окна расширения и элементов управления плеером."
   },
+  "reportTranslationIssue": {
+    "message": "Сообщить об ошибке перевода"
+  },
   "languageAutomatic": {
     "message": "Автоматически (язык браузера)"
   },

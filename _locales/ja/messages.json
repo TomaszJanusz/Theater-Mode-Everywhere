@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "設定ページ、ポップアップ、プレーヤーの操作ボタンに使用する言語を選択します。"
   },
+  "reportTranslationIssue": {
+    "message": "翻訳の問題を報告"
+  },
   "languageAutomatic": {
     "message": "自動（ブラウザーの言語）"
   },
