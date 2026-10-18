@@ -60,5 +60,5 @@ These settings live in `pnpm-workspace.yaml`, each with a one-line reason there.
 
 - `minimumReleaseAge: 4320` (3 days) keeps brand-new releases out of installs; resolution fails when no allowed version satisfies a range. For an urgent security fix, add the exact `name@version` to `minimumReleaseAgeExclude` with a comment and remove it once the release is old enough.
 - `trustPolicy: no-downgrade` rejects a version whose publish trust evidence is weaker than an earlier release's. `trustPolicyExclude` currently names one types-only release without attestation; add entries only with a reason. `trustLockfile` stays off because contributors can edit the lockfile.
-- `blockExoticSubdeps` and `strictDepBuilds` reject git or tarball subdependencies and unreviewed build scripts. `allowBuilds` lists esbuild only; `dangerouslyAllowAllBuilds` stays off.
+- `blockExoticSubdeps` rejects git repositories and direct tarball URLs in transitive dependencies (other trusted sources, such as workspace links, remain allowed), and `strictDepBuilds` rejects unreviewed build scripts. `allowBuilds` lists esbuild only; `dangerouslyAllowAllBuilds` stays off.
 - `verifyDepsBeforeRun: warn` reports a stale `node_modules` instead of reinstalling it on its own.
