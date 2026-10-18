@@ -5,6 +5,8 @@
     "module": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "skipLibCheck": true,
+    // TypeScript 6+ no longer loads every @types package on its own.
+    "types": ["chrome", "node"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
