@@ -581,6 +581,14 @@
   "enableSubtitles": {
     "message": "Увімкнути субтитри"
   },
+  "searchSubtitles": {
+    "message": "Пошук субтитрів…",
+    "description": "Placeholder and accessible label for filtering subtitle tracks in the player menu"
+  },
+  "subtitleNoMatches": {
+    "message": "Немає збігів",
+    "description": "Empty result shown when no subtitle tracks match the search"
+  },
   "noSubtitles": {
     "message": "Без субтитрів"
   },

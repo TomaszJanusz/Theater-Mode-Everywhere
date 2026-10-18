@@ -1,6 +1,8 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import { armPictureDismissOnLeave } from './picture-dismiss';
 
+export const MENU_CLOSE_EVENT = 'theater-menu-close';
+
 const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
 const SUPPRESS_CLASS = 'is-suppressed';
@@ -32,6 +34,7 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   if (!panel || !trigger) return false;
   const open = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
   if (!open) return false;
+  panel.dispatchEvent(new Event(MENU_CLOSE_EVENT));
   panel.classList.remove(PINNED_CLASS);
   host.classList.remove(OPEN_CLASS);
   host.classList.add(SUPPRESS_CLASS);
@@ -39,7 +42,7 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   trigger.setAttribute('aria-expanded', 'false');
   panel.inert = true;
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
-  if (restoreFocus) trigger.focus();
+  if (restoreFocus) trigger.focus({ preventScroll: true });
   else if (active instanceof HTMLElement && panel.contains(active)) active.blur();
   return true;
 }
@@ -67,6 +70,8 @@ export function bindMenuPopover(options: {
   scope: DisposableScope;
   onBeforeOpen?: () => void;
   prepare?: () => void;
+  /** Focus the leading control for pointer opening as well as keyboard opening. */
+  focusOnOpen?: () => HTMLElement | undefined;
   /** Overrides the first button, for panels whose leading rows can be hidden. */
   firstFocus?: () => HTMLElement | undefined;
   /** Selector for a scrollable list inside the panel; opening centers its `.active` row. */
@@ -131,7 +136,10 @@ export function bindMenuPopover(options: {
     host.classList.add(OPEN_CLASS);
     if (pin) panel.classList.add(PINNED_CLASS);
     syncExpanded();
-    if (focusFirst) (options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button'))?.focus({ preventScroll: true });
+    const focusTarget = focusFirst
+      ? options.firstFocus?.() ?? panel.querySelector<HTMLButtonElement>('button')
+      : options.focusOnOpen?.();
+    focusTarget?.focus({ preventScroll: true });
     if (!already) {
       userScrolled = false;
       centerActiveRow(list());
@@ -154,6 +162,7 @@ export function bindMenuPopover(options: {
     armPictureDismissOnLeave(event, host);
     if (!panel.classList.contains(PINNED_CLASS)) {
       host.classList.remove(OPEN_CLASS);
+      panel.dispatchEvent(new Event(MENU_CLOSE_EVENT));
       releaseMenuPosition(panel);
     }
     window.requestAnimationFrame(() => {

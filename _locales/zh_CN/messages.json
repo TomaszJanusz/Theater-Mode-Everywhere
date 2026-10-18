@@ -581,6 +581,14 @@
   "enableSubtitles": {
     "message": "开启字幕"
   },
+  "searchSubtitles": {
+    "message": "搜索字幕…",
+    "description": "Placeholder and accessible label for filtering subtitle tracks in the player menu"
+  },
+  "subtitleNoMatches": {
+    "message": "无匹配结果",
+    "description": "Empty result shown when no subtitle tracks match the search"
+  },
   "noSubtitles": {
     "message": "无字幕"
   },
