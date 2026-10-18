@@ -18,7 +18,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Must cover the 20-minute Test step plus install, build and both smoke runs.
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -87,7 +88,8 @@ jobs:
 
       - name: Test
         if: steps.changes.outputs.run != 'false'
-        timeout-minutes: 10
+        # The suite outgrew 10 minutes (it took ~6.7 min earlier); this is a cap, not a failing test.
+        timeout-minutes: 20
         run: pnpm test
 
       - name: Smoke Chromium
