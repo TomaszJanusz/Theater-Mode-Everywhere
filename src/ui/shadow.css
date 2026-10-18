@@ -3039,28 +3039,45 @@ button.theater-time-end:hover {
 /* Bass subwoofer: the level, set on the svg, picks the sound waves. */
 .bass-icon { overflow: visible; } /* the rock tilts past the 24px box */
 .bass-icon .bass-wave { display: none; }
-.bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"]) .bass-wave-1,
-.bass-icon:is([data-level="more"], [data-level="moar"]) .bass-wave-2 { display: inline; }
-.bass-icon[data-level="moar"] { color: var(--theater-bass-moar-color, #ef4444) !important; }
+.bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-1,
+.bass-icon:is([data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-2,
+.bass-icon[data-level="moaaarr"] .bass-wave-3 { display: inline; }
+.bass-icon:is([data-level="moar"], [data-level="moaaarr"]) { color: var(--theater-bass-moar-color, #ef4444) !important; }
 
-/* MOAAARR: a rock from one foot onto the other every 5 s (10 s cycle) and a constant tiny cone jitter.
+/* MOAAR: a rock from one foot onto the other every 5 s (10 s cycle) and a constant tiny cone jitter.
+   MOAAARR! is the same motion turned up: a bigger rock every 2.5 s (5 s cycle) and a faster, wider jitter.
    Transform-only, so neither animation lays out or repaints; a closed menu is display:none and a HUD is
-   removed, which stops both. Origins are the feet, spelled in the keyframes so the box needs no sizing. */
+   removed, which stops both. Pivots are the feet, spelled in the keyframes so the box needs no sizing. */
 .bass-icon[data-level="moar"] .bass-hop { animation: bass-hop 10s ease-in-out infinite; }
+.bass-icon[data-level="moaaarr"] .bass-hop { animation: bass-hop-hard 5s ease-in-out infinite; }
 .bass-icon[data-level="moar"] .bass-cone { animation: bass-jitter 90ms steps(1, end) infinite; }
-.bass-icon[data-level="moar"] .bass-body { animation: bass-jitter-body 130ms steps(1, end) infinite; }
+.bass-icon[data-level="moaaarr"] .bass-cone { animation: bass-jitter-hard 60ms steps(1, end) infinite; }
+.bass-icon:is([data-level="moar"], [data-level="moaaarr"]) .bass-body { animation: bass-jitter-body 130ms steps(1, end) infinite; }
 @keyframes bass-hop {
   0%, 8%, 50%, 58%, 100% { transform: none; }
-  2.5% { transform: translateY(-0.7px) translate(6px, 22px) rotate(-6deg) translate(-6px, -22px); }
-  5% { transform: translate(6px, 22px) rotate(1.5deg) translate(-6px, -22px); }
-  52.5% { transform: translateY(-0.7px) translate(13px, 22px) rotate(6deg) translate(-13px, -22px); }
-  55% { transform: translate(13px, 22px) rotate(-1.5deg) translate(-13px, -22px); }
+  2.5% { transform: translateY(-0.7px) translate(5.5px, 22px) rotate(-6deg) translate(-5.5px, -22px); }
+  5% { transform: translate(5.5px, 22px) rotate(1.5deg) translate(-5.5px, -22px); }
+  52.5% { transform: translateY(-0.7px) translate(12.5px, 22px) rotate(6deg) translate(-12.5px, -22px); }
+  55% { transform: translate(12.5px, 22px) rotate(-1.5deg) translate(-12.5px, -22px); }
+}
+@keyframes bass-hop-hard {
+  0%, 16%, 50%, 66%, 100% { transform: none; }
+  5% { transform: translateY(-1.2px) translate(5.5px, 22px) rotate(-9deg) translate(-5.5px, -22px); }
+  11% { transform: translate(5.5px, 22px) rotate(2.5deg) translate(-5.5px, -22px); }
+  55% { transform: translateY(-1.2px) translate(12.5px, 22px) rotate(9deg) translate(-12.5px, -22px); }
+  61% { transform: translate(12.5px, 22px) rotate(-2.5deg) translate(-12.5px, -22px); }
 }
 @keyframes bass-jitter {
   0% { transform: translate(0.25px, 0); }
   25% { transform: translate(-0.2px, 0.2px); }
   50% { transform: translate(0.1px, -0.25px); }
   75% { transform: translate(-0.25px, -0.1px); }
+}
+@keyframes bass-jitter-hard {
+  0% { transform: translate(0.45px, 0.1px); }
+  25% { transform: translate(-0.4px, 0.35px); }
+  50% { transform: translate(0.2px, -0.45px); }
+  75% { transform: translate(-0.45px, -0.2px); }
 }
 @keyframes bass-jitter-body {
   0% { transform: translate(0.1px, 0); }

@@ -45,7 +45,7 @@ export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
  * the svg's `data-level` (see shadow.css), so the settings row, HUD and any later surface share one shape.
  * `bass-hop` carries the MOAAARR rocking and `bass-cone` its jitter.
  */
-const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect x="3" y="2" width="13" height="18" rx="2"/><circle cx="9.5" cy="5.8" r="0.9"/><g class="bass-cone"><circle cx="9.5" cy="13.5" r="4"/><circle cx="9.5" cy="13.5" r="1.2"/></g><path d="M6 20v2M13 20v2"/></g><path class="bass-wave bass-wave-1" d="M18.5 10.5a5 5 0 0 1 0 6"/><path class="bass-wave bass-wave-2" d="M20.5 8a8 8 0 0 1 0 11"/></g>';
+const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect x="2" y="2" width="13" height="18" rx="2"/><circle cx="8.5" cy="5.8" r="0.9"/><g class="bass-cone"><circle cx="8.5" cy="13.5" r="4"/><circle cx="8.5" cy="13.5" r="1.2"/></g><path d="M5.5 20v2M11.5 20v2"/></g><path class="bass-wave bass-wave-1" d="M17 10.5a4 4 0 0 1 0 6"/><path class="bass-wave bass-wave-2" d="M19 8.5a7 7 0 0 1 0 10"/><path class="bass-wave bass-wave-3" d="M21.2 6.5a9 9 0 0 1 0 14"/></g>';
 
 const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   // A speaking head.

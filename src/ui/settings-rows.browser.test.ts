@@ -101,7 +101,7 @@ describe('settings menu rows stay on one line', () => {
                 settings.addRow(button, label, section, isNew).update(shortcut, value);
               };
               // The Bass row shows one of four levels; reserve room for the longest.
-            const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
+            const bassValue = ['bassLess', 'bassOriginal', 'bassMore', 'bassMoar', 'bassMoaaarr'].map(key => messages[key]).sort((a, b) => b.length - a.length)[0];
             for (const key of audio) add(messages[key] ?? key, 'audio', 'Shift+A', key === 'bassLabel' ? bassValue : messages.badgeNew);
               for (const row of rows) add(row.text, row.section ?? 'player', row.shortcut, row.value, row.isNew);
               settings.button.click();

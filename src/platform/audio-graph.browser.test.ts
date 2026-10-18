@@ -162,21 +162,40 @@ describe('audio graph', () => {
       const less = await render(settings({ bass: 'less' }), options);
       const more = await render(settings({ bass: 'more' }), options);
       const moar = await render(settings({ bass: 'moar' }), options);
+      const moaaarr = await render(settings({ bass: 'moaaarr' }), options);
       assert.ok(db(less.low, ref.low) < -4, 'less cuts bass');
       assert.ok(Math.abs(db(more.low, ref.low) - 6) < 1.5, `more lifts bass by about 6 dB (${db(more.low, ref.low).toFixed(1)})`);
       assert.ok(Math.abs(db(moar.low, ref.low) - 9) < 1.5, `moar lifts bass by about 9 dB (${db(moar.low, ref.low).toFixed(1)})`);
-      for (const levels of [less, more, moar]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
+      assert.ok(Math.abs(db(moaaarr.low, ref.low) - 11) < 1.5, `moaaarr lifts bass by about 11 dB (${db(moaaarr.low, ref.low).toFixed(1)})`);
+      for (const levels of [less, more, moar, moaaarr]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
     });
   });
 
   it('keeps hot mixes below full scale with every effect at its strongest', async () => {
     await withPage(async (render) => {
-      const hot = await render(settings({ voice: 'strong', leveling: 'strong', bass: 'moar' }), {
-        scene: `2.2 * (${STEREO_SCENE})`
-      });
-      assert.ok(hot.peak <= 1, `peak ${hot.peak.toFixed(3)}`);
-      const bass = await render(settings({ bass: 'moar' }), { scene: `0.9 * Math.sin(2 * Math.PI * 60 * t)` });
-      assert.ok(bass.peak <= 1, `bass peak ${bass.peak.toFixed(3)}`);
+      for (const bassLevel of ['moar', 'moaaarr'] as const) {
+        const hot = await render(settings({ voice: 'strong', leveling: 'strong', bass: bassLevel }), {
+          scene: `2.2 * (${STEREO_SCENE})`
+        });
+        assert.ok(hot.peak <= 1, `${bassLevel} peak ${hot.peak.toFixed(3)}`);
+        const bass = await render(settings({ bass: bassLevel }), { scene: `0.9 * Math.sin(2 * Math.PI * 60 * t)` });
+        assert.ok(bass.peak <= 1, `${bassLevel} bass peak ${bass.peak.toFixed(3)}`);
+        // Bass-heavy content with the other effects on: kick pulses under a tone.
+        const heavy = await render(settings({ voice: 'light', leveling: 'light', bass: bassLevel }), {
+          scene: `0.8 * Math.sin(2 * Math.PI * 55 * t) * Math.exp(-6 * ((t * 2) % 1)) + 0.12 * Math.sin(2 * Math.PI * 1500 * t)`
+        });
+        assert.ok(heavy.peak <= 1, `${bassLevel} bass-heavy peak ${heavy.peak.toFixed(3)}`);
+      }
+    });
+  });
+
+  it('only the top bass level keeps the soft ceiling in the signal path', async () => {
+    await withPage(async (render) => {
+      // Below the knee the ceiling is transparent, and it is disconnected below MOAAARR! anyway.
+      const options = { scene: `0.2 * Math.sin(2 * Math.PI * 1000 * t)`, bands: { tone: ['mid', 1000] } } satisfies RenderOptions;
+      const moar = await render(settings({ bass: 'moar' }), options);
+      const top = await render(settings({ bass: 'moaaarr' }), options);
+      assert.ok(Math.abs(db(top.tone, moar.tone)) < 0.3, 'quiet material passes the ceiling unchanged');
     });
   });
 });

@@ -162,7 +162,10 @@
     "message": "多め"
   },
   "bassMoar": {
-    "message": "MOAAARR"
+    "message": "MOAAR"
+  },
+  "bassMoaaarr": {
+    "message": "MOAAARR!"
   },
   "bassHud": {
     "message": "低音: $1",

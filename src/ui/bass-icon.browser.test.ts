@@ -52,23 +52,30 @@ describe('bass subwoofer icon', () => {
           const out: Record<string, ReturnType<typeof read> & { reduced?: { hop: string; jitter: string; color: string } }> = {};
           for (const level of levels) out[level] = read(level);
           host.setAttribute('data-motion', 'reduced');
-          const moar = root.querySelectorAll('.bass-icon')[3];
-          out.moar.reduced = {
-            hop: getComputedStyle(moar.querySelector('.bass-hop')!).animationName,
-            jitter: getComputedStyle(moar.querySelector('.bass-cone')!).animationName,
-            color: getComputedStyle(moar).color
-          };
+          const icons = root.querySelectorAll('.bass-icon');
+          for (const level of ['moar', 'moaaarr'] as const) {
+            const icon = icons[levels.indexOf(level)];
+            out[level].reduced = {
+              hop: getComputedStyle(icon.querySelector('.bass-hop')!).animationName,
+              jitter: getComputedStyle(icon.querySelector('.bass-cone')!).animationName,
+              color: getComputedStyle(icon).color
+            };
+          }
           return out;
         }, { css: UI_CSS, levels: [...BASS_LEVELS] });
 
-        assert.deepEqual(BASS_LEVELS.map(level => result[level].waves), [[false, false], [true, false], [true, true], [true, true]]);
-        assert.deepEqual(BASS_LEVELS.map(level => result[level].hop === 'bass-hop'), [false, false, false, true]);
-        assert.deepEqual(BASS_LEVELS.map(level => result[level].jitter === 'bass-jitter'), [false, false, false, true]);
+        assert.deepEqual(BASS_LEVELS.map(level => result[level].waves), [[false, false, false], [true, false, false], [true, true, false], [true, true, false], [true, true, true]]);
+        assert.deepEqual(BASS_LEVELS.map(level => result[level].hop), ['none', 'none', 'none', 'bass-hop', 'bass-hop-hard']);
+        assert.deepEqual(BASS_LEVELS.map(level => result[level].jitter), ['none', 'none', 'none', 'bass-jitter', 'bass-jitter-hard']);
         assert.equal(result.moar.hopPeriod, '10s', 'one hop per foot every 5 s');
+        assert.equal(result.moaaarr.hopPeriod, '5s', 'MOAAARR! hops twice as often');
+        assert.equal(result.moaaarr.color, result.moar.color, 'both top levels share the red');
         assert.notEqual(result.moar.color, result.more.color, 'MOAAARR keeps its own red instead of the accent');
-        assert.equal(result.moar.reduced?.hop, 'none');
-        assert.equal(result.moar.reduced?.jitter, 'none');
-        assert.equal(result.moar.reduced?.color, result.moar.color, 'reduced motion keeps the red');
+        for (const level of ['moar', 'moaaarr'] as const) {
+          assert.equal(result[level].reduced?.hop, 'none');
+          assert.equal(result[level].reduced?.jitter, 'none');
+          assert.equal(result[level].reduced?.color, result[level].color, 'reduced motion keeps the red');
+        }
         // Active rows take the accent on value; the default level keeps the ink.
         assert.notEqual(result.less.detail, result.original.detail, 'a non-default level is highlighted');
         assert.equal(result.more.detail, result.less.detail);

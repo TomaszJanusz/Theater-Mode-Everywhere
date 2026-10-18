@@ -1,11 +1,28 @@
 export const VOICE_LEVELS = ['off', 'light', 'strong'] as const;
 export const LEVELING_LEVELS = ['off', 'light', 'strong'] as const;
-export const BASS_LEVELS = ['less', 'original', 'more', 'moar'] as const;
+const ALL_BASS_LEVELS = ['less', 'original', 'more', 'moar', 'moaaarr'] as const;
+
+/**
+ * Gates the top bass level (MOAAARR!, about +11 dB) pending real-world listening: it is a candidate to ship
+ * in a later release. Off removes it from the settings row, shortcut cycle and HUD, and a stored 'moaaarr'
+ * resolves to 'moar'. The rest of the chain keeps it, so turning this on is the only change needed.
+ */
+export const BASS_MOAAARR_ENABLED = true;
+
+export function bassLevels(moaaarrEnabled: boolean): readonly (typeof ALL_BASS_LEVELS)[number][] {
+  return moaaarrEnabled ? ALL_BASS_LEVELS : ALL_BASS_LEVELS.filter((level) => level !== 'moaaarr');
+}
+export const BASS_LEVELS = bassLevels(BASS_MOAAARR_ENABLED);
+
+/** A saved 'moaaarr' stays valid as 'moar' while the top level is gated. */
+export function resolveBassLevel(value: unknown, moaaarrEnabled = BASS_MOAAARR_ENABLED): AudioSettings['bass'] {
+  return pick(bassLevels(moaaarrEnabled), value === 'moaaarr' && !moaaarrEnabled ? 'moar' : value, DEFAULT_AUDIO_SETTINGS.bass);
+}
 
 export type AudioSettings = {
   voice: typeof VOICE_LEVELS[number];
   leveling: typeof LEVELING_LEVELS[number];
-  bass: typeof BASS_LEVELS[number];
+  bass: typeof ALL_BASS_LEVELS[number];
 };
 export type AudioSettingName = keyof AudioSettings;
 
@@ -29,7 +46,7 @@ const DATASET_KEYS: Record<AudioSettingName, string> = {
 const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], string> } = {
   voice: { off: 'voiceBoostOff', light: 'voiceBoostLight', strong: 'voiceBoostStrong' },
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
-  bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore', moar: 'bassMoar' }
+  bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore', moar: 'bassMoar', moaaarr: 'bassMoaaarr' }
 };
 /** Every label a row can show, so a menu can reserve room for the widest. */
 export function audioLevelLabelKeys(name: AudioSettingName): string[] {
@@ -66,7 +83,7 @@ export function resolveAudioSettings(read: (name: AudioSettingName) => unknown):
   return {
     voice: pick(VOICE_LEVELS, read('voice'), DEFAULT_AUDIO_SETTINGS.voice),
     leveling: pick(LEVELING_LEVELS, read('leveling'), DEFAULT_AUDIO_SETTINGS.leveling),
-    bass: pick(BASS_LEVELS, read('bass'), DEFAULT_AUDIO_SETTINGS.bass)
+    bass: resolveBassLevel(read('bass'))
   };
 }
 

@@ -24,6 +24,7 @@ it('only connects requested DSP stages, including the neutral path used by boost
     createGain: () => new Node('gain'),
     createBiquadFilter: () => new Node('filter'),
     createDynamicsCompressor: () => new Node('compressor'),
+    createWaveShaper: () => new Node('shaper'),
     createChannelSplitter: () => new Node('splitter'),
     createChannelMerger: () => new Node('merger')
   });
@@ -32,21 +33,25 @@ it('only connects requested DSP stages, including the neutral path used by boost
     const seen = new Set<Node>();
     const visit = (node: Node) => { if (seen.has(node)) return; seen.add(node); node.outputs.forEach(visit); };
     visit(chain.input as unknown as Node);
-    return Object.fromEntries(['filter', 'compressor', 'splitter'].map(kind => [kind, [...seen].filter(node => node.kind === kind).length]));
+    return Object.fromEntries(['filter', 'compressor', 'splitter', 'shaper'].map(kind => [kind, [...seen].filter(node => node.kind === kind).length]));
   };
   try {
     chain.apply(DEFAULT_AUDIO_SETTINGS);
-    assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0 });
+    assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0, shaper: 0 });
     chain.apply({ ...DEFAULT_AUDIO_SETTINGS, voice: 'strong' });
-    assert.deepEqual(reachable(), { filter: 1, compressor: 2, splitter: 1 });
+    assert.deepEqual(reachable(), { filter: 1, compressor: 2, splitter: 1, shaper: 0 });
     chain.apply({ ...DEFAULT_AUDIO_SETTINGS, leveling: 'strong' });
-    assert.deepEqual(reachable(), { filter: 0, compressor: 2, splitter: 0 });
+    assert.deepEqual(reachable(), { filter: 0, compressor: 2, splitter: 0, shaper: 0 });
     chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'more' });
-    assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0 });
+    assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 0 });
     chain.apply(DEFAULT_AUDIO_SETTINGS);
-    assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0 });
+    assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0, shaper: 0 });
+    chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moar' });
+    assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 0 }, 'the soft ceiling stays out below MOAAARR!');
+    chain.apply({ ...DEFAULT_AUDIO_SETTINGS, bass: 'moaaarr' });
+    assert.deepEqual(reachable(), { filter: 1, compressor: 1, splitter: 0, shaper: 1 });
     chain.apply({ voice: 'strong', leveling: 'strong', bass: 'more' });
-    assert.deepEqual(reachable(), { filter: 2, compressor: 3, splitter: 1 });
+    assert.deepEqual(reachable(), { filter: 2, compressor: 3, splitter: 1, shaper: 0 });
   } finally { chain.dispose(); }
-  assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0 });
+  assert.deepEqual(reachable(), { filter: 0, compressor: 0, splitter: 0, shaper: 0 });
 });

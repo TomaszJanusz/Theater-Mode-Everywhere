@@ -5,7 +5,9 @@ import {
   BASS_LEVELS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  bassLevels,
   isAudioSettingActive,
+  resolveBassLevel,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
   LEVELING_LEVELS,
@@ -41,8 +43,8 @@ describe('audio settings', () => {
     }
     let bass = DEFAULT_AUDIO_SETTINGS;
     const order = [];
-    for (let step = 0; step < 4; step++) { bass = cycleAudioSetting(bass, 'bass'); order.push(bass.bass); }
-    assert.deepEqual(order, ['more', 'moar', 'less', 'original']);
+    for (let step = 0; step < 5; step++) { bass = cycleAudioSetting(bass, 'bass'); order.push(bass.bass); }
+    assert.deepEqual(order, ['more', 'moar', 'moaaarr', 'less', 'original']);
   });
 
   it('round-trips through the media element dataset and reports only real changes', () => {
@@ -60,5 +62,13 @@ describe('audio settings', () => {
     assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(DEFAULT_AUDIO_SETTINGS, name)), []);
     const tuned = { voice: 'light', leveling: 'off', bass: 'less' } as const;
     assert.deepEqual(AUDIO_SETTING_NAMES.filter(name => isAudioSettingActive(tuned, name)), ['voice', 'bass']);
+  });
+
+  it('gates the top bass level behind one flag', () => {
+    assert.deepEqual(bassLevels(false), ['less', 'original', 'more', 'moar']);
+    assert.deepEqual(bassLevels(true), ['less', 'original', 'more', 'moar', 'moaaarr']);
+    assert.equal(resolveBassLevel('moaaarr', false), 'moar', 'a saved top level falls back to MOAAR');
+    assert.equal(resolveBassLevel('moaaarr', true), 'moaaarr');
+    assert.equal(resolveBassLevel('bogus', false), 'original');
   });
 });
