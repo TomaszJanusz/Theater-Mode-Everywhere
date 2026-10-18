@@ -4,12 +4,28 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import type { Browser } from 'playwright';
+import { ownTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
+
+type TestApi = typeof import('./cc-menu') & typeof import('./menu-popover')
+  & typeof import('../core/disposable-scope') & typeof import('../platform/main-world-runtime');
+declare global {
+  interface Window {
+    CcMenu: TestApi;
+    ccMenuTest: {
+      choices: Parameters<import('./cc-menu').CcMenu['update']>[0];
+      selected: Array<string | null>;
+      hostKeys: string[];
+      scope: import('../core/disposable-scope').DisposableScope;
+      menu: import('./cc-menu').CcMenu;
+    };
+  }
+}
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
-  stdin: { contents: "export { MediaFeaturesController } from './media-features/controller';", resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts' },
+  stdin: { contents: "export { MediaFeaturesController } from './media-features/controller'; export { CcMenu } from './ui/cc-menu'; export { bindMenuPopover, closeMenuPopover } from './ui/menu-popover'; export { DisposableScope } from './core/disposable-scope'; export { installMainWorldRuntime } from './platform/main-world-runtime';", resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts' },
   bundle: true, write: false, format: 'iife', globalName: 'CcMenu', platform: 'browser', target: 'es2022', logLevel: 'silent'
 }).outputFiles[0].text;
 const SRC = new URL('../', import.meta.url).pathname;
@@ -28,17 +44,18 @@ const TRACKS = [
   'Przykładowa_bardzo_długa_nazwa_ścieżki_napisów_bez_żadnych_spacji_aby_wymusić_obcięcie'
 ];
 
-async function withBrowser(engine: 'chromium' | 'firefox', run: (browser: Browser) => Promise<void>): Promise<void> {
+async function withBrowser(test: import('node:test').TestContext, engine: 'chromium' | 'firefox', run: (browser: Browser) => Promise<void>): Promise<void> {
   const browserType = (await import('playwright'))[engine];
   assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
   const browser = await browserType.launch({ headless: true });
+  ownTestBrowser(test, browser);
   try { await run(browser); } finally { await browser.close(); }
 }
 
 describe('caption menu rows stay on one line', () => {
   for (const engine of ['chromium', 'firefox'] as const) {
-    it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async () => {
-      await withBrowser(engine, async browser => {
+    it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async t => {
+      await withBrowser(t, engine, async browser => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
           const page = await browser.newPage({ viewport });
           await page.setContent('<body style="margin:0"></body>');
@@ -58,7 +75,7 @@ describe('caption menu rows stay on one line', () => {
               const list = document.querySelector('.theater-cc-menu-list')!;
               labels.forEach((text, index) => {
                 const item = document.createElement('button');
-                item.className = 'theater-cc-menu-item' + (index === 1 ? ' active' : '');
+                item.className = 'theater-control-btn theater-settings-row theater-cc-menu-item' + (index === 1 ? ' active' : '');
                 const label = document.createElement('span');
                 label.className = 'theater-cc-menu-label';
                 label.textContent = text;
@@ -92,7 +109,7 @@ describe('caption menu rows stay on one line', () => {
             }, { labels, title: messages.subtitlesMenuTitle, options: messages.subtitleOptions, dir: locale === 'ar' ? 'rtl' : 'ltr' });
             const context = `${engine} ${locale} ${viewport.width}px`;
             for (const row of result.rows) {
-              assert.ok(row.height <= 30, `${context}: "${row.text}" wraps (${row.height}px)`);
+              assert.equal(row.height, 40, `${context}: "${row.text}" wraps (${row.height}px)`);
               assert.ok(row.overflow <= 0, `${context}: "${row.text}" overflows by ${row.overflow}px`);
             }
             assert.ok(result.headerHeight <= 40, `${context}: header wraps (${result.headerHeight}px)`);
@@ -107,8 +124,8 @@ describe('caption menu rows stay on one line', () => {
   }
 
   for (const engine of ['chromium', 'firefox'] as const) {
-    it(`truncates long host track names rendered by the controller in ${engine}`, { timeout: 120_000 }, async () => {
-      await withBrowser(engine, async browser => {
+    it(`truncates long host track names rendered by the controller in ${engine}`, { timeout: 120_000 }, async t => {
+      await withBrowser(t, engine, async browser => {
         const page = await browser.newPage({ viewport: { width: 360, height: 640 } });
         await page.setContent('<body style="margin:0"></body>');
         await page.addStyleTag({ content: UI_CSS });
@@ -154,3 +171,139 @@ describe('caption menu rows stay on one line', () => {
     });
   }
 });
+
+for (const engine of ['chromium', 'firefox'] as const) {
+  it(`searches and navigates stable subtitle choices in a shadow root and iframe in ${engine}`, { timeout: 120_000 }, async t => {
+    await withBrowser(t, engine, async browser => {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      await page.setContent('<iframe style="width:100%;height:750px" srcdoc="<body></body>"></iframe>');
+      const frame = page.frames()[1];
+      await frame.evaluate('window.__name = value => value');
+      await frame.addScriptTag({ content: BUNDLE });
+      await frame.evaluate(({ css, messages }) => {
+        const api = window.CcMenu;
+        // Actual MAIN capture must run before simulated host capture listeners.
+        api.installMainWorldRuntime();
+        const host = document.createElement('div');
+        host.id = 'theater-everywhere-ui';
+        document.body.append(host);
+        const root = host.attachShadow({ mode: 'open' });
+        root.innerHTML = `<style>${css}</style><div class="theater-controls-wrapper visible" style="position:fixed;bottom:20px;right:20px"><div class="theater-cc-menu-host theater-menu-anchored"><button class="theater-control-btn cc-btn">CC</button><div class="theater-cc-menu"></div></div></div>`;
+        const trigger = root.querySelector('button')!;
+        const panel = root.querySelector<HTMLElement>('.theater-cc-menu')!;
+        const choices = [
+          { id: null, label: 'Off', active: false },
+          { id: 'pl', label: 'Polski — Łódź, Poznań', language: 'pl', active: true },
+          { id: 'fr', label: 'Français', language: 'fr', active: false },
+          ...['en', 'de', 'ru', 'ar', 'ja', 'ko'].map(id => ({ id, label: id, language: id, active: false }))
+        ];
+        const selected: Array<string | null> = [];
+        const menuScope = new api.DisposableScope();
+        const menu = new api.CcMenu(panel, trigger, (key: string) => messages[key] ?? key, (id: string | null) => {
+          selected.push(id);
+          api.closeMenuPopover(trigger.parentElement);
+        }, () => {});
+        menu.update(choices);
+        const state = window.ccMenuTest = { choices, selected, hostKeys: [] as string[], scope: menuScope, menu };
+        api.bindMenuPopover({ host: trigger.parentElement!, panel, trigger,
+          scope: state.scope, focusOnOpen: () => menu.firstFocus(), firstFocus: () => menu.firstFocus() });
+        for (const type of ['keydown', 'keyup', 'keypress']) window.addEventListener(type, event => state.hostKeys.push((event as KeyboardEvent).key), true);
+      }, { css: UI_CSS, messages: english });
+      const input = frame.locator('.theater-cc-search-input');
+      const rows = frame.locator('button.theater-cc-menu-item');
+      await frame.locator('.cc-btn').click();
+      assert.equal(await input.evaluate(el => el.getRootNode() instanceof ShadowRoot && (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      const typography = await rows.first().evaluate(row => {
+        const reference = document.createElement('button');
+        reference.className = 'theater-control-btn theater-settings-row';
+        row.parentElement!.append(reference);
+        const properties = ['min-height', 'padding', 'gap', 'font-size', 'font-weight', 'font-family', 'letter-spacing', 'line-height', 'border-radius'];
+        const actual = getComputedStyle(row);
+        const expected = getComputedStyle(reference);
+        const equal = properties.every(property => actual.getPropertyValue(property) === expected.getPropertyValue(property));
+        reference.remove();
+        return { equal, weight: actual.fontWeight, height: row.getBoundingClientRect().height };
+      });
+      assert.deepEqual(typography, { equal: true, weight: '400', height: 40 });
+      await input.fill('  lodz poznan  ');
+      // Matching is anywhere in the label, with punctuation preserved.
+      assert.equal(await rows.count(), 0);
+      assert.equal(await frame.locator('[role=status]').textContent(), 'No matches');
+      await input.fill('POZNAN');
+      assert.equal(await rows.count(), 1);
+      assert.equal(await rows.getAttribute('aria-pressed'), 'true');
+      await input.fill('francais');
+      assert.equal(await rows.count(), 1);
+      await input.press('Escape');
+      assert.equal(await input.inputValue(), '');
+      assert.equal(await rows.count(), 9);
+      await input.fill('pl');
+      await input.press('ArrowDown');
+      assert.equal(await rows.first().evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      await rows.first().press('ArrowUp');
+      assert.equal(await input.evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      await frame.evaluate(() => { window.ccMenuTest.hostKeys = []; });
+      await input.fill('f');
+      await input.pressSequentially('tk ');
+      assert.equal(await frame.evaluate(() => window.ccMenuTest.hostKeys.length), 0);
+      // Composition keeps the previously committed results and never activates Enter.
+      await input.fill('pl');
+      await input.dispatchEvent('compositionstart');
+      await input.evaluate(el => { (el as HTMLInputElement).value = 'de'; el.dispatchEvent(new InputEvent('input', { bubbles: true, isComposing: true })); });
+      await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+      assert.equal(await rows.first().textContent(), 'Polski — Łódź, Poznań✓');
+      assert.deepEqual(await frame.evaluate(() => window.ccMenuTest.selected), []);
+      await input.dispatchEvent('compositionend');
+      assert.equal(await rows.first().textContent(), 'de');
+      await input.fill('pl');
+      await input.evaluate(el => (el as HTMLInputElement).setSelectionRange(1, 1));
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update([...state.choices, { id: 'it', label: 'Italiano', active: false }]); });
+      assert.equal(await input.inputValue(), 'pl');
+      assert.equal(await input.evaluate(el => (el as HTMLInputElement).selectionStart), 1);
+      assert.equal(await input.evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      await input.press('Enter');
+      assert.deepEqual(await frame.evaluate(() => window.ccMenuTest.selected), ['pl']);
+      assert.equal(await input.inputValue(), '');
+      assert.equal(await frame.locator('.cc-btn').evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      await frame.locator('.cc-btn').press('Enter');
+      await input.press('Escape');
+      assert.equal(await frame.locator('.cc-btn').getAttribute('aria-expanded'), 'false');
+      // Empty and small lists suppress search; a late long list restores it.
+      await frame.evaluate(() => window.ccMenuTest.menu.update([]));
+      assert.equal(await input.isVisible(), false);
+      await frame.locator('.cc-btn').press('Enter');
+      assert.equal(await frame.locator('[role=status]').textContent(), 'No subtitles');
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices.slice(0, 8)); });
+      assert.equal(await input.isVisible(), false, 'seven tracks omit search');
+      await frame.locator('.cc-btn').focus();
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices); });
+      assert.equal(await input.isVisible(), true, 'eight tracks show search');
+      assert.equal(await frame.locator('.cc-btn').evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true, 'late tracks do not steal focus');
+      assert.equal(await input.inputValue(), '', 'late tracks start with an empty query');
+      await input.focus();
+      await input.fill('pl');
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices.slice(0, 8)); });
+      assert.equal(await input.isVisible(), false, 'shrinking below eight hides focused search');
+      assert.equal(await frame.locator('.cc-btn').evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true);
+      assert.equal(await frame.locator('.cc-btn').getAttribute('aria-expanded'), 'true', 'shrinking keeps the menu open');
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices); });
+      assert.equal(await input.inputValue(), '');
+      await rows.first().focus();
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices); });
+      assert.equal(await rows.first().evaluate(el => (el.getRootNode() as ShadowRoot).activeElement === el), true, 'row focus survives refresh');
+      await input.focus();
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update([
+        ...state.choices, ...Array.from({length: 200}, (_, index) => ({id: `long-${index}`, label: `Long track ${index}`, active: false}))
+      ]); });
+      await frame.locator('.theater-cc-menu-list').evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await input.fill('poznan');
+      assert.equal(await frame.locator('.theater-cc-menu-list').evaluate(el => el.scrollTop), 0, 'query resets scroll');
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.update(state.choices); });
+      await input.fill('');
+      await frame.evaluate(() => { const state = window.ccMenuTest; state.menu.dispose(); state.scope.dispose(); state.menu.dispose(); });
+      await input.fill('zzzz');
+      assert.equal(await rows.count(), 9, 'disposed input no longer filters');
+      await page.close();
+    });
+  });
+}

@@ -917,6 +917,11 @@ export function createControls(
         speedSlider.blur();
       },
       prepare: () => mediaFeatures.renderCcMenu(),
+      firstFocus: () => mediaFeatures.firstCcMenuFocus(),
+      focusOnOpen: () => {
+        const first = mediaFeatures.firstCcMenuFocus();
+        return first instanceof HTMLInputElement ? first : undefined;
+      },
       centerActiveIn: '.theater-cc-menu-list',
       onChange: updateCaptionDock
     });

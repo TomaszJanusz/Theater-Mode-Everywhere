@@ -581,6 +581,14 @@
   "enableSubtitles": {
     "message": "Activar subtítulos"
   },
+  "searchSubtitles": {
+    "message": "Buscar subtítulos…",
+    "description": "Placeholder and accessible label for filtering subtitle tracks in the player menu"
+  },
+  "subtitleNoMatches": {
+    "message": "Sin resultados",
+    "description": "Empty result shown when no subtitle tracks match the search"
+  },
   "noSubtitles": {
     "message": "Sin subtítulos"
   },

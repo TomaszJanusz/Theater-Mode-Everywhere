@@ -1,4 +1,5 @@
 import { installBilibiliNavigation } from '../providers/bilibili/navigation';
+import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
@@ -349,6 +350,7 @@ export function installMainWorldRuntime(): void {
   }
 
   const modalKeys = new Set<string>();
+  const ccSearchKeys = new Set<string>();
   function swallowTheaterPlaybackKeys(event: KeyboardEvent): void {
     const modal = queryPlayerUi<HTMLElement>('.te-dialog-overlay > .te-dialog[aria-modal="true"]');
     const identity = event.code || event.key;
@@ -368,9 +370,23 @@ export function installMainWorldRuntime(): void {
       event.stopImmediatePropagation();
       return;
     }
+    const search = event.composedPath().find((node): node is HTMLInputElement =>
+      node instanceof HTMLInputElement && node.matches('.theater-cc-search-input'));
+    if ((search && search.closest('.theater-cc-menu')) || ccSearchKeys.has(identity)) {
+      if (event.type === 'keydown') ccSearchKeys.add(identity);
+      if (event.type === 'keyup') ccSearchKeys.delete(identity);
+      if (search && event.type === 'keydown' && !event.isComposing && ['Escape', 'ArrowDown', 'Enter'].includes(event.key)) {
+        const relay = new CustomEvent(CC_SEARCH_KEY_EVENT, { cancelable: true, detail: event.key });
+        search.dispatchEvent(relay);
+        if (relay.defaultPrevented) event.preventDefault();
+      }
+      event.stopImmediatePropagation();
+      return;
+    }
     if (isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
+    if (event.type === 'keypress') return;
     const marked = document.querySelector('.theater-everywhere-video-active, [data-theater-everywhere]');
-    if (isEditableKeyboardTarget(event.target) || isEditableKeyboardTarget(document.activeElement)) return;
+    if (event.composedPath().some(isEditableKeyboardTarget) || isEditableKeyboardTarget(document.activeElement)) return;
     // Netflix cancels Space at window capture, including its keyup default.
     // Stop host listeners while retaining the focused button's native action.
     if ((event.key === ' ' || event.key === 'Enter') && event.composedPath().some(node => node instanceof Element
@@ -420,7 +436,7 @@ export function installMainWorldRuntime(): void {
     }));
   }
 
-  window.addEventListener('blur', () => modalKeys.clear());
+  window.addEventListener('blur', () => { modalKeys.clear(); ccSearchKeys.clear(); });
   window.addEventListener('keydown', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keyup', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);

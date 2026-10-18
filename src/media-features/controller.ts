@@ -3,6 +3,7 @@ import { createTimelineMarkerSource } from '../providers/timeline/markers';
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
 import { contentTitle, type ContentTitle } from './content-title';
 import { CaptionRenderer } from './caption-renderer';
+import { CcMenu } from '../ui/cc-menu';
 import { closeMenuPopover } from '../ui/menu-popover';
 import { openCaptionOptionsDialog } from './caption-options-dialog';
 import { chapterAtTime } from './cue-index';
@@ -68,6 +69,7 @@ export class MediaFeaturesController {
   private video: PlaybackSurface;
   private ccBtn: HTMLButtonElement;
   private ccMenu: HTMLDivElement;
+  private captionMenu?: CcMenu;
   private markers: readonly TimelineMarker[] = [];
   private timelineMarkersEnabled = false;
   private stopMarkers = () => {};
@@ -644,50 +646,21 @@ export class MediaFeaturesController {
    * the same serialized operation used by shortcuts and restoration.
    */
   renderCcMenu(): void {
-    if (typeof document === 'undefined') return;
-    this.ccMenu.replaceChildren();
-
-    const header = document.createElement('div');
-    header.className = 'theater-cc-menu-header';
-    const title = document.createElement('span');
-    title.className = 'theater-cc-menu-title';
-    title.textContent = this.t('subtitlesMenuTitle');
-    const optionsBtn = document.createElement('button');
-    optionsBtn.type = 'button';
-    optionsBtn.className = 'theater-cc-menu-options';
-    optionsBtn.textContent = this.t('subtitleOptions');
-    optionsBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      void this.openCaptionOptions();
-    });
-    header.append(title, optionsBtn);
-
-    const list = document.createElement('div');
-    list.className = 'theater-cc-menu-list';
-
-    if (this.tracks.length === 0) {
-      const item = document.createElement('div');
-      item.className = 'theater-cc-menu-item';
-      item.append(this.menuLabel(this.t('noSubtitles')));
-      item.style.opacity = '0.5';
-      item.style.cursor = 'default';
-      list.appendChild(item);
-      this.ccMenu.append(header, list);
-      return;
-    }
-
-    list.appendChild(this.menuItem(this.t('subtitlesOff'), !this.captionsAreOn(), () => {
-      void this.activate(null);
-    }));
-
-    for (const track of this.tracks) {
-      const label = this.captionTrackDisplayLabel(track);
-      list.appendChild(this.menuItem(label, this.captionsAreOn() && this.activeTrackId === track.id, () => {
-        void this.activate(track.id);
-      }));
-    }
-    this.ccMenu.append(header, list);
+    if (this.disposed || typeof document === 'undefined') return;
+    this.captionMenu ??= new CcMenu(this.ccMenu, this.ccBtn, this.t, (id) => {
+      void this.activate(id);
+      this.dismissCcMenu();
+    }, () => { void this.openCaptionOptions(); });
+    this.captionMenu.update(this.tracks.length ? [
+      { id: null, label: this.t('subtitlesOff'), active: !this.captionsAreOn() },
+      ...this.tracks.map(track => ({
+        id: track.id, label: this.captionTrackDisplayLabel(track), language: track.language,
+        active: this.captionsAreOn() && this.activeTrackId === track.id
+      }))
+    ] : []);
   }
+
+  firstCcMenuFocus(): HTMLElement | undefined { return this.captionMenu?.firstFocus(); }
 
   private captionTrackDisplayLabel(track: CaptionTrack): string {
     const baseLabel = track.label || track.language || this.t('trackLabel', '1');
@@ -740,38 +713,6 @@ export class MediaFeaturesController {
       },
       decorate: this.decorateCaptionDialog
     });
-  }
-
-  /** Host track names can be long; the label truncates and keeps the full name in its title. */
-  private menuLabel(text: string): HTMLSpanElement {
-    const label = document.createElement('span');
-    label.className = 'theater-cc-menu-label';
-    label.textContent = text;
-    label.title = text;
-    return label;
-  }
-
-  private menuItem(label: string, active: boolean, onClick: () => void): HTMLButtonElement {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'theater-cc-menu-item';
-    item.append(this.menuLabel(label));
-    item.setAttribute('aria-pressed', String(active));
-    if (active) {
-      item.classList.add('active');
-      const checkIcon = document.createElement('span');
-      checkIcon.textContent = '✓';
-      checkIcon.className = 'theater-cc-menu-check';
-      checkIcon.setAttribute('aria-hidden', 'true');
-      item.appendChild(checkIcon);
-    }
-    item.addEventListener('click', () => {
-      const focused = (item.getRootNode() as Document | ShadowRoot).activeElement === item;
-      onClick();
-      this.dismissCcMenu();
-      if (focused) this.ccBtn.focus();
-    });
-    return item;
   }
 
   /**
@@ -1009,6 +950,7 @@ export class MediaFeaturesController {
    */
   dispose(): void {
     this.disposed = true;
+    this.captionMenu?.dispose();
     this.stopMarkers();
     this.stopObservingAdapter();
     this.bumpEpoch();

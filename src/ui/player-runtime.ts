@@ -1440,6 +1440,7 @@ function initialize(): void {
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = editableFieldFocused(activeEl);
     if (isEditable) return false;
+    if (activeEl?.matches('.theater-cc-menu-item') && ['ArrowUp', 'ArrowDown', 'Escape'].includes(event.key)) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
     if (event.key === 'Escape') {

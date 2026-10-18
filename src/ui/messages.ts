@@ -140,6 +140,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   subtitlesOffHud: 'Subtitles off',
   subtitlesLoadingHud: 'Loading subtitles...',
   subtitlesLoadFailedHud: 'Couldn\'t load subtitles',
+  searchSubtitles: 'Search subtitles…',
+  subtitleNoMatches: 'No matches',
   noSubtitles: 'No subtitles',
   subtitlesOff: 'Off',
   liveBadge: 'LIVE',

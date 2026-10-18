@@ -73,6 +73,7 @@
 /* Custom player controls container card */
 .theater-controls-wrapper {
   --theater-bar-pad: 10px;
+  --theater-menu-row-inset: 6px;
   --theater-menu-notch: 48px;
   --theater-menu-notch-depth: 64px;
   --theater-menu-notch-overlap: calc(var(--theater-menu-notch-depth) - 32px);
@@ -1241,7 +1242,7 @@ button.theater-time-end:hover {
   max-height: calc(100vh - 110px) !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  padding: 6px !important;
+  padding: var(--theater-menu-row-inset, 6px) !important;
 }
 
 /* Same 6px inset as the top. The shell is masked so the last row can use that
@@ -1286,6 +1287,16 @@ button.theater-time-end:hover {
   mask-position: top left, bottom right, bottom left;
 }
 
+.theater-settings-row,
+.theater-cc-search-input {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
 .theater-settings-row {
   width: 100% !important;
   height: auto !important;
@@ -1296,8 +1307,6 @@ button.theater-time-end:hover {
   justify-content: flex-start !important;
   text-align: start !important;
   color: var(--appearance-ink, #f8fafc) !important;
-  font-size: 12px !important;
-  line-height: 1.35 !important;
 }
 
 .theater-settings-row[aria-disabled="true"] {
@@ -1379,6 +1388,7 @@ button.theater-time-end:hover {
   pointer-events: none !important;
 }
 .theater-settings-row:focus-visible,
+.theater-cc-search-input:focus,
 .player-settings-btn:focus-visible,
 .theater-chat-theme-select:focus-visible,
 .theater-chat-width-slider:focus-visible {
@@ -1560,7 +1570,7 @@ button.theater-time-end:hover {
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   /* Stay inside the shell stroke. The header is a sibling, so rows cannot scroll above it. */
-  padding: 0 1px 4px !important;
+  padding: var(--theater-menu-row-inset, 6px) !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--accent-color, #6366f1) transparent !important;
 }
@@ -1570,10 +1580,6 @@ button.theater-time-end:hover {
    top reach the header divider. */
 .theater-menu-anchored .theater-cc-menu-list {
   min-height: calc(var(--theater-menu-notch-overlap) + 16px) !important;
-}
-
-.theater-cc-menu-list > .theater-cc-menu-item:first-child {
-  margin-top: 4px !important;
 }
 
 .theater-cc-menu-header {
@@ -1681,38 +1687,42 @@ button.theater-time-end:hover {
 }
 
 .theater-cc-menu-item {
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  background: none !important;
-  border: none !important;
-  color: var(--appearance-ink, #f8fafc) !important;
-  padding: 5px 12px !important;
-  text-align: start !important;
-  font-size: 12px !important;
-  line-height: 1.25 !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 8px !important;
-  width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
-  align-self: stretch !important;
-  flex: 0 0 auto !important;
-  transition: background 0.15s ease !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-.theater-cc-menu-check { flex: 0 0 auto !important; }
-
-.theater-cc-menu-item:hover {
-  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.1)) !important;
-}
-
+.theater-cc-menu-item.active .theater-settings-detail,
 .theater-cc-menu-item.active {
   color: var(--accent-color, #6366f1) !important;
+}
+
+.theater-cc-menu-item[aria-disabled="true"] {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.theater-cc-search {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  padding: var(--theater-menu-row-inset, 6px) !important;
+  padding-bottom: 0 !important;
+}
+.theater-cc-search[hidden] { display: none !important; }
+.theater-cc-search-input {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--appearance-border, rgba(255, 255, 255, 0.15)) !important;
+  background: var(--appearance-surface, rgb(20, 20, 20)) !important;
+  color: var(--appearance-ink, #f8fafc) !important;
+  text-overflow: ellipsis !important;
+}
+.theater-cc-search-input::placeholder {
+  color: var(--appearance-muted, #94a3b8) !important;
+  opacity: 1 !important;
 }
 
 /* Custom Button Tooltips */

@@ -35,7 +35,7 @@ describe('caption language menu', () => {
         for (let i = 0; i < 40; i += 1) {
           const item = document.createElement('button');
           item.type = 'button';
-          item.className = 'theater-cc-menu-item';
+          item.className = 'theater-control-btn theater-settings-row theater-cc-menu-item';
           item.textContent = 'język ' + i + ' angielski';
           list.append(item);
         }
@@ -89,7 +89,7 @@ describe('caption language menu', () => {
           for (let i = 0; i < 60; i += 1) {
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = 'theater-cc-menu-item' + (i === active ? ' active' : '');
+            item.className = 'theater-control-btn theater-settings-row theater-cc-menu-item' + (i === active ? ' active' : '');
             item.textContent = 'język ' + i;
             list.append(item);
           }
