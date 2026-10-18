@@ -42,11 +42,11 @@ export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
 
 /**
  * A subwoofer seen front-on: an outlined square cabinet (its width equals its height) on two feet, centred in the 24 box like the sibling icons, and a filled membrane ring with the dust
- * cap cut out (even-odd, so any background shows through). The waves overhang to the right of the box (the svg is overflow: visible) so they never move the cabinet. They show by the svg's `data-level` (see
+ * cap cut out (even-odd, so any background shows through). The waves radiate on both sides as mirror images about the box centre and overhang the box (the svg is overflow: visible), so they never move the cabinet and the icon needs no RTL mirroring. They show by the svg's `data-level` (see
  * shadow.css), so the settings row, HUD and any later surface share one shape. `bass-hop` carries the
  * MOAAR rocking and `bass-cone` its jitter; their pivots are the feet at x 8.5 and 15.5, y 20.
  */
-const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect class="bass-cabinet" x="5" y="2.5" width="14" height="14" rx="2"/><path d="M8.5 16.5V20M15.5 16.5V20"/><path class="bass-cone" fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 4.8a4.7 4.7 0 1 0 0 9.4a4.7 4.7 0 1 0 0-9.4zM12 7.8a1.7 1.7 0 1 0 0 3.4a1.7 1.7 0 1 0 0-3.4z"/></g><path class="bass-wave bass-wave-1" d="M22.2 7a3 3 0 0 1 0 5"/><path class="bass-wave bass-wave-2" d="M24.2 5.5a5 5 0 0 1 0 8"/><path class="bass-wave bass-wave-3" d="M26.4 4a8.5 8.5 0 0 1 0 11"/></g>';
+const BASS_SHAPES = '<g class="bass-hop"><g class="bass-body"><rect class="bass-cabinet" x="5" y="2.5" width="14" height="14" rx="2"/><path d="M8.5 16.5V20M15.5 16.5V20"/><path class="bass-cone" fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 4.8a4.7 4.7 0 1 0 0 9.4a4.7 4.7 0 1 0 0-9.4zM12 7.8a1.7 1.7 0 1 0 0 3.4a1.7 1.7 0 1 0 0-3.4z"/></g><path class="bass-wave bass-wave-1" data-side="right" d="M22.2 7a3 3 0 0 1 0 5"/><path class="bass-wave bass-wave-2" data-side="right" d="M24.2 5.5a5 5 0 0 1 0 8"/><path class="bass-wave bass-wave-3" data-side="right" d="M26.4 4a8.5 8.5 0 0 1 0 11"/><path class="bass-wave bass-wave-1" data-side="left" d="M1.8 7a3 3 0 0 0 0 5"/><path class="bass-wave bass-wave-2" data-side="left" d="M-0.2 5.5a5 5 0 0 0 0 8"/><path class="bass-wave bass-wave-3" data-side="left" d="M-2.4 4a8.5 8.5 0 0 0 0 11"/></g>';
 
 const AUDIO_SETTING_SHAPES: Record<AudioSettingName, string> = {
   // A speaking head.

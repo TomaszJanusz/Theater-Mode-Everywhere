@@ -3041,7 +3041,8 @@ button.theater-time-end:hover {
 }
 
 /* Bass subwoofer: the level, set on the svg, picks the sound waves. */
-.bass-icon { overflow: visible; } /* the waves overhang the box to the right, and the rock tilts past it */
+.bass-icon { overflow: visible; } /* the mirrored waves overhang the box on both sides, and the rock tilts past it */
+.volume-hud-icon .bass-icon { margin-inline: 4px; } /* room for the side waves next to the HUD text */
 .bass-icon .bass-wave { display: none; }
 .bass-icon:is([data-level="original"], [data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-1,
 .bass-icon:is([data-level="more"], [data-level="moar"], [data-level="moaaarr"]) .bass-wave-2,

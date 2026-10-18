@@ -45,7 +45,12 @@ describe('bass subwoofer icon', () => {
             const svg = row.querySelector('svg')!;
             const style = (selector: string) => getComputedStyle(row.querySelector(selector)!);
             return {
-              waves: [...row.querySelectorAll('.bass-wave')].map(wave => getComputedStyle(wave).display !== 'none'),
+              // Visible arcs per side, nearest the cabinet first; both sides must match and mirror about the centre.
+              waves: ['right', 'left'].map(side => [...row.querySelectorAll(`.bass-wave[data-side="${side}"]`)].map(wave => getComputedStyle(wave).display !== 'none')),
+              mirror: [1, 2, 3].map(index => {
+                const [right, left] = ['right', 'left'].map(side => (row.querySelector(`.bass-wave-${index}[data-side="${side}"]`) as unknown as SVGGraphicsElement).getBBox());
+                return { sum: right.x + right.width / 2 + left.x + left.width / 2, width: [right.width, left.width], y: [right.y, left.y] };
+              }),
               hop: style('.bass-hop').animationName,
               jitter: style('.bass-cone').animationName,
               color: getComputedStyle(svg).color,
@@ -97,7 +102,12 @@ describe('bass subwoofer icon', () => {
         }, { css: UI_CSS, levels: [...BASS_LEVELS] });
 
         const arcs = { less: 0, original: 1, more: 2, moar: 2, moaaarr: 3 };
-        assert.deepEqual(BASS_LEVELS.map(level => result[level].waves), BASS_LEVELS.map(level => [0, 1, 2].map(index => index < arcs[level])));
+        const side = (level: typeof BASS_LEVELS[number]) => [0, 1, 2].map(index => index < arcs[level]);
+        assert.deepEqual(BASS_LEVELS.map(level => result[level].waves), BASS_LEVELS.map(level => [side(level), side(level)]), 'equal arcs on both sides');
+        for (const level of BASS_LEVELS) for (const arc of result[level].mirror.slice(0, arcs[level])) { // hidden arcs have no box
+          assert.ok(Math.abs(arc.sum - 24) <= 0.1, `${level} arcs mirror about the box centre`);
+          assert.ok(Math.abs(arc.width[0] - arc.width[1]) <= 0.01 && Math.abs(arc.y[0] - arc.y[1]) <= 0.01, `${level} arcs are mirror images`);
+        }
         const motion = { hop: { moar: 'bass-hop', moaaarr: 'bass-hop-hard' }, jitter: { moar: 'bass-jitter', moaaarr: 'bass-jitter-hard' } } as Record<string, Record<string, string>>;
         assert.deepEqual(BASS_LEVELS.map(level => result[level].hop), BASS_LEVELS.map(level => motion.hop[level] ?? 'none'));
         assert.deepEqual(BASS_LEVELS.map(level => result[level].jitter), BASS_LEVELS.map(level => motion.jitter[level] ?? 'none'));
