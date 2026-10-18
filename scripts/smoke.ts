@@ -1857,6 +1857,27 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
   const waitEntered = () => page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
   const waitIdle = () => page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
   try {
+    // A fresh profile has no saved key: AutoTheater defaults to on in the options and the page.
+    await worker.evaluate(() => chrome.storage.sync.remove('autoEnterTheater'));
+    await worker.evaluate(({ key, release }) => chrome.storage.local.set({ [key]: release }),
+      { key: WHATS_NEW_ACK_STORAGE_KEY, release: WHATS_NEW_RELEASE.id });
+    const defaults = await context.newPage();
+    try {
+      await defaults.goto(new URL('options/options.html', worker.url()).href);
+      await defaults.locator('#tab-features').click();
+      const defaultToggle = defaults.locator('#auto-enter-theater-toggle');
+      await defaultToggle.waitFor({ state: 'attached' });
+      if (!await defaultToggle.isChecked()) throw new Error('Auto theater options default must be on');
+    } finally {
+      await defaults.close();
+    }
+    await page.goto(url);
+    await waitForPlayer(page);
+    await playEvent();
+    await waitEntered();
+    await page.keyboard.press('Escape');
+    await waitIdle();
+
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
     await page.goto(url);
     await waitForPlayer(page);
@@ -1871,7 +1892,7 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
       await options.locator('#tab-features').click();
       const toggle = options.locator('#auto-enter-theater-toggle');
       await toggle.waitFor({ state: 'attached' });
-      if (await toggle.isChecked()) throw new Error('Auto theater options default must be off');
+      if (await toggle.isChecked()) throw new Error('Saved AutoTheater off must stay off in the options');
       await options.locator('label.toggle-switch').filter({ has: toggle }).click();
       await options.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === true);
       await waitEntered();

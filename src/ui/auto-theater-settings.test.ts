@@ -19,7 +19,7 @@ it('saves without a dialog for opt-in, repeated off, an enabled launcher or eith
   const original = Object.getOwnPropertyDescriptor(globalThis, 'chrome');
   try {
     for (const [enabled, settings] of [
-      [true, {}], [false, {}], [false, { autoEnterTheater: false }],
+      [true, {}], [true, { autoEnterTheater: false }], [false, { autoEnterTheater: false }],
       [false, { autoEnterTheater: true, videoActivator: true }],
       [false, { autoEnterTheater: true, [ANSWER]: false }],
       [false, { autoEnterTheater: true, [ANSWER]: true }]

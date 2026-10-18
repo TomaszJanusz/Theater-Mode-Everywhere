@@ -13,12 +13,14 @@ const allowed: AutoTheaterDecision = {
 const visit: AutoTheaterVisit = { identity: 'youtube:abcdefghijk', entered: false };
 
 describe('automatic theater entry', () => {
-  it('defaults off and only accepts the boolean true', () => {
-    for (const value of [undefined, null, false, 0, 1, 'true', {}, []]) {
-      assert.equal(resolveAutoEnterTheater(value), false);
-      assert.equal(resolveAutoTheaterSkipCountdown(value), false);
-    }
+  it('defaults on and only an explicit boolean overrides it', () => {
+    for (const value of [undefined, null, 0, 1, 'false', {}, []]) assert.equal(resolveAutoEnterTheater(value), true);
     assert.equal(resolveAutoEnterTheater(true), true);
+    assert.equal(resolveAutoEnterTheater(false), false);
+  });
+
+  it('keeps the skip countdown off unless explicitly true', () => {
+    for (const value of [undefined, null, false, 0, 1, 'true', {}, []]) assert.equal(resolveAutoTheaterSkipCountdown(value), false);
     assert.equal(resolveAutoTheaterSkipCountdown(true), true);
   });
 
