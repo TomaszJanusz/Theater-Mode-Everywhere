@@ -247,10 +247,10 @@ function readLayout(): Layout {
       width: state.width,
       theme: state.theme === 'light' || state.theme === 'native' || state.theme === 'dark' ? state.theme : null
     } : null,
-    toggleHidden: toggle instanceof HTMLElement ? toggle.hidden : null,
+    toggleHidden: toggle instanceof HTMLElement ? Boolean(toggle.hidden) : null,
     toggleExpanded: toggle?.getAttribute('aria-expanded') ?? null,
     toggleLabel: toggle?.getAttribute('aria-label') ?? null,
-    widthRowHidden: widthRow instanceof HTMLElement ? widthRow.hidden : null,
+    widthRowHidden: widthRow instanceof HTMLElement ? Boolean(widthRow.hidden) : null,
     sliderInSettings: Boolean(menu),
     settingsButton: Boolean(menu?.parentElement?.querySelector('.player-settings-btn')),
     theater: document.documentElement.classList.contains('theater-everywhere-html-active'),
@@ -580,7 +580,7 @@ async function readThemeControl(page: Page): Promise<ThemeControl> {
     }
     const menu = select.closest('.theater-settings-menu');
     return {
-      hidden: row.hidden,
+      hidden: Boolean(row.hidden),
       disabled: select.disabled,
       value: select.value,
       label: select.getAttribute('aria-label'),

@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import ts from 'typescript';
-import { buildSync } from 'esbuild';
+import { buildSync, transformSync } from 'esbuild';
+import { parseAst } from 'vite';
 import { MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from './capabilities';
 import { providerDefinition } from './registry';
@@ -18,30 +18,43 @@ const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyro
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.
  * Required interface stubs are checked behaviorally below, never counted as support. */
-function methods(source: string) {
-  const file = ts.createSourceFile('adapter.ts', source, ts.ScriptTarget.Latest, true);
-  const names = new Set<string>();
-  function visit(node: ts.Node) {
-    if (ts.isMethodDeclaration(node) && node.body) names.add(node.name.getText(file));
-    ts.forEachChild(node, visit);
+type AstNode = { type: string; [key: string]: unknown };
+
+/** esbuild strips the types, then rollup's parser (via Vite) yields an ESTree. */
+function parse(source: string): AstNode {
+  return parseAst(transformSync(source, { loader: 'ts' }).code) as unknown as AstNode;
+}
+
+function walk(node: AstNode, visit: (node: AstNode) => void) {
+  visit(node);
+  for (const value of Object.values(node)) {
+    for (const child of Array.isArray(value) ? value : [value]) {
+      if (child && typeof child === 'object' && typeof (child as AstNode).type === 'string') walk(child as AstNode, visit);
+    }
   }
-  visit(file);
+}
+
+function methods(source: string) {
+  const names = new Set<string>();
+  walk(parse(source), node => {
+    const key = node.key as AstNode | undefined;
+    if (node.type === 'MethodDefinition' && key?.type === 'Identifier') names.add(key.name as string);
+  });
   return names;
 }
 
 function registeredFrom(source: string, module: string): boolean {
-  const file = ts.createSourceFile('factory.ts', source, ts.ScriptTarget.Latest, true);
   const imports = new Set<string>();
   const calls = new Set<string>();
-  function visit(node: ts.Node) {
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === module) {
-      const bindings = node.importClause?.namedBindings;
-      if (bindings && ts.isNamedImports(bindings)) for (const entry of bindings.elements) imports.add(entry.name.text);
+  walk(parse(source), node => {
+    if (node.type === 'ImportDeclaration' && (node.source as AstNode).value === module) {
+      for (const specifier of node.specifiers as AstNode[]) {
+        if (specifier.type === 'ImportSpecifier') imports.add((specifier.local as AstNode).name as string);
+      }
     }
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) calls.add(node.expression.text);
-    ts.forEachChild(node, visit);
-  }
-  visit(file);
+    const callee = node.callee as AstNode | undefined;
+    if (node.type === 'CallExpression' && callee?.type === 'Identifier') calls.add(callee.name as string);
+  });
   return [...imports].some(name => calls.has(name));
 }
 
