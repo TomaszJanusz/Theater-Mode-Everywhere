@@ -7,7 +7,7 @@ esbuild shortens syntax, whitespace, and local identifiers, including function a
 ## Requirements
 
 - Node.js 22
-- pnpm 11.5.1 (`packageManager` in `package.json`)
+- pnpm 12.14.0 (`packageManager` in `package.json`)
 
 ## Reproduce the release packages
 
