@@ -161,19 +161,21 @@ describe('audio graph', () => {
       const ref = await render(null, options);
       const less = await render(settings({ bass: 'less' }), options);
       const more = await render(settings({ bass: 'more' }), options);
+      const moar = await render(settings({ bass: 'moar' }), options);
       assert.ok(db(less.low, ref.low) < -4, 'less cuts bass');
-      assert.ok(db(more.low, ref.low) > 8, 'more lifts bass clearly');
-      for (const levels of [less, more]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
+      assert.ok(Math.abs(db(more.low, ref.low) - 6) < 1.5, `more lifts bass by about 6 dB (${db(more.low, ref.low).toFixed(1)})`);
+      assert.ok(Math.abs(db(moar.low, ref.low) - 9) < 1.5, `moar lifts bass by about 9 dB (${db(moar.low, ref.low).toFixed(1)})`);
+      for (const levels of [less, more, moar]) assert.ok(Math.abs(db(levels.mid, ref.mid)) < 0.5, 'midrange stays put');
     });
   });
 
   it('keeps hot mixes below full scale with every effect at its strongest', async () => {
     await withPage(async (render) => {
-      const hot = await render(settings({ voice: 'strong', leveling: 'strong', bass: 'more' }), {
+      const hot = await render(settings({ voice: 'strong', leveling: 'strong', bass: 'moar' }), {
         scene: `2.2 * (${STEREO_SCENE})`
       });
       assert.ok(hot.peak <= 1, `peak ${hot.peak.toFixed(3)}`);
-      const bass = await render(settings({ bass: 'more' }), { scene: `0.9 * Math.sin(2 * Math.PI * 60 * t)` });
+      const bass = await render(settings({ bass: 'moar' }), { scene: `0.9 * Math.sin(2 * Math.PI * 60 * t)` });
       assert.ok(bass.peak <= 1, `bass peak ${bass.peak.toFixed(3)}`);
     });
   });

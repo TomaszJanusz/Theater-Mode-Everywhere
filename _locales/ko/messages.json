@@ -161,6 +161,9 @@
   "bassMore": {
     "message": "많이"
   },
+  "bassMoar": {
+    "message": "MOAAARR"
+  },
   "bassHud": {
     "message": "저음: $1",
     "placeholders": {
