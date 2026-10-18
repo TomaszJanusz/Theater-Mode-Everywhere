@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Wybierz język ustawień, okna rozszerzenia i elementów sterujących odtwarzaczem."
   },
+  "reportTranslationIssue": {
+    "message": "Zgłoś błąd w tłumaczeniu"
+  },
   "languageAutomatic": {
     "message": "Automatyczny (język przeglądarki)"
   },

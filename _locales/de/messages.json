@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Wähle die Sprache für die Einstellungen, das Erweiterungs-Popup und die Wiedergabesteuerung."
   },
+  "reportTranslationIssue": {
+    "message": "Übersetzungsfehler melden"
+  },
   "languageAutomatic": {
     "message": "Automatisch (Browsersprache)"
   },

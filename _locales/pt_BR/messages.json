@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Escolha o idioma das configurações, da janela da extensão e dos controles do player."
   },
+  "reportTranslationIssue": {
+    "message": "Informar erro de tradução"
+  },
   "languageAutomatic": {
     "message": "Automático (idioma do navegador)"
   },

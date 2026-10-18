@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "اختر لغة الإعدادات والنافذة المنبثقة وعناصر التحكم في المشغّل."
   },
+  "reportTranslationIssue": {
+    "message": "الإبلاغ عن خطأ في الترجمة"
+  },
   "languageAutomatic": {
     "message": "تلقائي (لغة المتصفح)"
   },

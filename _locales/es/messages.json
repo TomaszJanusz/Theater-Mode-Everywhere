@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Elige el idioma de los ajustes, la ventana emergente y los controles del reproductor."
   },
+  "reportTranslationIssue": {
+    "message": "Informar de un error de traducción"
+  },
   "languageAutomatic": {
     "message": "Automático (idioma del navegador)"
   },

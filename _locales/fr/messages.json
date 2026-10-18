@@ -900,6 +900,9 @@
   "languageDescription": {
     "message": "Choisissez la langue des paramètres, de la fenêtre contextuelle et des commandes du lecteur."
   },
+  "reportTranslationIssue": {
+    "message": "Signaler une erreur de traduction"
+  },
   "languageAutomatic": {
     "message": "Automatique (langue du navigateur)"
   },
