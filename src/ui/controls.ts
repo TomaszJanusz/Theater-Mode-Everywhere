@@ -34,7 +34,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
-import { AUDIO_BLOCK_KEYS, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover, bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -1076,6 +1076,7 @@ export function createControls(
       // DRM and a refused CORS reload only become visible once the media loads.
       controlsScope.listen(native, 'encrypted', updateAudioRows);
       controlsScope.listen(native, 'loadedmetadata', updateAudioRows);
+      controlsScope.listen(native, AUDIO_SETTINGS_EVENT, updateAudioRows);
     }
     ctx.actions.syncAudioSettings();
 
