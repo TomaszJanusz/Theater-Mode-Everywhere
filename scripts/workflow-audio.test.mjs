@@ -17,10 +17,18 @@ test('tag-pinned releases keep virtual audio setup in sync with CI and nightly',
   }
 });
 
-test('nightly runs the unrestricted default suite on main and reports blocking suite/smoke outcomes', () => {
+test('nightly runs the unrestricted default suite on main and dev and reports blocking suite/smoke outcomes', () => {
   const source = readFileSync(new URL('../.github/workflows/nightly.yml', import.meta.url), 'utf8');
   const suite = source.split('      - name: Full test suite\n')[1].split('      - name: Smoke Chromium\n')[0];
-  assert.match(source, /ref: main\n\s+fetch-depth: 0/);
+  assert.doesNotMatch(source, /matrix|\$\{\{ *(?:github\.(?:event|head_ref|ref)|inputs)/);
+  for (const ref of ['main', 'dev']) {
+    const job = source.split(`  nightly-${ref}:\n`)[1].split(/\n  nightly-/)[0];
+    assert.ok(job.includes(`name: Nightly on ${ref}\n`));
+    assert.ok(job.includes(`ref: ${ref}\n          fetch-depth: 0`));
+    assert.ok(job.includes(`NIGHTLY_REF: ${ref}\n`));
+    // dev code must never read or write the default branch's caches.
+    assert.equal(/cache: 'pnpm'|actions\/cache@/.test(job), ref === 'main');
+  }
   assert.match(source, /timeout-minutes: 30/);
   assert.match(suite, /timeout-minutes: (?:2[5-9]|30)\n/);
   assert.match(suite, /run: pnpm test\n/);

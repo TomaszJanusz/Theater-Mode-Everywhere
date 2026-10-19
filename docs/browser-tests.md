@@ -25,7 +25,7 @@ including serialized browser code. Its textual rules conservatively count timers
 frames, sleep helpers, timer imports and named retry loops, including mocks and
 watchdogs; review clock ownership and aliases separately. Per-file/per-kind counts
 must match `scripts/test-determinism-baseline.json` and cannot grow past the
-baseline at the merge base with `origin/main`. CI requires that ref and full history;
+baseline at the merge base with the PR base (`origin/$GITHUB_BASE_REF` in CI, else `origin/main`). CI requires that ref and full history;
 locally a missing ref logs a skipped history comparison while inventory checks still run.
 After removing calls, run `pnpm exec tsx scripts/test-determinism.ts --update`;
 it only accepts reductions. Omit `--update` to print counts. Do not hide waits in
@@ -134,8 +134,9 @@ TME-112 owns making it blocking after ten consecutive green runs on the real
 installed-extension path; diagnostic injection does not meet that requirement.
 
 Merging to main starts **no CI test round**. The coverage model is affected tests
-on PRs, the full suite nightly, and the full suite on release. Nightly runs on main
-at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
+on PRs, the full suite nightly, and the full suite on release. Nightly runs on `main`
+and on the 2.1 integration branch `dev` (two independent jobs with literal refs, so one
+ref's failure does not hide the other) at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
 (unit tests and both browser engines, without lane or engine overrides), followed
 by both smokes. Full history preserves the suite's baseline/history guards. The
 suite has a 25-minute limit inside the existing 30-minute job. Failures fail the
@@ -155,7 +156,7 @@ retain their current browser ownership.
 ## Affected tests on pull requests
 
 PR CI uses `node scripts/test-impact.mjs` after dependency installation. It compares
-`HEAD` with the merge base of `origin/main` (full checkout history is required),
+`HEAD` with the merge base of the PR base branch (`origin/main` or `origin/dev`; full checkout history is required),
 then writes `.test-impact.json`. Each `pnpm test --lane=unit|browser
 --files-from=.test-impact.json` invocation runs the exact selected files in its
 lane. An empty selection is valid only when classification succeeded. Local
