@@ -41,6 +41,7 @@ import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, 
 import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import { installPatreonNavigation } from '../providers/patreon/navigation';
+import { installTwitchNavigation } from '../providers/twitch/navigation';
 import {
   harvestTwitchResponseJson,
   harvestTwitchResponseText,
@@ -246,6 +247,7 @@ export function installMainWorldRuntime(): void {
   if (harvestHost) {
     installYoutubeMain();
     installTwitchMain();
+    if (isTwitchHost(window.location.hostname)) installTwitchNavigation();
     installDisneyMain();
     installNetflixMain();
     installTencentMain();

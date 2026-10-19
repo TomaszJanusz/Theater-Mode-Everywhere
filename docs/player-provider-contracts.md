@@ -111,8 +111,12 @@ stream and no other video is playing. Pages without `mux-player` (Patreon's own 
 they hold exactly one non-live `<video>`; galleries, related-post players and embedded iframes stay
 manual, and identity is the URL's post id only. Patreon is a pushState SPA whose route changes fire
 no `popstate`, so its MAIN-world hook (`providers/patreon/navigation.ts`) publishes one window event
-per `pushState`/`replaceState` for the runtime to refresh on. Twitch uses
-stitched ads; Tencent
+per `pushState`/`replaceState` for the runtime to refresh on. Twitch declares VOD pages
+only (`/videos/<id>`); live channels, clips and embeds stay manual. A VOD qualifies when its page
+holds exactly one `<video>`, inside the player's `video-ref`, with a non-infinite duration (the
+previous channel's live video during SPA entry is therefore rejected). Ads stitched into the VOD
+stream are part of the watch session, as on Netflix and Disney+. Twitch is a pushState SPA too and
+reuses the shared history publication (`providers/navigation/history-publication.ts`). Tencent
 also has WASM/iframe playback; Crunchyroll commonly plays in a separate frame.
 These providers remain undeclared until those content boundaries are qualified.
 Bilibili confirms the live bpx player manifest (upload kind, BV id and part) and
