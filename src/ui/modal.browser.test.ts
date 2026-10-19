@@ -6,6 +6,8 @@ import { it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
 import { ownTestBrowser } from '../test-utils/test-browser';
+import { installChromeStub } from '../test-utils/chrome-stub';
+import { playerStylesheets } from '../test-utils/player-boot';
 import { readStylesheet } from '../test-utils/styles';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -33,14 +35,12 @@ async function fixture(page: Page, player = false): Promise<void> {
       <input id="shortcut-cycle" class="options-input"><button class="reset-single-btn" data-shortcut="cycle">Reset</button></div></div>
       <video src="/vod.webm" muted style="width:640px;height:360px"></video></body></html>` }));
   await page.goto('http://modal.test/');
+  await installChromeStub(page, { sync: { keepControlsVisible: true } });
   await page.evaluate(`window.__name = value => value; window.shortcutResult = { status: 'error' };
-    const saved = { keepControlsVisible: true };
-    const storage = { get: (keys, cb) => { cb?.(saved); return Promise.resolve(saved); }, set: async () => {} };
-    window.chrome = { runtime: { sendMessage: async () => window.shortcutResult },
-      storage: { sync: storage, onChanged: { addListener() {}, removeListener() {} } } };`);
-  await page.addStyleTag({ content: readStylesheet(path.join(ROOT, player ? 'src/content.css' : 'options/options.css')) });
+    chrome.runtime.sendMessage = async () => window.shortcutResult;`);
+  await page.addStyleTag({ content: player ? playerStylesheets().page : readStylesheet(path.join(ROOT, 'options/options.css')) });
   await page.addScriptTag({ content: await bundle });
-  await page.evaluate(`ModalFixture.setPlayerUiCss(${JSON.stringify(readStylesheet(path.join(ROOT, 'src/ui/shadow.css')))});`);
+  await page.evaluate(`ModalFixture.setPlayerUiCss(${JSON.stringify(playerStylesheets().ui)});`);
   if (player) {
     await page.evaluate('ModalFixture.installMainWorldRuntime(); ModalFixture.bootstrapPlayerRuntime();');
     await page.locator('video').evaluate(async (video: HTMLVideoElement) => {

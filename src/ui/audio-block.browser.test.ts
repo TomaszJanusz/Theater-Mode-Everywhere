@@ -1,34 +1,9 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { describe, it } from 'node:test';
 import type { Browser, Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
-
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';"
-    ].join('\n'),
-    resolveDir: SRC,
-    loader: 'ts'
-  },
-  bundle: true,
-  write: false,
-  format: 'iife',
-  globalName: 'AudioBlock',
-  platform: 'browser',
-  target: 'es2022',
-  logLevel: 'silent'
-}).outputFiles[0].text;
+import { bootPlayer, enterTheater } from '../test-utils/player-boot';
 
 const DRM_NOTE = 'Audio settings are unavailable: this video is DRM-protected.';
 
@@ -58,13 +33,9 @@ function fixture(drm: boolean): string {
 async function boot(page: Page, drm: boolean): Promise<void> {
   await page.route('http://audio-block.test/**', route => route.fulfill({ contentType: 'text/html', body: fixture(drm) }));
   await page.goto('http://audio-block.test/');
-  await page.evaluate(`window.chrome = { storage: { sync: { get: async () => ({ keepControlsVisible: true }), set: async () => {} }, onChanged: { addListener() {} } } };`);
-  await page.addStyleTag({ content: PAGE_CSS });
-  await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`AudioBlock.setPlayerUiCss(${JSON.stringify(UI_CSS)}); AudioBlock.bootstrapPlayerRuntime();`);
+  await bootPlayer(page, { settings: { keepControlsVisible: true } });
   await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).readyState >= 2);
-  await page.keyboard.press('t');
-  await page.locator('.theater-controls-wrapper.visible').waitFor();
+  await enterTheater(page);
   await page.locator('.player-settings-btn').click();
   await page.locator('.theater-settings-menu.visible').waitFor();
 }

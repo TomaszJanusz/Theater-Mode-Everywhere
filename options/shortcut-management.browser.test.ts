@@ -1,28 +1,20 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox } from 'playwright';
+
+import { installChromeStub } from '../src/test-utils/chrome-stub';
+import { bundleModules } from '../src/test-utils/player-boot';
+import { readStylesheet } from '../src/test-utils/styles';
 import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { testEngines } from '../src/test-utils/test-engines';
-import { readStylesheet } from '../src/test-utils/styles';
+import { defaultShortcuts } from '../src/ui/shortcuts';
 
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
 const css = readStylesheet(new URL('./options.css', import.meta.url));
-const bundle = buildSync({
-  stdin: { contents: `
-    import { createShortcutEditor } from './shortcut-editor';
-    import { defaultShortcuts } from '../src/ui/shortcuts';
-    let shortcuts = { ...defaultShortcuts, toggleMute: 'F', toggleFullscreen: 'F' };
-    window.chrome = { storage: { sync: { get: async () => ({ shortcuts }) } } };
-    const editor = createShortcutEditor(async () => {});
-    window.shortcutFixture = {
-      start: () => editor.initialize(),
-      reset: () => { shortcuts = { ...defaultShortcuts }; editor.applyStored(shortcuts); }
-    };
-  `, resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', target: 'es2022'
-}).outputFiles[0].text;
+const bundle = bundleModules(["export { createShortcutEditor } from '../options/shortcut-editor';"]);
+const conflicting = { ...defaultShortcuts, toggleMute: 'F', toggleFullscreen: 'F' };
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
@@ -31,7 +23,15 @@ for (const engine of testEngines()) {
     await page.setContent(html);
     await page.addStyleTag({ content: css });
     await page.locator('#shortcuts').evaluate(section => { (section as HTMLElement).hidden = false; });
+    await installChromeStub(page, { sync: { shortcuts: conflicting } });
     await page.addScriptTag({ content: bundle });
+    await page.evaluate(`(() => {
+      const editor = TheaterTest.createShortcutEditor(async () => {});
+      window.shortcutFixture = {
+        start: () => editor.initialize(),
+        reset: () => { const shortcuts = ${JSON.stringify(defaultShortcuts)}; chrome.storage.sync.set({ shortcuts }); editor.applyStored(shortcuts); }
+      };
+    })()`);
     await page.evaluate('shortcutFixture.start()');
     const assertConflictColor = () => page.waitForFunction(() =>
       ['shortcut-toggle-mute', 'shortcut-toggle-fullscreen'].every(id => {

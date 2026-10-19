@@ -1,27 +1,21 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { it, type TestContext } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { installChromeStub } from '../test-utils/chrome-stub';
+import { bundlePlayer, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "export { setActivatorDynamicPlacementForTests } from './ui/video-activator'; export { bootstrapPlayerRuntime } from './ui/player-runtime'; export { setPlayerUiCss } from './ui/root'; export { showAutoTheaterNotice } from './ui/auto-theater-notice';",
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'ActivatorTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
-const CSS = readStylesheet(new URL('./shadow.css', import.meta.url));
+const BUNDLE = bundlePlayer([
+  "export { setActivatorDynamicPlacementForTests } from './ui/video-activator';",
+  "export { showAutoTheaterNotice } from './ui/auto-theater-notice';"
+]);
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {
   interface Window {
-    ActivatorTest: {
+    TheaterTest: {
       bootstrapPlayerRuntime(): void;
       setActivatorDynamicPlacementForTests(enabled: boolean): void;
       setPlayerUiCss(css: string): void;
@@ -62,23 +56,26 @@ async function boot(page: Page, stored: Record<string, unknown> = {}, html = PAG
     EventTarget.prototype.removeEventListener = function (type, ...rest) {
       if (this === document && (type === 'pointermove' || type === 'pointerover')) window.activatorPointerListeners--;
       return remove.call(this, type, ...rest);
-    };
-    window.chrome = { runtime: { onMessage: { addListener() {} } }, storage: {
-      sync: { get: async () => (${JSON.stringify({ keepControlsVisible: true, videoActivator: true, ...stored })}), set: async () => {} },
-      local: { get: async () => ({}), set: async () => {} },
-      onChanged: { addListener: fn => window.storageListeners.push(fn), removeListener() {} } } };`);
+    };`);
   await page.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto(`https://${host}/`);
+  await installChromeStub(page, { sync: { keepControlsVisible: true, videoActivator: true, ...stored }, local: {} });
+  // The scenarios fire storage changes at the registered listeners directly.
+  await page.evaluate(`(() => {
+    const addListener = chrome.storage.onChanged.addListener;
+    chrome.storage.onChanged.addListener = fn => { window.storageListeners.push(fn); addListener(fn); };
+    chrome.runtime.onMessage = { addListener() {} };
+  })()`);
   await page.evaluate(media => {
     for (const video of document.querySelectorAll('video')) video.src = media;
   }, MEDIA);
   await page.waitForFunction(() => Array.from(document.querySelectorAll('video')).every(video => video.readyState >= 1));
   await page.addScriptTag({ content: BUNDLE });
   await page.evaluate(({ css, dynamicPlacement }) => {
-    if (dynamicPlacement) window.ActivatorTest.setActivatorDynamicPlacementForTests(true);
-    window.ActivatorTest.setPlayerUiCss(css);
-    window.ActivatorTest.bootstrapPlayerRuntime();
-  }, { css: CSS, dynamicPlacement });
+    if (dynamicPlacement) window.TheaterTest.setActivatorDynamicPlacementForTests(true);
+    window.TheaterTest.setPlayerUiCss(css);
+    window.TheaterTest.bootstrapPlayerRuntime();
+  }, { css: playerStylesheets().ui, dynamicPlacement });
   await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
 }
 
@@ -248,7 +245,7 @@ for (const engine of testEngines()) {
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     // Pointing at the extension's own interface hides it instead of re-evaluating the video beneath.
     await page.evaluate(() => {
-      const hud = window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000);
+      const hud = window.TheaterTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000);
       (window as unknown as { hideNotice: () => void }).hideNotice = hud;
     });
     const notice = page.locator('#theater-everywhere-ui .theater-auto-notice');
@@ -811,7 +808,7 @@ for (const engine of testEngines()) {
 
   it(`${engine}: the entry notice is opaque with a thinner border`, { timeout: 40_000 }, async t => {
     const page = await launch(t);
-    await page.evaluate(() => { window.ActivatorTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); });
+    await page.evaluate(() => { window.TheaterTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); });
     const style = await page.evaluate(() => {
       const notice = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice')!;
       const css = getComputedStyle(notice);
