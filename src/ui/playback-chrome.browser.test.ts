@@ -328,10 +328,28 @@ describe('playback chrome updates', () => {
         return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
           < root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
       });
-      await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!.classList.contains('visible'));
-      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const fadingBottom = await page.evaluate(() => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')));
-      assert.equal(fadingBottom, shown.bottom, 'captions remain clear while the controls are still fading');
+      // Capture the fade when it starts; a runner polling two frames later can
+      // miss the entire transition under Firefox or CPU contention.
+      await page.evaluate(() => {
+        const bar = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!;
+        Object.assign(window, { captionFade: new Promise((resolve, reject) => {
+          const observer = new MutationObserver(() => {
+            if (bar.classList.contains('visible')) return;
+            observer.disconnect();
+            const fade = bar.getAnimations().find(animation => animation instanceof CSSTransition && animation.transitionProperty === 'opacity');
+            if (!fade) { reject(new Error('controls must have an opacity transition')); return; }
+            fade.pause();
+            fade.currentTime = Number(fade.effect!.getTiming().duration) / 2;
+            resolve({ bottom: Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')),
+              opacity: Number(getComputedStyle(bar).opacity) });
+          });
+          observer.observe(bar, { attributes: true, attributeFilter: ['class'] });
+        }) });
+      });
+      const fading = await page.evaluate<{ bottom: number; opacity: number }>('window.captionFade');
+      assert.ok(fading.opacity > 0 && fading.opacity < 1, 'the assertion observes the middle of the fade');
+      assert.equal(fading.bottom, shown.bottom, 'captions remain clear while the controls are still fading');
+      await page.locator('.theater-controls-wrapper').evaluate(bar => { for (const animation of bar.getAnimations()) animation.play(); });
       await page.waitForFunction(bottom => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')) === bottom, rest);
     });
 

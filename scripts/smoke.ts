@@ -476,7 +476,13 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   if (!menuClearance) fail('Player settings overlap captions.');
   await page.setViewportSize({ width: 640, height: 720 });
   await page.mouse.move(320, 300);
-  await delay(400);
+  await page.waitForFunction(() => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    const caption = root.querySelector('.theater-caption-overlay')!.getBoundingClientRect();
+    const settings = root.querySelector('.theater-settings-menu')!.getBoundingClientRect();
+    return settings.left >= 0 && settings.right <= window.innerWidth
+      && (caption.right <= settings.left || caption.left >= settings.right || caption.bottom <= settings.top + 1);
+  });
   const narrowClearance = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     const caption = root.querySelector('.theater-caption-overlay')!.getBoundingClientRect();
@@ -488,7 +494,11 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.mouse.move(640, 300);
   await waitForChrome(true, true, false);
-  await delay(400);
+  await page.waitForFunction(() => {
+    const host = document.getElementById('theater-everywhere-ui')!;
+    return host.getBoundingClientRect().width === window.innerWidth
+      && !host.shadowRoot!.getAnimations().some(animation => animation.playState === 'running');
+  });
   const settingsLayout = await page.evaluate(() => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     return ['.controls-visibility-toggle', '.help-btn', '.video-fit-btn'].map((selector) => {
@@ -789,7 +799,12 @@ async function assertControlsPin(page: Page, context?: BrowserContext): Promise<
   await page.mouse.move(640, 300);
   await waitForChrome(true, true, false);
   const timeBefore = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.currentTime);
-  await delay(2800);
+  await page.waitForFunction(before => {
+    const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+    return document.querySelector<HTMLVideoElement>('video#player')!.currentTime > before
+      && document.documentElement.classList.contains('theater-everywhere-cursor-hidden')
+      && getComputedStyle(root.querySelector('.theater-everywhere-header-hud')!).opacity === '0';
+  }, timeBefore);
   await waitForChrome(true, true, false);
   const timeAfter = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.currentTime);
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT });
@@ -1427,11 +1442,12 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
     await row.click();
     await page.waitForFunction(([name, detail]) => document.getElementById('theater-everywhere-ui')?.shadowRoot
       ?.querySelector(`.audio-${name}-btn .theater-settings-detail`)?.textContent === detail, [name, detail]);
+    await hud.filter({ hasText: `${hudLabel}: ${detail}` }).waitFor();
     if (await hud.innerText() !== `${hudLabel}: ${detail}`) fail(`${hudLabel} HUD did not confirm ${detail}.`);
     if (await shapes(hud) !== await shapes(row)) fail(`${hudLabel} HUD icon differs from its settings row.`);
   };
 
-  if (!await page.locator('.audio-voice-btn').isVisible()) await gear.click();
+  if (!await page.locator('.audio-voice-btn').isVisible()) await gear.press('Enter');
   const section = page.locator('[data-settings-section="audio"]');
   await section.waitFor();
   // The heading can contain a nested New badge; its label is still Audio.
@@ -1538,7 +1554,7 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
 
   const layout = page.locator('.picture-layout-btn');
   // Opening help closes the settings popover; restore it for the next action.
-  if (!await layout.isVisible()) await gear.click();
+  if (!await layout.isVisible()) await gear.press('Enter');
   // The start layout depends on whether an earlier step ran with storage, so read it instead of assuming.
   const startLayout = (await layout.locator('.theater-settings-detail').innerText()).trim();
   const toggledLayout = startLayout === 'Raised' ? 'Centered' : 'Raised';
