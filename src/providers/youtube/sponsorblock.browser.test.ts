@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -48,7 +49,7 @@ body{margin:0;background:#111}#movie_player{width:960px;height:540px;position:re
   await page.waitForSelector('.theater-controls-wrapper');
 }
 const markers = (page: Page) => page.locator('.theater-scrubber-segment');
-for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as const) {
+for (const [name, engine] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([name]) => name)) {
   it(`${name}: marker borders follow resolved accents and appearance without changing SponsorBlock colors`, { timeout: 60000 }, async t => {
     const browser = await engine.launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage();
@@ -285,7 +286,7 @@ it('supports the existing YouTube embed player surface', { timeout: 30000 }, asy
   } finally { await browser.close(); }
 });
 
-for (const [name, engine] of [['Chromium', chromium], ['Firefox', firefox]] as const) {
+for (const [name, engine] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([name]) => name)) {
   it(`${name}: segment bars match the scrubber track height and boundaries get bar-colored ticks`, { timeout: 60000 }, async t => {
     const browser = await engine.launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1200, height: 800 }, deviceScaleFactor: 3 });

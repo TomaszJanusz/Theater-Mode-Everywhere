@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -20,7 +21,7 @@ const ANCESTORS: Record<string, string> = {
 };
 
 describe('pinned controls backing', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`keeps the docked plate opaque over busy page content while the floating bar stays glass (${engine})`, async (t) => {
       const playwright = await import('playwright');
       const type = playwright[engine] as BrowserType;

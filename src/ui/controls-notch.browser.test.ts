@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -67,7 +68,7 @@ describe('caption menu notch', () => {
       </div>
     </div></div></div>`;
 
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`keeps the notch clear of the header and flush with the menu for any row count (${engine})`, async (t) => {
       const playwright = await import('playwright');
       const type = playwright[engine] as BrowserType;

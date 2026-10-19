@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -53,7 +54,7 @@ async function boot(page: Page, dir: 'ltr' | 'rtl'): Promise<void> {
   await page.evaluate(d => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-title-hud')!.setAttribute('dir', d), dir);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) for (const dir of ['ltr', 'rtl'] as const) {
+for (const engine of testEngines()) for (const dir of ['ltr', 'rtl'] as const) {
   it(`${engine}/${dir}: reduced-motion title keeps head and tail, reveals in full, and follows the setting live`, { timeout: 60_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);

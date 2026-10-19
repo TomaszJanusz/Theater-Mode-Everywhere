@@ -2,15 +2,12 @@ name: CI
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
 
-# Only a newer push to the same PR cancels an older run. Pushes to main get a unique group so every
-# merge keeps its own result.
+# A newer update to the same PR cancels its older run. Merges do not rerun CI;
+# nightly Firefox coverage and the release suite cover main.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -18,7 +15,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Must cover the 20-minute Test step plus install, build and both smoke runs.
+    # Includes the conditional full Firefox matrix on infrastructure changes.
     timeout-minutes: 30
     steps:
       - name: Checkout Code
@@ -60,17 +57,16 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.changes.outputs.run != 'false'
-        run: pnpm exec playwright install --with-deps chromium firefox
+        env:
+          FIREFOX: ${{ steps.changes.outputs.firefox }}
+        run: |
+          browsers=(chromium)
+          if [ "$FIREFOX" != 'false' ]; then browsers+=(firefox); fi
+          pnpm exec playwright install --with-deps "${browsers[@]}"
 
       - name: Start virtual audio device
         if: steps.changes.outputs.run != 'false'
-        # Firefox needs an audio backend to run a native AudioContext on Linux.
-        run: |
-          sudo apt-get install --no-install-recommends -y pulseaudio
-          pulseaudio --start --exit-idle-time=-1
-          pactl load-module module-null-sink sink_name=theater_tests rate=48000
-          pactl set-default-sink theater_tests
-          pactl list short sinks
+        uses: ./.github/actions/virtual-audio
 
       - name: Typecheck
         if: steps.changes.outputs.run != 'false'
@@ -86,18 +82,36 @@ jobs:
         if: steps.changes.outputs.run != 'false'
         run: pnpm verify:bundles
 
+      - name: Unit tests
+        if: steps.changes.outputs.run != 'false'
+        run: pnpm test --lane=unit
+
       - name: Test
         if: steps.changes.outputs.run != 'false'
-        # The suite outgrew 10 minutes (it took ~6.7 min earlier); this is a cap, not a failing test.
-        timeout-minutes: 20
-        run: pnpm test
+        timeout-minutes: 10
+        run: pnpm test --lane=browser
+        env:
+          THEATER_TEST_ENGINES: chromium
+
+      - name: Test Firefox
+        if: steps.changes.outputs.run != 'false' && steps.changes.outputs.firefox != 'false'
+        timeout-minutes: 15
+        run: pnpm test --lane=browser
+        env:
+          THEATER_TEST_ENGINES: firefox
 
       - name: Smoke Chromium
         if: steps.changes.outputs.run != 'false'
         run: xvfb-run --auto-servernum pnpm smoke:chromium
 
       - name: Smoke Firefox
-        if: steps.changes.outputs.run != 'false'
+        id: firefox-smoke
+        if: steps.changes.outputs.run != 'false' && steps.changes.outputs.firefox != 'false'
         # Unsigned MV3 sideload is blocked in Playwright; the inject fallback is diagnostic-only.
+        # TME-112 owns making this blocking after 10 consecutive green installed-extension runs.
         continue-on-error: true
         run: xvfb-run --auto-servernum pnpm smoke:firefox
+
+      - name: Report Firefox smoke failure
+        if: ${{ !cancelled() && steps.firefox-smoke.outcome == 'failure' }}
+        run: echo '::warning title=Firefox smoke failed::PR Firefox smoke remains non-blocking pending TME-112 and 10 consecutive green installed-extension runs. The current injection fallback is diagnostic-only; inspect the Smoke Firefox log.'

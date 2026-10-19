@@ -1,0 +1,87 @@
+name: Nightly browser coverage
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-browser-coverage
+  cancel-in-progress: false
+
+jobs:
+  firefox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Start virtual audio device
+        uses: ./.github/actions/virtual-audio
+
+      - name: Build Extension
+        run: pnpm build
+        env:
+          CI: true
+
+      - name: Test Firefox
+        id: tests
+        timeout-minutes: 15
+        run: pnpm test --lane=browser
+        env:
+          THEATER_TEST_ENGINES: firefox
+
+      - name: Smoke Chromium
+        id: chromium
+        if: ${{ !cancelled() }}
+        run: xvfb-run --auto-servernum pnpm smoke:chromium
+
+      - name: Smoke Firefox
+        id: firefox
+        if: ${{ !cancelled() }}
+        # The unsigned-extension fallback is diagnostic, not an installation pass.
+        run: xvfb-run --auto-servernum pnpm smoke:firefox
+
+      - name: Coverage summary
+        if: always()
+        env:
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
+          FIREFOX_RESULT: ${{ steps.firefox.outcome }}
+        run: |
+          {
+            echo '## Nightly coverage on main'
+            echo "Firefox browser tests: $TEST_RESULT"
+            echo "Chromium smoke: $CHROMIUM_RESULT"
+            echo "Firefox smoke: $FIREFOX_RESULT"
+            echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
+            echo 'Failures fail this job; no test round runs on a merge to main.'
+          } >> "$GITHUB_STEP_SUMMARY"

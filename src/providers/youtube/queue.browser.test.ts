@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -93,7 +94,7 @@ async function setup(page: Page): Promise<void> {
   await page.evaluate('window.QueueTest.installYouTubeQueueNavigation()');
 }
 
-for (const [name, browserType] of [['Chromium', chromium], ['Firefox', firefox]] as const) {
+for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([name]) => name)) {
   describe(`YouTube queue navigation (${name})`, () => {
     it('uses collapsed queue links with missing native controls and keeps previews tied to targets', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }

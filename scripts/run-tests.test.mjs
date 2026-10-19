@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { discoverTests, main, planRun } from './run-tests.mjs';
+import { discoverTests, isBrowserTest, main, planRun } from './run-tests.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -62,4 +62,21 @@ test('forwards arguments verbatim to the child process without a shell', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('lanes partition discovery exactly once, including legacy browser filenames', () => {
+  const discovered = discoverTests(repoRoot);
+  const classify = file => isBrowserTest(join(repoRoot, file));
+  const files = lane => {
+    const plan = planRun(discovered, [`--lane=${lane}`], classify);
+    return [...plan.node.files, ...plan.tsx.files];
+  };
+  const unit = files('unit');
+  const browser = files('browser');
+  assert.ok(browser.includes('src/playlist-nav.test.ts'));
+  assert.ok(browser.includes('src/test-utils/test-browser.test.ts'));
+  assert.ok(unit.includes('scripts/run-tests.test.mjs'));
+  assert.deepEqual(unit.filter(file => browser.includes(file)), []);
+  assert.deepEqual([...unit, ...browser].sort(), discovered);
+  assert.throws(() => planRun(discovered, ['--lane=typo']), /Unknown test lane/);
 });

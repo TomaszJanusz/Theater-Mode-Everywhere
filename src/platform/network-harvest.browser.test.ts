@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import { MAX_CAPTION_BYTES } from './media-url-policy';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -67,7 +68,7 @@ type Counts = { clone: number; consumed: number; stringify: number; decode: numb
 const counts = (page: Page): Promise<Counts> => page.evaluate('window.counts');
 const reset = (page: Page): Promise<void> => page.evaluate('window.resetCounts()');
 
-for (const browserType of [chromium, firefox]) {
+for (const browserType of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${browserType.name()}: rejects unrelated fetch/XHR/heatmap before materialization and preserves fetch semantics`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
     const browser = await browserType.launch({ headless: true });

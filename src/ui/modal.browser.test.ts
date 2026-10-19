@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -88,7 +89,7 @@ async function shell(page: Page) {
   });
 }
 
-for (const browserType of [chromium, firefox]) {
+for (const browserType of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${browserType.name()}: every modal family shares the shell and computed styles in normal and High contrast`, { timeout: 180_000 }, async t => {
     const browser = await browserType.launch(); ownTestBrowser(t, browser);
     try {

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
@@ -103,7 +104,7 @@ describe('native chat controller', () => {
 
   it('seeds each content visit from native visibility, retaining saved fallback and session overrides in both browsers', { timeout: 60000 }, async t => {
     const { ownTestBrowser } = await import('../test-utils/test-browser');
-    for (const engine of ['chromium', 'firefox'] as const) {
+    for (const engine of testEngines()) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); continue; }
       const testBrowser = await browserType.launch({ headless: true });
@@ -1147,7 +1148,7 @@ describe('native chat controller', () => {
 
   it('limits discovery and theme work to visible watch routes', async t => {
     if (!browser || !code) { t.skip('Chromium is not installed'); return; }
-    const engines = ['chromium', 'firefox'] as const;
+    const engines = testEngines();
     for (const engine of engines) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
@@ -1368,7 +1369,7 @@ describe('native chat controller', () => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const ownedCode = bundleEntry('./owned-dom.ts', 'OwnedDomMod');
     const twitchCode = bundleEntry('./adapters/twitch.ts', 'TwitchTheme');
-    const engines = ['chromium', 'firefox'] as const;
+    const engines = testEngines();
     for (const engine of engines) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }

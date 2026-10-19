@@ -1,3 +1,4 @@
+import { testEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -24,7 +25,7 @@ const FIXTURE = `<!doctype html><html><head>
   <section id="related"><h2>Related</h2><video id="related-video"></video></section>
   </body></html>`;
 
-for (const engine of ['chromium', 'firefox'] as const) describe(`${engine} generic title source`, () => {
+for (const engine of testEngines()) describe(`${engine} generic title source`, () => {
   it('reads page fallbacks, waits for a client-side navigation to replace them and stops observing on cleanup', async (t) => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }

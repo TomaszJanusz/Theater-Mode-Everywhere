@@ -1,0 +1,12 @@
+name: Virtual audio device
+description: Provide a native Linux audio backend for Firefox Web Audio tests
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        sudo apt-get install --no-install-recommends -y pulseaudio
+        pulseaudio --start --exit-idle-time=-1
+        pactl load-module module-null-sink sink_name=theater_tests rate=48000
+        pactl set-default-sink theater_tests
+        pactl list short sinks

@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -79,7 +80,7 @@ async function focused(page: Page, selector: string): Promise<boolean> {
   return page.locator(selector).evaluate(el => (el.getRootNode() as Document | ShadowRoot).activeElement === el);
 }
 
-for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
+for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   describe(`screen-reader contracts in ${engine}`, () => {
     const testPage = async (t: Parameters<typeof ownTestBrowser>[0], run: (page: Page) => Promise<void>) => {
       const browser = await browserType.launch({ headless: true });

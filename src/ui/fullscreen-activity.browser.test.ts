@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -30,7 +31,7 @@ declare global {
 }
 
 describe('fullscreen chrome activity', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     for (const pinned of [false, true]) {
       it(`suppresses transition activity for 500 ms in ${engine}, pinned=${pinned}`, { timeout: 60_000 }, async t => {
         const browserType = (await import('playwright'))[engine];

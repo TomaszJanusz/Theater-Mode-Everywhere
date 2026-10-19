@@ -140,7 +140,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox
 
       - name: Start virtual audio device
-        # Firefox needs an audio backend to run a native AudioContext on Linux.
+        # Keep in sync with .github/actions/virtual-audio/action.yml. Inline because
+        # the pinned release tag may predate that local action.
         run: |
           sudo apt-get install --no-install-recommends -y pulseaudio
           pulseaudio --start --exit-idle-time=-1

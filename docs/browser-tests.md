@@ -49,9 +49,9 @@ that paused media suspends again; native autoplay policy and statechange timing
 vary across platforms. The separate native case checks real
 playback, pause, reload, replacement, reparenting and removal.
 
-The registered suite limits test-file concurrency to two. CI caps the test step
-at ten minutes and the job at fifteen, and cancels superseded runs for the same
-ref. These limits fail stalled checks; they do not turn them into passing tests.
+The registered suite limits test-file concurrency to two. CI caps Chromium browser
+tests at ten minutes, Firefox at fifteen, and the job at thirty, and cancels
+superseded runs for the same PR. These limits fail stalled checks; they do not turn them into passing tests.
 
 On headless Linux, native Firefox Web Audio also needs an audio server and an
 output device. CI starts PulseAudio with a null sink for the job; the browser
@@ -91,3 +91,55 @@ CoreFoundation home-directory lookups for child processes as well.
 See [Playwright issue #42768](https://github.com/microsoft/playwright/issues/42768)
 for upstream fix status. After upgrading Playwright and installing its matching
 Firefox build, verify an unprefixed launch before removing the workaround.
+
+## Test lanes and CI coverage
+
+```sh
+pnpm test --lane=unit
+THEATER_TEST_ENGINES=chromium pnpm test --lane=browser
+THEATER_TEST_ENGINES=firefox pnpm test --lane=browser
+```
+
+The runner partitions discovered tests into `unit` and `browser`: browser files
+use `.browser.test.ts`, or import Playwright (including legacy names such as
+`playlist-nav.test.ts`). Each discovered file belongs to exactly one lane.
+Selectors and Node test flags work within either lane. Without `--lane`, all
+tests run. `THEATER_TEST_ENGINES` selects parameterized browser cases; unset means
+both engines, preserving local and release coverage. Comma-separated `chromium`
+and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
+cases explicitly tied to Chromium still use Chromium in either browser lane;
+the switch does not claim to port those cases to Firefox.
+
+PRs run typecheck, build, bundle verification, unit tests, Chromium browser tests
+and Chromium smoke. `scripts/ci-changes.mjs` additionally enables the full Firefox
+browser matrix and Firefox smoke when any changed path is:
+
+- `manifest.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, or `tsconfig.json`;
+- under `src/platform/`, `src/protocol/`, `src/test-utils/`, or `test/`;
+- under `scripts/` (including build, packaging and smoke scripts), `.github/actions/`, or `.github/workflows/`.
+
+Both sides of renames count. Missing or invalid change metadata enables Firefox.
+This deliberately broad infrastructure rule avoids a per-test exception list;
+UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
+the existing inexpensive CI pass. The CI workflow and `check` job names are
+unchanged for branch-protection compatibility.
+
+PR Firefox smoke remains non-blocking and emits a warning annotation on failure.
+TME-112 owns making it blocking after ten consecutive green runs on the real
+installed-extension path; diagnostic injection does not meet that requirement.
+
+Merging to main starts **no CI test round**. Nightly coverage runs on main at
+02:23 UTC and can also be dispatched manually: all existing Firefox browser
+cases plus both smokes. Failures produce a failing job and a job summary; Firefox
+smoke failures are not suppressed. Its unsigned-extension injection fallback is
+still diagnostic-only. Release runs retain the full default test suite. Thus a
+Firefox regression outside the PR path rule can first surface nightly, rather
+than block that PR. Nightly does not repeat unit tests or the full Chromium
+browser suite.
+
+The shared-browser pilot in `test-browser.ts` launches lazily once per engine
+per file/suite. Each test owns a fresh context, with a cleanup hook registered
+before page setup; cookies, storage, routes, clocks and pages do not cross test
+boundaries. File/suite cleanup closes the browser. The pilot covers
+`video-activator`, `auto-theater-storage`, and options `rte-settings`; other files
+retain their current browser ownership.

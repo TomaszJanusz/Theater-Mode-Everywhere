@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -19,7 +20,7 @@ const BUNDLE = esbuild.buildSync({
 const redLevels = BASS_LEVELS.filter((level): level is 'moar' | 'moaaarr' => level === 'moar' || level === 'moaaarr');
 
 describe('bass subwoofer icon', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`follows the level and the active state in ${engine}`, { timeout: 60_000 }, async () => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -82,7 +83,7 @@ async function waitForHud(page: Page, text: string): Promise<void> {
 }
 
 describe('playback HUD browser regressions', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`centers the feedback HUD on the picture across layout, fit and resize in ${engine}`, { timeout: 60_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch({ headless: true });
       ownTestBrowser(t, browser);
@@ -231,7 +232,7 @@ describe('playback HUD browser regressions', () => {
     }
   });
 
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`dismisses settings, speed, and volume on a video click without pausing in ${engine}`, async () => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

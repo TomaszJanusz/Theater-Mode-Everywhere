@@ -1,10 +1,11 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { it } from 'node:test';
-import type { Page } from 'playwright';
+import { it, type TestContext } from 'node:test';
+import { chromium, firefox, type Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
@@ -97,13 +98,13 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
   await page.mouse.move(x, y);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
-  const launch = async (t: Parameters<typeof ownTestBrowser>[0], {
+for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+  const launch = async (t: TestContext, {
     stored, html = PAGE, host = 'activator.test', freezeClock = false, controlClock = false, pageAge = 60_000, dynamicPlacement = false
   }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; controlClock?: boolean; pageAge?: number; dynamicPlacement?: boolean } = {}) => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+    const context = await shared.newContext(t, { viewport: { width: 1000, height: 700 } });
+    const page = await context.newPage();
     page.setDefaultTimeout(6_000);
     // Most scenarios predate the five-second load window; fresh-page tests pass a negative pageAge.
     await page.addInitScript(`window.perfOffset = ${pageAge};`);

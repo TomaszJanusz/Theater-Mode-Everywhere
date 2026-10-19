@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { it } from 'node:test';
@@ -19,7 +20,7 @@ const bundle = buildSync({
   bundle: true, write: false, format: 'iife', target: 'es2022'
 }).outputFiles[0].text;
 
-for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
+for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   it(`select-only combobox keeps focus, separates browsing from selection and owns popup lifecycle in ${engine}`, { timeout: 30_000 }, async t => {
     const browser = await browserType.launch({ headless: true });
     ownTestBrowser(t, browser);

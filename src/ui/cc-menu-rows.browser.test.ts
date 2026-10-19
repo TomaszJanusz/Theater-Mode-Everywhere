@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -53,7 +54,7 @@ async function withBrowser(test: import('node:test').TestContext, engine: 'chrom
 }
 
 describe('caption menu rows stay on one line', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async t => {
       await withBrowser(t, engine, async browser => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
@@ -123,7 +124,7 @@ describe('caption menu rows stay on one line', () => {
     });
   }
 
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`truncates long host track names rendered by the controller in ${engine}`, { timeout: 120_000 }, async t => {
       await withBrowser(t, engine, async browser => {
         const page = await browser.newPage({ viewport: { width: 360, height: 640 } });
@@ -172,7 +173,7 @@ describe('caption menu rows stay on one line', () => {
   }
 });
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`searches and navigates stable subtitle choices in a shadow root and iframe in ${engine}`, { timeout: 120_000 }, async t => {
     await withBrowser(t, engine, async browser => {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

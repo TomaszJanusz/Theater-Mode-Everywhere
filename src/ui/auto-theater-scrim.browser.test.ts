@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
@@ -64,7 +65,7 @@ const scrimState = (page: Page) => page.evaluate(() => {
 const gone = (page: Page) => page.waitForFunction(() =>
   !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-scrim'), undefined, { timeout: 3000 });
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`${engine}: the scrim dims the page around the video with the notice, never intercepts input, and fades out on cancel`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);

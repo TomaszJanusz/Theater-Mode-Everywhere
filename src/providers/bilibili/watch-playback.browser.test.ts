@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
@@ -11,7 +12,7 @@ const bundle = buildSync({
   }, bundle: true, write: false, format: 'iife', globalName: 'BilibiliTest'
 }).outputFiles[0].text;
 
-for (const engine of [chromium, firefox]) {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`Bilibili ${engine.name()} confirms current content only and cleans up observations`, { timeout: 60_000 }, async t => {
     const browser = await engine.launch({ headless: true });
     ownTestBrowser(t, browser);

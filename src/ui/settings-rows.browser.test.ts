@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -60,7 +61,7 @@ async function withBrowser(engine: 'chromium' | 'firefox', run: (browser: Browse
 }
 
 describe('settings menu rows stay on one line', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async () => {
       await withBrowser(engine, async browser => {
         // 360px is the narrowest viewport the menu is designed for.
@@ -139,7 +140,7 @@ describe('settings menu rows stay on one line', () => {
     });
   }
 
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 180_000 }, async () => {
       await withBrowser(engine, async browser => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
@@ -223,7 +224,7 @@ describe('settings menu rows stay on one line', () => {
 });
 
 describe('Bass row sweep', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`sweeps once when the level rises into a red level in ${engine}`, { timeout: 60_000 }, async () => {
       await withBrowser(engine, async browser => {
         const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
@@ -270,7 +271,7 @@ describe('Bass row sweep', () => {
 });
 
 describe('Settings row vertical alignment', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     for (const scale of [1, 2]) {
       it(`centres icon, label, keycaps and value on one line at ${scale}x in ${engine}`, { timeout: 60_000 }, async () => {
         await withBrowser(engine, async browser => {

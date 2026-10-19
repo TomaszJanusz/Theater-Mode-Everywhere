@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -32,7 +33,7 @@ const bundle = esbuild.buildSync({
   target: 'es2022'
 }).outputFiles[0].text;
 
-const engines: Array<[string, BrowserType]> = [['chromium', chromium], ['firefox', firefox]];
+const engines: Array<[string, BrowserType]> = selectTestEngines<[string, BrowserType]>([['chromium', chromium], ['firefox', firefox]], ([name]) => name);
 
 async function install(page: Page): Promise<void> {
   await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
@@ -21,7 +22,7 @@ type Api = typeof import('./dom-watch') & typeof import('./navigation/watch')
   & typeof import('../media-features/caption-renderer') & typeof import('../ui/service-actions')
   & typeof import('../core/disposable-scope') & typeof import('./netflix/service-actions') & typeof import('../ui/chrome-visibility');
 
-for (const engine of ['chromium', 'firefox'] as const) describe(`${engine} UI refresh ownership`, () => {
+for (const engine of testEngines()) describe(`${engine} UI refresh ownership`, () => {
   it('coalesces scoped changes, stops hidden polling, rebinds shadow players and disposes in documents and iframes', async t => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }

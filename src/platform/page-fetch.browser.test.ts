@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
@@ -21,7 +22,7 @@ const bundle = esbuild.buildSync({
   bundle: true, write: false, format: 'iife', globalName: 'BridgeTest', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
-for (const engine of [chromium, firefox]) {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${engine.name()}: private replies reject window forgeries and close on timeout`, { timeout: 30_000 }, async t => {
     if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
     const browser = await engine.launch(); ownTestBrowser(t, browser);
