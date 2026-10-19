@@ -52,7 +52,7 @@ it('discovers new tests and tool/smoke code without scanning production or gener
   const directory = mkdtempSync(join(tmpdir(), 'test-determinism-'));
   try {
     const call = ['page.waitFor', 'Timeout(10);'].join('');
-    const included = ['src/new.browser.test.ts', 'options/new.test.ts', 'tools/nested/probe.ts', 'scripts/smoke-extra.ts'];
+    const included = ['src/new.browser.test.ts', 'options/new.test.ts', 'tools/nested/probe.ts', 'src/test-utils/player-scenarios/fixture.ts', 'scripts/smoke-extra.ts', 'scripts/smoke/nested/scenario.ts'];
     const excluded = ['src/runtime.ts', 'scripts/build.ts', 'node_modules/vendor.test.ts', 'dist/generated.test.ts'];
     for (const file of [...included, ...excluded]) {
       const path = join(directory, file);

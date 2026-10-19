@@ -240,3 +240,13 @@ test('smoke harness roots and smoke-only dependencies trigger Chromium without s
   }
   assert.equal(selectTests(files, [files[1]], actual).smoke, false);
 });
+
+test('nested smoke modules are harness roots and retain transitive dependencies', () => {
+  const modules = new Map([...graph,
+    ['scripts/smoke/nested/scenario.ts', new Set(['scripts/support.ts'])],
+    ['scripts/support.ts', new Set()]
+  ]);
+  for (const file of ['scripts/smoke/nested/scenario.ts', 'scripts/support.ts']) {
+    assert.equal(selectTests(tests, [file], modules).smoke, true, file);
+  }
+});

@@ -113,7 +113,7 @@ export async function readGraph(root, files, entries = ENTRIES) {
   // Repository-wide guards inspect files without importing them.
   for (const file of sources) {
     if (/^(?:src|popup|options)\//.test(file) && !/\.test\./.test(file)) graph.get('src/safe-dom.test.ts')?.add(file);
-    if (/\.test\.|^tools\/|^scripts\/smoke/.test(file)) graph.get('scripts/test-determinism.test.ts')?.add(file);
+    if (/\.test\.|^tools\/|^src\/test-utils\/|^scripts\/smoke/.test(file)) graph.get('scripts/test-determinism.test.ts')?.add(file);
   }
   for (const entry of entries) if (!graph.has(entry)) throw new Error(`Missing extension entry: ${entry}`);
   return graph;
@@ -135,7 +135,7 @@ export function selectTests(tests, changed, graph, entries) {
   const locales = changed.some(file => file.startsWith('_locales/'));
   // Harness roots trigger smoke without becoming inputs of dist-dependent tests.
   const smokeRoots = entries ?? [...BUNDLE_ENTRIES, ...[...graph.keys()].filter(file =>
-    /^scripts\/smoke[^/]*\.ts$/.test(file) && !file.endsWith('.test.ts'))];
+    /^scripts\/(?:smoke[^/]*|smoke\/.*)\.ts$/.test(file) && !file.endsWith('.test.ts'))];
   const smoke = locales || smokeRoots.some(file => reaches(file, targets));
   if (shared) return { ...full(`Shared input: ${shared}`), smoke };
   const unknown = [...targets].find(file => !graph.has(file) && !tests.includes(file)

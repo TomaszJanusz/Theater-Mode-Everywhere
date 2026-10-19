@@ -19,7 +19,8 @@ not verify Firefox extension installation, permissions, or the background script
 ## Deterministic waits
 
 Wait for observable DOM/media state; use fake timers or `page.clock` for deadlines.
-`scripts/test-determinism.test.ts` scans tests, `tools/**` and `scripts/smoke*.ts`,
+`scripts/test-determinism.test.ts` scans tests, `src/test-utils/**`, `tools/**`,
+`scripts/smoke*.ts` and `scripts/smoke/**/*.ts`,
 including serialized browser code. Its textual rules conservatively count timers,
 frames, sleep helpers, timer imports and named retry loops, including mocks and
 watchdogs; review clock ownership and aliases separately. Per-file/per-kind counts
@@ -179,8 +180,8 @@ affected, a shipped asset/build input changes, or classification fails. Otherwis
 the summary explicitly records its skip. Firefox still uses the existing
 `ci-changes.mjs` infrastructure rule; when enabled, it runs the selected browser
 files and existing Firefox smoke. `scripts/smoke.ts` and other
-`scripts/smoke*.ts` harness entries are additional smoke roots, so their own
-changes and transitive dependencies also run Chromium smoke. These harness roots
+`scripts/smoke*.ts` and `scripts/smoke/**/*.ts` harness entries are additional smoke
+roots, so their own changes and transitive dependencies also run Chromium smoke. These harness roots
 are separate from the build/installed roots that dist-dependent tests consume.
 
 Shared inputs force all test files: package/lock/workspace files, root tsconfigs,
@@ -209,3 +210,21 @@ work, or infer arbitrary computed dependencies. PRs no longer prove the entire
 Chromium/unit suite on every change. Nightly and release run the full
 default suite; nightly also runs both smokes with blocking failures. No
 authenticated host verification is implied by any of these fixture suites.
+
+## Installed smoke scope and timing
+
+Smoke protects installation/startup, background messages, MAIN/isolated wiring,
+real extension storage shared by Settings/popup/player, and iframe ownership.
+Fixture-only interaction regressions run in `src/ui/smoke-regressions.browser.test.ts`
+with `sharedTestBrowser`; its support modules live in `src/test-utils/player-scenarios/`
+and remain covered by the determinism guard. No Firefox installation or CI
+advisory policy changes are implied by this split.
+
+Set `THEATER_SMOKE_TIMING=1` on either smoke command to print seconds for each
+`assert*` scenario and a `TOTAL` wall duration including browser startup/cleanup.
+Rows are inclusive: do not add nested `assertBadgeWorld` to its parent highlights
+row. Repeated startup rows distinguish initial entry from entry after blacklist
+restoration. The existing `THEATER_SMOKE_*_ONLY` switches select the corresponding
+installed-storage scenario (shortcuts mode retains its existing skip-pin meaning).
+See [the scenario audit](smoke-coverage.md) for the retained capabilities and
+removed/moved coverage.
