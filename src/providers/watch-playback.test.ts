@@ -20,7 +20,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon', 'bilibili', 'bilibiliIntl']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon', 'twitch', 'bilibili', 'bilibiliIntl']);
     assert.ok(providerDefinition('youtube').watchPlayback?.refreshEvents?.includes('yt-navigate-start'));
   });
 
@@ -29,6 +29,18 @@ describe('positive provider watch declarations', () => {
       assert.deepEqual(read(href), { provider: 'vimeo', identity: '123456' });
     }
     for (const href of ['https://vimeo.com/', 'https://vimeo.com/watch', 'https://vimeo.com/showcase/1?video=123456', 'https://vimeo.com/event/123456', 'https://vimeo.com/video/123456']) {
+      assert.equal(read(href), null, href);
+    }
+  });
+
+  it('declares Twitch VOD pages only, keeping live channels, clips and other routes manual', () => {
+    const expected = { provider: 'twitch', identity: '2345678901' };
+    for (const href of ['https://www.twitch.tv/videos/2345678901', 'https://www.twitch.tv/videos/2345678901/', 'https://twitch.tv/videos/2345678901?t=1h2m3s&filter=archives']) {
+      assert.deepEqual(read(href), expected, href);
+    }
+    for (const href of ['https://www.twitch.tv/', 'https://www.twitch.tv/somechannel', 'https://www.twitch.tv/somechannel/videos', 'https://www.twitch.tv/somechannel/clip/Slug-abc',
+      'https://clips.twitch.tv/Slug-abc', 'https://www.twitch.tv/videos/', 'https://www.twitch.tv/videos/abc', 'https://www.twitch.tv/directory/game/x?video=2345678901',
+      'https://player.twitch.tv/?video=2345678901']) {
       assert.equal(read(href), null, href);
     }
   });
@@ -48,10 +60,10 @@ describe('positive provider watch declarations', () => {
   });
 
   it('never declares arbitrary sites, spoofed hosts, or unqualified providers', () => {
-    for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://www.twitch.tv/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
+    for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'disney', 'netflix', 'bilibili', 'bilibiliIntl']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -90,7 +102,8 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.patreon.com', { ...flags, patreon: false }, true), 'integrationOff');
-    assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.twitch.tv', { ...flags, twitch: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('example.com', { ...flags, youtube: false }, true), 'unsupported');

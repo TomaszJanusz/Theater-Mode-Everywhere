@@ -17,3 +17,9 @@ export function patreonPostId(url: URL): string | null {
   const match = /^(?:\/([^/]+))?\/posts\/(?:[^/]*-)?(\d+)\/?$/.exec(url.pathname);
   return match && match[1] !== 'c' ? match[2] : null;
 }
+
+/** Twitch VOD pages only: `/videos/<id>`. Live channels, clips and `?video=` embeds stay manual. */
+export function twitchVodId(url: URL): string | null {
+  if (url.hostname !== 'www.twitch.tv' && url.hostname !== 'twitch.tv') return null;
+  return /^\/videos\/(\d+)\/?$/.exec(url.pathname)?.[1] ?? null;
+}
