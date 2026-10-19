@@ -1,14 +1,11 @@
 import { testEngines } from '../test-utils/test-engines';
-import { readStylesheet } from '../test-utils/styles';
+import { playerStylesheets } from '../test-utils/player-boot';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import type { BrowserType } from 'playwright';
 
-const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
+const UI_CSS = playerStylesheets().ui;
 
 describe('player bar notch', () => {
   it('drops the open trigger onto the bar’s bottom border without moving the icon', async (t) => {

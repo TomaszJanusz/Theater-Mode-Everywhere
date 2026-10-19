@@ -1,44 +1,14 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { canvasVideoFixture } from '../test-utils/video-fixtures';
 import { ownTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';",
-      "export { installMainWorldRuntime } from './platform/main-world-runtime';"
-    ].join('\n'),
-    resolveDir: SRC, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'PlaybackHudTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
-
-const FIXTURE = `<!doctype html><html><head><title>Playback HUD fixture</title>
-  <style>body { margin:0; background:#111; } video { width:960px; height:540px; }</style>
-  </head><body><video id="player" title="Playback HUD regression" muted playsinline></video>
-  <script>
-    const canvas = document.createElement('canvas');
-    canvas.width = 1280; canvas.height = 720;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#1c2634'; ctx.fillRect(0, 0, 1280, 720);
-    const video = document.querySelector('video');
-    video.srcObject = canvas.captureStream(12);
-    setInterval(() => { ctx.fillRect(0, 0, 1, 1); }, 100);
-    video.play();
-  </script></body></html>`;
+const FIXTURE = canvasVideoFixture({ title: 'Playback HUD regression', pageTitle: 'Playback HUD fixture' });
 
 /**
  * Starts theater mode on a playing local video with the play/pause key on K.
@@ -46,23 +16,12 @@ const FIXTURE = `<!doctype html><html><head><title>Playback HUD fixture</title>
  * @returns When the theater controls have mounted and playback has started.
  */
 async function boot(page: Page, settings: Record<string, unknown> = {}): Promise<void> {
-  await page.evaluate(`window.chrome = { storage: {
-    sync: {
-      get: async () => ({ keepControlsVisible: true, shortcuts: { playPause: 'k' }, ...${JSON.stringify(settings)} }),
-      set: async () => {}
-    },
-    onChanged: { addListener() {} }
-  } };`);
-  await page.addStyleTag({ content: PAGE_CSS });
-  await page.addScriptTag({ content: BUNDLE });
-  if (settings.volumeBoostEnabled) await page.evaluate('PlaybackHudTest.installMainWorldRuntime();');
-  await page.evaluate(`PlaybackHudTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); PlaybackHudTest.bootstrapPlayerRuntime();`);
+  await bootPlayer(page, { settings: { keepControlsVisible: true, shortcuts: { playPause: 'k' }, ...settings }, mainWorld: Boolean(settings.volumeBoostEnabled) });
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return Boolean(video && video.readyState >= 2 && !video.paused);
   });
-  await page.keyboard.press('t');
-  await page.locator('.theater-controls-wrapper.visible').waitFor();
+  await enterTheater(page);
 }
 
 /**

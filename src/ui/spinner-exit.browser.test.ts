@@ -1,23 +1,20 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { it } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { installChromeStub } from '../test-utils/chrome-stub';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: { text: string }[] } };
-const bundle = esbuild.buildSync({
-  stdin: { contents: `export { exitSpinner } from './ui/spinner-exit';
-    export { showAutoTheaterNotice } from './ui/auto-theater-notice';
-    export { createHud } from './ui/hud';
-    export { bootstrapPlayerRuntime } from './ui/player-runtime';
-    export { setPlayerUiCss } from './ui/root';`, resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'SpinnerTest', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
-const css = readStylesheet(new URL('./shadow.css', import.meta.url));
+const bundle = bundleModules([
+  "export { exitSpinner } from './ui/spinner-exit';",
+  "export { showAutoTheaterNotice } from './ui/auto-theater-notice';",
+  "export { createHud } from './ui/hud';",
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';"
+], 'SpinnerTest');
+const css = playerStylesheets().ui;
 
 async function setup(page: Page) {
   await page.addInitScript('window.__name = target => target;');
@@ -261,8 +258,9 @@ for (const engine of testEngines()) {
     await page.evaluate(`document.body.innerHTML = '<video muted style="width:960px;height:540px"></video>';
       const video = document.querySelector('video');
       Object.defineProperties(video, { readyState: { configurable:true, value:4 }, duration: { configurable:true, value:60 } });
-      window.chrome = { storage: { sync: { get: async () => ({keepControlsVisible:true}), set: async () => {} }, onChanged: {addListener(){}} } };
-      SpinnerTest.bootstrapPlayerRuntime();`);
+      `);
+    await installChromeStub(page, { sync: { keepControlsVisible: true } });
+    await page.evaluate('SpinnerTest.bootstrapPlayerRuntime()');
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
     const spinner = page.locator('.theater-loading-spinner');

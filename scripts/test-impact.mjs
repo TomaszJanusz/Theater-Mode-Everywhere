@@ -115,6 +115,7 @@ export async function readGraph(root, files, entries = ENTRIES) {
   for (const file of sources) {
     if (/^(?:src|popup|options)\//.test(file) && !/\.test\./.test(file)) graph.get('src/safe-dom.test.ts')?.add(file);
     if (/\.test\.|^tools\/|^src\/test-utils\/|^scripts\/smoke/.test(file)) graph.get('scripts/test-determinism.test.ts')?.add(file);
+    if (/\.test\.ts$/.test(file)) graph.get('scripts/test-harness.test.ts')?.add(file);
   }
   for (const entry of entries) if (!graph.has(entry)) throw new Error(`Missing extension entry: ${entry}`);
   return graph;

@@ -1,0 +1,272 @@
+{
+  "options/choice-grid.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "options/combobox.browser.test.ts": {
+    "esbuild": 1
+  },
+  "options/localization.browser.test.ts": {
+    "esbuild": 1
+  },
+  "options/rte-settings.browser.test.ts": {
+    "esbuild": 1
+  },
+  "options/shortcut-management.browser.test.ts": {
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "options/tabs.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "popup/rte-settings.browser.test.ts": {
+    "esbuild": 1
+  },
+  "scripts/build-mode.test.ts": {
+    "esbuild": 1
+  },
+  "scripts/bundle-integrity.test.ts": {
+    "esbuild": 1
+  },
+  "src/appearance.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 2,
+    "chromeStub": 1
+  },
+  "src/chat/controller.browser.test.ts": {
+    "launch": 4,
+    "esbuild": 2
+  },
+  "src/entries/background.test.ts": {
+    "esbuild": 1
+  },
+  "src/platform/audio-graph.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/platform/bounded-body.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1
+  },
+  "src/platform/media-audio-runtime.browser.test.ts": {
+    "launch": 7,
+    "esbuild": 1
+  },
+  "src/platform/network-harvest.browser.test.ts": {
+    "launch": 5,
+    "esbuild": 1
+  },
+  "src/platform/page-fetch.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 1
+  },
+  "src/playlist-nav.test.ts": {
+    "launch": 3,
+    "esbuild": 1
+  },
+  "src/providers/bilibili/watch-playback.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/providers/bilibili-intl/runtime.browser.test.ts": {
+    "launch": 1
+  },
+  "src/providers/bilibili-intl/watch-playback.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/providers/capabilities.test.ts": {
+    "esbuild": 1
+  },
+  "src/providers/disney/clock.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 1
+  },
+  "src/providers/disney/stage.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/providers/native/page-title.browser.test.ts": {
+    "launch": 4,
+    "esbuild": 1
+  },
+  "src/providers/patreon/watch-playback.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1
+  },
+  "src/providers/service-actions.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 2
+  },
+  "src/providers/twitch/harvest.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/providers/ui-refresh.browser.test.ts": {
+    "launch": 4,
+    "esbuild": 1
+  },
+  "src/providers/youtube/captions.browser.test.ts": {
+    "launch": 7,
+    "esbuild": 1
+  },
+  "src/providers/youtube/queue.browser.test.ts": {
+    "launch": 8,
+    "esbuild": 1
+  },
+  "src/providers/youtube/sponsorblock.browser.test.ts": {
+    "launch": 7,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/providers/youtube/timedtext-cache.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1
+  },
+  "src/reduce-motion.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 2
+  },
+  "src/safe-dom.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/accessibility.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/audio-block.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/auto-theater-notice.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/auto-theater-runtime.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/auto-theater-scrim.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/auto-theater-settings.browser.test.ts": {
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/auto-theater-storage.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/bass-hud.browser.test.ts": {
+    "launch": 1
+  },
+  "src/ui/bass-icon.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/caption-dock-lifecycle.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/caption-loading.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/caption-options-close.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/caption-overlay-width.browser.test.ts": {
+    "launch": 1
+  },
+  "src/ui/cc-menu-rows.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/cc-menu.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1
+  },
+  "src/ui/controls-notch.browser.test.ts": {
+    "launch": 2
+  },
+  "src/ui/discovery.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/fullscreen-activity.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/hud-spacing.browser.test.ts": {
+    "launch": 1
+  },
+  "src/ui/modal.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/native-chat.browser.test.ts": {
+    "launch": 9,
+    "esbuild": 1
+  },
+  "src/ui/netflix-runtime.browser.test.ts": {
+    "launch": 3,
+    "esbuild": 2
+  },
+  "src/ui/new-badge.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/pinned-controls-backing.browser.test.ts": {
+    "launch": 1
+  },
+  "src/ui/playback-hud.browser.test.ts": {
+    "launch": 6
+  },
+  "src/ui/player-settings-order.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/scrubber-tooltip.browser.test.ts": {
+    "launch": 5,
+    "esbuild": 1
+  },
+  "src/ui/service-actions.browser.test.ts": {
+    "launch": 5,
+    "esbuild": 1
+  },
+  "src/ui/settings-rows.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1
+  },
+  "src/ui/time-readout.browser.test.ts": {
+    "launch": 3
+  },
+  "src/ui/title-hud-reduced.browser.test.ts": {
+    "launch": 1
+  },
+  "src/ui/video-activator.browser.test.ts": {
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/ui/video-selection.browser.test.ts": {
+    "esbuild": 1
+  },
+  "src/ui/volume-wheel.browser.test.ts": {
+    "launch": 1,
+    "esbuild": 1,
+    "chromeStub": 1
+  },
+  "src/whatsNew-content.browser.test.ts": {
+    "launch": 2,
+    "esbuild": 1
+  },
+  "tools/cpu-suite/browser.test.ts": {
+    "launch": 1
+  },
+  "tools/cpu-suite/resource.browser.test.ts": {
+    "launch": 2
+  }
+}

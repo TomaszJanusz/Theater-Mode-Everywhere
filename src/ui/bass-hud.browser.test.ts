@@ -1,27 +1,15 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { describe, it } from 'node:test';
 import { BASS_LEVELS } from '../audio-settings';
-import { readStylesheet } from '../test-utils/styles';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { createHud, audioHudIcon } from './ui/hud';",
-      "export { applyAccentColorPreset } from './accentTheme';"
-    ].join('\n'),
-    resolveDir: SRC,
-    loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'Hud', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const UI_CSS = playerStylesheets().ui;
+const BUNDLE = bundleModules([
+  "export { createHud, audioHudIcon } from './ui/hud';",
+  "export { applyAccentColorPreset } from './accentTheme';"
+], 'Hud');
 
 // The HUD is painted like the player paints it: paintOverlay stamps the user's accent inline on the
 // overlay, which is what once beat the stylesheet's red for the top bass levels.
