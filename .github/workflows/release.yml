@@ -140,7 +140,14 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox
 
       - name: Start virtual audio device
-        uses: ./.github/actions/virtual-audio
+        # Keep in sync with .github/actions/virtual-audio/action.yml. Inline because
+        # the pinned release tag may predate that local action.
+        run: |
+          sudo apt-get install --no-install-recommends -y pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=theater_tests rate=48000
+          pactl set-default-sink theater_tests
+          pactl list short sinks
 
       - name: Typecheck
         run: pnpm typecheck
