@@ -73,6 +73,8 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     if (process.env.THEATER_SMOKE_SHORTCUTS_ONLY !== '1') await assertPinStorage(page, context);
     await scenarios.assertShortcutManagement(page, context);
     await assertRteSettings(context);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
     await page.locator('video#player').click();
     await page.keyboard.press('t');
     await page.locator('.theater-controls-wrapper').waitFor();
