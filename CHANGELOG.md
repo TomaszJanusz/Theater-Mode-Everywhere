@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Firefox build no longer declares a minimum version for Firefox for Android; Firefox for Android is not supported.
+
 ## [2.0.1] - 2026-10-19
 
 ### Added
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The chat panel now follows whether the site's own chat was visible when you entered theater; your last choice is used only when the site's state cannot be read.
+- The Firefox build requires Firefox for Android 142 or newer; the minimum for desktop Firefox is unchanged.
 - Translated text and icons are now built without HTML injection, a hardening change with no visible difference.
 
 ### Fixed
