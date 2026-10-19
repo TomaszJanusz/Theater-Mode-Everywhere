@@ -23,9 +23,9 @@ PRINCIPAIS RECURSOS
 
 ONDE E COMO FUNCIONA
 - Vídeo HTML5 universal: funciona com os elementos de vídeo HTML5 padrão da web, inclusive players colocados no Shadow DOM.
-- Players incorporados: detecta e amplia vídeos incorporados em frames, como os players do YouTube ou do Vimeo.
+- Players incorporados: detecta e amplia vídeos incorporados em frames, como os players do YouTube ou de outras plataformas de vídeo.
 - Legendas HTML5: exibe as faixas de legendas HTML5 padrão em uma sobreposição própria do modo cinema, para que você personalize a aparência.
-- Integrações com plataformas: além dos citados no início desta descrição, a RTE também é compatível, entre outros, com o Vimeo (playlists e navegação no Showcase), o Tencent Video (títulos, legendas e capítulos), o Patreon (entrada automática no modo teatro em posts com vídeo nativo) e o Crunchyroll (títulos, capítulos de abertura e créditos, seleção de legendas). Os recursos disponíveis dependem do serviço e do vídeo.
+- Integrações com plataformas: além dos citados no início desta descrição, a RTE também é compatível, entre outros, com o Patreon (entrada automática no modo teatro em posts com vídeo nativo) e o Crunchyroll (títulos, capítulos de abertura e créditos, seleção de legendas), além de outras plataformas de vídeo, incluindo asiáticas, com playlists, títulos, legendas e capítulos. Os recursos disponíveis dependem do serviço e do vídeo.
 - Transmissões ao vivo: reconhece transmissões AO VIVO e, se o serviço oferecer uma janela de DVR, permite voltar na gravação e retornar ao momento atual.
 - Serviços protegidos por DRM: algumas plataformas limitam o acesso ao player, então alguns recursos, como os efeitos de áudio, podem não estar disponíveis.
 - Privacidade: Você não é o produto. A extensão não envia ao desenvolvedor informações sobre você nem sobre o que você assiste. As configurações podem ser sincronizadas pela conta do navegador. A política de privacidade completa está em Configurações, em Sobre.
