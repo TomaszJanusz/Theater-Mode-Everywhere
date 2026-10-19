@@ -12,6 +12,7 @@ import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 const FIXTURE = canvasVideoFixture({ title: 'Top layer' })
   + '<div id="cover" style="position:fixed;inset:0;z-index:2147483647;background:#f00"></div>'
   + '<div id="late" popover="manual" style="position:fixed;inset:0;margin:0;width:auto;height:auto;border:0;background:#0f0"></div>'
+  + '<div id="tip" popover="manual" style="position:fixed;inset:auto;left:4px;top:4px;margin:0;width:60px;height:20px"></div>'
   + '<dialog id="modal" style="position:fixed;inset:0;margin:0;width:auto;height:auto;max-width:none;max-height:none;border:0;background:#00f"></dialog>';
 
 const HOST = '#theater-everywhere-ui';
@@ -48,7 +49,7 @@ async function open(t: TestContext, engine: TestEngine) {
     }
   });
   await serveFixture(page, FIXTURE, 'http://top-layer.test/');
-  await page.addStyleTag({ content: '#cover, #late:not(:popover-open), #modal:not([open]) { display: none }' });
+  await page.addStyleTag({ content: '#cover, #late:not(:popover-open), #tip:not(:popover-open), #modal:not([open]) { display: none }' });
   return { page, errors };
 }
 
@@ -140,5 +141,68 @@ for (const engine of testEngines()) {
     await page.waitForFunction(h => !document.querySelector(h)!.matches(':popover-open'), HOST);
     await page.evaluate(() => document.documentElement.removeAttribute('data-theater-chat-active'));
     await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
+  });
+
+  it(`${engine}: re-entering the top layer on frequent page popovers does not restart its animations or drop focus`, { timeout: 60_000 }, async t => {
+    const { page, errors } = await open(t, engine);
+    await page.clock.install();
+    await bootPlayer(page);
+    await page.clock.resume();
+    await enterTheater(page);
+    // A looping animation and a focused control inside the host, in a corner the tooltip never touches.
+    await page.evaluate(h => {
+      const root = document.querySelector(h)!.shadowRoot!;
+      const box = document.createElement('div');
+      box.innerHTML = `<style>@keyframes probe { to { opacity: .5 } }</style>
+        <div id="probe" style="position:fixed;right:0;bottom:200px;width:40px;height:40px;animation:probe 1s infinite alternate"></div>
+        <button id="probe-focus" style="position:fixed;right:60px;bottom:200px">focus</button>`;
+      root.append(...box.children);
+      (window as any).starts = 0;
+      root.getElementById('probe')!.addEventListener('animationstart', () => { (window as any).starts++; });
+      root.getElementById('probe-focus')!.focus();
+    }, HOST);
+    await page.waitForFunction('window.starts === 1');
+    // Count the raises, so a pass cannot mean the host was never re-entered.
+    await page.evaluate(() => {
+      (window as any).hides = 0;
+      const hide = HTMLElement.prototype.hidePopover;
+      HTMLElement.prototype.hidePopover = function (this: HTMLElement) {
+        if (this.id === 'theater-everywhere-ui') (window as any).hides++;
+        return hide.call(this);
+      };
+    });
+    // Page tooltips: 20 show/hide pairs a frame apart, each awaited through its own toggle event.
+    for (let i = 0; i < 20; i++) {
+      await page.evaluate(() => new Promise<void>(resolve => {
+        const tip = document.getElementById('tip')!;
+        tip.addEventListener('toggle', () => resolve(), { once: true });
+        tip.matches(':popover-open') ? tip.hidePopover() : tip.showPopover();
+      }));
+      await page.evaluate(() => new Promise<void>(resolve => {
+        const tip = document.getElementById('tip')!;
+        tip.addEventListener('toggle', () => resolve(), { once: true });
+        tip.matches(':popover-open') ? tip.hidePopover() : tip.showPopover();
+      }));
+      await page.clock.runFor(20);
+    }
+    await page.clock.runFor(500);
+    const after = await page.evaluate(h => {
+      const root = document.querySelector(h)!.shadowRoot!;
+      return { raises: (window as any).hides as number, restarts: (window as any).starts - 1, focused: root.activeElement?.id, open: document.querySelector(h)!.matches(':popover-open') };
+    }, HOST);
+    t.diagnostic(`${engine}: 20 tooltip toggles -> ${after.raises} host raises, ${after.restarts} animation restarts`);
+    assert.ok(after.raises > 0, 'the host was re-entered');
+    assert.deepEqual({ ...after, raises: 0 }, { raises: 0, restarts: 0, focused: 'probe-focus', open: true });
+    // Why re-entering is harmless: the host's `display: block !important` keeps it rendered while
+    // closed, so no style update ever sees it hidden and animations and focus survive the hide/show pair.
+    const closedDisplay = await page.evaluate(h => {
+      const host = document.querySelector<HTMLElement>(h)!;
+      host.hidePopover();
+      const display = getComputedStyle(host).display;
+      host.showPopover();
+      return display;
+    }, HOST);
+    assert.equal(closedDisplay, 'block');
+    assert.deepEqual(errors, []);
   });
 }
