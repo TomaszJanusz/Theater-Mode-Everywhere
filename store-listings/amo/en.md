@@ -11,12 +11,12 @@ Theater Mode Everywhere enlarges HTML5 players to fill the entire browser window
 
 Watch tutorials, streams, videos, and short clips with custom playback controls. Use subtitles, keyboard shortcuts, video fit, audio effects and volume controls, plus additional features on supported platforms.
 
-Optional Rich Theater Experience (RTE) offers deeper integrations with popular online services. On social and video platforms such as YouTube, Twitch, Vimeo or Bilibili (both the Chinese and the international versions), and on movie and series services such as Netflix, Disney+, Tencent Video and Crunchyroll, RTE provides a better viewing experience. It also supports Patreon, a place where creators meet their fans. Depending on the service, the extension may display titles, subtitles, chapters, thumbnail previews, skip buttons, next-episode navigation and additional information on the timeline. The feature is still experimental, so its capabilities vary between platforms. The full list of supported services is in the extension's settings.
+Rich Theater Experience (RTE) offers deeper integrations with popular online services. It provides a better viewing experience on YouTube, Twitch and Bilibili (both the Chinese and the international versions) and on movie and series services such as Netflix and Disney+. Depending on the service, the extension may display titles, subtitles, chapters, thumbnail previews, skip buttons, next-episode navigation and additional information on the timeline. Capabilities vary between platforms. The full list of supported services is in the extension's settings.
 
 MAIN FEATURES
 - One-key immersive mode: press `T` to instantly enlarge the active video into browser view. Press again or `Escape` to return. If there are several videos on the page, use `Shift+T` to switch them. Double-click the picture to enter or leave fullscreen without leaving theater mode.
 - Better subtitle support: select a track directly in cinema mode, turn subtitles on and off with the `C` key, and adjust font, size, color, shadow, background and opacity. The extension remembers your preferred language separately for each website.
-- Rich Theater Experience (experimental): enable additional integrations with supported services. Available features depend on the service and can be managed with a switch for each service in the extension popup or in settings.
+- Rich Theater Experience: enable additional integrations with supported services. Available features depend on the service and can be managed with a switch for each service in the extension popup or in settings.
 - Chat beside the picture: on Twitch and YouTube with Rich Theater Experience, keep the live chat or chat replay next to the video or below it, and show or hide it with `Alt+R`.
 - A richer timeline: jump between chapters, preview thumbnails before seeking, and see YouTube's Most Replayed moments. Installed SponsorBlock markers can be shown on the YouTube timeline.
 - Skip buttons and next episodes: where the service offers them, skip intros, credits and recaps or YouTube ads, and move to the previous or next video or episode.
@@ -34,7 +34,7 @@ WHERE AND HOW IT WORKS
 - Universal HTML5 Video: Works with standard HTML5 video elements on the web, including players placed in the Shadow DOM.
 - Embedded Players: Detects and enlarges videos embedded in frames, such as YouTube or Vimeo players.
 - HTML5 Subtitles: Displays standard HTML5 subtitle tracks in their own cinema mode overlay so you can customize their appearance.
-- Platform Integrations: Rich Theater Experience can add titles, subtitles, chapters, preview thumbnails, and more on the supported services described above. Available features depend on the service and video.
+- Platform Integrations: Rich Theater Experience can add titles, subtitles, chapters, preview thumbnails, and more on the supported services. Besides those named at the top of this description, it also covers, among others, Vimeo, Tencent Video, Patreon and Crunchyroll. Available features depend on the service and video.
 - Live broadcasts: recognizes LIVE broadcasts and, if the service provides a DVR window, allows you to rewind the recording and return to the current moment.
 - DRM-protected services: some platforms limit access to the player, so some functions, such as audio effects, may be unavailable on them.
 - Privacy: You're not a product. The extension does not send information about you or what you watch to the developer. Settings can sync through your browser account. The full privacy policy is available in Settings, under About.
