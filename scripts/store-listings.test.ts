@@ -9,6 +9,40 @@ const chromeRoot = path.join(listingsRoot, 'chrome');
 const amoRoot = path.join(listingsRoot, 'amo');
 const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 
+// Chrome Web Store rejects descriptions that read as keyword spam, so every
+// language names exactly these four supported services (YouTube in all packs),
+// picked for regional relevance, and no other supported-service brand.
+const SERVICE_PACKS: Record<string, string[]> = {
+  en: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  de: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  pl: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ko: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ja: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  fr: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  es: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  it: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  pt_BR: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  ru: ['YouTube', 'Twitch', 'Vimeo', 'Crunchyroll'],
+  uk: ['YouTube', 'Twitch', 'Netflix', 'Crunchyroll'],
+  zh_CN: ['YouTube', 'Twitch', 'Bilibili', '腾讯视频'],
+  ar: ['YouTube', 'Netflix', 'Twitch', 'Disney+']
+};
+
+// Every supported-service brand with its transliterations, normalized to the
+// name used in SERVICE_PACKS. WeTV is detected on its own and belongs to no pack.
+const SERVICE_BRANDS: Array<[brand: string, pattern: RegExp]> = [
+  ['YouTube', /YouTube|يوتيوب|ユーチューブ|유튜브|Ютуб|Ютюб/i],
+  ['Twitch', /Twitch|تويتش|ツイッチ|트위치|Твитч|Твіч/i],
+  ['Netflix', /Netflix|نتفليكس|ネットフリックス|넷플릭스|Нетфликс|Нетфлікс/i],
+  ['Disney+', /Disney|ديزني|ディズニー|디즈니|Дисней|Дісней/i],
+  ['Crunchyroll', /Crunchyroll|كرانشي ?رول|クランチロール|크런치롤|Кранчиролл|Кранчіролл/i],
+  ['Vimeo', /Vimeo|فيميو|ビメオ|비메오|Вимео|Вімео/i],
+  ['Patreon', /Patreon|باتريون|パトレオン|패트리온|Патреон/i],
+  ['Bilibili', /Bilibili|بيلي ?بيلي|ビリビリ|빌리빌리|Билибили|Білібілі|哔哩哔哩/i],
+  ['腾讯视频', /腾讯|Tencent|腾訊/i],
+  ['WeTV', /WeTV/i]
+];
+
 function listingLocales(root: string, extension: string): string[] {
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
@@ -92,6 +126,21 @@ describe('store listings', () => {
         `${locale}: AMO name differs from extensionNameCompact`);
       assert.equal(amoSection(amo, 'Summary'), messages.extensionDescription?.message, `${locale}: summary differs`);
       assert.equal(amoSection(amo, 'Description'), readChromeLong(locale).trim(), `${locale}: description differs`);
+    }
+  });
+
+  it('names exactly the regional pack of four services in every Chrome description', () => {
+    assert.deepEqual(Object.keys(SERVICE_PACKS).sort(), locales);
+    assert.equal(locales.length, 13);
+    for (const [locale, pack] of Object.entries(SERVICE_PACKS)) {
+      assert.equal(new Set(pack).size, 4, `${locale}: pack must hold exactly 4 unique services`);
+      assert.ok(pack.includes('YouTube'), `${locale}: pack must include YouTube`);
+      assert.ok(!pack.includes('WeTV'), `${locale}: WeTV belongs to no pack`);
+    }
+    for (const locale of locales) {
+      const text = readChromeLong(locale);
+      const found = SERVICE_BRANDS.filter(([, pattern]) => pattern.test(text)).map(([brand]) => brand);
+      assert.deepEqual(found.sort(), [...SERVICE_PACKS[locale]].sort(), `${locale}: service names differ from the pack`);
     }
   });
 
