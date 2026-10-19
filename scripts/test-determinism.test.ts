@@ -75,7 +75,16 @@ it('allows a missing remote ref locally but rejects it in CI', t => {
     assertBaselineRatchet({}, directory, false);
     assert.equal(warning.mock.callCount(), 1);
     assert.match(String(warning.mock.calls[0].arguments[0]), /Skipping only the local history comparison/);
-    assert.throws(() => assertBaselineRatchet({}, directory, true), /requires origin\/main/);
+    const previous = process.env.GITHUB_BASE_REF;
+    try {
+      delete process.env.GITHUB_BASE_REF;
+      assert.throws(() => assertBaselineRatchet({}, directory, true), /requires origin\/main/);
+      process.env.GITHUB_BASE_REF = 'dev';
+      assert.throws(() => assertBaselineRatchet({}, directory, true), /requires origin\/dev/);
+    } finally {
+      if (previous === undefined) delete process.env.GITHUB_BASE_REF;
+      else process.env.GITHUB_BASE_REF = previous;
+    }
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
