@@ -1,5 +1,6 @@
 import { DISNEY_SHADOW_PARENT_CSS } from './disney/stage';
 import { rankNetflixTheaterVideos } from './netflix/playback';
+import { twitchVideoAbandoned } from './twitch/discovery';
 import { injectTencentWasmFrameStyles, tencentVideosShareContainer } from './tencent/stage';
 
 export type ProviderDiscovery = {
@@ -7,6 +8,8 @@ export type ProviderDiscovery = {
   prepareShadowRoot?(shadowRoot: ShadowRoot): void;
   extraShadowCss?(): string;
   sharesPlaybackHost?(current: HTMLVideoElement, replacement: HTMLVideoElement): boolean;
+  /** A still-connected video the host has emptied for good, which a loaded replacement may supersede. */
+  abandonedVideo?(video: HTMLVideoElement): boolean;
 };
 
 const providerDiscovery: ProviderDiscovery[] = [
@@ -19,6 +22,9 @@ const providerDiscovery: ProviderDiscovery[] = [
   },
   {
     extraShadowCss: () => DISNEY_SHADOW_PARENT_CSS
+  },
+  {
+    abandonedVideo: twitchVideoAbandoned
   }
 ];
 
@@ -43,4 +49,8 @@ export function providerSharesPlaybackHost(current: HTMLVideoElement, replacemen
     if (hook.sharesPlaybackHost && !hook.sharesPlaybackHost(current, replacement)) return false;
   }
   return true;
+}
+
+export function providerVideoAbandoned(video: HTMLVideoElement): boolean {
+  return providerDiscovery.some((hook) => hook.abandonedVideo?.(video) === true);
 }
