@@ -215,9 +215,6 @@ async function run() {
           required: ['none'],
           optional: []
         }
-      },
-      gecko_android: {
-        strict_min_version: '142.0'
       }
     };
     // AMO limits names to 50 characters, so Firefox keeps the name without the store slogan.

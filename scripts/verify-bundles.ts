@@ -17,7 +17,7 @@ for (const dir of dirs) {
   const settings = manifest.browser_specific_settings;
   if (settings?.gecko) {
     assert.equal(settings.gecko.strict_min_version, '140.0', 'Firefox desktop minimum must stay 140.0');
-    assert.equal(settings.gecko_android?.strict_min_version, '142.0', 'Firefox for Android requires 142.0 for data collection permissions');
+    assert.equal(settings.gecko_android, undefined, 'Firefox for Android is unsupported and must not be declared');
   }
 }
 
