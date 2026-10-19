@@ -124,6 +124,10 @@ UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
 the existing inexpensive CI pass. The CI workflow and `check` job names are
 unchanged for branch-protection compatibility.
 
+PR Firefox smoke remains non-blocking and emits a warning annotation on failure.
+TME-112 owns making it blocking after ten consecutive green runs on the real
+installed-extension path; diagnostic injection does not meet that requirement.
+
 Merging to main starts **no CI test round**. Nightly coverage runs on main at
 02:23 UTC and can also be dispatched manually: all existing Firefox browser
 cases plus both smokes. Failures produce a failing job and a job summary; Firefox
