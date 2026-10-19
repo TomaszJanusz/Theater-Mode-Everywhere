@@ -5,7 +5,7 @@ import path from 'node:path';
 import { it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../src/test-utils/test-browser';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
 import { readStylesheet } from '../src/test-utils/styles';
 import { LANGUAGES } from '../src/language';
@@ -55,11 +55,12 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
   }
 }
 
+const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
+
 it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { timeout: 30_000 }, async t => {
-  const browser = await chromium.launch({ headless: true });
-  ownTestBrowser(t, browser);
+  const context = await browsers.chromium.newContext(t);
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await open(page, 'options', []);
     await page.addStyleTag({ content: readStylesheet(path.join(root, 'options/options.css')) });
     await page.locator('#tab-features').click();
@@ -97,7 +98,7 @@ it('Settings groups AutoTheater and accessibility, persists countdown choices, a
         }
       }
     }
-  } finally { await browser.close(); }
+  } finally { await context.close(); }
 });
 
 async function switchTo(page: Page, locale: string): Promise<void> {
@@ -107,10 +108,9 @@ async function switchTo(page: Page, locale: string): Promise<void> {
 
 for (const blacklist of [[], ['example.com', 'second.com']]) {
   it(`Settings catalog audit relabels all five tabs and dynamic exclusions (${blacklist.length} rows) without reload`, { timeout: 30_000 }, async t => {
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await browsers.chromium.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'options', blacklist);
@@ -224,15 +224,14 @@ for (const blacklist of [[], ['example.com', 'second.com']]) {
       await page.locator('.te-dialog-btn-secondary').click();
       await page.locator('.te-dialog').waitFor({ state: 'detached' });
       assert.deepEqual(errors, []);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }
 
 it('Settings Language row links to the translation issue form for the selected language', { timeout: 30_000 }, async t => {
-  const browser = await chromium.launch({ headless: true });
-  ownTestBrowser(t, browser);
+  const context = await browsers.chromium.newContext(t);
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await open(page, 'options', []);
     await page.locator('#tab-appearance').click();
     const link = page.locator('#translation-issue-link');
@@ -243,15 +242,14 @@ it('Settings Language row links to the translation issue form for the selected l
     assert.equal(url.searchParams.get('template'), 'translation-issue.yml');
     assert.equal(url.searchParams.get('language'), 'Polski');
     assert.equal(await link.textContent(), 'Zgłoś błąd w tłumaczeniu');
-  } finally { await browser.close(); }
+  } finally { await context.close(); }
 });
 
 for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'https://child.example.com/watch', 'https://youtube.com/watch']) {
   it(`popup catalog audit refreshes dynamic domain/status (${url || 'no tab'})`, { timeout: 30_000 }, async t => {
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await browsers.chromium.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'popup', ['example.com'], url);
@@ -260,16 +258,16 @@ for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'http
         await assertLocalized(page, locale);
       }
       assert.deepEqual(errors, []);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }
 
-for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
+for (const [engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
+  const shared = browsers[engine as keyof typeof browsers];
   it(`${engine}: Video launcher keeps its localized BETA badge beside NEW across appearance and language changes`, { timeout: 30_000 }, async t => {
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page, 'options', []);
       await page.locator('#tab-features').click();
       const row = page.locator('[data-new-feature=settingsVideoActivator]');
@@ -307,6 +305,6 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
       await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
       await row.locator('.te-new-badge').waitFor({ state: 'detached' });
       assert.equal(await beta.isVisible(), true, 'experimental status persists when NEW highlights are hidden');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }

@@ -32,7 +32,11 @@ other helpers or raise allowances; remaining legacy waits are tracked in TME-116
 
 ## Timeouts and browser ownership
 
-Register a launched browser with `ownTestBrowser(t, browser)` from
+Browser files create one lazy browser per engine with `sharedTestBrowser(engine)`
+and give every test a fresh context (`shared.newContext(t, options)`); a context
+is the isolation boundary, so storage, routes, clocks and init scripts never
+leak between tests. A launch that needs its own browser flags registers it with
+`ownTestBrowser(t, browser)`. Both live in
 `src/test-utils/test-browser.ts`. A `node:test` timeout fails the test but does
 not settle an outstanding Playwright evaluation; a `finally` block alone can
 leave the browser transport alive and prevent the runner from exiting. The

@@ -2,10 +2,10 @@ import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
 import { build, buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { assertLocalized, readCatalog } from '../test-utils/language-audit';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
@@ -82,25 +82,25 @@ async function focused(page: Page, selector: string): Promise<boolean> {
 
 for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   describe(`screen-reader contracts in ${engine}`, () => {
-    const testPage = async (t: Parameters<typeof ownTestBrowser>[0], run: (page: Page) => Promise<void>) => {
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
+    const shared = sharedTestBrowser(browserType);
+    const testPage = async (t: TestContext, run: (page: Page) => Promise<void>) => {
+      const context = await shared.newContext(t, { viewport: { width: 1280, height: 900 } });
       try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        const page = await context.newPage();
         page.setDefaultTimeout(8_000);
         const errors: string[] = [];
         page.on('pageerror', error => errors.push(error.message));
         await run(page);
         assert.deepEqual(errors, []);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     };
 
     it('shares close-button geometry and states between Settings and shadow dialogs', { timeout: 30_000 }, async t => {
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
+      const settingsContext = await shared.newContext(t);
+      const playerContext = await shared.newContext(t);
       try {
-        const settings = await browser.newPage();
-        const player = await browser.newPage();
+        const settings = await settingsContext.newPage();
+        const player = await playerContext.newPage();
         await optionsPage(settings);
         await settings.locator('#whats-new-btn').click();
         await playerPage(player);
@@ -148,7 +148,7 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
             if (state === 'focus') assert.notEqual(pageStyle.outlineStyle, 'none', 'keyboard focus remains visible');
           }
         }
-      } finally { await browser.close(); }
+      } finally { await Promise.all([settingsContext.close(), playerContext.close()]); }
     });
 
     it('names Settings controls, exposes only the selected panel, and owns service disclosure/exclusion focus', { timeout: 30_000 }, async t => {

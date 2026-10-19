@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from '../test-utils/release';
 
@@ -69,9 +69,9 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
 }
 
 for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`${engine}: development Settings restores only newly added items after an acknowledged catalog`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
     await installMock(page, '0.26.1016.1512');
     await page.evaluate(`(async () => {
@@ -97,12 +97,10 @@ for (const engine of testEngines()) {
     await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
     assert.equal(await page.locator('[data-new-feature=settingsHighContrast] .te-new-badge').count(), 0);
     await page.locator('#whats-new-btn.has-unseen').waitFor();
-    await browser.close();
   });
 
   it(`${engine}: expiry hides Settings badges and unseen indication without acknowledging, and live state cannot revive them`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent(optionsHtml); await installMock(page);
     await page.evaluate(`(async () => {
       window.settingsHighlights = BadgeTest.setupFeatureHighlights(chrome.storage.sync.get());
@@ -122,12 +120,10 @@ for (const engine of testEngines()) {
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
     assert.equal(await page.locator('.te-new-badge').count(), 0);
-    await browser.close();
   });
 
   it(`${engine}: shared badge has accessible text, decorative dot, accent tokens and logical RTL spacing`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent('<html dir="rtl"><body style="--accent-color:#ff0000;--bg-color:#123456"><button>Language</button><button id="gear" aria-label="Settings" aria-description="New"></button></body></html>');
     await page.addScriptTag({ content: bundle });
     const styles = await page.evaluate<{tag:string;tabindex:number;color:string;margin:string;fontSize:string;animation:string;dotWidth:string;dotBackground:string;dotRing:string;hidden:string;text:string}>(`(() => {
@@ -153,13 +149,11 @@ for (const engine of testEngines()) {
       return { tag: pill.localName, text: pill.textContent, font: getComputedStyle(pill).fontSize };
     })()`);
     assert.deepEqual(fallback, { tag: 'span', text: 'New', font: '9.5px' });
-    await browser.close();
   });
 
   for (const version of [CURRENT_VERSION, '0.26.1016.1512']) {
     it(`${engine} ${version}: fresh install auto-open requires unseen items, independently of announcement acknowledgement`, { timeout: 30_000 }, async t => {
-      const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await shared.newContext(t)).newPage();
       await page.setContent(optionsHtml);
       await installMock(page, version);
       await page.evaluate(`(async () => {
@@ -175,12 +169,10 @@ for (const engine of testEngines()) {
       assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false, 'opening acknowledges the announcement and items');
       await page.evaluate(() => chrome.storage.local.set({ newFeaturesSeenThrough: '0.0', newFeaturesSeenItems: [] }));
       assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false, 'new items alone do not reopen an acknowledged announcement');
-      await browser.close();
     });
 
     it(`${engine} ${version}: Settings badges, acknowledgement, preference and language update live and clean up`, { timeout: 30_000 }, async t => {
-      const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await shared.newContext(t)).newPage();
       await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
       await installMock(page, version);
       await page.evaluate(`(async () => {
@@ -219,13 +211,11 @@ for (const engine of testEngines()) {
       const listeners = await page.evaluate<number>(`badgeListenerCount()`);
       await page.evaluate(`settingsHighlights.dispose(); settingsHighlights.dispose()`);
       assert.equal(await page.evaluate(`badgeListenerCount()`), listeners - 1);
-      await browser.close();
     });
   }
 
   it(`${engine}: Hide until next version hides badges live, restores them and ends with a new version`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent(optionsHtml); await page.addStyleTag({ content: optionsCss });
     await installMock(page);
     const mount = `(async () => {
@@ -260,12 +250,10 @@ for (const engine of testEngines()) {
     // The marker of an earlier generation no longer hides anything in this one.
     await page.evaluate(`chrome.storage.local.set({ newFeaturesHiddenThrough: '0.1' })`);
     await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
-    await browser.close();
   });
 
   it(`${engine}: Settings rejects stale storage snapshots after a live acknowledgement`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent(optionsHtml); await installMock(page);
     await page.evaluate(`(async () => {
       let resolve;
@@ -280,12 +268,10 @@ for (const engine of testEngines()) {
     assert.equal(await page.locator('#highlight-new-features-toggle').isChecked(), false);
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
     assert.equal(await page.locator('.te-new-badge').count(), 0);
-    await browser.close();
   });
 
   it(`${engine}: development hydration preserves both acknowledgement keys across a partial live update`, { timeout: 30_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent(optionsHtml); await installMock(page, '0.26.1016.1512');
     await page.evaluate(`(async () => {
       let resolveLocal;
@@ -296,12 +282,10 @@ for (const engine of testEngines()) {
       await settingsHighlights.ready;
     })()`);
     assert.equal(await page.locator('.te-new-badge').count(), 0, 'generation event cannot discard the item snapshot');
-    await browser.close();
   });
 
   it(`${engine}: player gear dot and new menu rows follow local/sync changes, language and rebuilds`, { timeout: 45_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.route('https://badge.test/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><video muted loop style="width:640px;height:360px"></video>' }));
     await page.goto('https://badge.test/');
     await installMock(page, '0.26.1016.1512');
@@ -358,6 +342,5 @@ for (const engine of testEngines()) {
     await page.locator('.te-dialog-btn-primary').click();
     await page.keyboard.press('Escape'); await page.keyboard.press('t');
     assert.equal(await page.locator('.te-new-badge').count(), 0);
-    await browser.close();
   });
 }

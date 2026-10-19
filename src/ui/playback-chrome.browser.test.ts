@@ -4,9 +4,9 @@ import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
@@ -102,11 +102,9 @@ async function snapshot(page: Page, name: string): Promise<void> {
 }
 
 describe('pinned controls geometry', () => {
+  const pinned = sharedTestBrowser(chromium);
   it('docks to the view and reserves the measured height across fit, caption, direction and fullscreen states in chromium', { timeout: 60_000 }, async t => {
-    const { chromium } = await import('playwright');
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const page = await (await pinned.newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
     await page.route('http://playback-chrome.test/**', route => route.fulfill(
       new URL(route.request().url()).pathname === '/en.vtt'
         ? { contentType: 'text/vtt', body: 'WEBVTT\n\n00:00:00.000 --> 00:01:00.000\nCaptions above the player controls\n' }
@@ -192,10 +190,9 @@ describe('pinned controls geometry', () => {
 
 describe('playback chrome updates', () => {
   for (const engine of testEngines()) {
+    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
     it(`shows seek loading before Disney starts moving and ignores stale clocks in ${engine}`, { timeout: 30_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       const playId = '86e14fdb-3841-4282-ad38-07c8c4aab4b6';
       await page.route('https://www.disneyplus.com/**', route => route.fulfill({
         contentType: 'text/html', body: FIXTURE
@@ -294,9 +291,7 @@ describe('playback chrome updates', () => {
     });
 
     it(`sets caption clearance before controls paint, glides, and holds through their fade in ${engine}`, { timeout: 30_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       await page.route('http://playback-chrome.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
       await page.goto('http://playback-chrome.test/');
       await boot(page, false);
@@ -354,9 +349,7 @@ describe('playback chrome updates', () => {
     it(`reads one playback snapshot per update and defers a hidden bar in ${engine}`, { timeout: 90_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.route('http://playback-chrome.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
@@ -419,9 +412,7 @@ describe('playback chrome updates', () => {
     it(`presents the current live DVR window when a hidden bar is shown in ${engine}`, { timeout: 90_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.route('http://playback-chrome.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));

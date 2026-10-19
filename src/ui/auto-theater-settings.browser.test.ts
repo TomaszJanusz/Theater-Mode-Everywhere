@@ -5,7 +5,7 @@ import path from 'node:path';
 import { it } from 'node:test';
 import { build } from 'esbuild';
 import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
@@ -78,11 +78,13 @@ async function toggle(page: Page, surface: 'options' | 'player'): Promise<void> 
   else await page.locator('.auto-theater-btn').evaluate((button: HTMLElement) => button.click());
 }
 
+const browsers = new Map(selectTestEngines([chromium, firefox], engine => engine.name()).map(engine => [engine, sharedTestBrowser(engine)] as const));
+
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
+  const shared = browsers.get(engine)!;
   for (const surface of ['options', 'player'] as const) {
     it(`${engine.name()}: ${surface} offers the launcher once, respects No and updates other tabs after Yes`, { timeout: 60_000 }, async t => {
-      const browser = await engine.launch(); ownTestBrowser(t, browser);
-      const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
+      const context = await shared.newContext(t, { reducedMotion: 'reduce', ignoreHTTPSErrors: true });
       const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
       await storage(context, saved);
       const page = await context.newPage();
@@ -124,13 +126,11 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
       await toggle(page, surface);
       await page.waitForFunction(async () => (await chrome.storage.sync.get('autoEnterTheater')).autoEnterTheater === false);
       assert.equal(await dialog.count(), 0);
-      await browser.close();
     });
   }
 
   it(`${engine.name()}: cancels stale offers and treats Escape as a remembered No`, { timeout: 60_000 }, async t => {
-    const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
+    const context = await shared.newContext(t, { reducedMotion: 'reduce', ignoreHTTPSErrors: true });
     const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
     await storage(context, saved);
     const page = await context.newPage();
@@ -163,14 +163,13 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     await page.keyboard.press('Escape');
     await page.waitForFunction(async () => (await chrome.storage.sync.get('videoActivatorPromptAnswer')).videoActivatorPromptAnswer === false);
     assert.equal(saved.videoActivator, false);
-    await browser.close();
   });
 }
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
+  const shared = browsers.get(engine)!;
   it(`${engine.name()}: player menu shows AutoTheater unavailable off supported services and live when Rich Theater Experience toggles`, { timeout: 60_000 }, async t => {
-    const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });
+    const context = await shared.newContext(t, { reducedMotion: 'reduce', ignoreHTTPSErrors: true });
     const saved: Saved = { autoEnterTheater: true, keepControlsVisible: true };
     await storage(context, saved);
     const row = (page: Page) => page.locator('.auto-theater-btn');
@@ -200,6 +199,5 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     await supported.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: true }));
     await supported.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot
       ?.querySelector('.auto-theater-btn')?.getAttribute('aria-disabled') === 'false');
-    await browser.close();
   });
 }

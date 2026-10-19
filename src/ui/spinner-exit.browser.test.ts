@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { it } from 'node:test';
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: { text: string }[] } };
@@ -94,11 +94,10 @@ async function assertShrinking(page: Page, selector: string) {
 }
 
 for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   for (const motion of ['normal', 'reduced', 'system'] as const) {
     it(`${engine}: centred confirmations reset their extra two seconds and clean up (${motion})`, { timeout: 40_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch();
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await shared.newContext(t)).newPage();
       await setup(page);
       if (motion === 'system') await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.evaluate(`hud.triggerVolumeIndicator(0.5, false, 'up');
@@ -144,9 +143,7 @@ for (const engine of testEngines()) {
   }
 
   it(`${engine}: deadline exit uses the intent clock, runs during the final 0 stage, and cleans up`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`const deadline = performance.now() + 3000;
       window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => deadline - performance.now());`);
@@ -203,9 +200,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: passive caption exit preserves nodes, reveals the track and cancels stale work`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading subtitles…'})`);
     await page.clock.runFor(400);
@@ -261,9 +256,7 @@ for (const engine of testEngines()) {
 
 
   it(`${engine}: buffering exits for 500 ms, restarts cleanly and retires on theater exit`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`document.body.innerHTML = '<video muted style="width:960px;height:540px"></video>';
       const video = document.querySelector('video');
@@ -360,9 +353,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: caption notice width morphs between states without jumping and cleans up`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     const hudBox = () => page.locator('.theater-everywhere-caption-hud').evaluate(e => {
       const box = e.getBoundingClientRect();
@@ -424,9 +415,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: off then on reveals the track name and morphs the width; rapid toggles leave nothing stale`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     const live = (selector: string) => page.evaluate(`exits.filter(r => r.element.matches('${selector}') && r.element.isConnected && r.animation.playState !== 'idle').length`);
     const off = `hud.triggerCaptionHud({kind:'status',title:'Subtitles off',duration:4000})`;
@@ -481,9 +470,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: notice text keeps its inline-end edge through the width morph in both directions`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     const off = `hud.triggerCaptionHud({kind:'status',title:'Subtitles off',duration:4000})`;
     const on = `hud.triggerCaptionHud({kind:'status',title:'Subtitles on',detail:'English (United Kingdom)',duration:4000})`;
@@ -515,9 +502,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: reduced motion removes immediately, including a live preference change, and the final half second shows 0`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch();
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading'})`);
     await page.clock.runFor(400);

@@ -2,9 +2,9 @@ import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
@@ -66,10 +66,9 @@ const gone = (page: Page) => page.waitForFunction(() =>
   !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-scrim'), undefined, { timeout: 3000 });
 
 for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`${engine}: the scrim dims the page around the video with the notice, never intercepts input, and fades out on cancel`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await mountScrim(page);
     const shown = (await scrimState(page))!;
     assert.equal(shown.ariaHidden, 'true');
@@ -94,9 +93,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: the scrim is dropped at once when theater opens or motion is reduced, and is not left behind`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     const present = () => page.evaluate(() => Boolean(document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-scrim')));
 
     await mountScrim(page);
