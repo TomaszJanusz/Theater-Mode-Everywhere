@@ -11,12 +11,12 @@ Theater Mode Everywhere 可将 HTML5 播放器放大至整个浏览器窗口，�
 
 使用自定义播放控件观看教程、直播、视频和短片。可使用字幕、键盘快捷键、画面适配、音频效果和音量控制，在受支持的平台上还有更多附加功能。
 
-可选的 Rich Theater Experience 可与 YouTube、Vimeo、Patreon、Twitch、Disney+、Netflix、Bilibili、Bilibili.tv、腾讯视频 / WeTV 和 Crunchyroll 深度集成。视服务而定，扩展程序可显示标题、字幕、章节、缩略图预览、跳过按钮、下一集导航以及时间轴上的更多信息。该功能仍处于实验阶段，因此不同平台上的可用能力有所不同。
+可选的 Rich Theater Experience 可与 YouTube、Vimeo、Patreon、Twitch 等视频平台，Netflix、Disney+、Crunchyroll 等流媒体服务，以及 Bilibili（含国内版和国际版）和腾讯视频 / WeTV 深度集成。视服务而定，扩展程序可显示标题、字幕、章节、缩略图预览、跳过按钮、下一集导航以及时间轴上的更多信息。该功能仍处于实验阶段，因此不同平台上的可用能力有所不同。
 
 主要功能
 - 一键沉浸模式：按 `T` 键即可立即将当前视频放大至整个浏览器窗口。再按一次或按 `Escape` 键即可返回。如果页面上有多个视频，可用 `Shift+T` 切换。双击画面即可进入或退出全屏，而无需退出剧场模式。
 - 更好的字幕支持：直接在影院模式中选择字幕轨道，用 `C` 键开关字幕，并调整字体、大小、颜色、阴影、背景和不透明度。扩展程序会为每个网站分别记住您偏好的语言。
-- Rich Theater Experience（实验性）：为 YouTube、Netflix、Disney+、Crunchyroll 等受支持的服务启用附加集成。可用功能取决于服务，您可以在扩展程序弹出窗口或设置中为每项服务单独开关。
+- Rich Theater Experience（实验性）：为 受支持的服务启用附加集成。可用功能取决于服务，您可以在扩展程序弹出窗口或设置中为每项服务单独开关。
 - 画面旁的聊天：在启用 Rich Theater Experience 的 Twitch 和 YouTube 上，可将直播聊天或聊天回放固定在视频旁边或下方，并用 `Alt+R` 显示或隐藏。
 - 更丰富的时间轴：在章节之间跳转，在拖动前预览缩略图，并查看 YouTube 的“最多重放”片段。已安装的 SponsorBlock 标记可显示在 YouTube 时间轴上。
 - 跳过按钮与下一集：在服务提供时，可跳过片头、片尾、剧情回顾或 YouTube 广告，并切换到上一个或下一个视频或剧集。
@@ -34,7 +34,7 @@ Theater Mode Everywhere 可将 HTML5 播放器放大至整个浏览器窗口，�
 - 通用 HTML5 视频：适用于网络上的标准 HTML5 video 元素，包括位于 Shadow DOM 中的播放器。
 - 嵌入式播放器：检测并放大嵌入在框架中的视频，例如 YouTube 或 Vimeo 播放器。
 - HTML5 字幕：在影院模式专属的叠加层中显示标准 HTML5 字幕轨道，方便您自定义其外观。
-- 平台集成：Rich Theater Experience 可在 YouTube、Vimeo、Patreon、Twitch、Disney+、Netflix、Bilibili、Bilibili.tv、腾讯视频 / WeTV 和 Crunchyroll 上添加标题、字幕、章节、缩略图预览等。可用功能取决于服务和视频。
+- 平台集成：Rich Theater Experience 可在上文所述的受支持服务上添加标题、字幕、章节、缩略图预览等。可用功能取决于服务和视频。
 - 直播：可识别直播，如果服务提供 DVR 窗口，您可以回放录像并返回当前时刻。
 - DRM 保护的服务：部分平台限制访问播放器，因此音频效果等某些功能在这些平台上可能不可用。
 - 隐私：您不是商品。本扩展程序不会向开发者发送有关您或您观看内容的任何信息。设置可通过浏览器账号同步。完整的隐私政策可在“设置”的“关于”中查看。
