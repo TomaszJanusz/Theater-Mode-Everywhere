@@ -1,33 +1,14 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { it } from 'node:test';
 import type { Locator, Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { emitStorageChange } from '../test-utils/chrome-stub';
+import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 import { ownTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "export { bootstrapPlayerRuntime } from './ui/player-runtime';\nexport { setPlayerUiCss } from './ui/root';",
-    resolveDir: SRC, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'TitleHudTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
 const TITLE = 'A Remarkably Long Documentary About Mountain Weather Systems, Part 12 - Summit Day';
-const FIXTURE = `<!doctype html><html><head><title>${TITLE}</title>
-  <style>body { margin:0; background:#111; } video { width:960px; height:540px; }</style></head>
-  <body><video id="player" title="${TITLE}" muted playsinline></video><script>
-    const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 720;
-    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#1c2634'; ctx.fillRect(0, 0, 1280, 720);
-    const video = document.querySelector('video'); video.srcObject = canvas.captureStream(12);
-    setInterval(() => { ctx.fillRect(0, 0, 1, 1); }, 100); video.play();
-  </script></body></html>`;
+const FIXTURE = canvasVideoFixture({ title: TITLE });
 
 const style = (hud: Locator, selector: string, property: string) =>
   hud.evaluate((el, [sel, prop]) => getComputedStyle(el.querySelector(sel)!).getPropertyValue(prop), [selector, property]);
@@ -38,18 +19,10 @@ const titleFocused = (page: Page, visibly = false) => page.evaluate(visible => {
 }, visibly);
 
 async function boot(page: Page, dir: 'ltr' | 'rtl'): Promise<void> {
-  await page.route('http://title-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
-  await page.goto('http://title-hud.test/');
-  await page.evaluate(`window.__listeners = new Set(); window.chrome = { runtime: {}, storage: {
-    sync: { get: (_keys, callback) => { const data = { keepControlsVisible: true, reduceMotion: 'on' }; callback?.(data); return Promise.resolve(data); }, set: async () => {} },
-    onChanged: { addListener: fn => window.__listeners.add(fn), removeListener: fn => window.__listeners.delete(fn) }
-  } };`);
-  await page.addStyleTag({ content: PAGE_CSS });
-  await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`TitleHudTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); TitleHudTest.bootstrapPlayerRuntime();`);
+  await serveFixture(page, FIXTURE, 'http://title-hud.test/');
+  await bootPlayer(page, { settings: { keepControlsVisible: true, reduceMotion: 'on' } });
   await page.waitForFunction(() => { const v = document.querySelector('video'); return Boolean(v && v.readyState >= 2 && !v.paused); });
-  await page.keyboard.press('t');
-  await page.locator('.theater-controls-wrapper.visible').waitFor();
+  await enterTheater(page);
   await page.locator('.theater-everywhere-title-hud.marquee').waitFor();
   await page.evaluate(d => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-title-hud')!.setAttribute('dir', d), dir);
 }
@@ -101,12 +74,10 @@ for (const engine of testEngines()) for (const dir of ['ltr', 'rtl'] as const) {
     assert.equal(await style(hud, '.theater-title-hud-smart', 'display'), 'flex');
 
     // Turning the setting off restores the scrolling title live.
-    await page.evaluate(() => window.__listeners.forEach((fn) => fn({ reduceMotion: { newValue: 'off' } }, 'sync')));
+    await emitStorageChange(page, { reduceMotion: { newValue: 'off' } });
     await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-title-hud')!.hasAttribute('tabindex'));
     assert.equal(await style(hud, '.theater-title-hud-track', 'animation-name'), dir === 'rtl' ? 'theater-title-marquee-rtl' : 'theater-title-marquee');
     assert.equal(await style(hud, '.theater-title-hud-smart', 'display'), 'none');
     assert.equal(await hud.getAttribute('title'), TITLE);
   });
 }
-
-declare global { interface Window { __listeners: Set<(changes: object, area: string) => void> } }

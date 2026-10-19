@@ -1,24 +1,13 @@
 import { testEngines } from '../test-utils/test-engines';
-import { readStylesheet } from '../test-utils/styles';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
 import { clockLabels } from './time-readout';
 
-const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const BUNDLE = esbuild.buildSync({
-  entryPoints: [path.join(SRC, 'ui/time-readout.ts')],
-  bundle: true, write: false, format: 'iife', globalName: 'TimeReadout', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+const UI_CSS = playerStylesheets().ui;
+const BUNDLE = bundleModules(["export * from './ui/time-readout';"], 'TimeReadout');
 
 /** The player bar inside a shadow root carrying the player UI sheet, as the extension mounts it. */
 async function mountBar(page: Page): Promise<void> {

@@ -66,6 +66,27 @@ machine, use its existing audio server or an isolated null sink before running
 the native lifecycle cases. A context that stays suspended during playback is
 an environment failure, not a passing lifecycle check.
 
+## Booting the player in a test
+
+`src/test-utils/` holds small independent pieces: `bundlePlayer()` / `bundleModules()`
+(one cached esbuild bundle per process and entry set; each `*.test.ts` file runs in its
+own process, so a file builds each distinct bundle once), `playerStylesheets()`,
+`installChromeStub()` / `emitStorageChange()` (`chrome.storage.{sync,local}` and
+`onChanged`, the surface the player uses; `set` notifies listeners and `get`
+returns the whole area), and `canvasVideoFixture()` / `vodVideoFixture()` /
+`serveFixture()`. `bootPlayer(page, { settings, mainWorld?, bundle? })` only composes
+them in the extension's order on a navigated page; waiting for media and `enterTheater(page)`
+stay with the test. Extend by composition: call the pieces yourself instead of adding options.
+
+`scripts/test-harness.ts` ratchets what these helpers replace: direct `.launch(`
+calls, `'esbuild'` imports and `window.chrome =` stubs in `*.test.ts` files outside
+`src/test-utils/`. Counts per file must match `scripts/test-harness-baseline.json` and cannot
+grow past the baseline at the merge base with the PR base (same `origin/$GITHUB_BASE_REF`
+rule and local skip as the determinism guard). After migrating a file, run
+`pnpm exec tsx scripts/test-harness.ts --update`; it only accepts reductions.
+Omit `--update` to print the counts. The same guard budgets `src/test-utils/*.ts`
+at 150 lines per file and four properties per exported `*Options` interface.
+
 ## Firefox on macOS 27
 
 Playwright 1.63.0's Firefox 155 (revision 1543) can exit at launch with

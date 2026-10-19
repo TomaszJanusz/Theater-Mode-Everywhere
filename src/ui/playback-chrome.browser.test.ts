@@ -1,58 +1,27 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { bootPlayer, bundlePlayer, enterTheater } from '../test-utils/player-boot';
+import { vodVideoFixture } from '../test-utils/video-fixtures';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const CSS = readStylesheet(path.join(SRC, 'content.css'));
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const VOD = readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64');
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';",
-      "export { playbackWindow, seekToMediaTime } from './playback-window';"
-    ].join('\n'),
-    resolveDir: SRC, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'PlaybackChromeTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
-
-const FIXTURE = `<!doctype html><html><head><title>Playback chrome fixture</title>
-  <style>body { margin:0; background:#111; } video { width:960px; height:540px; }</style>
-  </head><body><video id="player" title="Playback chrome" muted playsinline src="data:video/webm;base64,${VOD}"></video>
-  </body></html>`;
+const FIXTURE = vodVideoFixture({ title: 'Playback chrome', pageTitle: 'Playback chrome fixture' });
 
 /** Boots theater on the paused VOD clip; `keepControlsVisible: false` lets the bar auto-hide. */
 async function boot(page: Page, keepControlsVisible: boolean, dockGeometry = false): Promise<void> {
-  await page.evaluate(`window.chrome = { storage: {
-    sync: {
-      get: async () => ({ keepControlsVisible: ${keepControlsVisible}, ...${dockGeometry ? JSON.stringify({ pictureAlign: 'center', raiseOnlyWithSubtitles: false }) : '{}'}, shortcuts: { playPause: 'k' } }),
-      set: async () => {}
-    },
-    onChanged: { addListener() {} }
-  } };`);
-  // tsx wraps named functions in __name(); the serialized page callbacks need it defined.
-  await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
-  await page.addStyleTag({ content: CSS });
-  await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`PlaybackChromeTest.setPlayerUiCss(${JSON.stringify(UI_CSS)}); PlaybackChromeTest.bootstrapPlayerRuntime();`);
+  await bootPlayer(page, {
+    settings: { keepControlsVisible, ...(dockGeometry ? { pictureAlign: 'center', raiseOnlyWithSubtitles: false } : {}), shortcuts: { playPause: 'k' } },
+    bundle: bundlePlayer(["export { playbackWindow, seekToMediaTime } from './playback-window';"])
+  });
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return Boolean(video && video.readyState >= 2 && Number.isFinite(video.duration));
   });
   await page.evaluate(() => { document.querySelector('video')!.pause(); });
-  await page.keyboard.press('t');
-  await page.locator('.theater-controls-wrapper.visible').waitFor();
+  await enterTheater(page);
 }
 
 /** Counts `video.duration` reads; every playback snapshot reads it a fixed number of times. */
@@ -63,13 +32,13 @@ async function instrumentDurationReads(page: Page): Promise<number> {
     const w = window as unknown as {
       __reads: number;
       __duration: () => number;
-      PlaybackChromeTest: { playbackWindow(video: HTMLVideoElement): unknown };
+      TheaterTest: { playbackWindow(video: HTMLVideoElement): unknown };
     };
     w.__reads = 0;
     w.__duration = () => native.call(video);
     Object.defineProperty(video, 'duration', { configurable: true, get: () => { w.__reads++; return w.__duration(); } });
     w.__reads = 0;
-    w.PlaybackChromeTest.playbackWindow(video);
+    w.TheaterTest.playbackWindow(video);
     const perSnapshot = w.__reads;
     w.__reads = 0;
     return perSnapshot;
@@ -249,9 +218,9 @@ describe('playback chrome updates', () => {
       await clock(secondTarget);
       assert.equal(await loading(), false, 'a paused seek also settles when the target is ready');
       const request = async (time: number) => page.evaluate(time => {
-        (window as unknown as { PlaybackChromeTest: {
+        (window as unknown as { TheaterTest: {
           seekToMediaTime(video: HTMLVideoElement, time: number): void;
-        } }).PlaybackChromeTest.seekToMediaTime(document.querySelector('video')!, time);
+        } }).TheaterTest.seekToMediaTime(document.querySelector('video')!, time);
       }, time);
       const shortTarget = secondTarget + 1;
       await request(shortTarget);

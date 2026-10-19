@@ -1,23 +1,16 @@
 import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import type * as HudApi from './hud';
 import type { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import type { PlayerChromeContext } from './runtime-context';
-import { readStylesheet } from '../test-utils/styles';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { ownTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: { contents: "export * from './ui/hud'; export { CONTROLS_VISIBILITY_ICON } from './ui/controls-visibility';", resolveDir: SRC, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'Hud', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const CSS = playerStylesheets().ui;
+const BUNDLE = bundleModules(["export * from './ui/hud'; export { CONTROLS_VISIBILITY_ICON } from './ui/controls-visibility';"], 'Hud');
 
 const cases = ['less', 'original', 'more', 'moar', 'moaaarr', 'volume', 'quiet', 'muted', 'play', 'pause', 'voice', 'leveling', 'boost', 'layout', 'fit', 'switch', 'pin'] as const;
 
