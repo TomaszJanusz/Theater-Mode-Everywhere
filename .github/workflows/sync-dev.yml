@@ -4,25 +4,42 @@ name: Sync main into dev
 # merged forward here. It must be a REAL merge commit: squashing or rebasing would
 # rewrite the main commits and make the next sync conflict on the same changes.
 # Scheduled workflows only run from the default branch, hence this file lives on main.
+#
+# Three jobs with least privilege each: `merge` pushes (no install, no code from dev
+# runs), `verify` runs dev's own lint and typecheck read-only and cache-free, and
+# `report` opens the issue (no checkout). Fixes on main are written without dev's
+# linter, so a sync can break dev; the pushed merge is kept (branches must converge)
+# and the run ends red instead.
 
 on:
   schedule:
     - cron: '37 3 */2 * *'
   workflow_dispatch:
+    inputs:
+      force_verify:
+        description: Run the verify job even when nothing was pushed (dry run)
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
-  issues: write
+  contents: read
 
 concurrency:
   group: sync-dev
   cancel-in-progress: false
 
 jobs:
-  sync:
+  merge:
     name: Merge main into dev
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # issues: write is only for the conflict report below.
+    permissions:
+      contents: write
+      issues: write
+    outputs:
+      pushed: ${{ steps.merge.outputs.pushed }}
+      sha: ${{ steps.merge.outputs.sha }}
     env:
       GH_TOKEN: ${{ github.token }}
       ISSUE_TITLE: dev ← main sync has conflicts
@@ -41,6 +58,7 @@ jobs:
       - name: Merge main into dev
         id: merge
         run: |
+          echo 'pushed=false' >> "$GITHUB_OUTPUT"
           git fetch origin main
           if git merge-base --is-ancestor origin/main HEAD; then
             echo 'dev already contains main; nothing to sync.'
@@ -49,6 +67,8 @@ jobs:
           fi
           if git merge --no-ff --no-edit origin/main; then
             git push origin dev
+            echo 'pushed=true' >> "$GITHUB_OUTPUT"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             echo "## Merged main into dev ($(git rev-parse --short HEAD))" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -83,3 +103,108 @@ jobs:
           fi
           echo '::error title=dev ← main sync has conflicts::See the job summary for the files and resolution commands.'
           exit 1
+
+  verify:
+    name: Verify dev lint and typecheck
+    needs: merge
+    if: needs.merge.outputs.pushed == 'true' || inputs.force_verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PUSHED_SHA: ${{ needs.merge.outputs.sha }}
+    steps:
+      # Literal ref, like nightly.yml: CodeQL flags expression-driven checkouts.
+      # No caches here: dev code must never write to the default branch's caches.
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: false
+
+      - name: Check dev is at the pushed merge
+        if: env.PUSHED_SHA != ''
+        run: |
+          head=$(git rev-parse HEAD)
+          if [ "$head" != "$PUSHED_SHA" ]; then
+            echo "::error title=dev moved::dev is at $head, expected the pushed merge $PUSHED_SHA."
+            exit 1
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        id: install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | tee "$RUNNER_TEMP/lint.log"
+
+      - name: Typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee "$RUNNER_TEMP/typecheck.log"
+
+      - name: Summarize failures
+        if: failure()
+        run: |
+          for name in lint typecheck; do
+            log="$RUNNER_TEMP/$name.log"
+            [ -s "$log" ] || continue
+            {
+              echo "## $name output (last 40 lines)"
+              echo
+              echo '```'
+              tail -n 40 "$log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  report:
+    name: Report broken dev
+    needs: [merge, verify]
+    if: always() && needs.verify.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      ISSUE_TITLE: dev ← main sync broke lint/typecheck
+      PUSHED_SHA: ${{ needs.merge.outputs.sha }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open or update the issue
+        run: |
+          {
+            echo "After syncing \`main\` into \`dev\` (${PUSHED_SHA:-forced dry run, no new merge}), \`pnpm lint\` or \`pnpm typecheck\` fails on \`dev\`."
+            echo
+            echo "Run (output tails are in the job summary): $RUN_URL"
+            echo
+            echo 'Reproduce locally:'
+            echo
+            echo '```sh'
+            echo 'git switch dev && git pull && pnpm install --frozen-lockfile && pnpm lint && pnpm typecheck'
+            echo '```'
+            echo
+            echo 'How to fix: fix the new violations on `dev`. If they come from legitimate `main` code, adapt that code on `dev`. Never raise the suppression baseline without review.'
+          } > issue-body.md
+          existing=$(gh issue list --state open --search "$ISSUE_TITLE in:title" \
+            --json number,title --jq "[.[] | select(.title == env.ISSUE_TITLE)][0].number // empty")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file issue-body.md
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file issue-body.md
+          fi
