@@ -162,6 +162,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
             border: tokenColor('--border-color'),
             badgeText: style('.te-new-badge').color, badge: style('.te-new-badge').backgroundColor,
             ring: getComputedStyle(document.querySelector('.te-animated-border')!, '::before').content,
+            ringAnimation: getComputedStyle(document.querySelector('.te-animated-border')!, '::before').animationName,
             notification: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-caption-hud')!).color,
             progress: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-service-action-progress')!).backgroundColor,
             player: getComputedStyle(document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!, '::before').backgroundColor
@@ -187,8 +188,10 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
           assert.ok(ratio(colors.text, colors.progress) >= 4.5, `${label} text over countdown progress`);
         }
         // Reduce transparency alone keeps the ring and its interior (motion has its own setting).
-        if (high) assert.equal(colors.ring, 'none', `${label} RTE ring and gradient interior`);
-        else assert.notEqual(colors.ring, 'none', `${label} keeps the RTE ring`);
+        if (high) {
+          assert.equal(colors.ring, 'none', `${label} RTE ring and gradient interior`);
+          assert.equal(colors.ringAnimation, 'none', `${label} RTE decoration stops animating`);
+        } else assert.notEqual(colors.ring, 'none', `${label} keeps the RTE ring`);
         if (high || reduced) {
           assert.ok(ratio(colors.badgeText, colors.badge) >= 4.5, `${label} New badge`);
           hexColor(colors.player); // Opaque independently of the underlying video.

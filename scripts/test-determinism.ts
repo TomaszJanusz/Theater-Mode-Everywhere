@@ -37,7 +37,7 @@ export function inventory(directory = root): Inventory {
       if (entry.isDirectory()) { walk(path); continue; }
       const file = relative(directory, path).replaceAll('\\', '/');
       if (!entry.isFile() || !(/\.test\.(?:ts|mjs)$/.test(file)
-        || /^tools\/.*\.(?:[cm]?[jt]s)$/.test(file) || /^scripts\/smoke[^/]*\.ts$/.test(file))) continue;
+        || /^src\/test-utils\/.*\.ts$/.test(file) || /^tools\/.*\.(?:[cm]?[jt]s)$/.test(file) || /^scripts\/(?:smoke[^/]*|smoke\/.*)\.ts$/.test(file))) continue;
       const counts = countWaits(readFileSync(path, 'utf8'));
       if (Object.keys(counts).length) result[file] = counts;
     }

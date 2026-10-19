@@ -386,4 +386,41 @@ for (const engine of testEngines()) {
       }
     } finally { await context.close(); }
   });
+
+  it(`auto-theater in ${engine} rejects tiny players and auxiliary hover previews`, { timeout: 60_000 }, async t => {
+    // These full-runtime discovery guards previously existed only in installed smoke.
+    for (const kind of ['tiny', 'preview'] as const) {
+      const context = await shared.newContext(t);
+      const { page, target } = await fixture(context, { auto: false, skipCountdown: true });
+      await target.evaluate(async kind => {
+        if (kind === 'tiny') {
+          const video = document.querySelector<HTMLVideoElement>('video')!;
+          video.style.width = '40px';
+          video.style.height = '30px';
+        } else {
+          const watch = document.querySelector('ytd-watch-flexy')!;
+          const preview = document.createElement('ytd-video-preview');
+          watch.replaceWith(preview);
+          preview.append(watch);
+        }
+        window.autoStorageProbe.playing = true;
+        await window.autoStorageProbe.change({ autoEnterTheater: true });
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+      }, kind);
+      assert.equal(await active(target), false, kind);
+      // Prove this is an eligibility rejection, rather than an uninitialized runtime.
+      await target.evaluate(async kind => {
+        if (kind === 'tiny') {
+          document.querySelector<HTMLVideoElement>('video')!.style.cssText = 'width:640px;height:360px';
+        } else {
+          const preview = document.querySelector('ytd-video-preview')!;
+          preview.replaceWith(document.querySelector('ytd-watch-flexy')!);
+        }
+        await window.autoStorageProbe.change({ autoEnterTheater: true });
+        document.querySelector('video')!.dispatchEvent(new Event('playing'));
+      }, kind);
+      await target.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
+      await page.close();
+    }
+  });
 }
