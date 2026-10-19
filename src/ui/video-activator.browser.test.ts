@@ -99,20 +99,20 @@ async function hover(page: Page, x: number, y: number): Promise<void> {
 
 for (const engine of ['chromium', 'firefox'] as const) {
   const launch = async (t: Parameters<typeof ownTestBrowser>[0], {
-    stored, html = PAGE, host = 'activator.test', freezeClock = false, pageAge = 60_000, dynamicPlacement = false
-  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; pageAge?: number; dynamicPlacement?: boolean } = {}) => {
+    stored, html = PAGE, host = 'activator.test', freezeClock = false, controlClock = false, pageAge = 60_000, dynamicPlacement = false
+  }: { stored?: Record<string, unknown>; html?: string; host?: string; freezeClock?: boolean; controlClock?: boolean; pageAge?: number; dynamicPlacement?: boolean } = {}) => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
     page.setDefaultTimeout(6_000);
     // Most scenarios predate the five-second load window; fresh-page tests pass a negative pageAge.
     await page.addInitScript(`window.perfOffset = ${pageAge};`);
-    if (freezeClock) {
+    if (freezeClock || controlClock) {
       // Install before runtime startup so no native timer/frame survives the switch.
       const time = new Date('2026-01-01T00:00:00Z');
       await page.clock.install({ time });
       // install() alone still advances with wall time between Playwright commands.
-      await page.clock.pauseAt(new Date(time.getTime() + 60_000));
+      if (freezeClock) await page.clock.pauseAt(new Date(time.getTime() + 60_000));
     }
     await boot(page, stored, html, host, dynamicPlacement);
     return page;
@@ -228,18 +228,21 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: previews, tiny videos and extension UI never get an activator`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
+    const page = await launch(t, { controlClock: true });
     await hover(page, 860, 114);
-    await page.waitForTimeout(150);
+    await page.clock.runFor(150);
     assert.equal(await launcher(page), null, 'a 120x68 video is not a player');
     await page.evaluate(() => {
       const main = document.getElementById('main') as HTMLVideoElement;
       main.muted = true; main.loop = true;
     });
     await hover(page, 400, 260);
-    await page.waitForTimeout(150);
+    await page.clock.runFor(150);
     assert.equal(await launcher(page), null, 'muted looping video is a preview');
     await page.evaluate(() => { const main = document.getElementById('main') as HTMLVideoElement; main.muted = false; main.loop = false; });
+    // The native volumechange event rebinds pointer listeners asynchronously.
+    // Send the positive follow-up pointer only after the player is eligible again.
+    await page.waitForFunction(() => window.activatorPointerListeners === 2);
     await hover(page, 400, 270);
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator'));
     // Pointing at the extension's own interface hides it instead of re-evaluating the video beneath.
@@ -254,7 +257,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: click opens theater for the hovered video once and the launcher stays out of theater`, { timeout: 40_000 }, async t => {
-    const page = await launch(t);
+    const page = await launch(t, { controlClock: true });
     await hover(page, 400, 260);
     const box = await (async () => { await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-video-activator')); return (await launcher(page))!; })();
     await page.mouse.click(box.x + 20, box.y + 20);
@@ -263,7 +266,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await launcher(page), null);
     await page.mouse.move(300, 300);
     await page.mouse.move(500, 320);
-    await page.waitForTimeout(150);
+    await page.clock.runFor(150);
     assert.equal(await launcher(page), null, 'no launcher while theater is open');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.querySelector('video[data-theater-everywhere]'));
@@ -303,12 +306,12 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 
   it(`${engine}: the setting off installs no listener and no DOM, and applies live`, { timeout: 40_000 }, async t => {
-    const page = await launch(t, { stored: { videoActivator: false } });
+    const page = await launch(t, { stored: { videoActivator: false }, controlClock: true });
     await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
     const before = await page.evaluate(() => window.pointeroverListeners);
     assert.equal(await page.evaluate(() => window.activatorPointerRegistrations), 0);
     await hover(page, 400, 260);
-    await page.waitForTimeout(150);
+    await page.clock.runFor(150);
     assert.equal(await launcher(page), null);
     await page.evaluate(() => { for (const listener of window.storageListeners) listener({ videoActivator: { newValue: true } }, 'sync'); });
     await page.waitForFunction(count => window.pointeroverListeners > count, before);

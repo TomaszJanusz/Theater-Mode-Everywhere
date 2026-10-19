@@ -1,0 +1,98 @@
+{
+  "options/rte-settings.browser.test.ts": {
+    "frame": 1
+  },
+  "scripts/smoke.ts": {
+    "timer": 1,
+    "sleep": 13,
+    "frame": 6
+  },
+  "src/media-features/netflix-adapter.test.ts": {
+    "timer": 2
+  },
+  "src/media-features/twitch-adapter.test.ts": {
+    "timer": 2
+  },
+  "src/providers/bilibili-intl/runtime.browser.test.ts": {
+    "timer": 1,
+    "sleep": 2
+  },
+  "src/providers/crunchyroll/crunchyroll.test.ts": {
+    "timer": 8
+  },
+  "src/providers/disney/clock-policy.test.ts": {
+    "timer": 1
+  },
+  "src/providers/disney/clock.browser.test.ts": {
+    "timer": 1
+  },
+  "src/providers/native/page-title.browser.test.ts": {
+    "timer": 1
+  },
+  "src/providers/tencent/wasm-player.test.ts": {
+    "timer": 1
+  },
+  "src/providers/timeline/disney.test.ts": {
+    "retry": 1
+  },
+  "src/providers/youtube/sponsorblock.browser.test.ts": {
+    "frame": 2
+  },
+  "src/test-utils/test-browser.test.ts": {
+    "timer": 1
+  },
+  "src/ui/caption-dock-lifecycle.browser.test.ts": {
+    "frame": 1
+  },
+  "src/ui/cc-menu.browser.test.ts": {
+    "timer": 3
+  },
+  "src/ui/native-chat.browser.test.ts": {
+    "timer": 1,
+    "frame": 1
+  },
+  "src/ui/netflix-runtime.browser.test.ts": {
+    "frame": 2
+  },
+  "src/ui/service-actions.browser.test.ts": {
+    "timer": 1,
+    "frame": 4
+  },
+  "src/ui/shortcuts.test.ts": {
+    "timer": 2
+  },
+  "src/ui/spinner-exit.browser.test.ts": {
+    "timer": 1
+  },
+  "src/ui/video-activator.browser.test.ts": {
+    "frame": 11
+  },
+  "src/ui/video-selection.browser.test.ts": {
+    "frame": 2
+  },
+  "tools/cpu-suite/browser.test.ts": {
+    "frame": 1
+  },
+  "tools/cpu-suite/measurement.ts": {
+    "sleep": 2
+  },
+  "tools/cpu-suite/processes.ts": {
+    "timer": 2,
+    "sleep": 5,
+    "timerImport": 1
+  },
+  "tools/cpu-suite/resource-browser.ts": {
+    "timer": 1
+  },
+  "tools/cpu-suite/resource.browser.test.ts": {
+    "timer": 1,
+    "frame": 1
+  },
+  "tools/cpu-suite/runner.ts": {
+    "sleep": 1,
+    "retry": 1
+  },
+  "tools/cpu-suite/suite.test.ts": {
+    "sleep": 1
+  }
+}

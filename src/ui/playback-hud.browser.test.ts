@@ -297,13 +297,15 @@ describe('playback HUD browser regressions', () => {
           contentType: 'text/html',
           body: FIXTURE
         }));
+        // Own fixture, runtime and click-disambiguation timers from startup.
+        await page.clock.install();
         await page.goto('http://playback-hud.test/');
         await boot(page);
         const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
 
         // A popover left earlier must not turn a later, unrelated click into a no-op.
         await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
-        await page.waitForTimeout(1100);
+        await page.clock.runFor(1100);
         await page.locator('video').click({ position: { x: 120, y: 80 } });
         await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
 
@@ -323,7 +325,7 @@ describe('playback HUD browser regressions', () => {
           video.addEventListener('play', () => w.playbackEvents.push('play'));
         });
         await page.locator('video').dblclick({ position: { x: 120, y: 80 } });
-        await page.waitForTimeout(500);
+        await page.clock.runFor(500);
         assert.deepEqual(await page.evaluate(() => (window as unknown as { playbackEvents: string[] }).playbackEvents), []);
         assert.equal(await paused(), false);
         assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0, 'cancelled click leaves no HUD');

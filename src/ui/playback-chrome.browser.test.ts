@@ -317,6 +317,21 @@ describe('playback chrome updates', () => {
         const caption = root.querySelector<HTMLElement>('.theater-caption-overlay')!;
         const controls = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
         const bottom = Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'));
+        // Arm in the same task as reveal, before any geometry wait can outlast
+        // the idle deadline. Pausing the fade keeps the midpoint observable.
+        Object.assign(window, { captionFade: new Promise((resolve, reject) => {
+          const observer = new MutationObserver(() => {
+            if (controls.classList.contains('visible')) return;
+            observer.disconnect();
+            const fade = controls.getAnimations().find(animation => animation instanceof CSSTransition && animation.transitionProperty === 'opacity');
+            if (!fade) { reject(new Error('controls must have an opacity transition')); return; }
+            fade.pause();
+            fade.currentTime = Number(fade.effect!.getTiming().duration) / 2;
+            resolve({ bottom: Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')),
+              opacity: Number(getComputedStyle(controls).opacity) });
+          });
+          observer.observe(controls, { attributes: true, attributeFilter: ['class'] });
+        }) });
         return { bottom, targetBottom: innerHeight - bottom, transition: caption.style.transition,
           controlsTop: innerHeight - Number.parseFloat(getComputedStyle(controls).bottom) - controls.offsetHeight };
       });
@@ -328,10 +343,10 @@ describe('playback chrome updates', () => {
         return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
           < root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
       });
-      await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!.classList.contains('visible'));
-      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const fadingBottom = await page.evaluate(() => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')));
-      assert.equal(fadingBottom, shown.bottom, 'captions remain clear while the controls are still fading');
+      const fading = await page.evaluate<{ bottom: number; opacity: number }>('window.captionFade');
+      assert.ok(fading.opacity > 0 && fading.opacity < 1, 'the assertion observes the middle of the fade');
+      assert.equal(fading.bottom, shown.bottom, 'captions remain clear while the controls are still fading');
+      await page.locator('.theater-controls-wrapper').evaluate(bar => { for (const animation of bar.getAnimations()) animation.play(); });
       await page.waitForFunction(bottom => Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')) === bottom, rest);
     });
 

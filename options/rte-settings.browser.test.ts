@@ -433,7 +433,10 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await settle();
       const angle = () => netflix.evaluate(el => new Promise<string>(resolve => requestAnimationFrame(() => resolve(getComputedStyle(el, '::before').getPropertyValue('--te-border-angle')))));
       const first = await angle();
-      await page.waitForTimeout(300);
+      await page.waitForFunction(first => {
+        const tile = document.querySelector('[data-provider="netflix"]')!;
+        return getComputedStyle(tile, '::before').getPropertyValue('--te-border-angle') !== first;
+      }, first);
       assert.match(first, /deg$/, 'the angle is a registered <angle>');
       assert.notEqual(await angle(), first, 'the shared angle is animating');
       const steady = await motion();
@@ -522,10 +525,17 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     const region = tile.locator('.rte-details-region');
     const height = () => tile.evaluate(el => el.getBoundingClientRect().height);
     const settle = () => region.evaluate(async el => { await Promise.all(el.getAnimations().map(animation => animation.finished)); });
+    // Dispatch and inspect in one task: a slow transport can outlast the
+    // entire transition between click() returning and a later evaluation.
+    const toggleDetails = () => button.evaluate((button: HTMLButtonElement) => {
+      const region = button.closest('.rte-tile')!.querySelector('.rte-details-region')!;
+      getComputedStyle(region).gridTemplateRows;
+      button.click();
+      return region.getAnimations().map(animation => animation instanceof CSSTransition ? animation.transitionProperty : 'animation');
+    });
     assert.equal(await button.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
     const collapsed = await height();
-    await button.click();
-    assert.ok(await region.evaluate(el => el.getAnimations().some(animation => animation instanceof CSSTransition && animation.transitionProperty === 'grid-template-rows')));
+    assert.ok((await toggleDetails()).includes('grid-template-rows'));
     await settle();
     assert.ok(await height() > collapsed + 20);
     await button.click();
@@ -534,16 +544,14 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
     assert.equal(await tile.locator('.rte-details').getAttribute('aria-hidden'), 'true');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.waitForFunction(() => document.documentElement.dataset.motion === 'reduced');
-    await button.click();
-    assert.equal(await region.evaluate(el => el.getAnimations().length), 0);
+    assert.deepEqual(await toggleDetails(), []);
     assert.ok(await height() > collapsed + 20);
     await page.evaluate(() => (window as unknown as Harness).external({ reduceMotion: 'off' }));
     assert.equal(await page.locator('html').getAttribute('data-motion'), 'normal', 'explicit Off overrides the system through the shared resolver');
     await button.click();
     await settle();
     await page.evaluate(() => (window as unknown as Harness).external({ reduceMotion: 'on' }));
-    await button.click();
-    assert.equal(await region.evaluate(el => el.getAnimations().length), 0);
+    assert.deepEqual(await toggleDetails(), []);
   });
 
   it('announces an empty result and disables its master for a catalog without a matching service', { timeout: 45000 }, async t => {
