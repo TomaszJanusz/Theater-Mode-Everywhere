@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { baseRef } from './base-ref.mjs';
 
 // Textual ratchet, including code serialized into page.evaluate strings. Timers
 // and frame calls are counted conservatively (also fake clocks/watchdogs): new
@@ -69,16 +70,17 @@ export function assertNoGrowth(current: Inventory, previous: Inventory): void {
 }
 
 export function assertBaselineRatchet(current: Inventory, directory = root, ci = Boolean(process.env.CI)): void {
-  const ref = spawnSync('git', ['rev-parse', '--verify', 'refs/remotes/origin/main'], { cwd: directory, encoding: 'utf8' });
+  const baseName = baseRef();
+  const ref = spawnSync('git', ['rev-parse', '--verify', `refs/remotes/${baseName}`], { cwd: directory, encoding: 'utf8' });
   if (ref.status !== 0) {
-    const message = 'Determinism baseline history check requires origin/main; run git fetch origin (CI requires full history).';
+    const message = `Determinism baseline history check requires ${baseName}; run git fetch origin (CI requires full history).`;
     assert.ok(!ci, message);
     console.warn(`${message} Skipping only the local history comparison; inventory checks still run.`);
     return;
   }
   // CI checks out full history. The merge base excludes this branch's own edits;
   // the first introduction has no previous baseline to compare against.
-  const base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: directory, encoding: 'utf8' }).trim();
+  const base = execFileSync('git', ['merge-base', 'HEAD', baseName], { cwd: directory, encoding: 'utf8' }).trim();
   const files = execFileSync('git', ['ls-tree', '--name-only', base, '--', baselinePath], { cwd: directory, encoding: 'utf8' });
   if (files.trim()) {
     const previous = execFileSync('git', ['show', `${base}:${baselinePath}`], { cwd: directory, encoding: 'utf8' });

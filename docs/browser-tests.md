@@ -25,7 +25,7 @@ including serialized browser code. Its textual rules conservatively count timers
 frames, sleep helpers, timer imports and named retry loops, including mocks and
 watchdogs; review clock ownership and aliases separately. Per-file/per-kind counts
 must match `scripts/test-determinism-baseline.json` and cannot grow past the
-baseline at the merge base with `origin/main`. CI requires that ref and full history;
+baseline at the merge base with the PR base (`origin/$GITHUB_BASE_REF` in CI, else `origin/main`). CI requires that ref and full history;
 locally a missing ref logs a skipped history comparison while inventory checks still run.
 After removing calls, run `pnpm exec tsx scripts/test-determinism.ts --update`;
 it only accepts reductions. Omit `--update` to print counts. Do not hide waits in
@@ -156,7 +156,7 @@ retain their current browser ownership.
 ## Affected tests on pull requests
 
 PR CI uses `node scripts/test-impact.mjs` after dependency installation. It compares
-`HEAD` with the merge base of `origin/main` (full checkout history is required),
+`HEAD` with the merge base of the PR base branch (`origin/main` or `origin/dev`; full checkout history is required),
 then writes `.test-impact.json`. Each `pnpm test --lane=unit|browser
 --files-from=.test-impact.json` invocation runs the exact selected files in its
 lane. An empty selection is valid only when classification succeeded. Local

@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { discoverTests } from './run-tests.mjs';
 import { shouldRunChecks } from './ci-changes.mjs';
+import { baseRef } from './base-ref.mjs';
 
 // Add shared inputs here when they cannot be represented by an import edge.
 export const isFullRun = file => /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|vite\.config\.[^/]+)$/.test(file)
@@ -151,7 +152,7 @@ export function selectTests(tests, changed, graph, entries) {
   };
 }
 
-export async function impact({ root = process.cwd(), gitRoot = root, base = 'origin/main', head = 'HEAD' } = {}) {
+export async function impact({ root = process.cwd(), gitRoot = root, base = baseRef(), head = 'HEAD' } = {}) {
   const tests = discoverTests(root);
   let previous;
   try {
@@ -178,7 +179,7 @@ export function report(selection) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const selection = await impact({ base: process.argv[2] || 'origin/main' });
+  const selection = await impact({ base: process.argv[2] || baseRef() });
   const output = '.test-impact.json';
   writeFileSync(output, JSON.stringify(selection, null, 2) + '\n');
   console.log(report(selection));
