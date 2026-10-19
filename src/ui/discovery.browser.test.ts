@@ -104,10 +104,10 @@ for (const engine of ['chromium', 'firefox'] as const) {
       const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
       await setup(page, '<div id="inline-preview-player"><video id="preview" style="left:0;top:0;width:300px;height:170px"></video></div>'
         + '<ytd-miniplayer><video id="mini" style="left:600px;top:0;width:300px;height:170px"></video></ytd-miniplayer>'
-        + '<video id="empty" style="left:0;top:300px;width:0;height:0"></video>');
-      await page.evaluate(() => { document.querySelector('#empty')!.removeAttribute('src'); });
-      assert.equal((await rank(page)).picked, 'empty');
-      await page.evaluate(() => document.querySelector('#empty')!.remove());
+        + '<ytd-shorts><video id="short" style="left:900px;top:0;width:300px;height:170px"></video></ytd-shorts>');
+      // Shorts is the page's own player, so it remains the fallback.
+      assert.equal((await rank(page)).picked, 'short');
+      await page.evaluate(() => document.querySelector('ytd-shorts')!.remove());
       assert.equal((await rank(page)).picked, null);
       await page.close();
     });

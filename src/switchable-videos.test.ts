@@ -177,6 +177,7 @@ describe('switchable theater videos', () => {
   it('treats a video in the miniplayer or a hidden YouTube watch page as having left its surface', () => {
     assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-miniplayer'] })), true);
     assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-watch-flexy[hidden]'] })), true);
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-shorts'] })), false);
     assert.equal(hasLeftPlaybackSurface(mainYouTubeVideo()), false);
   });
 });
