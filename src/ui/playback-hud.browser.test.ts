@@ -122,6 +122,29 @@ describe('playback HUD browser regressions', () => {
       }
     });
 
+    it(`shares one vertical axis between the seek circles and the buffering spinner in ${engine}`, { timeout: 60_000 }, async t => {
+      const browser = await (await import('playwright'))[engine].launch({ headless: true });
+      ownTestBrowser(t, browser);
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
+      await page.goto('http://playback-hud.test/');
+      await boot(page, { pictureAlign: 'top', videoFitMode: 'contain' });
+      // The captured stream is live-like; give it a finite length so the seek shortcut is accepted.
+      await page.evaluate(() => Object.defineProperty(document.querySelector('video')!, 'duration', { value: 600 }));
+      await page.keyboard.press('ArrowRight');
+      await page.locator('.theater-everywhere-seek-overlay.right').waitFor({ state: 'attached' });
+      const centers = await page.evaluate(() => {
+        const root = document.querySelector('#theater-everywhere-ui')!.shadowRoot!;
+        const spinner = root.querySelector('.theater-loading-indicator')!;
+        const seek = root.querySelector('.theater-everywhere-seek-overlay')!;
+        const a = spinner.getBoundingClientRect();
+        const b = seek.getBoundingClientRect();
+        return { spinner: a.top + a.height / 2, seek: b.top + b.height / 2, viewport: innerHeight / 2 };
+      });
+      assert.ok(Math.abs(centers.viewport - centers.seek) > 10, `picture must be off-centre: ${JSON.stringify(centers)}`);
+      assert.ok(Math.abs(centers.spinner - centers.seek) < 1, JSON.stringify(centers));
+    });
+
     it(`keeps boosted HUD and toolbar speakers orange over a green accent in ${engine}`, { timeout: 60_000 }, async () => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

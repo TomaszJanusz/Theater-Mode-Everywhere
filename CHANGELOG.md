@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The subtitle overlay now uses the full video width instead of half of it.
+- The seek circles now sit on the same horizontal line as the buffering spinner and volume indicator, centred on the picture, when the picture is not centred in the window.
 - With an audio effect or Volume Boost enabled, entering theater on a video whose server does not allow audio processing no longer makes the site's player stop with an "unavailable or not supported" error; playback continues and the audio option shows as unavailable.
 - Pinned controls no longer let busy page content show through them.
 - On Twitch, after the player reloads itself following an error, theater follows the new video and the remaining time keeps updating.
