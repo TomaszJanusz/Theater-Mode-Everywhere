@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Firefox build no longer declares a minimum version for Firefox for Android; Firefox for Android is not supported.
+
 ## [2.0.1] - 2026-10-19
 
 ### Added
