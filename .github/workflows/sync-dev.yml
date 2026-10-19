@@ -121,15 +121,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: dev
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Check dev is at the pushed merge
+      # dev may have moved on since the push; that is fine (the newer head is what we
+      # want verified) as long as the pushed merge is still part of it.
+      - name: Check dev contains the pushed merge
         if: env.PUSHED_SHA != ''
         run: |
-          head=$(git rev-parse HEAD)
-          if [ "$head" != "$PUSHED_SHA" ]; then
-            echo "::error title=dev moved::dev is at $head, expected the pushed merge $PUSHED_SHA."
+          if ! git merge-base --is-ancestor "$PUSHED_SHA" HEAD; then
+            echo "::error title=Pushed merge missing::dev head $(git rev-parse HEAD) does not contain the pushed merge $PUSHED_SHA."
             exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" != "$PUSHED_SHA" ]; then
+            echo "dev has moved on since the sync; verifying the current head $(git rev-parse --short HEAD)."
+            echo "## dev moved on after the sync ($(git rev-parse --short "$PUSHED_SHA")); verified head $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Install pnpm

@@ -32,9 +32,10 @@ test('sync-dev verify runs lint and typecheck read-only, cache-free, on the push
   assert.match(verify, /needs: merge/);
   assert.match(verify, /if: needs\.merge\.outputs\.pushed == 'true' \|\| inputs\.force_verify/);
   assert.match(verify, /permissions:\n\s+contents: read\n(?!\s+\w+: )/);
-  assert.match(verify, /ref: dev\n\s+persist-credentials: false/);
+  assert.match(verify, /ref: dev\n\s+fetch-depth: 0\n\s+persist-credentials: false/);
   assert.doesNotMatch(verify, /ref: \$\{\{/);
-  assert.match(verify, /git rev-parse HEAD/);
+  assert.match(verify, /git merge-base --is-ancestor "\$PUSHED_SHA" HEAD/);
+  assert.match(verify, /dev has moved on since the sync/);
   assert.doesNotMatch(verify, /actions\/cache|\n\s+cache:|: write\b/);
   assert.match(verify, /pnpm install --frozen-lockfile/);
   assert.match(verify, /pnpm lint/);
