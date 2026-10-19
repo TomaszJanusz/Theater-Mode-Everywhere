@@ -57,8 +57,8 @@ proof of installation, background handling, permissions or cross-world wiring.
 - Generic: 20,000 unrelated divs without video and 100 composed mousemove
   events; 12 same-origin iframe startups with individual counter readouts; late
   open-shadow video insertion, theater entry and exit.
-- Chat: generic absent; Twitch live and native VOD replay; stored-hidden chat;
-  hide/show round trip; 20–100 portal add/remove cycles with alternating
+- Chat: generic absent; Twitch live and native VOD replay; native-hidden chat
+  despite a saved open preference; hide/show round trip; 20–100 portal add/remove cycles with alternating
   light/dark theme selections; theater exit and removal of chat ownership.
   DOM absence alone cannot establish that detached portals were collected.
 - Disney: catalog without player; playback; paused extension seek through the

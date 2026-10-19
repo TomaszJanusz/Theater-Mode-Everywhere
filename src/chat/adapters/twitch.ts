@@ -1,3 +1,4 @@
+import { readNativeChatVisibility } from './visibility';
 import { OwnedDom } from '../owned-dom';
 import { TWITCH_CHAT_PORTAL_SELECTOR } from '../selectors';
 import type { ChatSurface } from '../types';
@@ -152,4 +153,10 @@ function supportsTokenBridge(doc: Document): boolean {
     try { if (visit(sheet.cssRules)) return true; } catch { /* Opaque service sheets cannot qualify. */ }
   }
   return false;
+}
+
+export function readTwitchChatVisibility(root: HTMLElement): boolean | null {
+  const shell = root.matches('.chat-shell') ? root : root.querySelector('.chat-shell');
+  if (shell?.classList.contains('chat-shell__collapsed')) return false;
+  return readNativeChatVisibility(root);
 }
