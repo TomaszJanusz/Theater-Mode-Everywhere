@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative, sep } from 'node:path';
@@ -73,7 +73,23 @@ function run(spawn, args, label) {
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
   let plan;
   try {
-    plan = planRun(discoverTests(root), args, file => isBrowserTest(join(root, file)));
+    let discovered = discoverTests(root);
+    const selectionArg = args.find(arg => arg.startsWith('--files-from='));
+    if (selectionArg) {
+      args = args.filter(arg => arg !== selectionArg);
+      try {
+        const selection = JSON.parse(readFileSync(join(root, selectionArg.slice(13)), 'utf8'));
+        if (!Array.isArray(selection.files) || selection.total !== discovered.length
+          || selection.files.some(file => typeof file !== 'string' || !discovered.includes(file))
+          || new Set(selection.files).size !== selection.files.length) throw new Error('Invalid or stale selection');
+        discovered = selection.files;
+      } catch (error) {
+        const message = `Test selection unavailable (${error.message}); running all tests in this lane.`;
+        console.warn(message);
+        if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n${message}\n\n${discovered.map(file => `- \`${file}\``).join('\n')}\n`);
+      }
+    }
+    plan = planRun(discovered, args, file => isBrowserTest(join(root, file)));
   } catch (error) {
     console.error(error.message);
     return 1;

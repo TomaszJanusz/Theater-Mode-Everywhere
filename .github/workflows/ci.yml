@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Includes the conditional full Firefox matrix on infrastructure changes.
+    # Includes conditional Firefox coverage on infrastructure changes.
     timeout-minutes: 30
     steps:
       - name: Checkout Code
@@ -47,6 +47,15 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.run != 'false'
         run: pnpm install --frozen-lockfile
+
+      - name: Select affected tests
+        id: impact
+        if: steps.changes.outputs.run != 'false'
+        continue-on-error: true
+        # Never consume a partial/stale selection from a failed selector process.
+        run: |
+          rm -f .test-impact.json
+          node scripts/test-impact.mjs || { rm -f .test-impact.json; exit 1; }
 
       - name: Cache Playwright browsers
         if: steps.changes.outputs.run != 'false'
@@ -84,24 +93,24 @@ jobs:
 
       - name: Unit tests
         if: steps.changes.outputs.run != 'false'
-        run: pnpm test --lane=unit
+        run: pnpm test --lane=unit --files-from=.test-impact.json
 
       - name: Test
         if: steps.changes.outputs.run != 'false'
         timeout-minutes: 10
-        run: pnpm test --lane=browser
+        run: pnpm test --lane=browser --files-from=.test-impact.json
         env:
           THEATER_TEST_ENGINES: chromium
 
       - name: Test Firefox
         if: steps.changes.outputs.run != 'false' && steps.changes.outputs.firefox != 'false'
         timeout-minutes: 15
-        run: pnpm test --lane=browser
+        run: pnpm test --lane=browser --files-from=.test-impact.json
         env:
           THEATER_TEST_ENGINES: firefox
 
       - name: Smoke Chromium
-        if: steps.changes.outputs.run != 'false'
+        if: steps.changes.outputs.run != 'false' && (steps.impact.outcome != 'success' || steps.impact.outputs.smoke != 'false')
         run: xvfb-run --auto-servernum pnpm smoke:chromium
 
       - name: Smoke Firefox

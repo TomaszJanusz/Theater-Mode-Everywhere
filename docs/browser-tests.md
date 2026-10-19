@@ -110,9 +110,9 @@ and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
 cases explicitly tied to Chromium still use Chromium in either browser lane;
 the switch does not claim to port those cases to Firefox.
 
-PRs run typecheck, build, bundle verification, unit tests, Chromium browser tests
-and Chromium smoke. `scripts/ci-changes.mjs` additionally enables the full Firefox
-browser matrix and Firefox smoke when any changed path is:
+PRs run typecheck, build, bundle verification, affected unit/Chromium browser
+tests, and Chromium smoke when shipped inputs are affected (see below).
+`scripts/ci-changes.mjs` additionally enables Firefox browser coverage and Firefox smoke when any changed path is:
 
 - `manifest.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, or `tsconfig.json`;
 - under `src/platform/`, `src/protocol/`, `src/test-utils/`, or `test/`;
@@ -143,3 +143,52 @@ before page setup; cookies, storage, routes, clocks and pages do not cross test
 boundaries. File/suite cleanup closes the browser. The pilot covers
 `video-activator`, `auto-theater-storage`, and options `rte-settings`; other files
 retain their current browser ownership.
+
+## Affected tests on pull requests
+
+PR CI uses `node scripts/test-impact.mjs` after dependency installation. It compares
+`HEAD` with the merge base of `origin/main` (full checkout history is required),
+then writes `.test-impact.json`. Each `pnpm test --lane=unit|browser
+--files-from=.test-impact.json` invocation runs the exact selected files in its
+lane. An empty selection is valid only when classification succeeded. Local
+`pnpm test`, nightly and release invocations without `--files-from` still discover
+and run their full configured suites.
+
+A test is selected when it changed or transitively depends on a changed file.
+The selector unions esbuild metafile graphs from the merge base and current tree,
+so deleted files, removed imports and both sides of renames retain their impact.
+Packages are external: dependency/lockfile changes instead run all tests. Graph
+construction reads source; it never executes tests or their browser harnesses.
+
+Browser harnesses often bundle imports inside strings or read source directly.
+Literal paths, including type-only imports, are conservatively matched against
+all repository path suffixes; ambiguous names select every match. Tests reading
+`dist/` depend on all five installed extension script entrypoints and the build
+roots (`scripts/build.ts` and `vite.config.ts`). Repository-wide
+DOM and determinism guards have explicit dependency edges for the trees they scan.
+Catalog changes select localization/i18n tests and consumers of `_locales`, rather
+than unrelated playback tests. Chromium smoke runs when the entrypoint graph is
+affected, a shipped asset/build input changes, or classification fails. Otherwise
+the summary explicitly records its skip. Firefox still uses the existing
+`ci-changes.mjs` infrastructure rule; when enabled, it runs the selected browser
+files and existing Firefox smoke.
+
+Shared inputs force all test files: package/lock/workspace files, root tsconfigs,
+manifest, Vite config, `scripts/build*`, the runner, CI classifier and selector,
+`test-utils/**`, `src/test-utils/**`, `test/fixtures/**`, GitHub workflows/actions,
+and every CSS file (including `src/ui/shadow.css`). Extend `isFullRun` in
+[`scripts/test-impact.mjs`](../scripts/test-impact.mjs) for a new shared input;
+add a selector regression case alongside it. Extend the explicit graph edges
+when adding a directory-scanning guard or a harness with computed source inputs
+that cannot be resolved from literals; put such an input in the full-run set
+until its dependency can be represented. Build inputs also keep Chromium smoke.
+
+Missing history, unreadable/unbuildable graphs, unknown changed inputs or invalid
+selection files fall back to all tests, with a reason in the job summary. Selection
+errors also keep Chromium smoke enabled. The summary lists every selected test.
+This is static impact analysis: it cannot prove unrelated runtime paths still
+work, or infer arbitrary computed dependencies. PRs no longer prove the entire
+Chromium/unit suite on every change. Nightly catches all configured Firefox
+browser regressions and both smokes; it does **not** run all unit or Chromium
+tests. Release retains the full default suite. No authenticated host verification
+is implied by any of these fixture suites.
