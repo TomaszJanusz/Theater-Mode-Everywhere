@@ -15,19 +15,18 @@ concurrency:
 jobs:
   # `dev` is the long-lived 2.1 integration branch (docs/browser-tests.md). The
   # schedule only runs this file from the default branch, so both refs live here.
-  nightly:
-    name: Nightly on ${{ matrix.ref }}
+  # Each job has a literal ref: CodeQL treats an expression-driven checkout as
+  # untrusted code beside the default branch's caches. Only the main job uses
+  # caches, so dev code never writes to them.
+  nightly-main:
+    name: Nightly on main
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        ref: [main, dev]
     steps:
-      - name: Checkout ${{ matrix.ref }}
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.ref }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
 
@@ -79,7 +78,74 @@ jobs:
       - name: Coverage summary
         if: always()
         env:
-          NIGHTLY_REF: ${{ matrix.ref }}
+          NIGHTLY_REF: main
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
+          FIREFOX_RESULT: ${{ steps.firefox.outcome }}
+        run: |
+          {
+            echo "## Nightly coverage on $NIGHTLY_REF"
+            echo "Full suite (unit + Chromium + Firefox): $TEST_RESULT"
+            echo "Chromium smoke: $CHROMIUM_RESULT"
+            echo "Firefox smoke: $FIREFOX_RESULT"
+            echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
+            echo 'Failures fail this job; no test round runs on a merge.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  nightly-dev:
+    name: Nightly on dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+
+      - name: Start virtual audio device
+        uses: ./.github/actions/virtual-audio
+
+      - name: Build Extension
+        run: pnpm build
+        env:
+          CI: true
+
+      - name: Full test suite
+        id: tests
+        timeout-minutes: 25
+        run: pnpm test
+
+      - name: Smoke Chromium
+        id: chromium
+        if: ${{ !cancelled() }}
+        run: xvfb-run --auto-servernum pnpm smoke:chromium
+
+      - name: Smoke Firefox
+        id: firefox
+        if: ${{ !cancelled() }}
+        # The unsigned-extension fallback is diagnostic, not an installation pass.
+        run: xvfb-run --auto-servernum pnpm smoke:firefox
+
+      - name: Coverage summary
+        if: always()
+        env:
+          NIGHTLY_REF: dev
           TEST_RESULT: ${{ steps.tests.outcome }}
           CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
           FIREFOX_RESULT: ${{ steps.firefox.outcome }}
