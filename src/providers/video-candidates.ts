@@ -15,6 +15,14 @@ export function isProviderAuxiliaryVideo(video: HTMLVideoElement): boolean {
 }
 
 /**
+ * A theater video the host has moved away from its watch surface: YouTube hides the watch page
+ * when navigating to Home and parks playback in the miniplayer.
+ */
+export function hasLeftPlaybackSurface(video: HTMLVideoElement): boolean {
+  return isProviderAuxiliaryVideo(video) || Boolean(video.closest('ytd-watch-flexy[hidden]'));
+}
+
+/**
  * ThumbPlayer keeps a sourced standby video beside visible playback. Disney
  * mounts a display:none standby first when the next episode replaces the
  * player, then adds the real video.

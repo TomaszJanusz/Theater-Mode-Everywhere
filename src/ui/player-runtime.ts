@@ -58,7 +58,7 @@ import {
   seekBy,
   seekToMediaTime
 } from '../playback-window';
-import { isInactiveStandbyVideo } from '../switchable-videos';
+import { hasLeftPlaybackSurface, isInactiveStandbyVideo } from '../switchable-videos';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
 import { providerSharesPlaybackHost, providerVideoAbandoned } from '../providers/discovery';
 import {
@@ -2042,6 +2042,18 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     const current = session.element;
     if (current?.tagName !== 'VIDEO') return;
     const connected = isElementInDOMDeep(current);
+    if (connected && hasLeftPlaybackSurface(current as HTMLVideoElement)) {
+      // Navigating away leaves the video in a hidden watch page or the miniplayer, not a theater.
+      const replacement = findBestVideo();
+      if (replacement && replacement !== current) {
+        bindingScope.dispose();
+        switchTheaterVideo(replacement);
+        keepTheaterVideoBound(replacement);
+      } else {
+        exitTheaterMode();
+      }
+      return;
+    }
     if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement) && !providerVideoAbandoned(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
@@ -2147,7 +2159,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       });
     });
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   bindingScope.add(() => observer.disconnect());
 
   const styleObserver = new MutationObserver(() => {

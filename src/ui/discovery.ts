@@ -1,4 +1,4 @@
-import { isInactiveStandbyVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isAuxiliaryTheaterVideo, isInactiveStandbyVideo, selectSwitchableVideos } from '../switchable-videos';
 import { isProviderPlaybackFrameDocument } from '../providers/playback-session';
 import {
   prepareProviderShadowRoot,
@@ -186,7 +186,9 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     const videos = findAllVideosDeep(document).filter((video) => !isInactiveStandbyVideo(video));
     if (videos.length === 0) return null;
     const pool = selectSwitchableVideos(videos);
-    const ranked = pool.length > 0 ? pool : videos;
+    // Previews and the miniplayer are never a fallback target, however unplayable the page is.
+    const ranked = pool.length > 0 ? pool : videos.filter((video) => !isAuxiliaryTheaterVideo(video));
+    if (ranked.length === 0) return null;
     if (ranked.length === 1) return ranked[0];
 
     const providerPick = providerRankedVideo(ranked);

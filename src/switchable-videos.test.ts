@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  hasLeftPlaybackSurface,
   isSwitchableTheaterVideo,
   selectSwitchableVideos
 } from './switchable-videos';
@@ -171,5 +172,11 @@ describe('switchable theater videos', () => {
     });
     const main = mainYouTubeVideo();
     assert.deepEqual(selectSwitchableVideos([main, preview], preview), [preview, main]);
+  });
+
+  it('treats a video in the miniplayer or a hidden YouTube watch page as having left its surface', () => {
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-miniplayer'] })), true);
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-watch-flexy[hidden]'] })), true);
+    assert.equal(hasLeftPlaybackSurface(mainYouTubeVideo()), false);
   });
 });
