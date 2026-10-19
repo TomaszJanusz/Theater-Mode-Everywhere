@@ -109,7 +109,8 @@ export async function runFixture(browser: Browser, build: Build, fixture: Fixtur
       return route.abort();
     });
     await page.addInitScript(`window.__name = target => target;
-      const seed = {keepControlsVisible:true,youtubeIntegrationEnabled:true,twitchIntegrationEnabled:true,disneyIntegrationEnabled:true,nativeChatPreferences:{twitch:{visible:${fixture !== 'chat-hidden'},width:340,theme:'dark'}}};
+      // Deliberately oppose chat-hidden's native state: native visibility must win on entry.
+      const seed = {keepControlsVisible:true,youtubeIntegrationEnabled:true,twitchIntegrationEnabled:true,disneyIntegrationEnabled:true,nativeChatPreferences:{twitch:{visible:true,width:340,theme:'dark'}}};
       window.chrome = {storage:{sync:{get:async()=>seed,set:async patch=>Object.assign(seed,patch)}}};
 `);
     await page.goto(fixtureUrl(fixture, origin));

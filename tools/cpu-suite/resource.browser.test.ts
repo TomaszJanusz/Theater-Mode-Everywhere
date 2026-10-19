@@ -19,6 +19,16 @@ for (const engine of [chromium, firefox]) it(`resource fixture smoke: ${engine.n
     const row = await runFixture(browser, build, fixture, server.origin, 20, 1);
     assert.equal(row.accepted, true, `${fixture}: ${row.reason}`);
     assert.ok(row.phases.length > 0);
+    if (fixture === 'chat-hidden') {
+      const steady = row.phases.find(p => p.name === 'steady-4s');
+      const toggled = row.phases.find(p => p.name === 'show-hide');
+      assert.ok(steady);
+      assert.ok(toggled);
+      assert.equal(steady.input.chatHidden, true, 'native-hidden chat starts hidden despite the saved open preference');
+      assert.equal(steady.state.chatHidden, true, 'chat stays hidden during steady state');
+      assert.equal(steady.delta.setInterval ?? 0, 0, 'hidden chat schedules no additional interval during steady state');
+      assert.equal(toggled.state.chatHidden, true, 'toggle round trip returns to hidden');
+    }
     if (fixture === 'generic-mousemove') assert.equal(row.phases.at(-1)!.delta.setIntervalCallbacks ?? 0, 0, 'mousemove is measured without clock advancement');
     if (fixture === 'chat-portals') assert.equal(row.phases.filter(p => p.name.startsWith('portal-')).length, 20);
   }

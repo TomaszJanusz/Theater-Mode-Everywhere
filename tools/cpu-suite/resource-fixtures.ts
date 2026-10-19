@@ -13,7 +13,7 @@ export function fixtureDocument(fixture: Fixture, origin: string): string {
     : fixture === 'generic-iframes' ? Array.from({ length: 12 }, (_, i) => `<iframe src="${origin}/frame-${i}"></iframe>`).join('')
     : fixture === 'generic-late-shadow' || fixture === 'disney-catalog' ? '<div id="late"></div>'
     : fixture.startsWith('disney-') ? `<disney-web-player><disney-web-player-ui>${video}<timed-text-override-region></timed-text-override-region></disney-web-player-ui></disney-web-player>`
-    : fixture.startsWith('chat-') ? `<div class="persistent-player">${video}</div>${fixture === 'chat-absent' ? '' : `<div class="right-column" data-a-target="right-column-chat-bar">${chat}</div>`}`
+    : fixture.startsWith('chat-') ? `<div class="persistent-player">${video}</div>${fixture === 'chat-absent' ? '' : `<div class="right-column" data-a-target="right-column-chat-bar"${fixture === 'chat-hidden' ? ' hidden' : ''}>${chat}</div>`}`
     : `<ytd-watch-flexy video-id="abcdefghijk"><div id="movie_player">${video}</div></ytd-watch-flexy>`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     body{margin:0;background:#111}video,.persistent-player,disney-web-player,#movie_player{display:block;width:960px;height:540px}
