@@ -13,14 +13,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  firefox:
+  # `dev` is the long-lived 2.1 integration branch (docs/browser-tests.md). The
+  # schedule only runs this file from the default branch, so both refs live here.
+  nightly:
+    name: Nightly on ${{ matrix.ref }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: [main, dev]
     steps:
-      - name: Checkout main
+      - name: Checkout ${{ matrix.ref }}
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ matrix.ref }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -72,15 +79,16 @@ jobs:
       - name: Coverage summary
         if: always()
         env:
+          NIGHTLY_REF: ${{ matrix.ref }}
           TEST_RESULT: ${{ steps.tests.outcome }}
           CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
           FIREFOX_RESULT: ${{ steps.firefox.outcome }}
         run: |
           {
-            echo '## Nightly coverage on main'
+            echo "## Nightly coverage on $NIGHTLY_REF"
             echo "Full suite (unit + Chromium + Firefox): $TEST_RESULT"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
             echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
-            echo 'Failures fail this job; no test round runs on a merge to main.'
+            echo 'Failures fail this job; no test round runs on a merge.'
           } >> "$GITHUB_STEP_SUMMARY"

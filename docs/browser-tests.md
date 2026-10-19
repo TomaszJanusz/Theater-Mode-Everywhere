@@ -134,8 +134,9 @@ TME-112 owns making it blocking after ten consecutive green runs on the real
 installed-extension path; diagnostic injection does not meet that requirement.
 
 Merging to main starts **no CI test round**. The coverage model is affected tests
-on PRs, the full suite nightly, and the full suite on release. Nightly runs on main
-at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
+on PRs, the full suite nightly, and the full suite on release. Nightly runs on `main`
+and on the 2.1 integration branch `dev` (a matrix with `fail-fast: false`, so one
+ref's failure does not hide the other) at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
 (unit tests and both browser engines, without lane or engine overrides), followed
 by both smokes. Full history preserves the suite's baseline/history guards. The
 suite has a 25-minute limit inside the existing 30-minute job. Failures fail the
