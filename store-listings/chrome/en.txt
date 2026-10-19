@@ -2,7 +2,7 @@ Theater Mode Everywhere enlarges HTML5 players to fill the entire browser window
 
 Watch tutorials, streams, videos, and short clips with custom playback controls. Use subtitles, keyboard shortcuts, video fit, audio effects and volume controls, plus additional features on supported platforms.
 
-Rich Theater Experience (RTE) offers deeper integrations with popular online services. On YouTube and Twitch it adds chat beside the picture, on Netflix and Disney+ skip buttons for intros and next-episode navigation, and on Bilibili (both the Chinese and the international versions) titles, subtitles and thumbnail previews on the timeline. Depending on the service, the extension may display titles, subtitles, chapters, thumbnail previews, skip buttons, next-episode navigation and additional information on the timeline. Capabilities vary between platforms. The full list of supported services is in the extension's settings.
+Rich Theater Experience (RTE) offers deeper integrations with popular online services. On YouTube and Twitch it adds chat beside the picture, and on Netflix and Disney+ skip buttons for intros and next-episode navigation. Depending on the service, the extension may display titles, subtitles, chapters, thumbnail previews, skip buttons, next-episode navigation and additional information on the timeline. Capabilities vary between platforms. The full list of supported services is in the extension's settings.
 
 MAIN FEATURES
 - One-key immersive mode: press `T` to instantly enlarge the active video into browser view. Press again or `Escape` to return. If there are several videos on the page, use `Shift+T` to switch them. Double-click the picture to enter or leave fullscreen without leaving theater mode.

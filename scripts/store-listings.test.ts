@@ -9,6 +9,38 @@ const chromeRoot = path.join(listingsRoot, 'chrome');
 const amoRoot = path.join(listingsRoot, 'amo');
 const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 
+// Chrome Web Store rejects descriptions that read as keyword spam, so every
+// language names exactly these four supported services (YouTube in all packs),
+// picked for regional relevance, and no other supported-service brand.
+const SERVICE_PACKS: Record<string, string[]> = {
+  en: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  de: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  pl: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ko: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ja: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  fr: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  es: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  it: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  pt_BR: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
+  ru: ['YouTube', 'Twitch', 'Vimeo', 'Crunchyroll'],
+  uk: ['YouTube', 'Twitch', 'Netflix', 'Crunchyroll'],
+  zh_CN: ['YouTube', 'Twitch', 'Bilibili', '腾讯视频'],
+  ar: ['YouTube', 'Netflix', 'Twitch', 'Disney+']
+};
+
+// Every supported-service brand, normalized to the name used in SERVICE_PACKS.
+const SERVICE_BRANDS: Array<[brand: string, pattern: RegExp]> = [
+  ['YouTube', /YouTube/i],
+  ['Twitch', /Twitch/i],
+  ['Netflix', /Netflix/i],
+  ['Disney+', /Disney/i],
+  ['Crunchyroll', /Crunchyroll/i],
+  ['Vimeo', /Vimeo/i],
+  ['Patreon', /Patreon/i],
+  ['Bilibili', /Bilibili/i],
+  ['腾讯视频', /腾讯视频|Tencent|WeTV/i]
+];
+
 function listingLocales(root: string, extension: string): string[] {
   return readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
@@ -92,6 +124,15 @@ describe('store listings', () => {
         `${locale}: AMO name differs from extensionNameCompact`);
       assert.equal(amoSection(amo, 'Summary'), messages.extensionDescription?.message, `${locale}: summary differs`);
       assert.equal(amoSection(amo, 'Description'), readChromeLong(locale).trim(), `${locale}: description differs`);
+    }
+  });
+
+  it('names exactly the regional pack of four services in every Chrome description', () => {
+    assert.deepEqual(Object.keys(SERVICE_PACKS).sort(), locales);
+    for (const locale of locales) {
+      const text = readChromeLong(locale);
+      const found = SERVICE_BRANDS.filter(([, pattern]) => pattern.test(text)).map(([brand]) => brand);
+      assert.deepEqual(found.sort(), [...SERVICE_PACKS[locale]].sort(), `${locale}: service names differ from the pack`);
     }
   });
 
