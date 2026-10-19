@@ -60,7 +60,7 @@ import {
 } from '../playback-window';
 import { isInactiveStandbyVideo } from '../switchable-videos';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
-import { providerSharesPlaybackHost } from '../providers/discovery';
+import { providerSharesPlaybackHost, providerVideoAbandoned } from '../providers/discovery';
 import {
   bindProviderPlayback,
   ensureProviderStages,
@@ -2042,7 +2042,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     const current = session.element;
     if (current?.tagName !== 'VIDEO') return;
     const connected = isElementInDOMDeep(current);
-    if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement)) return;
+    if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement) && !providerVideoAbandoned(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
       && !isInactiveStandbyVideo(candidate)
