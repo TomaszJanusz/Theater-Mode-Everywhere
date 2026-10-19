@@ -9,11 +9,10 @@ import { shouldRunChecks } from './ci-changes.mjs';
 
 // Add shared inputs here when they cannot be represented by an import edge.
 export const isFullRun = file => /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|vite\.config\.[^/]+)$/.test(file)
-  || /^(?:scripts\/(?:build[^/]*|run-tests\.mjs|ci-changes\.mjs|test-impact(?:\.test)?\.mjs)|(?:src\/)?test-utils\/|test\/fixtures\/|\.github\/(?:workflows|actions)\/)/.test(file)
-  || file.endsWith('.css');
+  || /^(?:scripts\/(?:build[^/]*|run-tests\.mjs|ci-changes\.mjs|test-impact(?:\.test)?\.mjs)|(?:src\/)?test-utils\/|test\/fixtures\/|\.github\/(?:workflows|actions)\/)/.test(file);
 const isBuildInput = file => isFullRun(file) && !/^(?:(?:src\/)?test-utils\/|test\/fixtures\/|scripts\/(?:run-tests|ci-changes|test-impact))/.test(file);
 const ENTRIES = ['src/entries/content.ts', 'src/entries/main-world.ts', 'src/entries/background.ts', 'popup/popup.ts', 'options/options.ts'];
-const SMOKE_ENTRIES = [...ENTRIES, 'scripts/build.ts', 'vite.config.ts'];
+const BUNDLE_ENTRIES = [...ENTRIES, 'scripts/build.ts', 'vite.config.ts'];
 const localeTest = file => /(?:locales|localization|i18n|store-listings|safe-dom|rte-settings|whatsNew-(?:content|release)|cc-menu-rows|settings-rows)(?:\.browser)?\.test\./.test(file);
 const codeFile = file => /\.(?:[cm]?[jt]sx?)$/.test(file) && !file.endsWith('.d.ts');
 
@@ -43,14 +42,26 @@ export async function readGraph(root, files, entries = ENTRIES) {
     write: false, metafile: true, platform: 'node', format: 'esm', packages: 'external', logLevel: 'silent',
     loader: { '.css': 'text', '.html': 'text', '.svg': 'text', '.md': 'text' },
     plugins: [{ name: 'raw-assets', setup(builder) {
-      builder.onResolve({ filter: /\?raw$/ }, args => ({ path: resolve(args.resolveDir, args.path.slice(0, -4)), namespace: 'raw' }));
+      builder.onResolve({ filter: /\?(?:raw|inline)$/ }, args => ({ path: resolve(args.resolveDir, args.path.replace(/\?(?:raw|inline)$/, '')), namespace: 'raw' }));
       builder.onLoad({ filter: /.*/, namespace: 'raw' }, args => ({ contents: readFileSync(args.path, 'utf8'), loader: 'text' }));
     } }],
   });
   const graph = new Map();
-  const normalize = file => relative(root, resolve(root, file.replace(/^raw:/, ''))).replaceAll('\\', '/');
-  for (const [file, input] of Object.entries(result.metafile.inputs)) {
-    graph.set(normalize(file), new Set(input.imports.filter(edge => !edge.external).map(edge => normalize(edge.path))));
+  const normalize = file => relative(root, resolve(root, file.replace(/^raw:/, '').replace(/\?(?:raw|inline)$/, ''))).replaceAll('\\', '/');
+  // JS consumes some styles as strings. A separate CSS build retains @import
+  // and url() edges that the text loader (including ?raw/?inline) cannot see.
+  const styles = files.filter(file => file.endsWith('.css'));
+  const css = styles.length ? await build({
+    absWorkingDir: root, entryPoints: styles, outdir: '.impact-css-output',
+    bundle: true, write: false, metafile: true, packages: 'external', logLevel: 'silent',
+    loader: { '.svg': 'dataurl', '.png': 'dataurl', '.woff': 'dataurl', '.woff2': 'dataurl' },
+  }) : null;
+  if (css?.warnings.length) throw new Error(`Uncertain stylesheet graph: ${css.warnings[0].text}`);
+  for (const metadata of [result.metafile, css?.metafile]) {
+    for (const [file, input] of Object.entries(metadata?.inputs ?? {})) {
+      const key = normalize(file);
+      graph.set(key, new Set([...(graph.get(key) ?? []), ...input.imports.filter(edge => !edge.external).map(edge => normalize(edge.path))]));
+    }
   }
   // Browser harnesses embed imports in esbuild stdin strings, read source files,
   // or pass literal entryPoints. Match those literals against every possible
@@ -83,14 +94,21 @@ export async function readGraph(root, files, entries = ENTRIES) {
       for (const target of suffixes.get(key) ?? []) { edges.add(target); if (!graph.has(target)) graph.set(target, new Set()); }
     }
     // Built-extension tests consume all shipped runtime code, not their own imports.
-    if (/['"`](?:dist(?:\/|['"`])|(?:chrome|firefox)-unpacked)/.test(text)) for (const entry of SMOKE_ENTRIES) edges.add(entry);
+    if (/['"`](?:dist(?:\/|['"`])|(?:chrome|firefox)-unpacked)/.test(text)) for (const entry of BUNDLE_ENTRIES) edges.add(entry);
     graph.set(file, edges);
   }
   // HTML is loaded by the browser rather than imported by these scripts.
   for (const surface of ['popup', 'options']) {
     const html = `${surface}/${surface}.html`;
     graph.get(`${surface}/${surface}.ts`)?.add(html);
-    if (files.includes(html)) graph.set(html, graph.get(html) ?? new Set());
+    if (files.includes(html)) {
+      const edges = graph.get(html) ?? new Set();
+      // These entry pages load their stylesheet via <link>, including tests
+      // which derive the surface path dynamically from 'popup' or 'options'.
+      const css = `${surface}/${surface}.css`;
+      if (files.includes(css)) edges.add(css);
+      graph.set(html, edges);
+    }
   }
   // Repository-wide guards inspect files without importing them.
   for (const file of sources) {
@@ -101,7 +119,7 @@ export async function readGraph(root, files, entries = ENTRIES) {
   return graph;
 }
 
-export function selectTests(tests, changed, graph, entries = SMOKE_ENTRIES) {
+export function selectTests(tests, changed, graph, entries) {
   const full = reason => ({ files: tests, smoke: true, full: true, reason });
   if (!Array.isArray(changed) || changed.length === 0) return full('Missing or empty changed-file metadata');
   const shared = changed.find(isFullRun);
@@ -115,11 +133,17 @@ export function selectTests(tests, changed, graph, entries = SMOKE_ENTRIES) {
   };
   const targets = new Set(changed.filter(file => !file.startsWith('_locales/')));
   const locales = changed.some(file => file.startsWith('_locales/'));
-  const smoke = locales || entries.some(file => reaches(file, targets));
+  // Harness roots trigger smoke without becoming inputs of dist-dependent tests.
+  const smokeRoots = entries ?? [...BUNDLE_ENTRIES, ...[...graph.keys()].filter(file =>
+    /^scripts\/smoke[^/]*\.ts$/.test(file) && !file.endsWith('.test.ts'))];
+  const smoke = locales || smokeRoots.some(file => reaches(file, targets));
   if (shared) return { ...full(`Shared input: ${shared}`), smoke };
   const unknown = [...targets].find(file => !graph.has(file) && !tests.includes(file)
     && shouldRunChecks([file]));
   if (unknown) return full(`Unmodelled input: ${unknown}`);
+  const unmodelledStyle = changed.find(file => file.endsWith('.css')
+    && !tests.some(test => reaches(test, new Set([file]))));
+  if (unmodelledStyle) return full(`No modelled stylesheet test consumer: ${unmodelledStyle}`);
   return {
     files: tests.filter(file => reaches(file, targets) || (locales && (localeTest(file) || reaches(file, new Set(['_locales/']))))),
     smoke, full: false,

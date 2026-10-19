@@ -105,7 +105,7 @@ use `.browser.test.ts`, or import Playwright (including legacy names such as
 `playlist-nav.test.ts`). Each discovered file belongs to exactly one lane.
 Selectors and Node test flags work within either lane. Without `--lane`, all
 tests run. `THEATER_TEST_ENGINES` selects parameterized browser cases; unset means
-both engines, preserving local and release coverage. Comma-separated `chromium`
+both engines, preserving local, nightly and release coverage. Comma-separated `chromium`
 and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
 cases explicitly tied to Chromium still use Chromium in either browser lane;
 the switch does not claim to port those cases to Firefox.
@@ -128,14 +128,17 @@ PR Firefox smoke remains non-blocking and emits a warning annotation on failure.
 TME-112 owns making it blocking after ten consecutive green runs on the real
 installed-extension path; diagnostic injection does not meet that requirement.
 
-Merging to main starts **no CI test round**. Nightly coverage runs on main at
-02:23 UTC and can also be dispatched manually: all existing Firefox browser
-cases plus both smokes. Failures produce a failing job and a job summary; Firefox
-smoke failures are not suppressed. Its unsigned-extension injection fallback is
-still diagnostic-only. Release runs retain the full default test suite. Thus a
-Firefox regression outside the PR path rule can first surface nightly, rather
-than block that PR. Nightly does not repeat unit tests or the full Chromium
-browser suite.
+Merging to main starts **no CI test round**. The coverage model is affected tests
+on PRs, the full suite nightly, and the full suite on release. Nightly runs on main
+at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
+(unit tests and both browser engines, without lane or engine overrides), followed
+by both smokes. Full history preserves the suite's baseline/history guards. The
+suite has a 25-minute limit inside the existing 30-minute job. Failures fail the
+job and appear in its summary; both smokes still run after a test failure unless
+the run is cancelled. Firefox smoke failures are not suppressed. Its unsigned
+extension injection fallback is still diagnostic-only. Regressions outside a
+PR's selected paths can first surface in the full nightly run rather than block
+that PR. Release also retains unrestricted `pnpm test`.
 
 The shared-browser pilot in `test-browser.ts` launches lazily once per engine
 per file/suite. Each test owns a fresh context, with a cleanup hook registered
@@ -171,24 +174,34 @@ than unrelated playback tests. Chromium smoke runs when the entrypoint graph is
 affected, a shipped asset/build input changes, or classification fails. Otherwise
 the summary explicitly records its skip. Firefox still uses the existing
 `ci-changes.mjs` infrastructure rule; when enabled, it runs the selected browser
-files and existing Firefox smoke.
+files and existing Firefox smoke. `scripts/smoke.ts` and other
+`scripts/smoke*.ts` harness entries are additional smoke roots, so their own
+changes and transitive dependencies also run Chromium smoke. These harness roots
+are separate from the build/installed roots that dist-dependent tests consume.
 
 Shared inputs force all test files: package/lock/workspace files, root tsconfigs,
 manifest, Vite config, `scripts/build*`, the runner, CI classifier and selector,
-`test-utils/**`, `src/test-utils/**`, `test/fixtures/**`, GitHub workflows/actions,
-and every CSS file (including `src/ui/shadow.css`). Extend `isFullRun` in
+`test-utils/**`, `src/test-utils/**`, `test/fixtures/**`, and GitHub workflows/actions.
+Stylesheets use the dependency graph described below. Extend `isFullRun` in
 [`scripts/test-impact.mjs`](../scripts/test-impact.mjs) for a new shared input;
 add a selector regression case alongside it. Extend the explicit graph edges
 when adding a directory-scanning guard or a harness with computed source inputs
 that cannot be resolved from literals; put such an input in the full-run set
 until its dependency can be represented. Build inputs also keep Chromium smoke.
 
+CSS is selected through the same graph: esbuild parses stylesheet `@import`
+and asset `url()` dependencies separately from JS string loaders. `?raw` and
+`?inline` imports, literal `readFileSync`/`readStylesheet` paths and bundled runtime
+entrypoints retain canonical CSS edges. Popup/options HTML also links its surface
+stylesheet, covering tests that compute the surface path. A changed stylesheet
+with no modeled test consumer, a missing import or parser warning falls back to
+all tests and smoke.
+
 Missing history, unreadable/unbuildable graphs, unknown changed inputs or invalid
 selection files fall back to all tests, with a reason in the job summary. Selection
 errors also keep Chromium smoke enabled. The summary lists every selected test.
 This is static impact analysis: it cannot prove unrelated runtime paths still
 work, or infer arbitrary computed dependencies. PRs no longer prove the entire
-Chromium/unit suite on every change. Nightly catches all configured Firefox
-browser regressions and both smokes; it does **not** run all unit or Chromium
-tests. Release retains the full default suite. No authenticated host verification
-is implied by any of these fixture suites.
+Chromium/unit suite on every change. Nightly and release run the full
+default suite; nightly also runs both smokes with blocking failures. No
+authenticated host verification is implied by any of these fixture suites.

@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install pnpm
@@ -52,12 +53,10 @@ jobs:
         env:
           CI: true
 
-      - name: Test Firefox
+      - name: Full test suite
         id: tests
-        timeout-minutes: 15
-        run: pnpm test --lane=browser
-        env:
-          THEATER_TEST_ENGINES: firefox
+        timeout-minutes: 25
+        run: pnpm test
 
       - name: Smoke Chromium
         id: chromium
@@ -79,7 +78,7 @@ jobs:
         run: |
           {
             echo '## Nightly coverage on main'
-            echo "Firefox browser tests: $TEST_RESULT"
+            echo "Full suite (unit + Chromium + Firefox): $TEST_RESULT"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
             echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'

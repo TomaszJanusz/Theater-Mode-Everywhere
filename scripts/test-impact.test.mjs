@@ -25,7 +25,7 @@ test('transitive imports select their test, exclude unrelated tests, and tolerat
 });
 
 test('shared inputs and unreadable/unknown graphs fail open to all tests and smoke', () => {
-  for (const file of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'vite.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml', 'src/ui/shadow.css']) {
+  for (const file of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'vite.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml']) {
     assert.equal(isFullRun(file), true, file);
     assert.deepEqual(selectTests(tests, [file], graph).files, tests);
   }
@@ -125,8 +125,15 @@ test('base graph preserves removed imports and dist tests follow installed entry
   const result = await impact({ root, base: 'HEAD^' });
   assert.deepEqual(result.files, ['src/a.test.ts']);
   assert.equal(result.full, false);
-  const actual = await readGraph(root, [...entries, 'src/dist.browser.test.ts']);
+  put('scripts/smoke.ts', "import './harness-helper';");
+  put('scripts/harness-helper.ts', 'export {};');
+  const actual = await readGraph(root, [...entries, 'src/dist.browser.test.ts', 'scripts/smoke.ts', 'scripts/harness-helper.ts']);
   assert.deepEqual(selectTests(['src/dist.browser.test.ts'], [entries[0]], actual).files, ['src/dist.browser.test.ts']);
+  for (const file of ['scripts/smoke.ts', 'scripts/harness-helper.ts']) {
+    const smokeOnly = selectTests(['src/dist.browser.test.ts'], [file], actual);
+    assert.equal(smokeOnly.smoke, true);
+    assert.deepEqual(smokeOnly.files, []);
+  }
 });
 
 test('computed module inputs are uncertain and cannot silently produce an empty selection', async t => {
@@ -149,4 +156,87 @@ test('build dependencies also keep installed Chromium smoke', () => {
     ['scripts/bundle-integrity.ts', new Set()],
   ]);
   assert.equal(selectTests(tests, ['scripts/bundle-integrity.ts'], actual).smoke, true);
+});
+
+test('CSS imports, raw/inline strings, literal file reads and built entrypoints share transitive style edges', async t => {
+  const { root, put } = fixture(t);
+  const files = ['src/raw.test.ts', 'src/inline.test.ts', 'src/read.test.ts', 'src/dist.test.ts', 'src/unrelated.test.ts'];
+  put(files[0], "import css from './ui/shadow.css?raw'; export { css };");
+  put(files[1], "import css from './ui/shadow.css?inline'; export { css };");
+  put(files[2], "import { readFileSync } from 'node:fs'; export const css = readFileSync('src/ui/shadow.css', 'utf8');");
+  put(files[3], "export const extension = 'dist/chrome-unpacked';");
+  put(files[4], 'export {};');
+  put('src/entries/content.ts', "import css from '../ui/shadow.css?inline'; export { css };");
+  put('src/ui/shadow.css', "@import '../tokens.css'; body { color: red; }");
+  put('src/tokens.css', ':root { --accent: red; }');
+  const actual = await readGraph(root, [...files, 'src/entries/content.ts', 'src/ui/shadow.css', 'src/tokens.css'], []);
+  for (const style of ['src/ui/shadow.css', 'src/tokens.css']) {
+    assert.equal(isFullRun(style), false);
+    const result = selectTests(files, [style], actual, ['src/entries/content.ts']);
+    assert.equal(result.full, false);
+    assert.equal(result.smoke, true);
+    assert.deepEqual(result.files, files.slice(0, 4));
+  }
+});
+
+test('HTML-loaded surface styles select their bundled tests and smoke through shared CSS imports', async t => {
+  const { root, put } = fixture(t);
+  const files = ['options/surface.test.ts', 'src/unrelated.test.ts'];
+  put(files[0], "export const entry = 'options/options.ts';");
+  put(files[1], 'export {};');
+  put('options/options.ts', 'export {};');
+  put('options/options.html', '<link rel="stylesheet" href="options.css">');
+  put('options/options.css', "@import '../src/tokens.css';");
+  put('src/tokens.css', ':root { --accent: red; }');
+  const actual = await readGraph(root, [...files, 'options/options.ts', 'options/options.html', 'options/options.css', 'src/tokens.css'], []);
+  const result = selectTests(files, ['src/tokens.css'], actual);
+  assert.deepEqual(result.files, [files[0]]);
+  assert.equal(result.full, false);
+  assert.equal(result.smoke, true);
+});
+
+test('a stylesheet without a modelled test consumer still selects everything', () => {
+  const actual = new Map([...graph, ['src/computed.css', new Set()]]);
+  const result = selectTests(tests, ['src/computed.css'], actual, []);
+  assert.deepEqual(result.files, tests);
+  assert.equal(result.full, true);
+  assert.equal(result.smoke, true);
+  assert.match(result.reason, /No modelled stylesheet test consumer/);
+});
+
+test('an unreadable CSS import graph fails open to the full suite', async t => {
+  const { root, put, git } = fixture(t);
+  for (const file of ['src/entries/content.ts', 'src/entries/main-world.ts', 'src/entries/background.ts', 'popup/popup.ts', 'options/options.ts']) put(file, 'export {};');
+  put('src/a.test.ts', "export const style = 'src/ui/shadow.css';");
+  put('src/b.test.ts', 'export {};');
+  put('src/ui/shadow.css', 'body { color: red; }');
+  git('add', '.'); git('commit', '-qm', 'base');
+  put('src/ui/shadow.css', "@import './missing.css';");
+  git('add', '.'); git('commit', '-qm', 'broken style import');
+  const result = await impact({ root, base: 'HEAD^' });
+  assert.deepEqual(result.files, ['src/a.test.ts', 'src/b.test.ts']);
+  assert.equal(result.full, true);
+  assert.equal(result.smoke, true);
+  assert.match(result.reason, /Fallback/);
+});
+
+test('smoke harness roots and smoke-only dependencies trigger Chromium without selecting dist tests', () => {
+  const files = ['src/dist.browser.test.ts', 'src/unrelated.test.ts'];
+  const actual = new Map([
+    [files[0], new Set(['src/entries/content.ts', 'scripts/build.ts', 'vite.config.ts'])],
+    [files[1], new Set()],
+    ['src/entries/content.ts', new Set()],
+    ['scripts/build.ts', new Set()],
+    ['vite.config.ts', new Set()],
+    ['scripts/smoke.ts', new Set(['scripts/harness-helper.ts'])],
+    ['scripts/harness-helper.ts', new Set()],
+    ['scripts/smoke-extra.ts', new Set()],
+  ]);
+  for (const file of ['scripts/smoke.ts', 'scripts/harness-helper.ts', 'scripts/smoke-extra.ts']) {
+    const result = selectTests(files, [file], actual);
+    assert.equal(result.smoke, true, file);
+    assert.equal(result.full, false, file);
+    assert.deepEqual(result.files, [], file);
+  }
+  assert.equal(selectTests(files, [files[1]], actual).smoke, false);
 });
