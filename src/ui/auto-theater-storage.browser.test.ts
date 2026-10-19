@@ -219,7 +219,8 @@ for (const engine of testEngines()) {
     it(`${provider.id} auto-theater in ${engine} enters through the full player runtime and honors live provider settings`, { timeout: 60_000 }, async t => {
       const context = await shared.newContext(t);
       try {
-        const { page } = await fixture(context, provider);
+        // The notice countdown is covered by the intent and runtime suites; skipping it avoids two real 5 s waits.
+        const { page } = await fixture(context, { ...provider, skipCountdown: true });
         assert.equal(await active(page), false, 'loading a paused watch page must not enter');
         await page.evaluate(() => {
           window.autoStorageProbe.playing = true;

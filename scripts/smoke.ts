@@ -1121,9 +1121,6 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
       await page.screenshot({ path: path.join(captureDir, name), fullPage });
     }
   };
-  const settle = async () => {
-    await page.evaluate(async () => { await Promise.all(document.getAnimations().filter(animation => animation instanceof CSSTransition).map(animation => animation.finished)); });
-  };
   try {
     await worker.evaluate(async ({ key, id }) => { await chrome.storage.local.set({ [key]: id }); }, { key: WHATS_NEW_ACK_STORAGE_KEY, id: WHATS_NEW_RELEASE.id });
     await worker.evaluate(update => chrome.storage.sync.set(update), { ...mediaProviderFlagStorageUpdate(defaultMediaProviderFlags()), language: 'en' });
@@ -1131,70 +1128,18 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     await page.goto(new URL('options/options.html#features', worker.url()).href);
     await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => input.checked));
     await capture('tme60-section.png');
-    if (captureDir) await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles.png') });
+    // Only what needs the installed extension stays here: real chrome.storage defaults, writes and live updates
+    // across contexts. Hover, filters, master scoping, details, narrow and sticky layouts, and RTL are covered by
+    // options/rte-settings.browser.test.ts.
     const netflix = page.locator('[data-provider="netflix"]');
-    const ring = () => netflix.evaluate(el => ({ opacity: getComputedStyle(el, '::before').opacity, playState: getComputedStyle(el, '::before').animationPlayState }));
-    if ((await ring()).opacity !== '0') fail('A resting RTE tile shows brand colors.');
-    await netflix.hover();
-    await page.waitForFunction(() => {
-      const tile = document.querySelector('[data-provider="netflix"]')!;
-      return Number(getComputedStyle(tile, '::before').opacity) > 0;
-    });
-    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-1.png') });
-    await settle();
-    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-2.png') });
-    // The boost transition has settled; the steady orbit itself never finishes.
-    if ((await ring()).playState !== 'running' || (await ring()).opacity !== '1') fail('The RTE tile stopped showing its orbiting colors while hovered.');
-    if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-dwell.png') });
-    await page.mouse.move(2, 2);
-    await settle();
-    if ((await ring()).opacity !== '0') fail('The RTE border did not rest after the pointer left.');
-    await page.locator('#rte-all').click();
-    await page.waitForFunction(() => [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => !input.checked));
-    if (captureDir) {
-      await page.locator('#rte-tiles').screenshot({ path: path.join(captureDir, 'tme60-tiles-off.png') });
-    }
-    await page.locator('#rte-all').click();
-    await page.locator('[data-provider="netflix"] .rte-control').click();
+    await netflix.locator('.rte-control').click();
     await page.waitForFunction(() => (document.getElementById('rte-all') as HTMLInputElement).indeterminate);
     const saved = await worker.evaluate(async () => chrome.storage.sync.get(['netflixIntegrationEnabled', 'youtubeIntegrationEnabled']));
     if (saved.netflixIntegrationEnabled !== false || saved.youtubeIntegrationEnabled !== true) fail('RTE tile changed an unrelated provider flag.');
     await capture('tme47-rte-partial.png');
     await worker.evaluate(() => chrome.storage.sync.set({ netflixIntegrationEnabled: true }));
     await page.waitForFunction(() => (document.getElementById('rte-netflix') as HTMLInputElement).checked);
-    await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
-    await page.locator('#rte-filter-buttons [data-capability="quickActions"]').click();
-    if (await page.locator('.rte-tile:visible').count() !== 5 || await page.locator('#rte-all-label').textContent() !== 'All shown services') fail('RTE capability filter is not reflected in master control.');
-    await capture('tme60-filter.png');
-    await page.locator('#rte-all').click();
-    const filtered = await worker.evaluate(async () => chrome.storage.sync.get(['netflixIntegrationEnabled', 'youtubeIntegrationEnabled']));
-    if (filtered.netflixIntegrationEnabled !== true || filtered.youtubeIntegrationEnabled !== false) fail('Filtered RTE master changed a hidden provider.');
-    await page.locator('#rte-clear').click();
-    await page.locator('#rte-all').click();
-    const details = netflix.locator('.rte-details-toggle');
-    await details.press('Enter');
-    if (await details.getAttribute('aria-expanded') !== 'true' || !await page.locator('#rte-netflix').isChecked()) fail('RTE Details toggled the provider or did not expand.');
-    await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
-    await settle(); // the details height transition
-    await capture('tme47-rte-details.png');
-    await details.click();
-    await page.locator('[data-provider="tencent"] .rte-details-toggle').click();
-    await page.setViewportSize({ width: 420, height: 850 });
-    await capture('tme60-narrow.png');
-    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail('Narrow RTE settings overflow the viewport.');
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await worker.evaluate(() => chrome.storage.sync.set({ language: 'ar' }));
-    await page.waitForFunction(() => document.documentElement.dir === 'rtl');
-    await capture('tme60-ar.png');
-    await worker.evaluate(() => chrome.storage.sync.set({ language: 'en' }));
-    await page.waitForFunction(() => document.documentElement.dir === 'ltr');
-    await page.locator('#tab-shortcuts').click();
-    await page.setViewportSize({ width: 1440, height: 600 });
-    await page.evaluate(() => scrollTo(0, document.getElementById('shortcuts')!.offsetTop + 300));
-    const sticky = await page.locator('#shortcuts .card-heading-inner').boundingBox();
-    if (!sticky || Math.abs(sticky.y - 16) > 2) fail('Settings heading did not follow the long section.');
-    await capture('tme47-sticky.png', false);
-    console.log('smoke RTE settings: installed tiles, flags, mixed/filtered master, details, live storage/language, RTL, narrow and sticky heading passed');
+    console.log('smoke RTE settings: installed tiles, default flags, one-provider write and live storage update passed');
   } finally {
     await worker.evaluate(async ({ keys, original }) => {
       await chrome.storage.sync.remove(keys);
@@ -1902,6 +1847,9 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
     await waitEntered();
     await page.keyboard.press('Escape');
     await waitIdle();
+    // The installed countdown notice has now been proven once; the countdown itself is
+    // covered by the AutoTheater browser suites, so later entries skip its 5 s minimum.
+    await worker.evaluate(() => chrome.storage.sync.set({ autoTheaterSkipCountdown: true }));
 
     await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false }));
     await page.goto(url);
@@ -2059,7 +2007,7 @@ async function assertAutoTheater(page: Page, context: BrowserContext): Promise<v
     await assertIdle('the same Vimeo clip after exit');
     console.log('smoke:chromium installed auto theater: options/menu sync, saved setting, buffering API, exit, SPA identity, ads, feed, RTE, focus, preview, blacklist, micro video, paused content, fullscreen, iframe and Vimeo passed');
   } finally {
-    await worker.evaluate(() => chrome.storage.sync.remove(['autoEnterTheater', 'youtubeIntegrationEnabled', 'blacklist']));
+    await worker.evaluate(() => chrome.storage.sync.remove(['autoEnterTheater', 'autoTheaterSkipCountdown', 'youtubeIntegrationEnabled', 'blacklist']));
     await context.unroute('https://www.youtube.com/**');
     await context.unroute('https://player.vimeo.com/**');
   }

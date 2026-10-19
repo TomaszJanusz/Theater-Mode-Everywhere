@@ -196,7 +196,8 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       assert.deepEqual((await page.locator('.rte-tile:has(.rte-badge[data-capability="playlists"])').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
       const filter = page.locator('#rte-filter-buttons [data-capability="playlists"]');
       await filter.click();
-      for (const { locale } of LANGUAGES) {
+      // Live switching across every bundled language is proven by the next test; locale key parity by scripts/locales.test.ts.
+      for (const locale of ['pl', 'ar'] as const) {
         await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
         assert.equal(await filter.textContent(), `${catalogs[locale].rteCapabilityPlaylists.message} · 7`);
         assert.deepEqual((await page.locator('.rte-tile:visible').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
