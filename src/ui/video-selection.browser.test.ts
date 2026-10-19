@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -50,7 +51,7 @@ async function selected(frame: Page | Frame, timeout = 5000): Promise<string> {
   return video.evaluate(video => video.id);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`${engine}: standby detection includes hidden hosts and wrappers`, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
@@ -67,7 +68,7 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
   })()`);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`${engine}: development Settings restores only newly added items after an acknowledged catalog`, { timeout: 30_000 }, async t => {
     const browser = await ({ chromium, firefox })[engine].launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage();

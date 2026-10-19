@@ -1,3 +1,4 @@
+import { selectTestEngines } from './test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
@@ -18,7 +19,7 @@ const stylesheet = (path: string) => esbuild.buildSync({ entryPoints: [path], bu
 const optionsCss = stylesheet('options/options.css');
 const shadowCss = stylesheet('src/ui/shadow.css');
 
-for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion collapses extension animation and stops the marquee`, { timeout: 30000 }, async t => {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`${engine.name()}: reduced motion collapses extension animation and stops the marquee`, { timeout: 30000 }, async t => {
   const browser = await engine.launch({ headless: true });
   ownTestBrowser(t, browser);
   const page = await browser.newPage();
@@ -48,7 +49,7 @@ for (const engine of [chromium, firefox]) it(`${engine.name()}: reduced motion c
   assert.equal(reduced.reduced, true);
 });
 
-for (const engine of [chromium, firefox]) it(`${engine.name()}: the service tile ring orbits unless motion is reduced; Reduce transparency keeps it`, { timeout: 30000 }, async t => {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`${engine.name()}: the service tile ring orbits unless motion is reduced; Reduce transparency keeps it`, { timeout: 30000 }, async t => {
   const browser = await engine.launch({ headless: true });
   ownTestBrowser(t, browser);
   const page = await browser.newPage();

@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
@@ -51,7 +52,7 @@ async function open(page: Page, host: string, initial: Record<string, unknown> =
   await page.addScriptTag({ content: bundle });
 }
 const toggle = '#rich-theater-experience-toggle';
-for (const [name, engine] of Object.entries({ chromium, firefox })) {
+for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   it(`popup resolves services, isolates writes and follows live settings (${name})`, { timeout: 45000 }, async t => {
     const browser = await engine.launch();
     ownTestBrowser(t, browser);

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
@@ -92,7 +93,7 @@ async function assertShrinking(page: Page, selector: string) {
   assert.ok(style.scale > 0 && style.scale < 1 && style.opacity > 0 && style.opacity < 1);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   for (const motion of ['normal', 'reduced', 'system'] as const) {
     it(`${engine}: centred confirmations reset their extra two seconds and clean up (${motion})`, { timeout: 40_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch();

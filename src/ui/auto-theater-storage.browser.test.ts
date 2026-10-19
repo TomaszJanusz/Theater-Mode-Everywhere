@@ -1,10 +1,11 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
-import { chromium, firefox, type Browser, type Frame, type Page } from 'playwright';
+import { chromium, firefox, type BrowserContext, type Frame, type Page } from 'playwright';
 import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { readStylesheet } from '../test-utils/styles';
 import { AUTO_ENTER_NOTICE_MIN_MS } from './auto-theater-intent';
 import { AUTO_ENTER_NOTICE_DELAY_MS } from './auto-theater-runtime';
@@ -50,8 +51,8 @@ declare global {
   }
 }
 
-async function fixture(browser: Browser, options: { holdReads?: boolean; auto?: boolean; skipCountdown?: boolean; url?: string; iframe?: boolean; body?: string } = {}): Promise<{ page: Page; target: Page | Frame }> {
-  const page = await browser.newPage();
+async function fixture(context: BrowserContext, options: { holdReads?: boolean; auto?: boolean; skipCountdown?: boolean; url?: string; iframe?: boolean; body?: string } = {}): Promise<{ page: Page; target: Page | Frame }> {
+  const page = await context.newPage();
   await page.addInitScript('window.__name = target => target;');
   await page.route('**/*', route => route.request().isNavigationRequest()
     ? route.fulfill({ contentType: 'text/html', body: options.body ?? '<!doctype html><ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>' })
@@ -130,12 +131,12 @@ async function active(target: Page | Frame): Promise<boolean> {
   return target.evaluate(className => document.documentElement.classList.contains(className), ACTIVE);
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`AutoTheater in ${engine} skips the notice only when enabled, preserving playback gates and visit ownership`, { timeout: 60_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const { page, target } = await fixture(browser, { skipCountdown: true });
+      const { page, target } = await fixture(context, { skipCountdown: true });
       await page.clock.install();
       await page.clock.pauseAt(new Date(Date.now() + 60_000));
       const notice = page.locator('.theater-auto-notice');
@@ -176,14 +177,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
       assert.equal(await active(target), false, 'skip cannot bypass the provider ad guard');
       assert.equal(await notice.count(), 0);
       await page.close();
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it(`auto-theater in ${engine} retries when the player transition ends`, { timeout: 60_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const { page } = await fixture(browser);
+      const { page } = await fixture(context);
       await page.clock.install();
       await page.clock.pauseAt(new Date(Date.now() + 1000));
       // Start a toggle without an available target, then make playback eligible
@@ -203,7 +203,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
       assert.equal(await active(page), false, 'entry is announced for the minimum notice time first');
       await page.clock.runFor(AUTO_ENTER_NOTICE_MIN_MS);
       await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   for (const provider of [
@@ -217,10 +217,9 @@ for (const engine of ['chromium', 'firefox'] as const) {
     }
   ] as const) {
     it(`${provider.id} auto-theater in ${engine} enters through the full player runtime and honors live provider settings`, { timeout: 60_000 }, async t => {
-      const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
+      const context = await shared.newContext(t);
       try {
-        const { page } = await fixture(browser, provider);
+        const { page } = await fixture(context, provider);
         assert.equal(await active(page), false, 'loading a paused watch page must not enter');
         await page.evaluate(() => {
           window.autoStorageProbe.playing = true;
@@ -247,15 +246,14 @@ for (const engine of ['chromium', 'firefox'] as const) {
           await window.autoStorageProbe.change({ [`${id}IntegrationEnabled`]: true });
         }, provider.id);
         await page.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
   }
 
   it(`auto-theater storage in ${engine} skips unrelated discovery and still publishes shortcuts to MAIN`, { timeout: 60_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const { page, target } = await fixture(browser);
+      const { page, target } = await fixture(context);
       assert.equal(await target.evaluate(() => window.autoStorageProbe.reads), 1, 'Automatic language must reuse the initial settings read');
       assert.ok(await target.evaluate(() => window.autoStorageProbe.deepScans > 0), 'the qualifying paused watch must exercise deep discovery');
       const unrelated: StorageValues = {
@@ -286,14 +284,13 @@ for (const engine of ['chromium', 'firefox'] as const) {
       await page.keyboard.press('Control+Shift+Y');
       await target.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
       assert.equal(await target.evaluate(() => window.autoStorageProbe.shortcutRelays), 1, 'MAIN must consume the newly published config');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it(`auto-theater storage in ${engine} refreshes all policy dependencies and rejects stale hydration`, { timeout: 60_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const { page, target } = await fixture(browser, { holdReads: true, url: 'https://m.youtube.com/watch?v=abcdefghijk' });
+      const { page, target } = await fixture(context, { holdReads: true, url: 'https://m.youtube.com/watch?v=abcdefghijk' });
       await target.evaluate(() => window.autoStorageProbe.change({ blacklist: ['youtube.com'] }));
       await target.evaluate(() => window.autoStorageProbe.resolve(0));
       assert.equal(await target.evaluate(attribute => document.documentElement.hasAttribute(attribute), ENTRY_SHORTCUT_ATTRIBUTE), false, 'stale initial allowed policy must not initialize');
@@ -365,15 +362,14 @@ for (const engine of ['chromium', 'firefox'] as const) {
       assert.equal(await active(target), false, 'SPA preroll must not enter');
       await target.evaluate(() => document.getElementById('movie_player')!.classList.remove('ad-showing'));
       await target.waitForFunction(className => document.documentElement.classList.contains(className), ACTIVE);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it(`auto-theater storage in ${engine} preserves opt-out, generic and iframe guards`, { timeout: 60_000 }, async t => {
-    const browser = await ({ chromium, firefox })[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
       for (const options of [{ auto: false }, { url: 'https://fixture.test/watch' }, { iframe: true }]) {
-        const { page, target } = await fixture(browser, options);
+        const { page, target } = await fixture(context, options);
         await target.evaluate(async () => {
           const probe = window.autoStorageProbe;
           probe.deepScans = 0;
@@ -387,6 +383,6 @@ for (const engine of ['chromium', 'firefox'] as const) {
         assert.equal(await active(target), false, JSON.stringify(options));
         await page.close();
       }
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }

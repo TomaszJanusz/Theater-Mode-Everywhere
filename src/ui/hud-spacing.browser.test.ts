@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -21,7 +22,7 @@ const BUNDLE = esbuild.buildSync({
 const cases = ['less', 'original', 'more', 'moar', 'moaaarr', 'volume', 'quiet', 'muted', 'play', 'pause', 'voice', 'leveling', 'boost', 'layout', 'fit', 'switch', 'pin'] as const;
 
 describe('confirmation HUD optical spacing', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     for (const scale of [1, 2]) for (const direction of ['ltr', 'rtl'] as const) {
       it(`balances painted icons at ${scale}x ${direction} in ${engine}`, { timeout: 60_000 }, async t => {
         const browser = await (await import('playwright'))[engine].launch({ headless: true });

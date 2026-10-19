@@ -26,16 +26,24 @@ export function discoverTests(root) {
 
 // Flags go to the runner. Other arguments select tests: an exact discovered path,
 // or a substring of one (`pnpm test sponsorblock`). `--` separators are ignored.
-export function planRun(discovered, args) {
+export function isBrowserTest(file) {
+  return file.endsWith('.browser.test.ts') || /(?:from\s*|import\s*\()\s*['"]playwright['"]/.test(readFileSync(file, 'utf8'));
+}
+
+export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts')) {
   const flags = [];
   const selectors = [];
+  let lane = 'all';
   for (const arg of args) {
     if (arg === '--') continue;
+    if (arg.startsWith('--lane=')) { lane = arg.slice(7); continue; }
     (arg.startsWith('-') ? flags : selectors).push(arg);
   }
+  if (!['all', 'unit', 'browser'].includes(lane)) throw new Error(`Unknown test lane: ${lane}`);
+  const laneFiles = discovered.filter(file => lane === 'all' || (lane === 'browser') === classify(file));
   const files = selectors.length === 0
-    ? discovered
-    : discovered.filter(file => selectors.some(selector => file === selector || file.includes(selector)));
+    ? laneFiles
+    : laneFiles.filter(file => selectors.some(selector => file === selector || file.includes(selector)));
   if (selectors.length > 0 && files.length === 0) throw new Error(`No test file matches: ${selectors.join(' ')}`);
   return {
     // Plain-JS tests need no TypeScript loader; everything else runs under tsx.
@@ -65,7 +73,7 @@ function run(spawn, args, label) {
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
   let plan;
   try {
-    plan = planRun(discoverTests(root), args);
+    plan = planRun(discoverTests(root), args, file => isBrowserTest(join(root, file)));
   } catch (error) {
     console.error(error.message);
     return 1;

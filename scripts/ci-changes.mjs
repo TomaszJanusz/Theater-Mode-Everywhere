@@ -19,7 +19,17 @@ export function shouldRunChecks(files) {
   });
 }
 
-export function checksForEvent(eventName, event, git = execFileSync) {
+// Deliberately broad: shared browser infrastructure and build/world boundaries
+// warrant the full Firefox matrix. UI/provider-only changes use Chromium on PRs.
+export function shouldRunFirefox(files) {
+  if (!Array.isArray(files) || files.length === 0) return true;
+  return files.some(file => typeof file !== 'string' || !file ||
+    file.split('/').some(part => !part || part === '.' || part === '..') ||
+    ['manifest.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json'].includes(file) ||
+    ['src/platform/', 'src/protocol/', 'src/test-utils/', 'test/', 'scripts/', '.github/actions/', '.github/workflows/'].some(prefix => file.startsWith(prefix)));
+}
+
+export function checksForEvent(eventName, event, git = execFileSync, classify = shouldRunChecks) {
   if (eventName !== 'pull_request') return true;
   try {
     const base = event?.pull_request?.base?.sha;
@@ -28,7 +38,7 @@ export function checksForEvent(eventName, event, git = execFileSync) {
     // Disable rename detection so moving a code input into docs cannot hide it.
     const diff = git('git', ['diff', '--name-only', '--no-renames', '-z', `${base}...HEAD`, '--'], { encoding: 'utf8' });
     if (typeof diff !== 'string' || !diff.endsWith('\0')) return true;
-    return shouldRunChecks(diff.slice(0, -1).split('\0'));
+    return classify(diff.slice(0, -1).split('\0'));
   } catch {
     return true;
   }
@@ -36,12 +46,14 @@ export function checksForEvent(eventName, event, git = execFileSync) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   let run = true;
+  let firefox = true;
   try {
     const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
     run = checksForEvent(process.env.GITHUB_EVENT_NAME, event);
+    firefox = checksForEvent(process.env.GITHUB_EVENT_NAME, event, execFileSync, shouldRunFirefox);
   } catch {
     console.warn('Could not determine changed files; running all checks.');
   }
   console.log(run ? 'Running all CI checks.' : 'Only reviewed documentation changed; skipping expensive CI steps.');
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `run=${run}\n`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `run=${run}\nfirefox=${firefox}\n`);
 }

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import { readStylesheet } from '../test-utils/styles';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -175,7 +176,7 @@ describe('split time readout', () => {
   });
 });
 
-for (const engineName of ['chromium', 'firefox'] as const) {
+for (const engineName of testEngines()) {
   describe(`${engineName}: digit roll stagger and overshoot`, () => {
     type Probe = { text: string; slot: number; delay: number; y: number; leaving: boolean };
 

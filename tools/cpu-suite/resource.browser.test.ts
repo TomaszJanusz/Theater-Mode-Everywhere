@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -9,7 +10,7 @@ import { identifyBuild } from './storage';
 import { FIXTURES } from './resource-model';
 import { fixtureServer, runFixture } from './resource-browser';
 const directory = process.env.RESOURCE_AUDIT_BUILD ?? path.resolve(import.meta.dirname, '../../dist/chrome-unpacked');
-for (const engine of [chromium, firefox]) it(`resource fixture smoke: ${engine.name()} executes every scenario on built bundles`, {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`resource fixture smoke: ${engine.name()} executes every scenario on built bundles`, {
   timeout: 180000, skip: (!process.env.RESOURCE_AUDIT_BUILD && !existsSync(path.join(directory, 'content.js'))) || !existsSync(engine.executablePath())
 }, async t => {
   const browser = await engine.launch({ headless: true }); ownTestBrowser(t, browser);
@@ -33,7 +34,7 @@ for (const engine of [chromium, firefox]) it(`resource fixture smoke: ${engine.n
     if (fixture === 'chat-portals') assert.equal(row.phases.filter(p => p.name.startsWith('portal-')).length, 20);
   }
 });
-for (const engine of [chromium, firefox]) it(`resource instrumentation ${engine.name()}: idempotent observers, scheduler cancellation and body accounting`, {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`resource instrumentation ${engine.name()}: idempotent observers, scheduler cancellation and body accounting`, {
   timeout: 15000, skip: !existsSync(engine.executablePath())
 }, async t => {
   const browser = await engine.launch({headless:true}); ownTestBrowser(t, browser);

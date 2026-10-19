@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -155,7 +156,7 @@ async function withBrowser(test: TestContext, engine: 'chromium' | 'firefox', ru
 }
 
 describe('player settings action order', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`opens Extension settings through the background in ${engine}`, { timeout: 60_000 }, async test => {
       await withBrowser(test, engine, async page => {
         await boot(page, fixture({ secondVideo: false, playlist: false }));

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -111,7 +112,7 @@ async function boot(page: Page, controlledState = false): Promise<void> {
   await page.evaluate(() => window.AudioRuntime.installMediaAudioRuntime());
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   describe(`media audio runtime in ${engine}`, () => {
     it('creates one graph on activation and reuses it for gain, effects and reentry', { timeout: 60_000 }, async t => {
       const browserType = (await import('playwright'))[engine];

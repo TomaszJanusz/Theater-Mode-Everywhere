@@ -1,3 +1,4 @@
+import { selectTestEngines } from './test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
@@ -96,7 +97,7 @@ it('renders static English semantic content safely and refreshes localized dialo
   } finally { await browser.close(); }
 });
 
-for (const browserType of [chromium, firefox]) {
+for (const browserType of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${browserType.name()}: highlights keep thanks and actions visible while scrolling and resizing`, { timeout: 30_000 }, async t => {
     const browser = await browserType.launch(); ownTestBrowser(t, browser);
     const page = await browser.newPage({ viewport: { width: 1000, height: 800 }, reducedMotion: 'reduce' });

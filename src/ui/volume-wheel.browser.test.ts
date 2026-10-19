@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -81,7 +82,7 @@ async function waitForHud(page: Page, text: string): Promise<void> {
 }
 
 describe('wheel volume browser regressions', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`shares keyboard volume behavior and disposes wheel gestures in ${engine}`, { timeout: 60_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch({ headless: true });
       ownTestBrowser(t, browser);

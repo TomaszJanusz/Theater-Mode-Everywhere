@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -263,7 +264,7 @@ for (const url of ['chrome://extensions', '', 'https://example.com/watch', 'http
   });
 }
 
-for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
+for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   it(`${engine}: Video launcher keeps its localized BETA badge beside NEW across appearance and language changes`, { timeout: 30_000 }, async t => {
     const browser = await browserType.launch({ headless: true });
     ownTestBrowser(t, browser);

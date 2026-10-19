@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -158,7 +159,7 @@ describe('scrubber tooltip', () => {
     }
   });
 
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     for (const [name, value] of [['time', extras()], ['preview + chapter', extras('Fixture chapter', true)]] as const) {
       it(`reuses ${name} nodes and reads geometry before writes in ${engine}`, { timeout: 60_000 }, async t => {
         const browser = await (await import('playwright'))[engine].launch({ headless: true });

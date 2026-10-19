@@ -1,3 +1,4 @@
+import { testEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -72,7 +73,7 @@ const confirmed = (page: Page, index = 0) => page.evaluate(i => {
 const addPlayer = (page: Page, attributes: Record<string, string> = {}, source = true) =>
   page.evaluate(([a, s]) => (window as unknown as { addPlayer(a: object, s: boolean): Promise<void> }).addPlayer(a as object, s as boolean), [attributes, source] as const);
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`Patreon posts in ${engine} confirm only the single native Mux video`, { timeout: 60_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

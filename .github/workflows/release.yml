@@ -140,13 +140,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium firefox
 
       - name: Start virtual audio device
-        # Firefox needs an audio backend to run a native AudioContext on Linux.
-        run: |
-          sudo apt-get install --no-install-recommends -y pulseaudio
-          pulseaudio --start --exit-idle-time=-1
-          pactl load-module module-null-sink sink_name=theater_tests rate=48000
-          pactl set-default-sink theater_tests
-          pactl list short sinks
+        uses: ./.github/actions/virtual-audio
 
       - name: Typecheck
         run: pnpm typecheck

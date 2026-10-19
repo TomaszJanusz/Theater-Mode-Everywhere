@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -99,7 +100,7 @@ async function withBrowser(engine: 'chromium' | 'firefox', run: (page: Page) => 
 }
 
 describe('audio settings on protected media', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`replaces the audio rows with one explanation for DRM video in ${engine}`, { timeout: 60_000 }, async () => {
       await withBrowser(engine, async page => {
         await boot(page, true);

@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
@@ -53,7 +54,7 @@ const ring = (page: Page) => page.evaluate(() => {
   return { turns: turns.length, time: Math.round(Number(turns[0]?.currentTime ?? -1)), iterations: timing?.iterations, easing: timing?.easing };
 });
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`${engine}: the notice counts the remaining seconds with the shared digit roll and stops on cleanup`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
@@ -94,7 +95,7 @@ for (const engine of ['chromium', 'firefox'] as const) {
   });
 }
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   it(`${engine}: the per-digit ring mode restarts one eased turn with each digit change`, { timeout: 40_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
@@ -127,7 +128,7 @@ const SAMPLER = `(${(() => {
   (window as unknown as { stopSamples: () => typeof samples }).stopSamples = () => { clearInterval(timer); return samples; };
 }).toString()})()`;
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   for (const mode of ['normal', 'reduced transparency', 'high contrast', 'reduced motion'] as const) {
     it(`${engine}: the notice plate stays opaque through appear, countdown, ring exit and 0 (${mode})`, { timeout: 40_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch({ headless: true });

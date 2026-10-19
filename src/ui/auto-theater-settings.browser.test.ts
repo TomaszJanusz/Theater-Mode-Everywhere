@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -77,7 +78,7 @@ async function toggle(page: Page, surface: 'options' | 'player'): Promise<void> 
   else await page.locator('.auto-theater-btn').evaluate((button: HTMLElement) => button.click());
 }
 
-for (const engine of [chromium, firefox]) {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   for (const surface of ['options', 'player'] as const) {
     it(`${engine.name()}: ${surface} offers the launcher once, respects No and updates other tabs after Yes`, { timeout: 60_000 }, async t => {
       const browser = await engine.launch(); ownTestBrowser(t, browser);
@@ -166,7 +167,7 @@ for (const engine of [chromium, firefox]) {
   });
 }
 
-for (const engine of [chromium, firefox]) {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${engine.name()}: player menu shows AutoTheater unavailable off supported services and live when Rich Theater Experience toggles`, { timeout: 60_000 }, async t => {
     const browser = await engine.launch(); ownTestBrowser(t, browser);
     const context = await browser.newContext({ reducedMotion: 'reduce', ignoreHTTPSErrors: true });

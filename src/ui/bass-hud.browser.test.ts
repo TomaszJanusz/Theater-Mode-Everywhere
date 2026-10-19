@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -25,7 +26,7 @@ const BUNDLE = esbuild.buildSync({
 // The HUD is painted like the player paints it: paintOverlay stamps the user's accent inline on the
 // overlay, which is what once beat the stylesheet's red for the top bass levels.
 describe('bass confirmation HUD', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`turns red at MOAAR and MOAAARR! despite a user accent in ${engine}`, { timeout: 60_000 }, async () => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);

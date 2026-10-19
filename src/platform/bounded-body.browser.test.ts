@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -18,7 +19,7 @@ const bundle = esbuild.buildSync({
   bundle: true, write: false, format: 'iife', globalName: 'BoundedTest', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
-for (const browserType of [chromium, firefox]) {
+for (const browserType of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${browserType.name()}: abandoning synthetic and HTTP fetch clones leaves the original readable`, { timeout: 30_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
     const bytes = Buffer.alloc(512 * 1024, 65);

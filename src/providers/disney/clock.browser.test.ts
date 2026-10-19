@@ -1,3 +1,4 @@
+import { testEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
@@ -51,7 +52,7 @@ type ClockReport = {
   settled: { intervals: number; watchdogs: number; playhead: string | null; sought: boolean };
 };
 
-for (const engine of ['chromium', 'firefox'] as const) {
+for (const engine of testEngines()) {
   describe(`${engine} Disney playback clock`, () => {
     it('publishes the playerExperience episode label beside its title for the current play only', async (t) => {
       const browserType = (await import('playwright'))[engine];

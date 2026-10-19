@@ -1,9 +1,10 @@
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../src/test-utils/test-browser';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
 import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
 import { brightestStop, hexRgb, luminance, over } from './rte-colors';
@@ -74,12 +75,12 @@ async function open(page: Page, empty = false, initial: Record<string, unknown> 
   await page.evaluate(() => (window as unknown as Harness).ready);
 }
 
-for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RTE settings (${kind})`, () => {
+for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) describe(`RTE settings (${kind})`, () => {
+  const shared = sharedTestBrowser(engine);
   it('uses one-provider writes, mixed/all states, keyboard controls and external storage updates', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
     try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      const page = await context.newPage();
       await open(page);
       assert.equal(await page.locator('.rte-tile').count(), 10);
       await page.locator('[data-provider="netflix"] .rte-control').click();
@@ -117,7 +118,7 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(await page.locator('#rte-details-netflix p').textContent(), catalogs.pl.netflixIntegrationDescription.message);
       assert.equal(await details.getAttribute('aria-expanded'), 'true');
       assert.equal(await details.evaluate(el => el === document.activeElement), true);
-      const legacy = await browser.newPage();
+      const legacy = await (await shared.newContext(t)).newPage();
       await open(legacy, false, Object.fromEntries(['youtube', 'vimeo', 'patreon', 'twitch', 'disney'].map(id => [MEDIA_PROVIDER_FLAG_KEYS[id as keyof typeof MEDIA_PROVIDER_FLAG_KEYS], false])), { netflixIntegrationEnabled: true });
 
       assert.equal(await legacy.locator('.rte-tile input:checked').count(), 1, 'storage events supersede the in-flight initial snapshot');
@@ -128,14 +129,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.deepEqual(await legacy.evaluate(() => (window as unknown as Harness).writes), [{ youtubeIntegrationEnabled: true }]);
       assert.equal(await legacy.locator('#rte-netflix').isChecked(), true);
       assert.equal(await legacy.locator('#rte-tencent').isChecked(), false);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('filters AutoTheater services, combines with another chip and clears', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const total = PROVIDER_CAPABILITIES.length;
       const automatic = PROVIDER_CAPABILITIES.filter(provider => provider.capabilities.autoTheater.status !== 'no');
@@ -158,14 +158,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.deepEqual((await names()).sort(), expectedNames(PROVIDER_CAPABILITIES));
       assert.equal(await page.locator('#rte-filter-buttons [aria-pressed="true"]').count(), 0);
       assert.equal(await page.locator('#rte-shown').textContent(), `${total} of ${total} services shown`);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('filters with AND logic, highlights matches, scopes master writes and clears without saving', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
       assert.equal(await page.locator('.rte-tile:visible').count(), 7);
@@ -185,14 +184,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(await page.locator('#rte-clear').isVisible(), false);
       assert.equal(await page.locator('#rte-shown').getAttribute('role'), 'status');
       assert.equal(await page.evaluate(() => (window as unknown as Harness).writes.length), 1);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('advertises only registered playlist navigation and localizes its filter and badges', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const supported = ['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'vimeo', 'youtube'];
       assert.deepEqual((await page.locator('.rte-tile:has(.rte-badge[data-capability="playlists"])').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
@@ -209,14 +207,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await page.locator('#rte-clear').click();
       assert.equal(await page.locator('.rte-tile:visible').count(), 10);
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), []);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('localizes every language live, sorts with its collator and preserves focus and filters in RTL', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       await page.locator('#rte-filter-buttons [data-capability="heatmap"]').click();
       for (const { locale } of LANGUAGES) {
@@ -233,14 +230,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await page.setViewportSize({ width: 420, height: 800 });
       assert.equal(await page.locator('#rte-tiles').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), 1);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('bounds shared sticky headings to their card and restores normal flow below 860px', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 600 } });
     try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 600 } });
+      const page = await context.newPage();
       await open(page);
       await page.locator('#tab-shortcuts').click();
       // Give the document scroll room beyond the card to observe its lower boundary.
@@ -255,14 +251,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.ok(bounds!.y + bounds!.height <= card!.y + card!.height, 'heading stays inside card');
       await page.setViewportSize({ width: 420, height: 700 });
       assert.equal(await heading.evaluate(el => getComputedStyle(el).position), 'static');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('uses the standard switch, colored badges at rest and dark badges on hover with a larger title on branded tiles', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const slider = (selector: string) => page.locator(`${selector} .toggle-slider`).evaluate(el => getComputedStyle(el).backgroundColor);
       assert.equal(await page.locator('.rte-tile .toggle-switch').count(), 10);
@@ -305,14 +300,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(high.text, 'rgb(255, 255, 255)');
       assert.equal(high.background, 'rgb(24, 24, 27)');
 
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('aligns badge edges with titles and distinguishes disabled integrations without disabling their controls', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const tile = page.locator('[data-provider="netflix"]');
       const appearance = () => tile.evaluate(el => ({
@@ -346,14 +340,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await page.mouse.move(0, 0);
       await page.locator('#rte-all').focus();
       assert.deepEqual(await appearance(), enabled, 'enabling restores the original visual state');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('distinguishes notes and keeps contrast over every brightest hover stop in appearance modes', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const veil = Number(/--te-veil:\s*(\d+)%/.exec(css)![1]) / 100;
       const contrast = (a: number[], b: number[]) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
@@ -387,14 +380,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
           }
         }
       }
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('rests as a standard row, colors on hover and focus, and orbits one shared gradient', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page);
       const netflix = page.locator('[data-provider="netflix"]');
       const settle = () => netflix.evaluate(async el => { await Promise.all(el.getAnimations({ subtree: true }).filter(animation => animation instanceof CSSTransition).map(animation => animation.finished)); });
@@ -461,14 +453,13 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       // badge/colour transitions end within a frame; wait for that settled state.
       await netflix.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))));
       assert.equal(await netflix.evaluate(el => el.getAnimations({ subtree: true }).length), 0);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('keeps the Clear filter button compact, unbolded, unwrapped and below a wrapping heading', { timeout: 60000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 900 } });
     try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      const page = await context.newPage();
       await open(page);
       const clear = page.getByRole('button', { name: 'Clear filter' });
       assert.equal(await clear.isVisible(), false);
@@ -500,13 +491,12 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       await page.keyboard.press('Enter');
       assert.equal(await clear.isVisible(), false);
       assert.equal(await page.locator('#rte-shown').getAttribute('role'), 'status');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('lays out the shown count and master, animates details and respects resolved motion', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
     await open(page);
     assert.equal(await page.locator('#rte-count').count(), 0);
     for (const locale of ['en', 'pl', 'de', 'ar']) {
@@ -555,10 +545,9 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
   });
 
   it('announces an empty result and disables its master for a catalog without a matching service', { timeout: 45000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await open(page, true);
       await page.locator('#rte-filter-buttons [data-capability="heatmap"]').click();
       assert.equal(await page.locator('.rte-tile:visible').count(), 0);
@@ -566,6 +555,6 @@ for (const [kind, engine] of Object.entries({ chromium, firefox })) describe(`RT
       assert.equal(await page.locator('#rte-all').isDisabled(), true);
       assert.equal(await page.locator('#rte-shown').textContent(), '0 of 1 services shown');
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), []);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 });

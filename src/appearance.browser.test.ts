@@ -1,3 +1,4 @@
+import { selectTestEngines } from './test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -54,7 +55,7 @@ function hexColor(css: string): string {
   return '#' + values.slice(0, 3).map(value => Math.round(value * (css.startsWith('color(srgb') ? 255 : 1)).toString(16).padStart(2, '0')).join('');
 }
 
-for (const engine of [chromium, firefox]) it(`${engine.name()}: appearance across Settings, popup root and player; live storage, system and cleanup`, { timeout: 40000 }, async t => {
+for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`${engine.name()}: appearance across Settings, popup root and player; live storage, system and cleanup`, { timeout: 40000 }, async t => {
   const browser = await engine.launch({ headless: true });
   ownTestBrowser(t, browser);
   try {

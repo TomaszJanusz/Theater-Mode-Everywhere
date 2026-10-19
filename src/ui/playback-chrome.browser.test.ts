@@ -1,3 +1,4 @@
+import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -190,7 +191,7 @@ describe('pinned controls geometry', () => {
 });
 
 describe('playback chrome updates', () => {
-  for (const engine of ['chromium', 'firefox'] as const) {
+  for (const engine of testEngines()) {
     it(`shows seek loading before Disney starts moving and ignores stale clocks in ${engine}`, { timeout: 30_000 }, async t => {
       const browser = await (await import('playwright'))[engine].launch({ headless: true });
       ownTestBrowser(t, browser);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checksForEvent, shouldRunChecks } from './ci-changes.mjs';
+import { checksForEvent, shouldRunChecks, shouldRunFirefox } from './ci-changes.mjs';
 
 for (const files of [['README.md'], ['docs/browser-tests.md', 'docs/research/notes.md'], ['AGENTS.md', 'CLAUDE.md'],
   ['.coderabbit.yaml', '.github/pull_request_template.md', '.github/ISSUE_TEMPLATE/bug_report.yml', '.github/ISSUE_TEMPLATE/config.yml']]) {
@@ -39,4 +39,23 @@ test('pushes, schedules, missing metadata, empty/malformed diffs and git errors 
   }
   for (const diff of ['', 'README.md', '\0']) assert.equal(checksForEvent('pull_request', event, () => diff), true);
   assert.equal(checksForEvent('pull_request', event, () => { throw new Error('missing base'); }), true);
+});
+
+for (const file of ['manifest.json', 'scripts/build.ts', 'scripts/package-firefox.ts',
+  'src/platform/audio.ts', 'src/protocol/messages.ts', 'src/test-utils/test-engines.ts',
+  'test/fixtures/player.html', '.github/actions/virtual-audio/action.yml', '.github/workflows/ci.yml',
+  'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json']) {
+  test(`Firefox matrix for ${file}`, () => assert.equal(shouldRunFirefox([file]), true));
+}
+for (const file of ['src/ui/controls.ts', 'options/rte-settings.browser.test.ts',
+  'src/providers/youtube/queue.ts', 'README.md', 'docs/browser-tests.md']) {
+  test(`Chromium-only PR for ${file}`, () => assert.equal(shouldRunFirefox([file]), false));
+}
+test('Firefox classification fails open and includes the old side of moved boundaries', () => {
+  for (const files of [[], undefined, [null], [''], ['docs/../src/platform/a.ts']]) {
+    assert.equal(shouldRunFirefox(files), true);
+  }
+  assert.equal(checksForEvent('pull_request', event, () => 'src/platform/a.ts\0docs/a.md\0', shouldRunFirefox), true);
+  assert.equal(checksForEvent('pull_request', event, () => 'src/ui/a.ts\0', shouldRunFirefox), false);
+  assert.equal(checksForEvent('pull_request', event, () => { throw new Error('missing'); }, shouldRunFirefox), true);
 });

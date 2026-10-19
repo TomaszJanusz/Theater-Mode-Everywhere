@@ -1,3 +1,4 @@
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
@@ -19,7 +20,7 @@ const bundle = buildSync({
   bundle: true, write: false, format: 'iife', target: 'es2022'
 }).outputFiles[0].text;
 
-for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
+for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
   it(`choice grids share accent selection, roving focus and live relabeling in ${engine}`, { timeout: 30_000 }, async t => {
     const browser = await browserType.launch({ headless: true });
     ownTestBrowser(t, browser);
