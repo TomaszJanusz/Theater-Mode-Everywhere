@@ -13,8 +13,8 @@ function job(name) {
 test('sync-dev runs every two days or on demand and is read-only by default', () => {
   assert.match(source, /schedule:\n\s+- cron: '37 3 \*\/2 \* \*'/);
   assert.match(source, /workflow_dispatch:\n\s+inputs:\n\s+force_verify:[\s\S]*?type: boolean\n\s+default: false/);
-  assert.match(source, /\npermissions:\n  contents: read\n/);
-  assert.deepEqual([...source.matchAll(/^  ([a-z-]+):\n    name:/gm)].map(m => m[1]), ['merge', 'verify', 'report']);
+  assert.match(source, /\npermissions:\n {2}contents: read\n/);
+  assert.deepEqual([...source.matchAll(/^ {2}([a-z-]+):\n {4}name:/gm)].map(m => m[1]), ['merge', 'verify', 'report']);
 });
 
 test('sync-dev merge job is the only writer and installs nothing', () => {
