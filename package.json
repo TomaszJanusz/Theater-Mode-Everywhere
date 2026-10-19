@@ -13,6 +13,7 @@
     "smoke:chromium": "tsx scripts/smoke.ts chromium",
     "smoke:firefox": "tsx scripts/smoke.ts firefox",
     "store:cws:screenshots": "tsx scripts/render-cws-screenshots.ts",
+    "store:chrome:print": "tsx scripts/print-store-listing.ts",
     "store:amo:update": "tsx scripts/update-amo-listings.ts",
     "cpu:suite": "tsx tools/cpu-suite/suite.ts",
     "build:diagnostic": "TME_BUILD=diagnostic tsx scripts/build.ts",
