@@ -1539,11 +1539,14 @@ async function assertAudioSettings(page: Page, context?: BrowserContext): Promis
   const layout = page.locator('.picture-layout-btn');
   // Opening help closes the settings popover; restore it for the next action.
   if (!await layout.isVisible()) await gear.click();
+  // The start layout depends on whether an earlier step ran with storage, so read it instead of assuming.
+  const startLayout = (await layout.locator('.theater-settings-detail').innerText()).trim();
+  const toggledLayout = startLayout === 'Raised' ? 'Centered' : 'Raised';
   await layout.click();
-  await hud.filter({ hasText: 'Raised' }).waitFor();
+  await hud.filter({ hasText: toggledLayout }).waitFor();
   if (await shapes(hud) !== await shapes(layout)) fail('Layout HUD icon differs from its settings row.');
   await layout.click();
-  await hud.filter({ hasText: 'Centered' }).waitFor();
+  await hud.filter({ hasText: startLayout }).waitFor();
 
   // Session cleanup must bypass gain as well as the three effects, then
   // restore the remembered boosted level without rebuilding/reloading.
