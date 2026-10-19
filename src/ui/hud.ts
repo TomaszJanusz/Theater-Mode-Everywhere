@@ -1,3 +1,4 @@
+import { createSvgIcon } from './svg-icon';
 import { animateReveal, exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { isMotionReduced } from '../appearance-runtime';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
@@ -100,6 +101,19 @@ export const STATUS_HUD_UNMUTE_ICON = `
     <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
   </svg>
 `;
+
+function renderConfirmation(overlay: HTMLElement, icon: string, text: string, textClass = ''): void {
+  const content = document.createElement('div');
+  content.className = 'volume-hud-content';
+  const iconElement = document.createElement('div');
+  iconElement.className = 'volume-hud-icon';
+  iconElement.append(createSvgIcon(icon));
+  const label = document.createElement('span');
+  label.className = `volume-hud-text${textClass ? ` ${textClass}` : ''}`;
+  label.textContent = text;
+  content.append(iconElement, label);
+  overlay.replaceChildren(content);
+}
 
 export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBinder) {
   function mountConfirmation(overlay: HTMLElement): void {
@@ -236,12 +250,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     </svg>`;
     }
 
-    overlay.innerHTML = `
-    <div class="volume-hud-content">
-      <div class="volume-hud-icon">${icon}</div>
-      <span class="volume-hud-text ${action === 'up' ? 'zoom-in' : 'zoom-out'}">${pct}%</span>
-    </div>
-  `;
+    renderConfirmation(overlay, icon, `${pct}%`, action === 'up' ? 'zoom-in' : 'zoom-out');
 
     mountConfirmation(overlay);
 
@@ -265,7 +274,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     content.className = 'volume-hud-content';
     const iconEl = document.createElement('div');
     iconEl.className = 'volume-hud-icon zoom-in';
-    iconEl.innerHTML = icon;
+    if (icon) iconEl.append(createSvgIcon(icon));
     const textEl = document.createElement('span');
     textEl.className = 'volume-hud-text';
     textEl.textContent = text;
@@ -311,12 +320,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const text = action === 'play' ? ctx.t('play') : ctx.t('pause');
     announcePlayerStatus(text);
 
-    overlay.innerHTML = `
-    <div class="volume-hud-content">
-      <div class="volume-hud-icon">${icon}</div>
-      <span class="volume-hud-text">${text}</span>
-    </div>
-  `;
+    renderConfirmation(overlay, icon, text);
 
     mountConfirmation(overlay);
 
@@ -495,7 +499,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
         home.target = '_top';
         home.setAttribute('aria-label', ctx.t('homepage'));
         bindTooltip(home, () => ctx.t('homepage'), undefined, 'below');
-        home.innerHTML = '<svg class="theater-filter-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>';
+        home.append(createSvgIcon('<svg class="theater-filter-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>'));
         home.addEventListener('click', (event) => event.stopPropagation());
         home.addEventListener('dblclick', (event) => event.stopPropagation());
         header.appendChild(home);

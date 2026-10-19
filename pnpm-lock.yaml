@@ -167,13 +167,16 @@ overrides:
   postcss: 8.5.23
   source-map-js: 1.2.2
 
+patchedDependencies:
+  '@privacy-thing/brand@0.2.1': 5785d554a258eb381ac547dae57fce6b63e33793427d19d47fba396fb703abfc
+
 importers:
 
   .:
     dependencies:
       '@privacy-thing/brand':
         specifier: ^0.2.1
-        version: 0.2.1
+        version: 0.2.1(patch_hash=5785d554a258eb381ac547dae57fce6b63e33793427d19d47fba396fb703abfc)
     devDependencies:
       '@types/archiver':
         specifier: ^6.0.2
@@ -1404,7 +1407,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@privacy-thing/brand@0.2.1': {}
+  '@privacy-thing/brand@0.2.1(patch_hash=5785d554a258eb381ac547dae57fce6b63e33793427d19d47fba396fb703abfc)': {}
 
   '@rollup/rollup-android-arm-eabi@4.62.0':
     optional: true

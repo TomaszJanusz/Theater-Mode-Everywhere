@@ -1,3 +1,4 @@
+import { localizedMarkup } from './localized-markup';
 import { translateMessage } from './i18n-runtime';
 
 export const FALLBACK_MESSAGES: Record<string, string> = {
@@ -327,7 +328,7 @@ export function localizeDocument(root: ParentNode = document): void {
   });
 
   root.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((element) => {
-    element.innerHTML = t(element.dataset.i18nHtml || '');
+    element.replaceChildren(localizedMarkup(t(element.dataset.i18nHtml || ''), element.ownerDocument));
   });
 
   root.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((element) => {

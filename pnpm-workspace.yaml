@@ -27,3 +27,5 @@ overrides:
   brace-expansion: 2.1.7
   postcss: 8.5.23
   source-map-js: 1.2.2
+patchedDependencies:
+  '@privacy-thing/brand@0.2.1': patches/@privacy-thing__brand@0.2.1.patch
