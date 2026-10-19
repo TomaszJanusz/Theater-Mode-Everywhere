@@ -2,24 +2,22 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import { CHROME_LIMITS } from './print-store-listing';
 
 const listingsRoot = path.resolve(__dirname, '../store-listings');
 const chromeRoot = path.join(listingsRoot, 'chrome');
 const amoRoot = path.join(listingsRoot, 'amo');
 const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 
-function listingLocales(root: string, directories: boolean): string[] {
+function listingLocales(root: string, extension: string): string[] {
   return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => (directories ? entry.isDirectory() : entry.name.endsWith('.md')))
-    .map((entry) => (directories ? entry.name : entry.name.slice(0, -3)))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
+    .map((entry) => entry.name.slice(0, -extension.length))
     .sort();
 }
 
-const CHROME_FIELDS = ['name', 'short', 'long', 'keywords'] as const;
-type ChromeField = typeof CHROME_FIELDS[number];
-
-function readChrome(locale: string, field: ChromeField): string {
-  return readFileSync(path.join(chromeRoot, locale, `${field}.txt`), 'utf8');
+function readChromeLong(locale: string): string {
+  return readFileSync(path.join(chromeRoot, `${locale}.txt`), 'utf8');
 }
 
 function readCatalog(locale: string): Record<string, { message?: string }> {
@@ -42,41 +40,36 @@ function headings(content: string): string[] {
 }
 
 describe('store listings', () => {
-  const locales = listingLocales(chromeRoot, true);
+  const locales = listingLocales(chromeRoot, '.txt');
 
-  it('keeps Chrome and AMO locale sets aligned', () => {
-    assert.deepEqual(listingLocales(amoRoot, false), locales);
+  it('keeps Chrome, AMO and extension locale sets aligned', () => {
+    assert.deepEqual(listingLocales(amoRoot, '.md'), locales);
+    assert.deepEqual(
+      readdirSync(extensionLocalesRoot, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort(),
+      locales
+    );
   });
 
-  it('gives every Chrome locale exactly the separate field files, none empty', () => {
+  it('has a non-empty long description per Chrome locale within 16,000 characters', () => {
     for (const locale of locales) {
-      assert.deepEqual(
-        readdirSync(path.join(chromeRoot, locale)).sort(),
-        CHROME_FIELDS.map((field) => `${field}.txt`).sort(),
-        `chrome/${locale}: unexpected listing files`
-      );
-      for (const field of CHROME_FIELDS) {
-        assert.ok(readChrome(locale, field).trim().length > 0, `chrome/${locale}/${field}.txt is empty`);
-      }
+      const long = readChromeLong(locale).trim();
+      assert.ok(long.length > 0, `chrome/${locale}.txt is empty`);
+      assert.ok(long.length <= CHROME_LIMITS.long, `chrome/${locale}.txt has ${long.length} characters`);
     }
   });
 
-  it('keeps the Chrome short description on a single line within 132 characters', () => {
+  it('keeps the name and short description in the locale messages within store limits', () => {
     for (const locale of locales) {
-      const summary = readChrome(locale, 'short').trim();
-      assert.doesNotMatch(summary, /\n/, `chrome/${locale}: short description must be one line`);
-      assert.ok(summary.length <= 132,
-        `chrome/${locale}: short description has ${summary.length} characters`);
-    }
-  });
-
-  it('keeps Chrome short descriptions aligned with localized manifest descriptions', () => {
-    for (const locale of locales) {
-      assert.equal(
-        readCatalog(locale).extensionDescription?.message,
-        readChrome(locale, 'short').trim(),
-        `${locale}: extensionDescription differs from the Chrome short description`
-      );
+      const { extensionName, extensionDescription, extensionNameCompact } = readCatalog(locale);
+      const name = extensionName?.message ?? '';
+      const short = extensionDescription?.message ?? '';
+      assert.ok(name.trim(), `${locale}: extensionName is empty`);
+      assert.ok(short.trim(), `${locale}: extensionDescription is empty`);
+      assert.ok(name.length <= CHROME_LIMITS.name, `${locale}: extensionName has ${name.length} characters`);
+      assert.doesNotMatch(short, /\n/, `${locale}: extensionDescription must be one line`);
+      assert.ok(short.length <= CHROME_LIMITS.short, `${locale}: extensionDescription has ${short.length} characters`);
+      assert.ok(extensionNameCompact?.message && extensionNameCompact.message.length <= 50,
+        `${locale}: extensionNameCompact is missing or exceeds the AMO limit`);
     }
   });
 
@@ -91,32 +84,23 @@ describe('store listings', () => {
     }
   });
 
-  it('keeps names aligned with the manifest: Chrome uses the full name, AMO the compact one', () => {
+  it('keeps the AMO name, summary and description aligned with the locale messages and long description', () => {
     for (const locale of locales) {
       const messages = readCatalog(locale);
-      assert.equal(readChrome(locale, 'name').trim(), messages.extensionName?.message,
-        `${locale}: chrome name differs from extensionName`);
-      assert.equal(amoSection(readAmo(locale), 'Name'), messages.extensionNameCompact?.message,
-        `${locale}: AMO name differs from extensionNameCompact`);
-      assert.ok(messages.extensionName!.message!.length <= 75,
-        `${locale}: extensionName exceeds the 75-character Chrome Web Store limit`);
-      assert.ok(messages.extensionNameCompact!.message!.length <= 50, `${locale}: extensionNameCompact exceeds the AMO limit`);
-    }
-  });
-
-  it('keeps Chrome and AMO copy aligned within each locale', () => {
-    for (const locale of locales) {
       const amo = readAmo(locale);
-      assert.equal(amoSection(amo, 'Summary'), readChrome(locale, 'short').trim(), `${locale}: summary differs`);
-      assert.equal(amoSection(amo, 'Description'), readChrome(locale, 'long').trim(), `${locale}: description differs`);
-      assert.equal(amoSection(amo, 'Suggested tags'), readChrome(locale, 'keywords').trim(), `${locale}: keywords differ`);
+      assert.equal(amoSection(amo, 'Name'), messages.extensionNameCompact?.message,
+        `${locale}: AMO name differs from extensionNameCompact`);
+      assert.equal(amoSection(amo, 'Summary'), messages.extensionDescription?.message, `${locale}: summary differs`);
+      assert.equal(amoSection(amo, 'Description'), readChromeLong(locale).trim(), `${locale}: description differs`);
     }
   });
 
   it('contains no angle brackets or HTML entities in store copy', () => {
     for (const locale of locales) {
       const copies = [
-        ...CHROME_FIELDS.map((field) => [`chrome/${locale}/${field}`, readChrome(locale, field)] as const),
+        [`chrome/${locale}`, readChromeLong(locale)] as const,
+        [`chrome/${locale} name`, readCatalog(locale).extensionName!.message!] as const,
+        [`chrome/${locale} short`, readCatalog(locale).extensionDescription!.message!] as const,
         [`amo/${locale}`, readAmo(locale)] as const
       ];
       for (const [label, content] of copies) {

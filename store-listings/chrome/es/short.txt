@@ -1,1 +1,0 @@
-Amplía vídeos HTML5 en el navegador. Usa controles propios, subtítulos, efectos de audio e integraciones con servicios de vídeo.
