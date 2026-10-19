@@ -2,6 +2,7 @@ import { disposeModalIn } from './modal';
 import { observeAppearance, PAGE_MOTION_ATTRIBUTE, type AppearanceModes } from '../appearance-runtime';
 import { ensureNewBadgeStyles } from './new-badge';
 import { applyUiDirection } from './messages';
+import { bindTopLayer, type TopLayerBinding } from './top-layer';
 
 // Both script worlds must leave native button activation to the focused UI control.
 export const PLAYER_NATIVE_ACTIVATION_SELECTOR = '.theater-menu, .theater-service-action-host, '
@@ -14,6 +15,7 @@ let hostEl: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
 let playerUiCss = '';
 let stopAppearance: (() => void) | undefined;
+let topLayer: TopLayerBinding | undefined;
 
 /** Page-level extension styles and timing share the player's resolved motion preference. */
 function mirrorMotion(modes: AppearanceModes | null): void {
@@ -44,9 +46,13 @@ function ensureShadowStyles(root: ShadowRoot): void {
 }
 
 export function getPlayerUiRoot(): ShadowRoot {
-  if (shadow && hostEl?.isConnected) return shadow;
+  if (shadow && hostEl?.isConnected) {
+    topLayer?.ensure();
+    return shadow;
+  }
 
   stopAppearance?.();
+  topLayer?.dispose();
   hostEl = document.getElementById(HOST_ID);
   if (!hostEl) {
     hostEl = document.createElement('div');
@@ -59,6 +65,7 @@ export function getPlayerUiRoot(): ShadowRoot {
   shadow = hostEl.shadowRoot || hostEl.attachShadow({ mode: 'open' });
   ensureShadowStyles(shadow);
   ensureNewBadgeStyles(shadow);
+  topLayer = bindTopLayer(hostEl);
   if (!shadow.getElementById('theater-announcements')) {
     const status = document.createElement('div');
     status.id = 'theater-announcements';
@@ -96,6 +103,8 @@ export function destroyPlayerUi(): void {
   cancelPendingAnnouncement();
   stopAppearance?.();
   stopAppearance = undefined;
+  topLayer?.dispose();
+  topLayer = undefined;
   hostEl?.remove();
   hostEl = null;
   shadow = null;

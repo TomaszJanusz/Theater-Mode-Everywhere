@@ -15,7 +15,11 @@ for (const dir of dirs) {
   assertBackgroundScriptLoading(resolved);
   const manifest = JSON.parse(fs.readFileSync(path.join(resolved, 'manifest.json'), 'utf8'));
   const settings = manifest.browser_specific_settings;
-  if (settings?.gecko) {
+  if (!settings?.gecko) {
+    // The player UI host is a popover (Chromium 114).
+    assert.equal(manifest.minimum_chrome_version, '114', 'Chromium minimum must stay 114 for the Popover API');
+  } else {
+    assert.equal(manifest.minimum_chrome_version, undefined, 'Firefox manifest must not carry minimum_chrome_version');
     assert.equal(settings.gecko.strict_min_version, '140.0', 'Firefox desktop minimum must stay 140.0');
     assert.equal(settings.gecko_android, undefined, 'Firefox for Android is unsupported and must not be declared');
   }

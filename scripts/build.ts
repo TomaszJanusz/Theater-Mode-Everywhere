@@ -207,6 +207,8 @@ async function run() {
     console.log('Injecting Firefox-specific manifest settings...');
     const firefoxManifestPath = path.resolve(firefoxStagingDir, 'manifest.json');
     const firefoxManifest = JSON.parse(fs.readFileSync(firefoxManifestPath, 'utf8'));
+    // Chromium-only key; Firefox states its minimum in strict_min_version.
+    delete firefoxManifest.minimum_chrome_version;
     firefoxManifest.browser_specific_settings = {
       gecko: {
         id: 'theater-everywhere@tomaszjanusz.dev',
