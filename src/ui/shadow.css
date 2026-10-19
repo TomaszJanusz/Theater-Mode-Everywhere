@@ -889,7 +889,7 @@ button.theater-time-end:hover {
 /* Seek Visual Indicator Overlay (YouTube Style) */
 .theater-everywhere-seek-overlay {
   position: fixed !important;
-  top: 50% !important;
+  top: var(--theater-hud-center-y, 50vh) !important;
   transform: translateY(-50%);
   z-index: 2147483647 !important;
   display: flex !important;
