@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- AutoTheater now works on Twitch past broadcasts (videos); live channels and clips stay manual.
+
+### Changed
+
+- The chat panel now follows whether the site's own chat was visible when you entered theater; your last choice is used only when the site's state cannot be read.
+- The Firefox build requires Firefox for Android 142 or newer; the minimum for desktop Firefox is unchanged.
+- Translated text and icons are now built without HTML injection, a hardening change with no visible difference.
+
+### Fixed
+
+- The subtitle overlay now uses the full video width instead of half of it.
+- With an audio effect or Volume Boost enabled, entering theater on a video whose server does not allow audio processing no longer makes the site's player stop with an "unavailable or not supported" error; playback continues and the audio option shows as unavailable.
+- Pinned controls no longer let busy page content show through them.
+- On Twitch, after the player reloads itself following an error, theater follows the new video and the remaining time keeps updating.
+
 ## [2.0.0] - 2026-10-18
 
 ### Added
