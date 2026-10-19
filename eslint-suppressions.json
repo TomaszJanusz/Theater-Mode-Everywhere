@@ -1,0 +1,3128 @@
+{
+  "docs/research/prototypes/native-chat-opening.mjs": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "docs/research/prototypes/twitch-chat-fixes.mjs": {
+    "import/order": {
+      "count": 3
+    },
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "docs/research/prototypes/youtube-replay-baseline.mjs": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "options/appearance-choices.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "options/choice-grid.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "options/combobox.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "options/combobox.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "options/feature-highlights.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/no-unenclosed-multiline-block": {
+      "count": 1
+    }
+  },
+  "options/localization.browser.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "options/markdown.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "options/markdown.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "options/options.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "import/order": {
+      "count": 36
+    },
+    "local/max-symbol-name-length": {
+      "count": 6
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-clear-text-protocols": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-ignored-exceptions": {
+      "count": 1
+    }
+  },
+  "options/privacy-policy.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "options/rte-settings.browser.test.ts": {
+    "import/order": {
+      "count": 10
+    }
+  },
+  "options/rte-settings.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 2
+    }
+  },
+  "options/shortcut-editor.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "options/shortcut-management.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "options/tabs.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "popup/popup.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "popup/rte-settings.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "scripts/base-ref.test.mjs": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/build-mode.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/build.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "scripts/bundle-integrity.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/bundle-integrity.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "scripts/ci-changes.test.mjs": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/locales.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "scripts/render-cws-screenshots.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 6
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "sonarjs/no-ignored-exceptions": {
+      "count": 1
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "scripts/run-tests.mjs": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "scripts/run-tests.test.mjs": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "scripts/smoke.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/no-nested-functions": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/appearance.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/audio.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/auto-theater.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/browsers.ts": {
+    "import/order": {
+      "count": 7
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/frames.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/helpers.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/no-nested-functions": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "scripts/smoke/highlights.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/pin-storage.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/settings.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/store-listings.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/test-determinism.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/test-determinism.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 4
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/test-harness.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/test-harness.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "scripts/test-impact.mjs": {
+    "import/order": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 6
+    }
+  },
+  "scripts/test-impact.test.mjs": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "scripts/update-amo-listings.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "scripts/update-amo-listings.ts": {
+    "no-fallthrough": {
+      "count": 1
+    },
+    "sonarjs/concise-regex": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "scripts/verify-bundles.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "scripts/workflow-audio.test.mjs": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  },
+  "src/appearance-preferences.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/appearance-preferences.ts": {
+    "local/max-symbol-name-length": {
+      "count": 5
+    }
+  },
+  "src/appearance-runtime.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/appearance.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/audio-settings.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/audio-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/chat/activation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/chat/adapters/twitch.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/chat/adapters/youtube-palette.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/chat/adapters/youtube.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/chat/controller.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 4
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/chat/controller.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/chat/detect.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/chat/events.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/chat/geometry.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/chat/geometry.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 3
+    }
+  },
+  "src/chat/selectors.ts": {
+    "local/max-symbol-name-length": {
+      "count": 6
+    }
+  },
+  "src/chat/theme.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/chat/url.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/chat/url.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "sonarjs/concise-regex": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/core/disposable-scope.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/core/frame-coordinator.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/core/media-snapshot.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/core/player-session.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/core/player-session.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "sonarjs/prefer-single-boolean-return": {
+      "count": 1
+    }
+  },
+  "src/core/provider-presentation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/core/visible-refresh.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/entries/background.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/entries/background.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/entries/content.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/entries/main-world.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/feature-highlights-lifecycle.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/feature-highlights-lifecycle.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/feature-highlights-storage.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/feature-highlights.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/feature-highlights.ts": {
+    "local/max-symbol-name-length": {
+      "count": 9
+    }
+  },
+  "src/host-play.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/host-play.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/i18n.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/i18n.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/caption-dock.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 2
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 10
+    }
+  },
+  "src/media-features/caption-options-dialog.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/media-features/caption-preference.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    }
+  },
+  "src/media-features/caption-renderer.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/media-features/caption-style.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/caption-style.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/media-features/composite-adapter.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/media-features/content-title.ts": {
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "src/media-features/controller.test.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/media-features/controller.ts": {
+    "import/order": {
+      "count": 24
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 6
+    }
+  },
+  "src/media-features/crunchyroll-cdn.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/media-features/disney-adapter.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    }
+  },
+  "src/media-features/fetch-allowlist.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 2
+    }
+  },
+  "src/media-features/heatmap-path.ts": {
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "src/media-features/media-features.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 2
+    },
+    "import/order": {
+      "count": 27
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/media-features/native-adapter.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/media-features/netflix-adapter.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/media-features/netflix-adapter.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    }
+  },
+  "src/media-features/netflix-page.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/media-features/page-title.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/bilibili-intl.ts": {
+    "local/max-symbol-name-length": {
+      "count": 8
+    },
+    "max-params": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/bilibili.ts": {
+    "import/order": {
+      "count": 6
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/captions.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 4
+    },
+    "sonarjs/concise-regex": {
+      "count": 2
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/crunchyroll.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 19
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 4
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "src/media-features/parsers/disney-page.ts": {
+    "local/max-symbol-name-length": {
+      "count": 12
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 4
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/media-features/parsers/mux-storyboard.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/netflix-page.ts": {
+    "local/max-symbol-name-length": {
+      "count": 10
+    },
+    "no-useless-escape": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/netflix-preview.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/media-features/parsers/patreon-page.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 3
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/tencent.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/twitch-page.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 7
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 7
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 3
+    }
+  },
+  "src/media-features/parsers/twitch-storyboard.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/youtube-chapters.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "no-useless-escape": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/youtube-heatmap-path.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 3
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/youtube-heatmap.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/prefer-single-boolean-return": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/youtube-player-response.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/media-features/parsers/youtube-storyboard.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/media-features/patreon-adapter.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    }
+  },
+  "src/media-features/probe.ts": {
+    "import/order": {
+      "count": 8
+    },
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/media-features/provider-flags.ts": {
+    "local/max-symbol-name-length": {
+      "count": 9
+    }
+  },
+  "src/media-features/resolve-adapter.ts": {
+    "import/order": {
+      "count": 17
+    },
+    "local/max-symbol-name-length": {
+      "count": 6
+    }
+  },
+  "src/media-features/sanitize.ts": {
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/media-features/timeline-ticks.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/twitch-adapter.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/twitch-adapter.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    }
+  },
+  "src/media-features/vimeo-adapter.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/media-features/youtube-adapter.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/no-dead-store": {
+      "count": 1
+    }
+  },
+  "src/media-features/youtube-caption-url.ts": {
+    "local/max-symbol-name-length": {
+      "count": 5
+    }
+  },
+  "src/media-features/youtube-player-response.test.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/media-features/youtube-snapshot.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/message-catalog.ts": {
+    "sonarjs/anchor-precedence": {
+      "count": 1
+    }
+  },
+  "src/platform/audio-crossfade.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/audio-crossfade.ts": {
+    "sonarjs/no-unenclosed-multiline-block": {
+      "count": 1
+    }
+  },
+  "src/platform/audio-graph.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/platform/audio-graph.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/platform/audio-graph.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/bounded-body.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/platform/bounded-body.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/bounded-body.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/platform/domain-policy.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/domain-policy.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/platform/legacy-youtube-exclusion.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/platform/main-world-runtime.ts": {
+    "import/order": {
+      "count": 36
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/platform/media-audio-access.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/media-audio-runtime.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/platform/media-audio-runtime.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/platform/media-cors-probe.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/network-harvest.browser.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/platform/page-fetch.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/platform/parent-origin.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/parent-origin.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/platform/web-audio-reload.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/platform/web-audio-reload.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/platform/xhr-harvest.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/playback-surface.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/playback-window.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/playback-window.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    },
+    "sonarjs/no-nested-assignment": {
+      "count": 1
+    }
+  },
+  "src/playlist-nav.test.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/playlist-nav.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/protocol/frame-handshake.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/protocol/frame-messages.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    }
+  },
+  "src/protocol/world-messages.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/adapter.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/bilibili-intl.test.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/main.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/bilibili-intl/runtime.browser.test.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/service-actions.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/watch-playback.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/bilibili-intl/watch-playback.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili-intl/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili/bilibili.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/bilibili/main.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili/navigation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili/service-actions.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili/watch-playback.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/bilibili/watch-playback.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/bilibili/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/capabilities.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/providers/capabilities.ts": {
+    "import/order": {
+      "count": 8
+    }
+  },
+  "src/providers/crunchyroll/adapter.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/crunchyroll/crunchyroll.test.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/providers/crunchyroll/host-surface.ts": {
+    "local/max-symbol-name-length": {
+      "count": 5
+    }
+  },
+  "src/providers/crunchyroll/main.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 14
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 2
+    }
+  },
+  "src/providers/crunchyroll/service-actions.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 2
+    }
+  },
+  "src/providers/crunchyroll/skip-windows.ts": {
+    "local/max-symbol-name-length": {
+      "count": 4
+    }
+  },
+  "src/providers/discovery.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/disney/clock-policy.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/disney/clock-policy.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/providers/disney/clock.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 4
+    },
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/providers/disney/host-captions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 2
+    }
+  },
+  "src/providers/disney/main.ts": {
+    "import/order": {
+      "count": 7
+    },
+    "local/max-symbol-name-length": {
+      "count": 19
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 4
+    },
+    "sonarjs/regex-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/disney/play-next.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/disney/service-actions.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/disney/stage.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/disney/stage.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/host-captions.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/launcher-placement.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/media-events.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/native-service-actions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/providers/native/page-title.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/native/page-title.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/bilibili-intl.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/dailymotion.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/disney.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/factory.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/history-publication.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/netflix.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/observed.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/videojs.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/vimeo-showcase.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/watch.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/navigation/youtube.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/action-bridge.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/netflix/host-captions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 4
+    }
+  },
+  "src/providers/netflix/main.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/providers/netflix/next-episode.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/next-preview.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/next-preview.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/playback.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/netflix/service-actions.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/stage.ts": {
+    "local/max-symbol-name-length": {
+      "count": 7
+    }
+  },
+  "src/providers/netflix/timed-action.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/netflix/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/network-harvest.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/network-harvest.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/patreon/main.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/duplicates-in-character-class": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 2
+    }
+  },
+  "src/providers/patreon/watch-playback.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/patreon/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/play-controls.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/playback-session.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/providers/registry.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/registry.ts": {
+    "import/order": {
+      "count": 11
+    }
+  },
+  "src/providers/service-actions.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/service-actions.ts": {
+    "import/order": {
+      "count": 10
+    }
+  },
+  "src/providers/stage.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/tencent/adapter.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/tencent/main.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 4
+    }
+  },
+  "src/providers/tencent/playback-session.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/tencent/stage.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 4
+    }
+  },
+  "src/providers/tencent/tencent.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/providers/tencent/wasm-bridge.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/tencent/wasm-player.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/providers/tencent/wasm-player.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 11
+    }
+  },
+  "src/providers/tencent/wasm-runtime.browser.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/timeline/disney.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/providers/timeline/disney.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/timeline/markers.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/timeline/netflix.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/timeline/youtube.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/twitch/discovery.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/twitch/harvest.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/twitch/main.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "local/max-symbol-name-length": {
+      "count": 11
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 3
+    }
+  },
+  "src/providers/twitch/stage.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/twitch/watch-playback.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/twitch/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/providers/ui-refresh.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 7
+    },
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/video-candidates.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/providers/watch-playback.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/providers/watch-playback.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 4
+    }
+  },
+  "src/providers/youtube/captions.browser.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/providers/youtube/main.ts": {
+    "import/order": {
+      "count": 11
+    },
+    "local/max-symbol-name-length": {
+      "count": 14
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 4
+    },
+    "sonarjs/super-linear-regex": {
+      "count": 1
+    }
+  },
+  "src/providers/youtube/queue-main.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/providers/youtube/queue.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/providers/youtube/service-actions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/providers/youtube/sponsorblock-model.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/youtube/sponsorblock-model.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    }
+  },
+  "src/providers/youtube/sponsorblock.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/providers/youtube/sponsorblock.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/providers/youtube/timedtext-cache.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/providers/youtube/timedtext-cache.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/providers/youtube/timedtext-cache.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/providers/youtube/watch-playback.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/reduce-motion.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/safe-dom.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/switchable-videos.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/test-utils/language-audit.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/test-utils/player-boot.browser.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/test-utils/player-boot.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/test-utils/player-scenarios/audio-layout.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/test-utils/player-scenarios/controls-lifecycle.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/test-utils/player-scenarios/controls-settings.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/test-utils/player-scenarios/fixture.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/test-utils/player-scenarios/playback.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/test-utils/release.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/test-utils/test-browser.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/test-utils/test-browser.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/test-utils/test-engines.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/test-utils/video-fixtures.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/themeHelper.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/translation-issue.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/accessibility.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/appearance.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/ui/appearance.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "local/max-symbol-name-length": {
+      "count": 4
+    }
+  },
+  "src/ui/audio-block.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/auto-theater-intent.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-intent.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/auto-theater-notice.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/auto-theater-notice.ts": {
+    "import/order": {
+      "count": 6
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-runtime.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 6
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-runtime.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-scrim.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/auto-theater-scrim.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/auto-theater-settings.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/auto-theater-settings.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-settings.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater-storage.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/auto-theater.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/auto-theater.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/ui/bass-hud.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/ui/bass-icon.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/caption-dock-lifecycle.browser.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/caption-loading.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/ui/caption-options-close.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/ui/caption-overlay-width.browser.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/cc-menu-rows.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 8
+    },
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/cc-menu.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/cc-menu.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/ui/chat.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/ui/controls-notch.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/controls-visibility.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/controls-visibility.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/controls.ts": {
+    "import/order": {
+      "count": 40
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 8
+    },
+    "sonarjs/void-use": {
+      "count": 2
+    }
+  },
+  "src/ui/discovery.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/discovery.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/ui/fullscreen-activity.browser.test.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 2
+    },
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/help.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "src/ui/hud-spacing.browser.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/ui/hud.ts": {
+    "import/order": {
+      "count": 14
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/ui/menu-popover.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/ui/modal.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/modal.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/native-chat.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/ui/netflix-runtime.browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "src/ui/netflix-stage.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/ui/new-badge.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/new-badge.ts": {
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/ui/picture-click.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/picture-dismiss.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/picture-dismiss.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/ui/pinned-controls-backing.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/playback-chrome.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/playback-hud.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/player-runtime.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    },
+    "import/order": {
+      "count": 65
+    },
+    "local/max-symbol-name-length": {
+      "count": 16
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "no-empty": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 8
+    },
+    "sonarjs/void-use": {
+      "count": 2
+    }
+  },
+  "src/ui/player-settings-order.browser.test.ts": {
+    "import/order": {
+      "count": 7
+    }
+  },
+  "src/ui/player-settings.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/ui/presentation-lifecycle.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/ui/root.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/runtime-context.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 8
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/ui/scrubber-tooltip.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/seek-completion.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/ui/service-actions.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "src/ui/service-actions.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "local/max-symbol-name-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/ui/settings-rows.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/shortcut-updates.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/ui/shortcuts.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/ui/shortcuts.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/concise-regex": {
+      "count": 3
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "src/ui/smoke-regressions.browser.test.ts": {
+    "import/order": {
+      "count": 6
+    }
+  },
+  "src/ui/spinner-exit.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/spinner-exit.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/ui/sponsorblock-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
+  "src/ui/store.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/store.ts": {
+    "import/order": {
+      "count": 11
+    }
+  },
+  "src/ui/theater-layout.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/ui/time-readout.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/time-readout.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/time-readout.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "src/ui/title-hud-reduced.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/ui/title-truncation.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/toolbar.ts": {
+    "import/order": {
+      "count": 15
+    },
+    "local/max-symbol-name-length": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 3
+    },
+    "sonarjs/void-use": {
+      "count": 1
+    }
+  },
+  "src/ui/video-activator-placement.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/video-activator-placement.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/video-activator-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 3
+    }
+  },
+  "src/ui/video-activator.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/video-activator.test.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "src/ui/video-activator.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-unenclosed-multiline-block": {
+      "count": 1
+    }
+  },
+  "src/ui/video-selection.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/ui/volume-boost-settings.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "src/ui/volume-wheel.browser.test.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "src/whatsNew-content.browser.test.ts": {
+    "import/order": {
+      "count": 5
+    }
+  },
+  "src/whatsNew-release.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "src/whatsNew-release.ts": {
+    "local/max-symbol-name-length": {
+      "count": 7
+    }
+  },
+  "src/whatsNew.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 4
+    },
+    "import/order": {
+      "count": 3
+    },
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
+  "test/fixtures/browser-timeout.mjs": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "test/fixtures/shared-browser-timeout.mjs": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "tools/cpu-suite/browser.test.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
+  "tools/cpu-suite/browser.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 7
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 4
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 1
+    },
+    "sonarjs/pseudo-random": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/config.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/measurement.ts": {
+    "import/order": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/model.ts": {
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/processes.ts": {
+    "import/order": {
+      "count": 3
+    },
+    "sonarjs/no-os-command-from-path": {
+      "count": 2
+    }
+  },
+  "tools/cpu-suite/report.ts": {
+    "import/order": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/resource-browser.ts": {
+    "import/order": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/resource-fixtures.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 6
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/resource-model.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/resource-suite.ts": {
+    "import/order": {
+      "count": 5
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/resource.browser.test.ts": {
+    "import/order": {
+      "count": 8
+    }
+  },
+  "tools/cpu-suite/resource.test.ts": {
+    "import/order": {
+      "count": 2
+    }
+  },
+  "tools/cpu-suite/runner.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "import/order": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 1
+    },
+    "sonarjs/no-nested-template-literals": {
+      "count": 1
+    }
+  },
+  "tools/cpu-suite/storage.ts": {
+    "import/order": {
+      "count": 4
+    }
+  },
+  "tools/cpu-suite/suite.test.ts": {
+    "import/order": {
+      "count": 8
+    }
+  },
+  "tools/cpu-suite/suite.ts": {
+    "import/order": {
+      "count": 7
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-nested-conditional": {
+      "count": 2
+    }
+  },
+  "tools/cpu-suite/validation.ts": {
+    "import/order": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "vite.config.ts": {
+    "import/order": {
+      "count": 3
+    }
+  }
+}

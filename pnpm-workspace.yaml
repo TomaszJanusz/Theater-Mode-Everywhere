@@ -24,6 +24,9 @@ allowBuilds:
 verifyDepsBeforeRun: warn
 
 overrides:
+  # Keep import-x on its pure-JavaScript resolver; avoid resolve 2's
+  # semver 6 dependency, which fails the no-downgrade trust policy.
+  eslint-plugin-import-x>eslint-import-resolver-node: 0.3.9
   brace-expansion: 2.1.7
   postcss: 8.5.23
   source-map-js: 1.2.2

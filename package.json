@@ -17,20 +17,30 @@
     "store:amo:update": "tsx scripts/update-amo-listings.ts",
     "cpu:suite": "tsx tools/cpu-suite/suite.ts",
     "build:diagnostic": "TME_BUILD=diagnostic tsx scripts/build.ts",
-    "resource:audit": "tsx tools/cpu-suite/resource-suite.ts"
+    "resource:audit": "tsx tools/cpu-suite/resource-suite.ts",
+    "lint": "eslint . --config config/eslint.config.mjs --max-warnings 0",
+    "lint:suppressions:prune": "pnpm lint --prune-suppressions"
   },
   "author": "Tomasz Janusz",
   "license": "MIT",
   "packageManager": "pnpm@12.14.0",
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/archiver": "^6.0.2",
     "@types/chrome": "^0.0.268",
     "@types/node": "^20.12.7",
+    "@typescript-eslint/eslint-plugin": "^8.71.2",
+    "@typescript-eslint/parser": "^8.71.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "archiver": "^7.0.1",
     "esbuild": "^0.25.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-import-x": "4.6.1",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "globals": "^17.13.0",
     "playwright": "^1.63.0",
     "tsx": "^4.7.2",
-    "typescript": "^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^6.4.3"
   },
   "dependencies": {

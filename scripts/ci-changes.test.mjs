@@ -8,6 +8,7 @@ for (const files of [['README.md'], ['docs/browser-tests.md', 'docs/research/not
 }
 for (const file of [
   'src/content.ts', '.github/workflows/ci.yml', '.github/codeql/codeql-config.yml',
+  'config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json',
   'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'manifest.json',
   'store-listings/amo/en.md', 'store-listings/assets/cws-promo/README.md',
   '_locales/en/messages.json', 'CHANGELOG.md', 'PRIVACY.md', 'LICENSE',
