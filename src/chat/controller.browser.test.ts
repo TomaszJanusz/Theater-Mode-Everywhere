@@ -101,6 +101,80 @@ describe('native chat controller', () => {
     return page;
   }
 
+  it('seeds each content visit from native visibility, retaining saved fallback and session overrides in both browsers', { timeout: 60000 }, async t => {
+    const { ownTestBrowser } = await import('../test-utils/test-browser');
+    for (const engine of ['chromium', 'firefox'] as const) {
+      const browserType = (await import('playwright'))[engine];
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); continue; }
+      const testBrowser = await browserType.launch({ headless: true });
+      ownTestBrowser(t, testBrowser);
+      try {
+        for (const provider of ['youtube', 'twitch']) {
+          const page = await testBrowser.newPage();
+          await page.setContent('<!doctype html><html><body></body></html>');
+          await page.addScriptTag({ content: bundle() });
+          const report = await page.evaluate(`(() => {
+            const provider = ${JSON.stringify(provider)};
+            let href;
+            const mount = (key, mode) => {
+              href = provider === 'youtube' ? 'https://www.youtube.com/watch?v=' + key : 'https://www.twitch.tv/' + key;
+              document.body.innerHTML = provider === 'youtube'
+                ? '<ytd-watch-flexy video-id="' + key + '"><div style="width:500px"><div id="chat" style="width:340px"><iframe src="https://www.youtube.com/live_chat?v=' + key + '"></iframe></div></div></ytd-watch-flexy>'
+                : '<div style="width:500px"><div id="chat" class="right-column" style="width:340px"><section class="chat-room"></section></div></div>';
+              const root = document.querySelector('#chat');
+              if (mode === 'hidden') root.hidden = true;
+              if (mode === 'unreadable') {root.style.width='0';root.parentElement.style.width='0';}
+            };
+            let saved = {visible:false,width:420,theme:'dark'};
+            const options = () => ({document,href:()=>href,onChange(){},onLayoutChange(){},
+              initialPreferences:{[provider]:saved},persistPreference(_, value){saved=value;}});
+            mount('AbCdEfGhIjK','visible');
+            let c = new NativeChat.ChatController(options());
+            const visible = c.state.visible;
+            c.hide(); c.refresh();
+            const override = c.state.visible;
+            c.dispose();
+            c = new NativeChat.ChatController(options());
+            const reentry = c.state.visible;
+            c.hide();
+            document.head.insertAdjacentHTML('beforeend', '<style>html.theater-everywhere-html-active #chat:not([data-theater-chat]){visibility:hidden!important}</style>');
+            document.documentElement.classList.add('theater-everywhere-html-active');
+            mount('OtherVideo1','visible'); c.refresh();
+            const navigation = c.state.visible;
+            c.show();
+            mount('ThirdVideo1','hidden'); c.refresh();
+            const hiddenNavigation = c.state.visible;
+            c.dispose();
+            document.documentElement.classList.remove('theater-everywhere-html-active');
+            let stableRoute = true;
+            if (provider === 'youtube') {
+              mount('AbCdEfGhIjK','visible'); href='https://www.youtube.com/@example/live';
+              c=new NativeChat.ChatController(options()); c.hide();
+              mount('OtherVideo1','visible'); href='https://www.youtube.com/@example/live';
+              c.refresh(); stableRoute=c.state.visible; c.dispose();
+            }
+            const hidden = [];
+            const unreadable = [];
+            for (const stored of [false,true]) {
+              saved={visible:stored,width:420,theme:'dark'};
+              mount('AbCdEfGhIjK','hidden'); c=new NativeChat.ChatController(options());
+              hidden.push(c.state.visible); c.dispose();
+              mount('AbCdEfGhIjK','unreadable'); c=new NativeChat.ChatController(options());
+              unreadable.push(c.state.visible); c.dispose();
+            }
+            mount('AbCdEfGhIjK','visible');
+            document.body.innerHTML=''; c=new NativeChat.ChatController(options());
+            const absent=c.state.visible; c.dispose();
+            return {visible,override,reentry,navigation,hiddenNavigation,stableRoute,hidden,unreadable,absent};
+          })()`);
+          assert.deepEqual(report, {visible:true,override:false,reentry:true,navigation:true,hiddenNavigation:false,stableRoute:true,
+            hidden:[false,false],unreadable:[false,true],absent:false}, engine + ' ' + provider);
+          await page.close();
+        }
+      } finally { await testBrowser.close(); }
+    }
+  });
+
   it('preserves Twitch VOD replay without replacing it with the live channel chat', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`<div class="right-column" data-a-target="right-column-chat-bar">
@@ -278,7 +352,7 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('uses native YouTube Show chat and Twitch Expand Chat controls for collapsed components and stored preferences', async t => {
+  it('opens collapsed components only on an explicit toggle despite a saved open preference', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     for (const provider of ['youtube', 'twitch']) {
       const html = provider === 'youtube'
@@ -298,7 +372,8 @@ describe('native chat controller', () => {
           });
           const c = new NativeChat.ChatController({document,href:() => provider === 'youtube' ? 'https://www.youtube.com/watch?v=AbCdEfGhIjK' : 'https://www.twitch.tv/example',onChange(){},onLayoutChange(){},initialPreferences:{[provider]:{visible:true,width:400}}});
           c.refresh(); await window.__advanceNativeChatClock('structure');
-          c.hide(); c.show(); c.refresh();
+          const entry = {visible:c.state.visible,clicks};
+          c.show(); c.refresh();
           const result = {clicks,available:c.state.available,visible:c.state.visible,sameComponent:document.querySelector('iframe,textarea')===original};
           if (provider === 'youtube') {chat.setAttribute('collapsed','');document.querySelector('#show-hide-button').hidden=false;}
           else {document.querySelector('.channel-root__right-column').style.width='0';document.querySelector('#open').setAttribute('aria-label','Expand Chat');}
@@ -306,9 +381,10 @@ describe('native chat controller', () => {
           const closedByService={visible:c.state.visible,clicks};
           c.toggle();c.refresh();
           const reopened={visible:c.state.visible,clicks};
-          c.dispose();return {result,closedByService,reopened};
+          c.dispose();return {entry,result,closedByService,reopened};
         })()`);
         assert.deepEqual(report, {
+          entry:{visible:false,clicks:0},
           result:{clicks:1,available:true,visible:true,sameComponent:true},
           closedByService:{visible:false,clicks:1},reopened:{visible:true,clicks:2}
         }, provider);
@@ -532,7 +608,7 @@ describe('native chat controller', () => {
     }
   });
 
-  it('keeps a collapsed Twitch chat available, then honors a stored override across width clamps', async t => {
+  it('keeps a collapsed native chat hidden despite a saved open preference and clamps its width', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
     const page = await pageWith(`<div id="layout" style="width:800px"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__expanded"></div></section></div></div>`);
     try {
@@ -556,9 +632,9 @@ describe('native chat controller', () => {
         };
       })()`) as { available: boolean; visible: boolean; width: number; hidden: boolean; persisted: string[] };
       assert.equal(collapsed.available, true);
-      assert.equal(collapsed.visible, true);
+      assert.equal(collapsed.visible, false);
       assert.equal(collapsed.width, 280);
-      assert.equal(collapsed.hidden, false);
+      assert.equal(collapsed.hidden, true);
       assert.deepEqual(collapsed.persisted, []);
     } finally {
       await page.close();

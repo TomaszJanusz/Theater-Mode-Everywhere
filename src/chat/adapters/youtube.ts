@@ -1,3 +1,4 @@
+import { readNativeChatVisibility } from './visibility';
 import { OwnedDom } from '../owned-dom';
 import { THEATER_STAGE_BACKGROUND } from './stage';
 import type { ChatThemeAdapter, ForcedTheme } from './types';
@@ -107,4 +108,10 @@ function recognizedPalette(sheets: readonly CSSStyleSheet[]): string | null {
   }
   return light && dark && !unknown && lightThreadHover && CSS.supports('color', lightThreadHover)
     && [...YOUTUBE_CHAT_MAPPED_ALIASES].every(alias => declared.has(alias)) ? lightThreadHover : null;
+}
+
+export function readYouTubeChatVisibility(root: HTMLElement): boolean | null {
+  if (root.hasAttribute('collapsed') || root.closest('#chat[collapsed]')
+    || root.querySelector('ytd-live-chat-frame[collapsed]')) return false;
+  return readNativeChatVisibility(root);
 }

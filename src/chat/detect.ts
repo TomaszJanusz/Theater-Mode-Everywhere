@@ -1,3 +1,5 @@
+import { readYouTubeChatVisibility } from './adapters/youtube';
+import { readTwitchChatVisibility } from './adapters/twitch';
 import {
   TWITCH_CHAT_COLUMN_SELECTOR,
   TWITCH_CHAT_SECTION_SELECTOR,
@@ -38,7 +40,7 @@ function detectTwitch(document: Document, contentKey: string, kind: ChatKind): C
     root,
     contentRoot: section,
     revealAncestors: revealAncestors(root),
-    initiallyVisible: initiallyVisible(root, 'twitch')
+    initiallyVisible: readTwitchChatVisibility(root)
   };
 }
 
@@ -62,7 +64,7 @@ function detectYouTube(document: Document, contentKey: string): ChatSurface | nu
     root,
     iframe: selected.iframe,
     revealAncestors: revealAncestors(root),
-    initiallyVisible: initiallyVisible(root, 'youtube')
+    initiallyVisible: readYouTubeChatVisibility(root)
   };
 }
 
@@ -128,19 +130,4 @@ function revealAncestors(root: HTMLElement): HTMLElement[] {
     node = node.parentElement;
   }
   return found;
-}
-
-function initiallyVisible(root: HTMLElement, provider: 'twitch' | 'youtube'): boolean {
-  if (root.hasAttribute('hidden') || root.getAttribute('aria-hidden') === 'true') return false;
-  if (provider === 'youtube') {
-    if (root.hasAttribute('collapsed')) return false;
-    const chat = root.id === 'chat' ? root : root.closest('#chat');
-    if (chat instanceof HTMLElement && chat.hasAttribute('collapsed')) return false;
-  }
-  const shell = root.matches('.chat-shell') ? root : root.querySelector('.chat-shell');
-  if (shell?.classList.contains('chat-shell__collapsed')) return false;
-  if (shell?.classList.contains('chat-shell__expanded') && shell.getBoundingClientRect().width > 0) return true;
-  const parentWidth = root.parentElement?.getBoundingClientRect().width ?? 0;
-  if (parentWidth > 0 && root.getBoundingClientRect().width === 0) return false;
-  return true;
 }

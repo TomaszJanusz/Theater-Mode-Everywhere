@@ -30,8 +30,8 @@ export interface ChatSurface {
   iframe?: HTMLIFrameElement;
   /** Ancestors whose own visibility or opacity would otherwise keep the chat hidden. */
   revealAncestors: HTMLElement[];
-  /** Visibility observed at detection, before a stored or in-session choice is applied. */
-  initiallyVisible: boolean;
+  /** Native visibility at detection; null when the adapter cannot read it. */
+  initiallyVisible: boolean | null;
 }
 
 /** Service-owned control that opens a chat, including one not mounted yet. */

@@ -954,13 +954,12 @@ describe('native chat browser session', () => {
 
       await page.reload({ waitUntil: 'load' });
       await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
       layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
+      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
       assert.equal(layout.state?.width, CHOSEN_WIDTH, JSON.stringify(layout.state));
       assert.equal(pixels(layout.vars.chatWidth), CHOSEN_WIDTH, JSON.stringify(layout.vars));
-      assertFullVideo(layout, 'youtube restored hidden preference');
-      await page.locator('.theater-chat-toggle').click();
+      assertRightDock(layout, 'native visibility overrides the saved hidden preference');
       await page.waitForFunction(width => {
         const chat = document.querySelector('[data-theater-chat]');
         return chat !== null && !chat.hasAttribute('data-theater-chat-hidden') && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
@@ -1495,7 +1494,7 @@ describe('native chat browser session', () => {
           await page.reload({ waitUntil: 'load' });
           await boot(page);
           const state = await page.evaluate(() => window.NativeChatTest.nativeChatState());
-          assert.equal(state?.visible, false); assert.equal(state?.width, 440); assert.equal(state?.theme, 'dark');
+          assert.equal(state?.visible, true); assert.equal(state?.width, 440); assert.equal(state?.theme, 'dark');
           assert.deepEqual(pageErrors(page), []);
           await page.close();
         }

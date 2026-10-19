@@ -44,11 +44,9 @@ interface MemoryPreference {
   theme: ChatTheme;
   visible: boolean;
   width: number;
-  /** User or stored choice. Native initial visibility must not replace it. */
+  /** Explicit choice for this content. Native initial visibility must not replace it. */
   visibilityLocked: boolean;
   seeded: boolean;
-  /** Width or theme changed before native visibility was known; persist once that seed lands. */
-  persistPending: boolean;
 }
 
 const EMPTY_STATE: ChatState = {
@@ -111,13 +109,22 @@ export class ChatController {
     this.syncActivity();
     if (this.options.document.hidden) return;
     const href = this.safeHref();
-    this.lastIdentity = watchIdentity(href);
+    const identity = watchIdentity(href);
+    const routeChanged = identity !== this.lastIdentity;
+    if (routeChanged) this.resetVisibilitySeed();
+    this.lastIdentity = identity;
     this.lastLateRefresh = Date.now();
-    const surface = detectChatSurface(this.options.document, href);
+    let surface = detectChatSurface(this.options.document, href);
+    const previous = this.current.surface;
+    // A stable live route may mount a new content identity without changing its URL.
+    if (!routeChanged && surface && previous
+      && (surface.provider !== previous.provider || surface.contentKey !== previous.contentKey)) {
+      this.resetVisibilitySeed();
+      surface = detectChatSurface(this.options.document, href);
+    }
     this.activation = detectChatActivation(this.options.document, href, surface);
     // Closing chat through the service's own UI is also a viewer choice.
     // Do not immediately undo it with the previously shown TME preference.
-    const previous = this.current.surface;
     if (this.activation && this.current.visible && previous?.provider === this.activation.provider
       && previous.contentKey === this.activation.contentKey) {
       const preference = this.ensurePreference(previous.provider, false);
@@ -127,6 +134,17 @@ export class ChatController {
     }
     this.apply(surface);
     this.openNativeChat();
+  }
+
+  private resetVisibilitySeed(): void {
+    // Restore our presentation before measuring the next native content.
+    this.surfaceOwned.restoreAll();
+    this.documentOwned.restoreAll();
+    this.attemptedActivation = null;
+    for (const preference of this.memory.values()) {
+      preference.visibilityLocked = false;
+      preference.seeded = false;
+    }
   }
 
   show(): void {
@@ -153,8 +171,7 @@ export class ChatController {
     const preference = this.ensurePreference(provider, this.current.surface?.initiallyVisible ?? null);
     if (preference.width === next) return;
     preference.width = next;
-    if (preference.seeded || preference.visibilityLocked) this.persist(provider);
-    else preference.persistPending = true;
+    this.persist(provider);
     this.refresh();
   }
 
@@ -166,8 +183,7 @@ export class ChatController {
     const next = normalizeChatTheme(theme);
     if (preference.theme === next) return;
     preference.theme = next;
-    if (preference.seeded || preference.visibilityLocked) this.persist(provider);
-    else preference.persistPending = true;
+    this.persist(provider);
     this.refresh();
   }
 
@@ -544,10 +560,6 @@ export class ChatController {
       if (initiallyVisible !== null && !existing.seeded && !existing.visibilityLocked) {
         existing.visible = initiallyVisible;
         existing.seeded = true;
-        if (existing.persistPending) {
-          existing.persistPending = false;
-          this.persist(provider);
-        }
       }
       return existing;
     }
@@ -556,11 +568,10 @@ export class ChatController {
     const storedVisible = stored && typeof stored.visible === 'boolean' ? stored.visible : null;
     const created: MemoryPreference = {
       theme: normalizeChatTheme(stored?.theme),
-      visible: storedVisible ?? initiallyVisible ?? true,
+      visible: initiallyVisible ?? storedVisible ?? true,
       width: storedWidth ?? DEFAULT_CHAT_WIDTH_PX,
-      visibilityLocked: storedVisible !== null,
-      seeded: storedVisible !== null || initiallyVisible !== null,
-      persistPending: false
+      visibilityLocked: false,
+      seeded: initiallyVisible !== null
     };
     this.memory.set(provider, created);
     return created;
@@ -579,7 +590,6 @@ export class ChatController {
     preference.visible = visible;
     preference.visibilityLocked = true;
     preference.seeded = true;
-    preference.persistPending = false;
     this.persist(provider);
     this.refresh();
   }

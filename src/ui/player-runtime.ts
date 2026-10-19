@@ -2219,14 +2219,15 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     injectStylesIntoShadowRoot(rootNode);
   }
 
-  markTheaterVideo(element);
-  mountTheaterStage();
-  mountProviderStages(window.location.hostname, element);
+  // Sample native chat before provider presentation can hide the page's panels.
   startNativeChatSession(() => {
     if (session.element) applyTheaterElementInlineStyles(session.element);
     updateCaptionDock();
     window.dispatchEvent(new CustomEvent('theater-everywhere-chat-layout'));
   });
+  markTheaterVideo(element);
+  mountTheaterStage();
+  mountProviderStages(window.location.hostname, element);
   applyTheaterElementInlineStyles(element);
 
   // Specific setup for HTML5 <video> elements
