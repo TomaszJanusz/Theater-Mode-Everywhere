@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
-import type { Frame, Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { chromium, firefox, type Frame, type Page } from 'playwright';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
@@ -52,10 +52,9 @@ async function selected(frame: Page | Frame, timeout = 5000): Promise<string> {
 }
 
 for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`${engine}: standby detection includes hidden hosts and wrappers`, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.setContent('<main></main>');
     await boot(page);
     const result = await page.evaluate(() => {
@@ -84,9 +83,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: Disney episode replacement waits past the hidden standby and restores on exit`, { timeout: 30_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.route('https://www.disneyplus.com/**', route => route.fulfill({
       contentType: 'text/html',
       body: '<style>disney-web-player { display:block; width:640px; height:360px } video { width:640px; height:360px }</style><disney-web-player><video id="first" class="hive-video"></video></disney-web-player>'
@@ -146,10 +143,8 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: YouTube theater leaves a hidden watch page and moves to a visible replacement`, { timeout: 30_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
     const openWatchPage = async (extra: string): Promise<Page> => {
-      const page = await browser.newPage();
+      const page = await (await shared.newContext(t)).newPage();
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html',
         body: '<style>video { display:block; width:640px; height:360px }</style>'
@@ -184,9 +179,7 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: 100 mousemoves on a large page do no discovery or geometry reads`, { timeout: 30_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await page.addScriptTag({ content: 'window.__name = target => target;' });
     await page.setContent('<main><section><span id="pointer">Pointer</span></section></main>');
     await page.evaluate(() => {
@@ -238,10 +231,8 @@ for (const engine of testEngines()) {
   });
 
   it(`${engine}: theater and fullscreen defer pointer discovery without changing selection`, { timeout: 90_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
     const newPage = async () => {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
       page.setDefaultTimeout(5000);
       await page.route(/^https:\/\/(selection|embedded)\.test\//, route => route.fulfill({ contentType: 'text/html', body: PLAYERS }));
       await page.goto('https://selection.test/watch');

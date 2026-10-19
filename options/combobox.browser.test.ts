@@ -4,7 +4,7 @@ import path from 'node:path';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from '../src/test-utils/test-browser';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
 
 const css = buildSync({ entryPoints: [path.join(__dirname, 'options.css')], bundle: true, write: false }).outputFiles[0].text;
 const bundle = buildSync({
@@ -21,11 +21,11 @@ const bundle = buildSync({
 }).outputFiles[0].text;
 
 for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
+  const shared = sharedTestBrowser(browserType);
   it(`select-only combobox keeps focus, separates browsing from selection and owns popup lifecycle in ${engine}`, { timeout: 30_000 }, async t => {
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t, { viewport: { width: 480, height: 420 } });
     try {
-      const page = await browser.newPage({ viewport: { width: 480, height: 420 } });
+      const page = await context.newPage();
       page.setDefaultTimeout(5000);
       await page.setContent(`<div role="tabpanel" id="panel"><p id="label">Language</p><p id="description" class="visually-hidden">Choose a language</p>
         <button type="button" id="language" class="choice-combobox" aria-labelledby="label" aria-describedby="description"></button>
@@ -122,6 +122,6 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
       await combo.click();
       await closed();
       assert.equal(await page.locator('#language-listbox').count(), 0);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }

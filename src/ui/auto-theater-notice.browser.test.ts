@@ -2,9 +2,9 @@ import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 import { readStylesheet } from '../test-utils/styles';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
@@ -26,6 +26,8 @@ declare global {
     noticeHide: () => void;
   }
 }
+
+const browsers = Object.fromEntries(testEngines().map(engine => [engine, sharedTestBrowser({ chromium, firefox }[engine])]));
 
 /** Shows the notice with a 3 s deadline on the page's fake clock. */
 async function mountNotice(page: Page, ringTurn?: 'uniform' | 'per-digit'): Promise<void> {
@@ -55,10 +57,9 @@ const ring = (page: Page) => page.evaluate(() => {
 });
 
 for (const engine of testEngines()) {
+  const shared = browsers[engine];
   it(`${engine}: the notice counts the remaining seconds with the shared digit roll and stops on cleanup`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await mountNotice(page);
     assert.deepEqual(await readout(page), { text: '2', ariaHidden: 'true', rolling: 0 });
     await page.clock.runFor(999);
@@ -96,10 +97,9 @@ for (const engine of testEngines()) {
 }
 
 for (const engine of testEngines()) {
+  const shared = browsers[engine];
   it(`${engine}: the per-digit ring mode restarts one eased turn with each digit change`, { timeout: 40_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     await mountNotice(page, 'per-digit');
     await page.clock.runFor(1000);
     assert.equal((await readout(page))!.text, '1');
@@ -129,11 +129,10 @@ const SAMPLER = `(${(() => {
 }).toString()})()`;
 
 for (const engine of testEngines()) {
+  const shared = browsers[engine];
   for (const mode of ['normal', 'reduced transparency', 'high contrast', 'reduced motion'] as const) {
     it(`${engine}: the notice plate stays opaque through appear, countdown, ring exit and 0 (${mode})`, { timeout: 40_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await shared.newContext(t)).newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.goto('about:blank');
       await page.setContent('<body style="margin:0;background:#fff;height:900px"></body>');

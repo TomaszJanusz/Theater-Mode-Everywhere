@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 import { buildSync } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../src/test-utils/test-browser';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { MEDIA_PROVIDER_IDS, MEDIA_PROVIDER_FLAG_KEYS, resolveMediaProviderFlags } from '../src/media-features/provider-flags';
 import { providerDefinition } from '../src/providers/registry';
 
@@ -53,11 +53,11 @@ async function open(page: Page, host: string, initial: Record<string, unknown> =
 }
 const toggle = '#rich-theater-experience-toggle';
 for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
+  const shared = sharedTestBrowser(engine);
   it(`popup resolves services, isolates writes and follows live settings (${name})`, { timeout: 45000 }, async t => {
-    const browser = await engine.launch();
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t, { viewport: { width: 360, height: 480 } });
     try {
-      const page = await browser.newPage({ viewport: { width: 360, height: 480 } });
+      const page = await context.newPage();
       const hosts = ['www.youtube.com', 'player.vimeo.com', 'www.patreon.com', 'player.twitch.tv', 'www.disneyplus.com', 'www.netflix.com', 'www.bilibili.com', 'www.bilibili.tv', 'wetv.vip', 'static.crunchyroll.com'];
       for (const [index, id] of MEDIA_PROVIDER_IDS.entries()) {
         assert.equal(providerDefinition(id).matchesHost(hosts[index]), true);
@@ -96,6 +96,6 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
       await open(page, 'youtube.com', {}, true);
       await page.evaluate(() => { const state = window as unknown as Harness; state.stopRte(); state.release(); });
       assert.equal(await page.locator(toggle).isDisabled(), true, 'cleanup rejects pending initialization');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 }

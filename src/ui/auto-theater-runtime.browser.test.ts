@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { it } from 'node:test';
+import { chromium, firefox } from 'playwright';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { AUTO_ENTER_NOTICE_DELAY_MS as DELAY_MS, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { AUTO_ENTER_CANCEL_GRACE_MS as GRACE_MS } from './auto-theater-intent';
 
@@ -41,13 +42,13 @@ declare global {
 }
 
 for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`auto entry in ${engine} accepts native playing before YouTube state catches up, but rejects ads and stale content`, { timeout: 60_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player" class="ad-showing"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -103,17 +104,16 @@ for (const engine of testEngines()) {
       });
       assert.equal(await page.evaluate(() => window.autoTheaterProbe.entries), 1, 'exit and cleanup must prevent reentry');
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
   it(`auto entry in ${engine} announces intent, waits out the minimum notice time, and cancels on request`, { timeout: 60_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -175,17 +175,16 @@ for (const engine of testEngines()) {
       await page.clock.runFor(10_000);
       assert.deepEqual(await probe(), { entries: 0, active: false, shown: 2, hidden: 2 }, 'disposal removes the notice and entry');
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
   it(`the AutoTheater notice in ${engine} appears after its delay and never mounts for work that ended earlier`, { timeout: 60_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -263,17 +262,16 @@ for (const engine of testEngines()) {
       await page.clock.runFor(DELAY_MS);
       assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 }, 'the new identity mounts after its own delay');
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
   it(`AutoTheater countdown in ${engine} starts while loading and restarts or cancels on host state changes`, { timeout: 90_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html', body: '<ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -429,17 +427,16 @@ for (const engine of testEngines()) {
       await page.clock.runFor(1);
       assert.equal((await probe()).entries, 1);
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
   it(`AutoTheater countdown in ${engine} starts on SPA entry before YouTube reveals the watch page, but enters only when fully eligible`, { timeout: 90_000 }, async t => {
     const browserType = (await import('playwright'))[engine];
     assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.addInitScript('window.__name = target => target;');
       await page.route('https://www.youtube.com/**', route => route.fulfill({
         contentType: 'text/html', body: '<ytd-watch-flexy hidden><div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -591,17 +588,15 @@ for (const engine of testEngines()) {
       });
       assert.equal((await delta()).shown, 1, 'announces once the new identity is reported');
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
   for (const scenario of ['yt-player-updated', 'yt-page-data-updated', 'focus', 'fullscreen', 'transition', 'miniplayer', 'observe retry', 'observe player'] as const) {
     it(`YouTube auto entry in ${engine} re-evaluates ${scenario} without another playing event`, { timeout: 60_000 }, async t => {
-      const browserType = (await import('playwright'))[engine];
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await page.addInitScript('window.__name = target => target;');
         await page.route('https://www.youtube.com/**', route => route.fulfill({
           contentType: 'text/html', body: '<input id="search"><input id="comment"><ytd-miniplayer></ytd-miniplayer><ytd-watch-flexy><div id="movie_player"><video class="html5-main-video" muted loop style="width:640px;height:360px"></video></div></ytd-watch-flexy>'
@@ -710,7 +705,7 @@ for (const engine of testEngines()) {
         });
         assert.equal(await page.evaluate(() => window.watchPageProbe.entries), 1, 'repeated triggers, exit and disposal must not reenter');
       } finally {
-        await browser.close();
+        await context.close();
       }
     });
   }
@@ -731,10 +726,9 @@ for (const engine of testEngines()) {
     it(`${fixture.provider} auto entry in ${engine} qualifies the URL before the player and preserves session guards`, { timeout: 60_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, browser);
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await page.addInitScript('window.__name = target => target;');
         await page.route(`${fixture.origin}/**`, route => route.fulfill({
           contentType: 'text/html', body: `<!doctype html><style>video { width:640px; height:360px }</style>${fixture.body}`
@@ -873,7 +867,7 @@ for (const engine of testEngines()) {
         }, fixture);
         assert.equal(await entries(), 2, 'disposed runtime must stop reacting to playback and navigation');
       } finally {
-        await browser.close();
+        await context.close();
       }
     });
   }
