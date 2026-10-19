@@ -48,6 +48,13 @@ jobs:
         if: steps.changes.outputs.run != 'false'
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        if: steps.changes.outputs.run != 'false'
+        run: |
+          lint_start=$SECONDS
+          pnpm lint
+          echo "Lint wall time: $((SECONDS - lint_start))s" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Select affected tests
         id: impact
         if: steps.changes.outputs.run != 'false'
