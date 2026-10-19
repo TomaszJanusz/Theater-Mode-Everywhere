@@ -35,7 +35,7 @@ test('sync-dev verify runs lint and typecheck read-only, cache-free, on the push
   assert.match(verify, /ref: dev\n\s+persist-credentials: false/);
   assert.doesNotMatch(verify, /ref: \$\{\{/);
   assert.match(verify, /git rev-parse HEAD/);
-  assert.doesNotMatch(verify, /^\s+cache:|actions\/cache|: write\b/m);
+  assert.doesNotMatch(verify, /actions\/cache|\n\s+cache:|: write\b/);
   assert.match(verify, /pnpm install --frozen-lockfile/);
   assert.match(verify, /pnpm lint/);
   assert.match(verify, /pnpm typecheck/);
@@ -47,7 +47,7 @@ test('sync-dev report only files issues for a failed verify and checks out nothi
   assert.match(report, /needs: \[merge, verify\]/);
   assert.match(report, /if: always\(\) && needs\.verify\.result == 'failure'/);
   assert.match(report, /permissions:\n\s+issues: write\n(?!\s+\w+: )/);
-  assert.doesNotMatch(report, /actions\/checkout|setup-node|pnpm\/action-setup|^\s+run: pnpm|contents:/m);
+  assert.doesNotMatch(report, /actions\/checkout|setup-node|pnpm\/action-setup|\n\s+run: pnpm|contents:/);
   assert.match(report, /ISSUE_TITLE: dev ← main sync broke lint\/typecheck/);
   assert.match(report, /gh issue list --state open/);
   assert.match(report, /git switch dev && git pull && pnpm install --frozen-lockfile && pnpm lint && pnpm typecheck/);
