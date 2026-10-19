@@ -3,6 +3,7 @@
   "name": "__MSG_extensionName__",
   "version": "2.0.2",
   "default_locale": "en",
+  "minimum_chrome_version": "114",
   "author": "projects@tomaszjanusz.dev",
   "description": "__MSG_extensionDescription__",
   "permissions": [
