@@ -297,12 +297,13 @@ describe('playback HUD browser regressions', () => {
           contentType: 'text/html',
           body: FIXTURE
         }));
+        // Own fixture, runtime and click-disambiguation timers from startup.
+        await page.clock.install();
         await page.goto('http://playback-hud.test/');
         await boot(page);
         const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
 
         // A popover left earlier must not turn a later, unrelated click into a no-op.
-        await page.clock.install();
         await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
         await page.clock.runFor(1100);
         await page.locator('video').click({ position: { x: 120, y: 80 } });

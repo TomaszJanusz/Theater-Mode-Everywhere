@@ -282,11 +282,17 @@ for (const engineName of ['chromium', 'firefox'] as const) {
     it('leaves no stale transform after rapid successive updates', async () => {
       await withBar(async (page) => {
         await page.evaluate(`window.paint('0:30', '-0:21', false)`);
-        await page.evaluate(`(async () => {
+        await page.evaluate(`(() => {
+          const root = document.querySelector('#theater-everywhere-ui').shadowRoot;
           for (let second = 31; second <= 45; second += 1) {
             window.paint('0:' + second, '-0:21', true);
-            await new Promise((resolve) => setTimeout(resolve, 70));
+            // Interrupt native rolls at a controlled point, independent of runner speed.
+            for (const animation of root.getAnimations()) {
+              animation.pause();
+              animation.currentTime = Number(animation.currentTime) + 70;
+            }
           }
+          for (const animation of root.getAnimations()) animation.play();
         })()`);
         await page.waitForFunction(`!document.querySelector('#theater-everywhere-ui').shadowRoot
           .querySelector('.is-rolling, .is-entering, .is-leaving')`);

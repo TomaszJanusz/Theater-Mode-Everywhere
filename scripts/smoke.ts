@@ -70,6 +70,9 @@ function requireBuiltExtension(kind: SmokeBrowser): string {
   return dir;
 }
 
+// Remaining callers cover installed-world debounce/idle deadlines and negative
+// blacklist checks without an initialization acknowledgement. Keep readiness
+// waits observable instead of adding callers here.
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -217,7 +220,7 @@ async function assertTheaterToggle(page: Page): Promise<void> {
     return Boolean(video?.paused);
   });
   await page.keyboard.press('Space');
-  await delay(400);
+  await page.waitForFunction(before => document.querySelector<HTMLVideoElement>('video#player')!.paused !== before, pausedBefore);
   const pausedAfter = await page.evaluate(() => {
     const video = document.querySelector('video#player') as HTMLVideoElement | null;
     return Boolean(video?.paused);
@@ -228,7 +231,7 @@ async function assertTheaterToggle(page: Page): Promise<void> {
   }
   if (!pausedAfter) {
     await page.keyboard.press('Space');
-    await delay(200);
+    await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video#player')!.paused);
   }
 
   await page.keyboard.press('t');
@@ -1133,11 +1136,14 @@ async function assertRteSettings(context: BrowserContext): Promise<void> {
     const ring = () => netflix.evaluate(el => ({ opacity: getComputedStyle(el, '::before').opacity, playState: getComputedStyle(el, '::before').animationPlayState }));
     if ((await ring()).opacity !== '0') fail('A resting RTE tile shows brand colors.');
     await netflix.hover();
-    await page.waitForTimeout(250);
+    await page.waitForFunction(() => {
+      const tile = document.querySelector('[data-provider="netflix"]')!;
+      return Number(getComputedStyle(tile, '::before').opacity) > 0;
+    });
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-1.png') });
-    await page.waitForTimeout(450);
+    await settle();
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-hover-2.png') });
-    await settle(); // the boost transition; the steady orbit itself never finishes
+    // The boost transition has settled; the steady orbit itself never finishes.
     if ((await ring()).playState !== 'running' || (await ring()).opacity !== '1') fail('The RTE tile stopped showing its orbiting colors while hovered.');
     if (captureDir) await netflix.screenshot({ path: path.join(captureDir, 'tme60-dwell.png') });
     await page.mouse.move(2, 2);
@@ -1657,7 +1663,7 @@ async function injectBundledPlayer(page: Page, unpackedDir: string): Promise<voi
     // Content scripts have their own global scope; preserve it in the injected fallback.
     await page.addScriptTag({ content: isModule ? source : `(() => {\n${source}\n})();`, type: isModule ? 'module' : undefined });
   }
-  await delay(400);
+  await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
 }
 
 async function extensionWorker(context: BrowserContext) {
@@ -1806,7 +1812,7 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
 
   await delay(400);
   await frame.locator('video#player').click({ timeout: 15_000 });
-  await delay(200);
+  await page.waitForFunction(() => document.activeElement === document.getElementById('child'));
   await frame.locator('body').press('t');
   await page.waitForFunction((videoClass) => {
     const iframe = document.querySelector('#child');
@@ -1818,7 +1824,7 @@ async function assertIframeHandshake(page: Page, origin: string): Promise<void> 
       || childDoc?.documentElement.classList.contains('theater-everywhere-html-active')
     );
   }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
-  await delay(400);
+  await frame.locator('.theater-controls-wrapper').waitFor();
   await frame.locator('body').press('Escape');
   await page.waitForFunction((videoClass) => {
     const iframe = document.querySelector('#child');
@@ -2569,12 +2575,12 @@ async function tryFirefoxSideload(origin: string): Promise<boolean> {
     await waitForPlayer(page);
     await page.click('video#player');
     await page.keyboard.press('t');
-    await delay(1500);
+    await page.waitForFunction(videoClass => document.querySelector('video#player')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 1500 });
     const entered = await theaterEntered(page);
     if (!entered) return false;
     sideloadVerified = true;
     await page.keyboard.press('Escape');
-    await delay(500);
+    await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
     await assertControlsPin(page);
     console.log('smoke:firefox passed (sideloaded MV3 xpi)');
     return true;

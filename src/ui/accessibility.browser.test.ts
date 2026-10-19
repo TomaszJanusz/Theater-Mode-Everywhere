@@ -112,7 +112,8 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
             'outlineOffset', 'transitionDuration'].map(key => [key, css[key as keyof CSSStyleDeclaration]]));
         });
         for (const mode of ['normal', 'high', 'reduced', 'rtl', 'forced'] as const) {
-          for (const page of [settings, player]) {
+          // The dialogs have separate page contexts; set up their states together.
+          await Promise.all([settings, player].map(async page => {
             await page.emulateMedia({ forcedColors: mode === 'forced' ? 'active' : 'none' });
             await page.evaluate(mode => {
               const root = document.getElementById('theater-everywhere-ui') ?? document.documentElement;
@@ -121,22 +122,22 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
               root.dataset.motion = mode === 'reduced' ? 'reduced' : 'normal';
               root.dir = mode === 'rtl' ? 'rtl' : 'ltr';
             }, mode);
-          }
+          }));
           for (const state of ['rest', 'hover', 'focus'] as const) {
-            for (let i = 0; i < buttons.length; i++) {
+            await Promise.all(buttons.map(async (button, i) => {
               const page = [settings, player][i];
               await page.mouse.move(0, 0);
-              await buttons[i].evaluate(el => (el as HTMLElement).blur());
-              if (state === 'hover') await buttons[i].hover();
+              await button.evaluate(el => (el as HTMLElement).blur());
+              if (state === 'hover') await button.hover();
               if (state === 'focus') {
                 await page.keyboard.press('Tab');
-                await buttons[i].focus();
+                await button.focus();
               }
               // Wait for observable transition completion before sampling the final colors.
-              await buttons[i].evaluate(async el => {
+              await button.evaluate(async el => {
                 await Promise.all(el.getAnimations().map(animation => animation.finished));
               });
-            }
+            }));
             const [pageStyle, shadowStyle] = await Promise.all(buttons.map(style));
             assert.deepEqual(pageStyle, shadowStyle, `${mode}: ${state}`);
             assert.equal(pageStyle.width, '32px');
@@ -308,16 +309,18 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox })) {
         await page.keyboard.press('ArrowRight');
         await page.waitForFunction(() => (document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent ?? '') !== '');
         const first = await text();
-        const sequence = await page.evaluate(async () => {
+        const sequence = await page.evaluate(() => new Promise<string[]>(resolve => {
           const status = document.querySelector('#theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!;
           const seen: string[] = [];
-          const observer = new MutationObserver(() => seen.push(status.textContent ?? ''));
+          const observer = new MutationObserver(() => {
+            seen.push(status.textContent ?? '');
+            if (!status.textContent) return;
+            observer.disconnect();
+            resolve(seen);
+          });
           observer.observe(status, { childList: true, subtree: true, characterData: true });
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }));
-          await new Promise(resolve => setTimeout(resolve, 200));
-          observer.disconnect();
-          return seen;
-        });
+        }));
         assert.equal(sequence[0], '', 'the region is cleared before the repeated message');
         assert.equal(sequence.at(-1), first, 'the latest message is restored afterwards');
       });

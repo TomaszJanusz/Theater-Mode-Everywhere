@@ -123,6 +123,7 @@ const SAMPLER = `(${(() => {
       width: el.getBoundingClientRect().width
     });
   }, 40);
+  Object.assign(window, { plateSamples: samples });
   (window as unknown as { stopSamples: () => typeof samples }).stopSamples = () => { clearInterval(timer); return samples; };
 }).toString()})()`;
 
@@ -148,7 +149,14 @@ for (const engine of ['chromium', 'firefox'] as const) {
         const deadline = performance.now() + 2200;
         window.noticeHide = window.NoticeTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, deadline - performance.now()));
       });
-      await page.waitForTimeout(2900);
+      // Zero is the final displayed second; the ring's completed exit is the
+      // positive signal that sampling covered both the countdown and its fade.
+      await page.waitForFunction(() => {
+        const notice = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice')!;
+        return notice.querySelector('.theater-time-glyph:not(.is-leaving)')?.textContent === '0'
+          && !notice.querySelector('.caption-hud-spinner')
+          && (window as unknown as { plateSamples: unknown[] }).plateSamples.length > 40;
+      });
       const samples = await page.evaluate(() => (window as unknown as { stopSamples(): Array<Record<string, number | string>> }).stopSamples());
       assert.ok(samples.length > 40, 'sampled across the whole countdown');
       for (const s of samples) {

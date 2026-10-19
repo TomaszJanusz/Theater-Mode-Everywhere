@@ -1,12 +1,10 @@
 {
   "options/rte-settings.browser.test.ts": {
-    "waitForTimeout": 1,
     "frame": 1
   },
   "scripts/smoke.ts": {
-    "waitForTimeout": 2,
     "timer": 1,
-    "sleep": 20,
+    "sleep": 13,
     "frame": 6
   },
   "src/media-features/netflix-adapter.test.ts": {
@@ -43,12 +41,6 @@
   "src/test-utils/test-browser.test.ts": {
     "timer": 1
   },
-  "src/ui/accessibility.browser.test.ts": {
-    "timer": 1
-  },
-  "src/ui/auto-theater-notice.browser.test.ts": {
-    "waitForTimeout": 1
-  },
   "src/ui/caption-dock-lifecycle.browser.test.ts": {
     "frame": 1
   },
@@ -72,11 +64,7 @@
   "src/ui/spinner-exit.browser.test.ts": {
     "timer": 1
   },
-  "src/ui/time-readout.browser.test.ts": {
-    "timer": 1
-  },
   "src/ui/video-activator.browser.test.ts": {
-    "waitForTimeout": 4,
     "frame": 11
   },
   "src/ui/video-selection.browser.test.ts": {

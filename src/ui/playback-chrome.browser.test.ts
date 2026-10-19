@@ -317,6 +317,21 @@ describe('playback chrome updates', () => {
         const caption = root.querySelector<HTMLElement>('.theater-caption-overlay')!;
         const controls = root.querySelector<HTMLElement>('.theater-controls-wrapper')!;
         const bottom = Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom'));
+        // Arm in the same task as reveal, before any geometry wait can outlast
+        // the idle deadline. Pausing the fade keeps the midpoint observable.
+        Object.assign(window, { captionFade: new Promise((resolve, reject) => {
+          const observer = new MutationObserver(() => {
+            if (controls.classList.contains('visible')) return;
+            observer.disconnect();
+            const fade = controls.getAnimations().find(animation => animation instanceof CSSTransition && animation.transitionProperty === 'opacity');
+            if (!fade) { reject(new Error('controls must have an opacity transition')); return; }
+            fade.pause();
+            fade.currentTime = Number(fade.effect!.getTiming().duration) / 2;
+            resolve({ bottom: Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')),
+              opacity: Number(getComputedStyle(controls).opacity) });
+          });
+          observer.observe(controls, { attributes: true, attributeFilter: ['class'] });
+        }) });
         return { bottom, targetBottom: innerHeight - bottom, transition: caption.style.transition,
           controlsTop: innerHeight - Number.parseFloat(getComputedStyle(controls).bottom) - controls.offsetHeight };
       });
@@ -327,24 +342,6 @@ describe('playback chrome updates', () => {
         const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
         return root.querySelector('.theater-caption-overlay')!.getBoundingClientRect().bottom
           < root.querySelector('.theater-controls-wrapper')!.getBoundingClientRect().top;
-      });
-      // Capture the fade when it starts; a runner polling two frames later can
-      // miss the entire transition under Firefox or CPU contention.
-      await page.evaluate(() => {
-        const bar = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-controls-wrapper')!;
-        Object.assign(window, { captionFade: new Promise((resolve, reject) => {
-          const observer = new MutationObserver(() => {
-            if (bar.classList.contains('visible')) return;
-            observer.disconnect();
-            const fade = bar.getAnimations().find(animation => animation instanceof CSSTransition && animation.transitionProperty === 'opacity');
-            if (!fade) { reject(new Error('controls must have an opacity transition')); return; }
-            fade.pause();
-            fade.currentTime = Number(fade.effect!.getTiming().duration) / 2;
-            resolve({ bottom: Number.parseFloat(document.documentElement.style.getPropertyValue('--theater-caption-bottom')),
-              opacity: Number(getComputedStyle(bar).opacity) });
-          });
-          observer.observe(bar, { attributes: true, attributeFilter: ['class'] });
-        }) });
       });
       const fading = await page.evaluate<{ bottom: number; opacity: number }>('window.captionFade');
       assert.ok(fading.opacity > 0 && fading.opacity < 1, 'the assertion observes the middle of the fade');

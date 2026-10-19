@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -61,6 +62,20 @@ it('discovers new tests and tool/smoke code without scanning production or gener
     const found = inventory(directory);
     assert.deepEqual(Object.keys(found).sort(), included.sort());
     for (const counts of Object.values(found)) assert.deepEqual(counts, { waitForTimeout: 1 });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+it('allows a missing remote ref locally but rejects it in CI', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'determinism-no-remote-'));
+  const warning = t.mock.method(console, 'warn', () => {});
+  try {
+    execFileSync('git', ['init', '--quiet', directory]);
+    assertBaselineRatchet({}, directory, false);
+    assert.equal(warning.mock.callCount(), 1);
+    assert.match(String(warning.mock.calls[0].arguments[0]), /Skipping only the local history comparison/);
+    assert.throws(() => assertBaselineRatchet({}, directory, true), /requires origin\/main/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
