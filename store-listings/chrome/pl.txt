@@ -23,9 +23,9 @@ GŁÓWNE FUNKCJE
 
 GDZIE I JAK TO DZIAŁA
 - Uniwersalne wideo HTML5: działa ze standardowymi elementami wideo HTML5 w sieci, także z odtwarzaczami umieszczonymi w Shadow DOM.
-- Osadzone odtwarzacze: wykrywa i powiększa filmy osadzone w ramkach, takie jak odtwarzacze YouTube czy Vimeo.
+- Osadzone odtwarzacze: wykrywa i powiększa filmy osadzone w ramkach, takie jak odtwarzacze YouTube lub innych platform wideo.
 - Napisy HTML5: wyświetla standardowe ścieżki napisów HTML5 we własnej nakładce trybu kinowego, dzięki czemu możesz dostosować ich wygląd.
-- Integracje z platformami: poza wymienionymi na początku opisu RTE obsługuje też m.in. Vimeo (kolejki i nawigację w Showcase), Tencent Video (tytuły, napisy i rozdziały), Patreon (automatyczne wejście w tryb kinowy we wpisach z natywnym wideo) i Crunchyroll (tytuły, rozdziały intra i napisów końcowych, wybór napisów). Dostępne funkcje zależą od serwisu i wideo.
+- Integracje z platformami: poza wymienionymi na początku opisu RTE obsługuje też m.in. Patreon (automatyczne wejście w tryb kinowy we wpisach z natywnym wideo) i Crunchyroll (tytuły, rozdziały intra i napisów końcowych, wybór napisów), a także inne platformy wideo, w tym azjatyckie, z kolejkami odtwarzania, tytułami, napisami i rozdziałami. Dostępne funkcje zależą od serwisu i wideo.
 - Transmisje na żywo: rozpoznaje transmisje NA ŻYWO i, jeśli serwis udostępnia okno DVR, pozwala przewinąć nagranie i wrócić do bieżącego momentu.
 - Serwisy chronione DRM: niektóre platformy ograniczają dostęp do odtwarzacza, więc część funkcji, np. efekty audio, może być tam niedostępna.
 - Prywatność: Nie jesteś produktem. Rozszerzenie nie wysyła deweloperowi informacji o Tobie ani o tym, co oglądasz. Ustawienia mogą się synchronizować przez konto przeglądarki. Pełna polityka prywatności jest dostępna w Ustawieniach, w sekcji „O rozszerzeniu”.
