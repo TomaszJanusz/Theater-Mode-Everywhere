@@ -28,17 +28,19 @@ const SERVICE_PACKS: Record<string, string[]> = {
   ar: ['YouTube', 'Netflix', 'Twitch', 'Disney+']
 };
 
-// Every supported-service brand, normalized to the name used in SERVICE_PACKS.
+// Every supported-service brand with its transliterations, normalized to the
+// name used in SERVICE_PACKS. WeTV is detected on its own and belongs to no pack.
 const SERVICE_BRANDS: Array<[brand: string, pattern: RegExp]> = [
-  ['YouTube', /YouTube/i],
-  ['Twitch', /Twitch/i],
-  ['Netflix', /Netflix/i],
-  ['Disney+', /Disney/i],
-  ['Crunchyroll', /Crunchyroll/i],
-  ['Vimeo', /Vimeo/i],
-  ['Patreon', /Patreon/i],
-  ['Bilibili', /Bilibili/i],
-  ['腾讯视频', /腾讯视频|Tencent|WeTV/i]
+  ['YouTube', /YouTube|يوتيوب|ユーチューブ|유튜브|Ютуб|Ютюб/i],
+  ['Twitch', /Twitch|تويتش|ツイッチ|트위치|Твитч|Твіч/i],
+  ['Netflix', /Netflix|نتفليكس|ネットフリックス|넷플릭스|Нетфликс|Нетфлікс/i],
+  ['Disney+', /Disney|ديزني|ディズニー|디즈니|Дисней|Дісней/i],
+  ['Crunchyroll', /Crunchyroll|كرانشي ?رول|クランチロール|크런치롤|Кранчиролл|Кранчіролл/i],
+  ['Vimeo', /Vimeo|فيميو|ビメオ|비메오|Вимео|Вімео/i],
+  ['Patreon', /Patreon|باتريون|パトレオン|패트리온|Патреон/i],
+  ['Bilibili', /Bilibili|بيلي ?بيلي|ビリビリ|빌리빌리|Билибили|Білібілі|哔哩哔哩/i],
+  ['腾讯视频', /腾讯|Tencent|腾訊/i],
+  ['WeTV', /WeTV/i]
 ];
 
 function listingLocales(root: string, extension: string): string[] {
@@ -129,6 +131,12 @@ describe('store listings', () => {
 
   it('names exactly the regional pack of four services in every Chrome description', () => {
     assert.deepEqual(Object.keys(SERVICE_PACKS).sort(), locales);
+    assert.equal(locales.length, 13);
+    for (const [locale, pack] of Object.entries(SERVICE_PACKS)) {
+      assert.equal(new Set(pack).size, 4, `${locale}: pack must hold exactly 4 unique services`);
+      assert.ok(pack.includes('YouTube'), `${locale}: pack must include YouTube`);
+      assert.ok(!pack.includes('WeTV'), `${locale}: WeTV belongs to no pack`);
+    }
     for (const locale of locales) {
       const text = readChromeLong(locale);
       const found = SERVICE_BRANDS.filter(([, pattern]) => pattern.test(text)).map(([brand]) => brand);
