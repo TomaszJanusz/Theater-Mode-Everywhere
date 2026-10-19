@@ -68,11 +68,7 @@ export async function assertShortcutManagement(page: Page, context: BrowserConte
       // Live custom entry keys replace their defaults without a reload.
       await options.waitForSelector('.options-body[aria-busy="false"]');
       await options.locator('#shortcut-toggle-fullscreen').press('g');
-      await options.waitForSelector('.options-body[aria-busy="false"]');
-      await options.locator('#shortcut-toggle').press('Shift+T');
-      await dialog.locator('.te-dialog-btn-primary').click(); // Move from Cycle video.
-      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggle === 'Shift+T');
-      await page.waitForFunction(() => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"fullscreen":"G"') && document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"toggle":"Shift+T"'));
+      await page.waitForFunction(() => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"fullscreen":"G"'));
       await page.bringToFront();
       await page.locator('video#player').click();
       await page.keyboard.press('f');
@@ -87,7 +83,16 @@ export async function assertShortcutManagement(page: Page, context: BrowserConte
       await page.waitForFunction(() => !document.fullscreenElement);
       await page.keyboard.press('Escape');
       await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
-      await delay(250); // Existing theater-entry debounce.
+      // Start a fresh document, then prove the custom theater key propagates live.
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await waitForPlayer(page);
+      await options.waitForSelector('.options-body[aria-busy="false"]');
+      await options.locator('#shortcut-toggle').press('Shift+T');
+      await dialog.locator('.te-dialog-btn-primary').click(); // Move from Cycle video.
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.toggle === 'Shift+T');
+      await page.waitForFunction(() => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"fullscreen":"G"') && document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes('"toggle":"Shift+T"'));
+      await page.bringToFront();
+      await page.locator('video#player').click();
       await page.keyboard.press('Shift+T');
       try { await page.locator('.theater-controls-wrapper').waitFor(); } catch (error) {
         console.error('Custom theater diagnostics', await page.evaluate(() => ({ config: document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts'), classes: document.documentElement.className, active: document.activeElement?.outerHTML, hostKeys: window.hostEntryKeys })));
@@ -201,7 +206,7 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
         && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
     }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
 
-    await delay(400);
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await frame.locator('video#player').click({ timeout: 15_000 });
     await page.waitForFunction(() => document.activeElement === document.getElementById('child'));
     await frame.locator('body').press('t');
@@ -226,7 +231,7 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
         && !childDoc?.documentElement.classList.contains('theater-everywhere-html-active');
     }, THEATER_VIDEO_CLASS, { timeout: 10_000 });
     // A frame that reloads while the page is in theater drops its session; the page must not stay pinned around it.
-    await delay(400);
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await frame.locator('video#player').click({ timeout: 15_000 });
     await frame.locator('body').press('t');
     await page.waitForFunction(videoClass => document.getElementById('child')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 10_000 });

@@ -4,7 +4,7 @@
   },
   "scripts/smoke.ts": {
     "timer": 1,
-    "sleep": 6,
+    "sleep": 3,
     "frame": 1
   },
   "src/media-features/netflix-adapter.test.ts": {

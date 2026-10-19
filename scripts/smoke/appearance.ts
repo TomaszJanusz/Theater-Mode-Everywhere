@@ -41,6 +41,9 @@ export async function assertAppearanceModes(context: BrowserContext, origin: str
       // A new shadow root must hydrate both saved settings.
       await player.keyboard.press('Escape');
       await player.locator('#theater-everywhere-ui').waitFor({ state: 'detached' });
+      // Detachment does not release the previous entry's private repeat guard.
+      await player.goto(origin, { waitUntil: 'domcontentloaded' });
+      await waitForPlayer(player);
       await player.keyboard.press('t');
       await waitModes('high', 'reduced');
       const captureDir = process.env.THEATER_APPEARANCE_SCREENSHOT_DIR;
