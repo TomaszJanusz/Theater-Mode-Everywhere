@@ -1,3 +1,4 @@
+import { createSvgIcon } from '../src/ui/svg-icon';
 import { saveAutoTheaterEnabled } from '../src/ui/auto-theater-settings';
 import { setupAppearanceChoices } from './appearance-choices';
 import { observeDocumentAppearance } from '../src/appearance-runtime';
@@ -276,7 +277,7 @@ async function init() {
       blacklist.sort();
 
       countBadge.textContent = String(blacklist.length);
-      container.innerHTML = '';
+      container.replaceChildren();
       localizeBlacklist();
 
       if (blacklist.length === 0) {
@@ -284,13 +285,13 @@ async function init() {
         const emptyState = document.createElement('div');
         emptyState.className = 'empty-state';
         emptyState.setAttribute('role', 'listitem');
-        emptyState.innerHTML = `
+        emptyState.append(createSvgIcon(`
           <svg aria-hidden="true" class="empty-state-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
-        `;
+        `));
         const emptyTitle = document.createElement('h3');
         emptyTitle.dataset.i18n = 'noExclusionsYet';
         emptyTitle.textContent = t('noExclusionsYet');
@@ -318,12 +319,12 @@ async function init() {
         deleteBtn.dataset.i18nTitle = 'removeExclusion';
         deleteBtn.title = t('removeExclusion');
         deleteBtn.setAttribute('aria-label', `${t('removeExclusion')}: ${domain}`);
-        deleteBtn.innerHTML = `
+        deleteBtn.append(createSvgIcon(`
           <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
-        `;
+        `));
         deleteBtn.addEventListener('click', () => removeDomain(domain));
 
         item.appendChild(domainSpan);

@@ -1,0 +1,70 @@
+diff --git a/dist/dom.js b/dist/dom.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..012a7d29b25978b47b0ad6b29f21d1eebd6fe03f
+--- /dev/null
++++ b/dist/dom.js
+@@ -0,0 +1,20 @@
++// Only for this package's generated templates: assets, enum options and resolved numbers.
++// Never use this renderer with page, network, storage or localized copy.
++export function replaceTemplate(target, markup) {
++    const owner = target.ownerDocument;
++    const parsed = new DOMParser().parseFromString(markup, "text/html");
++    const copy = (source) => {
++        if (source.nodeType === 3) return owner.createTextNode(source.textContent ?? "");
++        if (source.nodeType !== 1) return owner.createTextNode("");
++        const element = owner.createElementNS(source.namespaceURI, source.localName);
++        for (const attribute of source.attributes) {
++            // HTML parsing leaves some prefixed SVG asset attributes unnamespaced.
++            if (attribute.namespaceURI) element.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
++            else element.setAttribute(attribute.name, attribute.value);
++        }
++        for (const child of source.childNodes) element.appendChild(copy(child));
++        return element;
++    };
++    // The stylesheet is parsed into head; preserve its position ahead of the logo.
++    target.replaceChildren(...[...parsed.head.childNodes, ...parsed.body.childNodes].map(copy));
++}
+diff --git a/dist/privacy-thing-logo.js b/dist/privacy-thing-logo.js
+index 9fad22a76cc8ebe5f7e816287f0bf65ca2d24039..abf9919d7368452d65b2706c199992773caa9498 100644
+--- a/dist/privacy-thing-logo.js
++++ b/dist/privacy-thing-logo.js
+@@ -1,3 +1,4 @@
++import { replaceTemplate } from "./dom.js";
+ import { renderStaticLogo, BRAND_STYLES } from "./template.js";
+ import { ThingController } from "./thing-controller.js";
+ import { BRAND_THING_DEFAULT_LOOK_AROUND_DIRECTIONS, BRAND_THING_DIRECTION_POSES, BRAND_THING_HOVER_REACTIONS, BRAND_THING_POSES, BRAND_THING_TAP_REACTIONS, PRIVACY_THING_LOGO_TAG, PRIVACY_THING_LOGO_VARIANTS, } from "./types.js";
+@@ -198,14 +199,14 @@ const createElementClass = () => class PrivacyThingLogoElementImpl extends HTMLE
+         const cursorAnimated = this.animateCursor && (!animatedComposite || this.pose !== "zz") && !this.reduceMotion;
+         const style = `<style>${BRAND_STYLES}</style>`;
+         if (variant === "thing") {
+-            this.#shadow.innerHTML = `${style}<span class="pt-brand-root" data-variant="thing"><span class="pt-brand-thing-mount"></span></span>`;
++            replaceTemplate(this.#shadow, `${style}<span class="pt-brand-root" data-variant="thing"><span class="pt-brand-thing-mount"></span></span>`);
+             const mount = this.#shadow.querySelector(".pt-brand-thing-mount");
+             if (mount)
+                 this.#thingController = new ThingController(mount, this.#thingOptions());
+             return;
+         }
+         const base = renderStaticLogo(variant);
+-        this.#shadow.innerHTML = `${style}<span class="pt-brand-root" data-variant="${variant}" data-cursor-animated="${cursorAnimated}" data-animated-icon="${animatedComposite}"><span class="pt-brand-base" part="base">${base}</span>${animatedComposite ? '<span class="pt-brand-thing-layer" part="thing"><span class="pt-brand-thing-mount"></span></span>' : ""}</span>`;
++        replaceTemplate(this.#shadow, `${style}<span class="pt-brand-root" data-variant="${variant}" data-cursor-animated="${cursorAnimated}" data-animated-icon="${animatedComposite}"><span class="pt-brand-base" part="base">${base}</span>${animatedComposite ? '<span class="pt-brand-thing-layer" part="thing"><span class="pt-brand-thing-mount"></span></span>' : ""}</span>`);
+         const mount = this.#shadow.querySelector(".pt-brand-thing-mount");
+         if (mount)
+             this.#thingController = new ThingController(mount, this.#thingOptions(true));
+diff --git a/dist/thing-controller.js b/dist/thing-controller.js
+index fc75033a2a4fe179b5b19a72882cfe106a71d6ab..e69b5cb046dc05b9ace6ddfed07bdcd7bcd76b61 100644
+--- a/dist/thing-controller.js
++++ b/dist/thing-controller.js
+@@ -1,3 +1,4 @@
++import { replaceTemplate } from "./dom.js";
+ import { GAZE_POSES, HEAD_BASE, HOVER_REACTION_DIRECTION_VECTORS, createBoopHeadPath, } from "./geometry.js";
+ import { ThingPointerTracker, resolveThingPointerDirection, } from "./pointer.js";
+ import { renderThingMarkup } from "./template.js";
+@@ -88,7 +89,7 @@ export class ThingController {
+     }
+     #render() {
+         this.#teardownRuntime();
+-        this.#host.innerHTML = renderThingMarkup(this.#options);
++        replaceTemplate(this.#host, renderThingMarkup(this.#options));
+         this.#root = this.#host.querySelector(".pt-brand-thing");
+         if (!this.#root)
+             return;

@@ -1,3 +1,4 @@
+import { createSvgIcon } from './svg-icon';
 import {
   CAPTION_DOCK_RAISED_CENTER_GAP,
   CAPTION_DOCK_RAISED_EDGE,
@@ -483,12 +484,10 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
   }
 
   function setIcon(el: HTMLElement, svgStr: string): void {
-    el.textContent = '';
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgStr.trim(), 'image/svg+xml');
-    doc.documentElement.setAttribute('aria-hidden', 'true');
-    doc.documentElement.setAttribute('focusable', 'false');
-    el.appendChild(doc.documentElement);
+    const icon = createSvgIcon(svgStr);
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+    el.replaceChildren(icon);
   }
 
   return {
