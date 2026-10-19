@@ -2,12 +2,12 @@ O Theater Mode Everywhere amplia os players HTML5 para preencher toda a janela d
 
 Assista a tutoriais, transmissões, vídeos e clipes curtos com controles de reprodução personalizados. Use legendas, atalhos de teclado, ajuste do vídeo, efeitos de áudio e controles de volume, além de recursos adicionais nas plataformas compatíveis.
 
-O recurso opcional Rich Theater Experience adiciona integrações mais profundas com YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV e Crunchyroll. Dependendo do serviço, a extensão pode exibir títulos, legendas, capítulos, miniaturas de pré-visualização, botões de pular, navegação para o próximo episódio e informações adicionais na linha do tempo. O recurso ainda é experimental, então suas capacidades variam entre as plataformas.
+O recurso opcional Rich Theater Experience adiciona integrações mais profundas com plataformas de vídeo como YouTube, Vimeo, Patreon e Twitch, serviços de streaming como Netflix, Disney+ e Crunchyroll, e com o Bilibili (tanto a versão chinesa quanto a internacional) e o Tencent Video / WeTV. Dependendo do serviço, a extensão pode exibir títulos, legendas, capítulos, miniaturas de pré-visualização, botões de pular, navegação para o próximo episódio e informações adicionais na linha do tempo. O recurso ainda é experimental, então suas capacidades variam entre as plataformas.
 
 PRINCIPAIS RECURSOS
 - Modo imersivo com uma tecla: pressione `T` para ampliar instantaneamente o vídeo ativo para o tamanho do navegador. Pressione de novo ou `Escape` para voltar. Se houver vários vídeos na página, use `Shift+T` para alternar entre eles. Clique duas vezes na imagem para entrar ou sair da tela cheia sem sair do modo teatro.
 - Melhor suporte a legendas: selecione uma faixa diretamente no modo cinema, ative e desative as legendas com a tecla `C` e ajuste fonte, tamanho, cor, sombra, fundo e opacidade. A extensão lembra seu idioma preferido separadamente para cada site.
-- Rich Theater Experience (experimental): ative integrações adicionais com serviços compatíveis, como YouTube, Netflix, Disney+, Crunchyroll e outros. Os recursos disponíveis dependem do serviço e podem ser gerenciados com um interruptor para cada serviço no pop-up da extensão ou nas configurações.
+- Rich Theater Experience (experimental): ative integrações adicionais com serviços compatíveis. Os recursos disponíveis dependem do serviço e podem ser gerenciados com um interruptor para cada serviço no pop-up da extensão ou nas configurações.
 - Chat ao lado da imagem: no Twitch e no YouTube com Rich Theater Experience, mantenha o chat ao vivo ou a reprise do chat ao lado do vídeo ou abaixo dele, e mostre ou oculte com `Alt+R`.
 - Uma linha do tempo mais rica: pule entre capítulos, veja miniaturas antes de avançar e confira os momentos mais reproduzidos do YouTube («Most Replayed»). Os marcadores do SponsorBlock instalado podem aparecer na linha do tempo do YouTube.
 - Botões de pular e próximos episódios: quando o serviço oferece, pule aberturas, créditos e resumos ou anúncios do YouTube, e vá para o vídeo ou episódio anterior ou seguinte.
@@ -25,7 +25,7 @@ ONDE E COMO FUNCIONA
 - Vídeo HTML5 universal: funciona com os elementos de vídeo HTML5 padrão da web, inclusive players colocados no Shadow DOM.
 - Players incorporados: detecta e amplia vídeos incorporados em frames, como os players do YouTube ou do Vimeo.
 - Legendas HTML5: exibe as faixas de legendas HTML5 padrão em uma sobreposição própria do modo cinema, para que você personalize a aparência.
-- Integrações com plataformas: a Rich Theater Experience pode adicionar títulos, legendas, capítulos, miniaturas de pré-visualização e mais no YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV e Crunchyroll. Os recursos disponíveis dependem do serviço e do vídeo.
+- Integrações com plataformas: a Rich Theater Experience pode adicionar títulos, legendas, capítulos, miniaturas de pré-visualização e mais nos serviços compatíveis descritos acima. Os recursos disponíveis dependem do serviço e do vídeo.
 - Transmissões ao vivo: reconhece transmissões AO VIVO e, se o serviço oferecer uma janela de DVR, permite voltar na gravação e retornar ao momento atual.
 - Serviços protegidos por DRM: algumas plataformas limitam o acesso ao player, então alguns recursos, como os efeitos de áudio, podem não estar disponíveis.
 - Privacidade: Você não é o produto. A extensão não envia ao desenvolvedor informações sobre você nem sobre o que você assiste. As configurações podem ser sincronizadas pela conta do navegador. A política de privacidade completa está em Configurações, em Sobre.
