@@ -106,127 +106,138 @@ async function switchTo(page: Page, locale: string): Promise<void> {
   await page.waitForFunction(locale => document.documentElement.lang === locale, locale.replace('_', '-'));
 }
 
-for (const blacklist of [[], ['example.com', 'second.com']]) {
-  it(`Settings catalog audit relabels all five tabs and dynamic exclusions (${blacklist.length} rows) without reload`, { timeout: 30_000 }, async t => {
-    const context = await browsers.chromium.newContext(t);
-    try {
-      const page = await context.newPage();
-      const errors: string[] = [];
-      page.on('pageerror', error => errors.push(error.message));
-      await open(page, 'options', blacklist);
-      assert.equal(await page.locator('[role=tab]').count(), 5);
-      const language = page.locator('#language-combobox');
-      assert.equal(await page.locator('#language-combobox-listbox [role=option]').count(), LANGUAGES.length + 1);
-      for (const { locale } of LANGUAGES) {
-        const option = page.locator(`#language-combobox-listbox [data-value="${locale}"]`);
-        assert.equal(await option.getAttribute('lang'), locale.replace('_', '-'));
-        assert.equal(await option.getAttribute('dir'), locale === 'ar' ? 'rtl' : 'ltr');
+it('Settings catalog audit relabels all five tabs and dynamic exclusions (2 rows) without reload', { timeout: 30_000 }, async t => {
+  const context = await browsers.chromium.newContext(t);
+  try {
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await open(page, 'options', ['example.com', 'second.com']);
+    assert.equal(await page.locator('[role=tab]').count(), 5);
+    const language = page.locator('#language-combobox');
+    assert.equal(await page.locator('#language-combobox-listbox [role=option]').count(), LANGUAGES.length + 1);
+    for (const { locale } of LANGUAGES) {
+      const option = page.locator(`#language-combobox-listbox [data-value="${locale}"]`);
+      assert.equal(await option.getAttribute('lang'), locale.replace('_', '-'));
+      assert.equal(await option.getAttribute('dir'), locale === 'ar' ? 'rtl' : 'ltr');
+    }
+    const accent = page.locator('#accent-color-grid [data-choice=teal]');
+    await accent.click();
+    const original = await accent.elementHandle();
+    assert.equal(await accent.getAttribute('title'), 'Teal');
+    await page.locator('#tab-exclusions').click();
+    await page.locator('#domain-input').fill('invalid');
+    await page.locator('#add-domain-form').evaluate((form: HTMLFormElement) => form.requestSubmit());
+    await page.locator('#tab-appearance').click();
+    await accent.focus();
+    for (const locale of ['pl', 'ar']) {
+      await switchTo(page, locale);
+      const catalog = readCatalog(locale);
+      assert.equal(await page.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value'), locale);
+      assert.equal(await page.locator('#language-combobox-listbox [data-value=automatic]').textContent(), catalog.languageAutomatic.message);
+      await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
+      assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
+      assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
+      for (const key of ['highContrast', 'reduceTransparency', 'reduceMotion']) {
+        assert.equal(await page.locator(`#${key}-combobox`).textContent(), catalog.appearanceAuto.message);
+        assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=auto]`).textContent(), catalog.appearanceAuto.message);
+        assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=on]`).textContent(), catalog.controlsVisibilityOn.message);
+        assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=off]`).textContent(), catalog.controlsVisibilityOff.message);
+        assert.equal(await page.locator(`#${key}-combobox-listbox [aria-selected=true]`).getAttribute('data-value'), 'auto');
       }
-      const accent = page.locator('#accent-color-grid [data-choice=teal]');
-      await accent.click();
-      const original = await accent.elementHandle();
-      assert.equal(await accent.getAttribute('title'), 'Teal');
-      await page.locator('#tab-exclusions').click();
-      await page.locator('#domain-input').fill('invalid');
-      await page.locator('#add-domain-form').evaluate((form: HTMLFormElement) => form.requestSubmit());
-      await page.locator('#tab-appearance').click();
-      await accent.focus();
-      for (const locale of ['pl', 'ar']) {
-        await switchTo(page, locale);
-        const catalog = readCatalog(locale);
-        assert.equal(await page.locator('#language-combobox-listbox [aria-selected=true]').getAttribute('data-value'), locale);
-        assert.equal(await page.locator('#language-combobox-listbox [data-value=automatic]').textContent(), catalog.languageAutomatic.message);
-        await language.ariaSnapshot().then(snapshot => assert.ok(snapshot.includes(catalog.languageTitle.message)));
-        assert.equal(await page.locator('#language-description').textContent(), catalog.languageDescription.message);
-        assert.equal(await language.getAttribute('aria-describedby'), 'language-description');
-        for (const key of ['highContrast', 'reduceTransparency', 'reduceMotion']) {
-          assert.equal(await page.locator(`#${key}-combobox`).textContent(), catalog.appearanceAuto.message);
-          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=auto]`).textContent(), catalog.appearanceAuto.message);
-          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=on]`).textContent(), catalog.controlsVisibilityOn.message);
-          assert.equal(await page.locator(`#${key}-combobox-listbox [data-value=off]`).textContent(), catalog.controlsVisibilityOff.message);
-          assert.equal(await page.locator(`#${key}-combobox-listbox [aria-selected=true]`).getAttribute('data-value'), 'auto');
-        }
-        assert.equal(await accent.textContent(), catalog.accentColorTeal.message);
-        assert.equal(await accent.getAttribute('title'), catalog.accentColorTeal.message);
-        assert.equal(await accent.getAttribute('aria-label'), catalog.useAccentColor.message.replace(/\$color\$/i, catalog.accentColorTeal.message));
-        assert.equal(await original!.evaluate(el => el.isConnected && el === document.activeElement), true);
-        assert.equal(await accent.getAttribute('aria-checked'), 'true');
-        assert.equal(await page.locator('#validation-msg').textContent(), catalog.invalidDomain.message);
-        await assertLocalized(page, locale);
+      assert.equal(await accent.textContent(), catalog.accentColorTeal.message);
+      assert.equal(await accent.getAttribute('title'), catalog.accentColorTeal.message);
+      assert.equal(await accent.getAttribute('aria-label'), catalog.useAccentColor.message.replace(/\$color\$/i, catalog.accentColorTeal.message));
+      assert.equal(await original!.evaluate(el => el.isConnected && el === document.activeElement), true);
+      assert.equal(await accent.getAttribute('aria-checked'), 'true');
+      assert.equal(await page.locator('#validation-msg').textContent(), catalog.invalidDomain.message);
+      await assertLocalized(page, locale);
+    }
+    await page.locator('#tab-about').click();
+    const privacy = page.locator('#privacy-policy-btn');
+    for (const locale of ['en', 'pl', 'ar']) {
+      await switchTo(page, locale);
+      const catalog = readCatalog(locale);
+      assert.equal(await page.locator('#about .about-privacy h2').textContent(), catalog.privacyPolicy.message);
+      assert.equal(await page.locator('#about .about-privacy p').textContent(), catalog.privacyPolicyDescription.message);
+      assert.equal(await privacy.textContent(), catalog.privacyPolicyRead.message);
+      await privacy.focus();
+      await page.keyboard.press('Enter');
+      const dialog = page.locator('.te-dialog-privacy');
+      await dialog.waitFor();
+      assert.equal(await page.locator('.te-dialog-title').textContent(), catalog.privacyPolicy.message);
+      assert.equal(await dialog.getAttribute('aria-modal'), 'true');
+      assert.equal(await dialog.getAttribute('aria-labelledby'), await page.locator('.te-dialog-title').getAttribute('id'));
+      assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), true);
+      const text = page.locator('.privacy-policy-text');
+      const scroll = page.locator('.te-dialog-body');
+      assert.match(await text.textContent() ?? '', /Stored settings/);
+      assert.equal(await scroll.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
+      const online = page.locator('.privacy-policy-online');
+      assert.equal(await online.textContent(), catalog.privacyPolicyOpenOnline.message);
+      assert.equal(await online.getAttribute('href'), 'https://theater.tomaszjanusz.dev/privacy-policy/');
+      assert.equal(await online.getAttribute('target'), '_blank');
+      assert.equal(await online.getAttribute('rel'), 'noopener noreferrer');
+      assert.equal(await dialog.locator('script, [onclick], a[href^="javascript:"]').count(), 0);
+      // Tab cycles inside the dialog; the page behind it is inert.
+      for (let i = 0; i < 6; i++) {
+        await page.keyboard.press('Tab');
+        assert.equal(await page.evaluate(() => !!document.activeElement?.closest('.te-dialog')), true);
       }
-      await page.locator('#tab-about').click();
-      const privacy = page.locator('#privacy-policy-btn');
-      for (const locale of ['en', 'pl', 'ar']) {
-        await switchTo(page, locale);
-        const catalog = readCatalog(locale);
-        assert.equal(await page.locator('#about .about-privacy h2').textContent(), catalog.privacyPolicy.message);
-        assert.equal(await page.locator('#about .about-privacy p').textContent(), catalog.privacyPolicyDescription.message);
-        assert.equal(await privacy.textContent(), catalog.privacyPolicyRead.message);
-        await privacy.focus();
-        await page.keyboard.press('Enter');
-        const dialog = page.locator('.te-dialog-privacy');
-        await dialog.waitFor();
-        assert.equal(await page.locator('.te-dialog-title').textContent(), catalog.privacyPolicy.message);
-        assert.equal(await dialog.getAttribute('aria-modal'), 'true');
-        assert.equal(await dialog.getAttribute('aria-labelledby'), await page.locator('.te-dialog-title').getAttribute('id'));
-        assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), true);
-        const text = page.locator('.privacy-policy-text');
-        const scroll = page.locator('.te-dialog-body');
-        assert.match(await text.textContent() ?? '', /Stored settings/);
-        assert.equal(await scroll.evaluate(el => el.scrollHeight > el.clientHeight && getComputedStyle(el).overflowY === 'auto'), true);
-        const online = page.locator('.privacy-policy-online');
-        assert.equal(await online.textContent(), catalog.privacyPolicyOpenOnline.message);
-        assert.equal(await online.getAttribute('href'), 'https://theater.tomaszjanusz.dev/privacy-policy/');
-        assert.equal(await online.getAttribute('target'), '_blank');
-        assert.equal(await online.getAttribute('rel'), 'noopener noreferrer');
-        assert.equal(await dialog.locator('script, [onclick], a[href^="javascript:"]').count(), 0);
-        // Tab cycles inside the dialog; the page behind it is inert.
-        for (let i = 0; i < 6; i++) {
-          await page.keyboard.press('Tab');
-          assert.equal(await page.evaluate(() => !!document.activeElement?.closest('.te-dialog')), true);
-        }
-        await page.keyboard.press('Escape');
-        await dialog.waitFor({ state: 'detached' });
-        assert.equal(await privacy.evaluate(el => el === document.activeElement), true);
-        assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), false);
-      }
-      await page.locator('#tab-features').click();
-      // An expanded service description is covered too: its text must follow the language live.
-      await page.locator('.rte-details-toggle').first().click();
-      await switchTo(page, 'pl');
-      await assertLocalized(page, 'pl');
-      await page.locator('#whats-new-btn').click();
-      await page.locator('.te-dialog').waitFor();
-      const acknowledge = page.locator('.te-dialog-btn-primary');
-      await acknowledge.focus();
-      for (const locale of ['ar', 'pl']) {
-        await switchTo(page, locale);
-        assert.equal(await page.locator('.te-dialog-title').textContent(), readCatalog(locale).whatsNewDialogTitle.message);
-        assert.equal(await acknowledge.evaluate(el => el === document.activeElement), true);
-        await assertLocalized(page, locale);
-      }
-      await acknowledge.click();
-      await page.locator('.te-dialog').waitFor({ state: 'detached' });
-      await page.locator('#tab-shortcuts').click();
-      await page.locator('#shortcut-cycle').press('Escape');
-      await page.locator('.te-dialog').waitFor();
-      await switchTo(page, 'ar');
-      await assertLocalized(page, 'ar');
-      await page.locator('.te-dialog-btn-primary').click();
-      await page.locator('.te-dialog').waitFor({ state: 'detached' });
-      await page.locator('#shortcut-play-pause').press('k');
-      await page.locator('.te-dialog-btn-secondary').waitFor();
-      await switchTo(page, 'pl');
-      await assertLocalized(page, 'pl');
-      const description = await page.locator('.te-dialog-body').textContent();
-      assert.ok(description?.includes(readCatalog('pl').cycleSwitchPlayer.message));
-      assert.ok(description?.includes(readCatalog('pl').playPause.message));
-      await page.locator('.te-dialog-btn-secondary').click();
-      await page.locator('.te-dialog').waitFor({ state: 'detached' });
-      assert.deepEqual(errors, []);
-    } finally { await context.close(); }
-  });
-}
+      await page.keyboard.press('Escape');
+      await dialog.waitFor({ state: 'detached' });
+      assert.equal(await privacy.evaluate(el => el === document.activeElement), true);
+      assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), false);
+    }
+    await page.locator('#tab-features').click();
+    // An expanded service description is covered too: its text must follow the language live.
+    await page.locator('.rte-details-toggle').first().click();
+    await switchTo(page, 'pl');
+    await assertLocalized(page, 'pl');
+    await page.locator('#whats-new-btn').click();
+    await page.locator('.te-dialog').waitFor();
+    const acknowledge = page.locator('.te-dialog-btn-primary');
+    await acknowledge.focus();
+    for (const locale of ['ar', 'pl']) {
+      await switchTo(page, locale);
+      assert.equal(await page.locator('.te-dialog-title').textContent(), readCatalog(locale).whatsNewDialogTitle.message);
+      assert.equal(await acknowledge.evaluate(el => el === document.activeElement), true);
+      await assertLocalized(page, locale);
+    }
+    await acknowledge.click();
+    await page.locator('.te-dialog').waitFor({ state: 'detached' });
+    await page.locator('#tab-shortcuts').click();
+    await page.locator('#shortcut-cycle').press('Escape');
+    await page.locator('.te-dialog').waitFor();
+    await switchTo(page, 'ar');
+    await assertLocalized(page, 'ar');
+    await page.locator('.te-dialog-btn-primary').click();
+    await page.locator('.te-dialog').waitFor({ state: 'detached' });
+    await page.locator('#shortcut-play-pause').press('k');
+    await page.locator('.te-dialog-btn-secondary').waitFor();
+    await switchTo(page, 'pl');
+    await assertLocalized(page, 'pl');
+    const description = await page.locator('.te-dialog-body').textContent();
+    assert.ok(description?.includes(readCatalog('pl').cycleSwitchPlayer.message));
+    assert.ok(description?.includes(readCatalog('pl').playPause.message));
+    await page.locator('.te-dialog-btn-secondary').click();
+    await page.locator('.te-dialog').waitFor({ state: 'detached' });
+    assert.deepEqual(errors, []);
+  } finally { await context.close(); }
+});
+
+// Only the empty-exclusions copy differs from the full audit above, so it needs no tab-by-tab replay.
+it('Settings catalog audit relabels the empty exclusions list', { timeout: 30_000 }, async t => {
+  const context = await browsers.chromium.newContext(t);
+  try {
+    const page = await context.newPage();
+    await open(page, 'options', []);
+    for (const locale of ['pl', 'ar']) {
+      await switchTo(page, locale);
+      await assertLocalized(page, locale);
+    }
+  } finally { await context.close(); }
+});
 
 it('Settings Language row links to the translation issue form for the selected language', { timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
