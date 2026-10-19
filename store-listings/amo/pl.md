@@ -11,7 +11,7 @@ Theater Mode Everywhere powiększa odtwarzacze HTML5 tak, by wypełniały całe 
 
 Oglądaj poradniki, transmisje, filmy i krótkie klipy z własnymi kontrolkami odtwarzania. Korzystaj z napisów, skrótów klawiszowych, dopasowania obrazu, efektów audio i regulacji głośności, a na obsługiwanych platformach także z dodatkowych funkcji.
 
-Rich Theater Experience (RTE) oferuje głębsze integracje z popularnymi serwisami internetowymi. Zapewnia lepsze doświadczenie na YouTube, Twitchu i Bilibili (zarówno w wersji chińskiej, jak i międzynarodowej) oraz w serwisach z filmami i serialami, takich jak Netflix i Disney+. W zależności od serwisu rozszerzenie może wyświetlać tytuły, napisy, rozdziały, miniatury podglądu, przyciski pomijania, nawigację do następnego odcinka oraz dodatkowe informacje na osi czasu. Możliwości różnią się między platformami. Pełna lista obsługiwanych serwisów znajduje się w ustawieniach rozszerzenia.
+Rich Theater Experience (RTE) oferuje głębsze integracje z popularnymi serwisami internetowymi. Na YouTube i Twitchu dodaje czat obok obrazu, na Netflix i Disney+ przyciski pomijania intra i nawigację do następnego odcinka, a na Bilibili (zarówno w wersji chińskiej, jak i międzynarodowej) tytuły, napisy i miniatury podglądu na osi czasu. W zależności od serwisu rozszerzenie może wyświetlać tytuły, napisy, rozdziały, miniatury podglądu, przyciski pomijania, nawigację do następnego odcinka oraz dodatkowe informacje na osi czasu. Możliwości różnią się między platformami. Pełna lista obsługiwanych serwisów znajduje się w ustawieniach rozszerzenia.
 
 GŁÓWNE FUNKCJE
 - Tryb immersyjny jednym klawiszem: naciśnij `T`, aby natychmiast powiększyć aktywne wideo do rozmiaru okna przeglądarki. Naciśnij ponownie lub `Escape`, aby wrócić. Jeśli na stronie jest kilka filmów, przełączaj je skrótem `Shift+T`. Kliknij obraz dwukrotnie, aby wejść do trybu pełnoekranowego lub z niego wyjść bez opuszczania trybu kinowego.
@@ -34,7 +34,7 @@ GDZIE I JAK TO DZIAŁA
 - Uniwersalne wideo HTML5: działa ze standardowymi elementami wideo HTML5 w sieci, także z odtwarzaczami umieszczonymi w Shadow DOM.
 - Osadzone odtwarzacze: wykrywa i powiększa filmy osadzone w ramkach, takie jak odtwarzacze YouTube czy Vimeo.
 - Napisy HTML5: wyświetla standardowe ścieżki napisów HTML5 we własnej nakładce trybu kinowego, dzięki czemu możesz dostosować ich wygląd.
-- Integracje z platformami: Rich Theater Experience może dodawać tytuły, napisy, rozdziały, miniatury podglądu i więcej w obsługiwanych serwisach. Poza wymienionymi na początku opisu obejmuje też m.in. Vimeo, Tencent Video, Patreon i Crunchyroll. Dostępne funkcje zależą od serwisu i wideo.
+- Integracje z platformami: poza wymienionymi na początku opisu RTE obsługuje też m.in. Vimeo (kolejki i nawigację w Showcase), Tencent Video (tytuły, napisy i rozdziały), Patreon (automatyczne wejście w tryb kinowy we wpisach z natywnym wideo) i Crunchyroll (tytuły, rozdziały intra i napisów końcowych, wybór napisów). Dostępne funkcje zależą od serwisu i wideo.
 - Transmisje na żywo: rozpoznaje transmisje NA ŻYWO i, jeśli serwis udostępnia okno DVR, pozwala przewinąć nagranie i wrócić do bieżącego momentu.
 - Serwisy chronione DRM: niektóre platformy ograniczają dostęp do odtwarzacza, więc część funkcji, np. efekty audio, może być tam niedostępna.
 - Prywatność: Nie jesteś produktem. Rozszerzenie nie wysyła deweloperowi informacji o Tobie ani o tym, co oglądasz. Ustawienia mogą się synchronizować przez konto przeglądarki. Pełna polityka prywatności jest dostępna w Ustawieniach, w sekcji „O rozszerzeniu”.
