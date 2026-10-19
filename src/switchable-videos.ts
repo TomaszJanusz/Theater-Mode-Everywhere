@@ -1,7 +1,7 @@
 import { mediaHasSource } from './host-play';
 import { isInactiveStandbyVideo, isProviderAuxiliaryVideo } from './providers/video-candidates';
 
-export { AUXILIARY_VIDEO_HOST_SELECTOR, isInactiveStandbyVideo } from './providers/video-candidates';
+export { AUXILIARY_VIDEO_HOST_SELECTOR, hasLeftPlaybackSurface, isInactiveStandbyVideo, isTransientVideo } from './providers/video-candidates';
 
 const MIN_SWITCHABLE_EDGE = 80;
 

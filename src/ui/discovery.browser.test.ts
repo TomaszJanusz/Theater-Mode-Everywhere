@@ -100,6 +100,18 @@ for (const engine of ['chromium', 'firefox'] as const) {
       });
     }
 
+    await t.test('previews and the miniplayer are never a fallback target', async () => {
+      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      await setup(page, '<div id="inline-preview-player"><video id="preview" style="left:0;top:0;width:300px;height:170px"></video></div>'
+        + '<ytd-miniplayer><video id="mini" style="left:600px;top:0;width:300px;height:170px"></video></ytd-miniplayer>'
+        + '<ytd-shorts><video id="short" style="left:900px;top:0;width:300px;height:170px"></video></ytd-shorts>');
+      // Shorts is the page's own player, so it remains the fallback.
+      assert.equal((await rank(page)).picked, 'short');
+      await page.evaluate(() => document.querySelector('ytd-shorts')!.remove());
+      assert.equal((await rank(page)).picked, null);
+      await page.close();
+    });
+
     await t.test('offscreen fallback caches layout area and retains playing/pointer priority', async () => {
       const page = await browser.newPage();
       await setup(page, Array.from({ length: 12 }, (_, i) => `<video id="v${i}" style="left:2000px;top:0;width:${100 + i * 10}px;height:100px;transform:scale(${12 - i})"></video>`).join(''));

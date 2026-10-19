@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On YouTube, theater no longer starts on a hover preview or the miniplayer, and leaves theater when you navigate away from the video instead of leaving the page broken.
 - The subtitle overlay now uses the full video width instead of half of it.
 - The seek circles now sit on the same horizontal line as the buffering spinner and volume indicator, centred on the picture, when the picture is not centred in the window.
 - With an audio effect or Volume Boost enabled, entering theater on a video whose server does not allow audio processing no longer makes the site's player stop with an "unavailable or not supported" error; playback continues and the audio option shows as unavailable.

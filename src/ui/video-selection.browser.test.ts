@@ -144,6 +144,44 @@ for (const engine of ['chromium', 'firefox'] as const) {
     assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);
   });
 
+  it(`${engine}: YouTube theater leaves a hidden watch page and moves to a visible replacement`, { timeout: 30_000 }, async t => {
+    const browser = await (await import('playwright'))[engine].launch({ headless: true });
+    ownTestBrowser(t, browser);
+    const openWatchPage = async (extra: string): Promise<Page> => {
+      const page = await browser.newPage();
+      await page.route('https://www.youtube.com/**', route => route.fulfill({
+        contentType: 'text/html',
+        body: '<style>video { display:block; width:640px; height:360px }</style>'
+          + '<ytd-watch-flexy><div id="movie_player" class="html5-video-player"><video id="watch" class="html5-main-video"></video></div></ytd-watch-flexy>'
+          + extra
+      }));
+      await page.goto('https://www.youtube.com/watch?v=aaaaaaaaaaa');
+      await page.evaluate(media => {
+        for (const video of document.querySelectorAll('video')) { video.muted = true; video.loop = true; video.src = media; }
+      }, MEDIA);
+      await page.waitForFunction(() => [...document.querySelectorAll('video')].every(video => video.readyState >= 2));
+      await boot(page);
+      await page.keyboard.press('t');
+      assert.equal(await selected(page), 'watch');
+      return page;
+    };
+    const hideWatchPage = (page: Page) => page.evaluate(() => document.querySelector('ytd-watch-flexy')!.setAttribute('hidden', ''));
+
+    // SPA navigation to Home hides the watch page while its video stays connected.
+    const home = await openWatchPage('');
+    await hideWatchPage(home);
+    await home.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+    assert.equal(await home.locator('video[data-theater-everywhere]').count(), 0);
+    assert.equal(await home.locator('.theater-everywhere-parent-active').count(), 0);
+    await home.close();
+
+    // With another playable video, theater follows it instead of exiting.
+    const other = await openWatchPage('<video id="other" style="position:absolute;top:2000px"></video>');
+    await hideWatchPage(other);
+    await other.waitForFunction(() => document.querySelector('video[data-theater-everywhere]')?.id === 'other');
+    await other.close();
+  });
+
   it(`${engine}: 100 mousemoves on a large page do no discovery or geometry reads`, { timeout: 30_000 }, async t => {
     const browser = await (await import('playwright'))[engine].launch({ headless: true });
     ownTestBrowser(t, browser);
