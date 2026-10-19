@@ -131,7 +131,10 @@
   border-radius: 0 !important;
 }
 
+/* A docked bar can sit over page content, not only the video, so its plate is opaque; the floating
+   bar keeps its glass. Reduced transparency and high contrast already resolve --appearance-surface. */
 .theater-controls-wrapper.pinned::before {
+  background-color: var(--appearance-surface, var(--bg-color, #09090b)) !important;
   border-radius: 0 !important;
   border-inline: none !important;
   border-bottom: none !important;
