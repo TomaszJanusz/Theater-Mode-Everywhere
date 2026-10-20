@@ -10,6 +10,7 @@ const CAPTION_REQUEST_ID_RE = /^te-nf-[a-z0-9-]{8,60}$/;
 const OFF_LABEL_RE = /^(?:off|none|wył\.?|wyl\.?|wyłączone|wylaczone|aus|desactivado|désactivé|desactive|spento|オフ|끄기|выкл\.?|вимк\.?|关闭|關)$/i;
 const SITE_TITLE_SUFFIX_RE = /\s*[|–—-]\s*(?:oficjalna witryna netflix|official (?:site|website)|site officiel|sitio oficial|sito ufficiale|offizielle webseite|netflix)$/i;
 const SITE_TITLE_PREFIX_RE = /^(?:oglądaj|ogladaj|watch|regarder|schauen|ver|mira|assistir|смотреть|дивіться|观看|視聴)\s*:\s*/i;
+const SUBTITLE_JOIN = ' · ';
 const GENERIC_TITLE_RE = /^(?:netflix|home|sign in|zaloguj się)$/i;
 
 export type NetflixTextTrack = {
@@ -316,10 +317,16 @@ export function readNetflixHeaderSubtitle(root: Pick<ParentNode, 'querySelector'
   if (!header) return null;
   const parts = Array.from(header.querySelectorAll(':scope > span'), (span) => sanitizeContentTitle(span.textContent))
     .filter((part): part is string => Boolean(part));
-  return sanitizeContentTitle(parts.join(' · '));
+  return sanitizeContentTitle(parts.join(SUBTITLE_JOIN));
 }
 
-/** The subtitle travels with the clip it was read for; a different video drops it. */
+/**
+ * The subtitle travels with the clip it was read for; a different video drops it.
+ * The header exists only while Netflix's own UI is shown, so a missing header is unknown,
+ * not empty: the cached text outranks the metadata episode title, which lacks the localized
+ * marker. A header that only repeats the tail of the cached text (marker not rendered yet)
+ * is a downgrade and does not replace it.
+ */
 export function resolveNetflixSubtitle(input: {
   videoId: string | null;
   previousVideoId: string | null;
@@ -327,11 +334,10 @@ export function resolveNetflixSubtitle(input: {
   headerSubtitle: unknown;
   episodeTitle: unknown;
 }): string | null {
+  const cached = input.videoId && input.videoId === input.previousVideoId ? input.previousSubtitle : null;
   const header = sanitizeContentTitle(input.headerSubtitle);
-  if (header) return header;
-  const episode = stripNetflixSiteTitle(input.episodeTitle);
-  if (episode) return episode;
-  return input.videoId && input.videoId === input.previousVideoId ? input.previousSubtitle : null;
+  if (header && !cached?.endsWith(`${SUBTITLE_JOIN}${header}`)) return header;
+  return cached || stripNetflixSiteTitle(input.episodeTitle);
 }
 
 export function resolveNetflixTitle(input: {
