@@ -73,6 +73,8 @@ portals, nested modal stacks, dependency injection or provider resolution.
 Extract rects-in/rect-out functions where tooltip/menu consumers actually need
 clamp/flip and logical alignment. Inputs include viewport, measured anchor/panel,
 direction and resolved safe insets; outputs contain placement/size constraints.
+Use the actual containing-block bounds: the current host keeps `contain: layout`
+and narrows for native chat. Do not replace that with window dimensions implicitly.
 Node tests cover viewport edges, oversized panels, RTL and supplied safe-area
 insets. DOM reads, CSS environment-inset resolution and writes stay in the binder;
 resize/scroll updates are event-driven and coalesced. Reuse existing launcher and

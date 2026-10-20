@@ -57,6 +57,12 @@ Layer abbreviations refer to [shadow.css](../src/ui/shadow.css) unless stated:
 `max` = 2147483647, `bar` = 2147483646, `menu` = 2000000000 → 2000000003
 when open. These are current values, not a proposed scale. Nested decorations
 also use -1/0/1; scrubber layers use 1–5. CSS positioning is not native anchoring.
+Fixed descendants resolve against the host containing block (`contain: layout`),
+which can narrow for chat; viewport descriptions below assume the normal full-size
+host. Host, page stage and floating launcher coordinates need their actual bounds.
+The concurrent `dev` clarification `704139e` in [top-layer.md](top-layer.md) confirms
+that internal UI z-index and host containment remain necessary; top-layer adoption
+alone does not make those declarations redundant.
 “No Escape” below means that surface does not independently own it; runtime may
 still cancel pending entry or exit theater. “DOM lifetime” means listeners attached
 to removed nodes, not a claim that all associated work is explicitly scoped.
