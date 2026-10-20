@@ -158,5 +158,9 @@ function supportsTokenBridge(doc: Document): boolean {
 export function readTwitchChatVisibility(root: HTMLElement): boolean | null {
   const shell = root.matches('.chat-shell') ? root : root.querySelector('.chat-shell');
   if (shell?.classList.contains('chat-shell__collapsed')) return false;
-  return readNativeChatVisibility(root);
+  const native = readNativeChatVisibility(root);
+  if (native !== null) return native;
+  // An expanded column can be a zero-width wrapper around a translated shell, so the shell itself
+  // is the evidence of an open chat. A collapsed one measures zero and stays unknown.
+  return shell && shell.getBoundingClientRect().width > 0 ? true : null;
 }
