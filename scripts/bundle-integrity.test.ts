@@ -42,6 +42,11 @@ describe('bundle integrity gate', () => {
     }
   });
 
+  it('accepts a wrapped bundle after banner comments and rejects unterminated ones without hanging', () => {
+    withScript('/* a */ /* b */\n(function(){})();', (filePath) => assert.doesNotThrow(() => assertScopedScript(filePath)));
+    withScript('/*' + '*//*'.repeat(50000), (filePath) => assert.throws(() => assertScopedScript(filePath), /IIFE/));
+  });
+
   it('accepts a classic IIFE', () => {
     withScript('(function(){ var x = 1; })();', (filePath) => {
       assert.doesNotThrow(() => assertSelfContainedScript(filePath));
