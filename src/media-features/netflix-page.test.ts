@@ -105,10 +105,33 @@ describe('netflix public player metadata', () => {
   it('keeps the subtitle with its clip and never leaves an empty one', () => {
     const base = { videoId: '1', previousVideoId: '1', previousSubtitle: 'O5 · Old', headerSubtitle: null, episodeTitle: null };
     assert.equal(resolveNetflixSubtitle({ ...base, headerSubtitle: 'O5 · Jawa czy sen?' }), 'O5 · Jawa czy sen?');
-    assert.equal(resolveNetflixSubtitle({ ...base, episodeTitle: 'Jawa czy sen?' }), 'Jawa czy sen?');
+    assert.equal(resolveNetflixSubtitle({ ...base, previousVideoId: '2', episodeTitle: 'Jawa czy sen?' }), 'Jawa czy sen?');
     assert.equal(resolveNetflixSubtitle(base), 'O5 · Old');
     assert.equal(resolveNetflixSubtitle({ ...base, previousVideoId: '2' }), null);
     assert.equal(resolveNetflixSubtitle({ ...base, headerSubtitle: '   ', previousSubtitle: null }), null);
+  });
+
+  it('keeps one subtitle while the host header comes and goes', () => {
+    const episodeTitle = 'Rozdział 2';
+    const full = 'O2 · Rozdział 2';
+    let previous: string | null = null;
+    const step = (headerSubtitle: string | null, videoId = '1', previousVideoId = '1') => {
+      previous = resolveNetflixSubtitle({ videoId, previousVideoId, previousSubtitle: previous, headerSubtitle, episodeTitle });
+      return previous;
+    };
+    // Metadata alone shows the episode title until the header supplies the marker.
+    assert.equal(step(null), episodeTitle);
+    assert.equal(step(full), full);
+    // Host UI hides: unknown, not empty, and metadata must not replace the marker.
+    assert.equal(step(null), full);
+    assert.equal(step(full), full);
+    // Re-added without the marker for a moment.
+    assert.equal(step(episodeTitle), full);
+    assert.equal(step(null), full);
+    assert.equal(step(full), full);
+    // A real change on the same video wins; so does a different video.
+    assert.equal(step('O2 · Rozdział 3'), 'O2 · Rozdział 3');
+    assert.equal(step(null, '2', '1'), episodeTitle);
   });
 
   it('publishes the subtitle only beside a title', () => {
