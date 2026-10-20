@@ -93,7 +93,6 @@ import {
   queryPlayerUiAll,
   PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
-import type { DisposableScope } from '../core/disposable-scope';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -2043,7 +2042,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const bindingScope = session.runtimeScope.child();
   // Hosts flip the watch surface to `hidden` for a frame while switching videos, so a lost
   // surface must persist before it ends the session. Owned by the binding; one recheck at a time.
-  let surfaceRecheck: DisposableScope | null = null;
+  let surfaceRecheck: typeof bindingScope | null = null;
   const cancelSurfaceRecheck = (): void => {
     surfaceRecheck?.dispose();
     surfaceRecheck = null;
