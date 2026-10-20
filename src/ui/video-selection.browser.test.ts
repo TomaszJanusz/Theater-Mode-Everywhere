@@ -191,11 +191,18 @@ for (const engine of testEngines()) {
         const video = document.querySelector('video')!; video.muted = true; video.loop = true; video.src = media;
       }, MEDIA);
       await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
-      await boot(page);
-      await page.keyboard.press('t');
-      assert.equal(await selected(page), 'watch');
+      // A paused clock makes every grace-period step exact; a running one also advances with real time under load.
       await page.clock.install();
+      await page.clock.pauseAt(new Date(Date.now() + 60_000));
+      await boot(page);
+      await toggle(page);
+      assert.equal(await selected(page), 'watch');
       return page;
+    };
+    // The toggle ignores presses for 200 ms; run that debounce on the fake clock so it never depends on real speed.
+    const toggle = async (page: Page): Promise<void> => {
+      await page.keyboard.press('t');
+      await page.clock.runFor(300);
     };
     const setHidden = (page: Page, hidden: boolean) => page.evaluate(hidden => document.querySelector('ytd-watch-flexy')!.toggleAttribute('hidden', hidden), hidden);
     const active = (page: Page) => page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
@@ -227,16 +234,14 @@ for (const engine of testEngines()) {
 
     // Leaving theater cancels a pending recheck: re-entering is not closed by the old timer.
     await setHidden(transient, false);
-    await transient.clock.runFor(300); // the toggle debounce runs on the fake clock too
-    await transient.keyboard.press('t');
+    await toggle(transient);
     assert.equal(await selected(transient), 'watch');
     await setHidden(transient, true);
     await transient.clock.runFor(300);
-    await transient.keyboard.press('t');
+    await toggle(transient);
     await transient.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
     await setHidden(transient, false);
-    await transient.clock.runFor(300);
-    await transient.keyboard.press('t');
+    await toggle(transient);
     assert.equal(await selected(transient), 'watch');
     await transient.clock.runFor(2000);
     assert.equal(await active(transient), true);
