@@ -33,6 +33,8 @@ const preview: Preview = {
     document.body.dataset.backdrop = String(globals.backdrop);
     setSyncStorage({ reduceMotion: globals.reduceMotion === 'off' ? 'off' : 'on' });
     await languageRuntime.set(globals.locale);
+    // The bundled Roboto loads lazily; layout that measures text (title marquee) must not run on fallback metrics.
+    await Promise.all(['400', '500', '600', '700'].map(weight => document.fonts.load(`${weight} 16px Roboto`)));
   }]
 };
 

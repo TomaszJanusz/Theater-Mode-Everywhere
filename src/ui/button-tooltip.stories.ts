@@ -36,7 +36,7 @@ const meta: Meta<Args> = {
     setSvgIcon(button, FULLSCREEN_ICON);
     tooltips.bind(button, () => t(tooltip, SHORTCUT_KEYS[tooltip]), undefined, place);
     return [button];
-  })
+  }, { liftBar: place === 'below' })
 };
 export default meta;
 

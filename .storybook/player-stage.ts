@@ -23,7 +23,7 @@ export { mountPlayerUi };
  * builds (`wrapper > row > left`). The previous story's root and listeners are torn down first,
  * as theater exit does.
  */
-export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[]): HTMLElement {
+export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[], options: { liftBar?: boolean } = {}): HTMLElement {
   scope?.dispose();
   destroyPlayerUi();
   scope = new DisposableScope();
@@ -38,6 +38,9 @@ export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[]
   left.append(...build(scope));
   row.append(left);
   wrapper.append(row);
+  // A tooltip below the bar needs room under it; flush with the viewport edge it would be clipped,
+  // and the clipped fractional edge rasterises differently from run to run.
+  if (options.liftBar) wrapper.style.setProperty('bottom', '96px', 'important');
   mountPlayerUi(wrapper);
   // Storybook mounts what a story returns; the player UI lives in the shadow root.
   return document.createElement('div');

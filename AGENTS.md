@@ -72,6 +72,7 @@ Storybook (HTML, no framework; `.storybook/`, `*.stories.ts` beside the componen
 - **Commands:** `pnpm storybook` (dev server), `pnpm storybook:test` (story `play` functions in a real browser; `STORYBOOK_BROWSER=firefox` for Firefox), `pnpm storybook:shots` (deterministic PNGs in `output/storybook-shots/chromium/`; `storybook:shots:firefox` for Firefox).
 - **Screenshots in PRs:** UI screenshots come from `pnpm storybook:shots`, or are explicitly labeled as real-host captures. Do not attach hand-drawn or mocked images.
 - **Stories render production components.** If a component reaches into `PlayerSession`, providers or `chrome.*`, extract explicit inputs (state, callbacks, strings) as `volume-control.ts` does; do not re-implement it in a story.
+- **Animated UI (HUDs, notices) takes its clock.** Timed UI accepts a `UiClock` (`src/ui/ui-clock.ts`); stories pass a manual clock from `.storybook/hud-stage.ts` and advance it instead of waiting. Stories tagged `frames` are shot with every animation held at fixed fractions (`window.__storyFrame`); `no-shot` stories are lifecycle assertions with nothing worth a picture, `live` ones run on real time. Assert lifecycle (shows, hides after its timeout, re-trigger resets, cleanup leaves no nodes, timers or animations), not elapsed milliseconds.
 - Storybook is a devDependency only; nothing under `.storybook/` or `*.stories.ts` is imported by an extension entry point.
 
 ## Docs and tracking
