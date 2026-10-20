@@ -6,32 +6,15 @@ import path from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 import { ownTestBrowser } from '../test-utils/test-browser';
 import type { Browser, Page } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { bootPlayer, bundlePlayer, enterTheater, playerStylesheets } from '../test-utils/player-boot';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
-const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';",
-      "export { createPlayerSettings } from './ui/player-settings';",
-      "export { DisposableScope } from './core/disposable-scope';"
-    ].join('\n'),
-    resolveDir: SRC,
-    loader: 'ts'
-  },
-  bundle: true,
-  write: false,
-  format: 'iife',
-  globalName: 'PlayerSettingsOrder',
-  platform: 'browser',
-  target: 'es2022',
-  logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundlePlayer([
+  "export { createPlayerSettings } from './ui/player-settings';",
+  "export { DisposableScope } from './core/disposable-scope';"
+]);
 
 const BACKGROUND_BUNDLE = esbuild.buildSync({
   entryPoints: [path.join(SRC, 'entries/background.ts')],
@@ -79,13 +62,9 @@ async function boot(page: Page, html: string): Promise<void> {
     body: html
   }));
   await page.goto('http://player-settings-order.test/');
-  await page.evaluate(`window.chrome = { storage: { sync: { get: async () => ({ keepControlsVisible: true }), set: async () => {} }, onChanged: { addListener() {} } } };`);
-  await page.addStyleTag({ content: PAGE_CSS });
-  await page.addScriptTag({ content: BUNDLE });
-  await page.evaluate(`PlayerSettingsOrder.setPlayerUiCss(${JSON.stringify(UI_CSS)}); PlayerSettingsOrder.bootstrapPlayerRuntime();`);
+  await bootPlayer(page, { settings: { keepControlsVisible: true }, bundle: BUNDLE });
   await page.waitForFunction(() => [...document.querySelectorAll('video')].every(video => video.readyState >= 2 && !video.paused));
-  await page.keyboard.press('t');
-  await page.locator('.theater-controls-wrapper.visible').waitFor();
+  await enterTheater(page);
   await page.locator('.player-settings-btn').click();
   await page.locator('.theater-settings-menu.visible').waitFor();
 }
@@ -243,10 +222,10 @@ describe('player settings action order', () => {
     it(`keeps Keyboard Shortcuts last when auto theater is absent and a later action arrives in ${engine}`, { timeout: 60_000 }, async test => {
       await withBrowser(test, engine, async page => {
         await page.setContent('<div id="mount" style="position:fixed;left:40px;bottom:80px;width:640px"></div>');
-        await page.addStyleTag({ content: UI_CSS });
+        await page.addStyleTag({ content: playerStylesheets().ui });
         await page.addScriptTag({ content: BUNDLE });
         const order = await page.evaluate(`(() => {
-          const api = PlayerSettingsOrder;
+          const api = TheaterTest;
           const scope = new api.DisposableScope();
           const settings = api.createPlayerSettings({
             t: (key) => key,

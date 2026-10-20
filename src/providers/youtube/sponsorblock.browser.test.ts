@@ -7,18 +7,13 @@ import { build } from 'esbuild';
 import { chromium, firefox, type Page } from 'playwright';
 import { contrastRatio } from '../../contrast';
 import { ownTestBrowser } from '../../test-utils/test-browser';
+import { bootPlayer, bundlePlayer, enterTheater } from '../../test-utils/player-boot';
 import { readStylesheet } from '../../test-utils/styles';
 import { WHATS_NEW_RELEASE } from '../../whatsNew-release';
 
 const ROOT = path.resolve(import.meta.dirname, '../../..');
-const CSS = readStylesheet(path.join(ROOT, 'src/content.css'));
-const SHADOW = readStylesheet(path.join(ROOT, 'src/ui/shadow.css'));
 const MEDIA = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
-const bundle = build({ stdin: { contents: `export { bootstrapPlayerRuntime } from './ui/player-runtime';
-export { setPlayerUiCss } from './ui/root';
-export { youtubeSponsorBlockSource } from './providers/youtube/sponsorblock';`, resolveDir: path.join(ROOT, 'src'), loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'SponsorTest', platform: 'browser', target: 'es2022'
-}).then(result => result.outputFiles![0].text);
+const bundle = bundlePlayer(["export { youtubeSponsorBlockSource } from './providers/youtube/sponsorblock';"]);
 
 async function boot(page: Page, enabled = true, installed = true, pathname = '/watch?v=first') {
   await page.addInitScript('window.__name = fn => fn');
@@ -33,20 +28,13 @@ body{margin:0;background:#111}#movie_player{width:960px;height:540px;position:re
 <div class="ytp-chrome-bottom"><div id="progress" class="ytp-progress-bar">${installed ? '<ul id="previewbar"><li class="previewbar" sponsorblock-category="sponsor" style="left:10%;right:65%;opacity:.6"></li><li class="previewbar" sponsorblock-category="intro" style="left:2%;right:92%;opacity:.7"></li><li class="previewbar" sponsorblock-category="poi_highlight" style="left:60%;opacity:.7"></li></ul>' : ''}</div></div></div>` }));
   await page.goto(`https://www.youtube.com${pathname}`);
   await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
-  await page.addStyleTag({ content: CSS });
-  await page.evaluate(({ enabled }) => {
-    const listeners: Array<(changes: object, area: string) => void> = [];
-    Object.assign(window, { chrome: { storage: {
-      sync: { get: async () => ({ keepControlsVisible: true, sponsorBlockMarkers: enabled, youtubeIntegrationEnabled: false }), set: async () => {} },
-      onChanged: { addListener: (listener: (changes: object, area: string) => void) => listeners.push(listener) }
-    } }, changeSponsorSetting: (value: boolean) => listeners.forEach(listener => listener({ sponsorBlockMarkers: { newValue: value } }, 'sync')),
-      changeAppearance: (values: Record<string, unknown>) => listeners.forEach(listener => listener(Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }])), 'sync')),
-      changeYouTubeIntegration: (value: boolean) => listeners.forEach(listener => listener({ youtubeIntegrationEnabled: { newValue: value } }, 'sync')) });
-  }, { enabled });
-  await page.addScriptTag({ content: await bundle });
-  await page.evaluate(`SponsorTest.setPlayerUiCss(${JSON.stringify(SHADOW)}); SponsorTest.bootstrapPlayerRuntime();`);
-  await page.keyboard.press('t');
-  await page.waitForSelector('.theater-controls-wrapper');
+  await bootPlayer(page, { settings: { keepControlsVisible: true, sponsorBlockMarkers: enabled, youtubeIntegrationEnabled: false }, bundle });
+  await page.evaluate(`Object.assign(window, {
+    changeSponsorSetting: value => __chromeStub.emit({ sponsorBlockMarkers: { newValue: value } }, 'sync'),
+    changeAppearance: values => __chromeStub.emit(Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }])), 'sync'),
+    changeYouTubeIntegration: value => __chromeStub.emit({ youtubeIntegrationEnabled: { newValue: value } }, 'sync')
+  })`);
+  await enterTheater(page);
 }
 const markers = (page: Page) => page.locator('.theater-scrubber-segment');
 for (const [name, engine] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([name]) => name)) {
@@ -163,11 +151,11 @@ it('observes only the bar or shallow insertion point; releases stale callbacks',
       MutationObserver.prototype.observe = function(target, options) {
         observedTargets.push(target.id); return original.call(this, target, options);
       };
-      window.stopSource = SponsorTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => publishedMarkers.push(value));
+      window.stopSource = TheaterTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => publishedMarkers.push(value));
     `);
     assert.deepEqual(await page.evaluate('observedTargets'), ['previewbar']);
     await page.evaluate(`stopSource(); stopSource(); observedTargets.length = 0; document.querySelector('#previewbar').remove();
-      window.stopAbsent = SponsorTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => {});`);
+      window.stopAbsent = TheaterTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => {});`);
     assert.deepEqual(await page.evaluate('observedTargets'), ['progress']);
     await page.evaluate('stopAbsent()');
     await page.evaluate(`window.previousPublications = publishedMarkers.length;
@@ -228,7 +216,7 @@ it('uses shallow childList observations, coalesces rebuilds, suppresses identica
         observe(target, options) { sourceObservations.push({id:target.id, options}); super.observe(target, options); }
         disconnect() { sourceDisconnects++; super.disconnect(); }
       };
-      window.stopLightSource = SponsorTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => sourceUpdates.push(value));
+      window.stopLightSource = TheaterTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => sourceUpdates.push(value));
     `);
     await page.waitForFunction('sourceUpdates.length === 1');
     assert.deepEqual(await page.evaluate('sourceObservations'), [{ id: 'previewbar', options: { childList: true } }]);
@@ -258,7 +246,7 @@ it('uses shallow childList observations, coalesces rebuilds, suppresses identica
     assert.deepEqual(await page.evaluate('sourceObservations.at(-1)'), { id: 'previewbar', options: { childList: true } });
     await page.evaluate(`stopLightSource(); stopLightSource(); window.afterStop=sourceDisconnects;
       document.querySelector('#previewbar').remove(); window.sourceObservations.length=0;
-      window.stopDiscovery = SponsorTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => {});`);
+      window.stopDiscovery = TheaterTest.youtubeSponsorBlockSource(document.querySelector('video')).observe(value => {});`);
     assert.deepEqual(await page.evaluate('sourceObservations'), [{ id: 'progress', options: { childList: true } }]);
     await page.evaluate(`const bar = document.createElement('ul');bar.id='previewbar';document.querySelector('#progress').prepend(bar);`);
     await page.waitForFunction('sourceObservations.length === 2');

@@ -133,11 +133,6 @@
       "count": 1
     }
   },
-  "options/shortcut-management.browser.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "options/tabs.browser.test.ts": {
     "import/order": {
       "count": 3
@@ -2313,7 +2308,7 @@
   },
   "src/ui/audio-block.browser.test.ts": {
     "import/order": {
-      "count": 5
+      "count": 4
     }
   },
   "src/ui/auto-theater-intent.test.ts": {
@@ -2424,12 +2419,12 @@
   },
   "src/ui/caption-loading.browser.test.ts": {
     "import/order": {
-      "count": 3
+      "count": 2
     }
   },
   "src/ui/caption-options-close.browser.test.ts": {
     "import/order": {
-      "count": 3
+      "count": 2
     }
   },
   "src/ui/caption-overlay-width.browser.test.ts": {
@@ -2900,11 +2895,6 @@
   "src/ui/volume-boost-settings.ts": {
     "local/max-symbol-name-length": {
       "count": 2
-    }
-  },
-  "src/ui/volume-wheel.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/whatsNew-content.browser.test.ts": {
