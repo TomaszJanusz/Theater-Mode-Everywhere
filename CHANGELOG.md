@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
 

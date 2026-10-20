@@ -43,9 +43,12 @@ export function createAutoTheaterRuntime(options: {
   const scope = new DisposableScope();
   let observedVideo: HTMLVideoElement | null = null;
   let stopObserving: (() => void) | undefined;
+  let stopReveal: (() => void) | undefined;
   const clearObservedVideo = (): void => {
     stopObserving?.();
     stopObserving = undefined;
+    stopReveal?.();
+    stopReveal = undefined;
     observedVideo = null;
   };
   scope.add(clearObservedVideo);
@@ -103,6 +106,8 @@ export function createAutoTheaterRuntime(options: {
       clearObservedVideo();
       return;
     }
+    // Attached before the video lookup: the player may still sit in the miniplayer, where it is no candidate.
+    stopReveal ??= page.playback.observeReveal?.(document, refresh);
     const video = options.findBestVideo();
     latestVideo = video;
     if (video !== observedVideo) {
