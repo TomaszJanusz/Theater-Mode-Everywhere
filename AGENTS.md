@@ -69,7 +69,8 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - **Notion** is the source of truth for requirements, architecture and durable decisions. Consult relevant pages when needed; flag conflicts with implementation.
 - **Linear** tracks scope, status, priorities, dependencies and acceptance criteria. Mark work complete when those criteria are met and verification gaps are explicit.
 - **GitHub** records code, PRs, CI and reviews. Link related artifacts instead of keeping competing status copies.
-- **Document the reason.** Local `docs/` hold code-adjacent contracts, constraints and procedures. Keep local explanations in comments; use documentation for reasoning that crosses boundaries. Link to code instead of enumerating its fields or narrating control flow.
+- **Notion, not `docs/`, for decisions.** ADRs, audits, research, proposals, plans and status notes go to Notion and are linked from Linear or the PR. Never commit them under `docs/` or as new top-level files unless the maintainer explicitly asks. If a decision needs a page, write it in Notion or hand the text to the maintainer instead of adding a file.
+- **Document the reason.** Local `docs/` is only for contracts, constraints and procedures that must change together with code and are maintained alongside it. Keep local explanations in comments; use documentation for reasoning that crosses boundaries. Link to code instead of enumerating its fields or narrating control flow.
 - **Keep guidance current.** Rewrite or remove outdated text when a decision changes. Most UI tweaks need no new page. Temporary plans, scratch files and diagnostic captures stay outside committed source unless explicitly requested or needed as durable project evidence.
 
 ## Changelog entries on a development branch
