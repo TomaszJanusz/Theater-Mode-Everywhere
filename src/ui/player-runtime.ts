@@ -93,6 +93,7 @@ import {
   queryPlayerUiAll,
   PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
+import type { DisposableScope } from '../core/disposable-scope';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -2035,8 +2036,24 @@ function toggleTheaterMode(): void {
   }
 }
 
+/** How long a video may sit off its playback surface before theater ends. */
+const LOST_SURFACE_GRACE_MS = 750;
+
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const bindingScope = session.runtimeScope.child();
+  // Hosts flip the watch surface to `hidden` for a frame while switching videos, so a lost
+  // surface must persist before it ends the session. Owned by the binding; one recheck at a time.
+  let surfaceRecheck: DisposableScope | null = null;
+  const cancelSurfaceRecheck = (): void => {
+    surfaceRecheck?.dispose();
+    surfaceRecheck = null;
+  };
+  bindingScope.add(cancelSurfaceRecheck);
+  const followReplacement = (replacement: HTMLVideoElement): void => {
+    bindingScope.dispose();
+    switchTheaterVideo(replacement);
+    keepTheaterVideoBound(replacement);
+  };
   const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
     if (bindingScope.isDisposed) return;
     const current = session.element;
@@ -2046,14 +2063,22 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       // Navigating away leaves the video in a hidden watch page or the miniplayer, not a theater.
       const replacement = findBestVideo();
       if (replacement && replacement !== current) {
-        bindingScope.dispose();
-        switchTheaterVideo(replacement);
-        keepTheaterVideoBound(replacement);
-      } else {
-        exitTheaterMode();
+        followReplacement(replacement);
+      } else if (!surfaceRecheck) {
+        const recheck = bindingScope.child();
+        surfaceRecheck = recheck;
+        recheck.timeout(() => {
+          surfaceRecheck = null;
+          if (session.element !== current || !isElementInDOMDeep(current)) return;
+          if (!hasLeftPlaybackSurface(current as HTMLVideoElement)) return;
+          const next = findBestVideo();
+          if (next && next !== current) followReplacement(next);
+          else exitTheaterMode();
+        }, LOST_SURFACE_GRACE_MS);
       }
       return;
     }
+    cancelSurfaceRecheck();
     if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement) && !providerVideoAbandoned(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
@@ -2064,11 +2089,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     // Wait for the visible replacement's metadata instead of loading its source ourselves.
     if (connected && (!replacement || replacement.readyState < 1
       || !providerSharesPlaybackHost(current as HTMLVideoElement, replacement))) return;
-    if (replacement && replacement !== current) {
-      bindingScope.dispose();
-      switchTheaterVideo(replacement);
-      keepTheaterVideoBound(replacement);
-    }
+    if (replacement && replacement !== current) followReplacement(replacement);
   };
 
   let ignoreStyleMutations = 0;

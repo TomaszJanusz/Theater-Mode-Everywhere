@@ -178,6 +178,70 @@ for (const engine of testEngines()) {
     await other.close();
   });
 
+  it(`${engine}: YouTube theater survives a transient hidden watch page but exits when it stays lost`, { timeout: 30_000 }, async t => {
+    const openWatchPage = async (): Promise<Page> => {
+      const page = await (await shared.newContext(t)).newPage();
+      await page.route('https://www.youtube.com/**', route => route.fulfill({
+        contentType: 'text/html',
+        body: '<style>video { display:block; width:640px; height:360px }</style>'
+          + '<ytd-watch-flexy><div id="movie_player" class="html5-video-player"><video id="watch" class="html5-main-video"></video></div></ytd-watch-flexy>'
+      }));
+      await page.goto('https://www.youtube.com/watch?v=aaaaaaaaaaa');
+      await page.evaluate(media => {
+        const video = document.querySelector('video')!; video.muted = true; video.loop = true; video.src = media;
+      }, MEDIA);
+      await page.waitForFunction(() => document.querySelector('video')!.readyState >= 2);
+      await boot(page);
+      await page.keyboard.press('t');
+      assert.equal(await selected(page), 'watch');
+      await page.clock.install();
+      return page;
+    };
+    const setHidden = (page: Page, hidden: boolean) => page.evaluate(hidden => document.querySelector('ytd-watch-flexy')!.toggleAttribute('hidden', hidden), hidden);
+    const active = (page: Page) => page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
+
+    // The host hides the watch page for a moment, then restores it: the session keeps going.
+    const transient = await openWatchPage();
+    for (const ms of [50, 300]) {
+      await setHidden(transient, true);
+      await transient.clock.runFor(ms);
+      await setHidden(transient, false);
+      await transient.clock.runFor(2000);
+      assert.equal(await active(transient), true, `hidden for ${ms} ms`);
+    }
+    // The first loss's recheck must not fire against a later, still-recovering one.
+    await setHidden(transient, true);
+    await transient.clock.runFor(600);
+    await setHidden(transient, false);
+    await transient.clock.runFor(100);
+    await setHidden(transient, true);
+    await transient.clock.runFor(600);
+    await setHidden(transient, false);
+    await transient.clock.runFor(2000);
+    assert.equal(await active(transient), true);
+
+    // A surface that stays lost ends theater after the grace period.
+    await setHidden(transient, true);
+    await transient.clock.runFor(2000);
+    assert.equal(await active(transient), false);
+
+    // Leaving theater cancels a pending recheck: re-entering is not closed by the old timer.
+    await setHidden(transient, false);
+    await transient.clock.runFor(300); // the toggle debounce runs on the fake clock too
+    await transient.keyboard.press('t');
+    assert.equal(await selected(transient), 'watch');
+    await setHidden(transient, true);
+    await transient.clock.runFor(300);
+    await transient.keyboard.press('t');
+    await transient.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+    await setHidden(transient, false);
+    await transient.clock.runFor(300);
+    await transient.keyboard.press('t');
+    assert.equal(await selected(transient), 'watch');
+    await transient.clock.runFor(2000);
+    assert.equal(await active(transient), true);
+  });
+
   it(`${engine}: 100 mousemoves on a large page do no discovery or geometry reads`, { timeout: 30_000 }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await page.addScriptTag({ content: 'window.__name = target => target;' });
