@@ -32,6 +32,7 @@ import {
 } from '../../media-features/parsers/crunchyroll';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import type { Chapter } from '../../media-features/types';
+import { noteWrapperFailure } from '../../platform/wrapper-failures';
 import { isCrunchyrollHost } from '../hosts';
 import { clearCrunchyrollSkipWindows, publishCrunchyrollSkipWindows } from './skip-windows';
 
@@ -1146,7 +1147,8 @@ export function installCrunchyrollMain(): void {
   if (!historyRef || (historyRef as History & { _teCrunchyroll?: boolean })._teCrunchyroll) return;
   const wrap = (original: History['pushState']) => function (this: History, ...args: Parameters<History['pushState']>) {
     const result = original.apply(this, args);
-    syncPage(true);
+    // The navigation already happened: a failure here must not surface as the page's pushState error.
+    try { syncPage(true); } catch (error) { noteWrapperFailure('crunchyroll-history', error); }
     return result;
   };
   try {

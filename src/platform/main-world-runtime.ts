@@ -1,25 +1,49 @@
-import { installBilibiliNavigation } from '../providers/bilibili/navigation';
+import { isChatDocument, isNativeChatEvent } from '../chat';
+import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
-import { fetchPageMedia } from './page-fetch';
-import { readPageResponseBytes } from './page-body';
-import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
-import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
-import { installWatchPlaybackQueries } from '../providers/watch-playback';
-import { installXhrHarvest } from './xhr-harvest';
-import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
-import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
-import { findActiveVideo } from './active-video';
-import { installMediaAudioRuntime } from './media-audio-runtime';
-import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
-import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
-import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
-import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
-import { matchesShortcut } from '../ui/shortcuts';
-import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
-import { isChatDocument, isNativeChatEvent } from '../chat';
+import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
+import { installBilibiliNavigation } from '../providers/bilibili/navigation';
+import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
+import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
+import {
+  captureDisneyNetworkResponse,
+  disneyIntegrationEnabled,
+  handleDisneyMediaSeek,
+  harvestDisneyBifFromXhr,
+  harvestDisneyBody,
+  harvestDisneyData,
+  installDisneyMain,
+  isAllowedDisneyBifUrl,
+  MAX_BIF_BYTES,
+  readDisneySnapshot
+} from '../providers/disney/main';
 import { isBilibiliHost, isBilibiliIntlHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
+import {
+  installNetflixMain,
+  handleNetflixMediaSeek,
+  netflixIntegrationEnabled,
+  readNetflixSnapshot
+} from '../providers/netflix/main';
+import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
+import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
+import { installPatreonNavigation } from '../providers/patreon/navigation';
+import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
+import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
+import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
+import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
+import {
+  harvestTwitchResponseJson,
+  harvestTwitchResponseText,
+  harvestTwitchXhr,
+  installTwitchMain,
+  readTwitchSnapshot,
+  twitchIntegrationEnabled
+} from '../providers/twitch/main';
+import { installTwitchNavigation } from '../providers/twitch/navigation';
+import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
+import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import {
   captureTimedtextResponse,
   cacheTimedtextBody,
@@ -34,40 +58,18 @@ import {
   readYoutubeSnapshot,
   youtubeIntegrationEnabled
 } from '../providers/youtube/main';
-import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
-import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
-import { readBilibiliIntlSnapshot, bilibiliIntlIntegrationEnabled } from '../providers/bilibili-intl/main';
-import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
-import { consumeCrunchyrollWrappedFetch, crunchyrollAllowsCaptionFetch, crunchyrollIntegrationEnabled, isCrunchyrollOwnedRequest, harvestCrunchyrollBody, harvestCrunchyrollData, installCrunchyrollMain, readCrunchyrollSnapshot, rememberCrunchyrollBif } from '../providers/crunchyroll/main';
-import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
-import { installPatreonNavigation } from '../providers/patreon/navigation';
-import { installTwitchNavigation } from '../providers/twitch/navigation';
-import {
-  harvestTwitchResponseJson,
-  harvestTwitchResponseText,
-  harvestTwitchXhr,
-  installTwitchMain,
-  readTwitchSnapshot,
-  twitchIntegrationEnabled
-} from '../providers/twitch/main';
-import {
-  captureDisneyNetworkResponse,
-  disneyIntegrationEnabled,
-  handleDisneyMediaSeek,
-  harvestDisneyBifFromXhr,
-  harvestDisneyBody,
-  harvestDisneyData,
-  installDisneyMain,
-  isAllowedDisneyBifUrl,
-  MAX_BIF_BYTES,
-  readDisneySnapshot
-} from '../providers/disney/main';
-import {
-  installNetflixMain,
-  handleNetflixMediaSeek,
-  netflixIntegrationEnabled,
-  readNetflixSnapshot
-} from '../providers/netflix/main';
+import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
+import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
+import { matchesShortcut } from '../ui/shortcuts';
+
+import { findActiveVideo } from './active-video';
+import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
+import { installMediaAudioRuntime } from './media-audio-runtime';
+import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
+import { readPageResponseBytes } from './page-body';
+import { fetchPageMedia } from './page-fetch';
+import { noteWrapperFailure } from './wrapper-failures';
+import { installXhrHarvest } from './xhr-harvest';
 
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
@@ -126,7 +128,8 @@ export function installMainWorldRuntime(): void {
     const tagged = fn as typeof fetch & { [FETCH_WRAPPED]?: boolean };
     if (tagged[FETCH_WRAPPED]) return fn;
     const wrapped = function(this: Window, input: RequestInfo | URL): Promise<Response> {
-      const url = requestUrl(input);
+      let url = '';
+      try { url = requestUrl(input); } catch (error) { noteWrapperFailure('fetch-input', error); }
       return Promise.resolve(fn.apply(this, arguments as unknown as [RequestInfo | URL, RequestInit?])).then((response) => {
         try {
           responseUrls.set(response, response.url || url);
@@ -150,8 +153,9 @@ export function installMainWorldRuntime(): void {
               case 'tencent': captureTencentNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
             }
           }
-        } catch {
+        } catch (error) {
           // Harvest must not break the page's fetch.
+          noteWrapperFailure('fetch', error);
         }
         return response;
       });
@@ -171,8 +175,9 @@ export function installMainWorldRuntime(): void {
             if (!this.ok || isOwnedHarvestResponse(this)) return;
             const url = this.url || responseUrls.get(this) || '';
             harvestJson(harvestTarget(url), url, data);
-          } catch {
+          } catch (error) {
             // Ignore harvest failures from host JSON parsing.
+            noteWrapperFailure('response-json', error);
           }
         }).catch(() => {});
       }
@@ -188,8 +193,9 @@ export function installMainWorldRuntime(): void {
             if (!text || !this.ok || isOwnedHarvestResponse(this)) return;
             const url = this.url || responseUrls.get(this) || '';
             harvestText(harvestTarget(url), url, text);
-          } catch {
+          } catch (error) {
             // Ignore harvest failures from host text parsing.
+            noteWrapperFailure('response-text', error);
           }
         }).catch(() => {});
       }
