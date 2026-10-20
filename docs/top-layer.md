@@ -10,6 +10,20 @@ The top layer orders by entry time, and `documentElement` joins it when fullscre
 the host re-enters after `fullscreenchange`, after something else closes it, and after a page popover
 opens (once per frame).
 
+Stacking rules that stay, and why (audited against the top layer):
+
+- **Host `z-index` and `--theater-chrome-z`** (`src/host-frame.css`): needed whenever the host is not in the
+  top layer, i.e. while native chat is active (`src/native-chat.css` lowers it below service popups) and in
+  browsers without `showPopover`. In the top layer it is inert.
+- **Host `contain: layout`** is not a stacking leftover. It makes the host the containing block of every
+  `position: fixed` descendant, so captions, HUDs and pinned controls follow the host box, which
+  `--theater-video-width` narrows when chat shares the stage, not the viewport. Removing it widens them to
+  the viewport (covered by `top-layer.browser.test.ts`). It also makes the host a stacking context.
+- **Z-index in `src/ui/shadow.css` and `src/ui/modal.css`** orders the UI's own surfaces inside the host's
+  stacking context. The top layer does not change that ordering, so none of it is redundant.
+- **Page-level z-index** (video, stage, ancestors, provider lifts) orders page elements against the page and
+  the chat column; the top layer only moves the host.
+
 Limits:
 
 - A page element that entered the top layer **before** the host stays below it; one that enters
