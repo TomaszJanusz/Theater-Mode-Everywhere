@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { noteWrapperFailure, wrapperFailureCount } from './wrapper-failures';
 
 describe('wrapper failure diagnostics', () => {

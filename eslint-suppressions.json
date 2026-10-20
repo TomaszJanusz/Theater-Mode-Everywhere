@@ -1214,9 +1214,6 @@
     }
   },
   "src/platform/main-world-runtime.ts": {
-    "import/order": {
-      "count": 36
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
