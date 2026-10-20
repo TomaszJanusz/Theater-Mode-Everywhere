@@ -1,3 +1,5 @@
+import { noteWrapperFailure } from './wrapper-failures';
+
 /** A reused XHR has one observer, reading the URL belonging to its latest open(). */
 export function installXhrHarvest(
   prototype: XMLHttpRequest,
@@ -19,8 +21,9 @@ export function installXhrHarvest(
         if (this.status < 200 || this.status >= 300) return;
         try {
           harvest(this, this.responseURL || requestUrls.get(this) || '');
-        } catch {
+        } catch (error) {
           // Metadata parsing must never break the host's request completion.
+          noteWrapperFailure('xhr', error);
         }
       });
     }
