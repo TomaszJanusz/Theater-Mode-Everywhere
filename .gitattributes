@@ -1,0 +1,6 @@
+# Keep screenshots, store-promo sources and scratch files out of `git archive`
+# (GitHub "Source code" downloads and the AMO review archive).
+/store-listings/assets/cws-promo export-ignore
+/docs/research export-ignore
+/docs/screenshots export-ignore
+/tmp export-ignore
