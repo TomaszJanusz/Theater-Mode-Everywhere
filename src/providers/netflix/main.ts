@@ -17,6 +17,8 @@ import {
   netflixVideoId,
   parseNetflixCaptionRequest,
   parseNetflixTextTracks,
+  readNetflixHeaderSubtitle,
+  resolveNetflixSubtitle,
   resolveNetflixTitle,
   stripNetflixSiteTitle,
   type NetflixTextTrack
@@ -38,6 +40,7 @@ export function netflixIntegrationEnabled(): boolean {
 type NetflixHarvest = {
   videoId?: string;
   title?: string;
+  subtitle?: string;
   captions?: boolean;
   previews?: boolean;
   tracks: NetflixTextTrack[];
@@ -215,6 +218,7 @@ export function publishedNetflixPayload(state: NetflixHarvest): Record<string, u
   return {
     ...(state.videoId ? { videoId: state.videoId } : {}),
     ...(state.title ? { title: state.title } : {}),
+    ...(state.title && state.subtitle ? { subtitle: state.subtitle } : {}),
     ...(state.previews === true ? { previews: true } : {}),
     ...(state.captions === true ? { captions: true } : {}),
     ...(blocked ? { captions: false } : {}),
@@ -308,17 +312,26 @@ function syncHarvest(): void {
   const api = session || (root && !watchId ? captionApis(root)[0] : null) || props;
   const tracks = captions && api ? parseNetflixTextTracks(netflixCaptionList(api)) : [];
   const selectedTrackId = captions && api ? netflixLiveTrackId(api) || undefined : undefined;
+  const sessionTitle = netflixSessionTitle(appApi, session ? videoId : null);
   const title = resolveNetflixTitle({
     videoId,
     previousVideoId,
     previousTitle: harvest.title || null,
-    playerTitle: netflixSessionTitle(appApi, session ? videoId : null) || (props ? playerTitleFromProps(props) : null),
+    playerTitle: sessionTitle?.title || (props ? playerTitleFromProps(props) : null),
     controlTitle: watchId ? null : controlTitle(),
     documentTitle: document.title
   });
+  const subtitle = title ? resolveNetflixSubtitle({
+    videoId,
+    previousVideoId,
+    previousSubtitle: harvest.subtitle || null,
+    headerSubtitle: readNetflixHeaderSubtitle(root),
+    episodeTitle: sessionTitle?.episodeTitle
+  }) : null;
   const nextHarvest: NetflixHarvest = {
     ...(videoId ? { videoId } : {}),
     ...(title ? { title: sanitizeContentTitle(title) || undefined } : {}),
+    ...(subtitle ? { subtitle } : {}),
     captions,
     previews: Boolean(session?.isReady?.() && typeof session.getTrickPlayFrame === 'function'),
     tracks,

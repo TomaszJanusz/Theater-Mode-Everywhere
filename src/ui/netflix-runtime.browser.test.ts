@@ -512,7 +512,8 @@ describe('netflix runtime browser regressions', () => {
         return { before, stale, language, selected, preview, off, calls: (window as any).__nfCalls };
       });
       assert.equal(result.before.videoId, '70248290');
-      assert.equal(result.before.title, 'House of Cards · Rozdział 2');
+      assert.equal(result.before.title, 'House of Cards');
+      assert.equal(result.before.subtitle, 'Rozdział 2');
       assert.equal(result.before.captions, true);
       assert.equal(result.before.previews, true);
       assert.equal(result.stale?.ok, false);
