@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-10-20
+
 ### Fixed
 
 - Some websites no longer break when the extension is installed: its page script no longer leaks names into the page's global scope, which could replace or clash with the site's own globals (for example a third-party login page whose analytics call failed with a TypeError). Synthetic key events from page scripts no longer raise errors from the extension either.
