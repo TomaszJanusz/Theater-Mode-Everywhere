@@ -105,17 +105,3 @@ Live page checks and before/after captures are recorded in
 [service-actions-live.md](service-actions-live.md). The live Bilibili.com check
 uses its native “do not skip” confirmation; a logged-in first-watch “still skip”
 confirmation remains covered by the fixture rather than a live session.
-
-## Screenshots
-
-Live screenshots are linked from [the live verification report](service-actions-live.md).
-The captures below are the original deterministic fixtures.
-
-Captured from the installed Chromium extension with deterministic page/player
-fixtures and a synthetic video. These show the actual extension UI, not live
-advertising or logged-in Bilibili playback.
-
-- [YouTube: native ad skip](screenshots/service-actions/youtube.png)
-- [Bilibili.com: native skip confirmation](screenshots/service-actions/bilibili.png)
-- [Bilibili.tv: intro skip](screenshots/service-actions/bilibili-tv.png)
-- [Bilibili.tv: outro and next episode](screenshots/service-actions/bilibili-tv-outro.png)

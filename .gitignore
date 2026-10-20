@@ -170,3 +170,6 @@ web-ext-artifacts/
 *.pem
 output/
 outputs/
+
+# Scratch files
+tmp/

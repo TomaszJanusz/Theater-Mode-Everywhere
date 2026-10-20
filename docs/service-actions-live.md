@@ -51,20 +51,9 @@ The browser regression also checks membership and unknown labels, both Chinese
 script variants of skip confirmations, and an old skip action whose native
 control has been repurposed for login.
 
-## Before and after screenshots
-
-These captures show real service pages with the installed extension.
-
-| Action | Before | After |
-| --- | --- | --- |
-| YouTube ad skip | [Ad and Skip CTA](screenshots/service-actions/live/youtube-skip-before.png) | [Content resumed](screenshots/service-actions/live/youtube-skip-after.png) |
-| Bilibili.com native confirmation | [不跳过 CTA](screenshots/service-actions/live/bilibili-native-confirm-before.png) | [Native toast dismissed](screenshots/service-actions/live/bilibili-native-confirm-after.png) |
-| Bilibili.com with login excluded | [Only 不跳过](screenshots/service-actions/live/bilibili-login-filter-before.png) | [No remaining CTA](screenshots/service-actions/live/bilibili-login-filter-after.png) |
-| Bilibili.tv intro | [100 s and Skip intro](screenshots/service-actions/live/bilibili-tv-intro-before.png) | [227 s, still paused](screenshots/service-actions/live/bilibili-tv-intro-after.png) |
-| Bilibili.tv outro | [1450 s and Skip outro](screenshots/service-actions/live/bilibili-tv-outro-before.png) | [1504 s, still paused](screenshots/service-actions/live/bilibili-tv-outro-after.png) |
+## Scope
 
 These are smoke checks of the observed desktop player variants, not a live
 matrix of all accounts, advertisements, embeds or locales. Bilibili.com's
 logged-in first-watch “still skip” branch and YouTube's older/embedded selectors
-are covered by deterministic browser fixtures. The original synthetic captures
-remain documented separately in [service-actions.md](service-actions.md).
+are covered by deterministic browser fixtures.

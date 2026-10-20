@@ -43,7 +43,6 @@ reviews:
     - "!**/*.zip"
     - "!pnpm-lock.yaml"
     - "!_locales/**"
-    - "!docs/research/**"
     - "!CHANGELOG.md"
   path_instructions:
     - path: "src/**"

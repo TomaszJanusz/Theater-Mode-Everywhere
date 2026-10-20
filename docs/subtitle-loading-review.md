@@ -15,11 +15,11 @@ The review covers every production caller of `activateCaptionTrack` and the Disn
 
 The provider boundary is documented in [player-provider-contracts.md](player-provider-contracts.md). Providers own downloads, retries within a download, parsing and caching. The controller owns request serialization, loading UI, result application, preferences, layout and cancellation feedback.
 
-## Verification and screenshots
+## Verification
 
 Controller regressions cover manual activation, toggling, saved-language restoration, cancellation, stale queues, host-delivered success, cue-window success/no-op/failure and metadata events after a failed selection. Browser tests run the production player runtime with a delayed native VTT response, measure both animation endpoints, check reduced motion, select a failing language, and exercise the real Disney adapter/composite with routed HLS/VTT responses.
 
-The screenshots show the production player on a deterministic local canvas video fixture, with mocked extension settings and controlled network responses. They are not captures from a signed-in streaming service.
+Browser captures use the production player on a deterministic local canvas video fixture, with mocked extension settings and controlled network responses. They are not captures from a signed-in streaming service.
 
 Local validation: `pnpm typecheck`, `pnpm build`, `pnpm verify:bundles` and all 50 controller/caption browser regressions passed. Full `xvfb-run --auto-servernum pnpm smoke:chromium` passed, including installed-extension startup, video switching, pinned controls, caption menus, shortcut management, fullscreen/help, blacklist and iframe behavior.
 
@@ -28,25 +28,3 @@ The full test run timed out in Netflix document-start session discovery in `src/
 The optional local Firefox smoke did not pass its caption-menu Escape/focus assertion. CI treats Firefox smoke as diagnostic-only because unsigned MV3 sideload is blocked in Playwright.
 
 The full Chromium smoke also exposed a fixture problem reproduced on that same `main`: its cursor stayed over Speed while switching from VOD to live. Hiding Speed moved CC under the cursor and opened captions on hover, so Escape correctly closed that menu instead of leaving theater mode. The smoke now moves the cursor onto the picture before restoring live playback and checks that no menu is open before testing Escape. The settings-icon geometry check also tolerates differences below half a CSS pixel instead of failing on browser subpixel rounding. Shortcut appearance checks bring the options tab to the foreground so its CSS transitions can finish.
-
-Reproduce them with:
-
-```sh
-CAPTION_SCREENSHOT_DIR=docs/screenshots/subtitle-loading pnpm exec tsx --test src/ui/caption-loading.browser.test.ts
-```
-
-Loading, white phase:
-
-![Saved captions loading with a white CC icon](screenshots/subtitle-loading/restore-loading-white.png)
-
-Loading, accent phase:
-
-![Saved captions loading with an accent CC icon](screenshots/subtitle-loading/restore-loading-accent.png)
-
-Successful restoration:
-
-![Saved captions restored with their language in the HUD](screenshots/subtitle-loading/restore-complete.png)
-
-Failed language selection:
-
-![Caption failure HUD and an inactive CC icon](screenshots/subtitle-loading/load-failed.png)
