@@ -1,11 +1,11 @@
 import {
-  NETFLIX_CAPTION_ACK_EVENT,
+  NETFLIX_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
-  netflixCaptionRequestDetail,
+  captionRequestDetail,
   parseNetflixCaptionAck,
-  readPublishedNetflixSnapshot,
-  selectableNetflixTextTracks,
-  selectNetflixCaptionTarget,
+  readPublishedSnapshot,
+  selectableTextTracks,
+  selectCaptionTarget,
   type NetflixSnapshot,
   type NetflixTextTrack
 } from './parsers/netflix-page';
@@ -60,7 +60,7 @@ export function requestNetflixHostCaption(
     const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
-      target.removeEventListener(NETFLIX_CAPTION_ACK_EVENT, onAck);
+      target.removeEventListener(NETFLIX_ACK_EVENT, onAck);
       target.clearTimeout(timer);
       resolve(ok);
     };
@@ -70,9 +70,9 @@ export function requestNetflixHostCaption(
       finish(ack.ok);
     };
     const timer = target.setTimeout(() => finish(false), timeoutMs);
-    target.addEventListener(NETFLIX_CAPTION_ACK_EVENT, onAck);
+    target.addEventListener(NETFLIX_ACK_EVENT, onAck);
     target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_EVENT, {
-      detail: netflixCaptionRequestDetail({ requestId, trackId, videoId })
+      detail: captionRequestDetail({ requestId, trackId, videoId })
     }));
   });
 }
@@ -81,7 +81,7 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
   private previewVideoId: string | null = null;
   private previewCache = new Map<number, PreviewFrame>();
   private read(): NetflixSnapshot | null {
-    const snapshot = readPublishedNetflixSnapshot();
+    const snapshot = readPublishedSnapshot();
     const watchId = typeof window === 'undefined' ? null : netflixWatchId(window.location?.pathname || '');
     return watchId && snapshot?.videoId !== watchId ? null : snapshot;
   }
@@ -94,23 +94,28 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
     return sanitizeContentTitle(this.read()?.title) || null;
   }
 
+  getSubtitle(): string | null {
+    const snapshot = this.read();
+    return snapshot?.title ? sanitizeContentTitle(snapshot.subtitle) : null;
+  }
+
   async probe(): Promise<MediaCapabilities> {
     const snapshot = this.read();
-    const tracks = snapshot?.captions === false ? [] : selectableNetflixTextTracks(snapshot?.tracks || []);
+    const tracks = snapshot?.captions === false ? [] : selectableTextTracks(snapshot?.tracks || []);
     return { captions: tracks.length > 0, chapters: false, previews: snapshot?.previews === true };
   }
 
   async listCaptionTracks(): Promise<CaptionTrack[]> {
     const snapshot = this.read();
     if (snapshot?.captions === false) return [];
-    return selectableNetflixTextTracks(snapshot?.tracks || []).map(toCaptionTrack);
+    return selectableTextTracks(snapshot?.tracks || []).map(toCaptionTrack);
   }
 
   async activateCaptionTrack(id: string | null): Promise<CaptionActivationResult> {
     if (id != null) {
       const snapshot = this.read();
       if (snapshot?.captions === false) return { status: 'failed', delivery: 'none', cues: [] };
-      const target = selectNetflixCaptionTarget(snapshot?.tracks || [], bareTrackId(id));
+      const target = selectCaptionTarget(snapshot?.tracks || [], bareTrackId(id));
       if (!target || target.none) return { status: 'failed', delivery: 'none', cues: [] };
       let ok = false;
       try {

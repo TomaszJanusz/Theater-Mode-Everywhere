@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
+import { publishedNetflixPayload } from '../providers/netflix/main';
+
+import { contentTitle } from './content-title';
 import { NetflixAdapter, requestNetflixHostCaption } from './netflix-adapter';
 import {
-  NETFLIX_CAPTION_ACK_EVENT,
+  NETFLIX_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
   NETFLIX_SNAPSHOT_ID,
   netflixCaptionAckDetail,
-  parseNetflixCaptionRequest,
+  parseCaptionRequest,
   parseNetflixTextTracks
 } from './parsers/netflix-page';
-import { publishedNetflixPayload } from '../providers/netflix/main';
 
 const rawTracks = [
   {
@@ -62,6 +65,29 @@ function installSnapshot(): void {
   });
 }
 
+describe('Netflix title and subtitle', () => {
+  const install = (subtitle?: string) => {
+    const payload = publishedNetflixPayload({ videoId: '82779520', title: 'Cyberpunk: Edgerunners', subtitle, tracks: [] });
+    Object.assign(globalThis, { document: { querySelector: () => ({ textContent: JSON.stringify(payload) }) } });
+  };
+
+  it('hands the episode label to the shared title as the subtitle', () => {
+    install('O5 · Jawa czy sen?');
+    const adapter = new NetflixAdapter();
+    assert.deepEqual(contentTitle(adapter.getTitle(), adapter.getSubtitle()), {
+      title: 'Cyberpunk: Edgerunners',
+      subtitle: 'O5 · Jawa czy sen?'
+    });
+  });
+
+  it('has no subtitle for a title without an episode, so no separator is drawn', () => {
+    install();
+    const adapter = new NetflixAdapter();
+    assert.equal(adapter.getSubtitle(), null);
+    assert.equal(contentTitle(adapter.getTitle(), adapter.getSubtitle())?.subtitle, null);
+  });
+});
+
 describe('Netflix caption request bridge', () => {
   it('rounds the published snapshot through Off with a string ack', async () => {
     installSnapshot();
@@ -70,11 +96,11 @@ describe('Netflix caption request bridge', () => {
     target.addEventListener(NETFLIX_CAPTION_EVENT, ((event: Event) => {
       const detail = (event as CustomEvent<unknown>).detail;
       assert.equal(typeof detail, 'string');
-      const request = parseNetflixCaptionRequest(detail);
+      const request = parseCaptionRequest(detail);
       assert.ok(request);
       assert.equal(request?.trackId, null);
       seen.push(request?.requestId || '');
-      target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+      target.dispatchEvent(new CustomEvent(NETFLIX_ACK_EVENT, {
         detail: netflixCaptionAckDetail({ requestId: request!.requestId, ok: true })
       }));
     }) as EventListener);
@@ -95,8 +121,8 @@ describe('Netflix caption request bridge', () => {
   it('fails when MAIN acks that the track was not applied', async () => {
     const target = new TestWindow();
     target.addEventListener(NETFLIX_CAPTION_EVENT, ((event: Event) => {
-      const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
-      target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+      const request = parseCaptionRequest((event as CustomEvent<unknown>).detail);
+      target.dispatchEvent(new CustomEvent(NETFLIX_ACK_EVENT, {
         detail: netflixCaptionAckDetail({ requestId: request!.requestId, ok: false })
       }));
     }) as EventListener);
@@ -107,10 +133,10 @@ describe('Netflix caption request bridge', () => {
     const target = new TestWindow();
     let requestId = '';
     target.addEventListener(NETFLIX_CAPTION_EVENT, ((event: Event) => {
-      requestId = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail)?.requestId || '';
+      requestId = parseCaptionRequest((event as CustomEvent<unknown>).detail)?.requestId || '';
     }) as EventListener);
     assert.equal(await requestNetflixHostCaption(null, target as unknown as Window, 15), false);
-    target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+    target.dispatchEvent(new CustomEvent(NETFLIX_ACK_EVENT, {
       detail: netflixCaptionAckDetail({ requestId, ok: true })
     }));
   });
@@ -131,10 +157,10 @@ describe('Netflix caption request bridge', () => {
     const target = new TestWindow();
     const requested: Array<string | null> = [];
     target.addEventListener(NETFLIX_CAPTION_EVENT, ((event: Event) => {
-      const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
+      const request = parseCaptionRequest((event as CustomEvent<unknown>).detail);
       assert.ok(request);
       requested.push(request?.trackId ?? null);
-      target.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+      target.dispatchEvent(new CustomEvent(NETFLIX_ACK_EVENT, {
         detail: netflixCaptionAckDetail({ requestId: request!.requestId, ok: true })
       }));
     }) as EventListener);

@@ -62,13 +62,14 @@ export function readNetflixPlayerAppApi(): NetflixPlayerAppApi | null {
   } catch { return null; }
 }
 
-export function netflixSessionTitle(api: NetflixPlayerAppApi | null, videoId: string | null): string | null {
+export function netflixSessionTitle(api: NetflixPlayerAppApi | null, videoId: string | null): { title: string | null; episodeTitle: string | null } | null {
   if (!api || !videoId) return null;
   try {
     const metadata = api.getVideoMetadataByVideoId?.(Number(videoId));
     const title = stripNetflixSiteTitle(metadata?.getTitle?.());
     const episode = stripNetflixSiteTitle(metadata?.getCurrentVideo?.()?.getEpisodeTitle?.());
-    return title && episode && title !== episode ? `${title} · ${episode}` : title || episode;
+    // With no show title the episode title stands in for it.
+    return title ? { title, episodeTitle: episode && episode !== title ? episode : null } : { title: episode, episodeTitle: null };
   } catch { return null; }
 }
 

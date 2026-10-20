@@ -2,21 +2,23 @@ import { observeProviderDom } from '../dom-watch';
 import { MAX_NETFLIX_PREVIEW_BYTES, NETFLIX_PREVIEW_EVENT, NETFLIX_PREVIEW_ID, parseNetflixPreviewRequest } from '../../media-features/parsers/netflix-preview';
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import {
-  NETFLIX_CAPTION_ACK_EVENT,
+  NETFLIX_ACK_EVENT,
   NETFLIX_CAPTION_EVENT,
   NETFLIX_HARVEST_EVENT,
   NETFLIX_SNAPSHOT_ID,
-  applyNetflixPlayerCaption,
+  applyPlayerCaption,
   netflixCaptionAckDetail,
   netflixCaptionList,
   netflixHarvestKey,
-  netflixHostCaptionsAvailable,
+  hostCaptionsAvailable,
   netflixLiveTrackId,
   type NetflixCaptionApi,
-  netflixSnapshotMatchesVideo,
+  snapshotMatchesVideo,
   netflixVideoId,
-  parseNetflixCaptionRequest,
+  parseCaptionRequest,
   parseNetflixTextTracks,
+  readHeaderSubtitle,
+  resolveNetflixSubtitle,
   resolveNetflixTitle,
   stripNetflixSiteTitle,
   type NetflixTextTrack
@@ -38,6 +40,7 @@ export function netflixIntegrationEnabled(): boolean {
 type NetflixHarvest = {
   videoId?: string;
   title?: string;
+  subtitle?: string;
   captions?: boolean;
   previews?: boolean;
   tracks: NetflixTextTrack[];
@@ -215,6 +218,7 @@ export function publishedNetflixPayload(state: NetflixHarvest): Record<string, u
   return {
     ...(state.videoId ? { videoId: state.videoId } : {}),
     ...(state.title ? { title: state.title } : {}),
+    ...(state.title && state.subtitle ? { subtitle: state.subtitle } : {}),
     ...(state.previews === true ? { previews: true } : {}),
     ...(state.captions === true ? { captions: true } : {}),
     ...(blocked ? { captions: false } : {}),
@@ -300,25 +304,34 @@ function syncHarvest(): void {
   // A /watch route with no matching session is loading, not a public trailer.
   const props = !watchId && root ? findPlayerProps(root) : null;
   const videoId = watchId || netflixVideoId(session?.getMovieId?.()) || netflixVideoId(props?.videoId) || numericAncestorId(root);
-  if (!netflixSnapshotMatchesVideo(harvest.videoId, videoId)) {
+  if (!snapshotMatchesVideo(harvest.videoId, videoId)) {
     harvest = { tracks: [] };
     previousVideoId = null;
   }
-  const captions = session ? session.isReady?.() === true : !watchId && netflixHostCaptionsAvailable(netflixCaptionSupport(root));
+  const captions = session ? session.isReady?.() === true : !watchId && hostCaptionsAvailable(netflixCaptionSupport(root));
   const api = session || (root && !watchId ? captionApis(root)[0] : null) || props;
   const tracks = captions && api ? parseNetflixTextTracks(netflixCaptionList(api)) : [];
   const selectedTrackId = captions && api ? netflixLiveTrackId(api) || undefined : undefined;
+  const sessionTitle = netflixSessionTitle(appApi, session ? videoId : null);
   const title = resolveNetflixTitle({
     videoId,
     previousVideoId,
     previousTitle: harvest.title || null,
-    playerTitle: netflixSessionTitle(appApi, session ? videoId : null) || (props ? playerTitleFromProps(props) : null),
+    playerTitle: sessionTitle?.title || (props ? playerTitleFromProps(props) : null),
     controlTitle: watchId ? null : controlTitle(),
     documentTitle: document.title
   });
+  const subtitle = title ? resolveNetflixSubtitle({
+    videoId,
+    previousVideoId,
+    previousSubtitle: harvest.subtitle || null,
+    headerSubtitle: readHeaderSubtitle(root),
+    episodeTitle: sessionTitle?.episodeTitle
+  }) : null;
   const nextHarvest: NetflixHarvest = {
     ...(videoId ? { videoId } : {}),
     ...(title ? { title: sanitizeContentTitle(title) || undefined } : {}),
+    ...(subtitle ? { subtitle } : {}),
     captions,
     previews: Boolean(session?.isReady?.() && typeof session.getTrickPlayFrame === 'function'),
     tracks,
@@ -339,10 +352,10 @@ function applyCaptionRequest(trackId: string | null, requestedVideoId?: string):
   const session = selectNetflixSession(readNetflixPlayerAppApi(), root, watchId);
   const currentId = watchId || netflixVideoId(session?.getMovieId?.()) || netflixVideoId(findPlayerProps(root)?.videoId) || numericAncestorId(root);
   if (requestedVideoId && currentId !== requestedVideoId) return false;
-  const captionsAvailable = session ? session.isReady?.() === true : !watchId && netflixHostCaptionsAvailable(netflixCaptionSupport(root));
+  const captionsAvailable = session ? session.isReady?.() === true : !watchId && hostCaptionsAvailable(netflixCaptionSupport(root));
   const apis = session ? [session] : watchId ? [] : captionApis(root);
   for (const api of apis) {
-    if (!applyNetflixPlayerCaption(api, trackId, captionsAvailable)) continue;
+    if (!applyPlayerCaption(api, trackId, captionsAvailable)) continue;
     syncHarvest();
     return true;
   }
@@ -379,10 +392,10 @@ export function installNetflixMain(): void {
     if (request) publishNetflixPreview(request.videoId, request.time);
   });
   window.addEventListener(NETFLIX_CAPTION_EVENT, (event: Event) => {
-    const request = parseNetflixCaptionRequest((event as CustomEvent<unknown>).detail);
+    const request = parseCaptionRequest((event as CustomEvent<unknown>).detail);
     if (!request) return;
     const ok = applyCaptionRequest(request.trackId, request.videoId);
-    window.dispatchEvent(new CustomEvent(NETFLIX_CAPTION_ACK_EVENT, {
+    window.dispatchEvent(new CustomEvent(NETFLIX_ACK_EVENT, {
       detail: netflixCaptionAckDetail({ requestId: request.requestId, ok })
     }));
   });

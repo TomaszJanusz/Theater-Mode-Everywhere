@@ -805,11 +805,6 @@
       "count": 1
     }
   },
-  "src/media-features/netflix-adapter.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "src/media-features/netflix-adapter.ts": {
     "import/order": {
       "count": 4
@@ -922,9 +917,6 @@
     }
   },
   "src/media-features/parsers/netflix-page.ts": {
-    "local/max-symbol-name-length": {
-      "count": 10
-    },
     "no-useless-escape": {
       "count": 1
     },

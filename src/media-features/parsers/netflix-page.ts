@@ -2,7 +2,7 @@ import { sanitizeContentTitle } from '../content-title';
 
 export const NETFLIX_SNAPSHOT_ID = 'theater-everywhere-netflix-snapshot';
 export const NETFLIX_CAPTION_EVENT = 'theater-everywhere-netflix-caption';
-export const NETFLIX_CAPTION_ACK_EVENT = 'theater-everywhere-netflix-caption-ack';
+export const NETFLIX_ACK_EVENT = 'theater-everywhere-netflix-caption-ack';
 export const NETFLIX_HARVEST_EVENT = 'theater-everywhere-netflix-harvest';
 
 const TRACK_ID_RE = /^[A-Za-z0-9:_;.\-]{1,80}$/;
@@ -24,6 +24,7 @@ export type NetflixTextTrack = {
 export type NetflixSnapshot = {
   videoId?: string;
   title?: string;
+  subtitle?: string;
   captions?: boolean;
   previews?: boolean;
   tracks: NetflixTextTrack[];
@@ -91,7 +92,7 @@ export function parseNetflixTextTracks(raw: unknown): NetflixTextTrack[] {
 }
 
 /** Snapshot JSON uses the normalized fields. The raw player parser must not read it. */
-export function parsePublishedNetflixTracks(raw: unknown): NetflixTextTrack[] {
+export function parsePublishedTracks(raw: unknown): NetflixTextTrack[] {
   if (!Array.isArray(raw)) return [];
   const tracks: NetflixTextTrack[] = [];
   const seen = new Set<string>();
@@ -119,13 +120,13 @@ export function parsePublishedNetflixTracks(raw: unknown): NetflixTextTrack[] {
   return tracks;
 }
 
-export function selectableNetflixTextTracks(tracks: NetflixTextTrack[]): NetflixTextTrack[] {
+export function selectableTextTracks(tracks: NetflixTextTrack[]): NetflixTextTrack[] {
   return tracks.filter((track) => !track.none);
 }
 
 export function chooseNetflixRawTrack(rawTracks: unknown, trackId: string | null): unknown | null {
   const tracks = parseNetflixTextTracks(rawTracks);
-  const target = selectNetflixCaptionTarget(tracks, trackId);
+  const target = selectCaptionTarget(tracks, trackId);
   if (!target || !Array.isArray(rawTracks)) return null;
   for (const item of rawTracks) {
     if (!item || typeof item !== 'object') continue;
@@ -180,7 +181,7 @@ export function netflixLiveTrackId(api: NetflixCaptionApi): string | null {
  * Unknown loading is a negative too. A mounted renderer means the host may
  * accept a logical track selection. It does not mean a cue was painted.
  */
-export function netflixHostCaptionsAvailable(input: {
+export function hostCaptionsAvailable(input: {
   rendererMounted: boolean;
   fallbackMode: boolean | null;
   playerLoading: boolean | null;
@@ -196,7 +197,7 @@ export function netflixHostCaptionsAvailable(input: {
  * not mean `.player-timedtext` painted a cue. Off is applied when the live
  * track is the off track.
  */
-export function applyNetflixPlayerCaption(
+export function applyPlayerCaption(
   api: NetflixCaptionApi,
   trackId: string | null,
   rendererMounted: boolean
@@ -214,11 +215,11 @@ export function applyNetflixPlayerCaption(
   return netflixLiveTrackId(api) === requestedId;
 }
 
-export function netflixCaptionRequestDetail(request: NetflixCaptionRequest): string {
+export function captionRequestDetail(request: NetflixCaptionRequest): string {
   return JSON.stringify({ requestId: request.requestId, trackId: request.trackId, ...(request.videoId ? { videoId: request.videoId } : {}) });
 }
 
-export function parseNetflixCaptionRequest(detail: unknown): NetflixCaptionRequest | null {
+export function parseCaptionRequest(detail: unknown): NetflixCaptionRequest | null {
   if (typeof detail !== 'string' || detail.length > 220) return null;
   let data: unknown;
   try {
@@ -259,6 +260,7 @@ export function parseNetflixCaptionAck(detail: unknown): NetflixCaptionAck | nul
 export function netflixHarvestKey(state: {
   videoId?: string | null;
   title?: string | null;
+  subtitle?: string | null;
   captions?: boolean | null;
   previews?: boolean;
   selectedTrackId?: string | null;
@@ -267,6 +269,7 @@ export function netflixHarvestKey(state: {
   return JSON.stringify({
     videoId: state.videoId ?? null,
     title: state.title ?? null,
+    subtitle: state.subtitle ?? null,
     captions: state.captions === true,
     previews: state.previews === true,
     selectedTrackId: state.selectedTrackId ?? null,
@@ -274,7 +277,7 @@ export function netflixHarvestKey(state: {
   });
 }
 
-export function selectNetflixCaptionTarget(
+export function selectCaptionTarget(
   tracks: NetflixTextTrack[],
   trackId: string | null
 ): NetflixTextTrack | null {
@@ -285,7 +288,7 @@ export function selectNetflixCaptionTarget(
 }
 
 /** Drops a published snapshot when playback moved to a different Netflix video id. */
-export function netflixSnapshotMatchesVideo(snapshotVideoId: unknown, activeVideoId: unknown): boolean {
+export function snapshotMatchesVideo(snapshotVideoId: unknown, activeVideoId: unknown): boolean {
   const snapshot = netflixVideoId(snapshotVideoId);
   const active = netflixVideoId(activeVideoId);
   if (!snapshot || !active) return true;
@@ -304,6 +307,33 @@ export function stripNetflixSiteTitle(value: unknown): string | null {
  * Title of the clip that is actually open.
  * A changed video id must not keep the previous trailer name.
  */
+/**
+ * Episode label beside the show title. The player header holds the title in an
+ * <h4> and the localized season/episode marker and episode title in <span>s.
+ */
+export function readHeaderSubtitle(root: Pick<ParentNode, 'querySelector'> | null | undefined): string | null {
+  const header = root?.querySelector('[data-uia="video-title"]');
+  if (!header) return null;
+  const parts = Array.from(header.querySelectorAll(':scope > span'), (span) => sanitizeContentTitle(span.textContent))
+    .filter((part): part is string => Boolean(part));
+  return sanitizeContentTitle(parts.join(' · '));
+}
+
+/** The subtitle travels with the clip it was read for; a different video drops it. */
+export function resolveNetflixSubtitle(input: {
+  videoId: string | null;
+  previousVideoId: string | null;
+  previousSubtitle: string | null;
+  headerSubtitle: unknown;
+  episodeTitle: unknown;
+}): string | null {
+  const header = sanitizeContentTitle(input.headerSubtitle);
+  if (header) return header;
+  const episode = stripNetflixSiteTitle(input.episodeTitle);
+  if (episode) return episode;
+  return input.videoId && input.videoId === input.previousVideoId ? input.previousSubtitle : null;
+}
+
 export function resolveNetflixTitle(input: {
   videoId: string | null;
   previousVideoId: string | null;
@@ -321,7 +351,7 @@ export function resolveNetflixTitle(input: {
   return stripNetflixSiteTitle(input.documentTitle);
 }
 
-export function readPublishedNetflixSnapshot(
+export function readPublishedSnapshot(
   root: Pick<ParentNode, 'querySelector'> | null | undefined = typeof document === 'undefined' ? null : document
 ): NetflixSnapshot | null {
   if (!root) return null;
@@ -332,13 +362,15 @@ export function readPublishedNetflixSnapshot(
     if (!data || typeof data !== 'object') return null;
     const videoId = netflixVideoId(data.videoId) || undefined;
     const title = stripNetflixSiteTitle(data.title) || undefined;
+    const subtitle = title ? sanitizeContentTitle(data.subtitle) || undefined : undefined;
     const captions = data.captions === false ? false : data.captions === true ? true : undefined;
-    const tracks = captions === false ? [] : parsePublishedNetflixTracks(data.tracks);
+    const tracks = captions === false ? [] : parsePublishedTracks(data.tracks);
     const selectedTrackId = captions === false ? undefined : netflixTrackId(data.selectedTrackId) || undefined;
     if (!videoId && !title && tracks.length === 0 && captions !== false) return null;
     return {
       ...(videoId ? { videoId } : {}),
       ...(title ? { title } : {}),
+      ...(subtitle ? { subtitle } : {}),
       ...(captions === undefined ? {} : { captions }),
       tracks,
       ...(data.previews === true ? { previews: true } : {}),
