@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
+
+## [2.0.3] - 2026-10-20
+
+### Fixed
+
+- Some websites no longer break when the extension is installed: its page script no longer leaks names into the page's global scope, which could replace or clash with the site's own globals (for example a third-party login page whose analytics call failed with a TypeError). Synthetic key events from page scripts no longer raise errors from the extension either.
 - The title bar on Netflix now shows the episode (season marker and episode title) as a styled subtitle after the show title, instead of one run-on title.
 
 ## [2.0.2] - 2026-10-19

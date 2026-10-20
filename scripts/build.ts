@@ -101,6 +101,16 @@ async function buildClassicScript(
       }
     }
   });
+  scopeClassicScript(path.join(root, 'dist', `${entryName}.js`));
+}
+
+/**
+ * The MAIN-world bundle shares its global scope with the host page, so every top-level name
+ * (including esbuild helpers hoisted above Rollup's own IIFE) must live in one function scope.
+ * Output is strict like the ES modules it came from. See assertScopedScript.
+ */
+function scopeClassicScript(file: string): void {
+  fs.writeFileSync(file, `(function(){"use strict";${fs.readFileSync(file, 'utf8')}\n})();\n`);
 }
 
 async function run() {
