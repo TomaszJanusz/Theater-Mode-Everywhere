@@ -97,7 +97,22 @@ export class ChatController {
   start(): void {
     if (this.disposed || this.started) return;
     this.started = true;
-    this.refresh();
+    if (this.options.document.hidden) this.sampleNativeVisibility();
+    else this.refresh();
+  }
+
+  /**
+   * Entering theater in a background tab (AutoTheater at load) defers every
+   * refresh until the tab shows. By then theater presentation may already hide the
+   * page's panels, so an open native chat would read as closed. Take the one native
+   * reading now: no observers, timers, or clicks while hidden.
+   */
+  private sampleNativeVisibility(): void {
+    this.syncActivity(); // Binds the visibility listener; a hidden document arms nothing.
+    const href = this.safeHref();
+    this.lastIdentity = watchIdentity(href);
+    const surface = detectChatSurface(this.options.document, href);
+    if (surface) this.ensurePreference(surface.provider, surface.initiallyVisible);
   }
 
   get state(): ChatState {
