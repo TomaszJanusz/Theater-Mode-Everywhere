@@ -143,6 +143,30 @@ for (const engine of testEngines()) {
     await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
   });
 
+  it(`${engine}: fixed UI children size against the host box, in and out of the top layer`, { timeout: 60_000 }, async t => {
+    const { page } = await open(t, engine);
+    await bootPlayer(page);
+    await enterTheater(page);
+    // Chat narrows the stage through --theater-video-width; the host's contain: layout makes it the
+    // containing block, so fixed children (captions, HUDs, pinned controls) must follow it, not the viewport.
+    const probeWidth = () => page.evaluate(h => {
+      const root = document.querySelector(h)!.shadowRoot!;
+      let probe = root.getElementById('layout-probe');
+      if (!probe) {
+        probe = document.createElement('div');
+        probe.id = 'layout-probe';
+        probe.style.cssText = 'position:fixed;inset:0';
+        root.appendChild(probe);
+      }
+      return probe.getBoundingClientRect().width;
+    }, HOST);
+    await page.evaluate(() => document.documentElement.style.setProperty('--theater-video-width', '600px'));
+    assert.equal(await probeWidth(), 600, 'in the top layer');
+    await page.evaluate(() => document.documentElement.setAttribute('data-theater-chat-active', ''));
+    await page.waitForFunction(h => !document.querySelector(h)!.matches(':popover-open'), HOST);
+    assert.equal(await probeWidth(), 600, 'out of the top layer (native chat)');
+  });
+
   it(`${engine}: re-entering the top layer on frequent page popovers does not restart its animations or drop focus`, { timeout: 60_000 }, async t => {
     const { page, errors } = await open(t, engine);
     await page.clock.install();
