@@ -19,6 +19,12 @@ export type WatchPlayback = {
   refreshEvents?: readonly string[];
   /** Null means attachment is not ready; retry on the next refresh. */
   observe?(video: HTMLVideoElement, onChange: () => void): (() => void) | null;
+  /**
+   * Host changes that reveal the watch player without a media event or publication, such as
+   * un-hiding the watch page or moving the already-playing player out of the miniplayer. Called
+   * while an entry may still happen, before any video is found; the returned cleanup is idempotent.
+   */
+  observeReveal?(doc: Document, onChange: () => void): () => void;
 };
 
 export type ProviderWatchPage = {

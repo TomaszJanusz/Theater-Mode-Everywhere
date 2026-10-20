@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
 - The title bar on Netflix now shows the episode (season marker and episode title) as a styled subtitle after the show title, instead of one run-on title.
 

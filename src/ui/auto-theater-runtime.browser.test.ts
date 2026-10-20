@@ -592,6 +592,80 @@ for (const engine of testEngines()) {
     }
   });
 
+  // Expanding the miniplayer publishes yt-page-data-updated while the watch page is still hidden;
+  // the host then reveals it and unparks the player with attribute flips only. Nothing else fires
+  // for the already-playing video, so the reveal itself has to re-evaluate entry.
+  for (const flow of ['player parked in the miniplayer', 'watch page still hidden'] as const) {
+    it(`YouTube auto entry in ${engine} follows the host's silent reveal after expanding the miniplayer (${flow})`, { timeout: 60_000 }, async t => {
+      const browserType = (await import('playwright'))[engine];
+      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
+      const context = await shared.newContext(t);
+      try {
+        const page = await context.newPage();
+        await page.addInitScript('window.__name = target => target;');
+        const parked = flow === 'player parked in the miniplayer';
+        const player = '<div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div>';
+        await page.route('https://www.youtube.com/**', route => route.fulfill({
+          contentType: 'text/html',
+          body: `<ytd-app${parked ? ' miniplayer-is-active' : ''}><ytd-miniplayer>${parked ? player : ''}</ytd-miniplayer><ytd-watch-flexy hidden>${parked ? '' : player}</ytd-watch-flexy></ytd-app>`
+        }));
+        await page.goto('https://www.youtube.com/');
+        await page.addScriptTag({ content: BUNDLE });
+        // Loaded before the runtime starts: assigning a source later would fire media events,
+        // which the host's silent reveal does not.
+        await page.evaluate(media => new Promise<void>(resolve => {
+          const video = document.querySelector('video')!;
+          video.addEventListener('loadeddata', () => resolve(), { once: true });
+          video.src = media;
+          Object.assign(document.getElementById('movie_player')!, { getVideoData: () => ({ video_id: 'abcdefghijk' }) });
+        }), MEDIA);
+        await page.clock.install();
+        await page.clock.pauseAt(new Date(Date.now() + 60_000));
+        await page.evaluate(flags => {
+          const video = document.querySelector('video')!;
+          // Already playing on Home, as when the video was started in the miniplayer.
+          for (const [key, value] of Object.entries({ paused: false, ended: false, readyState: 4, networkState: 2, error: null })) {
+            Object.defineProperty(video, key, { get: () => value, configurable: true });
+          }
+          window.AutoTheaterTest.installWatchPlaybackQueries();
+          const probe: Window['autoTheaterProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
+          window.autoTheaterProbe = probe;
+          window.autoTheaterRuntime = window.AutoTheaterTest.createAutoTheaterRuntime({
+            visit: { current: { identity: null, entered: false } },
+            enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+            editableFocused: () => false, theaterActive: () => probe.active,
+            transitioning: () => false,
+            // Like the real finder, never the miniplayer's video.
+            findBestVideo: () => (video.closest('ytd-miniplayer') ? null : video),
+            enter: () => { probe.entries++; probe.active = true; },
+            showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }, noticeDelayMs: 0
+          });
+        }, defaultMediaProviderFlags());
+        const probe = () => page.evaluate(() => { const { entries, shown } = window.autoTheaterProbe; return { entries, shown }; });
+
+        await page.evaluate(() => {
+          history.pushState({}, '', '/watch?v=abcdefghijk');
+          document.dispatchEvent(new Event('yt-navigate-finish'));
+          document.dispatchEvent(new Event('yt-page-data-updated'));
+        });
+        assert.deepEqual(await probe(), { entries: 0, shown: parked ? 0 : 1 }, 'the hidden page never enters');
+        await page.clock.runFor(6000);
+        assert.equal((await probe()).entries, 0, 'the hidden page never enters');
+
+        await page.evaluate(() => {
+          const watch = document.querySelector('ytd-watch-flexy')!;
+          watch.append(document.getElementById('movie_player')!);
+          watch.removeAttribute('hidden');
+          document.querySelector('ytd-app')!.removeAttribute('miniplayer-is-active');
+        });
+        await page.clock.runFor(6000);
+        assert.deepEqual(await probe(), { entries: 1, shown: 1 }, 'the reveal alone re-evaluates entry');
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
   for (const scenario of ['yt-player-updated', 'yt-page-data-updated', 'focus', 'fullscreen', 'transition', 'miniplayer', 'observe retry', 'observe player'] as const) {
     it(`YouTube auto entry in ${engine} re-evaluates ${scenario} without another playing event`, { timeout: 60_000 }, async t => {
       const context = await shared.newContext(t);

@@ -50,5 +50,16 @@ export const youtubeWatchPlayback: WatchPlayback = {
     });
     observer.observe(player, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
+  },
+  observeReveal(doc, onChange) {
+    // Expanding the miniplayer fires yt-page-data-updated while the watch page is still
+    // hidden; the host reveals it and takes the player out of the miniplayer a moment later
+    // with attribute flips only. On a slow page that can outlast the entry countdown.
+    const observer = new MutationObserver(onChange);
+    const watch = doc.querySelector('ytd-watch-flexy');
+    if (watch) observer.observe(watch, { attributes: true, attributeFilter: ['hidden'] });
+    const app = doc.querySelector('ytd-app');
+    if (app) observer.observe(app, { attributes: true, attributeFilter: ['miniplayer-is-active'] });
+    return () => observer.disconnect();
   }
 };

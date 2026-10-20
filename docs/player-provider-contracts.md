@@ -57,8 +57,12 @@ publications, provider-declared watch refresh events, and focus/fullscreen gate
 releases, and calls the regular theater entry path. Transition completion also
 re-evaluates entry. A released gate can enter the same unentered visit while
 playback remains active. Failed provider observation is retried on the next
-refresh. YouTube observes only the main player's ad-state classes, since ad
-completion need not emit another playing event. The opt-in preference defaults
+refresh. YouTube observes the main player's ad-state classes, since ad
+completion need not emit another playing event. A provider may also declare
+`WatchPlayback.observeReveal`, attached while an entry is still possible and before any
+video is found, for host reveals with no event of their own: YouTube's expanding the
+miniplayer un-hides the watch page and unparks the player with attribute flips shortly
+after its last publication, which can land after the countdown has run out. The opt-in preference defaults
 off; a visit records entry so exiting or changing preferences cannot reenter the
 same content. New content identities reset
 Entry is announced first: once the provider confirms the main video's identity and
