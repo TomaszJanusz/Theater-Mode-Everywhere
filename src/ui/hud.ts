@@ -559,8 +559,9 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (text && (text.firstChild?.textContent !== cleaned.title || (subtitle?.textContent ?? null) !== cleaned.subtitle)) {
       renderTitleText(text, cleaned);
       renderSmartTitle(overlay.querySelector('.theater-title-hud-smart')!, cleaned);
+      // Relayout restarts the marquee, so an unchanged title must not trigger it.
+      layoutTitleMarquee(overlay);
     }
-    layoutTitleMarquee(overlay);
   }
 
   function renderTitleText(text: Element, content: ContentTitle): void {
