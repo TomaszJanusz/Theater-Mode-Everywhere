@@ -10,6 +10,8 @@ import {
   parseNetflixTextTracks,
   parsePublishedNetflixTracks,
   readPublishedNetflixSnapshot,
+  readNetflixHeaderSubtitle,
+  resolveNetflixSubtitle,
   resolveNetflixTitle,
   selectableNetflixTextTracks,
   selectNetflixCaptionTarget,
@@ -85,6 +87,33 @@ describe('netflix public player metadata', () => {
       controlTitle: null,
       documentTitle: 'Netflix'
     }), 'Zwiastun serii: Stranger Things');
+  });
+
+  it('reads the season marker and episode title from the player header', () => {
+    const header = (spans: string[]) => ({
+      querySelector: (selector: string) => selector === '[data-uia="video-title"]'
+        ? { querySelectorAll: () => spans.map((textContent) => ({ textContent })) }
+        : null
+    });
+    // <h4>Cyberpunk: Edgerunners</h4><span>O5</span><span>Jawa czy sen?</span>
+    assert.equal(readNetflixHeaderSubtitle(header(['O5', 'Jawa czy sen?'])), 'O5 · Jawa czy sen?');
+    assert.equal(readNetflixHeaderSubtitle(header(['O5', '  ', ''])), 'O5');
+    assert.equal(readNetflixHeaderSubtitle(header([])), null);
+    assert.equal(readNetflixHeaderSubtitle({ querySelector: () => null }), null);
+  });
+
+  it('keeps the subtitle with its clip and never leaves an empty one', () => {
+    const base = { videoId: '1', previousVideoId: '1', previousSubtitle: 'O5 · Old', headerSubtitle: null, episodeTitle: null };
+    assert.equal(resolveNetflixSubtitle({ ...base, headerSubtitle: 'O5 · Jawa czy sen?' }), 'O5 · Jawa czy sen?');
+    assert.equal(resolveNetflixSubtitle({ ...base, episodeTitle: 'Jawa czy sen?' }), 'Jawa czy sen?');
+    assert.equal(resolveNetflixSubtitle(base), 'O5 · Old');
+    assert.equal(resolveNetflixSubtitle({ ...base, previousVideoId: '2' }), null);
+    assert.equal(resolveNetflixSubtitle({ ...base, headerSubtitle: '   ', previousSubtitle: null }), null);
+  });
+
+  it('publishes the subtitle only beside a title', () => {
+    assert.equal(publishedNetflixPayload({ videoId: '1', title: 'Show', subtitle: 'O5 · Ep', tracks: [] })?.subtitle, 'O5 · Ep');
+    assert.equal(publishedNetflixPayload({ videoId: '1', subtitle: 'O5 · Ep', tracks: [] })?.subtitle, undefined);
   });
 
   it('reads a published snapshot without keeping unsafe track ids', () => {

@@ -94,6 +94,11 @@ export class NetflixAdapter implements MediaFeaturesAdapter {
     return sanitizeContentTitle(this.read()?.title) || null;
   }
 
+  getSubtitle(): string | null {
+    const snapshot = this.read();
+    return snapshot?.title ? sanitizeContentTitle(snapshot.subtitle) : null;
+  }
+
   async probe(): Promise<MediaCapabilities> {
     const snapshot = this.read();
     const tracks = snapshot?.captions === false ? [] : selectableNetflixTextTracks(snapshot?.tracks || []);

@@ -24,6 +24,7 @@ export type NetflixTextTrack = {
 export type NetflixSnapshot = {
   videoId?: string;
   title?: string;
+  subtitle?: string;
   captions?: boolean;
   previews?: boolean;
   tracks: NetflixTextTrack[];
@@ -259,6 +260,7 @@ export function parseNetflixCaptionAck(detail: unknown): NetflixCaptionAck | nul
 export function netflixHarvestKey(state: {
   videoId?: string | null;
   title?: string | null;
+  subtitle?: string | null;
   captions?: boolean | null;
   previews?: boolean;
   selectedTrackId?: string | null;
@@ -267,6 +269,7 @@ export function netflixHarvestKey(state: {
   return JSON.stringify({
     videoId: state.videoId ?? null,
     title: state.title ?? null,
+    subtitle: state.subtitle ?? null,
     captions: state.captions === true,
     previews: state.previews === true,
     selectedTrackId: state.selectedTrackId ?? null,
@@ -304,6 +307,33 @@ export function stripNetflixSiteTitle(value: unknown): string | null {
  * Title of the clip that is actually open.
  * A changed video id must not keep the previous trailer name.
  */
+/**
+ * Episode label beside the show title. The player header holds the title in an
+ * <h4> and the localized season/episode marker and episode title in <span>s.
+ */
+export function readNetflixHeaderSubtitle(root: Pick<ParentNode, 'querySelector'> | null | undefined): string | null {
+  const header = root?.querySelector('[data-uia="video-title"]');
+  if (!header) return null;
+  const parts = Array.from(header.querySelectorAll(':scope > span'), (span) => sanitizeContentTitle(span.textContent))
+    .filter((part): part is string => Boolean(part));
+  return sanitizeContentTitle(parts.join(' · '));
+}
+
+/** The subtitle travels with the clip it was read for; a different video drops it. */
+export function resolveNetflixSubtitle(input: {
+  videoId: string | null;
+  previousVideoId: string | null;
+  previousSubtitle: string | null;
+  headerSubtitle: unknown;
+  episodeTitle: unknown;
+}): string | null {
+  const header = sanitizeContentTitle(input.headerSubtitle);
+  if (header) return header;
+  const episode = stripNetflixSiteTitle(input.episodeTitle);
+  if (episode) return episode;
+  return input.videoId && input.videoId === input.previousVideoId ? input.previousSubtitle : null;
+}
+
 export function resolveNetflixTitle(input: {
   videoId: string | null;
   previousVideoId: string | null;
@@ -332,6 +362,7 @@ export function readPublishedNetflixSnapshot(
     if (!data || typeof data !== 'object') return null;
     const videoId = netflixVideoId(data.videoId) || undefined;
     const title = stripNetflixSiteTitle(data.title) || undefined;
+    const subtitle = title ? sanitizeContentTitle(data.subtitle) || undefined : undefined;
     const captions = data.captions === false ? false : data.captions === true ? true : undefined;
     const tracks = captions === false ? [] : parsePublishedNetflixTracks(data.tracks);
     const selectedTrackId = captions === false ? undefined : netflixTrackId(data.selectedTrackId) || undefined;
@@ -339,6 +370,7 @@ export function readPublishedNetflixSnapshot(
     return {
       ...(videoId ? { videoId } : {}),
       ...(title ? { title } : {}),
+      ...(subtitle ? { subtitle } : {}),
       ...(captions === undefined ? {} : { captions }),
       tracks,
       ...(data.previews === true ? { previews: true } : {}),

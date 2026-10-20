@@ -9,6 +9,7 @@ import {
   parseNetflixCaptionRequest,
   parseNetflixTextTracks
 } from './parsers/netflix-page';
+import { contentTitle } from './content-title';
 import { publishedNetflixPayload } from '../providers/netflix/main';
 
 const rawTracks = [
@@ -61,6 +62,29 @@ function installSnapshot(): void {
     }
   });
 }
+
+describe('Netflix title and subtitle', () => {
+  const install = (subtitle?: string) => {
+    const payload = publishedNetflixPayload({ videoId: '82779520', title: 'Cyberpunk: Edgerunners', subtitle, tracks: [] });
+    Object.assign(globalThis, { document: { querySelector: () => ({ textContent: JSON.stringify(payload) }) } });
+  };
+
+  it('hands the episode label to the shared title as the subtitle', () => {
+    install('O5 · Jawa czy sen?');
+    const adapter = new NetflixAdapter();
+    assert.deepEqual(contentTitle(adapter.getTitle(), adapter.getSubtitle()), {
+      title: 'Cyberpunk: Edgerunners',
+      subtitle: 'O5 · Jawa czy sen?'
+    });
+  });
+
+  it('has no subtitle for a title without an episode, so no separator is drawn', () => {
+    install();
+    const adapter = new NetflixAdapter();
+    assert.equal(adapter.getSubtitle(), null);
+    assert.equal(contentTitle(adapter.getTitle(), adapter.getSubtitle())?.subtitle, null);
+  });
+});
 
 describe('Netflix caption request bridge', () => {
   it('rounds the published snapshot through Off with a string ack', async () => {
