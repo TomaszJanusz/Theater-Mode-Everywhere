@@ -333,4 +333,11 @@ describe('shortcut editor paint', () => {
       (globalThis as { chrome?: unknown }).chrome = oldChrome;
     }
   });
+
+  it('does not throw for synthetic key events that lack key or code', () => {
+    // Pages dispatch plain `Event('keydown')` objects; MAIN-world capture listeners match them.
+    for (const event of [new Event('keydown'), { key: 'a' }, { code: 'KeyA' }, {}]) {
+      assert.equal(matchesShortcut(event as KeyboardEvent, 'Ctrl+A'), false);
+    }
+  });
 });

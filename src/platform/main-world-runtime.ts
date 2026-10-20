@@ -7,6 +7,7 @@ import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, ty
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { installXhrHarvest } from './xhr-harvest';
+import { noteWrapperFailure } from './wrapper-failures';
 import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchUrl, MAX_CAPTION_BYTES } from './media-url-policy';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
@@ -126,7 +127,8 @@ export function installMainWorldRuntime(): void {
     const tagged = fn as typeof fetch & { [FETCH_WRAPPED]?: boolean };
     if (tagged[FETCH_WRAPPED]) return fn;
     const wrapped = function(this: Window, input: RequestInfo | URL): Promise<Response> {
-      const url = requestUrl(input);
+      let url = '';
+      try { url = requestUrl(input); } catch (error) { noteWrapperFailure('fetch-input', error); }
       return Promise.resolve(fn.apply(this, arguments as unknown as [RequestInfo | URL, RequestInit?])).then((response) => {
         try {
           responseUrls.set(response, response.url || url);
@@ -150,8 +152,9 @@ export function installMainWorldRuntime(): void {
               case 'tencent': captureTencentNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
             }
           }
-        } catch {
+        } catch (error) {
           // Harvest must not break the page's fetch.
+          noteWrapperFailure('fetch', error);
         }
         return response;
       });
@@ -171,8 +174,9 @@ export function installMainWorldRuntime(): void {
             if (!this.ok || isOwnedHarvestResponse(this)) return;
             const url = this.url || responseUrls.get(this) || '';
             harvestJson(harvestTarget(url), url, data);
-          } catch {
+          } catch (error) {
             // Ignore harvest failures from host JSON parsing.
+            noteWrapperFailure('response-json', error);
           }
         }).catch(() => {});
       }
@@ -188,8 +192,9 @@ export function installMainWorldRuntime(): void {
             if (!text || !this.ok || isOwnedHarvestResponse(this)) return;
             const url = this.url || responseUrls.get(this) || '';
             harvestText(harvestTarget(url), url, text);
-          } catch {
+          } catch (error) {
             // Ignore harvest failures from host text parsing.
+            noteWrapperFailure('response-text', error);
           }
         }).catch(() => {});
       }

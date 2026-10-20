@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { assertBackgroundScriptLoading, assertSelfContainedScript } from './bundle-integrity';
+import { assertBackgroundScriptLoading, assertScopedScript, assertSelfContainedScript } from './bundle-integrity';
 
 const requireFromVite = createRequire(path.resolve(__dirname, '../node_modules/vite/package.json'));
 
@@ -34,6 +34,14 @@ function withScript(source: string, run: (filePath: string) => void): void {
 }
 
 describe('bundle integrity gate', () => {
+  it('rejects top-level declarations that would leak into the page global scope', () => {
+    for (const source of ['function va(t,e){return t}va(1,2);', 'const oo=1;(function(){})();', 'var a=1;']) {
+      withScript(source, (filePath) => {
+        assert.throws(() => assertScopedScript(filePath), /IIFE/);
+      });
+    }
+  });
+
   it('accepts a classic IIFE', () => {
     withScript('(function(){ var x = 1; })();', (filePath) => {
       assert.doesNotThrow(() => assertSelfContainedScript(filePath));

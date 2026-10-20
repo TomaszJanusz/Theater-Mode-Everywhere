@@ -152,7 +152,8 @@ export function shortcutDisplayParts(shortcutStr: string): string[] {
 }
 
 export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
-  if (!shortcutStr) return false;
+  // Pages dispatch synthetic key events (plain `Event`s, autofill) that lack `key`/`code`.
+  if (!shortcutStr || typeof e.key !== 'string' || typeof e.code !== 'string') return false;
 
   const parts = shortcutStr.split('+');
   const mainKey = parts.pop() || '+';
