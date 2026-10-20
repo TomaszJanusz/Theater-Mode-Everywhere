@@ -26,6 +26,17 @@ function skipLeadingTrivia(source: string): string {
   return rest;
 }
 
+/** Drops trailing whitespace and line comments (e.g. a sourceMappingURL), in linear time. */
+function trimTrailingTrivia(source: string): string {
+  let rest = source.trimEnd();
+  for (let start = rest.lastIndexOf('\n'); rest.slice(start + 1).startsWith('//'); start = rest.lastIndexOf('\n')) {
+    rest = rest.slice(0, Math.max(start, 0)).trimEnd();
+  }
+  return rest;
+}
+
+const IIFE_END_RE = /(?:\}\)\(\)|\}\(\)\)|\)\(\))\s*;?$/;
+
 /**
  * The MAIN-world bundle shares its global scope with the host page. Top-level minified names
  * (`function va`, `const oo`) would become page globals: they shadow the page's own (a site
@@ -33,7 +44,9 @@ function skipLeadingTrivia(source: string): string {
  * `let`/`const` of the same name fails to parse. Everything must live inside one function scope.
  */
 export function assertScopedScript(filePath: string): void {
-  if (!IIFE_START_RE.test(skipLeadingTrivia(fs.readFileSync(filePath, 'utf8')))) {
+  const source = fs.readFileSync(filePath, 'utf8');
+  // Start and end together rule out a declaration before or after the wrapper call.
+  if (!IIFE_START_RE.test(skipLeadingTrivia(source)) || !IIFE_END_RE.test(trimTrailingTrivia(source))) {
     throw new Error(`${path.basename(filePath)} is not wrapped in an IIFE; its top-level names would leak into the page's global scope.`);
   }
 }

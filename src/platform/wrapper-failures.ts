@@ -10,8 +10,11 @@ export function noteWrapperFailure(kind: string, error: unknown): void {
   const seen = (counts.get(kind) ?? 0) + 1;
   counts.set(kind, seen);
   if (seen !== 1) return;
-  const message = error instanceof Error ? error.message : String(error);
-  console.warn(`[Theater Everywhere] wrapper failure (${kind}): ${message}`);
+  // Page code owns `console` and may have replaced or removed it: reporting must never throw.
+  try {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[Theater Everywhere] wrapper failure (${kind}): ${message}`);
+  } catch { /* diagnostics only */ }
 }
 
 export function wrapperFailureCount(kind: string): number {
