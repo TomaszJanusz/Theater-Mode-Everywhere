@@ -1,0 +1,95 @@
+import type { Meta, StoryObj } from '@storybook/html-vite';
+import { expect, userEvent } from 'storybook/test';
+
+import { renderPlayerBar } from '../../.storybook/player-stage';
+
+import { t } from './messages';
+import { queryPlayerUi } from './root';
+import { createSpeedControl } from './speed-control';
+
+interface Args {
+  rate: number;
+  disabled: boolean;
+}
+
+const meta: Meta<Args> = {
+  title: 'Player/Speed control',
+  args: { rate: 1.5, disabled: false },
+  render: ({ rate, disabled }) => renderPlayerBar(scope => {
+    const control = createSpeedControl({
+      video: { playbackRate: rate },
+      scope,
+      label: t('playbackSpeed'),
+      updateCaptionDock: () => {},
+      blurMouseToggle: () => {}
+    });
+    control.button.disabled = disabled;
+    control.slider.disabled = disabled;
+    return [control.container];
+  })
+};
+export default meta;
+
+type Story = StoryObj<Args>;
+
+const button = () => queryPlayerUi<HTMLButtonElement>('.speed-btn')!;
+const slider = () => queryPlayerUi<HTMLInputElement>('.theater-speed-slider')!;
+const panel = () => queryPlayerUi<HTMLElement>('.theater-speed-panel')!;
+const container = () => queryPlayerUi<HTMLElement>('.theater-speed-container')!;
+
+export const Default: Story = {
+  play: async () => {
+    await expect(button().textContent).toBe('1.50x');
+    await expect(panel().inert).toBe(true);
+  }
+};
+
+/** Focus is the keyboard path to the panel the pointer reveals on hover. */
+export const Open: Story = {
+  play: async () => {
+    button().focus();
+    await expect(panel().inert).toBe(false);
+  }
+};
+
+/**
+ * Pointer and keyboard open the panel through one function in `bindSliderPopover`; Escape closes
+ * it, returns focus to the button, and is consumed only while the panel is open.
+ */
+export const PointerKeyboardParity: Story = {
+  play: async () => {
+    container().dispatchEvent(new PointerEvent('pointerenter'));
+    await expect(panel().inert).toBe(false);
+    container().dispatchEvent(new PointerEvent('pointerleave'));
+    await expect(panel().inert).toBe(true);
+
+    // The first Escape is stopped at the control, so only the second reaches the document.
+    const reached: boolean[] = [];
+    document.addEventListener('keydown', event => reached.push(event.defaultPrevented));
+    button().focus();
+    await expect(panel().inert).toBe(false);
+    await userEvent.keyboard('{Escape}');
+    await expect(panel().inert).toBe(true);
+    await expect(button().matches(':focus')).toBe(true);
+    // Escape with the panel closed is left alone, so theater can still exit on it.
+    await userEvent.keyboard('{Escape}');
+    await expect(reached).toEqual([false]);
+  }
+};
+
+export const Fast: Story = { args: { rate: 2 } };
+
+export const Disabled: Story = {
+  args: { disabled: true },
+  play: async () => {
+    await expect(button().disabled).toBe(true);
+  }
+};
+
+export const LongLabelGerman: Story = {
+  globals: { locale: 'de' },
+  play: async () => {
+    await expect(button().getAttribute('aria-label')).toBe('Wiedergabegeschwindigkeit');
+    await expect(slider().getAttribute('aria-label')).toBe('Wiedergabegeschwindigkeit');
+  }
+};

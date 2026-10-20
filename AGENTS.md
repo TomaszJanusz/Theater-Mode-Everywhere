@@ -65,6 +65,15 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - **Real hosts:** verify host-dependent behavior with the intended extension build and active theater/RTE state. Capture screenshots for appearance, video for timing when useful. Fixture checks do not prove authenticated host behavior; diagnostic injection is not an installed-extension pass.
 - **Finish:** run `git diff --check`. Report skips and coverage gaps. Repeat successful checks only after relevant edits or new evidence.
 
+## Storybook
+
+Storybook (HTML, no framework; `.storybook/`, `*.stories.ts` beside the component) renders the production player UI from `src/ui` against the real stylesheets, in the real shadow root, with only `chrome.storage` and the language catalog stubbed. It proves component rendering and behavior, not host behavior.
+
+- **Commands:** `pnpm storybook` (dev server), `pnpm storybook:test` (story `play` functions in a real browser; `STORYBOOK_BROWSER=firefox` for Firefox), `pnpm storybook:shots` (deterministic PNGs in `output/storybook-shots/chromium/`; `storybook:shots:firefox` for Firefox).
+- **Screenshots in PRs:** UI screenshots come from `pnpm storybook:shots`, or are explicitly labeled as real-host captures. Do not attach hand-drawn or mocked images.
+- **Stories render production components.** If a component reaches into `PlayerSession`, providers or `chrome.*`, extract explicit inputs (state, callbacks, strings) as `volume-control.ts` does; do not re-implement it in a story.
+- Storybook is a devDependency only; nothing under `.storybook/` or `*.stories.ts` is imported by an extension entry point.
+
 ## Docs and tracking
 
 - **Notion** is the source of truth for requirements, architecture and durable decisions. Consult relevant pages when needed; flag conflicts with implementation.

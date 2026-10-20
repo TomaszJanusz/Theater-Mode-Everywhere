@@ -27,3 +27,11 @@ export function createSvgIcon(markup: string): SVGSVGElement {
   if (!(root instanceof SVGSVGElement)) throw new Error('Invalid icon root');
   return root;
 }
+
+/** Replace an icon button's content with a sanitized, decorative icon. */
+export function setSvgIcon(element: HTMLElement, markup: string): void {
+  const icon = createSvgIcon(markup);
+  icon.setAttribute('aria-hidden', 'true');
+  icon.setAttribute('focusable', 'false');
+  element.replaceChildren(icon);
+}

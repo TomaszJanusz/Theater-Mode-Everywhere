@@ -1,4 +1,4 @@
-import type { PlayerChromeContext } from './runtime-context';
+import type { PlayerChromeActions, PlayerChromeContext } from './runtime-context';
 
 export type ButtonTooltipPlace = 'above' | 'below';
 
@@ -11,8 +11,13 @@ export type ButtonTooltipBinder = (
   place?: ButtonTooltipPlace
 ) => void;
 
+/** What the tooltip needs from the player; narrower than the whole chrome context. */
+export type ButtonTooltipHost = Pick<PlayerChromeContext, 'paintOverlay' | 'mountPlayerUi'> & {
+  actions: Pick<PlayerChromeActions, 'updateCaptionDock' | 'setTooltipContent'>;
+};
+
 /** One shared control tooltip. A target at the top of the frame places it below. */
-export function createButtonTooltip(ctx: PlayerChromeContext): { bind: ButtonTooltipBinder } {
+export function createButtonTooltip(ctx: ButtonTooltipHost): { bind: ButtonTooltipBinder } {
   let element: HTMLDivElement | null = null;
 
   const hide = () => {

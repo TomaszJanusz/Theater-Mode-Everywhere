@@ -35,10 +35,12 @@ import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
-import { bindMenuPopover, bindSliderPopover } from './menu-popover';
-import { armPictureDismissOnLeave, beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
+import { bindMenuPopover } from './menu-popover';
+import { beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
+import { createSpeedControl } from './speed-control';
+import { createVolumeControl } from './volume-control';
 import { mountNativeChatControls, nativeChatState } from './chat';
 import { clockLabels, renderLiveBadge, renderTimeReadout } from './time-readout';
 import type { ButtonTooltipBinder } from './button-tooltip';
@@ -95,7 +97,6 @@ export function createControls(
   function createCustomControls(media: HTMLVideoElement | PlaybackSurface): void {
     const video = coercePlaybackSurface(media);
     const native = nativeVideoOf(video);
-    let volumeMax = volumeCeiling(video, ui().volumeBoost);
     destroyCustomControls();
 
     const controlsScope = new DisposableScope();
@@ -300,184 +301,23 @@ export function createControls(
       barWasVisible = state.toolbarVisible;
     }));
 
-    // Volume Container
-    const volumeContainer = document.createElement('div');
-    volumeContainer.className = 'theater-volume-container theater-popover';
-    volumeContainer.addEventListener('pointerenter', updateCaptionDock);
-    volumeContainer.addEventListener('pointerleave', (event) => {
-      armPictureDismissOnLeave(event, volumeContainer);
-      updateCaptionDock();
+    const volumeControl = createVolumeControl({
+      video,
+      scope: controlsScope,
+      labels: { toggleMute: t('toggleMute'), volume: t('volumeLabel') },
+      ceiling: () => volumeCeiling(video, ui().volumeBoost),
+      onCeilingChange: listener => ctx.uiStore.subscribe(listener),
+      boostReady: () => native?.dataset.theaterBoostReady === 'true',
+      isSilent: () => isVideoSilent(video),
+      rememberAudible: volume => rememberAudibleVolume(video, volume),
+      applyLevel: level => applyVolumeAndBoost(video, level),
+      toggleMute: () => ctx.actions.toggleVideoMute(video),
+      stepVolume: direction => ctx.actions.adjustVolume(video, direction),
+      setIcon,
+      updateCaptionDock,
+      blurMouseToggle
     });
-
-    const volumeBtn = document.createElement('button');
-    volumeBtn.className = 'theater-control-btn volume-btn';
-
-    const volumePanel = document.createElement('div');
-    volumePanel.className = 'theater-volume-panel';
-
-    const volumeTooltip = document.createElement('div');
-    volumeTooltip.className = 'theater-volume-tooltip-vertical';
-
-    const volumeSliderWrapper = document.createElement('div');
-    volumeSliderWrapper.className = 'theater-vertical-slider-wrapper';
-
-    const volumeSlider = document.createElement('input');
-    volumeSlider.type = 'range';
-    volumeSlider.setAttribute('aria-label', t('volumeLabel'));
-    volumeSlider.setAttribute('aria-orientation', 'vertical');
-    volumeSlider.className = 'theater-volume-slider theater-vertical-slider';
-    volumeSlider.min = '0';
-    volumeSlider.step = '0.05';
-  
-    if (video.volume > 0) rememberAudibleVolume(video, video.volume);
-    const initialLogical = video.logicalVolume !== undefined
-      ? video.logicalVolume
-      : (isVideoSilent(video) ? 0 : video.volume);
-    volumeSlider.value = String(initialLogical);
-
-    const volumeTick100 = document.createElement('div');
-    volumeTick100.className = 'volume-tick-100-vertical';
-    const applyVolumeMax = () => {
-      volumeSlider.max = volumeMax.toFixed(1);
-      volumeTick100.style.display = volumeMax <= 1 ? 'none' : '';
-    };
-    applyVolumeMax();
-
-    volumeSliderWrapper.appendChild(volumeSlider);
-    volumeSliderWrapper.appendChild(volumeTick100);
-    volumePanel.appendChild(volumeTooltip);
-    volumePanel.appendChild(volumeSliderWrapper);
-
-    const volHighIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-      </svg>
-    `;
-    const volLowIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-      </svg>
-    `;
-    const volMutedIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-        <line x1="23" y1="9" x2="17" y2="15"></line>
-        <line x1="17" y1="9" x2="23" y2="15"></line>
-      </svg>
-    `;
-
-    volumeBtn.setAttribute('aria-label', t('toggleMute'));
-    const updateVolumeIcon = () => {
-      volumeBtn.setAttribute('aria-pressed', String(isVideoSilent(video)));
-      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
-      volumeBtn.classList.toggle('boosted', logicalVol > 1.0 && native?.dataset.theaterBoostReady === 'true');
-      if (video.muted || logicalVol === 0) {
-        setIcon(volumeBtn, volMutedIcon);
-      } else if (logicalVol < 0.5) {
-        setIcon(volumeBtn, volLowIcon);
-      } else {
-        setIcon(volumeBtn, volHighIcon);
-      }
-    };
-    updateVolumeIcon();
-
-    const updateVolumeSliderFill = () => {
-      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
-      const fillPct = (logicalVol / volumeMax) * 100;
-      const isBoosted = logicalVol > 1.0;
-      const activeColor = isBoosted ? 'var(--theater-volume-boost-color)' : 'var(--accent-color, #6366f1)';
-      const grad = `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${fillPct}%, rgba(255, 255, 255, 0.2) ${fillPct}%, rgba(255, 255, 255, 0.2) 100%)`;
-      volumeSlider.style.setProperty('background', grad, 'important');
-      if (isBoosted) {
-        volumeSlider.classList.add('boosted');
-      } else {
-        volumeSlider.classList.remove('boosted');
-      }
-    };
-    updateVolumeSliderFill();
-
-    const updateVolumeTooltip = () => {
-      const logicalVol = video.muted ? 0 : (video.logicalVolume !== undefined ? video.logicalVolume : video.volume);
-      if (logicalVol <= 1.0) {
-        volumeTooltip.textContent = `${Math.round(logicalVol * 100)}%`;
-        volumeTooltip.style.color = '#f8fafc';
-      } else {
-        const pct = Math.round(100 + (logicalVol - 1.0) * 400);
-        volumeTooltip.textContent = `${pct}%`;
-        volumeTooltip.style.color = 'var(--theater-volume-boost-color)';
-      }
-      volumeSlider.setAttribute('aria-valuetext', volumeTooltip.textContent ?? '');
-    };
-    updateVolumeTooltip();
-
-    const onBoostReady = () => {
-      updateVolumeIcon();
-      updateVolumeSliderFill();
-      updateVolumeTooltip();
-    };
-    window.addEventListener('theater-everywhere-boost-ready', onBoostReady);
-    controlsScope.add(ctx.uiStore.subscribe(() => {
-      const next = volumeCeiling(video, ui().volumeBoost);
-      if (next === volumeMax) return;
-      volumeMax = next;
-      applyVolumeMax();
-      updateVolumeSliderFill();
-    }));
-
-    volumeBtn.addEventListener('click', (event) => {
-      ctx.actions.toggleVideoMute(video);
-      blurMouseToggle(event, volumeBtn);
-    });
-
-    volumeSlider.addEventListener('input', (e) => {
-      let val = parseFloat((e.target as HTMLInputElement).value);
-      if (Math.abs(val - 1.0) <= 0.05) {
-        val = 1.0;
-        volumeSlider.value = '1.0';
-      }
-      video.logicalVolume = val;
-      rememberAudibleVolume(video, val);
-      if (val > 0 && video.muted) {
-        video.muted = false;
-      }
-      applyVolumeAndBoost(video, val);
-      updateVolumeIcon();
-      updateVolumeSliderFill();
-      updateVolumeTooltip();
-    });
-
-    // A wheel notch is roughly 100 CSS pixels (or three lines). Share the
-    // remainder across the speaker, slider and gap, but discard old gestures.
-    let wheelRemainder = 0;
-    let lastWheelTime = -Infinity;
-    const onVolumeWheel = (event: WheelEvent) => {
-      if (volumeBtn.disabled || volumeSlider.disabled || volumeBtn.hidden || volumeSlider.hidden || volumeContainer.hidden
-        || volumeContainer.getAttribute('aria-disabled') === 'true') return;
-      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
-        || !Number.isFinite(event.deltaY) || event.deltaY === 0
-        || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      const now = performance.now();
-      if (now - lastWheelTime > 250) wheelRemainder = 0;
-      lastWheelTime = now;
-      const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 100 / 3
-        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? 100 : 1;
-      // Bound momentum/large device deltas to one volume step per event.
-      wheelRemainder += Math.max(-100, Math.min(100, event.deltaY * scale));
-      const steps = Math.trunc(wheelRemainder / 100);
-      wheelRemainder -= steps * 100;
-      if (steps !== 0) ctx.actions.adjustVolume(video, steps < 0 ? 'up' : 'down');
-    };
-    for (const target of [volumeBtn, volumeSlider, volumeContainer]) {
-      controlsScope.listen(target, 'wheel', onVolumeWheel, { passive: false });
-    }
-
-    volumeContainer.appendChild(volumeBtn);
-    volumeContainer.appendChild(volumePanel);
-    bindSliderPopover(volumeContainer, volumePanel, controlsScope);
+    const { container: volumeContainer, button: volumeBtn, slider: volumeSlider } = volumeControl;
 
     // Elapsed sits left of the scrubber. The trailing clock sits on its right
     // and toggles between time remaining and duration.
@@ -617,110 +457,14 @@ export function createControls(
     });
 
     // Playback Speed Controls
-    const speedContainer = document.createElement('div');
-    speedContainer.className = 'theater-speed-container theater-popover';
-    speedContainer.addEventListener('pointerenter', updateCaptionDock);
-    speedContainer.addEventListener('pointerleave', (event) => {
-      armPictureDismissOnLeave(event, speedContainer);
-      updateCaptionDock();
+    const speedControl = createSpeedControl({
+      video,
+      scope: controlsScope,
+      label: t('playbackSpeed'),
+      updateCaptionDock,
+      blurMouseToggle
     });
-
-    const speedBtn = document.createElement('button');
-    speedBtn.className = 'theater-control-btn speed-btn';
-    speedBtn.setAttribute('aria-label', t('playbackSpeed'));
-
-    const speedLabel = document.createElement('span');
-    speedLabel.className = 'speed-label';
-    speedBtn.appendChild(speedLabel);
-
-    const speedLevels = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-    const getSpeedIndex = (rate: number): number => {
-      let closestIdx = 3; // default to 1.0
-      let minDiff = Infinity;
-      for (let i = 0; i < speedLevels.length; i++) {
-        const diff = Math.abs(speedLevels[i] - rate);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestIdx = i;
-        }
-      }
-      return closestIdx;
-    };
-
-    const updateSpeedLabelText = () => {
-      speedLabel.textContent = video.playbackRate.toFixed(2).replace(/\.00$|\.0$/, '') + 'x';
-    };
-    updateSpeedLabelText();
-
-    const speedPanel = document.createElement('div');
-    speedPanel.className = 'theater-speed-panel';
-
-    const speedTooltip = document.createElement('div');
-    speedTooltip.className = 'theater-speed-tooltip-vertical';
-
-    const speedSliderWrapper = document.createElement('div');
-    speedSliderWrapper.className = 'theater-vertical-slider-wrapper';
-
-    const speedSlider = document.createElement('input');
-    speedSlider.type = 'range';
-    speedSlider.setAttribute('aria-label', t('playbackSpeed'));
-    speedSlider.setAttribute('aria-orientation', 'vertical');
-    speedSlider.className = 'theater-speed-slider theater-vertical-slider';
-    speedSlider.min = '0';
-    speedSlider.max = String(speedLevels.length - 1);
-    speedSlider.step = '1';
-    speedSlider.value = String(getSpeedIndex(video.playbackRate));
-
-    const speedTick1x = document.createElement('div');
-    speedTick1x.className = 'speed-tick-1x-vertical';
-
-    speedSliderWrapper.appendChild(speedSlider);
-    speedSliderWrapper.appendChild(speedTick1x);
-    speedPanel.appendChild(speedTooltip);
-    speedPanel.appendChild(speedSliderWrapper);
-
-    speedContainer.appendChild(speedBtn);
-    speedContainer.appendChild(speedPanel);
-    bindSliderPopover(speedContainer, speedPanel, controlsScope);
-
-    let lastNonNormalSpeed = 1.5;
-
-    const updateSpeedSliderFill = () => {
-      const idx = getSpeedIndex(video.playbackRate);
-      const pct = (idx / (speedLevels.length - 1)) * 100;
-      const accentColor = 'var(--accent-color, #6366f1)';
-      const grad = `linear-gradient(to right, ${accentColor} 0%, ${accentColor} ${pct}%, rgba(255, 255, 255, 0.2) ${pct}%, rgba(255, 255, 255, 0.2) 100%)`;
-      speedSlider.style.setProperty('background', grad, 'important');
-    };
-    updateSpeedSliderFill();
-
-    const updateSpeedTooltip = () => {
-      speedTooltip.textContent = `${video.playbackRate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
-      speedSlider.setAttribute('aria-valuetext', speedTooltip.textContent);
-      speedBtn.setAttribute('aria-pressed', String(video.playbackRate !== 1));
-    };
-    updateSpeedTooltip();
-
-    speedBtn.addEventListener('click', (event) => {
-      if (video.playbackRate !== 1.0) {
-        lastNonNormalSpeed = video.playbackRate;
-        video.playbackRate = 1.0;
-      } else {
-        video.playbackRate = lastNonNormalSpeed;
-      }
-      blurMouseToggle(event, speedBtn);
-    });
-
-    speedSlider.addEventListener('input', (e) => {
-      const idx = parseInt((e.target as HTMLInputElement).value, 10);
-      const rate = speedLevels[idx];
-      video.playbackRate = rate;
-      if (rate !== 1.0) {
-        lastNonNormalSpeed = rate;
-      }
-      updateSpeedSliderFill();
-      updateSpeedTooltip();
-    });
+    const { container: speedContainer, button: speedBtn, slider: speedSlider } = speedControl;
 
     // PiP Button
     const pipBtn = document.createElement('button');
@@ -1652,30 +1396,9 @@ export function createControls(
       fullscreenRecovery.invalidate();
       void mediaFeatures.refresh();
     };
-    const onVolumeChange = () => {
-      if (video.muted) {
-        volumeSlider.value = '0';
-      } else {
-        if (video.logicalVolume !== undefined && video.logicalVolume > 1.0 && video.volume === 1.0) {
-          volumeSlider.value = String(video.logicalVolume);
-          rememberAudibleVolume(video, video.logicalVolume);
-        } else {
-          video.logicalVolume = video.volume;
-          volumeSlider.value = String(video.volume);
-          rememberAudibleVolume(video, video.volume);
-        }
-      }
-      updateVolumeIcon();
-      updateVolumeSliderFill();
-      updateVolumeTooltip();
-    };
+    const onVolumeChange = volumeControl.sync;
     refs.onVolumeAdjustedCallback = onVolumeChange;
-    const onRateChange = () => {
-      updateSpeedLabelText();
-      speedSlider.value = String(getSpeedIndex(video.playbackRate));
-      updateSpeedSliderFill();
-      updateSpeedTooltip();
-    };
+    const onRateChange = speedControl.sync;
   
     const armBufferingFailsafe = () => {
       if (bufferingFailsafe) clearTimeout(bufferingFailsafe);
@@ -1762,7 +1485,6 @@ export function createControls(
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('stalled', onStalled);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
-      window.removeEventListener('theater-everywhere-boost-ready', onBoostReady);
       video.removeEventListener('enterpictureinpicture', syncPipButton);
       video.removeEventListener('leavepictureinpicture', syncPipButton);
       if (bufferingTimeout) {

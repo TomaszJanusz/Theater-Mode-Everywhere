@@ -1,4 +1,4 @@
-import { createSvgIcon } from './svg-icon';
+import { setSvgIcon } from './svg-icon';
 import {
   CAPTION_DOCK_RAISED_CENTER_GAP,
   CAPTION_DOCK_RAISED_EDGE,
@@ -483,13 +483,6 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function setIcon(el: HTMLElement, svgStr: string): void {
-    const icon = createSvgIcon(svgStr);
-    icon.setAttribute('aria-hidden', 'true');
-    icon.setAttribute('focusable', 'false');
-    el.replaceChildren(icon);
-  }
-
   return {
     scheduleToolbarHide,
     refreshToolbarVisibility,
@@ -504,7 +497,7 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     cancelPictureClick: videoClicks.cancel,
     bindWasmCatcher,
     escapeHtml,
-    setIcon,
+    setIcon: setSvgIcon,
     setTooltipContent: renderKbdText
   };
 }

@@ -2470,7 +2470,7 @@
   },
   "src/ui/controls.ts": {
     "import/order": {
-      "count": 40
+      "count": 42
     },
     "local/max-symbol-name-length": {
       "count": 2
@@ -2482,10 +2482,10 @@
       "count": 2
     },
     "sonarjs/cognitive-complexity": {
-      "count": 2
+      "count": 1
     },
     "sonarjs/no-nested-conditional": {
-      "count": 8
+      "count": 3
     },
     "sonarjs/void-use": {
       "count": 2
