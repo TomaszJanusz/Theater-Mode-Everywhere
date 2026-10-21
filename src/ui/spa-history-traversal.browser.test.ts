@@ -40,6 +40,7 @@ async function enterTheater(page: Page): Promise<void> {
   await page.keyboard.press('t');
   await page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
 }
+// The runtime's popstate listener is registered first and exits synchronously, so state read after this resolves is final.
 const goBack = (page: Page) => page.evaluate(() => new Promise<void>(resolve => {
   addEventListener('popstate', () => resolve(), { once: true });
   history.back();
@@ -48,9 +49,6 @@ const goForward = (page: Page) => page.evaluate(() => new Promise<void>(resolve 
   addEventListener('popstate', () => resolve(), { once: true });
   history.forward();
 }));
-async function settled(page: Page): Promise<void> {
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-}
 
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
@@ -78,7 +76,6 @@ for (const engine of testEngines()) {
     // Rapid back/forward lands on the watch page with the stage already cleaned up.
     await goBack(page);
     await goForward(page);
-    await settled(page);
     assert.equal(await theaterOn(page), false);
   });
 
@@ -89,7 +86,6 @@ for (const engine of testEngines()) {
     await route(page, `/watch?v=${ID_B}`);
     await enterTheater(page);
     await goBack(page);
-    await settled(page);
     assert.equal(await theaterOn(page), true);
     assert.equal(await page.locator('video#player[data-theater-everywhere]').count(), 1);
   });
@@ -100,7 +96,6 @@ for (const engine of testEngines()) {
     await route(page, '/results?search_query=y');
     await enterTheater(page);
     await goBack(page);
-    await settled(page);
     assert.equal(await theaterOn(page), true);
   });
 }
