@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { autoTheaterAvailability, readProviderWatchPage } from './watch-playback';
+import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from './watch-playback';
 import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
 import { providerDefinition, shouldAttachProvider } from './registry';
 
@@ -107,5 +107,27 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('example.com', { ...flags, youtube: false }, true), 'unsupported');
+  });
+});
+
+describe('navigation off a watch page', () => {
+  it('ends only a session that began on a provider watch page and landed elsewhere', () => {
+    const watch = 'https://www.youtube.com/watch?v=abcdefghijk';
+    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/results?search_query=x'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/watch?v=zyxwvutsrqp'), false);
+    assert.equal(leftProviderWatchPage(true, watch), false);
+    assert.equal(leftProviderWatchPage(false, 'https://www.youtube.com/'), false);
+    assert.equal(leftProviderWatchPage(true, 'https://example.com/page'), true);
+    assert.equal(leftProviderWatchPage(false, 'https://example.com/page'), false);
+    assert.equal(leftProviderWatchPage(false, watch), false);
+    assert.equal(leftProviderWatchPage(true, `${watch}&list=playlist&index=2`), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/browse'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/watch/12345'), false);
+    // Manual season playback remains eligible without relaxing automatic content identity.
+    assert.equal(readProviderWatchPage(new URL('https://www.bilibili.tv/en/play/1053337')), null);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337'), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337/11371243'), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en'), true);
   });
 });
