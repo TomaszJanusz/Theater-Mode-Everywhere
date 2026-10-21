@@ -47,7 +47,7 @@ for (const engine of testEngines()) {
     }
     // The top-layer host must track the browser viewport, not a resized fixture container.
     for (const id of NARROW_ANCHORS) {
-      const narrow = profilesFor(id).find(profile => profile.name === 'narrow-de')!;
+      const narrow = profilesFor(id, engine).find(profile => profile.name === 'narrow-de')!;
       for (const width of [640, narrow.viewport.width]) {
         await page.setViewportSize({ width, height: 360 });
         await openStory(page, server.url, id, { ...narrow, viewport: { width, height: 360 } });
@@ -113,7 +113,7 @@ for (const engine of testEngines()) {
     }
     await openStory(page, server.url, 'player-control-button-tooltip--closed', environment());
     await finished(page);
-    await page.locator('.fullscreen-btn').hover();
+    await page.locator('.theater-control-btn').hover();
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-button-tooltip')?.classList.contains('visible'));
     await page.mouse.move(600, 10);
     await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-button-tooltip')?.classList.contains('visible'));

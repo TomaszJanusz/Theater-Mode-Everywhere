@@ -91,3 +91,23 @@ const RingTurnSurvivesTicks: Story = {
   }
 };
 test('RingTurnSurvivesTicks', () => runNoticeCase(RingTurnSurvivesTicks));
+
+
+test('Digit cleanup belongs to the notice clock and cancellation clears it', () => runNoticeCase({
+  play: async () => {
+    const pending = run().stage.clock.pending;
+    run().elapse(500);
+    const slot = notice()?.querySelector('.theater-time-slot');
+    await expect(slot?.classList.contains('is-rolling')).toBe(true);
+    await expect(run().stage.clock.pending).toBe(pending + 1);
+    run().stage.advance(399);
+    await expect(slot?.classList.contains('is-rolling')).toBe(true);
+    run().stage.advance(1);
+    await expect(slot?.classList.contains('is-rolling')).toBe(false);
+    // Start another roll, then stop before its cleanup deadline.
+    run().elapse(1000);
+    await expect(slot?.classList.contains('is-rolling')).toBe(true);
+    run().stop();
+    await expect(run().stage.clock.pending).toBe(0);
+  }
+}));

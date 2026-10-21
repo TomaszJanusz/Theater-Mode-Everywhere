@@ -8,16 +8,16 @@ import { videoFitLabel } from './appearance';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import {
   STATUS_HUD_FIT_ICON, STATUS_HUD_LAYOUT_ICON, STATUS_HUD_MUTE_ICON, STATUS_HUD_SWITCH_ICON,
-  STATUS_HUD_UNMUTE_ICON, VOLUME_BOOST_ICONS
+  STATUS_HUD_UNMUTE_ICON, SEEK_HUD_MS, VOLUME_BOOST_ICONS
 } from './hud';
 import { t } from './messages';
 import { getPlayerUiRoot, queryPlayerUi } from './root';
 
 const meta: Meta<HudArgs> = {
-  title: 'Player/HUD', tags: ['frames'], args: { phase: 'steady', live: false },
+  title: 'Player/HUD', parameters: { timeline: true }, tags: ['frames'], args: { phase: 'steady', live: false },
   argTypes: {
-    phase: { control: 'select', options: ['entering', 'steady', 'leaving'] },
-    live: { control: 'boolean', description: 'Real-clock preview; replay remounts the fixture.' }
+    phase: { control: false },
+    live: { control: false }
   }
 };
 export default meta;
@@ -66,7 +66,7 @@ function seek(direction: 'left' | 'right' | 'both') {
         await expect(queryPlayerUi(`${SEEK}.${side}`)?.getAttribute('dir')).toBe(t('@@bidi_dir'));
       }
     }
-  }, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES });
+  }, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES, holdAfterMs: SEEK_HUD_MS * 0.5, leaveAfterMs: SEEK_HUD_MS * 0.9 });
 }
 
 const STATUS = {

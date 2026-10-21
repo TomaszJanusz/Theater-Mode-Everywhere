@@ -9,8 +9,9 @@ import { t } from './messages';
 // roll and zoom-out at a fixed fraction so each frame is the same on every run.
 const meta: Meta<NoticeArgs> = {
   title: 'Player/Auto-theater notice',
+  parameters: { timeline: true },
   tags: ['frames'],
-  argTypes: { remainingMs: { control: { type: 'number', min: 0, max: 10000, step: 100 } }, ringTurn: { control: 'select', options: ['uniform', 'per-digit'] }, progress: { control: { type: 'range', min: 0, max: 1, step: 0.05 } }, frames: { control: false } },
+  argTypes: { remainingMs: { control: { type: 'number', min: 0, max: 10000, step: 100 } }, ringTurn: { control: 'select', options: ['uniform', 'per-digit'] }, progress: { control: false }, phase: { control: false }, live: { control: false }, frames: { control: false } },
   args: { remainingMs: 4500, ringTurn: 'uniform', progress: 0.5 },
   render: renderNotice
 };
@@ -19,8 +20,9 @@ export default meta;
 type Story = NoticeStoryObj;
 
 export const Counting: Story = {
-  play: async ({ args }) => {
-    await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000)));
+  play: async ({ args, globals }) => {
+    const heldRemaining = globals.timeline === 'leave' ? Math.min(args.remainingMs, 900) : args.remainingMs;
+    await expect(digit()).toBe(String(Math.floor(heldRemaining / 1000)));
     await expect(notice()?.getAttribute('role')).toBe('status');
     await expect(notice()?.querySelector('.theater-auto-notice-count')?.getAttribute('aria-hidden')).toBe('true');
     await expect(notice()?.getAttribute('dir')).toBe(t('@@bidi_dir'));

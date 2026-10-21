@@ -8,6 +8,10 @@ import { test } from 'node:test';
 
 import { chromium } from 'playwright';
 
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
+
+const browser = sharedTestBrowser(chromium);
+
 const stories = [
   'player-auto-theater-notice--counting',
   'player-hud--playback',
@@ -30,21 +34,19 @@ test('Storybook dev serves bundled fonts and renders even when fonts fail or sta
   t.after(async () => { server.kill('SIGTERM'); await exited; });
   let output = '';
   await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`Storybook startup timed out:\n${output}`)), 30000);
     const collect = (chunk: Buffer) => {
       output += chunk.toString();
-      if (output.includes('Storybook ready!')) { clearTimeout(timeout); resolve(); }
+      if (output.includes('Storybook ready!')) resolve();
     };
     server.stdout.on('data', collect);
     server.stderr.on('data', collect);
-    server.once('error', error => { clearTimeout(timeout); reject(error); });
-    server.once('exit', () => { clearTimeout(timeout); reject(new Error(output)); });
+    server.once('error', reject);
+    server.once('exit', () => reject(new Error(output)));
   });
-  const browser = await chromium.launch();
-  t.after(() => browser.close());
+  const context = await browser.newContext(t);
   const failures: string[] = [];
   for (const mode of ['normal', 'failed', 'stalled']) {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     page.on('pageerror', error => failures.push(error.message));
     if (mode === 'failed') await page.route(/\.woff2?(\?|$)/, route => route.abort());
     // Leave intercepted requests pending until page.close(), proving the loader has a bounded wait.

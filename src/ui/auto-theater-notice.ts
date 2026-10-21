@@ -96,7 +96,7 @@ export function showAutoTheaterNotice(
   const tick = (animate: boolean): void => {
     if (stopped) return;
     const remaining = remainingMs();
-    renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate);
+    renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate, clock);
     turnRing(remaining);
     const wait = msUntilNoticeSecondChanges(remaining);
     // A timer that fires a hair early re-reads the clock and re-arms instead of skipping a digit.
@@ -115,7 +115,7 @@ export function showAutoTheaterNotice(
     clock.clearTimeout(timer);
     turn?.cancel();
     // Also settle any digit roll already in flight before discarding its DOM.
-    renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
+    renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false, clock);
     overlay.remove();
     stopScrim?.();
   };

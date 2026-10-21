@@ -15,13 +15,13 @@ interface Args extends HudArgs {
 }
 // View-API fixtures: result-to-view mapping in player-runtime is outside this component proof.
 const meta: Meta<Args> = {
-  title: 'Player/Caption notice', tags: ['frames'],
+  title: 'Player/Caption notice', parameters: { timeline: 'caption' }, tags: ['frames'],
   args: { phase: 'steady', live: false, view: 'status', titleKey: 'subtitlesOnHud', detail: 'English (auto-generated)', duration: 4000 },
   argTypes: {
     view: { control: 'select', options: ['loading', 'status', 'loading-to-result'] },
     titleKey: { control: 'select', options: ['subtitlesOnHud', 'subtitlesOffHud', 'noSubtitlesAvailable', 'subtitlesLoadFailedHud'] },
     detail: { control: 'text' }, duration: { control: { type: 'number', min: 100, max: 10000, step: 100 } },
-    phase: { control: 'select', options: ['entering', 'steady', 'leaving'] }, live: { control: 'boolean' }
+    phase: { control: false }, live: { control: false }
   }
 };
 export default meta;
@@ -44,7 +44,7 @@ function caption(args: Partial<Args> = {}) {
       } else await expect(node?.querySelector('.volume-hud-detail')?.textContent ?? '').toBe(values.detail);
       await expect(node?.getAttribute('dir')).toBe(t('@@bidi_dir'));
     }
-  }, { leaveAfterMs: args.duration ?? 4000 });
+  }, { leaveAfterMs: values => values.duration });
 }
 export const Loading = caption({ view: 'loading' });
 export const Status = caption();

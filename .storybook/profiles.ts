@@ -1,14 +1,18 @@
 import type { AppearancePreference } from '../src/appearance-preferences';
 import type { Language } from '../src/language';
 
+export type Timeline = 'enter' | 'hold' | 'leave' | 'live';
+export interface Moment { timeline: Exclude<Timeline, 'live'>; frame: number }
+
 /** Shared capture and browser-test inputs. Content is fixture data, independent of UI locale. */
 export interface Profile {
   name: string;
-  globals: { locale: Language; backdrop: 'dark' | 'light'; reduceMotion: AppearancePreference };
+  globals: { locale: Language; backdrop: 'dark' | 'light'; reduceMotion: AppearancePreference; timeline: Timeline };
   args: Record<string, string | number | boolean>;
   viewport: { width: number; height: number };
   reducedMotion: 'reduce' | 'no-preference';
   frames?: readonly number[];
+  moments?: readonly Moment[];
 }
 
 export const BASE_VIEWPORT = { width: 640, height: 360 };
@@ -17,7 +21,7 @@ export const BACKDROPS = ['dark', 'light'] as const;
 
 export function environment(locale: Language = 'en', backdrop: 'dark' | 'light' = 'dark'): Profile {
   return {
-    name: `${locale}-${backdrop}`, globals: { locale, backdrop, reduceMotion: 'off' },
+    name: `${locale}-${backdrop}`, globals: { locale, backdrop, reduceMotion: 'off', timeline: 'hold' },
     args: {}, viewport: BASE_VIEWPORT, reducedMotion: 'reduce'
   };
 }
@@ -38,7 +42,22 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
 const REDUCED = new Set(['player-hud--bass', 'player-title-hud--overflow', 'player-caption-notice--loading-to-result', 'player-auto-theater-notice--counting']);
 export const NARROW_ANCHORS = ['player-control-button-tooltip--above', 'player-hud--text-only', 'player-caption-notice--status', 'player-title-hud--overflow'];
 
-export function profilesFor(id: string): Profile[] {
+/** Real timer states plus animation fractions; persistent titles/loading use only frame sweeps. */
+function momentsFor(id: string): readonly Moment[] | undefined {
+  if (id.startsWith('player-hud--seek')) return [
+    { timeline: 'enter', frame: 0.15 }, { timeline: 'hold', frame: 0.5 }, { timeline: 'leave', frame: 0.9 }
+  ];
+  if (id === 'player-auto-theater-notice--ring-exit') return [
+    { timeline: 'enter', frame: 0 }, { timeline: 'hold', frame: 0.25 }, { timeline: 'leave', frame: 0.5 }
+  ];
+  if (id.startsWith('player-hud--') || id.startsWith('player-auto-theater-notice--')
+    || id === 'player-caption-notice--status' || id === 'player-caption-notice--loading-to-result') return [
+    { timeline: 'enter', frame: 0.5 }, { timeline: 'hold', frame: 1 }, { timeline: 'leave', frame: 0.5 }
+  ];
+  return undefined;
+}
+
+export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromium'): Profile[] {
   const profiles = BACKDROPS.map(backdrop => environment('en', backdrop));
   const content = LOCALE_ANCHORS[id];
   if (content) for (const locale of ['de', 'ar'] as const) {
@@ -51,6 +70,23 @@ export function profilesFor(id: string): Profile[] {
   if (NARROW_ANCHORS.includes(id)) profiles.push({
     ...environment('de'), name: 'narrow-de', viewport: { width: 320, height: 360 }, args: content?.('de') ?? {}, frames: [0.5]
   });
+  for (const profile of profiles) {
+    if (profile.frames) continue;
+    // A marquee's 0% and 100% are the same seamless-loop image. Short titles are static
+    // in Chromium; Firefox's existing short-title marquee still needs its second position.
+    if (id === 'player-title-hud--short' || id === 'player-title-hud--with-subtitle') {
+      profile.frames = engine === 'firefox' ? [0, 0.5] : [1];
+    } else if (id === 'player-title-hud--overflow' || id === 'player-caption-notice--loading') {
+      profile.frames = [0, 0.5];
+    } else if (id === 'player-auto-theater-notice--no-ring') profile.frames = [1];
+    else {
+      const moments = momentsFor(id);
+      // Playback and text without an icon have no distinct entry animation. Keep the held
+      // image and the real fade; long status profiles with an icon retain their entry frame.
+      profile.moments = id === 'player-hud--playback' || (id === 'player-hud--text-only' && !profile.args.preset)
+        ? moments?.filter(moment => moment.timeline !== 'enter') : moments;
+    }
+  }
   return profiles;
 }
 
@@ -65,7 +101,7 @@ export function storyUrl(base: string, id: string, profile: Profile): string {
 
 declare global {
   interface Window {
-    __storyState?: { globals: Record<string, unknown>; args: Record<string, unknown> };
+    __storyState?: { globals: Record<string, unknown>; args: Record<string, unknown>; timelineSupported: boolean };
   }
 }
 

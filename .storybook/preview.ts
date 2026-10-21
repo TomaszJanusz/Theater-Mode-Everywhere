@@ -16,7 +16,7 @@ setPlayerUiCss(shadowCss);
 
 const preview: Preview = {
   parameters: { layout: 'fullscreen', controls: { expanded: true } },
-  initialGlobals: { backdrop: 'dark', locale: 'en', reduceMotion: 'off' },
+  initialGlobals: { backdrop: 'dark', locale: 'en', reduceMotion: 'off', timeline: 'hold' },
   globalTypes: {
     backdrop: {
       description: 'Picture behind the player UI. The UI itself has one dark skin.',
@@ -26,6 +26,13 @@ const preview: Preview = {
       description: 'Catalog from _locales, loaded through the production language runtime.',
       toolbar: { title: 'Locale', items: LANGUAGES.map(({ locale }) => locale), dynamicTitle: true }
     },
+    timeline: {
+      description: 'Opt-in HUD, timed caption status and countdown inspection. Static controls, persistent titles and indefinite loading stay canonical. Use Remount to replay Live.',
+      toolbar: { title: 'Timeline', items: [
+        { value: 'live', title: 'Live' }, { value: 'enter', title: 'Enter' },
+        { value: 'hold', title: 'Hold' }, { value: 'leave', title: 'Leave' }
+      ], dynamicTitle: true }
+    },
     reduceMotion: {
       description: 'Reduce motion preference, written to storage like the options page.',
       toolbar: { title: 'Reduce motion', items: ['auto', 'on', 'off'], dynamicTitle: true }
@@ -33,8 +40,15 @@ const preview: Preview = {
   },
   beforeEach: () => () => disposeStage(),
   decorators: [(story, context) => {
-    window.__storyState = { globals: { ...context.globals }, args: { ...context.args } };
-    return story();
+    const supported = Boolean(context.parameters.timeline)
+      && !(context.parameters.timeline === 'caption' && context.args.view === 'loading');
+    const timeline = context.globals.timeline;
+    const args = supported ? { ...context.args,
+      phase: timeline === 'enter' ? 'entering' : timeline === 'leave' ? 'leaving' : 'steady',
+      live: timeline === 'live'
+    } : context.args;
+    window.__storyState = { globals: { ...context.globals }, args: { ...args }, timelineSupported: supported };
+    return story({ args });
   }],
   loaders: [async ({ globals }) => {
     document.body.dataset.backdrop = String(globals.backdrop);

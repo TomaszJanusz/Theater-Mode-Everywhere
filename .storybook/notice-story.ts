@@ -4,8 +4,12 @@ import { showAutoTheaterNotice, type CountdownRingTurn } from '../src/ui/auto-th
 import { queryPlayerUi } from '../src/ui/root';
 
 import { mountHudStage, type HudStage } from './hud-stage';
+import type { Phase } from './hud-story';
 
 export interface NoticeArgs {
+  /** Internal projection of the opt-in timeline global; not component Controls. */
+  phase?: Phase;
+  live?: boolean;
   /** Time left on the intent's own clock when the notice appears. */
   remainingMs: number;
   ringTurn: CountdownRingTurn;
@@ -32,11 +36,15 @@ let current: NoticeRun | undefined;
 export const run = (): NoticeRun => current!;
 
 export function renderNotice(args: NoticeArgs): HTMLElement {
-  const stage = mountHudStage({ progress: args.progress, frames: args.frames });
+  const phaseIndex = args.phase === 'entering' ? 0 : args.phase === 'leaving' ? 2 : 1;
+  const progress = args.phase ? (args.frames ?? [0.5, 1, 0.5])[phaseIndex] : args.progress;
+  const stage = mountHudStage({ progress: args.live ? undefined : progress, frames: args.frames });
+  const started = performance.now();
   let remaining = args.remainingMs;
   const cancel = { calls: 0 };
   const stop = showAutoTheaterNotice(
-    stage.host.paintOverlay, () => { cancel.calls += 1; }, () => remaining, args.ringTurn, undefined, stage.clock
+    stage.host.paintOverlay, () => { cancel.calls += 1; }, () => args.live ? Math.max(0, args.remainingMs - (performance.now() - started)) : remaining,
+    args.ringTurn, undefined, args.live ? undefined : stage.clock
   );
   stage.onDispose(stop);
   current = {
@@ -52,6 +60,7 @@ export function renderNotice(args: NoticeArgs): HTMLElement {
       stage.settle();
     }
   };
+  if (!args.live && args.phase === 'leaving') current.elapse(Math.max(0, args.remainingMs - 900));
   stage.settle();
   return stage.view;
 }

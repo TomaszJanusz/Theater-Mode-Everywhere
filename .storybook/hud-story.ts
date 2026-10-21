@@ -35,16 +35,17 @@ let active: { stage: HudStage; hud: Hud } | undefined;
 export const stage = (): HudStage => active!.stage;
 export const hud = (): Hud => active!.hud;
 
-export interface HudStoryOptions {
+export interface HudStoryOptions<T extends HudArgs = HudArgs> {
   boostReady?: boolean;
   progress?: Record<Phase, number>;
   /** Clock time the `leaving` phase advances to; centred HUDs leave after `CENTERED_HUD_VISIBLE_MS`. */
-  leaveAfterMs?: number;
+  leaveAfterMs?: number | ((args: T) => number);
+  holdAfterMs?: number;
   /** Fractions the screenshots sweep, when the default 0, 50% and 100% miss the visible part of the motion. */
   frames?: readonly number[];
 }
 
-export function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage: HudStage, args: T) => void, options: HudStoryOptions): HTMLElement {
+export function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage: HudStage, args: T) => void, options: HudStoryOptions<T>): HTMLElement {
   const stage = mountHudStage({
     progress: args.live ? undefined : (options.progress ?? PHASE_PROGRESS)[args.phase],
     boostReady: options.boostReady,
@@ -55,7 +56,15 @@ export function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage:
     if (active?.stage === stage) active = undefined; });
   active = { stage, hud };
   trigger(hud, stage, args);
-  if (args.phase === 'leaving' && !args.live) stage.advance(options.leaveAfterMs ?? CENTERED_HUD_VISIBLE_MS);
+  if (!args.live) {
+    if (args.phase === 'steady') stage.advance(options.holdAfterMs ?? 0);
+    if (args.phase === 'leaving') {
+      // Establish the visible style before the timer adds fade-out, so a real CSS transition starts.
+      stage.settle();
+      stage.advance(typeof options.leaveAfterMs === 'function'
+        ? options.leaveAfterMs(args) : options.leaveAfterMs ?? CENTERED_HUD_VISIBLE_MS);
+    }
+  }
   stage.settle();
   // Storybook mounts what a story returns; the HUD lives in the player UI shadow root.
   return stage.view;
@@ -65,7 +74,7 @@ export function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage:
 export function hudStory<T extends HudArgs = HudArgs>(
   trigger: (hud: Hud, stage: HudStage, args: T) => void,
   story: StoryObj<T> = {},
-  options: HudStoryOptions = {}
+  options: HudStoryOptions<T> = {}
 ): StoryObj<T> {
   return { ...story, render: args => renderHud(args, trigger, options) };
 }

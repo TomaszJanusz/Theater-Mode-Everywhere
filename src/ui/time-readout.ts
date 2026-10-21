@@ -5,6 +5,8 @@
  */
 import { isMotionReduced } from '../appearance-runtime';
 
+import type { UiClock } from './ui-clock';
+
 export const TIME_DIGIT_TRANSITION_MS = 320;
 /** Each changing digit starts this much after the one to its left. */
 export const TIME_DIGIT_STAGGER_MS = 30;
@@ -92,22 +94,28 @@ function makeGlyph(doc: Document, ch: string): HTMLSpanElement {
   return glyph;
 }
 
-const settleTimers = new WeakMap<HTMLElement, number>();
+const settleTimers = new WeakMap<HTMLElement, { id: number; clock: UiClock }>();
 
 /** Separators never change, so they stay a plain glyph that sizes their slot. */
 function slotWindow(slot: HTMLElement): HTMLElement | null {
   return slot.querySelector<HTMLElement>(':scope > .theater-time-roll');
 }
 
-function setSlotChar(slot: HTMLElement, next: string, animate: boolean, roll: DigitRoll | null): void {
-  if (slot.dataset.ch === next && slot.childElementCount > 0) return;
+interface SlotUpdate { animate: boolean; roll: DigitRoll | null; clock?: UiClock }
+
+function setSlotChar(slot: HTMLElement, next: string, { animate, roll, clock }: SlotUpdate): void {
+  // Explicitly settling a readout must also finish an in-flight roll of the same value.
+  if (slot.dataset.ch === next && slot.childElementCount > 0 && (animate || !slot.classList.contains('is-rolling'))) return;
   const doc = slot.ownerDocument;
   const view = doc.defaultView;
   const reduce = isMotionReduced(doc);
   const previous = slot.dataset.ch;
   slot.dataset.ch = next;
   const pending = settleTimers.get(slot);
-  if (pending !== undefined) view?.clearTimeout(pending);
+  if (pending) {
+    pending.clock.clearTimeout(pending.id);
+    settleTimers.delete(slot);
+  }
   const rollWindow = slotWindow(slot);
   const current = rollWindow?.querySelector<HTMLElement>(':scope > .theater-time-glyph:not(.is-leaving)');
   const interrupting = slot.classList.contains('is-rolling');
@@ -131,16 +139,21 @@ function setSlotChar(slot: HTMLElement, next: string, animate: boolean, roll: Di
   slot.style.setProperty('--theater-time-roll-delay', `${delayMs}ms`);
   slot.classList.add('is-rolling');
   const settle = () => {
+    settleTimers.delete(slot);
     current.remove();
     entering.classList.remove('is-entering');
     slot.classList.remove('is-rolling');
     slot.style.removeProperty('--theater-time-roll-delay');
   };
-  const timer = view?.setTimeout(settle, delayMs + TIME_DIGIT_TRANSITION_MS + 80);
-  if (timer !== undefined) settleTimers.set(slot, timer);
+  const owner = clock ?? (view ? {
+    setTimeout: (handler: () => void, delay: number) => view.setTimeout(handler, delay),
+    clearTimeout: (id: number | undefined) => view.clearTimeout(id)
+  } : undefined);
+  const timer = owner?.setTimeout(settle, delayMs + TIME_DIGIT_TRANSITION_MS + 80);
+  if (owner && timer !== undefined) settleTimers.set(slot, { id: timer, clock: owner });
 }
 
-export function renderTimeReadout(host: HTMLElement, value: string, animate: boolean): void {
+export function renderTimeReadout(host: HTMLElement, value: string, animate: boolean, clock?: UiClock): void {
   const mask = maskFor(value);
   const doc = host.ownerDocument;
   host.dataset.mode = 'clock';
@@ -157,7 +170,7 @@ export function renderTimeReadout(host: HTMLElement, value: string, animate: boo
         slot.appendChild(roll);
       }
       host.appendChild(slot);
-      setSlotChar(slot, ch, false, null);
+      setSlotChar(slot, ch, { animate: false, roll: null, clock });
     }
     return;
   }
@@ -166,7 +179,7 @@ export function renderTimeReadout(host: HTMLElement, value: string, animate: boo
   const plan = planDigitRolls(slots.map((slot) => slot.dataset.ch ?? '').join(''), value);
   for (let i = 0; i < value.length; i += 1) {
     const slot = slots[i];
-    if (slot) setSlotChar(slot, value[i], animate, plan[i]);
+    if (slot) setSlotChar(slot, value[i], { animate, roll: plan[i], clock });
   }
 }
 

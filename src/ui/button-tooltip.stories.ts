@@ -16,9 +16,15 @@ interface Args {
   open: boolean;
 }
 
-const SHORTCUT_KEYS = { fullscreenTooltip: ['F'], exitTheaterModeTooltip: ['Esc', 'T'] } satisfies Record<Args['tooltip'], string[]>;
+const SHORTCUT_KEYS = { fullscreenTooltip: ['F'], exitTheaterModeTooltip: ['T', 'Esc'] } satisfies Record<Args['tooltip'], string[]>;
 
 const FULLSCREEN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
+
+const EXIT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="4" x2="4" y2="20"></line><line x1="4" y1="4" x2="20" y2="20"></line></svg>';
+const ACTIONS = {
+  fullscreenTooltip: { label: 'toggleFullscreen', icon: FULLSCREEN_ICON, className: 'fullscreen-btn' },
+  exitTheaterModeTooltip: { label: 'exitTheaterMode', icon: EXIT_ICON, className: 'close-btn' }
+} satisfies Record<Args['tooltip'], { label: string; icon: string; className: string }>;
 
 const meta: Meta<Args> = {
   title: 'Player/Control button tooltip',
@@ -32,10 +38,12 @@ const meta: Meta<Args> = {
       actions: { updateCaptionDock: () => {}, setTooltipContent: renderKbdText }
     });
     const button = document.createElement('button');
-    button.className = 'theater-control-btn fullscreen-btn';
-    button.setAttribute('aria-label', t(tooltip, SHORTCUT_KEYS[tooltip]));
+    // The action's label and icon match its tooltip; this fixture does not execute host commands.
+    const action = ACTIONS[tooltip];
+    button.className = `theater-control-btn ${action.className}`;
+    button.setAttribute('aria-label', t(action.label));
     button.disabled = disabled;
-    setSvgIcon(button, FULLSCREEN_ICON);
+    setSvgIcon(button, action.icon);
     tooltips.bind(button, () => t(tooltip, SHORTCUT_KEYS[tooltip]), undefined, place);
     scope.raf(() => { if (open && !disabled) button.dispatchEvent(new MouseEvent('mouseenter')); });
     return [button];
@@ -45,11 +53,13 @@ export default meta;
 
 type Story = StoryObj<Args>;
 
-const button = () => queryPlayerUi<HTMLButtonElement>('.fullscreen-btn')!;
+const button = () => queryPlayerUi<HTMLButtonElement>('.theater-control-btn')!;
 const tooltip = () => queryPlayerUi<HTMLElement>('.theater-button-tooltip');
 
 export const Closed: Story = {
   play: async ({ args }) => {
+    await expect(button().getAttribute('aria-label')).toBe(t(ACTIONS[args.tooltip].label));
+    await expect(button().getAttribute('aria-label')).not.toContain('<');
     await expect(button().hasAttribute('title')).toBe(false);
     await expect(button().disabled).toBe(args.disabled);
     await waitFor(() => expect(tooltip()?.classList.contains('visible') ?? false).toBe(args.open && !args.disabled));

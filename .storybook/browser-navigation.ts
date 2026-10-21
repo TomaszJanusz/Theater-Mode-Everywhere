@@ -25,3 +25,12 @@ export async function openStory(page: Page, base: string, id: string, profile: P
   await page.waitForFunction(args => Object.entries(args).every(([key, value]) => window.__storyState?.args[key] === value), profile.args);
   await waitForStory(page);
 }
+
+export async function selectTimeline(page: Page, timeline: Profile['globals']['timeline']): Promise<void> {
+  await page.evaluate(value => {
+    const channel = (window as unknown as { __STORYBOOK_ADDONS_CHANNEL__: { emit(type: string, payload: unknown): void } }).__STORYBOOK_ADDONS_CHANNEL__;
+    channel.emit('updateGlobals', { globals: { timeline: value } });
+  }, timeline);
+  await page.waitForFunction(value => window.__storyState?.globals.timeline === value, timeline);
+  await waitForStory(page);
+}
