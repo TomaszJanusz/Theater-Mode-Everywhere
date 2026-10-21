@@ -37,6 +37,14 @@ export function readProviderWatchPage(url: URL): ProviderWatchPage | null {
   return null;
 }
 
+/**
+ * Single-page sites keep the player element across history traversal and may not hide it, so
+ * element removal never signals that a back or forward step left the watch page.
+ */
+export function leftProviderWatchPage(enteredOnWatchPage: boolean, href: string): boolean {
+  return enteredOnWatchPage && !readProviderWatchPage(new URL(href));
+}
+
 export type AutoTheaterAvailability = 'available' | 'unsupported' | 'integrationOff';
 
 /** Mirrors the gates `readProviderWatchPage` and the runtime apply, without needing a watch URL, so menus can explain them. */

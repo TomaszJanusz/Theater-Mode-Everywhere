@@ -10,7 +10,7 @@ import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, reso
 import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
-import { autoTheaterAvailability } from '../providers/watch-playback';
+import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -1884,7 +1884,9 @@ function initialize(): void {
 
   // 5. SPA navigation listener — auto-exit theater mode when page navigates away
   listeners.navigate = () => {
-    if ((session.element && !isElementInDOMDeep(session.element)) || (session.id && session.element && !isElementInDOMDeep(session.element))) {
+    if (session.hasUi && leftProviderWatchPage(theaterEnteredOnWatchPage, window.location.href)) {
+      exitTheaterMode();
+    } else if ((session.element && !isElementInDOMDeep(session.element)) || (session.id && session.element && !isElementInDOMDeep(session.element))) {
       exitTheaterMode();
     }
     refs.activeVideo = null;
@@ -2218,8 +2220,12 @@ function refreshTheaterAncestors(element: HTMLElement): void {
   refs.ancestorsList = next;
 }
 
+/** Whether the active session began on a provider watch page; history traversal off it ends the session. */
+let theaterEnteredOnWatchPage = false;
+
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
   if (session.element) return;
+  theaterEnteredOnWatchPage = window === window.top && readProviderWatchPage(new URL(window.location.href)) !== null;
 
   session.rebind(element, sessionId, nonce);
   refs.childPlaylistNav = emptyPlaylistNav();

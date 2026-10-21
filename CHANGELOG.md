@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Theater mode now exits when you navigate back on single-page sites instead of leaving the stage on screen.
+
 ## [2.0.3] - 2026-10-20
 
 ### Fixed
