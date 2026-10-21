@@ -34,7 +34,16 @@ const preview: Preview = {
     setSyncStorage({ reduceMotion: globals.reduceMotion === 'off' ? 'off' : 'on' });
     await languageRuntime.set(globals.locale);
     // The bundled Roboto loads lazily; layout that measures text (title marquee) must not run on fallback metrics.
-    await Promise.all(['400', '500', '600', '700'].map(weight => document.fonts.load(`${weight} 16px Roboto`)));
+    // Failed or stalled font requests must still let the interactive preview render with fallback fonts.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.allSettled(['400', '500', '600', '700'].map(weight => document.fonts.load(`${weight} 16px Roboto`))),
+        new Promise<void>(resolve => { timeout = setTimeout(resolve, 3000); })
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
   }]
 };
 

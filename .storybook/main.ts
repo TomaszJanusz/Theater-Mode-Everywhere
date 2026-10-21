@@ -1,4 +1,11 @@
+import { realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
+
 import type { StorybookConfig } from '@storybook/html-vite';
+import { searchForWorkspaceRoot } from 'vite';
+
+const require = createRequire(import.meta.url);
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.ts'],
@@ -9,7 +16,22 @@ const config: StorybookConfig = {
   // output and `emptyOutDir`. Storybook keeps its plugins and resolution, not that build plan.
   viteFinal(viteConfig) {
     const { input: _input, output: _output, ...rollup } = viteConfig.build?.rollupOptions ?? {};
-    return { ...viteConfig, build: { ...viteConfig.build, emptyOutDir: false, rollupOptions: rollup } };
+    return {
+      ...viteConfig,
+      server: {
+        ...viteConfig.server,
+        fs: {
+          ...viteConfig.server?.fs,
+          // pnpm's global virtual store can resolve fonts outside the workspace (notably on macOS).
+          allow: [
+            searchForWorkspaceRoot(process.cwd()),
+            ...(viteConfig.server?.fs?.allow ?? []),
+            dirname(realpathSync(require.resolve('@fontsource/roboto/package.json')))
+          ]
+        }
+      },
+      build: { ...viteConfig.build, emptyOutDir: false, rollupOptions: rollup }
+    };
   }
 };
 
