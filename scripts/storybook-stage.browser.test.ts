@@ -3,15 +3,19 @@ import { test } from 'node:test';
 
 import { chromium, firefox } from 'playwright';
 
+import type * as hudApi from '../.storybook/hud-story';
+import type * as noticeApi from '../.storybook/notice-story';
+import type * as playerApi from '../.storybook/player-stage';
+import type * as ownerApi from '../.storybook/stage-owner';
 import deCatalog from '../_locales/de/messages.json';
+import type * as languageApi from '../src/i18n-runtime';
 import { installChromeStub } from '../src/test-utils/chrome-stub';
 import { bundleModules, playerStylesheets } from '../src/test-utils/player-boot';
 import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { testEngines } from '../src/test-utils/test-engines';
+import type * as rootApi from '../src/ui/root';
 
-type StageApi = typeof import('../.storybook/hud-story') & typeof import('../.storybook/player-stage')
-  & typeof import('../.storybook/notice-story') & typeof import('../.storybook/stage-owner')
-  & typeof import('../src/ui/root') & typeof import('../src/i18n-runtime');
+type StageApi = typeof hudApi & typeof playerApi & typeof noticeApi & typeof ownerApi & typeof rootApi & typeof languageApi;
 declare global { interface Window { StoryStages: StageApi } }
 const bundle = bundleModules([
   "export * from '../.storybook/hud-story';",
