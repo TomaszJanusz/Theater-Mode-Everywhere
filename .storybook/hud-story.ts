@@ -44,7 +44,7 @@ export interface HudStoryOptions {
   frames?: readonly number[];
 }
 
-function renderHud(args: HudArgs, trigger: (hud: Hud, stage: HudStage) => void, options: HudStoryOptions): HTMLElement {
+function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage: HudStage, args: T) => void, options: HudStoryOptions): HTMLElement {
   const stage = mountHudStage({
     progress: args.live ? undefined : (options.progress ?? PHASE_PROGRESS)[args.phase],
     boostReady: options.boostReady,
@@ -53,7 +53,7 @@ function renderHud(args: HudArgs, trigger: (hud: Hud, stage: HudStage) => void, 
   const hud = createHud(stage.host, () => {}, args.live ? undefined : stage.clock);
   stage.onDispose(() => { hud.removeCenteredHud(); hud.removeCaptionHud(); });
   active = { stage, hud };
-  trigger(hud, stage);
+  trigger(hud, stage, args);
   if (args.phase === 'leaving' && !args.live) stage.advance(options.leaveAfterMs ?? CENTERED_HUD_VISIBLE_MS);
   stage.settle();
   // Storybook mounts what a story returns; the HUD lives in the player UI shadow root.
@@ -61,11 +61,11 @@ function renderHud(args: HudArgs, trigger: (hud: Hud, stage: HudStage) => void, 
 }
 
 /** A story that triggers the production HUD once on a fresh stage; `play` then drives and asserts. */
-export function hudStory(
-  trigger: (hud: Hud, stage: HudStage) => void,
-  story: HudStoryObj = {},
+export function hudStory<T extends HudArgs = HudArgs>(
+  trigger: (hud: Hud, stage: HudStage, args: T) => void,
+  story: StoryObj<T> = {},
   options: HudStoryOptions = {}
-): HudStoryObj {
+): StoryObj<T> {
   return { ...story, render: args => renderHud(args, trigger, options) };
 }
 

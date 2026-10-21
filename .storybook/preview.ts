@@ -1,6 +1,7 @@
 import type { Preview } from '@storybook/html-vite';
 
 import '../src/content.css';
+import { resolveReduceMotion } from '../src/appearance-preferences';
 import { languageRuntime } from '../src/i18n-runtime';
 import { LANGUAGES } from '../src/language';
 import { setPlayerUiCss } from '../src/ui/root';
@@ -13,8 +14,8 @@ installChromeStub();
 setPlayerUiCss(shadowCss);
 
 const preview: Preview = {
-  parameters: { layout: 'fullscreen', controls: { disable: true } },
-  initialGlobals: { backdrop: 'dark', locale: 'en', reduceMotion: 'on' },
+  parameters: { layout: 'fullscreen', controls: { expanded: true } },
+  initialGlobals: { backdrop: 'dark', locale: 'en', reduceMotion: 'off' },
   globalTypes: {
     backdrop: {
       description: 'Picture behind the player UI. The UI itself has one dark skin.',
@@ -26,12 +27,16 @@ const preview: Preview = {
     },
     reduceMotion: {
       description: 'Reduce motion preference, written to storage like the options page.',
-      toolbar: { title: 'Motion', items: ['on', 'off'], dynamicTitle: true }
+      toolbar: { title: 'Reduce motion', items: ['auto', 'on', 'off'], dynamicTitle: true }
     }
   },
+  decorators: [(story, context) => {
+    window.__storyState = { globals: { ...context.globals }, args: { ...context.args } };
+    return story();
+  }],
   loaders: [async ({ globals }) => {
     document.body.dataset.backdrop = String(globals.backdrop);
-    setSyncStorage({ reduceMotion: globals.reduceMotion === 'off' ? 'off' : 'on' });
+    setSyncStorage({ reduceMotion: resolveReduceMotion(globals.reduceMotion) });
     await languageRuntime.set(globals.locale);
     // The bundled Roboto loads lazily; layout that measures text (title marquee) must not run on fallback metrics.
     // Failed or stalled font requests must still let the interactive preview render with fallback fonts.

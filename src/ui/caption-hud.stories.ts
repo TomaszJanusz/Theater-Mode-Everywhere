@@ -1,91 +1,56 @@
 import type { Meta } from '@storybook/html-vite';
 import { expect } from 'storybook/test';
 
-import type { hud} from '../../.storybook/hud-story';
-import { CAPTION_HUD, hudStory, type HudArgs, type HudStoryObj } from '../../.storybook/hud-story';
+import { CAPTION_HUD, hudStory, type HudArgs } from '../../.storybook/hud-story';
 
-import { CAPTION_LOADING_HUD_DELAY_MS, type CaptionHudView } from './hud';
+import { CAPTION_LOADING_HUD_DELAY_MS } from './hud';
 import { t } from './messages';
 import { queryPlayerUi } from './root';
 
-const meta: Meta<HudArgs> = {
-  title: 'Player/Caption notice',
-  globals: { reduceMotion: 'off' },
-  tags: ['frames'],
-  args: { phase: 'steady', live: false }
+interface Args extends HudArgs {
+  view: 'loading' | 'status' | 'loading-to-result';
+  titleKey: 'subtitlesOnHud' | 'subtitlesOffHud' | 'noSubtitlesAvailable' | 'subtitlesLoadFailedHud';
+  detail: string;
+  duration: number;
+}
+// View-API fixtures: result-to-view mapping in player-runtime is outside this component proof.
+const meta: Meta<Args> = {
+  title: 'Player/Caption notice', tags: ['frames'],
+  args: { phase: 'steady', live: false, view: 'status', titleKey: 'subtitlesOnHud', detail: 'English (auto-generated)', duration: 4000 },
+  argTypes: {
+    view: { control: 'select', options: ['loading', 'status', 'loading-to-result'] },
+    titleKey: { control: 'select', options: ['subtitlesOnHud', 'subtitlesOffHud', 'noSubtitlesAvailable', 'subtitlesLoadFailedHud'] },
+    detail: { control: 'text' }, duration: { control: { type: 'number', min: 100, max: 10000, step: 100 } },
+    phase: { control: 'select', options: ['entering', 'steady', 'leaving'] }, live: { control: 'boolean' }
+  }
 };
 export default meta;
 
-type Story = HudStoryObj;
-
-// The runtime maps each caption result to one of these views (`showCaptionHud` in player-runtime.ts).
-const loading = (): CaptionHudView => ({ kind: 'loading', title: t('subtitlesLoadingHud') });
-const status = (key: string, detail?: string, duration?: number): CaptionHudView => ({
-  kind: 'status', title: t(key), ...(detail ? { detail } : {}), ...(duration ? { duration } : {})
-});
-
-const hud_ = () => queryPlayerUi<HTMLElement>(CAPTION_HUD);
-const title = () => hud_()?.querySelector('.volume-hud-text')?.textContent;
-const detail = () => hud_()?.querySelector('.volume-hud-detail')?.textContent;
-// Status notices show 800 ms by default; the `leaving` frame sits in the fade after that.
-const STATUS_VISIBLE_MS = 800;
-
-// Views are built when the story renders, after the locale global has loaded its catalog.
-const show = (view: () => CaptionHudView, afterMs = 0) => (h: ReturnType<typeof hud>, stage: { advance(ms: number): void }) => {
-  h.triggerCaptionHud(view());
-  if (afterMs) stage.advance(afterMs);
-};
-
-/** A loading notice appears only after a short delay, so a fast download never flashes it. */
-export const Loading: Story = hudStory(show(loading, CAPTION_LOADING_HUD_DELAY_MS), {
-  play: async () => {
-    await expect(title()).toBe(t('subtitlesLoadingHud'));
-    await expect(hud_()?.classList.contains('loading')).toBe(true);
-    await expect(hud_()?.querySelector('.caption-hud-spinner')).not.toBeNull();
-  }
-});
-
-export const CaptionsOff: Story = hudStory(show(() => status('subtitlesOffHud')), {
-  play: async () => { await expect(title()).toBe(t('subtitlesOffHud')); }
-}, { leaveAfterMs: STATUS_VISIBLE_MS });
-
-export const NoCaptionsAvailable: Story = hudStory(show(() => status('noSubtitlesAvailable')), {
-  play: async () => { await expect(title()).toBe(t('noSubtitlesAvailable')); }
-}, { leaveAfterMs: STATUS_VISIBLE_MS });
-
-export const LoadFailed: Story = hudStory(show(() => status('subtitlesLoadFailedHud')), {
-  play: async () => { await expect(title()).toBe(t('subtitlesLoadFailedHud')); }
-}, { leaveAfterMs: STATUS_VISIBLE_MS });
-
-export const CaptionsOnWithLanguage: Story = hudStory(show(() => status('subtitlesOnHud', 'English (auto-generated)', 4000)), {
-  play: async () => {
-    await expect(title()).toBe(t('subtitlesOnHud'));
-    await expect(detail()).toBe('English (auto-generated)');
-  }
-}, { leaveAfterMs: 4000 });
-
-/** Loading turns into the result in the same plate: the ring zooms out and the width eases to the new text. */
-export const LoadingBecomesResult: Story = hudStory((h, stage) => {
-  h.triggerCaptionHud(loading());
-  stage.advance(CAPTION_LOADING_HUD_DELAY_MS);
-  h.triggerCaptionHud(status('subtitlesOnHud', 'Deutsch', 4000));
-}, {
-  play: async () => {
-    await expect(title()).toBe(t('subtitlesOnHud'));
-    await expect(detail()).toBe('Deutsch');
-  }
-});
-
-export const LongLabelGerman: Story = {
-  ...hudStory(show(() => status('subtitlesOnHud', 'Portugiesisch (Brasilien, automatisch erstellt)', 4000)), {
-    play: async () => { await expect(title()).toBe(t('subtitlesOnHud')); }
-  }, { leaveAfterMs: 4000 }),
-  globals: { locale: 'de' }
-};
-
-export const RtlArabic: Story = {
-  ...hudStory(show(() => status('subtitlesOnHud', 'العربية', 4000)), {
-    play: async () => { await expect(hud_()?.getAttribute('dir')).toBe('rtl'); }
-  }, { leaveAfterMs: 4000 }),
-  globals: { locale: 'ar' }
-};
+function caption(args: Partial<Args> = {}) {
+  return hudStory<Args>((h, stage, values) => {
+    if (values.view !== 'status') {
+      h.triggerCaptionHud({ kind: 'loading', title: t('subtitlesLoadingHud') });
+      stage.advance(CAPTION_LOADING_HUD_DELAY_MS);
+    }
+    if (values.view !== 'loading') h.triggerCaptionHud({ kind: 'status', title: t(values.titleKey), detail: values.detail, duration: values.duration });
+  }, {
+    args,
+    play: async ({ args: values }) => {
+      const node = queryPlayerUi<HTMLElement>(CAPTION_HUD);
+      await expect(node?.querySelector('.volume-hud-text')?.textContent).toBe(t(values.view === 'loading' ? 'subtitlesLoadingHud' : values.titleKey));
+      if (values.view === 'loading') {
+        await expect(node?.classList.contains('loading')).toBe(true);
+        await expect(node?.querySelector('.caption-hud-spinner')).not.toBeNull();
+      } else await expect(node?.querySelector('.volume-hud-detail')?.textContent ?? '').toBe(values.detail);
+      await expect(node?.getAttribute('dir')).toBe(t('@@bidi_dir'));
+    }
+  }, { leaveAfterMs: args.duration ?? 4000 });
+}
+export const Loading = caption({ view: 'loading' });
+export const CaptionsOff = caption({ titleKey: 'subtitlesOffHud', detail: '', duration: 800 });
+export const NoCaptionsAvailable = caption({ titleKey: 'noSubtitlesAvailable', detail: '', duration: 800 });
+export const LoadFailed = caption({ titleKey: 'subtitlesLoadFailedHud', detail: '', duration: 800 });
+export const CaptionsOnWithLanguage = caption();
+export const LoadingBecomesResult = caption({ view: 'loading-to-result', detail: 'Deutsch' });
+export const LongLabelGerman = caption({ detail: 'Portugiesisch (Brasilien, automatisch erstellt)' });
+export const RtlArabic = caption({ detail: 'العربية' });

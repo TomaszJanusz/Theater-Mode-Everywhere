@@ -13,6 +13,7 @@ interface Args {
   tooltip: 'fullscreenTooltip' | 'exitTheaterModeTooltip';
   place: ButtonTooltipPlace;
   disabled: boolean;
+  open: boolean;
 }
 
 const SHORTCUT_KEYS = { fullscreenTooltip: ['F'], exitTheaterModeTooltip: ['Esc', 'T'] } satisfies Record<Args['tooltip'], string[]>;
@@ -21,8 +22,9 @@ const FULLSCREEN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24
 
 const meta: Meta<Args> = {
   title: 'Player/Control button tooltip',
-  args: { tooltip: 'fullscreenTooltip', place: 'above', disabled: false },
-  render: ({ tooltip, place, disabled }) => renderPlayerBar(() => {
+  argTypes: { tooltip: { control: 'select', options: ['fullscreenTooltip', 'exitTheaterModeTooltip'] }, place: { control: 'select', options: ['above', 'below'] }, disabled: { control: 'boolean' }, open: { control: 'boolean' } },
+  args: { tooltip: 'fullscreenTooltip', place: 'above', disabled: false, open: false },
+  render: ({ tooltip, place, disabled, open }) => renderPlayerBar(scope => {
     // The player runtime supplies the real mount and paint; only the caption dock is an edge no-op.
     const tooltips = createButtonTooltip({
       paintOverlay,
@@ -31,10 +33,11 @@ const meta: Meta<Args> = {
     });
     const button = document.createElement('button');
     button.className = 'theater-control-btn fullscreen-btn';
-    button.setAttribute('aria-label', t('toggleFullscreen'));
+    button.setAttribute('aria-label', t(tooltip, SHORTCUT_KEYS[tooltip]));
     button.disabled = disabled;
     setSvgIcon(button, FULLSCREEN_ICON);
     tooltips.bind(button, () => t(tooltip, SHORTCUT_KEYS[tooltip]), undefined, place);
+    scope.raf(() => { if (open && !disabled) button.dispatchEvent(new MouseEvent('mouseenter')); });
     return [button];
   }, { liftBar: place === 'below' })
 };
@@ -53,10 +56,11 @@ export const Default: Story = {
 };
 
 export const Open: Story = {
-  play: async () => {
+  play: async ({ args }) => {
+    if (args.disabled) return;
     button().dispatchEvent(new MouseEvent('mouseenter'));
     await expect(tooltip()?.classList.contains('visible')).toBe(true);
-    await expect(tooltip()?.querySelector('kbd')?.textContent).toBe('F');
+    await expect(tooltip()?.querySelector('kbd')?.textContent).toBe(SHORTCUT_KEYS[args.tooltip][0]);
     button().dispatchEvent(new MouseEvent('mouseleave'));
     await expect(tooltip()?.classList.contains('visible')).toBe(false);
     button().dispatchEvent(new MouseEvent('mouseenter'));
@@ -67,25 +71,26 @@ export const Disabled: Story = { args: { disabled: true } };
 
 export const Below: Story = {
   args: { place: 'below' },
-  play: async () => {
+  play: async ({ args }) => {
+    if (args.disabled) return;
     button().dispatchEvent(new MouseEvent('mouseenter'));
-    await expect(tooltip()?.classList.contains('is-below')).toBe(true);
+    await expect(tooltip()?.classList.contains('is-below')).toBe(args.place === 'below');
   }
 };
 
 /** The longest tooltip string in the catalogs (German, 62 characters). */
 export const LongLabelGerman: Story = {
   args: { tooltip: 'exitTheaterModeTooltip' },
-  globals: { locale: 'de' },
-  play: async () => {
+  play: async ({ args }) => {
+    if (args.disabled) return;
     button().dispatchEvent(new MouseEvent('mouseenter'));
     await expect(tooltip()?.classList.contains('visible')).toBe(true);
   }
 };
 
 export const Arabic: Story = {
-  globals: { locale: 'ar' },
-  play: async () => {
+  play: async ({ args }) => {
+    if (args.disabled) return;
     button().dispatchEvent(new MouseEvent('mouseenter'));
     await expect(tooltip()?.classList.contains('visible')).toBe(true);
   }

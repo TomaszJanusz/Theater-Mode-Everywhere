@@ -22,8 +22,9 @@ export function volumeSurface(state: VolumeState): PlaybackSurface {
 }
 
 /**
- * The player callbacks `controls.ts` binds from `player-runtime.ts`. That module boots the whole
- * runtime on import, so these small stand-ins mirror its volume rules at the edge instead.
+ * Visual stand-ins for callbacks bound by `player-runtime.ts`. Importing that singleton module
+ * allocates wiring and binds Chrome actions; full init is gated by bootstrapPlayerRuntime().
+ * These fixtures establish presentation, not runtime volume commands or audible gain.
  */
 export function volumeHost(
   surface: PlaybackSurface,

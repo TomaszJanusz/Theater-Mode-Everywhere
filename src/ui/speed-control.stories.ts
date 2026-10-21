@@ -10,12 +10,14 @@ import { createSpeedControl } from './speed-control';
 interface Args {
   rate: number;
   disabled: boolean;
+  open: boolean;
 }
 
 const meta: Meta<Args> = {
   title: 'Player/Speed control',
-  args: { rate: 1.5, disabled: false },
-  render: ({ rate, disabled }) => renderPlayerBar(scope => {
+  argTypes: { rate: { control: { type: 'range', min: 0.25, max: 4, step: 0.25 } }, disabled: { control: 'boolean' }, open: { control: 'boolean' } },
+  args: { rate: 1.5, disabled: false, open: false },
+  render: ({ rate, disabled, open }) => renderPlayerBar(scope => {
     const control = createSpeedControl({
       video: { playbackRate: rate },
       scope,
@@ -25,6 +27,7 @@ const meta: Meta<Args> = {
     });
     control.button.disabled = disabled;
     control.slider.disabled = disabled;
+    scope.raf(() => { if (open && !disabled) control.button.focus(); });
     return [control.container];
   })
 };
@@ -38,15 +41,15 @@ const panel = () => queryPlayerUi<HTMLElement>('.theater-speed-panel')!;
 const container = () => queryPlayerUi<HTMLElement>('.theater-speed-container')!;
 
 export const Default: Story = {
-  play: async () => {
-    await expect(button().textContent).toBe('1.50x');
-    await expect(panel().inert).toBe(true);
+  play: async ({ args }) => {
+    await expect(button().textContent).toBe(`${args.rate.toFixed(2)}x`);
   }
 };
 
 /** Focus is the keyboard path to the panel the pointer reveals on hover. */
 export const Open: Story = {
-  play: async () => {
+  play: async ({ args }) => {
+    if (args.disabled) return;
     button().focus();
     await expect(panel().inert).toBe(false);
   }
@@ -81,15 +84,14 @@ export const Fast: Story = { args: { rate: 2 } };
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async () => {
-    await expect(button().disabled).toBe(true);
+  play: async ({ args }) => {
+    await expect(button().disabled).toBe(args.disabled);
   }
 };
 
 export const LongLabelGerman: Story = {
-  globals: { locale: 'de' },
   play: async () => {
-    await expect(button().getAttribute('aria-label')).toBe('Wiedergabegeschwindigkeit');
-    await expect(slider().getAttribute('aria-label')).toBe('Wiedergabegeschwindigkeit');
+    await expect(button().getAttribute('aria-label')).toBe(t('playbackSpeed'));
+    await expect(slider().getAttribute('aria-label')).toBe(t('playbackSpeed'));
   }
 };

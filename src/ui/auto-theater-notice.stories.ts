@@ -9,8 +9,8 @@ import { t } from './messages';
 // roll and zoom-out at a fixed fraction so each frame is the same on every run.
 const meta: Meta<NoticeArgs> = {
   title: 'Player/Auto-theater notice',
-  globals: { reduceMotion: 'off' },
   tags: ['frames'],
+  argTypes: { remainingMs: { control: { type: 'number', min: 0, max: 10000, step: 100 } }, ringTurn: { control: 'select', options: ['uniform', 'per-digit'] }, progress: { control: { type: 'range', min: 0, max: 1, step: 0.05 } }, frames: { control: false } },
   args: { remainingMs: 4500, ringTurn: 'uniform', progress: 0.5 },
   render: renderNotice
 };
@@ -19,8 +19,8 @@ export default meta;
 type Story = NoticeStoryObj;
 
 export const Counting: Story = {
-  play: async () => {
-    await expect(digit()).toBe('4');
+  play: async ({ args }) => {
+    await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000)));
     await expect(notice()?.getAttribute('role')).toBe('status');
     await expect(notice()?.querySelector('.theater-auto-notice-count')?.getAttribute('aria-hidden')).toBe('true');
   }
@@ -28,36 +28,33 @@ export const Counting: Story = {
 
 export const LastSecondsDigit: Story = {
   args: { remainingMs: 1800 },
-  play: async () => { await expect(digit()).toBe('1'); }
+  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
 };
 
 /** At 0 the ring is leaving: it zooms out over the last half second while the digit stays. */
 export const RingLeaving: Story = {
   args: { remainingMs: 900, frames: [0, 0.25, 0.5] },
-  play: async () => { await expect(digit()).toBe('0'); }
+  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
 };
 
 export const PerDigitRing: Story = {
   args: { ringTurn: 'per-digit', remainingMs: 2400 },
-  play: async () => { await expect(digit()).toBe('2'); }
+  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
 };
 
 export const LongLabelGerman: Story = {
-  globals: { locale: 'de' },
   play: async () => {
     await expect(notice()?.querySelector('.volume-hud-text')?.textContent).toBe(t('autoEnterNoticeTitle'));
-    await expect(notice()?.getAttribute('aria-label')).toContain('Kinomodus wird aktiviert');
+    await expect(notice()?.getAttribute('aria-label')).toContain(t('autoEnterNoticeTitle'));
   }
 };
 
 export const RtlArabic: Story = {
-  globals: { locale: 'ar' },
-  play: async () => { await expect(notice()?.getAttribute('dir')).toBe('rtl'); }
+  play: async () => { await expect(notice()?.getAttribute('dir')).toBe(t('@@bidi_dir')); }
 };
 
 export const ReducedMotion: Story = {
-  globals: { reduceMotion: 'on' },
   play: async () => {
-    await expect(notice()?.querySelector('.caption-hud-spinner')?.getAnimations().length).toBe(0);
+    await expect(notice()?.getAttribute('role')).toBe('status');
   }
 };

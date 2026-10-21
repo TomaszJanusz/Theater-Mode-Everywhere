@@ -1,10 +1,8 @@
 import type { Meta } from '@storybook/html-vite';
 import { expect } from 'storybook/test';
 
-import {
-  bassHud, hudStory, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS, type HudArgs, type HudStoryObj
-} from '../../.storybook/hud-story';
-import type { AudioSettings } from '../audio-settings';
+import { bassHud, hudStory, hudText, overlay, SEEK, SEEK_FRAMES, SEEK_PHASE_PROGRESS, type HudArgs } from '../../.storybook/hud-story';
+import { BASS_LEVELS, type AudioSettings } from '../audio-settings';
 
 import { videoFitLabel } from './appearance';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
@@ -16,187 +14,125 @@ import { t } from './messages';
 import { getPlayerUiRoot, queryPlayerUi } from './root';
 
 const meta: Meta<HudArgs> = {
-  title: 'Player/HUD',
-  globals: { reduceMotion: 'off' },
-  tags: ['frames'],
-  args: { phase: 'steady', live: false }
+  title: 'Player/HUD', tags: ['frames'], args: { phase: 'steady', live: false },
+  argTypes: {
+    phase: { control: 'select', options: ['entering', 'steady', 'leaving'] },
+    live: { control: 'boolean', description: 'Real-clock preview; replay remounts the fixture.' }
+  }
 };
 export default meta;
 
-type Story = HudStoryObj;
-
-export const Play: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
-  play: async () => {
-    await expect(hudText()).toBe(t('play'));
-    await expect(overlay()?.dataset.playbackAction).toBe('play');
-  }
-});
-
-export const Pause: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
-  play: async () => {
-    await expect(hudText()).toBe(t('pause'));
-  }
-});
-
-export const VolumeUp: Story = hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up'), {
-  play: async () => {
-    await expect(hudText()).toBe('65%');
-    await expect(overlay()?.querySelector('.volume-hud-text')?.classList.contains('zoom-in')).toBe(true);
-  }
-});
-
-export const VolumeDown: Story = hudStory(hud => hud.triggerVolumeIndicator(0.3, false, 'down'), {
-  play: async () => {
-    await expect(hudText()).toBe('30%');
-    await expect(overlay()?.querySelector('.volume-hud-text')?.classList.contains('zoom-out')).toBe(true);
-  }
-});
-
-export const VolumeFull: Story = hudStory(hud => hud.triggerVolumeIndicator(1, false, 'up'), {
-  play: async () => { await expect(hudText()).toBe('100%'); }
-});
-
-export const VolumeZero: Story = hudStory(hud => hud.triggerVolumeIndicator(0, false, 'down'), {
-  play: async () => { await expect(hudText()).toBe('0%'); }
-});
-
-export const VolumeMuted: Story = hudStory(hud => hud.triggerVolumeIndicator(0.8, true, 'down'), {
-  play: async () => { await expect(hudText()).toBe('0%'); }
-});
-
-export const VolumeBoosted: Story = hudStory(hud => hud.triggerVolumeIndicator(1.25, false, 'up'), {
-  play: async () => {
-    await expect(hudText()).toBe('200%');
-    await expect(overlay()?.classList.contains('boosted')).toBe(true);
-  }
-}, { boostReady: true });
-
-/** Above 100% without a boost graph (the page owns the audio): the label shows, the boost tint does not. */
-export const VolumeNoBoostGraph: Story = hudStory(hud => hud.triggerVolumeIndicator(1.25, false, 'up'), {
-  play: async () => {
-    await expect(hudText()).toBe('200%');
-    await expect(overlay()?.classList.contains('boosted')).toBe(false);
-  }
-});
-
-export const SeekBackward: Story = hudStory(hud => hud.triggerSeekIndicator('left'), {
-  play: async () => {
-    await expect(queryPlayerUi(`${SEEK}.left`)?.textContent).toBe(t('fiveSeconds'));
-  }
-}, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES });
-
-export const SeekForward: Story = hudStory(hud => hud.triggerSeekIndicator('right'), {
-  play: async () => {
-    await expect(queryPlayerUi(`${SEEK}.right`)?.textContent).toBe(t('fiveSeconds'));
-  }
-}, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES });
-
-/** Both overlays can show at once: rapid back-and-forth seeking. */
-export const SeekBothDirections: Story = hudStory(hud => {
-  hud.triggerSeekIndicator('left');
-  hud.triggerSeekIndicator('right');
-}, {
-  play: async () => {
-    await expect(getPlayerUiRoot().querySelectorAll(SEEK).length).toBe(2);
-    await expect(queryPlayerUi(`${SEEK}.left`)).not.toBeNull();
-    await expect(queryPlayerUi(`${SEEK}.right`)).not.toBeNull();
-  }
-}, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES });
-
-export const SeekGerman: Story = {
-  ...hudStory(hud => hud.triggerSeekIndicator('right'), {
-    play: async () => { await expect(queryPlayerUi(`${SEEK}.right`)?.textContent).toBe('5 Sekunden'); }
-  }, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES }),
-  globals: { locale: 'de' }
-};
-
-export const SeekRtlArabic: Story = {
-  ...hudStory(hud => hud.triggerSeekIndicator('left'), {
-    play: async () => { await expect(queryPlayerUi(`${SEEK}.left`)?.getAttribute('dir')).toBe('rtl'); }
-  }, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES }),
-  globals: { locale: 'ar' }
-};
-
-export const Mute: Story = hudStory(hud => hud.triggerStatusIndicator(t('muteHud'), STATUS_HUD_MUTE_ICON), {
-  play: async () => { await expect(hudText()).toBe(t('muteHud')); }
-});
-
-export const Unmute: Story = hudStory(hud => hud.triggerStatusIndicator(t('unmuteHud'), STATUS_HUD_UNMUTE_ICON), {
-  play: async () => { await expect(hudText()).toBe(t('unmuteHud')); }
-});
-
-export const VolumeBoostOn: Story = hudStory(hud => hud.triggerStatusIndicator(
-  t('volumeBoostHud', t('volumeBoostOn')), VOLUME_BOOST_ICONS.hud
-));
-
-export const VideoFit: Story = hudStory(hud => hud.triggerStatusIndicator(videoFitLabel('cover'), STATUS_HUD_FIT_ICON));
-
-export const PictureAlignment: Story = hudStory(hud => hud.triggerStatusIndicator(t('pictureAlignTop'), STATUS_HUD_LAYOUT_ICON));
-
-export const SwitchVideo: Story = hudStory(hud => hud.triggerStatusIndicator(t('cycleIframeHud'), STATUS_HUD_SWITCH_ICON));
-
-export const ControlsPinned: Story = hudStory(hud => hud.triggerStatusIndicator(t('controlsPinnedHud'), CONTROLS_VISIBILITY_ICON));
-
-/** `controls.ts` reports an unavailable action with text only. */
-export const NoIcon: Story = hudStory(hud => hud.triggerStatusIndicator(t('nativeChatFullscreenUnavailable'), ''), {
-  play: async () => { await expect(overlay()?.querySelector('.volume-hud-icon svg')).toBeNull(); }
-});
-
-export const LongLabelGerman: Story = {
-  ...hudStory(hud => hud.triggerStatusIndicator(t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON), {
-    play: async () => { await expect(hudText()).toBe(t('onlyOneVideoHud')); }
-  }),
-  globals: { locale: 'de' }
-};
-
-export const RtlArabic: Story = {
-  ...hudStory(hud => hud.triggerStatusIndicator(t('videoFitCover'), STATUS_HUD_FIT_ICON), {
-    play: async () => { await expect(overlay()?.getAttribute('dir')).toBe('rtl'); }
-  }),
-  globals: { locale: 'ar' }
-};
-
-function bassStory(bass: AudioSettings['bass']): Story {
-  return hudStory(bassHud(bass), {
-    play: async () => {
-      await expect(overlay()?.dataset.level).toBe(bass);
-      await expect(overlay()?.querySelector('.bass-icon')?.getAttribute('data-level')).toBe(bass);
+function playback(action: 'play' | 'pause') {
+  return hudStory<HudArgs & { action: 'play' | 'pause' }>((h, _s, args) => h.triggerPlaybackIndicator(args.action), {
+    args: { action }, argTypes: { action: { control: 'select', options: ['play', 'pause'] } },
+    play: async ({ args }) => {
+      await expect(hudText()).toBe(t(args.action));
+      await expect(overlay()?.dataset.playbackAction).toBe(args.action);
     }
   });
 }
 
-export const BassLess: Story = bassStory('less');
-export const BassOriginal: Story = bassStory('original');
-export const BassMore: Story = bassStory('more');
-export const BassMoar: Story = bassStory('moar');
-/** The top level: red, with the strongest cabinet shake. */
-export const BassMoaaarr: Story = bassStory('moaaarr');
+interface VolumeArgs extends HudArgs { amount: number; muted: boolean; direction: 'up' | 'down'; graph: boolean }
+function volume(amount: number, direction: 'up' | 'down' = 'up', graph = false, muted = false) {
+  return hudStory<VolumeArgs>((h, s, args) => {
+    s.session.element!.dataset.theaterBoostReady = String(args.graph);
+    h.triggerVolumeIndicator(args.amount, args.muted, args.direction);
+  }, {
+    args: { amount, direction, graph, muted },
+    argTypes: {
+      amount: { control: { type: 'range', min: 0, max: 1.5, step: 0.05 } },
+      muted: { control: 'boolean' }, graph: { control: 'boolean' },
+      direction: { control: 'select', options: ['up', 'down'] }
+    },
+    play: async ({ args }) => {
+      const level = args.muted ? 0 : args.amount;
+      await expect(hudText()).toBe(`${Math.round(level <= 1 ? level * 100 : 100 + (level - 1) * 400)}%`);
+      await expect(overlay()?.classList.contains('boosted')).toBe(level > 1 && args.graph);
+      await expect(overlay()?.querySelector('.volume-hud-text')?.classList.contains(args.direction === 'up' ? 'zoom-in' : 'zoom-out')).toBe(true);
+    }
+  });
+}
 
-export const BassMoaaarrReducedMotion: Story = {
-  ...bassStory('moaaarr'),
-  globals: { reduceMotion: 'on' }
-};
+function seek(direction: 'left' | 'right' | 'both') {
+  return hudStory<HudArgs & { direction: 'left' | 'right' | 'both' }>((h, _s, args) => {
+    if (args.direction !== 'right') h.triggerSeekIndicator('left');
+    if (args.direction !== 'left') h.triggerSeekIndicator('right');
+  }, {
+    args: { direction }, argTypes: { direction: { control: 'select', options: ['left', 'right', 'both'] } },
+    play: async ({ args }) => {
+      await expect(getPlayerUiRoot().querySelectorAll(SEEK).length).toBe(args.direction === 'both' ? 2 : 1);
+      for (const side of args.direction === 'both' ? ['left', 'right'] : [args.direction]) {
+        await expect(queryPlayerUi(`${SEEK}.${side}`)?.textContent).toBe(t('fiveSeconds'));
+        await expect(queryPlayerUi(`${SEEK}.${side}`)?.getAttribute('dir')).toBe(t('@@bidi_dir'));
+      }
+    }
+  }, { progress: SEEK_PHASE_PROGRESS, frames: SEEK_FRAMES });
+}
 
-export const Entering: Story = {
-  ...hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up')),
-  args: { phase: 'entering' }
+const STATUS = {
+  mute: () => [t('muteHud'), STATUS_HUD_MUTE_ICON],
+  unmute: () => [t('unmuteHud'), STATUS_HUD_UNMUTE_ICON],
+  boost: () => [t('volumeBoostHud', t('volumeBoostOn')), VOLUME_BOOST_ICONS.hud],
+  fit: () => [videoFitLabel('cover'), STATUS_HUD_FIT_ICON],
+  alignment: () => [t('pictureAlignTop'), STATUS_HUD_LAYOUT_ICON],
+  switch: () => [t('cycleIframeHud'), STATUS_HUD_SWITCH_ICON],
+  pinned: () => [t('controlsPinnedHud'), CONTROLS_VISIBILITY_ICON],
+  unavailable: () => [t('nativeChatFullscreenUnavailable'), ''],
+  onlyVideo: () => [t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON]
 };
+function status(preset: keyof typeof STATUS) {
+  return hudStory<HudArgs & { preset: keyof typeof STATUS }>((h, _s, args) => {
+    const [text, icon] = STATUS[args.preset]();
+    h.triggerStatusIndicator(text, icon);
+  }, {
+    args: { preset }, argTypes: { preset: { control: 'select', options: Object.keys(STATUS) } },
+    play: async ({ args }) => {
+      await expect(hudText()).toBe(STATUS[args.preset]()[0]);
+      if (args.preset === 'unavailable') await expect(overlay()?.querySelector('.volume-hud-icon svg')).toBeNull();
+    }
+  });
+}
+function bass(level: AudioSettings['bass']) {
+  return hudStory<HudArgs & { level: AudioSettings['bass'] }>((h, _s, args) => bassHud(args.level)(h), {
+    args: { level }, argTypes: { level: { control: 'select', options: BASS_LEVELS } },
+    play: async ({ args }) => {
+      await expect(overlay()?.dataset.level).toBe(args.level);
+      await expect(overlay()?.querySelector('.bass-icon')?.getAttribute('data-level')).toBe(args.level);
+    }
+  });
+}
 
-export const Steady: Story = {
-  ...hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up')),
-  args: { phase: 'steady' }
-};
-
-export const Leaving: Story = {
-  ...hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up'), {
-    play: async () => { await expect(overlay()?.classList.contains('fade-out')).toBe(true); }
-  }),
-  args: { phase: 'leaving' }
-};
-
-/** On the real clock with animations running, to watch the whole life in Storybook. Not screenshot. */
-export const Live: Story = {
-  ...hudStory(hud => hud.triggerVolumeIndicator(0.65, false, 'up')),
-  tags: ['!frames', 'live'],
-  args: { live: true }
-};
+export const Play = playback('play');
+export const Pause = playback('pause');
+export const VolumeUp = volume(0.65);
+export const VolumeDown = volume(0.3, 'down');
+export const VolumeFull = volume(1);
+export const VolumeZero = volume(0, 'down');
+export const VolumeMuted = volume(0.8, 'down', false, true);
+export const VolumeBoosted = volume(1.25, 'up', true);
+export const VolumeNoBoostGraph = volume(1.25);
+export const SeekBackward = seek('left');
+export const SeekForward = seek('right');
+export const SeekBothDirections = seek('both');
+export const SeekGerman = seek('right');
+export const SeekRtlArabic = seek('left');
+export const Mute = status('mute');
+export const Unmute = status('unmute');
+export const VolumeBoostOn = status('boost');
+export const VideoFit = status('fit');
+export const PictureAlignment = status('alignment');
+export const SwitchVideo = status('switch');
+export const ControlsPinned = status('pinned');
+export const NoIcon = status('unavailable');
+export const LongLabelGerman = status('onlyVideo');
+export const RtlArabic = status('fit');
+export const BassLess = bass('less');
+export const BassOriginal = bass('original');
+export const BassMore = bass('more');
+export const BassMoar = bass('moar');
+export const BassMoaaarr = bass('moaaarr');
+export const BassMoaaarrReducedMotion = bass('moaaarr');
+export const Entering = { ...volume(0.65), args: { ...volume(0.65).args, phase: 'entering' as const } };
+export const Steady = volume(0.65);
+export const Leaving = { ...volume(0.65), args: { ...volume(0.65).args, phase: 'leaving' as const } };
+export const Live = { ...volume(0.65), tags: ['!frames', 'live'], args: { ...volume(0.65).args, live: true } };
