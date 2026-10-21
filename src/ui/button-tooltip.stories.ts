@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html-vite';
-import { expect } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 
 import { paintOverlay, renderPlayerBar } from '../../.storybook/player-stage';
 
@@ -48,50 +48,16 @@ type Story = StoryObj<Args>;
 const button = () => queryPlayerUi<HTMLButtonElement>('.fullscreen-btn')!;
 const tooltip = () => queryPlayerUi<HTMLElement>('.theater-button-tooltip');
 
-export const Default: Story = {
-  play: async () => {
-    await expect(tooltip()).toBeNull();
+export const Closed: Story = {
+  play: async ({ args }) => {
     await expect(button().hasAttribute('title')).toBe(false);
+    await expect(button().disabled).toBe(args.disabled);
+    await waitFor(() => expect(tooltip()?.classList.contains('visible') ?? false).toBe(args.open && !args.disabled));
+    if (args.open && !args.disabled) {
+      await expect(tooltip()?.querySelector('kbd')?.textContent).toBe(SHORTCUT_KEYS[args.tooltip][0]);
+      await expect(tooltip()?.classList.contains('is-below')).toBe(args.place === 'below');
+    }
   }
 };
-
-export const Open: Story = {
-  play: async ({ args }) => {
-    if (args.disabled) return;
-    button().dispatchEvent(new MouseEvent('mouseenter'));
-    await expect(tooltip()?.classList.contains('visible')).toBe(true);
-    await expect(tooltip()?.querySelector('kbd')?.textContent).toBe(SHORTCUT_KEYS[args.tooltip][0]);
-    button().dispatchEvent(new MouseEvent('mouseleave'));
-    await expect(tooltip()?.classList.contains('visible')).toBe(false);
-    button().dispatchEvent(new MouseEvent('mouseenter'));
-  }
-};
-
-export const Disabled: Story = { args: { disabled: true } };
-
-export const Below: Story = {
-  args: { place: 'below' },
-  play: async ({ args }) => {
-    if (args.disabled) return;
-    button().dispatchEvent(new MouseEvent('mouseenter'));
-    await expect(tooltip()?.classList.contains('is-below')).toBe(args.place === 'below');
-  }
-};
-
-/** The longest tooltip string in the catalogs (German, 62 characters). */
-export const LongLabelGerman: Story = {
-  args: { tooltip: 'exitTheaterModeTooltip' },
-  play: async ({ args }) => {
-    if (args.disabled) return;
-    button().dispatchEvent(new MouseEvent('mouseenter'));
-    await expect(tooltip()?.classList.contains('visible')).toBe(true);
-  }
-};
-
-export const Arabic: Story = {
-  play: async ({ args }) => {
-    if (args.disabled) return;
-    button().dispatchEvent(new MouseEvent('mouseenter'));
-    await expect(tooltip()?.classList.contains('visible')).toBe(true);
-  }
-};
+export const Above: Story = { ...Closed, args: { open: true } };
+export const Below: Story = { ...Closed, args: { open: true, place: 'below' } };

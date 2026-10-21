@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
-import { profilesFor, storyUrl, type Profile } from '../.storybook/profiles';
+import { openStory } from '../.storybook/browser-navigation';
+import { profilesFor, type Profile } from '../.storybook/profiles';
 import { serveStorybook } from '../.storybook/static-server';
 
 // One deterministic PNG per story and backdrop, for `gh pr create|edit|comment --attach`.
@@ -30,6 +31,7 @@ interface ShotTarget {
   profile: Profile;
   effective?: { globals: Record<string, unknown>; args: Record<string, unknown> };
   captures: Record<string, unknown>;
+  rendered?: { locale?: string; direction?: string; motion?: string; viewport: number };
   animated: boolean;
   out: string;
   hashes: Record<string, string>;
@@ -67,18 +69,26 @@ async function holdFrame(page: Page, frame: number): Promise<number | undefined>
 
 /** One PNG per story state; animated stories get one per held frame, a still story one. */
 async function shootStory(page: Page, address: string, target: ShotTarget): Promise<void> {
-  await page.setViewportSize(target.profile.viewport);
-  await page.emulateMedia({ reducedMotion: target.profile.reducedMotion });
-  await page.goto(address);
+  await openStory(page, address, target.id, target.profile);
   const phase = await renderedPhase(page);
   if (phase !== 'finished') target.failures.push(`${target.id} (${target.profile.name}): ${String(phase)}`);
   target.effective = await page.evaluate(() => window.__storyState);
   for (const [key, value] of Object.entries(target.profile.globals)) {
     if (target.effective?.globals[key] !== value) throw new Error(`${target.id}: global ${key} was pinned`);
   }
+  target.rendered = await page.evaluate(() => {
+    const host = document.getElementById('theater-everywhere-ui');
+    return { locale: host?.lang, direction: host?.dir, motion: host?.dataset.motion, viewport: window.innerWidth };
+  });
+  const { locale, reduceMotion } = target.profile.globals;
+  const expectedMotion = reduceMotion === 'on' || (reduceMotion === 'auto' && target.profile.reducedMotion === 'reduce') ? 'reduced' : 'normal';
+  if (target.rendered.locale !== locale || target.rendered.direction !== (locale === 'ar' ? 'rtl' : 'ltr')
+    || target.rendered.motion !== expectedMotion || target.rendered.viewport !== target.profile.viewport.width) {
+    throw new Error(`${target.id}: requested environment did not reach the rendered root`);
+  }
   await page.evaluate(() => document.fonts.ready);
   await settleFrames(page);
-  const frames = target.profile.frames ?? (target.animated ? await page.evaluate(() => window.__storyFrames) ?? FRAMES : [undefined]);
+  const frames = target.animated ? target.profile.frames ?? await page.evaluate(() => window.__storyFrames) ?? FRAMES : [undefined];
   for (const frame of frames) {
     if (frame !== undefined && await holdFrame(page, frame) === undefined) {
       target.failures.push(`${target.id} (${target.profile.name}): no __storyFrame`);
@@ -87,7 +97,7 @@ async function shootStory(page: Page, address: string, target: ShotTarget): Prom
     // Held frames must not be fast-forwarded to their end state by the screenshot itself.
     const png = await page.screenshot({ animations: target.animated ? 'allow' : 'disabled', caret: 'hide', path: join(target.out, name) });
     target.hashes[name] = createHash('sha256').update(png).digest('hex');
-    target.captures[name] = { story: target.id, profile: target.profile, effective: target.effective, frame, sha256: target.hashes[name] };
+    target.captures[name] = { story: target.id, profile: target.profile, effective: target.effective, rendered: target.rendered, frame, sha256: target.hashes[name] };
   }
 }
 
@@ -110,7 +120,7 @@ async function main(): Promise<void> {
     const page = await context.newPage();
     const failures: string[] = [];
     for (const story of stories) {
-      for (const profile of profilesFor(story.id)) await shootStory(page, storyUrl(url, story.id, profile), {
+      for (const profile of profilesFor(story.id)) await shootStory(page, url, {
         id: story.id, profile, captures, animated: story.tags?.includes('frames') ?? false, out, hashes, failures
       });
     }

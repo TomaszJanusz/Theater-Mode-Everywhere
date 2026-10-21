@@ -1,29 +1,21 @@
-import type { Meta } from '@storybook/html-vite';
-import { expect } from 'storybook/test';
+import { expect, test } from 'vitest';
 
-import { activeAnimationCount, uiNodeCount } from '../../.storybook/hud-stage';
-import {
-  bassHud, hud, hudStory, hudText, measure, overlay, overlayCount, SEEK, SEEK_PHASE_PROGRESS, stage, type HudArgs, type HudStoryObj
-} from '../../.storybook/hud-story';
-import { BASS_LEVELS } from '../audio-settings';
-
+import { BASS_LEVELS } from '../../src/audio-settings';
 import {
   audioHudIcon, CENTERED_HUD_VISIBLE_MS, HUD_FADE_OUT_MS, SEEK_HUD_MS, STATUS_HUD_MUTE_ICON
-} from './hud';
-import { t } from './messages';
-import { queryPlayerUi } from './root';
+} from '../../src/ui/hud';
+import { t } from '../../src/ui/messages';
+import { queryPlayerUi } from '../../src/ui/root';
+import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
+import { activeAnimationCount, uiNodeCount } from '../hud-stage';
+import {
+  bassHud, hud, hudText, measure, overlay, overlayCount, SEEK, SEEK_PHASE_PROGRESS, stage
+} from '../hud-story';
 
 // Behavior of the HUD lifecycle on a clock the story advances. These end with the UI removed or
 // replaced, so they are not screenshot; `Player/HUD` has the frames.
-const meta: Meta<HudArgs> = {
-  title: 'Player/HUD behavior',
-  globals: { reduceMotion: 'off' },
-  tags: ['no-shot'],
-  args: { phase: 'steady', live: false }
-};
-export default meta;
 
-type Story = HudStoryObj;
+type Story = HudCase;
 
 // Animations still alive depend on how far real time has run, so the bound is a ceiling for the plates
 // the burst can leave (at most both seek overlays: three arrows and the pulse each), not a count.
@@ -44,7 +36,7 @@ function rapid(name: string, action: (index: number) => void): { one: ReturnType
 }
 
 /** A click previews its action and the command then reports the same one: no second icon. */
-export const PlaybackEchoKeepsTheIcon: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
+const PlaybackEchoKeepsTheIcon: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
   play: async () => {
     const first = overlay()!;
     const icon = first.querySelector('.volume-hud-icon');
@@ -59,17 +51,19 @@ export const PlaybackEchoKeepsTheIcon: Story = hudStory(hud => hud.triggerPlayba
     await expect(first.classList.contains('fade-out')).toBe(true);
   }
 });
+test('PlaybackEchoKeepsTheIcon', () => runHudCase(PlaybackEchoKeepsTheIcon));
 
-export const CancelledClickWithdraws: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
+const CancelledClickWithdraws: Story = hudStory(hud => hud.triggerPlaybackIndicator('pause'), {
   play: async () => {
     hud().dismissPlaybackIndicator();
     await expect(overlay()).toBeNull();
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('CancelledClickWithdraws', () => runHudCase(CancelledClickWithdraws));
 
 /** The pulse ends by itself: its timer removes the node, and a repeat in the same direction replaces it. */
-export const SeekPulseLeavesRepeat: Story = hudStory(hud => hud.triggerSeekIndicator('right'), {
+const SeekPulseLeavesRepeat: Story = hudStory(hud => hud.triggerSeekIndicator('right'), {
   play: async () => {
     const first = queryPlayerUi(`${SEEK}.right`)!;
     stage().advance(SEEK_HUD_MS / 2);
@@ -85,8 +79,9 @@ export const SeekPulseLeavesRepeat: Story = hudStory(hud => hud.triggerSeekIndic
     await expect(stage().clock.pending).toBe(0);
   }
 }, { progress: SEEK_PHASE_PROGRESS });
+test('SeekPulseLeavesRepeat', () => runHudCase(SeekPulseLeavesRepeat));
 
-export const BassLevelsInOrder: Story = hudStory(bassHud('less'), {
+const BassLevelsInOrder: Story = hudStory(bassHud('less'), {
   play: async () => {
     await expect([...BASS_LEVELS]).toEqual(['less', 'original', 'more', 'moar', 'moaaarr']);
     for (const level of BASS_LEVELS) {
@@ -96,8 +91,9 @@ export const BassLevelsInOrder: Story = hudStory(bassHud('less'), {
     }
   }
 });
+test('BassLevelsInOrder', () => runHudCase(BassLevelsInOrder));
 
-export const HidesAfterItsTimeout: Story = hudStory(hud => hud.triggerStatusIndicator(t('muteHud'), STATUS_HUD_MUTE_ICON), {
+const HidesAfterItsTimeout: Story = hudStory(hud => hud.triggerStatusIndicator(t('muteHud'), STATUS_HUD_MUTE_ICON), {
   play: async () => {
     const shown = overlay()!;
     stage().advance(CENTERED_HUD_VISIBLE_MS - 1);
@@ -110,8 +106,9 @@ export const HidesAfterItsTimeout: Story = hudStory(hud => hud.triggerStatusIndi
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('HidesAfterItsTimeout', () => runHudCase(HidesAfterItsTimeout));
 
-export const RetriggerResetsTimer: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
+const RetriggerResetsTimer: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
   play: async () => {
     const shown = overlay()!;
     stage().advance(CENTERED_HUD_VISIBLE_MS - 100);
@@ -125,9 +122,10 @@ export const RetriggerResetsTimer: Story = hudStory(hud => hud.triggerVolumeIndi
     await expect(shown.classList.contains('fade-out')).toBe(true);
   }
 });
+test('RetriggerResetsTimer', () => runHudCase(RetriggerResetsTimer));
 
 /** A new action while the old one fades revives the same plate instead of removing it mid-fade. */
-export const RetriggerWhileLeaving: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
+const RetriggerWhileLeaving: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
   play: async () => {
     const shown = overlay()!;
     stage().advance(CENTERED_HUD_VISIBLE_MS);
@@ -140,8 +138,9 @@ export const RetriggerWhileLeaving: Story = hudStory(hud => hud.triggerVolumeInd
     await expect(shown.isConnected).toBe(true);
   }
 });
+test('RetriggerWhileLeaving', () => runHudCase(RetriggerWhileLeaving));
 
-export const OneOverlayAcrossActions: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
+const OneOverlayAcrossActions: Story = hudStory(hud => hud.triggerPlaybackIndicator('play'), {
   play: async () => {
     const shown = overlay()!;
     hud().triggerVolumeIndicator(0.4, false, 'down');
@@ -152,9 +151,10 @@ export const OneOverlayAcrossActions: Story = hudStory(hud => hud.triggerPlaybac
     await expect(hudText()).toBe(t('muteHud'));
   }
 });
+test('OneOverlayAcrossActions', () => runHudCase(OneOverlayAcrossActions));
 
 /** Work scheduled for an earlier session must not touch the UI of a later one. */
-export const StaleSessionIgnored: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
+const StaleSessionIgnored: Story = hudStory(hud => hud.triggerVolumeIndicator(0.5, false, 'up'), {
   play: async () => {
     const shown = overlay()!;
     stage().session.currentEpoch += 1;
@@ -166,8 +166,9 @@ export const StaleSessionIgnored: Story = hudStory(hud => hud.triggerVolumeIndic
     await expect(shown.isConnected).toBe(false);
   }
 });
+test('StaleSessionIgnored', () => runHudCase(StaleSessionIgnored));
 
-export const NoSessionNoHud: Story = hudStory((hud, stage) => {
+const NoSessionNoHud: Story = hudStory((hud, stage) => {
   stage.session.element = null;
   hud.triggerVolumeIndicator(0.5, false, 'up');
   hud.triggerStatusIndicator('x', '');
@@ -180,9 +181,10 @@ export const NoSessionNoHud: Story = hudStory((hud, stage) => {
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('NoSessionNoHud', () => runHudCase(NoSessionNoHud));
 
 /** Theater exit: nodes, timers and animations all go, and a second exit is harmless. */
-export const CleanupLeavesNothing: Story = hudStory(hud => {
+const CleanupLeavesNothing: Story = hudStory(hud => {
   hud.triggerVolumeIndicator(0.5, false, 'up');
   hud.triggerSeekIndicator('left');
 }, {
@@ -195,8 +197,9 @@ export const CleanupLeavesNothing: Story = hudStory(hud => {
     await expect(activeAnimationCount()).toBe(0);
   }
 }, { progress: SEEK_PHASE_PROGRESS });
+test('CleanupLeavesNothing', () => runHudCase(CleanupLeavesNothing));
 
-export const RapidVolume: Story = hudStory(() => {}, {
+const RapidVolume: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('volume', index => hud().triggerVolumeIndicator(index % 2 ? 0.8 : 0.6, false, index % 2 ? 'down' : 'up'));
     await expect(many.nodes).toBe(one.nodes);
@@ -207,8 +210,9 @@ export const RapidVolume: Story = hudStory(() => {}, {
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('RapidVolume', () => runHudCase(RapidVolume));
 
-export const RapidStatus: Story = hudStory(() => {}, {
+const RapidStatus: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('status', index => {
       const bass = index % 2 ? 'more' : 'moaaarr';
@@ -219,8 +223,9 @@ export const RapidStatus: Story = hudStory(() => {}, {
     await expect(many.timers).toBe(one.timers);
   }
 });
+test('RapidStatus', () => runHudCase(RapidStatus));
 
-export const RapidPlayPause: Story = hudStory(() => {}, {
+const RapidPlayPause: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('play-pause', index => hud().triggerPlaybackIndicator(index % 2 ? 'pause' : 'play'));
     await expect(many.nodes).toBe(one.nodes);
@@ -228,12 +233,13 @@ export const RapidPlayPause: Story = hudStory(() => {}, {
     await expect(many.timers).toBe(one.timers);
   }
 });
+test('RapidPlayPause', () => runHudCase(RapidPlayPause));
 
 /**
  * Nodes stay at one per direction. Each seek also leaves its own 650 ms removal timer behind (the
  * replaced node's timer is not cleared), so pending timers grow with the burst and drain with the clock.
  */
-export const RapidSeek: Story = hudStory(() => {}, {
+const RapidSeek: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('seek', index => hud().triggerSeekIndicator(index % 2 ? 'left' : 'right'));
     await expect(many.nodes).toBeLessThanOrEqual(one.nodes * 2);
@@ -244,4 +250,5 @@ export const RapidSeek: Story = hudStory(() => {}, {
     await expect(stage().clock.pending).toBe(0);
   }
 }, { progress: SEEK_PHASE_PROGRESS });
+test('RapidSeek', () => runHudCase(RapidSeek));
 

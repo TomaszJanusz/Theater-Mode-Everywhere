@@ -9,8 +9,8 @@ import { test } from 'node:test';
 import { chromium } from 'playwright';
 
 const stories = [
-  'player-auto-theater-notice-behavior--joins-where-the-clock-says',
-  'player-hud--play',
+  'player-auto-theater-notice--counting',
+  'player-hud--playback',
   'player-title-hud--short'
 ];
 

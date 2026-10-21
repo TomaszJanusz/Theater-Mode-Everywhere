@@ -25,13 +25,18 @@ export function environment(locale: Language = 'en', backdrop: 'dark' | 'light' 
 export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args']> = {
   'player-volume-control--open': () => ({}),
   'player-speed-control--open': () => ({}),
-  'player-control-button-tooltip--open': () => ({ tooltip: 'exitTheaterModeTooltip' }),
-  'player-hud--seek-forward': () => ({}),
-  'player-hud--no-icon': () => ({}),
-  'player-caption-notice--captions-on-with-language': () => ({}),
-  'player-title-hud--long-marquee': () => ({}),
+  'player-control-button-tooltip--above': () => ({ tooltip: 'exitTheaterModeTooltip' }),
+  // Arabic previously exercised backward seek, German forward seek.
+  'player-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),
+  'player-hud--text-only': () => ({ preset: 'onlyVideo' }),
+  'player-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
+  'player-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
+    ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
   'player-auto-theater-notice--counting': () => ({})
 };
+
+const REDUCED = new Set(['player-hud--bass', 'player-title-hud--overflow', 'player-caption-notice--loading-to-result', 'player-auto-theater-notice--counting']);
+export const NARROW_ANCHORS = ['player-control-button-tooltip--above', 'player-hud--text-only', 'player-caption-notice--status', 'player-title-hud--overflow'];
 
 export function profilesFor(id: string): Profile[] {
   const profiles = BACKDROPS.map(backdrop => environment('en', backdrop));
@@ -39,6 +44,13 @@ export function profilesFor(id: string): Profile[] {
   if (content) for (const locale of ['de', 'ar'] as const) {
     for (const backdrop of BACKDROPS) profiles.push({ ...environment(locale, backdrop), args: content(locale) });
   }
+  if (REDUCED.has(id)) for (const backdrop of BACKDROPS) {
+    const profile = environment('en', backdrop);
+    profiles.push({ ...profile, name: `reduced-${backdrop}`, globals: { ...profile.globals, reduceMotion: 'on' }, frames: [0.5] });
+  }
+  if (NARROW_ANCHORS.includes(id)) profiles.push({
+    ...environment('de'), name: 'narrow-de', viewport: { width: 320, height: 360 }, args: content?.('de') ?? {}, frames: [0.5]
+  });
   return profiles;
 }
 
@@ -47,7 +59,7 @@ export function storyUrl(base: string, id: string, profile: Profile): string {
   url.searchParams.set('id', id);
   url.searchParams.set('viewMode', 'story');
   url.searchParams.set('globals', Object.entries(profile.globals).map(([key, value]) => `${key}:${value}`).join(';'));
-  if (Object.keys(profile.args).length) url.searchParams.set('args', Object.entries(profile.args).map(([key, value]) => `${key}:${value}`).join(';'));
+  if (Object.keys(profile.args).length) url.searchParams.set('args', Object.entries(profile.args).filter(([, value]) => typeof value !== 'string' || /^[a-zA-Z0-9 _-]*$/.test(value)).map(([key, value]) => `${key}:${value}`).join(';'));
   return url.href;
 }
 

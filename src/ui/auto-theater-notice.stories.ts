@@ -23,38 +23,14 @@ export const Counting: Story = {
     await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000)));
     await expect(notice()?.getAttribute('role')).toBe('status');
     await expect(notice()?.querySelector('.theater-auto-notice-count')?.getAttribute('aria-hidden')).toBe('true');
+    await expect(notice()?.getAttribute('dir')).toBe(t('@@bidi_dir'));
   }
 };
-
-export const LastSecondsDigit: Story = {
-  args: { remainingMs: 1800 },
-  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
-};
-
-/** At 0 the ring is leaving: it zooms out over the last half second while the digit stays. */
-export const RingLeaving: Story = {
-  args: { remainingMs: 900, frames: [0, 0.25, 0.5] },
-  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
-};
-
-export const PerDigitRing: Story = {
-  args: { ringTurn: 'per-digit', remainingMs: 2400 },
-  play: async ({ args }) => { await expect(digit()).toBe(String(Math.floor(args.remainingMs / 1000))); }
-};
-
-export const LongLabelGerman: Story = {
-  play: async () => {
-    await expect(notice()?.querySelector('.volume-hud-text')?.textContent).toBe(t('autoEnterNoticeTitle'));
-    await expect(notice()?.getAttribute('aria-label')).toContain(t('autoEnterNoticeTitle'));
-  }
-};
-
-export const RtlArabic: Story = {
-  play: async () => { await expect(notice()?.getAttribute('dir')).toBe(t('@@bidi_dir')); }
-};
-
-export const ReducedMotion: Story = {
-  play: async () => {
-    await expect(notice()?.getAttribute('role')).toBe('status');
+export const RingExit: Story = { ...Counting, args: { remainingMs: 900, frames: [0, 0.25, 0.5] } };
+export const NoRing: Story = {
+  ...Counting, args: { remainingMs: 400 },
+  play: async context => {
+    await Counting.play?.(context);
+    if (context.args.remainingMs < 500) await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
   }
 };

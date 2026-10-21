@@ -1,23 +1,16 @@
-import type { Meta } from '@storybook/html-vite';
-import { expect } from 'storybook/test';
+import { expect, test } from 'vitest';
 
-import { activeAnimationCount, uiNodeCount } from '../../.storybook/hud-stage';
-import { CAPTION_HUD, hud, hudStory, measure, stage, type HudArgs, type HudStoryObj } from '../../.storybook/hud-story';
 
-import { CAPTION_LOADING_HUD_DELAY_MS, HUD_FADE_OUT_MS, type CaptionHudView } from './hud';
-import { t } from './messages';
-import { queryPlayerUi } from './root';
+import { CAPTION_LOADING_HUD_DELAY_MS, HUD_FADE_OUT_MS, type CaptionHudView } from '../../src/ui/hud';
+import { t } from '../../src/ui/messages';
+import { queryPlayerUi } from '../../src/ui/root';
+import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
+import { activeAnimationCount, uiNodeCount } from '../hud-stage';
+import { CAPTION_HUD, hud, measure, stage } from '../hud-story';
 
 // Lifecycle of the caption notice on a clock the story advances; the frames are in `Player/Caption notice`.
-const meta: Meta<HudArgs> = {
-  title: 'Player/Caption notice behavior',
-  globals: { reduceMotion: 'off' },
-  tags: ['no-shot'],
-  args: { phase: 'steady', live: false }
-};
-export default meta;
 
-type Story = HudStoryObj;
+type Story = HudCase;
 
 // Animations still alive depend on how far real time has run, so the bound is a ceiling for the plates
 // the burst can leave (at most both seek overlays: three arrows and the pulse each), not a count.
@@ -29,7 +22,7 @@ const status = (title: string, detail?: string, duration?: number): CaptionHudVi
 const notice = () => queryPlayerUi<HTMLElement>(CAPTION_HUD);
 
 /** A download that finishes inside the delay never shows anything and leaves no timer. */
-export const FastLoadNeverFlashes: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
+const FastLoadNeverFlashes: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
     stage().advance(CAPTION_LOADING_HUD_DELAY_MS - 1);
     await expect(notice()).toBeNull();
@@ -39,8 +32,9 @@ export const FastLoadNeverFlashes: Story = hudStory(h => h.triggerCaptionHud(LOA
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('FastLoadNeverFlashes', () => runHudCase(FastLoadNeverFlashes));
 
-export const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
+const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
     stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
     const shown = notice()!;
@@ -51,8 +45,9 @@ export const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LO
     await expect(notice()).toBeNull();
   }
 });
+test('LoadingStaysUntilDone', () => runHudCase(LoadingStaysUntilDone));
 
-export const StatusHidesAfterDuration: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const StatusHidesAfterDuration: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
   play: async () => {
     const shown = notice()!;
     stage().advance(799);
@@ -64,8 +59,9 @@ export const StatusHidesAfterDuration: Story = hudStory(h => h.triggerCaptionHud
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('StatusHidesAfterDuration', () => runHudCase(StatusHidesAfterDuration));
 
-export const StatusDurationIsHonoured: Story = hudStory(h => h.triggerCaptionHud(status(t('subtitlesOnHud'), 'English', 4000)), {
+const StatusDurationIsHonoured: Story = hudStory(h => h.triggerCaptionHud(status(t('subtitlesOnHud'), 'English', 4000)), {
   play: async () => {
     stage().advance(3999);
     await expect(notice()?.classList.contains('fade-out')).toBe(false);
@@ -73,9 +69,10 @@ export const StatusDurationIsHonoured: Story = hudStory(h => h.triggerCaptionHud
     await expect(notice()?.classList.contains('fade-out')).toBe(true);
   }
 });
+test('StatusDurationIsHonoured', () => runHudCase(StatusDurationIsHonoured));
 
 /** A second status while one shows rewrites the same plate and restarts its timer. */
-export const RetriggerResetsTimer: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const RetriggerResetsTimer: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
   play: async () => {
     const shown = notice()!;
     stage().advance(700);
@@ -89,17 +86,19 @@ export const RetriggerResetsTimer: Story = hudStory(h => h.triggerCaptionHud(sta
     await expect(shown.classList.contains('fade-out')).toBe(true);
   }
 });
+test('RetriggerResetsTimer', () => runHudCase(RetriggerResetsTimer));
 
 /** Work for an earlier media or session must not show, hide or remove anything for a later one. */
-export const StaleLoadingNeverShows: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
+const StaleLoadingNeverShows: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
     stage().session.currentEpoch += 1;
     stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
     await expect(notice()).toBeNull();
   }
 });
+test('StaleLoadingNeverShows', () => runHudCase(StaleLoadingNeverShows));
 
-export const StaleStatusDoesNotFade: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const StaleStatusDoesNotFade: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
   play: async () => {
     const shown = notice()!;
     stage().session.element = document.createElement('video');
@@ -109,8 +108,9 @@ export const StaleStatusDoesNotFade: Story = hudStory(h => h.triggerCaptionHud(s
     await expect(shown.isConnected).toBe(false);
   }
 });
+test('StaleStatusDoesNotFade', () => runHudCase(StaleStatusDoesNotFade));
 
-export const NoSessionNoNotice: Story = hudStory((h, s) => {
+const NoSessionNoNotice: Story = hudStory((h, s) => {
   s.session.element = null;
   h.triggerCaptionHud(status('Captions off'));
   h.triggerCaptionHud(LOADING);
@@ -121,8 +121,9 @@ export const NoSessionNoNotice: Story = hudStory((h, s) => {
     await expect(stage().clock.pending).toBe(0);
   }
 });
+test('NoSessionNoNotice', () => runHudCase(NoSessionNoNotice));
 
-export const CleanupLeavesNothing: Story = hudStory((h, s) => {
+const CleanupLeavesNothing: Story = hudStory((h, s) => {
   h.triggerCaptionHud(LOADING);
   s.advance(CAPTION_LOADING_HUD_DELAY_MS);
   h.triggerCaptionHud(status('Captions on', 'English', 4000));
@@ -135,8 +136,9 @@ export const CleanupLeavesNothing: Story = hudStory((h, s) => {
     await expect(activeAnimationCount()).toBe(0);
   }
 });
+test('CleanupLeavesNothing', () => runHudCase(CleanupLeavesNothing));
 
-export const RapidResults: Story = hudStory(() => {}, {
+const RapidResults: Story = hudStory(() => {}, {
   play: async () => {
     const run = (index: number) => hud().triggerCaptionHud(index % 2
       ? status('Captions on', `Language ${index}`, 4000) : status('Captions off'));
@@ -151,3 +153,4 @@ export const RapidResults: Story = hudStory(() => {}, {
     await expect(many.timers).toBe(one.timers);
   }
 });
+test('RapidResults', () => runHudCase(RapidResults));

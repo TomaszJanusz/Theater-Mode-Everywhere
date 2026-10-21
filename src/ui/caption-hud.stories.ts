@@ -47,10 +47,5 @@ function caption(args: Partial<Args> = {}) {
   }, { leaveAfterMs: args.duration ?? 4000 });
 }
 export const Loading = caption({ view: 'loading' });
-export const CaptionsOff = caption({ titleKey: 'subtitlesOffHud', detail: '', duration: 800 });
-export const NoCaptionsAvailable = caption({ titleKey: 'noSubtitlesAvailable', detail: '', duration: 800 });
-export const LoadFailed = caption({ titleKey: 'subtitlesLoadFailedHud', detail: '', duration: 800 });
-export const CaptionsOnWithLanguage = caption();
-export const LoadingBecomesResult = caption({ view: 'loading-to-result', detail: 'Deutsch' });
-export const LongLabelGerman = caption({ detail: 'Portugiesisch (Brasilien, automatisch erstellt)' });
-export const RtlArabic = caption({ detail: 'العربية' });
+export const Status = caption();
+export const LoadingToResult = caption({ view: 'loading-to-result', detail: 'Deutsch' });

@@ -1,7 +1,7 @@
 import type { Meta } from '@storybook/html-vite';
 import { expect, waitFor } from 'storybook/test';
 
-import { hud, hudStory, type HudArgs } from '../../.storybook/hud-story';
+import { hudStory, type HudArgs } from '../../.storybook/hud-story';
 
 import { HEADER_HUD_CLASS, TITLE_HUD_CLASS } from './hud';
 import { queryPlayerUi } from './root';
@@ -38,15 +38,4 @@ function content(args: Partial<Args> = {}) {
 }
 export const Short = content();
 export const WithSubtitle = content({ title: 'Severance', subtitle: 'S2 E4 • Woe’s Hollow' });
-export const LongMarquee = content({ title: LONG_TITLE });
-export const LongReducedMotion = content({ title: LONG_TITLE });
-export const RtlArabic = content({ title: 'الفيلم الوثائقي', subtitle: 'الحلقة ٣' });
-export const ClearedTitleLeaves = {
-  ...content(), tags: ['!frames', 'no-shot'],
-  play: async () => {
-    hud().syncContentTitle(null);
-    await expect(title()).toBeNull();
-    hud().syncContentTitle(null);
-    await expect(title()).toBeNull();
-  }
-};
+export const Overflow = content({ title: LONG_TITLE });

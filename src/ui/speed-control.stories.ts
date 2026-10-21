@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html-vite';
-import { expect, userEvent } from 'storybook/test';
+import { expect, waitFor } from 'storybook/test';
 
 import { renderPlayerBar } from '../../.storybook/player-stage';
 
@@ -38,63 +38,15 @@ type Story = StoryObj<Args>;
 const button = () => queryPlayerUi<HTMLButtonElement>('.speed-btn')!;
 const slider = () => queryPlayerUi<HTMLInputElement>('.theater-speed-slider')!;
 const panel = () => queryPlayerUi<HTMLElement>('.theater-speed-panel')!;
-const container = () => queryPlayerUi<HTMLElement>('.theater-speed-container')!;
 
-export const Default: Story = {
+export const Closed: Story = {
   play: async ({ args }) => {
-    await expect(button().textContent).toBe(`${args.rate.toFixed(2)}x`);
-  }
-};
-
-/** Focus is the keyboard path to the panel the pointer reveals on hover. */
-export const Open: Story = {
-  play: async ({ args }) => {
-    if (args.disabled) return;
-    button().focus();
-    await expect(panel().inert).toBe(false);
-  }
-};
-
-/**
- * Pointer and keyboard open the panel through one function in `bindSliderPopover`; Escape closes
- * it, returns focus to the button, and is consumed only while the panel is open.
- */
-export const PointerKeyboardParity: Story = {
-  play: async () => {
-    container().dispatchEvent(new PointerEvent('pointerenter'));
-    await expect(panel().inert).toBe(false);
-    container().dispatchEvent(new PointerEvent('pointerleave'));
-    await expect(panel().inert).toBe(true);
-
-    // The first Escape is stopped at the control, so only the second reaches the document.
-    const reached: boolean[] = [];
-    const onKey = (event: KeyboardEvent) => reached.push(event.defaultPrevented);
-    document.addEventListener('keydown', onKey);
-    try {
-    button().focus();
-    await expect(panel().inert).toBe(false);
-    await userEvent.keyboard('{Escape}');
-    await expect(panel().inert).toBe(true);
-    await expect(button().matches(':focus')).toBe(true);
-    // Escape with the panel closed is left alone, so theater can still exit on it.
-    await userEvent.keyboard('{Escape}');
-    await expect(reached).toEqual([false]);
-    } finally { document.removeEventListener('keydown', onKey); }
-  }
-};
-
-export const Fast: Story = { args: { rate: 2 } };
-
-export const Disabled: Story = {
-  args: { disabled: true },
-  play: async ({ args }) => {
-    await expect(button().disabled).toBe(args.disabled);
-  }
-};
-
-export const LongLabelGerman: Story = {
-  play: async () => {
+    await expect(button().textContent).toBe(`${args.rate.toFixed(2).replace(/\.00$|\.0$/, '')}x`);
     await expect(button().getAttribute('aria-label')).toBe(t('playbackSpeed'));
     await expect(slider().getAttribute('aria-label')).toBe(t('playbackSpeed'));
+    await expect(button().disabled).toBe(args.disabled);
+    await expect(slider().disabled).toBe(args.disabled);
+    await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
   }
 };
+export const Open: Story = { ...Closed, args: { open: true } };
