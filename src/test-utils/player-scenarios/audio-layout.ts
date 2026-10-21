@@ -50,19 +50,22 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   await hud.filter({ hasText: 'Volume boost: On' }).waitFor();
   if (await shapes(hud) !== await shapes(boost)) fail('Volume boost HUD icon differs from its settings row.');
   if (await slider.getAttribute('max') !== '1.5') fail('Volume boost did not raise the volume ceiling.');
-  await slider.evaluate((input: HTMLInputElement) => {
-    input.value = '1.5';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
+  // A drag stops at 100% first, so reach the boosted level in two moves.
+  for (const value of ['1', '1.5']) {
+    await slider.evaluate((input: HTMLInputElement, value) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+  }
   await page.keyboard.press('Shift+B');
   await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
-  if (await slider.getAttribute('max') !== '1.0' || await slider.inputValue() !== '1') {
+  if (await slider.getAttribute('max') !== '1' || await slider.inputValue() !== '1') {
     fail(`Turning volume boost off kept boosted volume: ${await slider.getAttribute('max')} / ${await slider.inputValue()}`);
   }
   if (await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') fail('Volume boost kept amplifying after it was turned off.');
   await page.keyboard.press('Shift+B');
   await slider.evaluate((input: HTMLInputElement) => {
-    for (const value of ['1.5', '0']) {
+    for (const value of ['1.5', '1', '0']) {
       input.value = value;
       input.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -125,7 +128,7 @@ export async function assertAudioSettings(page: Page): Promise<void> {
       window.dispatchEvent(new KeyboardEvent('keyup', { key, code, shiftKey, bubbles: true, cancelable: true }));
     }
   });
-  if (JSON.stringify(await media()) !== JSON.stringify(beforeGuardedKeys) || await slider.getAttribute('max') !== '1.0') {
+  if (JSON.stringify(await media()) !== JSON.stringify(beforeGuardedKeys) || await slider.getAttribute('max') !== '1') {
     fail('Audio shortcuts fired in an editable field, behind help, or on key repeat.');
   }
   if (JSON.stringify(await media()) !== JSON.stringify({ voice: 'light', leveling: 'strong', bass: 'more' })) {

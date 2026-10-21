@@ -14,6 +14,7 @@ import { autoTheaterAvailability } from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
+import { nextVolumeLevel } from './volume-level';
 import { probeMediaCors } from '../platform/media-cors-probe';
 import { reloadForWebAudio } from '../platform/web-audio-reload';
 import {
@@ -473,9 +474,7 @@ function toggleVideoMute(video: PlaybackSurface): void {
 
 function adjustVolume(video: PlaybackSurface, direction: 'up' | 'down'): void {
   const current = video.logicalVolume ?? (video.muted ? 0 : video.volume);
-  video.logicalVolume = direction === 'up'
-    ? Math.min(volumeCeiling(video, ui().volumeBoost), current + 0.05)
-    : Math.max(0, current - 0.05);
+  video.logicalVolume = nextVolumeLevel(current, direction, volumeCeiling(video, ui().volumeBoost));
   if (direction === 'up' && video.muted) video.muted = false;
   applyVolumeAndBoost(video, video.logicalVolume);
   rememberAudibleVolume(video, video.logicalVolume);

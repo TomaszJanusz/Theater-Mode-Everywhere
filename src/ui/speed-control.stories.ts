@@ -38,6 +38,7 @@ type Story = StoryObj<Args>;
 const button = () => queryPlayerUi<HTMLButtonElement>('.speed-btn')!;
 const slider = () => queryPlayerUi<HTMLInputElement>('.theater-speed-slider')!;
 const panel = () => queryPlayerUi<HTMLElement>('.theater-speed-panel')!;
+const marker = () => queryPlayerUi<HTMLElement>('.theater-speed-panel .theater-slider-marker')!;
 
 export const Closed: Story = {
   play: async ({ args }) => {
@@ -46,6 +47,9 @@ export const Closed: Story = {
     await expect(slider().getAttribute('aria-label')).toBe(t('playbackSpeed'));
     await expect(button().disabled).toBe(args.disabled);
     await expect(slider().disabled).toBe(args.disabled);
+    // The 1x marker is 3 of 7 steps along the track, wherever the thumb is.
+    await expect(marker().hidden).toBe(false);
+    await expect(Number(marker().style.getPropertyValue('--slider-position'))).toBeCloseTo(3 / 7, 5);
     await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
   }
 };

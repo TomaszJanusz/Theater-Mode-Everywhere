@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { ownTestBrowser, sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 
@@ -44,6 +44,31 @@ async function waitForHud(page: Page, text: string): Promise<void> {
   }, text);
 }
 
+/**
+ * Counts wheel events reaching the volume container so a test can wait for each delivery.
+ * @param page Theater page under test (with `page.clock` installed).
+ * @returns A function that scrolls one gesture, separated from earlier ones, and awaits delivery.
+ */
+async function countWheelDelivery(page: Page): Promise<(delta: number) => Promise<void>> {
+  // Count delivery, including sub-notch input which intentionally has no HUD.
+  await page.locator('.volume-btn').evaluate(button => {
+    const container = button.parentElement!;
+    container.setAttribute('data-wheel-count', '0');
+    container.addEventListener('wheel', () => {
+      container.setAttribute('data-wheel-count', String(Number(container.getAttribute('data-wheel-count')) + 1));
+    }, true);
+  });
+  return async delta => {
+    // Separate notches from the deterministic continuous-gesture checks.
+    await page.clock.runFor(251);
+    const container = page.locator('.theater-volume-container');
+    const count = Number(await container.getAttribute('data-wheel-count'));
+    await page.mouse.wheel(0, delta);
+    await page.waitForFunction(expected => document.querySelector('#theater-everywhere-ui')?.shadowRoot
+      ?.querySelector('.theater-volume-container')?.getAttribute('data-wheel-count') === String(expected), count + 1);
+  };
+}
+
 describe('wheel volume browser regressions', () => {
   for (const engine of testEngines()) {
     it(`shares keyboard volume behavior and disposes wheel gestures in ${engine}`, { timeout: 60_000 }, async t => {
@@ -62,23 +87,7 @@ describe('wheel volume browser regressions', () => {
           input.dispatchEvent(new Event('input', { bubbles: true }));
         }, value);
       };
-      // Count delivery, including sub-notch input which intentionally has no HUD.
-      await speaker.evaluate(button => {
-        const container = button.parentElement!;
-        container.setAttribute('data-wheel-count', '0');
-        container.addEventListener('wheel', () => {
-          container.setAttribute('data-wheel-count', String(Number(container.getAttribute('data-wheel-count')) + 1));
-        }, true);
-      });
-      const wheel = async (delta: number) => {
-        // Separate notches from the deterministic continuous-gesture checks below.
-        await page.clock.runFor(251);
-        const container = page.locator('.theater-volume-container');
-        const count = Number(await container.getAttribute('data-wheel-count'));
-        await page.mouse.wheel(0, delta);
-        await page.waitForFunction(expected => document.querySelector('#theater-everywhere-ui')?.shadowRoot
-          ?.querySelector('.theater-volume-container')?.getAttribute('data-wheel-count') === String(expected), count + 1);
-      };
+      const wheel = await countWheelDelivery(page);
       await setVolume('0.5');
       await speaker.hover();
       assert.equal(await speaker.evaluate(button => getComputedStyle(button).cursor), 'ns-resize');
@@ -124,12 +133,17 @@ describe('wheel volume browser regressions', () => {
       assert.equal(await slider.inputValue(), '0.6');
       await wheel(-10000);
       await waitForHud(page, '65%');
+      // A drag cannot jump over 100%, so pass through it before boosting.
+      await setVolume('1.5');
+      assert.equal(await slider.inputValue(), '1');
       await setVolume('1.5');
       await wheel(-120);
       await waitForHud(page, '300%');
       assert.equal(await slider.inputValue(), '1.5');
       await wheel(120);
       await waitForHud(page, '280%');
+      await setVolume('0');
+      assert.equal(await slider.inputValue(), '1', 'a drag down also stops at 100%');
       await setVolume('0');
       await wheel(120);
       await waitForHud(page, '0%');
@@ -164,5 +178,41 @@ describe('wheel volume browser regressions', () => {
       await page.locator('.theater-controls-wrapper.visible').waitFor();
       assert.equal(await page.locator('.theater-volume-slider').inputValue(), '0.2');
     });
+
+    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+    for (const boost of [false, true]) {
+      it(`stops at 100% in both directions ${boost ? 'with' : 'without'} volume boost in ${engine}`, { timeout: 60_000 }, async t => {
+        const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+        await serveFixture(page, FIXTURE, 'http://wheel-volume.test/');
+        await boot(page, { volumeBoostEnabled: boost });
+        await page.clock.install();
+        const slider = page.locator('.theater-volume-slider');
+        await page.locator('.volume-btn').hover();
+        const wheel = await countWheelDelivery(page);
+        // 5% steps survive off-grid values, then 100% is mandatory before anything above it.
+        await slider.evaluate((input: HTMLInputElement) => {
+          input.value = '0.9';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        await wheel(-120);
+        await waitForHud(page, '95%');
+        await wheel(-120);
+        await waitForHud(page, '100%');
+        assert.equal(await slider.inputValue(), '1');
+        await wheel(-120);
+        if (boost) {
+          await waitForHud(page, '120%');
+          assert.equal(await slider.inputValue(), '1.05');
+          await wheel(120);
+          await waitForHud(page, '100%');
+          assert.equal(await slider.inputValue(), '1');
+        } else {
+          await waitForHud(page, '100%');
+          assert.equal(await slider.inputValue(), '1', 'without boost the level stays at 100%');
+        }
+        await wheel(120);
+        await waitForHud(page, '95%');
+      });
+    }
   }
 });

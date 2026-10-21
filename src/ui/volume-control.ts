@@ -1,8 +1,9 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import type { PlaybackSurface } from '../playback-surface';
 
-import { bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave } from './picture-dismiss';
+import { createVerticalSlider } from './vertical-slider';
+import { stopAtFullVolume, volumePercent } from './volume-level';
 
 /** The slice of the playback surface the volume control reads and writes. */
 export type VolumeSource = Pick<PlaybackSurface, 'volume' | 'muted' | 'logicalVolume'>;
@@ -92,27 +93,20 @@ export function createVolumeControl(options: VolumeControlOptions): VolumeContro
     options.updateCaptionDock();
   });
   const button = element('button', 'theater-control-btn volume-btn');
-  const panel = element('div', 'theater-volume-panel');
-  const tooltip = element('div', 'theater-volume-tooltip-vertical');
-  const sliderWrapper = element('div', 'theater-vertical-slider-wrapper');
-  const slider = element('input', 'theater-volume-slider theater-vertical-slider');
-  slider.type = 'range';
-  slider.setAttribute('aria-label', labels.volume);
-  slider.setAttribute('aria-orientation', 'vertical');
-  slider.min = '0';
-  slider.step = '0.05';
+  container.append(button);
+  const track = createVerticalSlider({
+    container,
+    scope,
+    label: labels.volume,
+    panelClass: 'theater-volume-panel',
+    sliderClass: 'theater-volume-slider',
+    min: 0,
+    max,
+    step: 0.05,
+    markerValue: 1
+  });
+  const { slider } = track;
   if (video.volume > 0) options.rememberAudible(video.volume);
-  const silentVolume = options.isSilent() ? 0 : video.volume;
-  slider.value = String(video.logicalVolume ?? silentVolume);
-
-  const tick100 = element('div', 'volume-tick-100-vertical');
-  const applyMax = () => {
-    slider.max = max.toFixed(1);
-    tick100.style.display = max <= 1 ? 'none' : '';
-  };
-  applyMax();
-  sliderWrapper.append(slider, tick100);
-  panel.append(tooltip, sliderWrapper);
   button.setAttribute('aria-label', labels.toggleMute);
 
   const logicalVolume = () => video.muted ? 0 : (video.logicalVolume ?? video.volume);
@@ -123,29 +117,13 @@ export function createVolumeControl(options: VolumeControlOptions): VolumeContro
     const quiet = level < 0.5 ? ICON_LOW : ICON_HIGH;
     options.setIcon(button, video.muted || level === 0 ? ICON_MUTED : quiet);
   };
-  const updateFill = () => {
+  const updateSlider = () => {
     const level = logicalVolume();
-    const fillPct = (level / max) * 100;
-    const boosted = level > 1.0;
-    const activeColor = boosted ? 'var(--theater-volume-boost-color)' : 'var(--accent-color, #6366f1)';
-    slider.style.setProperty('background', `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${fillPct}%, rgba(255, 255, 255, 0.2) ${fillPct}%, rgba(255, 255, 255, 0.2) 100%)`, 'important');
-    slider.classList.toggle('boosted', boosted);
-  };
-  const updateTooltip = () => {
-    const level = logicalVolume();
-    if (level <= 1.0) {
-      tooltip.textContent = `${Math.round(level * 100)}%`;
-      tooltip.style.color = '#f8fafc';
-    } else {
-      tooltip.textContent = `${Math.round(100 + (level - 1.0) * 400)}%`;
-      tooltip.style.color = 'var(--theater-volume-boost-color)';
-    }
-    slider.setAttribute('aria-valuetext', tooltip.textContent ?? '');
+    track.render({ value: level, text: `${volumePercent(level)}%`, boosted: level > 1.0 });
   };
   const paint = () => {
     updateIcon();
-    updateFill();
-    updateTooltip();
+    updateSlider();
   };
   paint();
 
@@ -154,8 +132,8 @@ export function createVolumeControl(options: VolumeControlOptions): VolumeContro
     const next = options.ceiling();
     if (next === max) return;
     max = next;
-    applyMax();
-    updateFill();
+    track.setMax(max);
+    updateSlider();
   }));
 
   button.addEventListener('click', (event) => {
@@ -163,11 +141,8 @@ export function createVolumeControl(options: VolumeControlOptions): VolumeContro
     options.blurMouseToggle(event, button);
   });
   slider.addEventListener('input', () => {
-    let value = parseFloat(slider.value);
-    if (Math.abs(value - 1.0) <= 0.05) {
-      value = 1.0;
-      slider.value = '1.0';
-    }
+    // A drag may not skip 100%; the render below puts the thumb back on the stop.
+    const value = stopAtFullVolume(logicalVolume(), parseFloat(slider.value));
     video.logicalVolume = value;
     options.rememberAudible(value);
     if (value > 0 && video.muted) video.muted = false;
@@ -175,8 +150,6 @@ export function createVolumeControl(options: VolumeControlOptions): VolumeContro
     paint();
   });
 
-  container.append(button, panel);
-  bindSliderPopover(container, panel, scope);
   const control = { container, button, slider, sync };
   bindVolumeWheel(control, options);
 

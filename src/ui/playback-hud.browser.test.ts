@@ -120,6 +120,8 @@ describe('playback HUD browser regressions', () => {
           input.value = value;
           input.dispatchEvent(new Event('input', { bubbles: true }));
         }, value);
+        // A drag cannot jump over 100%; pass through it to reach boost.
+        await setVolume('1');
         await setVolume('1.25');
         // The trusted key can create the first Web Audio graph in either engine.
         await page.keyboard.press('ArrowUp');
