@@ -16,7 +16,7 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, plugins: [storybookTest({ configDir: dirname })], test: { name: 'stories', browser: browser('stories') } },
-      { extends: true, test: { name: 'component-cases', include: ['.storybook/cases/*.test.ts'], browser: browser('component-cases') } }
+      { extends: true, test: { name: 'component-cases', include: ['.storybook/cases/*.cases.ts'], browser: browser('component-cases') } }
     ]
   }
 });

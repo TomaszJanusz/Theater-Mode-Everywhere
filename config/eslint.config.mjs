@@ -12,7 +12,7 @@ import {
 } from './eslint-rules/max-symbol-name-length.mjs';
 
 const productFiles = ['{src,popup,options,scripts,tools}/**/*.{js,mjs,cjs,ts,mts,cts}'];
-const testFiles = ['**/*.test.{js,mjs,cjs,ts,mts,cts}', '**/test-utils/**'];
+const testFiles = ['**/*.test.{js,mjs,cjs,ts,mts,cts}', '.storybook/cases/*.cases.ts', '**/test-utils/**'];
 const generatedFiles = ['**/*.generated.*', '**/generated/**', '**/*.d.{ts,mts,cts}'];
 
 // ESLint bulk suppressions only cover errors. Keep editor guidance as warnings,
