@@ -119,6 +119,17 @@ for (const engine of testEngines()) {
     // CLI --config used to hide a broken root-config discovery path. Exercise the actual dev panel.
     const manager = await context.newPage();
     await manager.goto(`${base}/?path=/story/${PLAYER_STORY}`);
+    await manager.getByRole('button', { name: 'Move addon panel to bottom', exact: true }).waitFor();
+    const player = manager.frameLocator('#storybook-preview-iframe').frameLocator('iframe[title="Fixture document"]');
+    await player.locator('.theater-controls-wrapper.visible').waitFor();
+    await player.locator('.player-settings-btn').click();
+    await player.locator('.theater-settings-menu.visible').waitFor();
+    assert.equal(await player.locator('.theater-settings-body').evaluate(body => {
+      const panel = body.parentElement!.getBoundingClientRect();
+      return panel.top >= 0 && panel.bottom <= innerHeight && panel.left >= 0 && panel.right <= innerWidth
+        && body.scrollHeight <= body.clientHeight + 1;
+    }), true, 'Controls beside the player leaves the full settings menu inside a typical canvas');
+    await player.locator('.player-settings-btn').click();
     await manager.getByRole('button', { name: 'Expand testing module', exact: true }).click();
     assert.equal(await manager.getByRole('checkbox', { name: 'Coverage', exact: true }).count(), 0,
       'coverage is outside the pilot and must not be offered by the addon');

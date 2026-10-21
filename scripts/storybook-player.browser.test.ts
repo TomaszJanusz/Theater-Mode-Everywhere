@@ -6,6 +6,7 @@ import { chromium, firefox, type Frame, type Page } from 'playwright';
 import { openStory, waitForStory } from '../.storybook/browser-navigation';
 import { environment, PLAYER_STORY } from '../.storybook/profiles';
 import { serveStorybook } from '../.storybook/static-server';
+import { playerStylesheets } from '../src/test-utils/player-boot';
 import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { testEngines } from '../src/test-utils/test-engines';
 
@@ -95,6 +96,65 @@ const openPanels = (page: Page) => fixtureFrame(page).evaluate(() => {
 
 for (const engine of testEngines()) {
   const browser = sharedTestBrowser({ chromium, firefox }[engine]);
+
+  test(`Player UI: settings fit the viewport, scroll to the footer and retain production scrollbar styles (${engine})`, { timeout: 120000 }, async t => {
+    const server = await serveStorybook();
+    t.after(server.close);
+    const context = await browser.newContext(t, { reducedMotion: 'reduce' });
+    await context.addInitScript('window.__name = fn => fn;');
+    const page = await context.newPage();
+    for (const height of [360, 460, 720]) {
+      await openStory(page, server.url, PLAYER_STORY, {
+        ...environment(), viewport: { width: 980, height }, args: { scenario: 'watching' }
+      });
+      await control(page, '.player-settings-btn').click();
+      await control(page, '.theater-settings-menu.visible').waitFor();
+      const result = await fixtureFrame(page).evaluate(styles => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        const panel = root.querySelector<HTMLElement>('.theater-settings-menu')!;
+        const body = root.querySelector<HTMLElement>('.theater-settings-body')!;
+        const footer = [...body.querySelectorAll<HTMLButtonElement>('button')].at(-1)!;
+        const read = () => [root.host, panel, body].map(element => {
+          const style = getComputedStyle(element);
+          return Object.fromEntries(['position', 'overflow-x', 'overflow-y', 'max-height', 'border-radius',
+            'background-color', 'color', 'font-family', 'scrollbar-color', 'scrollbar-width', 'color-scheme']
+            .map(property => {
+              const value = style.getPropertyValue(property);
+              // Vite removes optional font-family quotes; Firefox preserves them in computed CSS.
+              return [property, property === 'font-family' ? value.replaceAll('"', '') : value];
+            }));
+        });
+        const actual = read();
+        // Use the production entry's stylesheet graph as the reference, including its imports.
+        // The settings body currently uses native scrollbars; dark/thin rules belong to CC/modal lists.
+        const sheet = root.querySelector<HTMLStyleElement>('#theater-everywhere-ui-styles')!;
+        const previous = sheet.textContent;
+        const pageSheet = document.createElement('style');
+        pageSheet.textContent = styles.page;
+        document.head.append(pageSheet);
+        sheet.textContent = styles.ui;
+        const production = read();
+        sheet.textContent = previous;
+        pageSheet.remove();
+        const bounds = panel.getBoundingClientRect();
+        const scrolled = body.scrollHeight > body.clientHeight + 1;
+        body.scrollTop = body.scrollHeight;
+        const last = footer.getBoundingClientRect();
+        const hit = root.elementFromPoint(last.x + last.width / 2, last.y + last.height / 2);
+        return {
+          actual, production, scrolled, width: innerWidth, height: innerHeight,
+          panel: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom },
+          footer: { top: last.top, bottom: last.bottom, clickable: hit === footer || footer.contains(hit) }
+        };
+      }, playerStylesheets());
+      assert.deepEqual(result.actual, result.production, 'page, shadow skin and native scrollbar styles match production');
+      assert.equal(result.actual[1]['overflow-x'], 'hidden', 'rounded shell clips its scrolling body');
+      assert.ok(result.panel.left >= 0 && result.panel.top >= 0 && result.panel.right <= result.width && result.panel.bottom <= result.height);
+      assert.ok(result.footer.top >= result.panel.top && result.footer.bottom <= result.panel.bottom, 'the whole footer is reachable');
+      assert.equal(result.footer.clickable, true, 'the control bar does not cover Extension settings');
+      assert.equal(result.scrolled, height < 720, 'large canvases show every row; short canvases use production scrolling');
+    }
+  });
 
   test(`Player UI: real pointer and keyboard open each menu, menus exclude each other and Escape restores focus (${engine})`, { timeout: 120000 }, async t => {
     const server = await serveStorybook();

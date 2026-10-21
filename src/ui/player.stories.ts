@@ -16,7 +16,13 @@ const meta: Meta<Args> = {
   title: 'Extension/Player UI',
   argTypes: { scenario: { control: 'inline-radio', options: [...SCENARIOS] } },
   args: { scenario: 'watching' },
-  parameters: { docs: { description: { component: 'Production player UI composed around local fixture media; synthetic provider data. Not host behavior.' } } },
+  parameters: {
+    // A bottom addon panel leaves about 460px in a typical window. Keep Controls beside the
+    // full player so its production settings menu fits without scrolling; fullscreen alone
+    // only removes preview padding, not the manager's addon panel.
+    options: { layout: { panelPosition: 'right' } },
+    docs: { description: { component: 'Production player UI composed around local fixture media; synthetic provider data. Not host behavior.' } }
+  },
   render: ({ scenario }, { globals }) => renderPlayer(
     { locale: String(globals.locale), backdrop: String(globals.backdrop), reduceMotion: String(globals.reduceMotion) }, scenario)
 };
