@@ -20,7 +20,9 @@ declare global {
 }
 
 async function launch(engine: 'chromium' | 'firefox') {
-  return (await import('playwright'))[engine].launch();
+  // Partial raster repaints only invalidated tile regions. With a backdrop blur over a video frame
+  // (the composed Player) that settled into one of two states, a few pixels apart, per page load.
+  return (await import('playwright'))[engine].launch(engine === 'chromium' ? { args: ['--disable-partial-raster'] } : {});
 }
 type Browser = Awaited<ReturnType<typeof launch>>;
 type Page = Awaited<ReturnType<Awaited<ReturnType<Browser['newContext']>>['newPage']>>;
@@ -69,7 +71,8 @@ async function readCaptureState(page: Page, target: ShotTarget): Promise<void> {
     if (target.effective?.args[key] !== value) throw new Error(`${target.id}: requested arg ${key} was not applied`);
   }
   target.rendered = await page.evaluate(() => {
-    const host = document.getElementById('theater-everywhere-ui');
+    // The Player story's runtime lives in a fixture document of its own.
+    const host = (window.__storyDocument ?? document).getElementById('theater-everywhere-ui');
     return { locale: host?.lang, direction: host?.dir, motion: host?.dataset.motion, viewport: window.innerWidth };
   });
   const { locale, reduceMotion } = target.profile.globals;

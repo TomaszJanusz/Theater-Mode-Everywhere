@@ -5,7 +5,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 const STATIC_DIR = resolve(import.meta.dirname, '../output/storybook-static');
 const TYPES: Record<string, string> = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff'
+  '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.webm': 'video/webm'
 };
 
 export async function serveStorybook(): Promise<{ url: string; close(): Promise<void> }> {

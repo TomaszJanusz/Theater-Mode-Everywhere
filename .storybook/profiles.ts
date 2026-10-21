@@ -57,7 +57,22 @@ function momentsFor(id: string): readonly Moment[] | undefined {
   return undefined;
 }
 
+export const PLAYER_STORY = 'player-composed-player--composed';
+export const PLAYER_SHOT_SCENARIOS = ['watching', 'settings', 'captions'] as const;
+
+/**
+ * Three scenarios on two backdrops. Reduce motion is on: the title marquee and menu transitions
+ * are real time, and a capture of them would differ from run to run.
+ */
+function playerProfiles(): Profile[] {
+  return PLAYER_SHOT_SCENARIOS.flatMap(scenario => BACKDROPS.map(backdrop => {
+    const profile = environment('en', backdrop);
+    return { ...profile, name: `${scenario}-${backdrop}`, globals: { ...profile.globals, reduceMotion: 'on' as const }, args: { scenario } };
+  }));
+}
+
 export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromium'): Profile[] {
+  if (id === PLAYER_STORY) return playerProfiles();
   const profiles = BACKDROPS.map(backdrop => environment('en', backdrop));
   const content = LOCALE_ANCHORS[id];
   if (content) for (const locale of ['de', 'ar'] as const) {
