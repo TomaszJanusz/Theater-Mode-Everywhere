@@ -1,12 +1,14 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
-import { ownTestBrowser } from '../test-utils/test-browser';
+
 import type { Browser, Page } from 'playwright';
+
 import { bootPlayer, bundlePlayer, enterTheater, playerStylesheets } from '../test-utils/player-boot';
+import { ownTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
 
 const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
@@ -163,6 +165,11 @@ describe('player settings action order', () => {
         for (const activation of ['pointer', 'keyboard']) {
           const button = page.locator('.extension-settings-btn');
           assert.equal(await button.getAttribute('aria-label'), 'Extension settings');
+          assert.deepEqual(await button.evaluate(row => ({
+            keys: row.querySelectorAll('kbd').length,
+            value: row.querySelector('.theater-settings-detail')?.textContent ?? '',
+            shortcut: row.getAttribute('aria-keyshortcuts')
+          })), { keys: 0, value: '', shortcut: null });
           if (activation === 'pointer') await button.click();
           else { await button.focus(); await page.keyboard.press('Enter'); }
           await page.locator('.theater-settings-menu').waitFor({ state: 'hidden' });

@@ -1,6 +1,7 @@
-import { WHATS_NEW_ACK_STORAGE_KEY } from '../../src/whatsNew-release';
-import { SEEN_ITEMS_STORAGE_KEY } from '../../src/feature-highlights';
 import { type BrowserContext, type Page } from 'playwright';
+
+import { SEEN_ITEMS_STORAGE_KEY } from '../../src/feature-highlights';
+import { WHATS_NEW_ACK_STORAGE_KEY } from '../../src/whatsNew-release';
 
 import { fail, extensionWorker, waitForPlayer, timeScenario } from './helpers';
 export async function assertPinStorage(page: Page, context: BrowserContext): Promise<void> {
@@ -16,14 +17,6 @@ export async function assertPinStorage(page: Page, context: BrowserContext): Pro
     await waitForPin(true);
     await gear.click();
     await menu.waitFor({ state: 'visible' });
-    const extensionRow = await menu.locator('.extension-settings-btn').evaluate((row) => ({
-      keys: row.querySelectorAll('kbd').length,
-      value: row.querySelector('.theater-settings-detail')?.textContent ?? '',
-      shortcut: row.getAttribute('aria-keyshortcuts')
-    }));
-    if (extensionRow.keys !== 0 || extensionRow.value !== '' || extensionRow.shortcut) {
-      fail(`Extension settings row should not show a shortcut or value: ${JSON.stringify(extensionRow)}`);
-    }
     const openedOptions = context.waitForEvent('page', { timeout: 10_000 });
     await menu.locator('.extension-settings-btn').click();
     const opened = await openedOptions;

@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 
+import { applyAccentColorPreset } from '../../src/accentTheme';
 import { BASS_LEVELS } from '../../src/audio-settings';
 import {
   audioHudIcon, CENTERED_HUD_VISIBLE_MS, HUD_FADE_OUT_MS, SEEK_HUD_MS, STATUS_HUD_MUTE_ICON
@@ -252,3 +253,31 @@ const RapidSeek: Story = hudStory(() => {}, {
 }, { progress: SEEK_PHASE_PROGRESS });
 test('RapidSeek', () => runHudCase(RapidSeek));
 
+
+// The user accent is painted inline, which previously overrode the red danger levels.
+test('Bass colors override the painted user accent only at the top levels', () => runHudCase(hudStory((h, s) => {
+  s.host.paintOverlay = element => applyAccentColorPreset(element, 'green');
+  bassHud('more')(h);
+}, {
+  play: async () => {
+    const read = () => {
+      const plate = overlay()!;
+      return {
+        colors: ['.volume-hud-text', '.volume-hud-icon', '.bass-icon'].map(selector => getComputedStyle(plate.querySelector(selector)!).color),
+        outline: getComputedStyle(plate).outlineColor
+      };
+    };
+    const normalOutline = read().outline;
+    for (const level of BASS_LEVELS) {
+      bassHud(level)(hud());
+      const { colors, outline } = read();
+      if (level === 'moar' || level === 'moaaarr') {
+        await expect(colors).toEqual(['rgb(239, 68, 68)', 'rgb(239, 68, 68)', 'rgb(239, 68, 68)']);
+        await expect(outline).not.toBe(normalOutline);
+      } else {
+        await expect(colors[1]).toBe('rgb(81, 205, 0)');
+        await expect(colors[0]).not.toBe('rgb(239, 68, 68)');
+      }
+    }
+  }
+})));

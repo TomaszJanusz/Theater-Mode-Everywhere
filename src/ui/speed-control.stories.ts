@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html-vite';
 import { expect, waitFor } from 'storybook/test';
 
 import { renderPlayerBar } from '../../.storybook/player-stage';
+import { expectSliderMarker } from '../../.storybook/slider-assertions';
 
 import { t } from './messages';
 import { queryPlayerUi } from './root';
@@ -51,6 +52,7 @@ export const Closed: Story = {
     await expect(marker().hidden).toBe(false);
     await expect(Number(marker().style.getPropertyValue('--slider-position'))).toBeCloseTo(3 / 7, 5);
     await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
+    if (args.open && !args.disabled) await expectSliderMarker(slider(), marker(), 3);
   }
 };
 export const Open: Story = { ...Closed, args: { open: true } };
