@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
 
@@ -9,6 +9,11 @@ const TYPES: Record<string, string> = {
 };
 
 export async function serveStorybook(): Promise<{ url: string; close(): Promise<void> }> {
+  for (const file of ['iframe.html', 'index.json']) {
+    await access(join(STATIC_DIR, file)).catch(error => {
+      throw new Error(`Missing Storybook static artifact: ${join(STATIC_DIR, file)}. Run pnpm storybook:build, or use pnpm test to build before static-preview tests.`, { cause: error });
+    });
+  }
   const server = createServer((request, response) => {
     const path = normalize(decodeURIComponent(new URL(request.url ?? '/', 'https://localhost').pathname));
     const file = join(STATIC_DIR, path);

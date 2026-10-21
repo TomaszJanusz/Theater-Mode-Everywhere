@@ -80,3 +80,31 @@ test('lanes partition discovery exactly once, including legacy browser filenames
   assert.deepEqual([...unit, ...browser].sort(), discovered);
   assert.throws(() => planRun(discovered, ['--lane=typo']), /Unknown test lane/);
 });
+
+test('selected static-preview tests build once before workers; other selections skip the build', () => {
+  const root = mkdtempSync(join(tmpdir(), 'run-tests-storybook-'));
+  try {
+    for (const file of ['profiles', 'timeline']) {
+      writeFileSync(join(root, `${file}.browser.test.ts`), `import { serveStorybook } from '../.storybook/static-server';`);
+    }
+    writeFileSync(join(root, 'dev.browser.test.ts'), '');
+    const files = discoverTests(root);
+    writeFileSync(join(root, 'selection.json'), JSON.stringify({ total: files.length, files: files.filter(file => !file.startsWith('dev')) }));
+    const calls = [];
+    const spawn = (_command, args, options) => { calls.push({ args, options }); return { status: 0 }; };
+    assert.equal(main(['--lane=browser', '--files-from=selection.json'], root, spawn), 0);
+    assert.equal(calls.length, 2);
+    assert.deepEqual(calls[0].args.slice(1), ['build', '--output-dir', 'output/storybook-static']);
+    assert.equal(calls[0].options.cwd, root);
+    assert.deepEqual(calls[1].args.slice(-2), ['profiles.browser.test.ts', 'timeline.browser.test.ts']);
+    calls.length = 0;
+    assert.equal(main(['dev'], root, spawn), 0);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].args.includes('--test'));
+    calls.length = 0;
+    assert.equal(main(['profiles'], root, (_command, args) => { calls.push(args); return { status: 7 }; }), 7);
+    assert.equal(calls.length, 1, 'a failed build must stop before browser workers');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
