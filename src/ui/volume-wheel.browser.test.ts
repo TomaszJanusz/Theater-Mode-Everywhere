@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import type { Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { ownTestBrowser, sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 
@@ -179,11 +179,10 @@ describe('wheel volume browser regressions', () => {
       assert.equal(await page.locator('.theater-volume-slider').inputValue(), '0.2');
     });
 
+    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
     for (const boost of [false, true]) {
       it(`stops at 100% in both directions ${boost ? 'with' : 'without'} volume boost in ${engine}`, { timeout: 60_000 }, async t => {
-        const browser = await (await import('playwright'))[engine].launch({ headless: true });
-        ownTestBrowser(t, browser);
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
         await serveFixture(page, FIXTURE, 'http://wheel-volume.test/');
         await boot(page, { volumeBoostEnabled: boost });
         await page.clock.install();

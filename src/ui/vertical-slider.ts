@@ -33,6 +33,48 @@ export interface VerticalSlider {
   render(view: VerticalSliderView): void;
 }
 
+const THUMB = 12;
+
+/**
+ * The wrapper is wider than the 6px track so a press beside it still counts. A press on the
+ * input itself is native; one in the padding jumps the thumb to the pointer and keeps dragging,
+ * through the same `input` events, so the input stays the one source of value, focus and ARIA.
+ */
+function bindPaddingDrag(wrapper: HTMLElement, slider: HTMLInputElement, scope: DisposableScope): void {
+  const setFromPointer = (event: PointerEvent) => {
+    // The input is rotated, so its bounding box is the vertical track the thumb travels.
+    const track = slider.getBoundingClientRect();
+    const span = track.height - THUMB;
+    const along = Math.min(1, Math.max(0, (track.bottom - THUMB / 2 - event.clientY) / span));
+    const min = Number(slider.min);
+    const step = Number(slider.step);
+    const raw = min + along * (Number(slider.max) - min);
+    const before = slider.value;
+    // Assigning the value lets the browser clamp it to the range.
+    slider.value = String(Math.round((Math.round((raw - min) / step) * step + min) * 1e4) / 1e4);
+    if (slider.value !== before) slider.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  let dragging: number | null = null;
+  scope.listen(wrapper, 'pointerdown', (event: PointerEvent) => {
+    if (event.target === slider || event.button !== 0 || slider.disabled) return;
+    event.preventDefault();
+    slider.focus();
+    dragging = event.pointerId;
+    wrapper.setPointerCapture(event.pointerId);
+    setFromPointer(event);
+  });
+  scope.listen(wrapper, 'pointermove', (event: PointerEvent) => {
+    if (event.pointerId === dragging) setFromPointer(event);
+  });
+  const end = (event: PointerEvent) => {
+    if (event.pointerId !== dragging) return;
+    dragging = null;
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  scope.listen(wrapper, 'pointerup', end);
+  scope.listen(wrapper, 'pointercancel', end);
+}
+
 /**
  * Track fill and marker both sit at a fraction of the input range, so the 1x and 100% marks stay
  * on the thumb's path whatever the range is. shadow.css turns the fractions into geometry.
@@ -60,6 +102,8 @@ export function createVerticalSlider(options: VerticalSliderOptions): VerticalSl
   panel.append(tooltip, wrapper);
   options.container.append(panel);
   bindSliderPopover(options.container, panel, options.scope);
+
+  bindPaddingDrag(wrapper, slider, options.scope);
 
   const fraction = (value: number) => (value - min) / (max - min);
   let last: VerticalSliderView | null = null;

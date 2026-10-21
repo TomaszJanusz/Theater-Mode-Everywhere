@@ -538,7 +538,10 @@
 
 .theater-vertical-slider-wrapper {
   height: 140px !important;
-  width: 24px !important;
+  /* The press target: wider than the 6px track; the panel padding keeps it clear of neighbours. */
+  width: 32px !important;
+  touch-action: none !important;
+  cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
