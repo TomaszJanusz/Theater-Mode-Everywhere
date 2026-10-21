@@ -170,6 +170,7 @@ overrides:
 
 patchedDependencies:
   '@privacy-thing/brand@0.2.1': 5785d554a258eb381ac547dae57fce6b63e33793427d19d47fba396fb703abfc
+  '@storybook/addon-vitest@10.6.2': 62af1d236ac9c3db61e1c85ec6f9f098d611e6ba7a2fb2cb982b822c5b29f142
 
 importers:
 
@@ -187,7 +188,7 @@ importers:
         version: 5.3.0
       '@storybook/addon-vitest':
         specifier: ^10.6.2
-        version: 10.6.2(@vitest/browser-playwright@5.0.5)(@vitest/browser@5.0.5)(react@19.3.1)(storybook@10.6.2(react@19.3.1))(vitest@5.0.5)
+        version: 10.6.2(patch_hash=62af1d236ac9c3db61e1c85ec6f9f098d611e6ba7a2fb2cb982b822c5b29f142)(@vitest/browser-playwright@5.0.5)(@vitest/browser@5.0.5)(react@19.3.1)(storybook@10.6.2(react@19.3.1))(vitest@5.0.5)
       '@storybook/html-vite':
         specifier: ^10.6.2
         version: 10.6.2(storybook@10.6.2(react@19.3.1))(vite@6.4.4(@types/node@20.19.43)(tsx@4.22.4)(yaml@2.9.1))
@@ -3064,7 +3065,7 @@ snapshots:
 
   '@sonarsource/analyzer-commons-configurations@2.31.0-5284': {}
 
-  '@storybook/addon-vitest@10.6.2(@vitest/browser-playwright@5.0.5)(@vitest/browser@5.0.5)(react@19.3.1)(storybook@10.6.2(react@19.3.1))(vitest@5.0.5)':
+  '@storybook/addon-vitest@10.6.2(patch_hash=62af1d236ac9c3db61e1c85ec6f9f098d611e6ba7a2fb2cb982b822c5b29f142)(@vitest/browser-playwright@5.0.5)(@vitest/browser@5.0.5)(react@19.3.1)(storybook@10.6.2(react@19.3.1))(vitest@5.0.5)':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.2.0(react@19.3.1)

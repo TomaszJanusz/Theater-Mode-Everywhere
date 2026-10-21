@@ -30,7 +30,7 @@ const devStories = [...fontStories,
 for (const engine of testEngines()) {
   const browser = sharedTestBrowser({ chromium, firefox }[engine]);
 
-  test(`Storybook dev: catalog, assets, Player, font fallback and addon test discovery (${engine})`, { timeout: 120000 }, async t => {
+  test(`Storybook dev: catalog, assets, Player, font fallback and addon panel completion (${engine})`, { timeout: 120000 }, async t => {
     const portServer = createServer();
     portServer.listen(0, '127.0.0.1');
     await once(portServer, 'listening');
@@ -114,8 +114,17 @@ for (const engine of testEngines()) {
     // CLI --config used to hide a broken root-config discovery path. Exercise the actual dev panel.
     const manager = await context.newPage();
     await manager.goto(`${base}/?path=/story/${PLAYER_STORY}`);
+    await manager.getByRole('button', { name: 'Expand testing module', exact: true }).click();
+    assert.equal(await manager.getByRole('checkbox', { name: 'Coverage', exact: true }).count(), 0,
+      'coverage is outside the pilot and must not be offered by the addon');
     await manager.getByRole('button', { name: 'Run tests', exact: true }).filter({ hasText: 'Run tests' }).click();
+    await manager.getByRole('button', { name: 'Stop test run', exact: true }).waitFor();
+    // Test output precedes coverage reporting. Only the completed manager state proves the run succeeded.
+    await manager.getByRole('button', { name: 'Start test run', exact: true }).waitFor();
+    await manager.getByRole('button', { name: 'Component tests passed', exact: true }).waitFor();
+    assert.match(await manager.locator('body').innerText(), /Test run finished\. 28 components passed\./);
+    assert.equal(await manager.getByText('View full error', { exact: true }).count(), 0);
     await untilOutput(/Tests\s+28 passed \(28\)/);
-    assert.doesNotMatch(output, /No projects matched|Failed to start (?:Vitest|test runner)|outside of Vite serving allow list/);
+    assert.doesNotMatch(output, /No projects matched|Failed to (?:start (?:Vitest|test runner)|run tests)|Custom report|Coverage enabled|outside of Vite serving allow list/);
   });
 }
