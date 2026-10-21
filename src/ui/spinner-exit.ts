@@ -1,5 +1,7 @@
 import { isMotionReduced } from '../appearance-runtime';
 
+import { systemClock, type UiClock } from './ui-clock';
+
 export const SPINNER_DEADLINE_START_MS = 1000;
 export const SPINNER_DEADLINE_END_MS = 500;
 export const SPINNER_PASSIVE_EXIT_MS = 500;
@@ -29,6 +31,7 @@ type ExitMode = { mode: 'passive' } | { mode: 'deadline'; remainingMs: () => num
  * Callers cancel before dismissing/replacing their UI; cancelled finishes do nothing.
  */
 export function exitSpinner(element: HTMLElement, options: ExitMode & {
+  clock?: UiClock;
   isCurrent?: () => boolean;
   onStart?: () => void;
   onFinish?: () => void;
@@ -38,6 +41,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
   let stopped = false;
   let started = false;
   let timer: number | undefined;
+  const clock = options.clock ?? systemClock;
   const animations: Animation[] = [];
   const doc = element.ownerDocument;
   const root = element.getRootNode();
@@ -47,7 +51,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
   const dispose = () => {
     if (stopped) return;
     stopped = true;
-    window.clearTimeout(timer);
+    clock.clearTimeout(timer);
     motion.disconnect();
     for (const animation of animations) {
       animation.onfinish = null;
@@ -74,7 +78,7 @@ export function exitSpinner(element: HTMLElement, options: ExitMode & {
     if (!current()) { dispose(); return; }
     const remaining = options.mode === 'deadline' ? options.remainingMs() : 0;
     if (options.mode === 'deadline' && remaining > SPINNER_DEADLINE_START_MS) {
-      timer = window.setTimeout(start, Math.ceil(remaining - SPINNER_DEADLINE_START_MS));
+      timer = clock.setTimeout(start, Math.ceil(remaining - SPINNER_DEADLINE_START_MS));
       return;
     }
     started = true;

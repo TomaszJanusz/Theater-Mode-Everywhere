@@ -18,6 +18,11 @@
     "cpu:suite": "tsx tools/cpu-suite/suite.ts",
     "build:diagnostic": "TME_BUILD=diagnostic tsx scripts/build.ts",
     "resource:audit": "tsx tools/cpu-suite/resource-suite.ts",
+    "storybook": "storybook dev --port 6006 --no-open",
+    "storybook:build": "storybook build --output-dir output/storybook-static",
+    "storybook:shots": "pnpm storybook:build && tsx scripts/storybook-shots.ts",
+    "storybook:shots:firefox": "pnpm storybook:build && tsx scripts/storybook-shots.ts firefox",
+    "storybook:test": "vitest run --config .storybook/vitest.config.ts",
     "lint": "eslint . --config config/eslint.config.mjs --max-warnings 0",
     "lint:suppressions:prune": "pnpm lint --prune-suppressions"
   },
@@ -26,12 +31,16 @@
   "packageManager": "pnpm@12.14.0",
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@fontsource/roboto": "^5.3.0",
+    "@storybook/addon-vitest": "^10.6.2",
+    "@storybook/html-vite": "^10.6.2",
     "@types/archiver": "^6.0.2",
     "@types/chrome": "^0.0.268",
     "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^8.71.2",
     "@typescript-eslint/parser": "^8.71.2",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/browser-playwright": "^5.0.5",
     "archiver": "^7.0.1",
     "esbuild": "^0.25.0",
     "eslint": "^9.39.5",
@@ -39,9 +48,11 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "globals": "^17.13.0",
     "playwright": "^1.63.0",
+    "storybook": "^10.6.2",
     "tsx": "^4.7.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^6.4.3"
+    "vite": "^6.4.3",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "@privacy-thing/brand": "^0.2.1"

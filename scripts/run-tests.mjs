@@ -70,6 +70,18 @@ function run(spawn, args, label) {
   return 0;
 }
 
+function runTsxTests(spawn, plan, root) {
+  // Static-preview tests need a fresh production Storybook, including in selected CI lanes.
+  // Build once before starting test workers so parallel files cannot race over the output.
+  if (plan.files.some(file => /from\s*['"]\.\.\/\.storybook\/static-server(?:\.ts)?['"]/.test(readFileSync(join(root, file), 'utf8')))) {
+    const manifest = createRequire(import.meta.url).resolve('storybook/package.json');
+    const result = spawn(process.execPath, [join(dirname(manifest), 'dist/bin/dispatcher.js'), 'build', '--output-dir', 'output/storybook-static'], { cwd: root, stdio: 'inherit' });
+    if (result.error) throw result.error;
+    if (result.status !== 0) return result.status ?? 1;
+  }
+  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...plan.flags, ...plan.files], 'tsx');
+}
+
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
   let plan;
   try {
@@ -99,7 +111,7 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
     if (status !== 0) return status;
   }
   if (plan.tsx.files.length > 0) {
-    return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...plan.tsx.flags, ...plan.tsx.files], 'tsx');
+    return runTsxTests(spawn, plan.tsx, root);
   }
   return 0;
 }

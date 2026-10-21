@@ -8,14 +8,19 @@ import { discoverParentOrigin } from '../platform/parent-origin';
 import { serviceHomeUrl } from '../platform/service-home';
 import type { ButtonTooltipBinder } from './button-tooltip';
 import type { PlayerChromeContext } from './runtime-context';
+import { systemClock, type UiClock } from './ui-clock';
 import type { AudioSettingName, AudioSettings } from '../audio-settings';
 
 export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
 // Keep centred confirmations readable for two extra seconds; loading and corner notices own their timing.
-const CENTERED_HUD_VISIBLE_MS = 800 + 2000;
-const CAPTION_LOADING_HUD_DELAY_MS = 400;
+export const CENTERED_HUD_VISIBLE_MS = 800 + 2000;
+/** How long the leaving fade runs before the node is removed; shadow.css transitions opacity over the same 0.2s. */
+export const HUD_FADE_OUT_MS = 200;
+export const CAPTION_LOADING_HUD_DELAY_MS = 400;
 const CAPTION_WIDTH_MORPH_MS = 225;
+/** The seek pulse in shadow.css (`theaterSeekPulse`) runs 0.65s; the node goes with it. */
+export const SEEK_HUD_MS = 650;
 export const HUD_PLATE_CLASS = 'theater-hud-plate';
 
 export const STATUS_HUD_SWITCH_ICON = `
@@ -115,7 +120,13 @@ function renderConfirmation(overlay: HTMLElement, icon: string, text: string, te
   overlay.replaceChildren(content);
 }
 
-export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBinder) {
+/** What the HUDs read from the player: the session identity they guard on, the UI mount and the labels. */
+export type HudHost = Pick<PlayerChromeContext, 'queryPlayerUi' | 'mountPlayerUi' | 'paintOverlay' | 't'> & {
+  ui(): Pick<ReturnType<PlayerChromeContext['ui']>, 'toolbarVisible'>;
+  session: Pick<PlayerChromeContext['session'], 'element' | 'currentEpoch'>;
+};
+
+export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock: UiClock = systemClock) {
   function mountConfirmation(overlay: HTMLElement): void {
     if (!overlay.isConnected) ctx.mountPlayerUi(overlay);
     const svg = overlay.querySelector<SVGSVGElement>('.volume-hud-icon > svg');
@@ -134,13 +145,13 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     svg.style.setProperty('--hud-icon-y', `${(view.y + view.height / 2 - box.y - box.height / 2) * scale}px`);
   }
 
-  let centeredHideTimer: ReturnType<typeof setTimeout> | null = null;
-  let centeredRemoveTimer: ReturnType<typeof setTimeout> | null = null;
+  let centeredHideTimer: number | null = null;
+  let centeredRemoveTimer: number | null = null;
   let centeredIdentity: object | null = null;
 
   function clearCenteredTimers(): void {
-    if (centeredHideTimer !== null) clearTimeout(centeredHideTimer);
-    if (centeredRemoveTimer !== null) clearTimeout(centeredRemoveTimer);
+    if (centeredHideTimer !== null) clock.clearTimeout(centeredHideTimer);
+    if (centeredRemoveTimer !== null) clock.clearTimeout(centeredRemoveTimer);
     centeredHideTimer = centeredRemoveTimer = null;
     centeredIdentity = null;
   }
@@ -159,13 +170,13 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const epoch = ctx.session.currentEpoch;
     const isCurrent = () => centeredIdentity === identity && ctx.session.element === element
       && ctx.session.currentEpoch === epoch;
-    centeredHideTimer = setTimeout(() => {
+    centeredHideTimer = clock.setTimeout(() => {
       if (!isCurrent()) return;
       centeredHideTimer = null;
       overlay.classList.add('fade-out');
-      centeredRemoveTimer = setTimeout(() => {
+      centeredRemoveTimer = clock.setTimeout(() => {
         if (isCurrent()) removeCenteredHud();
-      }, 200);
+      }, HUD_FADE_OUT_MS);
     }, CENTERED_HUD_VISIBLE_MS);
   }
 
@@ -208,11 +219,11 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
 
     ctx.mountPlayerUi(overlay);
 
-    setTimeout(() => {
+    clock.setTimeout(() => {
       if (overlay && overlay.parentNode) {
         overlay.remove();
       }
-    }, 650);
+    }, SEEK_HUD_MS);
   }
 
   function triggerVolumeIndicator(logicalVolume: number, muted: boolean, action: 'up' | 'down'): void {
@@ -336,21 +347,21 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
   let captionWidthMorph: Animation | null = null;
   let captionReveal: Animation | null = null;
   let captionIdentity: { element: Element; epoch: number } | null = null;
-  let captionHudHideTimer: ReturnType<typeof setTimeout> | null = null;
-  let captionHudRemoveTimer: ReturnType<typeof setTimeout> | null = null;
-  let captionHudShowTimer: ReturnType<typeof setTimeout> | null = null;
+  let captionHudHideTimer: number | null = null;
+  let captionHudRemoveTimer: number | null = null;
+  let captionHudShowTimer: number | null = null;
 
   function clearCaptionHudTimers(): void {
     if (captionHudShowTimer !== null) {
-      clearTimeout(captionHudShowTimer);
+      clock.clearTimeout(captionHudShowTimer);
       captionHudShowTimer = null;
     }
     if (captionHudHideTimer) {
-      clearTimeout(captionHudHideTimer);
+      clock.clearTimeout(captionHudHideTimer);
       captionHudHideTimer = null;
     }
     if (captionHudRemoveTimer) {
-      clearTimeout(captionHudRemoveTimer);
+      clock.clearTimeout(captionHudRemoveTimer);
       captionHudRemoveTimer = null;
     }
   }
@@ -391,7 +402,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
       // Fast background downloads should not interrupt watching with a flash.
       const epoch = ctx.session.currentEpoch;
       const element = ctx.session.element;
-      captionHudShowTimer = setTimeout(() => {
+      captionHudShowTimer = clock.setTimeout(() => {
         captionHudShowTimer = null;
         if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element) return;
         renderCaptionHud(view);
@@ -455,7 +466,7 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     const spinner = existing?.querySelector<HTMLElement>('.caption-hud-spinner');
     if (spinner) {
       stopCaptionExit = exitSpinner(spinner, {
-        mode: 'passive', reveal: detail,
+        mode: 'passive', reveal: detail, clock,
         isCurrent: () => captionIdentity === identity && ctx.session.element === identity.element
           && ctx.session.currentEpoch === identity.epoch
       });
@@ -475,13 +486,13 @@ export function createHud(ctx: PlayerChromeContext, bindTooltip: ButtonTooltipBi
     if (view.kind === 'loading') return;
 
     const displayDuration = view.kind === 'status' ? (view.duration ?? 800) : 800;
-    captionHudHideTimer = setTimeout(() => {
+    captionHudHideTimer = clock.setTimeout(() => {
       if (captionIdentity !== identity || ctx.session.element !== identity.element
         || ctx.session.currentEpoch !== identity.epoch) return;
       overlay.classList.add('fade-out');
-      captionHudRemoveTimer = setTimeout(() => {
+      captionHudRemoveTimer = clock.setTimeout(() => {
         if (captionIdentity === identity) removeCaptionHud();
-      }, 200);
+      }, HUD_FADE_OUT_MS);
     }, displayDuration);
   }
 

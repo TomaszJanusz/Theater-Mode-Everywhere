@@ -5,6 +5,7 @@ import { renderKbdText } from './kbd-text';
 import { t } from './messages';
 import { msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
 import { renderTimeReadout } from './time-readout';
+import { systemClock, type UiClock } from './ui-clock';
 import { showAutoTheaterScrim, type AutoTheaterScrimOptions } from './auto-theater-scrim';
 
 export const AUTO_THEATER_NOTICE_CLASS = 'theater-auto-notice';
@@ -27,7 +28,8 @@ export function showAutoTheaterNotice(
   onCancel: () => void,
   remainingMs: () => number,
   ringTurn: CountdownRingTurn = DEFAULT_COUNTDOWN_RING_TURN,
-  scrim?: AutoTheaterScrimOptions
+  scrim?: AutoTheaterScrimOptions,
+  clock: UiClock = systemClock
 ): () => void {
   const hint = t('autoEnterNoticeHint', 'Esc');
   const title = t('autoEnterNoticeTitle');
@@ -94,11 +96,11 @@ export function showAutoTheaterNotice(
   const tick = (animate: boolean): void => {
     if (stopped) return;
     const remaining = remainingMs();
-    renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate);
+    renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate, clock);
     turnRing(remaining);
     const wait = msUntilNoticeSecondChanges(remaining);
     // A timer that fires a hair early re-reads the clock and re-arms instead of skipping a digit.
-    if (wait !== null) timer = window.setTimeout(() => tick(true), Math.max(1, Math.ceil(wait)));
+    if (wait !== null) timer = clock.setTimeout(() => tick(true), Math.max(1, Math.ceil(wait)));
   };
   // Mounted first, so the notice paints above it.
   const stopScrim = scrim?.video ? showAutoTheaterScrim(scrim) : undefined;
@@ -106,14 +108,14 @@ export function showAutoTheaterNotice(
   // After mounting, so reduced motion is read from the UI host.
   tick(false);
   // The ring leaves while the digit keeps ticking; 0 is the last second, during which the ring clears.
-  const stopExit = exitSpinner(spinner, { mode: 'deadline', remainingMs });
+  const stopExit = exitSpinner(spinner, { mode: 'deadline', remainingMs, clock });
   return () => {
     stopped = true;
     stopExit();
-    window.clearTimeout(timer);
+    clock.clearTimeout(timer);
     turn?.cancel();
     // Also settle any digit roll already in flight before discarding its DOM.
-    renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false);
+    renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false, clock);
     overlay.remove();
     stopScrim?.();
   };

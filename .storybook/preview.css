@@ -1,0 +1,9 @@
+@import '@fontsource/roboto/latin-400.css';
+@import '@fontsource/roboto/latin-500.css';
+@import '@fontsource/roboto/latin-600.css';
+@import '@fontsource/roboto/latin-700.css';
+
+/* The player UI sits over a video frame; the backdrop stands in for a dark or bright picture. */
+html, body { margin: 0; height: 100%; }
+body { background: #0b0b10; }
+body[data-backdrop="light"] { background: #e9e9f0; }

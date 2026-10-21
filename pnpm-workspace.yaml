@@ -32,3 +32,6 @@ overrides:
   source-map-js: 1.2.2
 patchedDependencies:
   '@privacy-thing/brand@0.2.1': patches/@privacy-thing__brand@0.2.1.patch
+  # Interaction tests only: hide addon coverage and ignore its saved toggle. 10.6.2 has no disable option;
+  # its reporter's require(ESM) export is incompatible with Vitest 5's dynamic-import reporter loader.
+  '@storybook/addon-vitest@10.6.2': patches/@storybook__addon-vitest@10.6.2.patch

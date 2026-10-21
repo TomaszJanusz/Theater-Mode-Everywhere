@@ -1,0 +1,35 @@
+diff --git a/dist/manager.js b/dist/manager.js
+index 9b1a55081dc570a8fb19c2f4fe80e3a98e8ba08f..27eba4ee65c930a063d3b51cacf9eb980054dcd1 100644
+--- a/dist/manager.js
++++ b/dist/manager.js
+@@ -458,7 +458,7 @@ var Container = styled4.div(({ inContextMenu }) => ({
+     },
+     componentTestStatusValueToStoryIds["status-value:error"].length + componentTestStatusValueToStoryIds["status-value:warning"].length || null,
+     React3.createElement(TestStatusIcon, { status: componentTestStatusIcon, isRunning })
+-  )), !entry && React3.createElement(ActionList.Item, null, React3.createElement(ActionList.Action, { as: "label", readOnly: isRunning, ariaLabel: !1 }, React3.createElement(ActionList.Icon, null, React3.createElement(
++  )), /* Coverage is outside this pilot; the runner also ignores saved coverage state. */ false && React3.createElement(ActionList.Item, null, React3.createElement(ActionList.Action, { as: "label", readOnly: isRunning, ariaLabel: !1 }, React3.createElement(ActionList.Icon, null, React3.createElement(
+     Form.Checkbox,
+     {
+       name: "Coverage",
+diff --git a/dist/node/vitest.js b/dist/node/vitest.js
+index bdd41b2a8838e21f79524dd47f85bd723f122705..4e8c9a655cdb6c3e7c5c0fb42e605bdf3de12e60 100644
+--- a/dist/node/vitest.js
++++ b/dist/node/vitest.js
+@@ -182,6 +182,8 @@ var DOUBLE_SPACES = "  ", getTestName = (name) => `${name}${DOUBLE_SPACES}`, Vit
+     this.runningPromise = null;
+   }
+   async startVitest({ coverage }) {
++    // This project uses story interaction tests, not coverage. Ignore persisted manager coverage state.
++    coverage = false;
+     let { createVitest } = await import("vitest/node"), storybookCoverageReporter = [
+       "@storybook/addon-vitest/internal/coverage-reporter",
+       {
+@@ -346,7 +348,7 @@ Please install the @vitest/${isIstanbul ? "coverage-istanbul" : "coverage-v8"} p
+     return { filteredTestSpecifications, filteredStoryIds };
+   }
+   getCurrentRunConfig() {
+-    return this.testManager.store.getState().currentRun.config;
++    return { ...this.testManager.store.getState().currentRun.config, coverage: false };
+   }
+   provideRunConfig() {
+     this.vitest?.provide(STORYBOOK_TEST_PROVIDE_KEY, this.getCurrentRunConfig());
