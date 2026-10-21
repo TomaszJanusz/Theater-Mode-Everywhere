@@ -14,7 +14,7 @@ interface Args {
 }
 
 const meta: Meta<Args> = {
-  title: 'Player/Speed control',
+  title: 'Components/Speed control',
   argTypes: { rate: { control: { type: 'range', min: 0.25, max: 4, step: 0.25 } }, disabled: { control: 'boolean' }, open: { control: 'boolean' } },
   args: { rate: 1.5, disabled: false, open: false },
   render: ({ rate, disabled, open }) => renderPlayerBar(scope => {

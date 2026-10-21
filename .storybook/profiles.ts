@@ -27,37 +27,37 @@ export function environment(locale: Language = 'en', backdrop: 'dark' | 'light' 
 }
 
 export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args']> = {
-  'player-volume-control--open': () => ({}),
-  'player-speed-control--open': () => ({}),
-  'player-control-button-tooltip--above': () => ({ tooltip: 'exitTheaterModeTooltip' }),
+  'components-volume-control--open': () => ({}),
+  'components-speed-control--open': () => ({}),
+  'components-control-button-tooltip--above': () => ({ tooltip: 'exitTheaterModeTooltip' }),
   // Arabic previously exercised backward seek, German forward seek.
-  'player-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),
-  'player-hud--text-only': () => ({ preset: 'onlyVideo' }),
-  'player-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
-  'player-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
+  'components-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),
+  'components-hud--text-only': () => ({ preset: 'onlyVideo' }),
+  'components-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
+  'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
     ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
-  'player-auto-theater-notice--counting': () => ({})
+  'components-auto-theater-notice--counting': () => ({})
 };
 
-const REDUCED = new Set(['player-hud--bass', 'player-title-hud--overflow', 'player-caption-notice--loading-to-result', 'player-auto-theater-notice--counting']);
-export const NARROW_ANCHORS = ['player-control-button-tooltip--above', 'player-hud--text-only', 'player-caption-notice--status', 'player-title-hud--overflow'];
+const REDUCED = new Set(['components-hud--bass', 'components-title-hud--overflow', 'components-caption-notice--loading-to-result', 'components-auto-theater-notice--counting']);
+export const NARROW_ANCHORS = ['components-control-button-tooltip--above', 'components-hud--text-only', 'components-caption-notice--status', 'components-title-hud--overflow'];
 
 /** Real timer states plus animation fractions; persistent titles/loading use only frame sweeps. */
 function momentsFor(id: string): readonly Moment[] | undefined {
-  if (id.startsWith('player-hud--seek')) return [
+  if (id.startsWith('components-hud--seek')) return [
     { timeline: 'enter', frame: 0.15 }, { timeline: 'hold', frame: 0.5 }, { timeline: 'leave', frame: 0.9 }
   ];
-  if (id === 'player-auto-theater-notice--ring-exit') return [
+  if (id === 'components-auto-theater-notice--ring-exit') return [
     { timeline: 'enter', frame: 0 }, { timeline: 'hold', frame: 0.25 }, { timeline: 'leave', frame: 0.5 }
   ];
-  if (id.startsWith('player-hud--') || id.startsWith('player-auto-theater-notice--')
-    || id === 'player-caption-notice--status' || id === 'player-caption-notice--loading-to-result') return [
+  if (id.startsWith('components-hud--') || id.startsWith('components-auto-theater-notice--')
+    || id === 'components-caption-notice--status' || id === 'components-caption-notice--loading-to-result') return [
     { timeline: 'enter', frame: 0.5 }, { timeline: 'hold', frame: 1 }, { timeline: 'leave', frame: 0.5 }
   ];
   return undefined;
 }
 
-export const PLAYER_STORY = 'player-composed-player--composed';
+export const PLAYER_STORY = 'extension-player-ui--composed';
 export const PLAYER_SHOT_SCENARIOS = ['watching', 'settings', 'captions'] as const;
 
 /**
@@ -89,16 +89,16 @@ export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromi
     if (profile.frames) continue;
     // A marquee's 0% and 100% are the same seamless-loop image. Short titles are static
     // in Chromium; Firefox's existing short-title marquee still needs its second position.
-    if (id === 'player-title-hud--short' || id === 'player-title-hud--with-subtitle') {
+    if (id === 'components-title-hud--short' || id === 'components-title-hud--with-subtitle') {
       profile.frames = engine === 'firefox' ? [0, 0.5] : [1];
-    } else if (id === 'player-title-hud--overflow' || id === 'player-caption-notice--loading') {
+    } else if (id === 'components-title-hud--overflow' || id === 'components-caption-notice--loading') {
       profile.frames = [0, 0.5];
-    } else if (id === 'player-auto-theater-notice--no-ring') profile.frames = [1];
+    } else if (id === 'components-auto-theater-notice--no-ring') profile.frames = [1];
     else {
       const moments = momentsFor(id);
       // Playback and text without an icon have no distinct entry animation. Keep the held
       // image and the real fade; long status profiles with an icon retain their entry frame.
-      profile.moments = id === 'player-hud--playback' || (id === 'player-hud--text-only' && !profile.args.preset)
+      profile.moments = id === 'components-hud--playback' || (id === 'components-hud--text-only' && !profile.args.preset)
         ? moments?.filter(moment => moment.timeline !== 'enter') : moments;
     }
   }

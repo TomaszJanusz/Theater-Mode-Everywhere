@@ -13,7 +13,7 @@ interface Args { scenario: Scenario }
  * worlds or the installed extension.
  */
 const meta: Meta<Args> = {
-  title: 'Player/Composed player',
+  title: 'Extension/Player UI',
   argTypes: { scenario: { control: 'inline-radio', options: [...SCENARIOS] } },
   args: { scenario: 'watching' },
   parameters: { docs: { description: { component: 'Production player UI composed around local fixture media; synthetic provider data. Not host behavior.' } } },

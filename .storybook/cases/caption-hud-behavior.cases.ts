@@ -8,7 +8,7 @@ import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
 import { activeAnimationCount, uiNodeCount } from '../hud-stage';
 import { CAPTION_HUD, hud, measure, stage } from '../hud-story';
 
-// Lifecycle of the caption notice on a clock the story advances; the frames are in `Player/Caption notice`.
+// Lifecycle of the caption notice on a clock the story advances; the frames are in `Components/Caption notice`.
 
 type Story = HudCase;
 

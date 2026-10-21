@@ -27,7 +27,7 @@ const ACTIONS = {
 } satisfies Record<Args['tooltip'], { label: string; icon: string; className: string }>;
 
 const meta: Meta<Args> = {
-  title: 'Player/Control button tooltip',
+  title: 'Components/Control button tooltip',
   argTypes: { tooltip: { control: 'select', options: ['fullscreenTooltip', 'exitTheaterModeTooltip'] }, place: { control: 'select', options: ['above', 'below'] }, disabled: { control: 'boolean' }, open: { control: 'boolean' } },
   args: { tooltip: 'fullscreenTooltip', place: 'above', disabled: false, open: false },
   render: ({ tooltip, place, disabled, open }) => renderPlayerBar(scope => {

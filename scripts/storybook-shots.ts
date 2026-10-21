@@ -21,7 +21,7 @@ declare global {
 
 async function launch(engine: 'chromium' | 'firefox') {
   // Partial raster repaints only invalidated tile regions. With a backdrop blur over a video frame
-  // (the composed Player) that settled into one of two states, a few pixels apart, per page load.
+  // (Player UI) that settled into one of two states, a few pixels apart, per page load.
   return (await import('playwright'))[engine].launch(engine === 'chromium' ? { args: ['--disable-partial-raster'] } : {});
 }
 type Browser = Awaited<ReturnType<typeof launch>>;

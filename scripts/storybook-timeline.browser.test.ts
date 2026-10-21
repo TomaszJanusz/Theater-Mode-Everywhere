@@ -16,7 +16,7 @@ for (const engine of testEngines()) {
     t.after(server.close);
     const context = await browser.newContext(t);
     const page = await context.newPage();
-    await openStory(page, server.url, 'player-hud--volume', environment());
+    await openStory(page, server.url, 'components-hud--volume', environment());
     for (let replay = 0; replay < 2; replay++) {
       await selectTimeline(page, 'leave');
       assert.equal(await page.locator('.theater-everywhere-volume-overlay').evaluate(node => node.classList.contains('fade-out')), true);
@@ -34,7 +34,7 @@ for (const engine of testEngines()) {
     const original = await page.locator('#theater-everywhere-ui').elementHandle();
     await page.evaluate(() => {
       const channel = (window as unknown as { __STORYBOOK_ADDONS_CHANNEL__: { emit(type: string, payload: unknown): void } }).__STORYBOOK_ADDONS_CHANNEL__;
-      channel.emit('updateStoryArgs', { storyId: 'player-hud--volume', updatedArgs: { amount: 0.3, direction: 'down' } });
+      channel.emit('updateStoryArgs', { storyId: 'components-hud--volume', updatedArgs: { amount: 0.3, direction: 'down' } });
     });
     await page.waitForFunction(() => window.__storyState?.args.amount === 0.3);
     await waitForStory(page);
@@ -49,7 +49,7 @@ for (const engine of testEngines()) {
     assert.equal(await page.locator('#theater-everywhere-ui').getAttribute('dir'), 'rtl');
     assert.equal(await page.locator('#theater-everywhere-ui').getAttribute('data-motion'), 'reduced');
 
-    await openStory(page, server.url, 'player-hud--seek-both', environment());
+    await openStory(page, server.url, 'components-hud--seek-both', environment());
     await selectTimeline(page, 'leave');
     assert.equal(await page.locator('.theater-everywhere-seek-overlay').count(), 2);
     await selectTimeline(page, 'enter');
@@ -57,7 +57,7 @@ for (const engine of testEngines()) {
 
     const caption = environment();
     caption.args = { duration: 1200, detail: 'Custom fixture detail' };
-    await openStory(page, server.url, 'player-caption-notice--status', caption);
+    await openStory(page, server.url, 'components-caption-notice--status', caption);
     await selectTimeline(page, 'leave');
     assert.equal(await page.locator('.theater-everywhere-caption-hud').evaluate(node => node.classList.contains('fade-out')), true);
     const opacity = await page.locator('.theater-everywhere-caption-hud').evaluate(node => Number(getComputedStyle(node).opacity));
@@ -65,7 +65,7 @@ for (const engine of testEngines()) {
     await selectTimeline(page, 'enter');
     assert.equal(await page.locator('.theater-everywhere-caption-hud').evaluate(node => node.classList.contains('fade-out')), false);
 
-    await openStory(page, server.url, 'player-auto-theater-notice--counting', environment());
+    await openStory(page, server.url, 'components-auto-theater-notice--counting', environment());
     await selectTimeline(page, 'leave');
     assert.equal(await page.locator('.theater-time-glyph:not(.is-leaving)').textContent(), '0');
     await selectTimeline(page, 'enter');
@@ -76,7 +76,7 @@ for (const engine of testEngines()) {
     await selectTimeline(page, 'hold');
     assert.equal(await page.locator('.theater-auto-notice').count(), 1);
 
-    for (const id of ['player-volume-control--closed', 'player-title-hud--short', 'player-caption-notice--loading']) {
+    for (const id of ['components-volume-control--closed', 'components-title-hud--short', 'components-caption-notice--loading']) {
       await openStory(page, server.url, id, environment());
       await selectTimeline(page, 'leave');
       assert.equal(await page.evaluate(() => window.__storyState?.timelineSupported), false);

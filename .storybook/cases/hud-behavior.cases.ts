@@ -13,7 +13,7 @@ import {
 } from '../hud-story';
 
 // Behavior of the HUD lifecycle on a clock the story advances. These end with the UI removed or
-// replaced, so they are not screenshot; `Player/HUD` has the frames.
+// replaced, so they are not screenshot; `Components/HUD` has the frames.
 
 type Story = HudCase;
 

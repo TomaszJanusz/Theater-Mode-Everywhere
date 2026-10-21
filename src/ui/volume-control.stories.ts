@@ -19,7 +19,7 @@ interface Args {
 }
 
 const meta: Meta<Args> = {
-  title: 'Player/Volume control',
+  title: 'Components/Volume control',
   argTypes: { volume: { control: { type: 'range', min: 0, max: 1, step: 0.05 } }, muted: { control: 'boolean' }, logicalVolume: { control: { type: 'range', min: 0, max: 1.5, step: 0.05 } }, boost: { control: 'boolean' }, disabled: { control: 'boolean' }, open: { control: 'boolean' } },
   args: { volume: 0.6, muted: false, boost: false, disabled: false, open: false },
   render: ({ volume, muted, logicalVolume, boost, disabled, open }) => renderPlayerBar(scope => {

@@ -14,7 +14,7 @@ import { t } from './messages';
 import { getPlayerUiRoot, queryPlayerUi } from './root';
 
 const meta: Meta<HudArgs> = {
-  title: 'Player/HUD', parameters: { timeline: true }, tags: ['frames'], args: { phase: 'steady', live: false },
+  title: 'Components/HUD', parameters: { timeline: true }, tags: ['frames'], args: { phase: 'steady', live: false },
   argTypes: {
     phase: { control: false },
     live: { control: false }

@@ -16,7 +16,7 @@ installChromeStub();
 setPlayerUiCss(shadowCss);
 
 const preview: Preview = {
-  parameters: { layout: 'fullscreen', controls: { expanded: true } },
+  parameters: { layout: 'fullscreen', controls: { expanded: true }, options: { storySort: { order: ['Extension', 'Components'] } } },
   initialGlobals: { backdrop: 'dark', locale: 'en', reduceMotion: 'off', timeline: 'hold' },
   globalTypes: {
     backdrop: {

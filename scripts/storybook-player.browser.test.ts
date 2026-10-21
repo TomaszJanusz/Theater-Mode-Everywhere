@@ -12,7 +12,7 @@ import { testEngines } from '../src/test-utils/test-engines';
 // The composed Player story: production player UI on local fixture media in a fixture document.
 // Input is real (Playwright pointer and keyboard) and goes into that document. These tests do not
 // establish host behavior, services, MAIN/isolated worlds or the installed extension.
-const VOLUME_STORY = 'player-volume-control--open';
+const VOLUME_STORY = 'components-volume-control--open';
 const FRAME = 'iframe[title="Fixture document"]';
 
 type Channel = { emit(type: string, payload: unknown): void };
@@ -96,7 +96,7 @@ const openPanels = (page: Page) => fixtureFrame(page).evaluate(() => {
 for (const engine of testEngines()) {
   const browser = sharedTestBrowser({ chromium, firefox }[engine]);
 
-  test(`Composed player: real pointer and keyboard open each menu, menus exclude each other and Escape restores focus (${engine})`, { timeout: 120000 }, async t => {
+  test(`Player UI: real pointer and keyboard open each menu, menus exclude each other and Escape restores focus (${engine})`, { timeout: 120000 }, async t => {
     const server = await serveStorybook();
     t.after(server.close);
     const context = await browser.newContext(t, { reducedMotion: 'reduce' });
@@ -154,7 +154,7 @@ for (const engine of testEngines()) {
     assert.equal(walked.filter(name => name === 'theater-vertical-slider').length, 2, 'volume and speed sliders');
   });
 
-  test(`Composed player: a locale change rebuilds the chrome and keeps the media element and time (${engine})`, { timeout: 120000 }, async t => {
+  test(`Player UI: a locale change rebuilds the chrome and keeps the media element and time (${engine})`, { timeout: 120000 }, async t => {
     const server = await serveStorybook();
     t.after(server.close);
     const context = await browser.newContext(t, { reducedMotion: 'reduce' });
@@ -179,7 +179,7 @@ for (const engine of testEngines()) {
     assert.equal(await page.evaluate(() => document.querySelector('iframe')?.dataset.probe), 'same-frame');
   });
 
-  test(`Composed player: remount and navigation leave no document, listener, interval or object URL behind (${engine})`, { timeout: 120000 }, async t => {
+  test(`Player UI: remount and navigation leave no document, listener, interval or object URL behind (${engine})`, { timeout: 120000 }, async t => {
     const server = await serveStorybook();
     t.after(server.close);
     const context = await browser.newContext(t, { reducedMotion: 'reduce' });

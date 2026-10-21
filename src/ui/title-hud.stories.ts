@@ -8,7 +8,7 @@ import { queryPlayerUi } from './root';
 
 interface Args extends HudArgs { title: string; subtitle: string }
 const meta: Meta<Args> = {
-  title: 'Player/Title HUD', tags: ['frames'], args: { phase: 'steady', live: false, title: 'Big Buck Bunny', subtitle: '' },
+  title: 'Components/Title HUD', tags: ['frames'], args: { phase: 'steady', live: false, title: 'Big Buck Bunny', subtitle: '' },
   argTypes: { title: { control: 'text' }, subtitle: { control: 'text' }, phase: { control: false }, live: { control: false } }
 };
 export default meta;

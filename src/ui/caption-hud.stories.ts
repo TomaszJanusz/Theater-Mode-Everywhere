@@ -15,7 +15,7 @@ interface Args extends HudArgs {
 }
 // View-API fixtures: result-to-view mapping in player-runtime is outside this component proof.
 const meta: Meta<Args> = {
-  title: 'Player/Caption notice', parameters: { timeline: 'caption' }, tags: ['frames'],
+  title: 'Components/Caption notice', parameters: { timeline: 'caption' }, tags: ['frames'],
   args: { phase: 'steady', live: false, view: 'status', titleKey: 'subtitlesOnHud', detail: 'English (auto-generated)', duration: 4000 },
   argTypes: {
     view: { control: 'select', options: ['loading', 'status', 'loading-to-result'] },

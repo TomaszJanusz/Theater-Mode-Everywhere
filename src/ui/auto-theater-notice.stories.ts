@@ -8,7 +8,7 @@ import { t } from './messages';
 // The countdown the player shows before entering theater on its own. `progress` holds the ring, digit
 // roll and zoom-out at a fixed fraction so each frame is the same on every run.
 const meta: Meta<NoticeArgs> = {
-  title: 'Player/Auto-theater notice',
+  title: 'Components/Auto-theater notice',
   parameters: { timeline: true },
   tags: ['frames'],
   argTypes: { remainingMs: { control: { type: 'number', min: 0, max: 10000, step: 100 } }, ringTurn: { control: 'select', options: ['uniform', 'per-digit'] }, progress: { control: false }, phase: { control: false }, live: { control: false }, frames: { control: false } },

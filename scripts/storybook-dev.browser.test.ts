@@ -14,17 +14,17 @@ import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { testEngines } from '../src/test-utils/test-engines';
 
 const fontStories = [
-  'player-auto-theater-notice--counting',
-  'player-hud--playback',
-  'player-title-hud--short',
+  'components-auto-theater-notice--counting',
+  'components-hud--playback',
+  'components-title-hud--short',
   PLAYER_STORY
 ];
 
 const devStories = [...fontStories,
-  'player-volume-control--open',
-  'player-speed-control--open',
-  'player-caption-notice--loading',
-  'player-control-button-tooltip--above'
+  'components-volume-control--open',
+  'components-speed-control--open',
+  'components-caption-notice--loading',
+  'components-control-button-tooltip--above'
 ];
 
 for (const engine of testEngines()) {
@@ -70,10 +70,15 @@ for (const engine of testEngines()) {
     const context = await browser.newContext(t);
     const indexResponse = await context.request.get(`${base}/index.json`);
     assert.equal(indexResponse.status(), 200);
-    const index = await indexResponse.json() as { entries: Record<string, { type: string }> };
+    const index = await indexResponse.json() as { entries: Record<string, { type: string; title: string }> };
     const stories = Object.keys(index.entries).filter(id => index.entries[id].type === 'story');
-    assert.equal(stories.length, 28, '27 component stories plus the composed Player');
+    assert.equal(stories.length, 28, '27 component stories plus Extension/Player UI');
     assert.ok(stories.includes(PLAYER_STORY));
+    assert.deepEqual([...new Set(stories.map(id => index.entries[id].title))].sort(), [
+      'Extension/Player UI',
+      'Components/Auto-theater notice', 'Components/Caption notice', 'Components/Control button tooltip',
+      'Components/HUD', 'Components/Speed control', 'Components/Title HUD', 'Components/Volume control'
+    ].sort());
 
     const failures: string[] = [];
     for (const mode of ['normal', 'failed', 'stalled']) {

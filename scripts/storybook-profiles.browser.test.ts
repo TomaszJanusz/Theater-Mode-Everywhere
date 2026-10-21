@@ -61,7 +61,7 @@ for (const engine of testEngines()) {
       const profile = environment('en');
       profile.globals.reduceMotion = preference;
       profile.reducedMotion = os;
-      await openStory(page, server.url, 'player-volume-control--closed', profile);
+      await openStory(page, server.url, 'components-volume-control--closed', profile);
       const expected = preference === 'on' || (preference === 'auto' && os === 'reduce') ? 'reduced' : 'normal';
       await page.waitForFunction(value => document.getElementById('theater-everywhere-ui')?.dataset.motion === value, expected);
     }
@@ -79,7 +79,7 @@ for (const engine of testEngines()) {
       for (const disabled of [false, true]) {
         const profile = environment();
         profile.args = { disabled, open: true, ...(family === 'speed' ? { rate: 2 } : { volume: 0.3, muted: true }) };
-        await openStory(page, server.url, `player-${family}-control--open`, profile);
+        await openStory(page, server.url, `components-${family}-control--open`, profile);
         await finished(page);
         const button = page.locator(`.${family}-btn`);
         assert.equal(await button.isDisabled(), disabled);
@@ -89,7 +89,7 @@ for (const engine of testEngines()) {
       }
     }
     for (let replay = 0; replay < 2; replay++) {
-      await openStory(page, server.url, 'player-speed-control--closed', environment());
+      await openStory(page, server.url, 'components-speed-control--closed', environment());
       await finished(page);
       const button = page.locator('.speed-btn');
       const panel = page.locator('.theater-speed-panel');
@@ -111,7 +111,7 @@ for (const engine of testEngines()) {
       await page.keyboard.press('Escape');
       assert.equal(await page.locator('html').getAttribute('data-escapes'), '1');
     }
-    await openStory(page, server.url, 'player-control-button-tooltip--closed', environment());
+    await openStory(page, server.url, 'components-control-button-tooltip--closed', environment());
     await finished(page);
     await page.locator('.theater-control-btn').hover();
     await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-button-tooltip')?.classList.contains('visible'));
