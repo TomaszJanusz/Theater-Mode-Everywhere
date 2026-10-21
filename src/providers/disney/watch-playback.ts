@@ -10,11 +10,11 @@ export const disneyWatchPlayback: WatchPlayback = {
     const path = url.pathname.replace(/^\/[a-z]{2}(?:-[a-z]{2})?(?=\/)/i, '').replace(/\/$/, '');
     return identity && path.toLowerCase() === `/play/${identity}` ? identity : null;
   },
-  mainVideo(doc) {
+  mainVideo(doc, _identity, purpose) {
     const player = doc.querySelector('disney-web-player');
     if (!player) return null;
     const videos = Array.from(player.querySelectorAll<HTMLVideoElement>('video.hive-video'))
-      .filter(video => !video.paused && !video.ended
+      .filter(video => (purpose === 'replacement' || (!video.paused && !video.ended))
         && isUsableDisneyMediaVideo(video) && isSwitchableTheaterVideo(video));
     // The play route owns the session, including ads. Exclude Disney's separate
     // btm media client and reject ambiguous main players instead of guessing.

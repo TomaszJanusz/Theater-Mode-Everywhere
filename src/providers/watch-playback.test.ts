@@ -110,7 +110,7 @@ describe('AutoTheater availability', () => {
   });
 });
 
-describe('history traversal off a watch page', () => {
+describe('navigation off a watch page', () => {
   it('ends only a session that began on a provider watch page and landed elsewhere', () => {
     const watch = 'https://www.youtube.com/watch?v=abcdefghijk';
     assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/results?search_query=x'), true);
@@ -119,5 +119,15 @@ describe('history traversal off a watch page', () => {
     assert.equal(leftProviderWatchPage(true, watch), false);
     assert.equal(leftProviderWatchPage(false, 'https://www.youtube.com/'), false);
     assert.equal(leftProviderWatchPage(true, 'https://example.com/page'), true);
+    assert.equal(leftProviderWatchPage(false, 'https://example.com/page'), false);
+    assert.equal(leftProviderWatchPage(false, watch), false);
+    assert.equal(leftProviderWatchPage(true, `${watch}&list=playlist&index=2`), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/browse'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/watch/12345'), false);
+    // Manual season playback remains eligible without relaxing automatic content identity.
+    assert.equal(readProviderWatchPage(new URL('https://www.bilibili.tv/en/play/1053337')), null);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337'), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en/play/1053337/11371243'), false);
+    assert.equal(leftProviderWatchPage(true, 'https://www.bilibili.tv/en'), true);
   });
 });

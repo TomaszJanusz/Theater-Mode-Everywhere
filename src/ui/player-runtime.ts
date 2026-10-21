@@ -10,7 +10,7 @@ import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, reso
 import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
-import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from '../providers/watch-playback';
+import { autoTheaterAvailability, confirmProviderWatchReplacement, leftProviderWatchPage, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -2039,6 +2039,14 @@ function toggleTheaterMode(): void {
 
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
   const bindingScope = session.runtimeScope.child();
+  const needsWatchIdentity = (): boolean => theaterEnteredOnWatchPage
+    && readProviderWatchPage(new URL(window.location.href)) !== null;
+  const acceptsReplacement = (candidate: HTMLVideoElement): boolean =>
+    !needsWatchIdentity() || confirmProviderWatchReplacement(candidate);
+  const pickReplacement = (): HTMLVideoElement | null => {
+    if (!needsWatchIdentity()) return findBestVideo();
+    return findAllVideosDeep(document).find(acceptsReplacement) ?? null;
+  };
   const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
     if (bindingScope.isDisposed) return;
     const current = session.element;
@@ -2052,7 +2060,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     const connected = isElementInDOMDeep(current);
     if (connected && hasLeftPlaybackSurface(current as HTMLVideoElement)) {
       // Navigating away leaves the video in a hidden watch page or the miniplayer, not a theater.
-      const replacement = findBestVideo();
+      const replacement = pickReplacement();
       if (replacement && replacement !== current) {
         bindingScope.dispose();
         switchTheaterVideo(replacement);
@@ -2065,9 +2073,9 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (connected && !isInactiveStandbyVideo(current as HTMLVideoElement) && !providerVideoAbandoned(current as HTMLVideoElement)) return;
 
     const replacement = candidate && candidate !== current && isElementInDOMDeep(candidate)
-      && !isInactiveStandbyVideo(candidate)
+      && !isInactiveStandbyVideo(candidate) && acceptsReplacement(candidate)
       ? candidate
-      : findBestVideo();
+      : pickReplacement();
     // Hosts can swap between connected video nodes while changing playback.
     // Wait for the visible replacement's metadata instead of loading its source ourselves.
     if (connected && (!replacement || replacement.readyState < 1
@@ -2078,6 +2086,13 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       keepTheaterVideoBound(replacement);
     }
   };
+
+  bindingScope.add(observeProviderWatchPlaybackChanges(() => {
+    // Publications can precede the host revealing its next player; only the route is final here.
+    if (!bindingScope.isDisposed && leftProviderWatchPage(theaterEnteredOnWatchPage, window.location.href)) {
+      exitTheaterMode();
+    }
+  }));
 
   let ignoreStyleMutations = 0;
   let stabilizeScheduled = false;
@@ -2188,8 +2203,14 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
         ? session.element
         : null
     ),
-    pick: () => findBestVideo(),
+    pick: pickReplacement,
     onSwitch: (next) => {
+      if (bindingScope.isDisposed) return;
+      if (leftProviderWatchPage(theaterEnteredOnWatchPage, window.location.href)) {
+        exitTheaterMode();
+        return;
+      }
+      if (!acceptsReplacement(next)) return;
       switchTheaterVideo(next);
       if (session.element !== next) return;
       bindingScope.dispose();
@@ -2226,7 +2247,7 @@ function refreshTheaterAncestors(element: HTMLElement): void {
   refs.ancestorsList = next;
 }
 
-/** Whether the active session began on a provider watch page; history traversal off it ends the session. */
+/** Whether the active session began on a provider watch page; navigation off it ends the session. */
 let theaterEnteredOnWatchPage = false;
 
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {

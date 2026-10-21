@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Theater mode now exits when you navigate back on single-page sites instead of leaving the stage on screen.
+- Theater mode now exits when you navigate back or forward to a page without the player on single-page sites, instead of leaving the stage on screen or switching it to another video.
 
 ## [2.0.3] - 2026-10-20
 

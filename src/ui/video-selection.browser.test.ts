@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = esbuild.buildSync({
   stdin: {
-    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
+    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; export { confirmProviderWatchVideo, confirmProviderWatchReplacement } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
     resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
   },
   bundle: true, write: false, format: 'iife', globalName: 'VideoSelectionTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
@@ -20,7 +20,11 @@ const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixture
 declare global {
   interface Window {
     setVideoSelectionEnabled(enabled: boolean): void;
-    VideoSelectionTest: { isInactiveStandbyVideo(video: HTMLVideoElement): boolean };
+    VideoSelectionTest: {
+      isInactiveStandbyVideo(video: HTMLVideoElement): boolean;
+      confirmProviderWatchVideo(video: HTMLVideoElement): boolean;
+      confirmProviderWatchReplacement(video: HTMLVideoElement): boolean;
+    };
   }
 }
 
@@ -82,6 +86,36 @@ for (const engine of testEngines()) {
     })));
   });
 
+  for (const fixture of [
+    { url: 'https://www.disneyplus.com/play/86e14fdb-3841-4282-ad38-07c8c4aab4b6',
+      host: '<disney-web-player><video id="first" class="hive-video"></video></disney-web-player>',
+      off: 'data-te-disney-integration-off' },
+    { url: 'https://www.netflix.com/watch/12345',
+      host: '<div class="watch-video"><div data-uia="player" data-videoid="12345"><video id="first"></video></div></div>',
+      off: 'data-te-netflix-integration-off' }
+  ]) {
+    it(`${engine}: paused primary media can replace manually but cannot auto-enter (${fixture.off})`, async t => {
+      const page = await (await shared.newContext(t)).newPage();
+      await page.route(fixture.url, route => route.fulfill({
+        contentType: 'text/html', body: `<style>video{width:640px;height:360px}</style>${fixture.host}`
+      }));
+      await page.goto(fixture.url);
+      await page.evaluate(media => { document.querySelector<HTMLVideoElement>('video')!.src = media; }, MEDIA);
+      await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('video')!.readyState >= 2);
+      await boot(page);
+      const confirmation = () => page.evaluate(() => {
+        const video = document.querySelector<HTMLVideoElement>('video')!;
+        return {
+          automatic: window.VideoSelectionTest.confirmProviderWatchVideo(video),
+          replacement: window.VideoSelectionTest.confirmProviderWatchReplacement(video)
+        };
+      });
+      assert.deepEqual(await confirmation(), { automatic: false, replacement: true });
+      await page.evaluate(off => document.documentElement.setAttribute(off, ''), fixture.off);
+      assert.deepEqual(await confirmation(), { automatic: false, replacement: true });
+    });
+  }
+
   it(`${engine}: Disney episode replacement waits past the hidden standby and restores on exit`, { timeout: 30_000 }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await page.route('https://www.disneyplus.com/**', route => route.fulfill({
@@ -142,7 +176,7 @@ for (const engine of testEngines()) {
     assert.equal(await page.locator('video[data-theater-everywhere]').count(), 0);
   });
 
-  it(`${engine}: YouTube theater leaves a hidden watch page and moves to a visible replacement`, { timeout: 30_000 }, async t => {
+  it(`${engine}: theater leaves a hidden watch page even when another video is visible`, { timeout: 30_000 }, async t => {
     const openWatchPage = async (extra: string): Promise<Page> => {
       const page = await (await shared.newContext(t)).newPage();
       await page.route('https://www.youtube.com/**', route => route.fulfill({
@@ -163,7 +197,7 @@ for (const engine of testEngines()) {
     };
     const hideWatchPage = (page: Page) => page.evaluate(() => document.querySelector('ytd-watch-flexy')!.setAttribute('hidden', ''));
 
-    // SPA navigation to Home hides the watch page while its video stays connected.
+    // Navigation hides the watch page while its video stays connected.
     const home = await openWatchPage('');
     await hideWatchPage(home);
     await home.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
@@ -171,10 +205,11 @@ for (const engine of testEngines()) {
     assert.equal(await home.locator('.theater-everywhere-parent-active').count(), 0);
     await home.close();
 
-    // With another playable video, theater follows it instead of exiting.
+    // An unrelated playable video must not inherit the watch session.
     const other = await openWatchPage('<video id="other" style="position:absolute;top:2000px"></video>');
     await hideWatchPage(other);
-    await other.waitForFunction(() => document.querySelector('video[data-theater-everywhere]')?.id === 'other');
+    await other.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+    assert.equal(await other.locator('video[data-theater-everywhere]').count(), 0);
     await other.close();
   });
 
