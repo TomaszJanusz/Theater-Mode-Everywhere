@@ -1,6 +1,7 @@
 import type { DisposableScope } from '../core/disposable-scope';
 
 import { bindSliderPopover } from './menu-popover';
+import type { UiClock } from './ui-clock';
 
 /** What a control supplies; structure, marker, fill and tooltip are the same for every slider. */
 export interface VerticalSliderOptions {
@@ -16,6 +17,8 @@ export interface VerticalSliderOptions {
   step: number;
   /** Input value that gets the marker; hidden unless it lies inside the range. */
   markerValue: number;
+  /** Drives the pointer-focus hide timer; tests inject a fake. */
+  clock?: UiClock;
 }
 
 /** One rendering of the slider: the input value, its label and whether it is boosted. */
@@ -101,7 +104,7 @@ export function createVerticalSlider(options: VerticalSliderOptions): VerticalSl
   wrapper.append(slider, marker);
   panel.append(tooltip, wrapper);
   options.container.append(panel);
-  bindSliderPopover(options.container, panel, options.scope);
+  bindSliderPopover(options.container, panel, options.scope, options.clock);
 
   bindPaddingDrag(wrapper, slider, options.scope);
 

@@ -1,5 +1,6 @@
 import type { DisposableScope } from '../core/disposable-scope';
 import { armPictureDismissOnLeave } from './picture-dismiss';
+import { systemClock, type UiClock } from './ui-clock';
 
 export const MENU_CLOSE_EVENT = 'theater-menu-close';
 
@@ -204,19 +205,71 @@ export function bindMenuPopover(options: {
   return { close };
 }
 
-/** Slider panels follow the existing hover/focus presentation, including AT visibility. */
-export function bindSliderPopover(host: HTMLElement, panel: HTMLElement, scope: DisposableScope): void {
+/** How long a slider panel that only a pointer press keeps focused stays open once the pointer is away. */
+export const SLIDER_IDLE_HIDE_MS = 5000;
+
+/**
+ * Slider panels follow the existing hover/focus presentation, including AT visibility.
+ *
+ * Focus that came from a pointer (a drag, or a press beside the track) is not a keyboard user
+ * parking on the control: once the pointer is away and no press is active, the input is blurred
+ * after SLIDER_IDLE_HIDE_MS so the panel hides and player shortcuts work again. Focus
+ * reached by keyboard stays until Escape or blur.
+ */
+export function bindSliderPopover(
+  host: HTMLElement,
+  panel: HTMLElement,
+  scope: DisposableScope,
+  clock: UiClock = systemClock
+): void {
   let hovered = false;
   let suppressed = false;
-  const sync = () => {
+  let pressed = false;
+  // Input modality of the latest focus: a pointerdown precedes pointer focus, any keydown ends it.
+  let pointerFocus = false;
+  let timer: number | undefined;
+  const focusInside = () => {
     const active = (host.getRootNode() as Document | ShadowRoot).activeElement;
-    panel.inert = suppressed || (!hovered && !(active instanceof Node && host.contains(active)));
+    return active instanceof HTMLElement && host.contains(active) ? active : null;
+  };
+  const sync = () => {
+    panel.inert = suppressed || (!hovered && !focusInside());
     panel.style.visibility = suppressed ? 'hidden' : '';
   };
+  const cancelTimer = () => {
+    clock.clearTimeout(timer);
+    timer = undefined;
+  };
+  const armTimer = () => {
+    cancelTimer();
+    if (!pointerFocus || hovered || pressed || !focusInside()) return;
+    timer = clock.setTimeout(() => {
+      timer = undefined;
+      // Blur in place: focus goes to the document body, not to another control.
+      focusInside()?.blur();
+      pointerFocus = false;
+      sync();
+    }, SLIDER_IDLE_HIDE_MS);
+  };
   panel.inert = true;
-  scope.listen(host, 'pointerenter', () => { hovered = true; suppressed = false; sync(); });
-  scope.listen(host, 'pointerleave', () => { hovered = false; sync(); });
-  scope.listen(host, 'focusin', sync);
+  scope.add(cancelTimer);
+  // Capture, so the modality is known before the press focuses anything, wherever it lands.
+  scope.listen(window, 'pointerdown', (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    pointerFocus = pressed = event.composedPath().includes(host);
+    if (pressed) cancelTimer();
+  }, { capture: true });
+  scope.listen(window, 'keydown', () => { pointerFocus = false; cancelTimer(); }, { capture: true });
+  const release = () => {
+    if (!pressed) return;
+    pressed = false;
+    armTimer();
+  };
+  scope.listen(window, 'pointerup', release, { capture: true });
+  scope.listen(window, 'pointercancel', release, { capture: true });
+  scope.listen(host, 'pointerenter', () => { hovered = true; suppressed = false; cancelTimer(); sync(); });
+  scope.listen(host, 'pointerleave', () => { hovered = false; sync(); armTimer(); });
+  scope.listen(host, 'focusin', () => { sync(); armTimer(); });
   scope.listen(host, 'keydown', (event: KeyboardEvent) => {
     // Only an open panel owns Escape; once it is closed with focus left on the button, Escape exits theater again.
     if (event.key !== 'Escape' || panel.inert) return;
@@ -228,7 +281,10 @@ export function bindSliderPopover(host: HTMLElement, panel: HTMLElement, scope: 
   });
   scope.listen(host, 'focusout', (event: FocusEvent) => {
     const inside = event.relatedTarget instanceof Node && host.contains(event.relatedTarget);
-    if (!inside) suppressed = false;
+    if (!inside) {
+      suppressed = false;
+      cancelTimer();
+    }
     panel.inert = suppressed || (!hovered && !inside);
     panel.style.visibility = suppressed ? 'hidden' : '';
   });
