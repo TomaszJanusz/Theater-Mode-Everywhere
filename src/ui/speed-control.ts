@@ -1,7 +1,7 @@
 import type { DisposableScope } from '../core/disposable-scope';
 
-import { bindSliderPopover } from './menu-popover';
 import { armPictureDismissOnLeave } from './picture-dismiss';
+import { createVerticalSlider } from './vertical-slider';
 
 export interface SpeedControlOptions {
   video: { playbackRate: number };
@@ -54,44 +54,27 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   buttonLabel.className = 'speed-label';
   button.appendChild(buttonLabel);
 
-  const panel = document.createElement('div');
-  panel.className = 'theater-speed-panel';
-  const tooltip = document.createElement('div');
-  tooltip.className = 'theater-speed-tooltip-vertical';
-  const sliderWrapper = document.createElement('div');
-  sliderWrapper.className = 'theater-vertical-slider-wrapper';
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.setAttribute('aria-label', label);
-  slider.setAttribute('aria-orientation', 'vertical');
-  slider.className = 'theater-speed-slider theater-vertical-slider';
-  slider.min = '0';
-  slider.max = String(SPEED_LEVELS.length - 1);
-  slider.step = '1';
-  const tick1x = document.createElement('div');
-  tick1x.className = 'speed-tick-1x-vertical';
-  sliderWrapper.append(slider, tick1x);
-  panel.append(tooltip, sliderWrapper);
-  container.append(button, panel);
-  bindSliderPopover(container, panel, scope);
+  container.append(button);
+  const { slider, render } = createVerticalSlider({
+    container,
+    scope,
+    label,
+    panelClass: 'theater-speed-panel',
+    sliderClass: 'theater-speed-slider',
+    min: 0,
+    max: SPEED_LEVELS.length - 1,
+    step: 1,
+    markerValue: SPEED_LEVELS.indexOf(1.0)
+  });
 
   let lastNonNormalSpeed = 1.5;
   const paint = () => {
-    const index = closestSpeedIndex(video.playbackRate);
-    const pct = (index / (SPEED_LEVELS.length - 1)) * 100;
-    const accent = 'var(--accent-color, #6366f1)';
-    slider.style.setProperty('background', `linear-gradient(to right, ${accent} 0%, ${accent} ${pct}%, rgba(255, 255, 255, 0.2) ${pct}%, rgba(255, 255, 255, 0.2) 100%)`, 'important');
     const text = formatRate(video.playbackRate);
     buttonLabel.textContent = text;
-    tooltip.textContent = text;
-    slider.setAttribute('aria-valuetext', text);
+    render({ value: closestSpeedIndex(video.playbackRate), text });
     button.setAttribute('aria-pressed', String(video.playbackRate !== 1));
   };
-  const sync = () => {
-    slider.value = String(closestSpeedIndex(video.playbackRate));
-    paint();
-  };
-  sync();
+  paint();
 
   button.addEventListener('click', (event) => {
     if (video.playbackRate !== 1.0) {
@@ -108,5 +91,5 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
     if (rate !== 1.0) lastNonNormalSpeed = rate;
     paint();
   });
-  return { container, button, slider, sync };
+  return { container, button, slider, sync: paint };
 }

@@ -557,7 +557,11 @@
   box-shadow: none !important;
   width: 130px !important; /* vertical height of slider */
   height: 6px !important;
-  background: var(--appearance-hover, rgba(255, 255, 255, 0.2)) !important;
+  /* createVerticalSlider sets --slider-position (0..1) on the input and on the marker. */
+  --slider-fill-color: var(--accent-color, #6366f1);
+  background: linear-gradient(to right,
+    var(--slider-fill-color) calc(6px + var(--slider-position, 0) * (100% - 12px)),
+    var(--appearance-hover, rgba(255, 255, 255, 0.2)) 0) !important;
   border-radius: 3px !important;
   outline: none !important;
   cursor: pointer !important;
@@ -565,8 +569,7 @@
   transform-origin: center !important;
 }
 
-.theater-volume-tooltip-vertical,
-.theater-speed-tooltip-vertical {
+.theater-slider-tooltip {
   font-size: 10px !important;
   font-weight: 700 !important;
   color: var(--appearance-ink, #f8fafc) !important;
@@ -576,34 +579,34 @@
   user-select: none !important;
 }
 
-.speed-tick-1x-vertical {
+/* Marks the value a slider passes through deliberately (1x, 100%); centred on the thumb's path. */
+.theater-slider-marker {
   position: absolute !important;
   left: 50% !important;
-  bottom: calc(5px + 0.42857 * (100% - 10px)) !important;
-  transform: translate(-50%, 50%) !important;
-  width: 3px !important;
-  height: 3px !important;
-  border-radius: 50% !important;
-  background: var(--appearance-marker, rgba(255, 255, 255, 0.6)) !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-
-.volume-tick-100-vertical {
-  position: absolute !important;
-  left: 50% !important;
-  bottom: calc(5px + 0.66667 * (100% - 10px)) !important;
+  bottom: calc(11px + var(--slider-position, 0) * (100% - 22px)) !important;
   transform: translate(-50%, 50%) !important;
   width: 4px !important;
   height: 2px !important;
+  border-radius: 1px !important;
   background: var(--appearance-marker, rgba(255, 255, 255, 0.6)) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
 
+.theater-slider-marker[hidden] {
+  display: none !important;
+}
+
+.theater-slider-tooltip.boosted {
+  color: var(--theater-volume-boost-color) !important;
+}
+
+.theater-vertical-slider.boosted {
+  --slider-fill-color: var(--theater-volume-boost-color);
+}
+
 /* Range slider track overrides to prevent website styles from causing tall sliders */
-.theater-volume-slider::-webkit-slider-runnable-track,
-.theater-speed-slider::-webkit-slider-runnable-track {
+.theater-vertical-slider::-webkit-slider-runnable-track {
   -webkit-appearance: none !important;
   appearance: none !important;
   height: 6px !important;
@@ -614,8 +617,7 @@
   margin: 0 !important;
 }
 
-.theater-volume-slider::-moz-range-track,
-.theater-speed-slider::-moz-range-track {
+.theater-vertical-slider::-moz-range-track {
   height: 6px !important;
   background: transparent !important;
   border: none !important;
@@ -624,8 +626,7 @@
   margin: 0 !important;
 }
 
-.theater-volume-slider::-webkit-slider-thumb,
-.theater-speed-slider::-webkit-slider-thumb {
+.theater-vertical-slider::-webkit-slider-thumb {
   -webkit-appearance: none !important;
   appearance: none !important;
   width: 12px !important;
@@ -638,8 +639,7 @@
   padding: 0 !important;
 }
 
-.theater-volume-slider::-moz-range-thumb,
-.theater-speed-slider::-moz-range-thumb {
+.theater-vertical-slider::-moz-range-thumb {
   width: 12px !important;
   height: 12px !important;
   border-radius: 50% !important;
@@ -666,11 +666,8 @@
   cursor: ns-resize !important;
 }
 
-.theater-volume-slider.boosted::-webkit-slider-thumb {
-  background: var(--theater-volume-boost-color) !important;
-}
-
-.theater-volume-slider.boosted::-moz-range-thumb {
+.theater-vertical-slider.boosted::-webkit-slider-thumb,
+.theater-vertical-slider.boosted::-moz-range-thumb {
   background: var(--theater-volume-boost-color) !important;
 }
 

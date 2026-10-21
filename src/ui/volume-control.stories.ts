@@ -41,6 +41,7 @@ type Story = StoryObj<Args>;
 const slider = () => queryPlayerUi<HTMLInputElement>('.theater-volume-slider')!;
 const button = () => queryPlayerUi<HTMLButtonElement>('.volume-btn')!;
 const panel = () => queryPlayerUi<HTMLElement>('.theater-volume-panel')!;
+const marker = () => queryPlayerUi<HTMLElement>('.theater-volume-panel .theater-slider-marker')!;
 
 export const Closed: Story = {
   play: async ({ args }) => {
@@ -48,6 +49,9 @@ export const Closed: Story = {
     await expect(slider().getAttribute('aria-valuetext')).toBe(`${Math.round(level <= 1 ? level * 100 : 100 + (level - 1) * 400)}%`);
     await expect(slider().classList.contains('boosted')).toBe(level > 1);
     await expect(button().classList.contains('boosted')).toBe(level > 1 && args.boost);
+    // 100% is the end of the track without boost, and 1 of the 1.5 ceiling with it.
+    await expect(marker().hidden).toBe(!args.boost);
+    if (args.boost) await expect(Number(marker().style.getPropertyValue('--slider-position'))).toBeCloseTo(1 / 1.5, 5);
     await expect(button().getAttribute('aria-label')).toBe(t('toggleMute'));
     await expect(button().disabled).toBe(args.disabled);
     await expect(slider().disabled).toBe(args.disabled);
@@ -57,6 +61,7 @@ export const Closed: Story = {
     await expect(host.shadowRoot).not.toBeNull();
   }
 };
-export const Open: Story = { ...Closed, args: { open: true } };
+// Boost on, so the open panel shows the 100% marker the speed panel shares.
+export const Open: Story = { ...Closed, args: { open: true, boost: true } };
 export const Muted: Story = { ...Closed, args: { muted: true } };
 export const Boosted: Story = { ...Closed, args: { boost: true, volume: 1, logicalVolume: 1.3, open: true } };
