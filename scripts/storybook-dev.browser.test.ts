@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { stripVTControlCharacters } from 'node:util';
 
 import { chromium, firefox } from 'playwright';
 
@@ -41,10 +42,19 @@ for (const engine of testEngines()) {
     const server = spawn(process.execPath, [
       join(dirname(createRequire(import.meta.url).resolve('storybook/package.json')), 'dist/bin/dispatcher.js'),
       'dev', '--ci', '--no-open', '--host', '127.0.0.1', '--port', String(address.port), '--exact-port'
-    ], { cwd: new URL('..', import.meta.url), env: { ...process.env, STORYBOOK_BROWSER: engine }, stdio: ['ignore', 'pipe', 'pipe'] });
+    ], {
+      cwd: new URL('..', import.meta.url),
+      // CI enables ANSI output; exercise it even when the local agent sets NO_COLOR.
+      env: { ...process.env, STORYBOOK_BROWSER: engine, NO_COLOR: undefined, FORCE_COLOR: '1' },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
     const exited = once(server, 'exit');
     t.after(async () => { server.kill('SIGTERM'); await exited; });
     let output = '';
+    let phase = 'dev server startup';
+    t.after(() => {
+      if (t.signal.aborted) t.diagnostic(`Storybook timed out during ${phase}:\n${stripVTControlCharacters(output)}`);
+    });
     // Use output events, including the panel's actual browser run, rather than a startup sleep.
     const progress = new EventTarget();
     const collect = (chunk: Buffer) => { output += chunk.toString(); progress.dispatchEvent(new Event('output')); };
@@ -52,10 +62,11 @@ for (const engine of testEngines()) {
     server.stderr.on('data', collect);
     const untilOutput = (pattern: RegExp) => new Promise<void>((resolve, reject) => {
       const check = () => {
-        if (/No projects matched|Failed to start (?:Vitest|test runner)/.test(output)) {
+        const plain = stripVTControlCharacters(output);
+        if (/No projects matched|Failed to start (?:Vitest|test runner)/.test(plain)) {
           progress.removeEventListener('output', check);
           reject(new Error(output));
-        } else if (pattern.test(output)) {
+        } else if (pattern.test(plain)) {
           progress.removeEventListener('output', check);
           resolve();
         }
@@ -100,6 +111,7 @@ for (const engine of testEngines()) {
       // Leave requests pending until page.close(), proving both document loaders have a bounded wait.
       if (mode === 'stalled') await page.route(/\.woff2?(\?|$)/, () => {});
       for (const id of mode === 'normal' ? devStories : fontStories) {
+        phase = `${mode} fonts: ${id}`;
         await page.goto(`${base}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'domcontentloaded' });
         await waitForStory(page);
         assert.doesNotMatch(await page.locator('body').innerText(), /component failed to render/i, `${mode}: ${id}`);
@@ -118,6 +130,7 @@ for (const engine of testEngines()) {
 
     // CLI --config used to hide a broken root-config discovery path. Exercise the actual dev panel.
     const manager = await context.newPage();
+    phase = 'manager layout and settings';
     await manager.goto(`${base}/?path=/story/${PLAYER_STORY}`);
     await manager.getByRole('button', { name: 'Move addon panel to bottom', exact: true }).waitFor();
     const player = manager.frameLocator('#storybook-preview-iframe').frameLocator('iframe[title="Fixture document"]');
@@ -133,6 +146,7 @@ for (const engine of testEngines()) {
     await manager.getByRole('button', { name: 'Expand testing module', exact: true }).click();
     assert.equal(await manager.getByRole('checkbox', { name: 'Coverage', exact: true }).count(), 0,
       'coverage is outside the pilot and must not be offered by the addon');
+    phase = 'addon panel run';
     await manager.getByRole('button', { name: 'Run tests', exact: true }).filter({ hasText: 'Run tests' }).click();
     await manager.getByRole('button', { name: 'Stop test run', exact: true }).waitFor();
     // Test output precedes coverage reporting. Only the completed manager state proves the run succeeded.
@@ -140,7 +154,8 @@ for (const engine of testEngines()) {
     await manager.getByRole('button', { name: 'Component tests passed', exact: true }).waitFor();
     assert.match(await manager.locator('body').innerText(), /Test run finished\. 28 components passed\./);
     assert.equal(await manager.getByText('View full error', { exact: true }).count(), 0);
-    await untilOutput(/Tests\s+28 passed \(28\)/);
-    assert.doesNotMatch(output, /No projects matched|Failed to (?:start (?:Vitest|test runner)|run tests)|Custom report|Coverage enabled|outside of Vite serving allow list/);
+    // The panel above is the completion contract. Vitest's terminal summary inserts ANSI
+    // escapes around "28 passed" in CI, so waiting for its uncolored text never finishes.
+    assert.doesNotMatch(stripVTControlCharacters(output), /No projects matched|Failed to (?:start (?:Vitest|test runner)|run tests)|Custom report|Coverage enabled|outside of Vite serving allow list/);
   });
 }
