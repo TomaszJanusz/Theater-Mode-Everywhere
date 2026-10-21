@@ -8,6 +8,7 @@ import { setPlayerUiCss } from '../src/ui/root';
 import shadowCss from '../src/ui/shadow.css?inline';
 
 import { installChromeStub, setSyncStorage } from './chrome-stub';
+import { waitForFonts } from './fonts';
 import { disposeStage } from './stage-owner';
 import './preview.css';
 
@@ -54,17 +55,7 @@ const preview: Preview = {
     document.body.dataset.backdrop = String(globals.backdrop);
     setSyncStorage({ reduceMotion: resolveReduceMotion(globals.reduceMotion) });
     await languageRuntime.set(globals.locale);
-    // The bundled Roboto loads lazily; layout that measures text (title marquee) must not run on fallback metrics.
-    // Failed or stalled font requests must still let the interactive preview render with fallback fonts.
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    try {
-      await Promise.race([
-        Promise.allSettled(['400', '500', '600', '700'].map(weight => document.fonts.load(`${weight} 16px Roboto`))),
-        new Promise<void>(resolve => { timeout = setTimeout(resolve, 3000); })
-      ]);
-    } finally {
-      clearTimeout(timeout);
-    }
+    await waitForFonts(document);
   }]
 };
 

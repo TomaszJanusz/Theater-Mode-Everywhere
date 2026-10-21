@@ -51,11 +51,12 @@ const config: StorybookConfig = {
         ...viteConfig.server,
         fs: {
           ...viteConfig.server?.fs,
-          // pnpm's global virtual store can resolve fonts outside the workspace (notably on macOS).
+          // pnpm's global virtual store puts fonts and Storybook's mocker runtime outside the workspace.
           allow: [
             searchForWorkspaceRoot(process.cwd()),
             ...(viteConfig.server?.fs?.allow ?? []),
-            dirname(realpathSync(require.resolve('@fontsource/roboto/package.json')))
+            dirname(realpathSync(require.resolve('@fontsource/roboto/package.json'))),
+            dirname(realpathSync(require.resolve('storybook/package.json')))
           ]
         }
       },

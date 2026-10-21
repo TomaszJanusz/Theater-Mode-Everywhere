@@ -12,6 +12,7 @@ import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-re
 import vod from '../test/fixtures/vod.webm?url';
 
 import { createChromeStub, type ChromeStub } from './chrome-stub';
+import { waitForFonts } from './fonts';
 import { beginStage } from './stage-owner';
 
 // Menus that the production bar pins open on click. Volume and speed open on hover or focus, which tests drive with real input.
@@ -141,7 +142,7 @@ export class PlayerFixture {
       const track = video.addTextTrack('subtitles', label, language);
       track.addCue(new win.VTTCue(0, 2, text));
     }
-    await Promise.all(['400', '500', '600', '700'].map(weight => doc.fonts.load(`${weight} 16px Roboto`)));
+    await waitForFonts(doc);
     // Settings are read asynchronously; the runtime publishes its entry shortcuts once its key handler is live.
     await waitFor(win, () => doc.documentElement.hasAttribute(ENTRY_SHORTCUT_ATTRIBUTE), 'the runtime to initialize');
     // Seek before entering theater, so the frame at MEDIA_TIME is shown before the bar's backdrop exists.
