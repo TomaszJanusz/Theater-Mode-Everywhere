@@ -78,3 +78,18 @@ cleanup using `/usr/bin/time -p`. One pair is evidence of this local run, not a
 statistical benchmark. Full `pnpm test` is separate verification. CI affected-test
 selection and runner load make its overall `check` duration observational, not a
 controlled speed comparison. Results are recorded in the PR body.
+
+
+## Automated component coverage
+
+The pilot did not invoke `pnpm storybook:test` from CI: its preview browser tests
+exercise different integration contracts. Removing classic assertions without a
+component gate would silently reduce automated coverage. This cleanup therefore
+adds explicit component steps to PR CI (Chromium, plus Firefox under the existing
+infrastructure gate) and both nightly/release engines. Nightly and release skip
+those steps for checked-out revisions predating `vitest.config.ts`, so the
+nightly main job remains compatible until the Storybook pilot reaches main.
+Nightly summaries report the component outcomes separately from classic tests.
+This adds component work to CI; the overall `check` comparison must account for
+that newly enforced coverage rather than attributing all duration changes to
+fewer browser launches.
