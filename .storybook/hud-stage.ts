@@ -1,9 +1,10 @@
 import type { HudHost } from '../src/ui/hud';
 import { t } from '../src/ui/messages';
-import { destroyPlayerUi, mountPlayerUi, queryPlayerUi, getPlayerUiRoot } from '../src/ui/root';
+import { mountPlayerUi, queryPlayerUi, getPlayerUiRoot } from '../src/ui/root';
 import type { UiClock } from '../src/ui/ui-clock';
 
 import { paintOverlay } from './player-stage';
+import { beginStage } from './stage-owner';
 
 /** A clock the story advances by hand: timers run in due order, including ones scheduled meanwhile. */
 export interface ManualClock extends UiClock {
@@ -11,6 +12,7 @@ export interface ManualClock extends UiClock {
   /** Timers scheduled and not yet fired or cleared. */
   readonly pending: number;
   advance(ms: number): void;
+  clear(): void;
 }
 
 export function manualClock(): ManualClock {
@@ -28,6 +30,7 @@ export function manualClock(): ManualClock {
     clearTimeout(id) {
       if (id !== undefined) timers.delete(id);
     },
+    clear: () => timers.clear(),
     advance(ms) {
       const end = now + ms;
       for (;;) {
@@ -84,6 +87,8 @@ export function uiNodeCount(): number {
 }
 
 export interface HudStage {
+  view: HTMLElement;
+  readonly disposed: boolean;
   clock: ManualClock;
   host: HudHost;
   /** The session the HUDs guard on; replace `element` or bump `currentEpoch` to make work stale. */
@@ -96,26 +101,30 @@ export interface HudStage {
   onDispose(cleanup: () => void): void;
 }
 
-let current: { dispose(): void } | undefined;
-
 /**
  * Starts a player UI for HUD stories: the real shadow root and mount, a session element standing in
  * for the playing video, and a clock the story owns. The previous story's UI is destroyed first.
  * With `progress`, animations are held at that fraction (a deterministic frame); without it they run.
  */
 export function mountHudStage(options: { progress?: number; boostReady?: boolean; frames?: readonly number[] } = {}): HudStage {
-  current?.dispose();
-  destroyPlayerUi();
+  const { scope, view } = beginStage();
   const clock = manualClock();
   const video = document.createElement('video');
   video.dataset.theaterBoostReady = String(options.boostReady ?? false);
   const session = { element: video as HTMLElement | null, currentEpoch: 1 };
-  const cleanups: Array<() => void> = [];
+  scope.add(() => { session.currentEpoch += 1; session.element = null; clock.clear(); });
   let progress = options.progress;
-  const settle = () => { if (progress !== undefined) freezeAnimations(progress); };
+  const settle = () => { if (!scope.isDisposed && progress !== undefined) freezeAnimations(progress); };
   window.__storyFrames = options.frames;
-  window.__storyFrame = value => { progress = value; return freezeAnimations(value); };
+  window.__storyFrame = value => {
+    if (scope.isDisposed) return 0;
+    progress = value;
+    return freezeAnimations(value);
+  };
+  scope.add(() => { delete window.__storyFrame; delete window.__storyFrames; });
   const stage: HudStage = {
+    view,
+    get disposed() { return scope.isDisposed; },
     clock,
     session,
     host: {
@@ -126,16 +135,9 @@ export function mountHudStage(options: { progress?: number; boostReady?: boolean
       t,
       ui: () => ({ toolbarVisible: true })
     },
-    advance: ms => { clock.advance(ms); settle(); },
+    advance: ms => { if (!scope.isDisposed) { clock.advance(ms); settle(); } },
     settle,
-    onDispose: cleanup => { cleanups.push(cleanup); }
-  };
-  current = {
-    dispose: () => {
-      for (const cleanup of cleanups.splice(0).reverse()) cleanup();
-      delete window.__storyFrame;
-      delete window.__storyFrames;
-    }
+    onDispose: cleanup => { scope.add(cleanup); }
   };
   return stage;
 }

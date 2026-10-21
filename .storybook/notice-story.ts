@@ -43,6 +43,7 @@ export function renderNotice(args: NoticeArgs): HTMLElement {
     stage, cancel, stop,
     remaining: () => remaining,
     elapse(ms) {
+      if (stage.disposed) return;
       for (let left = ms; left > 0; left -= 50) {
         const step = Math.min(50, left);
         remaining = Math.max(0, remaining - step);
@@ -52,7 +53,7 @@ export function renderNotice(args: NoticeArgs): HTMLElement {
     }
   };
   stage.settle();
-  return document.createElement('div');
+  return stage.view;
 }
 
 export const notice = (): HTMLElement | null => queryPlayerUi<HTMLElement>(NOTICE);

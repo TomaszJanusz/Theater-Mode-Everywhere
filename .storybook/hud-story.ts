@@ -44,20 +44,21 @@ export interface HudStoryOptions {
   frames?: readonly number[];
 }
 
-function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage: HudStage, args: T) => void, options: HudStoryOptions): HTMLElement {
+export function renderHud<T extends HudArgs>(args: T, trigger: (hud: Hud, stage: HudStage, args: T) => void, options: HudStoryOptions): HTMLElement {
   const stage = mountHudStage({
     progress: args.live ? undefined : (options.progress ?? PHASE_PROGRESS)[args.phase],
     boostReady: options.boostReady,
     frames: options.frames
   });
   const hud = createHud(stage.host, () => {}, args.live ? undefined : stage.clock);
-  stage.onDispose(() => { hud.removeCenteredHud(); hud.removeCaptionHud(); });
+  stage.onDispose(() => { hud.syncContentTitle(null); hud.removeCenteredHud(); hud.removeCaptionHud();
+    if (active?.stage === stage) active = undefined; });
   active = { stage, hud };
   trigger(hud, stage, args);
   if (args.phase === 'leaving' && !args.live) stage.advance(options.leaveAfterMs ?? CENTERED_HUD_VISIBLE_MS);
   stage.settle();
   // Storybook mounts what a story returns; the HUD lives in the player UI shadow root.
-  return document.createElement('div');
+  return stage.view;
 }
 
 /** A story that triggers the production HUD once on a fresh stage; `play` then drives and asserts. */

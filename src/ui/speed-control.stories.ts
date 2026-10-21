@@ -68,7 +68,9 @@ export const PointerKeyboardParity: Story = {
 
     // The first Escape is stopped at the control, so only the second reaches the document.
     const reached: boolean[] = [];
-    document.addEventListener('keydown', event => reached.push(event.defaultPrevented));
+    const onKey = (event: KeyboardEvent) => reached.push(event.defaultPrevented);
+    document.addEventListener('keydown', onKey);
+    try {
     button().focus();
     await expect(panel().inert).toBe(false);
     await userEvent.keyboard('{Escape}');
@@ -77,6 +79,7 @@ export const PointerKeyboardParity: Story = {
     // Escape with the panel closed is left alone, so theater can still exit on it.
     await userEvent.keyboard('{Escape}');
     await expect(reached).toEqual([false]);
+    } finally { document.removeEventListener('keydown', onKey); }
   }
 };
 

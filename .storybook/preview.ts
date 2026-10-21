@@ -8,6 +8,7 @@ import { setPlayerUiCss } from '../src/ui/root';
 import shadowCss from '../src/ui/shadow.css?inline';
 
 import { installChromeStub, setSyncStorage } from './chrome-stub';
+import { disposeStage } from './stage-owner';
 import './preview.css';
 
 installChromeStub();
@@ -30,6 +31,7 @@ const preview: Preview = {
       toolbar: { title: 'Reduce motion', items: ['auto', 'on', 'off'], dynamicTitle: true }
     }
   },
+  beforeEach: () => () => disposeStage(),
   decorators: [(story, context) => {
     window.__storyState = { globals: { ...context.globals }, args: { ...context.args } };
     return story();

@@ -1,9 +1,9 @@
 import { applyAccentColorPreset } from '../src/accentTheme';
-import { DisposableScope } from '../src/core/disposable-scope';
+import type { DisposableScope } from '../src/core/disposable-scope';
 import { applyUiDirection } from '../src/ui/messages';
-import { destroyPlayerUi, getPlayerUiRoot, mountPlayerUi } from '../src/ui/root';
+import { getPlayerUiRoot, mountPlayerUi } from '../src/ui/root';
 
-let scope: DisposableScope | undefined;
+import { beginStage } from './stage-owner';
 
 /** The same overlay painting the player runtime applies to everything it mounts. */
 export function paintOverlay(element: HTMLElement): void {
@@ -24,9 +24,7 @@ export { mountPlayerUi };
  * as theater exit does.
  */
 export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[], options: { liftBar?: boolean } = {}): HTMLElement {
-  scope?.dispose();
-  destroyPlayerUi();
-  scope = new DisposableScope();
+  const { scope, view } = beginStage();
   const wrapper = document.createElement('div');
   wrapper.className = 'theater-controls-wrapper visible';
   wrapper.setAttribute('role', 'group');
@@ -43,5 +41,5 @@ export function renderPlayerBar(build: (scope: DisposableScope) => HTMLElement[]
   if (options.liftBar) wrapper.style.setProperty('bottom', '96px', 'important');
   mountPlayerUi(wrapper);
   // Storybook mounts what a story returns; the player UI lives in the shadow root.
-  return document.createElement('div');
+  return view;
 }
