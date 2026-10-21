@@ -2043,6 +2043,12 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (bindingScope.isDisposed) return;
     const current = session.element;
     if (current?.tagName !== 'VIDEO') return;
+    // The route no longer shows a watch page: another video here (a feed's autoplaying ad, a
+    // preview) must not inherit the session.
+    if (leftProviderWatchPage(theaterEnteredOnWatchPage, window.location.href)) {
+      exitTheaterMode();
+      return;
+    }
     const connected = isElementInDOMDeep(current);
     if (connected && hasLeftPlaybackSurface(current as HTMLVideoElement)) {
       // Navigating away leaves the video in a hidden watch page or the miniplayer, not a theater.
