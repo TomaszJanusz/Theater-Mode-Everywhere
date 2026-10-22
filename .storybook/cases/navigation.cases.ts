@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
 
-import type { PlayerChromeContext } from '../../src/ui/runtime-context';
 import { createNavigation } from '../../src/ui/navigation';
 import { getPlayerUiRoot } from '../../src/ui/root';
+import type { PlayerChromeContext } from '../../src/ui/runtime-context';
 import { defaultShortcuts } from '../../src/ui/shortcuts';
 import { prepare } from '../fixture-test';
 import { renderPlayerBar } from '../player-stage';

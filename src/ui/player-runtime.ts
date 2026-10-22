@@ -1,4 +1,5 @@
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
+import { createNavigation } from './navigation';
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
@@ -125,7 +126,6 @@ import { createButtonTooltip } from './button-tooltip';
 import { createControls, type ExtendedHTMLDivElement } from './controls';
 import { createDiscovery, isElementInDOMDeep } from './discovery';
 import { createHelp } from './help';
-import { createNavigation } from './navigation';
 import {
   createHud,
   TITLE_HUD_CLASS,
