@@ -237,14 +237,15 @@ export async function preparePinAndMenus(page: Page) {
   if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab from the trigger skipped open settings.');
   }
-  // A disabled arrow is not a tab stop: Voice and Leveling start at Off (no previous), Bass at Original (both),
-  // Video fit at Fit (no previous).
-  for (const [name, direction] of [['voice', 1], ['leveling', 1], ['bass', -1], ['bass', 1]] as const) {
+  // Both arrows of a stepper are tab stops (an arrow at the end of its range is aria-disabled, so it keeps focus).
+  for (const [name, direction] of [['voice', -1], ['voice', 1], ['leveling', -1], ['leveling', 1], ['bass', -1], ['bass', 1]] as const) {
     await page.keyboard.press('Tab');
     if (!await menu.locator(`.audio-${name}-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
   }
-  await page.keyboard.press('Tab');
-  if (!await menu.locator('.video-fit-btn [data-direction="1"]').evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
+  for (const direction of [-1, 1]) {
+    await page.keyboard.press('Tab');
+    if (!await menu.locator(`.video-fit-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
+  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');

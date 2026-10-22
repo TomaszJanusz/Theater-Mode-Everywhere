@@ -93,7 +93,7 @@ export function createPlayerSettings(
     scope,
     onBeforeOpen: () => options?.onBeforeOpen?.(),
     // A blocked audio section hides its rows, which cannot take focus.
-    firstFocus: () => [...panel.querySelectorAll('button:not(:disabled)')].find(row => !row.closest('[hidden]')) as HTMLElement | undefined,
+    firstFocus: () => [...panel.querySelectorAll('button:not(:disabled):not([aria-disabled="true"])')].find(row => !row.closest('[hidden]')) as HTMLElement | undefined,
     onKeyboardOpen: () => ctx.actions.showToolbar(),
     onChange: () => ctx.actions.updateCaptionDock()
   });
