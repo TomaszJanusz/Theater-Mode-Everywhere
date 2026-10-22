@@ -8,8 +8,12 @@ import { isMotionReduced } from '../appearance-runtime';
 import type { UiClock } from './ui-clock';
 
 export const TIME_DIGIT_TRANSITION_MS = 320;
-/** Each changing digit starts this much after the one to its left. */
-export const TIME_DIGIT_STAGGER_MS = 30;
+/**
+ * Each changing digit starts this much after the one to its left. Wide enough
+ * to read as a sequence; with the rank cap, the last roll still ends inside the
+ * one-second tick (3 * 180 + 320 = 860 ms).
+ */
+export const TIME_DIGIT_STAGGER_MS = 180;
 /** Ranks beyond this share one delay, so a wide change stays inside the tick. */
 const TIME_DIGIT_STAGGER_RANKS = 3;
 

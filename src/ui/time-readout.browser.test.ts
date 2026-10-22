@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import type { Page } from 'playwright';
-import { clockLabels } from './time-readout';
+import { clockLabels, TIME_DIGIT_STAGGER_MS } from './time-readout';
 
 const UI_CSS = playerStylesheets().ui;
 const BUNDLE = bundleModules(["export * from './ui/time-readout';"], 'TimeReadout');
@@ -213,7 +213,7 @@ for (const engineName of testEngines()) {
         const ones = entering.find((probe) => probe.text === '0' && probe.slot === 3);
         assert.ok(tens && ones, JSON.stringify(probes));
         assert.equal(tens.delay, 0);
-        assert.ok(ones.delay > tens.delay && ones.delay <= 60, JSON.stringify(probes));
+        assert.ok(ones.delay === tens.delay + TIME_DIGIT_STAGGER_MS, JSON.stringify(probes));
         // The old right digit holds its place until its own turn.
         assert.ok(probes.some((probe) => probe.leaving && probe.slot === 3 && probe.text === '9' && probe.y === 0), JSON.stringify(probes));
       });

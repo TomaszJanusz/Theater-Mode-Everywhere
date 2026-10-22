@@ -71,4 +71,9 @@ describe('clock labels', () => {
     assert.deepEqual(delays, [0, undefined, TIME_DIGIT_STAGGER_MS, 2 * TIME_DIGIT_STAGGER_MS, undefined, 3 * TIME_DIGIT_STAGGER_MS, 3 * TIME_DIGIT_STAGGER_MS]);
     assert.equal(planDigitRolls('-0:10', ' 0:10')[0]?.delayMs, 0);
   });
+
+  it('finishes the widest stagger before the next one-second tick', () => {
+    const latest = Math.max(...planDigitRolls('0:00:00', '1:11:11').map((roll) => roll?.delayMs ?? 0));
+    assert.ok(latest + TIME_DIGIT_TRANSITION_MS < 1000, `${latest} ms`);
+  });
 });
