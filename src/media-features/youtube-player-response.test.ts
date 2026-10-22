@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { normalizeYoutubePlayerResponse } from './probe';
 
 const response = (captionTracks: unknown): unknown => ({
@@ -29,7 +30,16 @@ describe('YouTube external player responses', () => {
     ]);
   });
 
-  it('does not coerce object labels, invalid numeric values or storyboard structures', () => {
+  it('normalizes titles and rejects malformed metadata without coercion', () => {
+    const snapshot = normalizeYoutubePlayerResponse({
+      videoDetails: { videoId: 'abc123def45', title: '  Night   Drive  ', lengthSeconds: '12' },
+      microformat: { playerMicroformatRenderer: { title: { simpleText: 'Ignored' } } }
+    });
+    assert.equal(snapshot?.title, 'Night Drive');
+    assert.equal(normalizeYoutubePlayerResponse({
+      videoDetails: { videoId: 'abc123def45' },
+      microformat: { playerMicroformatRenderer: { title: { simpleText: 'From the microformat' } } }
+    })?.title, 'From the microformat');
     const result = normalizeYoutubePlayerResponse({
       videoDetails: { videoId: {}, lengthSeconds: 'Infinity', title: { runs: {} }, shortDescription: [] },
       microformat: { playerMicroformatRenderer: { title: { simpleText: 'Fallback' } } },
