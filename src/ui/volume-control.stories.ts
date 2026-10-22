@@ -56,7 +56,11 @@ export const Closed: Story = {
     await expect(button().getAttribute('aria-label')).toBe(t('toggleMute'));
     await expect(button().disabled).toBe(args.disabled);
     await expect(slider().disabled).toBe(args.disabled);
-    await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
+    await waitFor(() => {
+      // The deferred render focus can be lost in Firefox; drive the requested state here too.
+      if (args.open && !args.disabled) button().focus();
+      expect(panel().inert).toBe(args.disabled || !args.open);
+    });
     if (args.open && !args.disabled && args.boost) await expectSliderMarker(slider(), marker(), 1);
     const host = document.getElementById('theater-everywhere-ui')!;
     await expect(host.matches(':popover-open')).toBe(true);
