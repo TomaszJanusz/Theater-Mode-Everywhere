@@ -1,5 +1,5 @@
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { type BrowserContext, type Page } from 'playwright';
 
@@ -283,7 +283,7 @@ export async function assertLanguageMenu(page: Page, origin: string, context: Br
       await otherOptions.goto(extensionUrl);
       await popup.goto(new URL('popup/popup.html', worker.url()).href);
       await popup.locator('#domain-name').filter({ hasText: 'System page' }).waitFor();
-      await options.waitForFunction(() => document.querySelectorAll('#language-combobox-listbox [role=option]').length === 14);
+      await options.waitForFunction(count => document.querySelectorAll('#language-combobox-listbox [role=option]').length === count, readdirSync(path.join(ROOT, '_locales')).length + 1);
       const combo = options.locator('#language-combobox');
       const list = options.locator('#language-combobox-listbox');
       const openLanguageMenu = async () => {
