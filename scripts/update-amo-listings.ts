@@ -28,6 +28,8 @@ const ANGLE_BRACKET_PATTERN = /[<>]/u;
 
 export const AMO_LOCALE_SOURCES: Readonly<Record<string, readonly string[]>> = {
   en: ['en-US'],
+  cs: ['cs'],
+  sk: ['sk'],
   de: ['de'],
   es: ['es-AR', 'es-CL', 'es-ES', 'es-MX'],
   fr: ['fr'],
