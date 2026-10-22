@@ -21,7 +21,7 @@ describe('keyboard focus frame', () => {
       await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));
       await enterTheater(page);
 
-      const unframed = await page.evaluate(async () => {
+      const unframed = await page.evaluate(() => {
         const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
         const missing: string[] = [];
         const frame = (element: HTMLElement) => {
@@ -35,17 +35,14 @@ describe('keyboard focus frame', () => {
         };
         const controls = (container: ParentNode) => [...container.querySelectorAll<HTMLElement>('button, input, select, [tabindex]')]
           .filter(element => !(element as HTMLButtonElement).disabled && element.getClientRects().length > 0 && !element.closest('[hidden], [inert]'));
-        const frames = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         controls(root.querySelector('.theater-controls-wrapper')!).forEach(frame);
         for (const trigger of root.querySelectorAll<HTMLButtonElement>('.theater-menu > button')) {
           trigger.click();
-          await frames();
           controls(trigger.parentElement!.querySelector('.theater-menu-panel')!).forEach(frame);
           trigger.parentElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         }
         for (const name of ['volume', 'speed']) {
           root.querySelector<HTMLElement>(`.${name}-btn`)!.focus({ focusVisible: true } as FocusOptions);
-          await frames();
           frame(root.querySelector<HTMLElement>(`.theater-${name}-container input[type="range"]`)!);
         }
         return missing;
