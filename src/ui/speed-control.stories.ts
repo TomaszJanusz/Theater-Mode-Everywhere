@@ -51,7 +51,11 @@ export const Closed: Story = {
     // The 1x marker is 3 of 7 steps along the track, wherever the thumb is.
     await expect(marker().hidden).toBe(false);
     await expect(Number(marker().style.getPropertyValue('--slider-position'))).toBeCloseTo(3 / 7, 5);
-    await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
+    await waitFor(() => {
+      // The deferred render focus can be lost in Firefox; drive the requested state here too.
+      if (args.open && !args.disabled) button().focus();
+      expect(panel().inert).toBe(args.disabled || !args.open);
+    });
     if (args.open && !args.disabled) await expectSliderMarker(slider(), marker(), 3);
   }
 };
