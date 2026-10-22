@@ -5,6 +5,7 @@ import {
   type AccentColorPreset
 } from '../accentTheme';
 import { raisedCaptionBandMin } from '../media-features/caption-dock';
+import { stepLevel } from '../step-level';
 import { t } from './messages';
 
 export { applyAccentColorPreset, DEFAULT_ACCENT_COLOR, resolveAccentColorPreset };
@@ -26,6 +27,11 @@ export const VIDEO_FIT_LABEL_KEYS: Record<VideoFitMode, string> = {
   cover: 'videoFitCover',
   fill: 'videoFitFill'
 };
+
+/** One fit mode down or up, held at the ends; the cycle shortcut wraps on its own. */
+export function stepVideoFitMode(mode: VideoFitMode, direction: 1 | -1): VideoFitMode {
+  return stepLevel(VIDEO_FIT_MODES, mode, direction);
+}
 
 export function videoFitLabel(mode: VideoFitMode): string {
   return t(VIDEO_FIT_LABEL_KEYS[mode]);

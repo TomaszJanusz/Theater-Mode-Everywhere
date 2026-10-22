@@ -6,9 +6,9 @@ import { setSyncStorage } from './chrome-stub';
 import type { HudStage } from './hud-stage';
 import { renderHud, type Hud, type HudArgs, type HudStoryOptions } from './hud-story';
 import { renderNotice, type NoticeArgs } from './notice-story';
-import { renderStepper, type StepperArgs } from './stepper-story';
 import './preview';
 import { disposeStage } from './stage-owner';
+import { renderStepper, type StepperArgs } from './stepper-story';
 
 // These are executable lifecycle cases, deliberately outside Storybook's visual index.
 // They use the same render/stage helpers; there is no second component renderer.

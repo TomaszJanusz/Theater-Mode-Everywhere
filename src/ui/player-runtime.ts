@@ -111,6 +111,7 @@ import {
   resolveRaiseOnlyWithSubtitles,
   resolveVideoFitMode,
   VIDEO_FIT_MODES,
+  stepVideoFitMode,
   VIDEO_FIT_STORAGE_KEY,
   videoFitLabel,
   type PictureAlign,
@@ -153,7 +154,6 @@ import {
   type AudioSettingName,
   type AudioSettings
 } from '../audio-settings';
-import { stepLevel } from '../step-level';
 import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
@@ -381,7 +381,7 @@ function applyAudioSettings(settings: AudioSettings): void {
 }
 
 /** The cycle shortcuts wrap past the top level; the settings stepper holds at either end. */
-function changeAudioSettingCommand(name: AudioSettingName, direction: 1 | -1 | 'cycle'): void {
+function shiftAudioSetting(name: AudioSettingName, direction: 1 | -1 | 'cycle'): void {
   const video = sessionNativeVideo();
   const icon = audioHudIcon(name, ui().audio);
   if (!video || audioBlock(video)) {
@@ -575,10 +575,10 @@ function executeCommand(command: PlayerCommand): void {
       toggleControlsPin();
       break;
     case 'CYCLE_AUDIO':
-      changeAudioSettingCommand(command.setting, 'cycle');
+      shiftAudioSetting(command.setting, 'cycle');
       break;
     case 'STEP_AUDIO':
-      changeAudioSettingCommand(command.setting, command.direction);
+      shiftAudioSetting(command.setting, command.direction);
       break;
     case 'TOGGLE_VOLUME_BOOST':
       toggleVolumeBoostCommand();
@@ -1020,7 +1020,7 @@ function cycleVideoFit(): void {
 }
 
 function stepVideoFit(direction: 1 | -1): void {
-  changeVideoFit(current => stepLevel(VIDEO_FIT_MODES, current, direction));
+  changeVideoFit(current => stepVideoFitMode(current, direction));
 }
 
 function showCaptionHud(payload: CaptionHudPayload): void {

@@ -1,3 +1,4 @@
+import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
@@ -33,7 +34,6 @@ import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
-import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
