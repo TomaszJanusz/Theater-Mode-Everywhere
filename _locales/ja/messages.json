@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "映像の表示方法"
   },
+  "stepperPrevious": {
+    "message": "$1: 前の選択肢",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: 次の選択肢",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "オン"
   },

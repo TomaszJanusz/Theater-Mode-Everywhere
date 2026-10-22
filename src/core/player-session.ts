@@ -23,8 +23,10 @@ export type PlayerCommand =
   | { type: 'STEP_CAPTION_SIZE'; direction: 1 | -1 }
   | { type: 'CYCLE_VIDEO'; direction?: 'next' | 'prev' }
   | { type: 'CYCLE_FIT' }
+  | { type: 'STEP_FIT'; direction: 1 | -1 }
   | { type: 'CYCLE_LAYOUT' }
   | { type: 'CYCLE_AUDIO'; setting: AudioSettingName }
+  | { type: 'STEP_AUDIO'; setting: AudioSettingName; direction: 1 | -1 }
   | { type: 'TOGGLE_VOLUME_BOOST' }
   | { type: 'TOGGLE_AUTO_THEATER' }
   | { type: 'TOGGLE_HELP' }

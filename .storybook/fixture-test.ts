@@ -6,6 +6,7 @@ import { setSyncStorage } from './chrome-stub';
 import type { HudStage } from './hud-stage';
 import { renderHud, type Hud, type HudArgs, type HudStoryOptions } from './hud-story';
 import { renderNotice, type NoticeArgs } from './notice-story';
+import { renderStepper, type StepperArgs } from './stepper-story';
 import './preview';
 import { disposeStage } from './stage-owner';
 
@@ -43,6 +44,16 @@ export interface NoticeCase {
 export async function runNoticeCase(story: NoticeCase): Promise<void> {
   await prepare(story.globals);
   renderNotice({ remainingMs: 4500, ringTurn: 'uniform', progress: 0.5, ...story.args });
+  await story.play?.();
+}
+export interface StepperCase {
+  globals?: HudCase['globals'];
+  args?: Partial<StepperArgs>;
+  play?: () => Promise<void>;
+}
+export async function runStepperCase(story: StepperCase): Promise<void> {
+  await prepare(story.globals);
+  renderStepper({ count: 5, index: 2, ...story.args });
   await story.play?.();
 }
 afterEach(disposeStage);

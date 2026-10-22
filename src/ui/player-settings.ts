@@ -4,6 +4,7 @@ import type { DisposableScope } from '../core/disposable-scope';
 import { closeMenuPopover, bindMenuPopover } from './menu-popover';
 import type { PlayerChromeContext } from './runtime-context';
 import { shortcutDisplayParts } from './shortcuts';
+import { createStepper, type StepperState } from './stepper';
 
 /** Close the settings panel, optionally returning keyboard focus to its trigger. */
 export function closePlayerSettings(root: ParentNode, restoreFocus = false): boolean {
@@ -92,7 +93,7 @@ export function createPlayerSettings(
     scope,
     onBeforeOpen: () => options?.onBeforeOpen?.(),
     // A blocked audio section hides its rows, which cannot take focus.
-    firstFocus: () => [...panel.querySelectorAll('button')].find(row => !row.closest('[hidden]')),
+    firstFocus: () => [...panel.querySelectorAll('button:not(:disabled)')].find(row => !row.closest('[hidden]')) as HTMLElement | undefined,
     onKeyboardOpen: () => ctx.actions.showToolbar(),
     onChange: () => ctx.actions.updateCaptionDock()
   });
@@ -128,8 +129,22 @@ export function createPlayerSettings(
   }
 
   /** Audio rows precede player actions. Shortcuts stay the last action; footer rows close the panel. */
-  function addRow(row: HTMLButtonElement, label: string, section: 'player' | 'audio' | 'footer' | 'shortcuts' = 'player', newItem?: NewFeatureId) {
+  type RowSection = 'player' | 'audio' | 'footer' | 'shortcuts';
+  function addRow(row: HTMLButtonElement, label: string, section: RowSection = 'player', newItem?: NewFeatureId) {
     row.type = 'button';
+    return mountRow(row, label, section, { newItem });
+  }
+
+  /**
+   * A row for a setting with several ordered options: arrows step it down and up without wrapping.
+   * Not a button, so the arrows inside it stay valid, focusable controls.
+   */
+  function addStepperRow(row: HTMLElement, label: string, section: RowSection, onStep: (direction: 1 | -1) => void) {
+    row.setAttribute('role', 'group');
+    return mountRow(row, label, section, { onStep });
+  }
+
+  function mountRow(row: HTMLElement, label: string, section: RowSection, { newItem, onStep }: { newItem?: NewFeatureId; onStep?: (direction: 1 | -1) => void }) {
     row.setAttribute('aria-label', label);
     row.classList.add('theater-settings-row');
     const icon = document.createElement('span');
@@ -150,7 +165,14 @@ export function createPlayerSettings(
     main.append(text, keys);
     const detail = document.createElement('span');
     detail.className = 'theater-settings-detail';
-    row.append(main, detail);
+    const stepper = onStep && createStepper({
+      scope,
+      previousLabel: ctx.t('stepperPrevious', label),
+      nextLabel: ctx.t('stepperNext', label),
+      onStep
+    });
+    if (stepper) row.classList.add('theater-settings-stepper-row');
+    row.append(main, stepper?.element ?? detail);
     if (section === 'audio') {
       audioBody.append(row);
       audioSection.hidden = false;
@@ -166,20 +188,29 @@ export function createPlayerSettings(
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
     if (newItem) highlight(row, icon, label, newItem, true);
+    function setShortcut(shortcut: string, name: string) {
+      const item = newItems.get(row);
+      if (item) item.label = name;
+      row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
+      keys.replaceChildren();
+      shortcutDisplayParts(shortcut).forEach((part, index) => {
+        if (index > 0) keys.append('+');
+        const key = document.createElement('kbd');
+        key.textContent = part;
+        keys.append(key);
+      });
+      if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
+      else row.removeAttribute('aria-keyshortcuts');
+    }
     return {
+      /** `shortcut` is the cycle key the row advertises; the arrows themselves are the stepper's own controls. */
+      updateStepper(shortcut: string, state: StepperState) {
+        setShortcut(shortcut, label);
+        stepper?.update(state);
+      },
       /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
       update(shortcut: string, value?: string, values: readonly string[] = []) {
-        const name = value ? `${label}: ${value}` : label;
-        const item = newItems.get(row);
-        if (item) item.label = name;
-        row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
-        keys.replaceChildren();
-        shortcutDisplayParts(shortcut).forEach((part, index) => {
-          if (index > 0) keys.append('+');
-          const key = document.createElement('kbd');
-          key.textContent = part;
-          keys.append(key);
-        });
+        setShortcut(shortcut, value ? `${label}: ${value}` : label);
         detail.replaceChildren();
         if (value) {
           const current = document.createElement('span');
@@ -194,8 +225,6 @@ export function createPlayerSettings(
             detail.append(reserve);
           }
         }
-        if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
-        else row.removeAttribute('aria-keyshortcuts');
       }
     };
   }
@@ -209,5 +238,5 @@ export function createPlayerSettings(
     audioNote.textContent = reason;
     if (newItems.size) refreshHighlights(true);
   }
-  return { button, panel, container, close, addRow, setAudioNote };
+  return { button, panel, container, close, addRow, addStepperRow, setAudioNote };
 }

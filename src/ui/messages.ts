@@ -55,6 +55,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   autoEnterTheaterOn: "On",
   autoEnterTheaterOff: "Off",
   videoFitLabel: "Video fit",
+  stepperPrevious: "$1: previous option",
+  stepperNext: "$1: next option",
   pictureAlignLabel: 'Layout',
   pictureAlignCenter: 'Centered',
   pictureAlignTop: 'Raised',

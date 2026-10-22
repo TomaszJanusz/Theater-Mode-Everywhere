@@ -1,3 +1,5 @@
+import { stepLevel } from './step-level';
+
 export const VOICE_LEVELS = ['off', 'light', 'strong'] as const;
 export const LEVELING_LEVELS = ['off', 'light', 'strong'] as const;
 const ALL_BASS_LEVELS = ['less', 'original', 'more', 'moar', 'moaaarr'] as const;
@@ -48,11 +50,6 @@ const LEVEL_LABEL_KEYS: { [N in AudioSettingName]: Record<AudioSettings[N], stri
   leveling: { off: 'volumeLevelingOff', light: 'volumeLevelingLight', strong: 'volumeLevelingStrong' },
   bass: { less: 'bassLess', original: 'bassOriginal', more: 'bassMore', moar: 'bassMoar', moaaarr: 'bassMoaaarr' }
 };
-/** Every label a row can show, so a menu can reserve room for the widest. */
-export function audioLevelLabelKeys(name: AudioSettingName): string[] {
-  return Object.values(LEVEL_LABEL_KEYS[name]);
-}
-
 /** Why audio settings cannot apply to a video, with the message that explains it. */
 export type AudioBlock = 'protected' | 'refused';
 export const AUDIO_BLOCK_KEYS: Record<AudioBlock, string> = {
@@ -112,6 +109,24 @@ export function cycleAudioSetting(settings: AudioSettings, name: AudioSettingNam
     case 'voice': return { ...settings, voice: cycle(VOICE_LEVELS, settings.voice) };
     case 'leveling': return { ...settings, leveling: cycle(LEVELING_LEVELS, settings.leveling) };
     case 'bass': return { ...settings, bass: cycle(BASS_LEVELS, settings.bass) };
+  }
+}
+
+/** The ordered levels a setting offers, for a stepper that shows every option. */
+export function audioLevels(name: AudioSettingName): readonly AudioSettings[AudioSettingName][] {
+  switch (name) {
+    case 'voice': return VOICE_LEVELS;
+    case 'leveling': return LEVELING_LEVELS;
+    case 'bass': return BASS_LEVELS;
+  }
+}
+
+/** One level down or up, held at either end; the cycle shortcuts keep wrapping with `cycleAudioSetting`. */
+export function stepAudioSetting(settings: AudioSettings, name: AudioSettingName, direction: 1 | -1): AudioSettings {
+  switch (name) {
+    case 'voice': return { ...settings, voice: stepLevel(VOICE_LEVELS, settings.voice, direction) };
+    case 'leveling': return { ...settings, leveling: stepLevel(LEVELING_LEVELS, settings.leveling, direction) };
+    case 'bass': return { ...settings, bass: stepLevel(BASS_LEVELS, settings.bass, direction) };
   }
 }
 

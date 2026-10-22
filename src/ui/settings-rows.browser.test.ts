@@ -303,10 +303,19 @@ describe('Settings row vertical alignment', () => {
               icon: centre(row.querySelector('.theater-settings-row-icon svg')),
               label: centre(row.querySelector('.theater-settings-label')),
               keys: [...row.querySelectorAll('kbd')].map(centre),
-              detail: centre(row.querySelector('.theater-settings-detail > :not(.theater-settings-reserve)'))
+              detail: centre(row.querySelector('.theater-settings-detail > :not(.theater-settings-reserve), .theater-stepper-value')),
+              stepper: row.querySelector('.theater-stepper') ? (({ left, width }) => ({ left, width, overflow: row.scrollWidth - row.clientWidth }))(row.querySelector('.theater-stepper')!.getBoundingClientRect()) : null
             }));
           }, english);
           assert.ok(rows.length >= 6, `${engine}: rows found`);
+          // Stepper rows share one fixed value column, so their arrows line up whatever the label or value says.
+          const steppers = rows.filter(row => row.stepper);
+          assert.ok(steppers.length >= 3, `${engine}: stepper rows found`);
+          for (const row of steppers) {
+            assert.equal(Math.round(row.stepper!.left), Math.round(steppers[0].stepper!.left), `${engine} ${row.row}: stepper column moved`);
+            assert.equal(Math.round(row.stepper!.width), Math.round(steppers[0].stepper!.width), `${engine} ${row.row}: stepper width changed`);
+            assert.ok(row.stepper!.overflow <= 0, `${engine} ${row.row}: stepper overflows its row`);
+          }
           for (const row of rows) {
             if (row.icon === null || row.label === null) continue;
             assert.ok(Math.abs(row.icon - row.label) <= 0.5, `${engine} ${scale}x ${row.row}: icon centre ${row.icon} vs label centre ${row.label}`);

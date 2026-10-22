@@ -21,10 +21,14 @@ export function resolveVideoFitMode(value: unknown): VideoFitMode {
     : DEFAULT_VIDEO_FIT;
 }
 
+export const VIDEO_FIT_LABEL_KEYS: Record<VideoFitMode, string> = {
+  contain: 'videoFitContain',
+  cover: 'videoFitCover',
+  fill: 'videoFitFill'
+};
+
 export function videoFitLabel(mode: VideoFitMode): string {
-  if (mode === 'cover') return t('videoFitCover');
-  if (mode === 'fill') return t('videoFitFill');
-  return t('videoFitContain');
+  return t(VIDEO_FIT_LABEL_KEYS[mode]);
 }
 
 export const PICTURE_ALIGN_STORAGE_KEY = 'pictureAlign';

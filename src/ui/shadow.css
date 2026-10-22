@@ -3158,3 +3158,84 @@ button.theater-time-end:hover {
   66% { transform: translate(0, -0.1px); }
 }
 :host([data-motion="reduced"]) .bass-icon :is(.bass-hop, .bass-cone, .bass-body) { animation: none !important; }
+
+/* Stepper rows (Cyberpunk 2077-inspired): the label column flexes, the value column is a fixed width so
+   every row's arrows line up; a row of segments under the value shows how many options exist. */
+.theater-settings-stepper-row {
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+}
+.theater-stepper {
+  --theater-stepper-width: 128px;
+  flex: 0 0 var(--theater-stepper-width) !important;
+  inline-size: var(--theater-stepper-width) !important;
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) 24px !important;
+  column-gap: 2px !important;
+  align-items: center !important;
+  position: relative !important;
+  color: var(--appearance-ink, #cbd5e1) !important;
+}
+.theater-stepper-value {
+  grid-area: 1 / 2 !important;
+  overflow: hidden !important;
+  text-align: center !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.theater-stepper-btn {
+  grid-row: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  background: none !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  color: inherit !important;
+  cursor: pointer !important;
+}
+.theater-stepper-btn[data-direction="-1"] { grid-column: 1 !important; }
+.theater-stepper-btn[data-direction="1"] { grid-column: 3 !important; }
+.theater-stepper-btn:hover:not(:disabled) {
+  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)) !important;
+  color: var(--accent-color, #ffffff) !important;
+}
+.theater-stepper-btn:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: -2px !important;
+}
+.theater-stepper-btn:disabled {
+  color: var(--appearance-muted, #94a3b8) !important;
+  cursor: default !important;
+  opacity: 0.4 !important;
+}
+.theater-stepper-btn svg { flex: 0 0 14px !important; }
+/* Arrows and segments follow the reading direction: the lowest option sits at the start. */
+.theater-controls-wrapper[dir="rtl"] .theater-stepper-btn svg { transform: scaleX(-1) !important; }
+/* Under the value, out of the flow, so the value stays centred on the row's label. */
+.theater-stepper-segments {
+  position: absolute !important;
+  inset-inline: 26px !important;
+  top: calc(50% + 10px) !important;
+  display: flex !important;
+  gap: 2px !important;
+}
+.theater-stepper-segment {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 3px !important;
+  border-radius: 1px !important;
+  background: var(--appearance-border, rgba(255, 255, 255, 0.2)) !important;
+  transition: background-color 0.15s ease !important;
+}
+.theater-stepper-segment[data-current="true"] { background: var(--accent-color, #6366f1) !important; }
+:host([data-motion="reduced"]) .theater-stepper-segment { transition: none !important; }
+/* Bass red levels recolour the row through --accent-color; the stepper reads it like the row does. */
+.theater-settings-row[data-active="true"] .theater-stepper-value { color: var(--accent-color, #6366f1) !important; }

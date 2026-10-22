@@ -142,6 +142,7 @@ import {
   AUDIO_STORAGE_KEYS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  stepAudioSetting,
   DEFAULT_AUDIO_SETTINGS,
   isNeutralAudio,
   resolveAudioSettings,
@@ -152,6 +153,7 @@ import {
   type AudioSettingName,
   type AudioSettings
 } from '../audio-settings';
+import { stepLevel } from '../step-level';
 import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
@@ -378,14 +380,16 @@ function applyAudioSettings(settings: AudioSettings): void {
   syncAudioSettings();
 }
 
-function cycleAudioSettingCommand(name: AudioSettingName): void {
+/** The cycle shortcuts wrap past the top level; the settings stepper holds at either end. */
+function changeAudioSettingCommand(name: AudioSettingName, direction: 1 | -1 | 'cycle'): void {
   const video = sessionNativeVideo();
   const icon = audioHudIcon(name, ui().audio);
   if (!video || audioBlock(video)) {
     triggerStatusIndicator(audioBlockedMessage(video), icon);
     return;
   }
-  const next = cycleAudioSetting(ui().audio, name);
+  const next = direction === 'cycle' ? cycleAudioSetting(ui().audio, name) : stepAudioSetting(ui().audio, name, direction);
+  if (sameAudioSettings(next, ui().audio)) return;
   applyAudioSettings(next);
   triggerStatusIndicator(t(AUDIO_HUD_KEYS[name], t(audioLevelLabelKey(next, name))), audioHudIcon(name, next),
     name === 'bass' ? next.bass : undefined);
@@ -564,11 +568,17 @@ function executeCommand(command: PlayerCommand): void {
     case 'CYCLE_FIT':
       cycleVideoFit();
       break;
+    case 'STEP_FIT':
+      stepVideoFit(command.direction);
+      break;
     case 'TOGGLE_CONTROLS_PIN':
       toggleControlsPin();
       break;
     case 'CYCLE_AUDIO':
-      cycleAudioSettingCommand(command.setting);
+      changeAudioSettingCommand(command.setting, 'cycle');
+      break;
+    case 'STEP_AUDIO':
+      changeAudioSettingCommand(command.setting, command.direction);
       break;
     case 'TOGGLE_VOLUME_BOOST':
       toggleVolumeBoostCommand();
@@ -996,13 +1006,21 @@ function cyclePictureLayout(): void {
   }
 }
 
-function cycleVideoFit(): void {
+function changeVideoFit(next: (current: VideoFitMode) => VideoFitMode): void {
   const surface = sessionSurface();
   if (surface && !surface.capabilities.objectFit) return;
-  const currentIndex = VIDEO_FIT_MODES.indexOf(ui().videoFit);
-  const nextMode = VIDEO_FIT_MODES[(currentIndex + 1) % VIDEO_FIT_MODES.length];
+  const nextMode = next(ui().videoFit);
+  if (nextMode === ui().videoFit) return;
   persistVideoFitMode(nextMode);
   triggerStatusIndicator(videoFitLabel(nextMode), STATUS_HUD_FIT_ICON);
+}
+
+function cycleVideoFit(): void {
+  changeVideoFit(current => VIDEO_FIT_MODES[(VIDEO_FIT_MODES.indexOf(current) + 1) % VIDEO_FIT_MODES.length]);
+}
+
+function stepVideoFit(direction: 1 | -1): void {
+  changeVideoFit(current => stepLevel(VIDEO_FIT_MODES, current, direction));
 }
 
 function showCaptionHud(payload: CaptionHudPayload): void {

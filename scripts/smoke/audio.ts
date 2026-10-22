@@ -18,10 +18,10 @@ export async function assertAudioWorld(page: Page, context: BrowserContext): Pro
     await page.locator('.player-settings-btn').click();
     await page.locator('.volume-boost-btn').click();
     await page.locator('.volume-boost-btn').click();
-    await page.locator('.audio-voice-btn').click();
-    await page.locator('.audio-leveling-btn').click();
-    await page.locator('.audio-leveling-btn').click();
-    await page.locator('.audio-bass-btn').click();
+    await page.locator('.audio-voice-btn .theater-stepper-btn[data-direction="1"]').click();
+    await page.locator('.audio-leveling-btn .theater-stepper-btn[data-direction="1"]').click();
+    await page.locator('.audio-leveling-btn .theater-stepper-btn[data-direction="1"]').click();
+    await page.locator('.audio-bass-btn .theater-stepper-btn[data-direction="1"]').click();
     await page.waitForFunction(() => {
       const video = document.querySelector<HTMLVideoElement>('video#player');
       return video?.dataset.theaterVoice === 'light' && video.dataset.theaterLeveling === 'strong'

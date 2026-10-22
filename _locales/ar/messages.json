@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "ملاءمة الفيديو"
   },
+  "stepperPrevious": {
+    "message": "$1: الخيار السابق",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: الخيار التالي",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "تشغيل"
   },

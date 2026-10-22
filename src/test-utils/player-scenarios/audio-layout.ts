@@ -26,9 +26,9 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   }));
   const cycleTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string) => {
     const row = page.locator(`.audio-${name}-btn`);
-    await row.click();
+    await row.locator('.theater-stepper-btn[data-direction="1"]').click();
     await page.waitForFunction(([name, detail]) => document.getElementById('theater-everywhere-ui')?.shadowRoot
-      ?.querySelector(`.audio-${name}-btn .theater-settings-detail`)?.textContent === detail, [name, detail]);
+      ?.querySelector(`.audio-${name}-btn .theater-stepper-value`)?.textContent === detail, [name, detail]);
     await hud.filter({ hasText: `${hudLabel}: ${detail}` }).waitFor();
     if (await hud.innerText() !== `${hudLabel}: ${detail}`) fail(`${hudLabel} HUD did not confirm ${detail}.`);
     if (await shapes(hud) !== await shapes(row)) fail(`${hudLabel} HUD icon differs from its settings row.`);
@@ -41,7 +41,7 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   const audioHeading = await section.locator('.theater-settings-heading').evaluate(heading =>
     Array.from(heading.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
   if (audioHeading !== 'Audio') fail(`Audio section heading is missing: ${JSON.stringify(audioHeading)}`);
-  const details = await section.locator('.theater-settings-detail').allInnerTexts();
+  const details = await section.locator('.theater-settings-detail, .theater-stepper-value').allInnerTexts();
   if (details.join('|') !== 'Off|Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
   if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
   const slider = page.locator('.theater-volume-slider');
@@ -103,7 +103,7 @@ export async function assertAudioSettings(page: Page): Promise<void> {
       await page.keyboard.press(key);
       await page.waitForFunction(([name, before]) => document.querySelector<HTMLVideoElement>('video#player')
         ?.dataset[name === 'voice' ? 'theaterVoice' : 'theaterLeveling'] !== before, [name, before]);
-      const detail = await page.locator(`.audio-${name}-btn .theater-settings-detail`).innerText();
+      const detail = await page.locator(`.audio-${name}-btn .theater-stepper-value`).innerText();
       if (await hud.innerText() !== `${label}: ${detail}`) fail(`${label} shortcut did not confirm its new level.`);
     }
     if ((await media())[name] !== initial) fail(`${label} shortcut did not cycle through all levels.`);
@@ -254,12 +254,15 @@ export async function assertPictureLayoutFixture(page: Page): Promise<void> {
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired in a shadow input.');
   await page.evaluate(() => document.getElementById('layout-input-test')?.remove());
   if (!await row.isVisible()) await page.locator('.player-settings-btn').click();
-  const fit = page.locator('.video-fit-btn');
-  await fit.click();
+  const fitNext = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="1"]');
+  const fitPrevious = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="-1"]');
+  await fitNext.click();
   await row.click();
   await waitPosition('50% 50%');
-  await fit.click();
+  await fitNext.click();
   await waitPosition('50% 50%');
-  await fit.click();
+  // The stepper does not wrap: back to Fit takes two steps down.
+  await fitPrevious.click();
+  await fitPrevious.click();
   await waitPosition('50% 0%');
 }
