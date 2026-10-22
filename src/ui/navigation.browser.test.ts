@@ -48,6 +48,14 @@ const focused = (page: Page) => page.evaluate(() => {
 });
 const barVisible = (page: Page) => page.evaluate(() => Boolean(document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-controls-wrapper.visible')));
 const pageKeys = (page: Page) => page.evaluate(() => (window as unknown as { pageKeys: Array<{ code: string; prevented: boolean }> }).pageKeys.splice(0));
+const menuOpen = (page: Page) => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-settings-container')!.classList.contains('is-open'));
+/** What the focused row's arrows currently show: the key each carries, and whether a chevron still paints. */
+const arrowKeys = (page: Page) => page.evaluate(() => {
+  const arrows = [...document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelectorAll<HTMLElement>('.video-fit-btn .theater-stepper-btn')]
+    .sort((first, second) => first.getBoundingClientRect().left - second.getBoundingClientRect().left);
+  const shown = (arrow: HTMLElement) => getComputedStyle(arrow, '::after').content.replaceAll('"', '');
+  return { left: shown(arrows[0]), right: shown(arrows[1]), chevrons: arrows.some(arrow => getComputedStyle(arrow.querySelector('svg')!).display !== 'none') };
+});
 const fitValue = (page: Page) => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.video-fit-btn .theater-stepper-value')!.textContent);
 
 describe('player bar navigation', () => {
@@ -78,16 +86,21 @@ describe('player bar navigation', () => {
       await press(page, QWERTY.d);
       assert.ok((await focused(page))?.classes.includes('player-settings-btn'), 'D moves back');
 
-      // Up from the gear opens its menu and focuses its first row; S moves down inside it.
+      // Up from the gear opens its menu on the row nearest the bar; S past that row closes it onto the gear.
       await press(page, QWERTY.w);
-      const first = await focused(page);
-      assert.ok(first?.inMenu, 'W opens the menu');
+      const bottom = await focused(page);
+      assert.ok(bottom?.inMenu && bottom.classes.includes('extension-settings-btn'), 'W opens the menu on its bottom row');
       await press(page, QWERTY.s);
-      assert.notDeepEqual(await focused(page), first, 'S moves down inside the menu');
+      assert.ok((await focused(page))?.classes.includes('player-settings-btn'), 'S below the last row closes the menu onto the gear');
+      assert.equal(await menuOpen(page), false);
+      await press(page, QWERTY.w);
+      await press(page, QWERTY.w);
+      assert.notEqual((await focused(page))?.classes.join(' '), bottom.classes.join(' '), 'W climbs inside the menu');
 
-      // Down to the Video fit row: D raises, A lowers, neither wraps.
-      for (let step = 0; step < 12 && !(await focused(page))?.row.includes('video-fit-btn'); step++) await press(page, QWERTY.s);
-      assert.ok((await focused(page))?.row.includes('video-fit-btn'), 'S reaches the Video fit row');
+      // Up to the Video fit row: D raises, A lowers, neither wraps.
+      for (let step = 0; step < 12 && !(await focused(page))?.row.includes('video-fit-btn'); step++) await press(page, QWERTY.w);
+      assert.ok((await focused(page))?.row.includes('video-fit-btn'), 'W reaches the Video fit row');
+      assert.deepEqual(await arrowKeys(page), { left: 'A', right: 'D', chevrons: false }, 'the focused stepper row shows its keys instead of arrows');
       const start = await fitValue(page);
       await press(page, QWERTY.a);
       assert.equal(await fitValue(page), start, 'A at the first option changes nothing');

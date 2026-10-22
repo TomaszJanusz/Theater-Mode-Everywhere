@@ -45,6 +45,11 @@ export function createStepper(options: StepperOptions): {
   update: (state: StepperState) => void;
   /** Nudge in the direction a press could not go; called for a blocked step. */
   bump: (direction: 1 | -1) => void;
+  /**
+   * The single keys that step the row by screen side (e.g. A and D). While the row has keyboard focus the
+   * arrows read as these keys. Unless both sides have one, the chevrons stay.
+   */
+  setKeys: (left: string | undefined, right: string | undefined) => void;
 } {
   const element = document.createElement('span');
   element.className = 'theater-stepper';
@@ -106,6 +111,18 @@ export function createStepper(options: StepperOptions): {
   return {
     element,
     bump,
+    setKeys(left, right) {
+      // The right-to-left layout mirrors the arrows, so each carries the key for both reading directions.
+      for (const [button, ltr, rtl] of [[previous, left, right], [next, right, left]] as const) {
+        if (left && right) {
+          button.dataset.key = ltr;
+          button.dataset.keyRtl = rtl;
+        } else {
+          delete button.dataset.key;
+          delete button.dataset.keyRtl;
+        }
+      }
+    },
     update({ value: text, index, count }) {
       const changed = shown && shown.index !== index;
       const step = shown ? Math.sign(index - shown.index) : 0;

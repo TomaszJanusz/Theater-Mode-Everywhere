@@ -145,11 +145,14 @@ export function createNavigation(ctx: PlayerChromeContext) {
     return true;
   }
 
-  /** A trigger with a menu opens it the way a keyboard click does; a slider button reaches its slider. */
+  /** A trigger with a menu opens it as a keyboard click does and enters at its bottom row, the one nearest the
+   *  bar (menus open upward); a slider button reaches its slider. */
   function enter(element: HTMLElement): boolean {
     const container = element.parentElement;
     if (container?.classList.contains('theater-menu') && container.querySelector(':scope > button') === element) {
       element.click();
+      // The trigger precedes its panel, so the last control in the host is the panel's bottom row.
+      focusElement(focusable(container).at(-1) ?? element, 'up');
       return true;
     }
     const slider = container?.matches('.theater-volume-container, .theater-speed-container')
@@ -181,7 +184,8 @@ export function createNavigation(ctx: PlayerChromeContext) {
     }
     const target = toTarget(element, focusable(panel), direction);
     if (target) focusElement(target, direction);
-    else if (direction === 'up' && host && closeMenuPopover(host, true)) ctx.actions.updateCaptionDock();
+    // Past the bottom row is back toward the bar: close the menu onto its trigger. The top row is a dead end.
+    else if (direction === 'down' && host && closeMenuPopover(host, true)) ctx.actions.updateCaptionDock();
   }
 
   function moveInSlider(slider: HTMLInputElement, direction: NavigationDirection): void {
