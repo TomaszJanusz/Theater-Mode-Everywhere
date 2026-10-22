@@ -120,7 +120,7 @@ function altLetter(event: KeyboardEvent): string | null {
  */
 export function shortcutFromEvent(event: KeyboardEvent, physical = false): string {
   if (event.isComposing || ['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'Dead', 'Unidentified', 'Process'].includes(event.key)) return '';
-  const key = (physical && /^(?:Key[A-Z]|Digit[0-9])$/.test(event.code) ? event.code : null) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
+  const key = (physical && /^(?:Key[A-Z]|Digit\d)$/.test(event.code) ? event.code : null) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
     : event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
     event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
@@ -179,6 +179,7 @@ export async function loadKeyboardLayout(): Promise<void> {
     layoutNames.clear();
     map?.forEach((value, code) => layoutNames.set(code, value));
   } catch {
+    layoutNames.clear();
     // Not allowed in this context (for example a cross-origin frame): positions keep their default names.
   }
 }
@@ -194,7 +195,7 @@ export function shortcutDisplayParts(shortcutStr: string): string[] {
   if (!shortcutStr) return [];
   const parts = shortcutStr.split('+');
   let mainKey = parts.pop() || '+';
-  if (/^(?:Key[A-Z]|Digit[0-9])$/.test(mainKey)) mainKey = physicalKeyName(mainKey);
+  if (/^(?:Key[A-Z]|Digit\d)$/.test(mainKey)) mainKey = physicalKeyName(mainKey);
   return [...parts.filter(Boolean), mainKey];
 }
 

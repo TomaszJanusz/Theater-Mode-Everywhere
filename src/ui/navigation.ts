@@ -1,5 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
 import { closeMenuPopover } from './menu-popover';
+import { isElementMotionReduced } from './spinner-exit';
 import type { PlayerChromeContext } from './runtime-context';
 import { matchesShortcut, NAVIGATION_DIRECTIONS, NAVIGATION_SHORTCUTS, type NavigationDirection, type Shortcuts } from './shortcuts';
 
@@ -34,12 +35,30 @@ export function nextFocusIndex(from: FocusRect, candidates: readonly FocusRect[]
     eligible.push({ index, along: Math.abs(along), across: Math.abs(across) });
   });
   if (!eligible.length) return -1;
-  if (horizontal) return eligible.reduce((best, entry) => (entry.along < best.along ? entry : best)).index;
   const nearest = Math.min(...eligible.map(entry => entry.along));
-  return eligible
-    .filter(entry => entry.along <= nearest + SAME_BAND_PX)
-    .reduce((best, entry) => (entry.across < best.across ? entry : best)).index;
+  // Sideways the nearest wins; vertically the nearest row does, and within it the item most in line.
+  const pool = horizontal ? eligible : eligible.filter(entry => entry.along <= nearest + SAME_BAND_PX);
+  const key = horizontal ? 'along' : 'across';
+  return pool.reduce((best, entry) => (entry[key] < best[key] ? entry : best), pool[0]).index;
 }
+
+/** On a stepper row the two arrows are the row's value: the one on that side of the row is the step. */
+function stepperArrow(element: HTMLElement, direction: NavigationDirection): HTMLButtonElement | undefined {
+  const arrows = [...(element.closest('.theater-settings-stepper-row')?.querySelectorAll<HTMLButtonElement>('.theater-stepper-btn') ?? [])]
+    .sort((first, second) => first.getBoundingClientRect().left - second.getBoundingClientRect().left);
+  return direction === 'left' ? arrows[0] : arrows.at(-1);
+}
+
+function toTarget(from: HTMLElement, candidates: HTMLElement[], direction: NavigationDirection): HTMLElement | null {
+  const index = nextFocusIndex(rectOf(from), candidates.map(rectOf), direction);
+  return index < 0 ? null : candidates[index];
+}
+
+/** The bar's own curve and a short run: the arriving element settles in from the side focus came from. */
+const SETTLE_MS = 130;
+const SETTLE_PX = 4;
+const SETTLE_EASE = 'cubic-bezier(0.25, 1, 0.5, 1)';
+const SETTLE_OFFSETS: Record<NavigationDirection, [number, number]> = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] };
 
 const FOCUSABLE = 'button, input, [tabindex]';
 const MENU_PANEL = '.theater-settings-menu, .theater-cc-menu';
@@ -69,6 +88,7 @@ function focusable(root: ParentNode, exclude?: string): HTMLElement[] {
  */
 export function createNavigation(ctx: PlayerChromeContext) {
   let session: DisposableScope | null = null;
+  let settling: Animation | null = null;
 
   const bar = () => ctx.queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
   const focusedIn = (container: HTMLElement): HTMLElement | null => {
@@ -76,14 +96,38 @@ export function createNavigation(ctx: PlayerChromeContext) {
     return active instanceof HTMLElement && container.contains(active) ? active : null;
   };
 
+  function cancelSettle(): void {
+    settling?.cancel();
+    settling = null;
+  }
   function end(): void {
+    cancelSettle();
     session?.dispose();
     session = null;
   }
 
-  function focusElement(element: HTMLElement): void {
+  /** Focus moves at once; the settle is only paint (transform/opacity), restarts on a quicker move and yields to reduced motion. */
+  function focusElement(element: HTMLElement, direction?: NavigationDirection): void {
     ctx.refs.toolbarKeyboardInteractionActive = true;
     element.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
+    cancelSettle();
+    if (isElementMotionReduced(element)) return;
+    const [x, y] = direction ? SETTLE_OFFSETS[direction] : [0, 0];
+    const animation = element.animate([
+      { translate: `${x * SETTLE_PX}px ${y * SETTLE_PX}px`, scale: direction ? 1 : 0.94, opacity: 0.6 },
+      { translate: '0 0', scale: 1, opacity: 1 }
+    ], { duration: SETTLE_MS, easing: SETTLE_EASE });
+    settling = animation;
+    const done = () => { if (settling === animation) settling = null; };
+    animation.addEventListener('finish', done);
+    animation.addEventListener('cancel', done);
+  }
+
+  /** Blurs the control itself (a host blur does not reliably reach focus inside the shadow root) and hands focus back to the page. */
+  function leaveBar(element: HTMLElement): void {
+    end();
+    element.blur();
+    ctx.actions.focusTheaterPage();
   }
 
   function begin(): boolean {
@@ -103,11 +147,6 @@ export function createNavigation(ctx: PlayerChromeContext) {
     return true;
   }
 
-  function toTarget(from: HTMLElement, candidates: HTMLElement[], direction: NavigationDirection): HTMLElement | null {
-    const index = nextFocusIndex(rectOf(from), candidates.map(rectOf), direction);
-    return index < 0 ? null : candidates[index];
-  }
-
   /** A trigger with a menu opens it the way a keyboard click does; a slider button reaches its slider. */
   function enter(element: HTMLElement): boolean {
     const container = element.parentElement;
@@ -118,7 +157,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
     const slider = container?.matches('.theater-volume-container, .theater-speed-container')
       ? container.querySelector<HTMLInputElement>('input[type="range"]') : null;
     if (slider && element.tagName === 'BUTTON') {
-      focusElement(slider);
+      focusElement(slider, 'up');
       return true;
     }
     return false;
@@ -127,11 +166,10 @@ export function createNavigation(ctx: PlayerChromeContext) {
   function moveInBar(wrapper: HTMLElement, element: HTMLElement, direction: NavigationDirection): void {
     if (direction === 'up' && enter(element)) return;
     const target = toTarget(element, focusable(wrapper, `${MENU_PANEL}, ${SLIDER_PANEL}`), direction);
-    if (target) focusElement(target);
+    if (target) focusElement(target, direction);
     else if (direction === 'down') {
       // Nothing below the bar's last row: put the bar away and hand the keys back to the player.
-      end();
-      ctx.actions.focusTheaterPage();
+      leaveBar(element);
       ctx.actions.hideToolbar();
     }
   }
@@ -139,22 +177,19 @@ export function createNavigation(ctx: PlayerChromeContext) {
   function moveInMenu(panel: HTMLElement, element: HTMLElement, direction: NavigationDirection): void {
     const host = panel.closest<HTMLElement>('.theater-menu');
     if (direction === 'left' || direction === 'right') {
-      // On a stepper row the two arrows are the row's value: the one in that direction is the step.
-      const arrows = [...(element.closest('.theater-settings-stepper-row')?.querySelectorAll<HTMLButtonElement>('.theater-stepper-btn') ?? [])]
-        .sort((first, second) => first.getBoundingClientRect().left - second.getBoundingClientRect().left);
-      const arrow = direction === 'left' ? arrows[0] : arrows.at(-1);
-      if (arrow && !arrow.disabled) arrow.click();
+      // A blocked end is still a press: the stepper answers with its nudge rather than staying silent.
+      stepperArrow(element, direction)?.click();
       return;
     }
     const target = toTarget(element, focusable(panel), direction);
-    if (target) focusElement(target);
+    if (target) focusElement(target, direction);
     else if (direction === 'up' && host && closeMenuPopover(host, true)) ctx.actions.updateCaptionDock();
   }
 
   function moveInSlider(slider: HTMLInputElement, direction: NavigationDirection): void {
     if (direction === 'down') {
       const trigger = slider.closest('.theater-volume-container, .theater-speed-container')?.querySelector<HTMLElement>('button');
-      if (trigger) focusElement(trigger);
+      if (trigger) focusElement(trigger, 'down');
     } else if (direction !== 'up') {
       if (direction === 'left') slider.stepDown();
       else slider.stepUp();
@@ -184,9 +219,9 @@ export function createNavigation(ctx: PlayerChromeContext) {
   /** Escape ends the mode from the bar (a menu's Escape closes the menu first); returns whether it did. */
   function handleEscape(): boolean {
     const wrapper = bar();
-    if (!session || !wrapper || !focusedIn(wrapper)) return false;
-    end();
-    ctx.actions.focusTheaterPage();
+    const element = session && wrapper ? focusedIn(wrapper) : null;
+    if (!element) return false;
+    leaveBar(element);
     ctx.actions.scheduleToolbarHide();
     return true;
   }
