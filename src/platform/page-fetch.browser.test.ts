@@ -1,12 +1,15 @@
-import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { it } from 'node:test';
+
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { selectTestEngines } from '../test-utils/test-engines';
 
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
@@ -17,16 +20,19 @@ const bundle = esbuild.buildSync({
     export { requestPageFetch } from './media-features/probe';
     export { fetchPageMedia } from './platform/page-fetch';
     export { createWorldMessage } from './protocol/world-messages';
-    export { readCachedTimedtextBody } from './providers/youtube/main';`,
+    export { readCachedTimedtextBody } from './providers/youtube/main';
+    export { readBoundedBytes } from './platform/bounded-body';
+    export { readPageResponseBytes } from './platform/page-body';`,
     resolveDir: path.resolve(new URL('..', import.meta.url).pathname), loader: 'ts' },
   bundle: true, write: false, format: 'iife', globalName: 'BridgeTest', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
+  const shared = sharedTestBrowser(engine);
   it(`${engine.name()}: private replies reject window forgeries and close on timeout`, { timeout: 30_000 }, async t => {
     if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const context = await shared.newContext(t);
+    const page = await context.newPage();
     await page.route('**/*', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Fixture</title>' }));
     await page.goto('https://www.patreon.com/posts/123');
     await page.addScriptTag({ content: bundle });
@@ -73,8 +79,8 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
 
   it(`${engine.name()}: every provider rejects off-allowlist redirects before consuming the body`, { timeout: 30_000 }, async t => {
     if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const context = await shared.newContext(t);
+    const page = await context.newPage();
     await page.route('https://example.com/', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Fixture</title>' }));
     await page.goto('https://example.com');
     await page.addScriptTag({ content: bundle });
@@ -113,8 +119,8 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
 
   it(`${engine.name()}: timedtext harvest accepts a child and ignores self, null and unrelated sources`, { timeout: 30_000 }, async t => {
     if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await engine.launch(); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const context = await shared.newContext(t);
+    const page = await context.newPage();
     await page.route('**/*', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><iframe src="/child"></iframe>' }));
     await page.goto('https://www.youtube.com/watch?v=abc');
     await page.addScriptTag({ content: bundle });
@@ -134,6 +140,67 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
     const report = result as { rejected: string | null; accepted: string | null; body: string };
     assert.equal(report.rejected, null);
     assert.equal(report.accepted, report.body);
+  });
+
+  it(`${engine.name()}: abandoning synthetic and HTTP fetch clones leaves the original readable`, { timeout: 30_000 }, async t => {
+    if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
+    const bytes = Buffer.alloc(512 * 1024, 65);
+    const server = createServer((req, res) => {
+      if (req.url === '/redirect') { res.writeHead(302, { location: '/body' }); res.end(); }
+      else if (req.url === '/body') { res.writeHead(200, { 'content-type': 'application/octet-stream' }); res.end(bytes); }
+      else { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<!doctype html><title>Fixture</title>'); }
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    t.after(() => { server.closeAllConnections(); server.close(); });
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const context = await shared.newContext(t);
+    const page = await context.newPage();
+    await page.goto(`http://127.0.0.1:${address.port}`);
+    await page.addScriptTag({ content: bundle });
+    const result = await page.evaluate(`(async () => {
+      const results = [];
+      for (const response of [new Response('abcdefghijk'), await fetch('/redirect')]) {
+        const clone = response.clone();
+        const bounded = await BridgeTest.readBoundedBytes(clone, 4);
+        // This line is reached before the original starts reading: awaiting the
+        // tee branch's cancel promise would deadlock here in both browsers.
+        const original = await response.text();
+        results.push({bounded, length:original.length, valid:/^A+$/.test(original) || original === 'abcdefghijk', redirected:response.redirected});
+      }
+      return results;
+    })()`);
+    assert.deepEqual(result, [
+      { bounded: null, length: 11, valid: true, redirected: false },
+      { bounded: null, length: bytes.length, valid: true, redirected: true }
+    ]);
+  });
+
+  it(`${engine.name()}: cancels page reads on navigation/abort and rejects a changed URL on continuation`, { timeout: 30_000 }, async t => {
+    if (!existsSync(engine.executablePath())) { t.skip('Browser not installed'); return; }
+    const context = await shared.newContext(t);
+    const page = await context.newPage();
+    await page.route('**/*', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html>' }));
+    await page.goto('https://fixture.example/first');
+    await page.addScriptTag({ content: bundle });
+    for (const change of [
+      `window.dispatchEvent(new Event('pagehide'))`,
+      `history.pushState(null, '', '/next'); window.dispatchEvent(new PopStateEvent('popstate'))`,
+      `window.dispatchEvent(new Event('yt-navigate-start'))`,
+      `document.dispatchEvent(new Event('yt-navigate-start'))`,
+      `controller.abort()`,
+      // No navigation event: identity must still be rechecked on continuation.
+      `history.replaceState(null, '', '/replaced'); deliver.enqueue(new Uint8Array(1))`
+    ]) {
+      await page.evaluate(`history.replaceState(null, '', '/first')`);
+      assert.deepEqual(await page.evaluate(`(async () => {
+        const controller = new AbortController(); let cancelled = 0, deliver;
+        const body = new ReadableStream({start(c) {deliver = c;}, cancel() {cancelled++;}});
+        const result = BridgeTest.readPageResponseBytes({body}, 8, controller.signal);
+        ${change};
+        return {result:await result, cancelled, locked:body.locked};
+      })()`), { result: null, cancelled: 1, locked: false });
+    }
   });
 }
 

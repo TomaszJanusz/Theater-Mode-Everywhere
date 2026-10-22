@@ -41,10 +41,6 @@
     "launch": 1,
     "esbuild": 1
   },
-  "src/platform/bounded-body.browser.test.ts": {
-    "launch": 2,
-    "esbuild": 1
-  },
   "src/platform/media-audio-runtime.browser.test.ts": {
     "launch": 7,
     "esbuild": 1
@@ -54,7 +50,6 @@
     "esbuild": 1
   },
   "src/platform/page-fetch.browser.test.ts": {
-    "launch": 3,
     "esbuild": 1
   },
   "src/playlist-nav.test.ts": {

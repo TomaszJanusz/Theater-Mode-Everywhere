@@ -1159,11 +1159,6 @@
       "count": 1
     }
   },
-  "src/platform/bounded-body.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/platform/bounded-body.test.ts": {
     "import/order": {
       "count": 1
@@ -1241,11 +1236,6 @@
   "src/platform/network-harvest.browser.test.ts": {
     "import/order": {
       "count": 7
-    }
-  },
-  "src/platform/page-fetch.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "src/platform/parent-origin.test.ts": {
