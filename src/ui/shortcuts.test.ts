@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createShortcutEditor } from '../../options/shortcut-editor';
 import { createShortcutUpdateQueue, readShortcutUpdate } from './shortcut-updates';
-import { assignShortcut, defaultShortcuts, isReservedShortcut, matchesShortcut, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayParts, withShortcutDefaults } from './shortcuts';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, matchesShortcut, NAVIGATION_SHORTCUTS, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayParts, withShortcutDefaults } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -338,6 +338,86 @@ describe('shortcut editor paint', () => {
     // Pages dispatch plain `Event('keydown')` objects; MAIN-world capture listeners match them.
     for (const event of [new Event('keydown'), { key: 'a' }, { code: 'KeyA' }, {}]) {
       assert.equal(matchesShortcut(event as KeyboardEvent, 'Ctrl+A'), false);
+    }
+  });
+});
+
+describe('navigation shortcuts', () => {
+  const [up, left, down, right] = NAVIGATION_SHORTCUTS;
+  // What each layout prints on a position: AZERTY puts Z, Q, S, D on the W, A, S, D positions and W on Z.
+  const azerty = { w: key({ key: 'z', code: 'KeyW' }), a: key({ key: 'q', code: 'KeyA' }), s: key({ key: 's', code: 'KeyS' }), d: key({ key: 'd', code: 'KeyD' }) };
+
+  it('is one group of four position keys, W A S D by default', () => {
+    assert.deepEqual(NAVIGATION_SHORTCUTS.map(name => defaultShortcuts[name]), ['KeyW', 'KeyA', 'KeyS', 'KeyD']);
+    assert.equal(NAVIGATION_SHORTCUTS.every(isNavigationShortcut), true);
+    assert.equal(isNavigationShortcut('cycleBass'), false);
+  });
+
+  it('matches by position, so the cluster follows the keyboard layout', () => {
+    for (const [action, event] of [[up, azerty.w], [left, azerty.a], [down, azerty.s], [right, azerty.d]] as const) {
+      assert.equal(matchesShortcut(event, defaultShortcuts[action]), true, `${action} on AZERTY`);
+    }
+    // QWERTZ swaps only Y and Z: the printed Z/Y sit elsewhere and are not navigation.
+    assert.equal(matchesShortcut(key({ key: 'z', code: 'KeyY' }), defaultShortcuts[up]), false);
+    assert.equal(matchesShortcut(key({ key: 'y', code: 'KeyZ' }), defaultShortcuts[up]), false);
+    assert.equal(matchesShortcut(key({ key: 'w', code: 'KeyW' }), defaultShortcuts[up]), true);
+    // The AZERTY Z position prints W but is not the W position.
+    assert.equal(matchesShortcut(key({ key: 'w', code: 'KeyZ' }), defaultShortcuts[up]), false);
+  });
+
+  it('requires exactly the bare key', () => {
+    for (const modifier of ['shiftKey', 'altKey', 'ctrlKey', 'metaKey']) {
+      assert.equal(matchesShortcut(key({ key: 'w', code: 'KeyW', [modifier]: true }), defaultShortcuts[up]), false, modifier);
+    }
+  });
+
+  it('is added to older settings without taking a key the user already uses', () => {
+    const migrated = withShortcutDefaults({ toggleMute: 'A', cycle: 'Shift+W' });
+    assert.equal(migrated.navigateLeft, '');
+    assert.equal(migrated.navigateUp, 'KeyW');
+    assert.equal(migrated.navigateDown, 'KeyS');
+    assert.equal(withShortcutDefaults({ navigateLeft: 'KeyJ' }).navigateLeft, 'KeyJ');
+    assert.equal(withShortcutDefaults({ navigateLeft: '' }).navigateLeft, '');
+  });
+
+  it('conflicts with a letter bound by name or by position, in either spelling', () => {
+    assert.equal(shortcutsConflict('KeyW', 'W'), true);
+    assert.equal(shortcutsConflict('KeyW', 'KeyW'), true);
+    assert.equal(shortcutsConflict('KeyW', 'Shift+W'), false);
+    assert.equal(shortcutsConflict('KeyW', 'KeyA'), false);
+    assert.deepEqual(shortcutConflicts(defaultShortcuts, 'toggleMute', 'S'), [down]);
+    assert.deepEqual(assignShortcut(defaultShortcuts, 'toggleMute', 'D').navigateRight, '');
+    // The defaults collide with nothing else.
+    for (const action of NAVIGATION_SHORTCUTS) assert.deepEqual(shortcutConflicts(defaultShortcuts, action, defaultShortcuts[action]), []);
+    assert.equal(left, 'navigateLeft');
+  });
+
+  it('records the group by position and every other action by what the key prints', () => {
+    const event = { ...azerty.w, isComposing: false } as KeyboardEvent;
+    assert.equal(shortcutFromEvent(event, true), 'KeyW');
+    assert.equal(shortcutFromEvent(event), 'Z');
+    assert.equal(shortcutFromEvent({ ...key({ key: 'W', code: 'KeyW', shiftKey: true }), isComposing: false } as KeyboardEvent, true), 'Shift+KeyW');
+    assert.equal(shortcutFromEvent({ ...key({ key: 'ArrowUp', code: 'ArrowUp' }), isComposing: false } as KeyboardEvent, true), 'ArrowUp');
+    assert.equal(shortcutFromEvent({ ...azerty.w, isComposing: true } as KeyboardEvent, true), '');
+  });
+
+  it('shows what the layout prints where it can say, and the default letter where it cannot', async () => {
+    assert.deepEqual(shortcutDisplayParts('KeyW'), ['W']);
+    assert.deepEqual(shortcutDisplayParts('Shift+KeyS'), ['Shift', 'S']);
+    assert.deepEqual(shortcutDisplayParts('T'), ['T']);
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { keyboard: { getLayoutMap: async () => new Map([['KeyW', 'z'], ['KeyA', 'q']]) } } });
+    try {
+      await loadKeyboardLayout();
+      assert.deepEqual(shortcutDisplayParts('KeyW'), ['Z']);
+      assert.deepEqual(shortcutDisplayParts('KeyA'), ['Q']);
+      assert.deepEqual(shortcutDisplayParts('KeyS'), ['S']);
+      Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { keyboard: { getLayoutMap: async () => { throw new Error('blocked'); } } } });
+      await loadKeyboardLayout();
+      assert.deepEqual(shortcutDisplayParts('KeyW'), ['W']);
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'navigator', original);
+      await loadKeyboardLayout();
     }
   });
 });

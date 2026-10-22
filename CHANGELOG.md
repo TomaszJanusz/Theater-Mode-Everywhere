@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Czech and Slovak translations for settings, the extension popup, player controls and store listings.
 
+### Added
+
+- Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. On a setting with several levels, A and D lower and raise the value; S on the bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
+
 ### Changed
 
 - The AutoTheater countdown ring now fills to a full circle during the last two seconds, holds, then zooms out just before entry. If the video is still not ready when the countdown ends, the notice waits a moment and then shows an animated ellipsis until it is. With reduced motion the ring switches to full and disappears without animating.

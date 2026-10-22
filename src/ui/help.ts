@@ -1,7 +1,7 @@
 import { activeElementDeep } from '../accessibility';
 import { createModal, type Modal } from './modal';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
-import { AUDIO_SHORTCUTS, defaultShortcuts, shortcutDisplayParts } from './shortcuts';
+import { AUDIO_SHORTCUTS, defaultShortcuts, NAVIGATION_SHORTCUTS, shortcutDisplayParts } from './shortcuts';
 import type { PlayerChromeContext } from './runtime-context';
 
 export function createHelp(ctx: PlayerChromeContext) {
@@ -29,7 +29,6 @@ export function createHelp(ctx: PlayerChromeContext) {
     ctx.actions.showToolbar();
 
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;
-
     const grid = document.createElement('div');
     grid.className = 'theater-help-grid';
     const theaterColumn = document.createElement('div');
@@ -81,6 +80,10 @@ export function createHelp(ctx: PlayerChromeContext) {
           { label: ctx.t('volumeBoostLabel'), key: shortcuts.toggleVolumeBoost },
           ...AUDIO_SETTING_NAMES.map((name) => ({ label: ctx.t(AUDIO_LABEL_KEYS[name]), key: shortcuts[AUDIO_SHORTCUTS[name]] }))
         ]
+      },
+      {
+        title: ctx.t('navigationGroupTitle'),
+        items: NAVIGATION_SHORTCUTS.map((name) => ({ label: ctx.t(name), key: shortcuts[name] }))
       }
     ];
 

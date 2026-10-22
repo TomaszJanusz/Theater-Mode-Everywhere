@@ -26,7 +26,7 @@ export function hudCase(
 ): HudCase {
   return { ...story, render: args => renderHud(args, trigger, options) };
 }
-async function prepare(globals: HudCase['globals']): Promise<void> {
+export async function prepare(globals: HudCase['globals']): Promise<void> {
   setSyncStorage({ reduceMotion: globals?.reduceMotion ?? 'off' });
   await languageRuntime.set(globals?.locale ?? 'en');
   await Promise.all(['400', '500', '600', '700'].map(weight => document.fonts.load(`${weight} 16px Roboto`)));

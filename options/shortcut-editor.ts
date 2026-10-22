@@ -1,6 +1,6 @@
 import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
-import { assignShortcut, defaultShortcuts, isReservedShortcut, shortcutConflicts, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, shortcutConflicts, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
 
 export function createShortcutEditor(onSaved: () => Promise<void>) {
@@ -141,6 +141,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
   }
 
   async function initialize() {
+    await loadKeyboardLayout();
     render(defaultShortcuts);
     await refresh();
     for (const entry of entries) {
@@ -149,7 +150,8 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
         event.preventDefault();
         event.stopPropagation();
         if (event.repeat || busy) return;
-        const shortcut = shortcutFromEvent(event);
+        // The Navigation group records positions, so the cluster follows the keyboard's shape on any layout.
+        const shortcut = shortcutFromEvent(event, isNavigationShortcut(entry.action));
         if (!shortcut) return;
         entry.input.value = shortcut;
         void edit(entry.input, () => save(entry.action, shortcut));

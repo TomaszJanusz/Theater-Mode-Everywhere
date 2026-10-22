@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "Navigácia"
+  },
+  "navigateUp": {
+    "message": "Navigovať nahor"
+  },
+  "navigateLeft": {
+    "message": "Navigovať doľava"
+  },
+  "navigateDown": {
+    "message": "Navigovať nadol"
+  },
+  "navigateRight": {
+    "message": "Navigovať doprava"
+  },
   "volumeBoostLabel": {
     "message": "Zosilnenie hlasitosti"
   },

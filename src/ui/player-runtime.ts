@@ -1,4 +1,5 @@
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
+import { createNavigation } from './navigation';
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
@@ -118,7 +119,7 @@ import {
   type VideoFitMode
 } from './appearance';
 import { applyUiDirection, t } from './messages';
-import { AUDIO_SHORTCUTS, defaultShortcuts, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { AUDIO_SHORTCUTS, defaultShortcuts, loadKeyboardLayout, matchesShortcut, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
 import { createButtonTooltip } from './button-tooltip';
@@ -195,6 +196,7 @@ const buttonTooltip = createButtonTooltip(ctx);
 const hud = createHud(ctx, buttonTooltip.bind);
 const toolbar = createToolbar(ctx, applyTheaterPictureLayout);
 const help = createHelp(ctx);
+const navigation = createNavigation(ctx);
 const discovery = createDiscovery(ctx);
 const controls = createControls(ctx, buttonTooltip.bind, () => {
   hud.removeCaptionHud();
@@ -229,6 +231,7 @@ const {
   injectStylesIntoShadowRoot
 } = discovery;
 const { createCustomControls, destroyCustomControls } = controls;
+const destroyNavigatedControls = (): void => { navigation.end(); destroyCustomControls(); };
 
 let pendingVideoPointer: { path: WeakRef<Node>[]; href: string } | null = null;
 
@@ -674,7 +677,7 @@ function bindChromeActions(): void {
     injectStylesIntoShadowRoot,
     preventDoubleToggle,
     createCustomControls,
-    destroyCustomControls,
+    destroyCustomControls: destroyNavigatedControls,
     showToolbar,
     suppressToolbarActivity: toolbar.suppressToolbarActivity,
     hideToolbar,
@@ -1445,7 +1448,10 @@ function initialize(): void {
   if (refs.isInitialized) return;
 
   session.resetRuntimeScope();
+  // Position keys (the Navigation group) are named for what this keyboard prints on them; display only.
+  void loadKeyboardLayout();
   session.runtimeScope.add(() => {
+    navigation.end();
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
     videoActivator?.dispose();
@@ -1532,6 +1538,22 @@ function initialize(): void {
         updateCaptionDock();
         return true;
       }
+    }
+
+    // Navigation owns Escape only while it runs on the bar; its menus close first, above.
+    if ((event.key === 'Escape' || event.key === 'Esc') && session.element && navigation.handleEscape()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return true;
+    }
+
+    // Outside theater nothing here runs, so W/A/S/D stay the host page's; inside, only W starts the mode.
+    if (session.element && !ui().helpOpen && navigation.handleKeydown(event, shortcuts)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return true;
     }
 
     if (session.element && matchesShortcut(event, shortcuts.toggleControlsPin)) {
@@ -1992,7 +2014,7 @@ function attachProviderPlayback(element: HTMLElement): void {
 
 function rebindProviderPlayback(next: HTMLElement): void {
   const previous = session.element;
-  destroyCustomControls();
+  destroyNavigatedControls();
   releaseProviderPlayback();
   if (previous) {
     unmarkTheaterVideo(previous);
@@ -2372,7 +2394,7 @@ function exitTheaterMode(
 
   releaseAudioSettings();
   if (session.element && (session.element.tagName === 'VIDEO' || providerPlayback)) {
-    destroyCustomControls();
+    destroyNavigatedControls();
   }
   releaseProviderPlayback();
 

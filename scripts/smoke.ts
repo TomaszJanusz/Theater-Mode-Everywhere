@@ -65,6 +65,13 @@ export async function assertShortcutManagement(page: Page, context: BrowserConte
         const { shortcuts } = await chrome.storage.sync.get('shortcuts');
         return shortcuts?.toggleMute === 'Ctrl+M' && shortcuts?.toggleControlsPin === 'Shift+U';
       });
+      // The Navigation group records a key's position, whatever this layout prints there: an AZERTY-style Q on the A position.
+      await options.waitForSelector('.options-body[aria-busy="false"]');
+      await options.locator('#shortcut-navigate-left').evaluate(input => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'q', code: 'KeyJ', bubbles: true, cancelable: true })));
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.navigateLeft === 'KeyJ');
+      await options.waitForSelector('.options-body[aria-busy="false"]');
+      await options.locator('#reset-shortcuts-btn').click();
+      await options.waitForFunction(async () => (await chrome.storage.sync.get('shortcuts')).shortcuts?.navigateLeft === 'KeyA');
       // Live custom entry keys replace their defaults without a reload.
       await options.waitForSelector('.options-body[aria-busy="false"]');
       await options.locator('#shortcut-toggle-fullscreen').press('g');

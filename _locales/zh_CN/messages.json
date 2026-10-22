@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "导航"
+  },
+  "navigateUp": {
+    "message": "向上导航"
+  },
+  "navigateLeft": {
+    "message": "向左导航"
+  },
+  "navigateDown": {
+    "message": "向下导航"
+  },
+  "navigateRight": {
+    "message": "向右导航"
+  },
   "volumeBoostLabel": {
     "message": "音量增强"
   },

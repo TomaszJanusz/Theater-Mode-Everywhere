@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "ナビゲーション"
+  },
+  "navigateUp": {
+    "message": "上へ移動"
+  },
+  "navigateLeft": {
+    "message": "左へ移動"
+  },
+  "navigateDown": {
+    "message": "下へ移動"
+  },
+  "navigateRight": {
+    "message": "右へ移動"
+  },
   "volumeBoostLabel": {
     "message": "音量ブースト"
   },

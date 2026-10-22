@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "Навігація"
+  },
+  "navigateUp": {
+    "message": "Перейти вгору"
+  },
+  "navigateLeft": {
+    "message": "Перейти ліворуч"
+  },
+  "navigateDown": {
+    "message": "Перейти вниз"
+  },
+  "navigateRight": {
+    "message": "Перейти праворуч"
+  },
   "volumeBoostLabel": {
     "message": "Посилення звуку"
   },
