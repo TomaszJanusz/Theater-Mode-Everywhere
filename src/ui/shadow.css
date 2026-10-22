@@ -3266,7 +3266,7 @@ button.theater-time-end:focus-visible,
 .theater-stepper-segments {
   position: absolute !important;
   inset-inline: 26px !important;
-  top: calc(50% + 10px) !important;
+  top: calc(50% + 13px) !important;
   display: flex !important;
   gap: 2px !important;
   --theater-stepper-sign: 1;
@@ -3278,6 +3278,10 @@ button.theater-time-end:focus-visible,
   height: 1px !important;
   border-radius: 1px !important;
   background: var(--appearance-border, rgba(255, 255, 255, 0.2)) !important;
+}
+/* On a tinted row the idle segments sink into it, like the arrows do under the pointer. */
+.theater-settings-stepper-row:is(:hover, :has(:focus-visible)) .theater-stepper-segment {
+  background: rgba(0, 0, 0, 0.45) !important;
 }
 /* One highlight that slides to the current segment (transform only), instead of segments recolouring. */
 .theater-stepper-thumb {
