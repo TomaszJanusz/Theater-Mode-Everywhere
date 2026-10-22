@@ -10,6 +10,8 @@ body:
       options:
         - English
         - Polski
+        - Čeština
+        - Slovenčina
         - Deutsch
         - Español
         - Français

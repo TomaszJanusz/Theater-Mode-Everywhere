@@ -5,6 +5,8 @@ export const DEFAULT_LANGUAGE = 'automatic';
 export const LANGUAGES = [
   { locale: 'en', name: 'English' },
   { locale: 'pl', name: 'Polski' },
+  { locale: 'cs', name: 'Čeština' },
+  { locale: 'sk', name: 'Slovenčina' },
   { locale: 'de', name: 'Deutsch' },
   { locale: 'es', name: 'Español' },
   { locale: 'fr', name: 'Français' },

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Czech and Slovak translations for settings, the extension popup, player controls and store listings.
+
 ### Changed
 
 - The AutoTheater countdown ring now fills to a full circle during the last two seconds, holds, then zooms out just before entry. If the video is still not ready when the countdown ends, the notice waits a moment and then shows an animated ellipsis until it is. With reduced motion the ring switches to full and disappears without animating.

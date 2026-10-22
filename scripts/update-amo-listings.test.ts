@@ -38,7 +38,7 @@ one, two
   it('matches the existing AMO locales and fans Spanish out to country variants', () => {
     const payload = buildAmoPayload(listingsRoot);
     const expectedLocales = [
-      'de', 'en-US', 'es-AR', 'es-CL', 'es-ES', 'es-MX', 'fr', 'it',
+      'cs', 'sk', 'de', 'en-US', 'es-AR', 'es-CL', 'es-ES', 'es-MX', 'fr', 'it',
       'ja', 'ko', 'pl', 'pt-BR', 'ru', 'uk', 'zh-CN',
     ];
 

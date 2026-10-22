@@ -1,0 +1,1101 @@
+{
+  "extensionName": {
+    "message": "Theater Mode Everywhere — Jeden prehrávač vládne všetkým"
+  },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere"
+  },
+  "extensionDescription": {
+    "message": "Zväčšite ľubovoľné HTML5 video na celé okno. Vlastné ovládanie, titulky, zvukové efekty a integrácie s videoslužbami."
+  },
+  "cwsPromoBeforeLabel": {
+    "message": "PRED"
+  },
+  "cwsPromoAfterLabel": {
+    "message": "PO"
+  },
+  "cwsPromoPlayerUiLabel": {
+    "message": "Ovládanie prehrávača"
+  },
+  "cwsPromoShortcutsLabel": {
+    "message": "Klávesové skratky"
+  },
+  "settingsTitle": {
+    "message": "Nastavenia"
+  },
+  "settingsPageTitle": {
+    "message": "Theater Mode Everywhere – Nastavenia"
+  },
+  "settingsSubtitle": {
+    "message": "Nastavte výnimky pre weby, vzhľad a klávesové skratky režimu kina."
+  },
+  "websiteLabel": {
+    "message": "Web"
+  },
+  "loadingLabel": {
+    "message": "Načítava sa..."
+  },
+  "systemPage": {
+    "message": "Systémová stránka"
+  },
+  "noActivePage": {
+    "message": "Žiadna aktívna stránka"
+  },
+  "errorLoading": {
+    "message": "Chyba pri načítavaní"
+  },
+  "statusActive": {
+    "message": "Aktívne"
+  },
+  "statusDisabled": {
+    "message": "Vypnuté"
+  },
+  "statusDisabledByParent": {
+    "message": "Vypnuté kvôli $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusInactiveSystem": {
+    "message": "Neaktívne (systém)"
+  },
+  "statusUnavailable": {
+    "message": "Nedostupné"
+  },
+  "toggleTheaterModeLower": {
+    "message": "Prepnúť režim kina"
+  },
+  "createdBy": {
+    "message": "Vytvoril Tomasz Janusz"
+  },
+  "createdByHtml": {
+    "message": "Vytvoril <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>"
+  },
+  "appearanceTitle": {
+    "message": "Vzhľad"
+  },
+  "appearanceDescription": {
+    "message": "Zvoľte umiestnenie obrazu a farbu ovládacích prvkov, posuvníkov, skratiek a zvýraznení."
+  },
+  "pictureAlignLabel": {
+    "message": "Rozloženie"
+  },
+  "pictureAlignCenter": {
+    "message": "Na stred"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "Obraz zostáva uprostred obrazovky. Najlepšie pre obrazovky 16:9."
+  },
+  "pictureAlignTop": {
+    "message": "Hore"
+  },
+  "pictureAlignTopDescription": {
+    "message": "Obraz je hore, pod ním je čierny pás pre titulky. Najlepšie pre obrazovky 16:10 a 4:3."
+  },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Hore len s titulkami"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "So zapnutými titulkami umiestniť obraz hore, s vypnutými na stred."
+  },
+  "voiceBoostLabel": {
+    "message": "Zvýraznenie hlasu"
+  },
+  "voiceBoostOff": {
+    "message": "Vypnuté"
+  },
+  "voiceBoostLight": {
+    "message": "Mierne"
+  },
+  "voiceBoostStrong": {
+    "message": "Silné"
+  },
+  "audioProtected": {
+    "message": "Nastavenia zvuku nie sú dostupné: toto video je chránené DRM."
+  },
+  "audioRefused": {
+    "message": "Nastavenia zvuku nie sú dostupné: server videa to neumožňuje."
+  },
+  "audioUnavailableHud": {
+    "message": "Nastavenia zvuku nie sú pre toto video dostupné"
+  },
+  "voiceBoostHud": {
+    "message": "Zvýraznenie hlasu: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Stíšenie hlasných zvukov"
+  },
+  "volumeLevelingOff": {
+    "message": "Vypnuté"
+  },
+  "volumeLevelingLight": {
+    "message": "Mierne"
+  },
+  "volumeLevelingStrong": {
+    "message": "Silné"
+  },
+  "volumeLevelingHud": {
+    "message": "Stíšenie hlasných zvukov: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Basy"
+  },
+  "bassLess": {
+    "message": "Menej"
+  },
+  "bassOriginal": {
+    "message": "Pôvodné"
+  },
+  "bassMore": {
+    "message": "Viac"
+  },
+  "bassMoar": {
+    "message": "EŠTE VIAC"
+  },
+  "bassMoaaarr": {
+    "message": "EŠTE VIAAAC!"
+  },
+  "bassHud": {
+    "message": "Basy: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeBoostLabel": {
+    "message": "Zosilnenie hlasitosti"
+  },
+  "volumeBoostOff": {
+    "message": "Vypnuté"
+  },
+  "volumeBoostOn": {
+    "message": "Zapnuté"
+  },
+  "volumeBoostHud": {
+    "message": "Zosilnenie hlasitosti: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "accentColorLabel": {
+    "message": "Farba zvýraznenia"
+  },
+  "accentColorSystem": {
+    "message": "Systémová"
+  },
+  "accentColorTeal": {
+    "message": "Tyrkysová"
+  },
+  "accentColorBlue": {
+    "message": "Modrá"
+  },
+  "accentColorGreen": {
+    "message": "Zelená"
+  },
+  "accentColorYellow": {
+    "message": "Žltá"
+  },
+  "accentColorOrange": {
+    "message": "Oranžová"
+  },
+  "accentColorRed": {
+    "message": "Červená"
+  },
+  "accentColorPink": {
+    "message": "Ružová"
+  },
+  "accentColorPurple": {
+    "message": "Fialová"
+  },
+  "accentColorGray": {
+    "message": "Sivá"
+  },
+  "useAccentColor": {
+    "message": "Použiť farbu zvýraznenia: $COLOR$",
+    "placeholders": {
+      "color": {
+        "content": "$1"
+      }
+    }
+  },
+  "featuresTitle": {
+    "message": "Funkcie"
+  },
+  "featuresDescription": {
+    "message": "Zapnite alebo vypnite voliteľné funkcie režimu kina."
+  },
+  "volumeBoostTitle": {
+    "message": "Zosilnenie hlasitosti"
+  },
+  "volumeBoostDescription": {
+    "message": "Zosilnite hlasitosť až na 300 % pomocou Web Audio API. Pri prvom vstupe do režimu kina so zapnutou funkciou sa môže krátko zobraziť indikátor načítavania."
+  },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (experimentálne)"
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Zapnúť rozšírené integrácie len pre túto službu."
+  },
+  "youtubeIntegrationTitle": {
+    "message": "Integrácia YouTube"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, kapitoly, tepelná mapa, miniatúry. Rýchle akcie: preskočenie reklám a ďalšie video v poradí. So zapnutými funkciami YouTube Rich Theater Experience a Spúšťač videa hľadajte tlačidlo na lište prehrávača vľavo od prepínača automatického prehrávania."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Integrácia Vimeo"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, kapitoly, miniatúry. Rýchle akcie: ďalšie video v kolekcii Showcase."
+  },
+  "patreonIntegrationTitle": {
+    "message": "Integrácia Patreon"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, kapitoly, miniatúry."
+  },
+  "twitchIntegrationTitle": {
+    "message": "Integrácia Twitch"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Zobrazuje názov kanála alebo videa a pri záznamoch aj výber titulkov, značky kapitol a náhľady na časovej osi, ak sú k dispozícii."
+  },
+  "disneyIntegrationTitle": {
+    "message": "Integrácia Disney+"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, miniatúry. Rýchle akcie: preskočenie úvodu, zhrnutia či záverečných titulkov a ďalší diel."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Integrácia Netflix"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, miniatúry. Rýchle akcie: preskočenie úvodu, zhrnutia či záverečných titulkov a ďalší diel."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Integrácia Bilibili (bilibili.com)"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, kapitoly, tepelná mapa, miniatúry. Rýchle akcie: potvrdenia preskočenia v službe a ďalšie video."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Integrácia Tencent Video / WeTV"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, miniatúry. Rýchle akcie: ďalší diel cez prehrávač."
+  },
+  "liveBadge": {
+    "message": "NAŽIVO"
+  },
+  "jumpToLive": {
+    "message": "Sledovať naživo"
+  },
+  "showTotalTime": {
+    "message": "Zobraziť dĺžku"
+  },
+  "showRemainingTime": {
+    "message": "Zobraziť zostávajúci čas"
+  },
+  "websiteExclusionsTitle": {
+    "message": "Výnimky pre weby"
+  },
+  "websiteExclusionsDescription": {
+    "message": "Vylúčte weby, na ktorých nechcete automaticky aktivovať režim kina."
+  },
+  "domainInputPlaceholder": {
+    "message": "napr. youtube.com alebo vložte URL"
+  },
+  "excludedWebsitesTitle": {
+    "message": "Vylúčené weby"
+  },
+  "exclusionsFooterTip": {
+    "message": "Tip: Výnimky môžete spravovať aj kliknutím na ikonu rozšírenia na lište prehliadača."
+  },
+  "invalidDomain": {
+    "message": "Neplatný formát domény alebo URL."
+  },
+  "websiteAlreadyExcluded": {
+    "message": "Tento web je už vylúčený."
+  },
+  "errorSavingSettings": {
+    "message": "Chyba pri ukladaní nastavení."
+  },
+  "noExclusionsYet": {
+    "message": "Zatiaľ žiadne výnimky"
+  },
+  "noExclusionsDescription": {
+    "message": "Režim kina sa bude automaticky aktivovať na všetkých stránkach s videom."
+  },
+  "removeExclusion": {
+    "message": "Odstrániť výnimku"
+  },
+  "errorLoadingSettings": {
+    "message": "Chyba pri načítavaní nastavení."
+  },
+  "keyboardShortcutsTitle": {
+    "message": "Klávesové skratky"
+  },
+  "keyboardShortcutsDescription": {
+    "message": "Kliknite na vstupné pole a stlačte požadovanú kombináciu klávesov. Podporované sú aj modifikátory Ctrl, Alt a Shift."
+  },
+  "playerControlsTitle": {
+    "message": "Ovládanie prehrávača"
+  },
+  "toggleTheaterMode": {
+    "message": "Prepnúť režim kina"
+  },
+  "exitTheaterMode": {
+    "message": "Ukončiť režim kina"
+  },
+  "cycleSwitchPlayer": {
+    "message": "Prepnúť video na stránke"
+  },
+  "cycleSwitchVideo": {
+    "message": "Prepnúť video na stránke"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Funguje len na stránkach s viac ako jedným HTML5 videom."
+  },
+  "cycleVideoFit": {
+    "message": "Prepnúť prispôsobenie obrazu"
+  },
+  "toggleSubtitles": {
+    "message": "Prepnúť titulky"
+  },
+  "increaseSubtitleSize": {
+    "message": "Zväčšiť titulky"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Zmenšiť titulky"
+  },
+  "subtitlesTooltip": {
+    "message": "Titulky <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Titulky zapnuté"
+  },
+  "subtitlesOnNamedHud": {
+    "message": "Titulky zapnuté: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOffHud": {
+    "message": "Titulky vypnuté"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Načítavajú sa titulky..."
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Titulky sa nepodarilo načítať"
+  },
+  "onlyOneVideoHud": {
+    "message": "Funkcia nie je dostupná. Video možno prepnúť len vtedy, keď je na stránke viac prehrávačov."
+  },
+  "cycleIframeHud": {
+    "message": "Prepínanie funguje len s HTML5 videom"
+  },
+  "videoFitTooltip": {
+    "message": "Prispôsobenie obrazu <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Prispôsobiť"
+  },
+  "videoFitCover": {
+    "message": "Vyplniť"
+  },
+  "videoFitFill": {
+    "message": "Roztiahnuť"
+  },
+  "reportABug": {
+    "message": "Nahlásiť chybu"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Tu je moje nové rozšírenie! S Privacy Thing rozhodujete, čo o vás môže web zistiť: polohu, jazyk, časové pásmo a oveľa viac. Obmedzuje sledovanie medzi webmi."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Zadarmo a s otvoreným zdrojovým kódom."
+  },
+  "whatsNew": {
+    "message": "Novinky v aktualizácii"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Novinky v aktualizácii"
+  },
+  "dialogAcknowledge": {
+    "message": "Rozumiem"
+  },
+  "dialogChoiceTrue": {
+    "message": "Áno"
+  },
+  "dialogChoiceFalse": {
+    "message": "Nie"
+  },
+  "showHideHelp": {
+    "message": "Zobraziť/skryť pomocníka"
+  },
+  "playbackVolumeControlsTitle": {
+    "message": "Ovládanie prehrávania a hlasitosti"
+  },
+  "playPause": {
+    "message": "Prehrať / Pozastaviť"
+  },
+  "seekBackward5": {
+    "message": "Späť (5 s)"
+  },
+  "seekForward5": {
+    "message": "Dopredu (5 s)"
+  },
+  "volumeUp5": {
+    "message": "Zvýšiť hlasitosť (5 %)"
+  },
+  "volumeDown5": {
+    "message": "Znížiť hlasitosť (5 %)"
+  },
+  "toggleMute": {
+    "message": "Prepnúť stlmenie"
+  },
+  "theaterFullscreenPipTitle": {
+    "message": "Režim kina, celá obrazovka a PiP"
+  },
+  "frameStepBackward": {
+    "message": "Predchádzajúca snímka"
+  },
+  "frameStepForward": {
+    "message": "Ďalšia snímka"
+  },
+  "frameStepBackward004": {
+    "message": "Predchádzajúca snímka (0,04 s)"
+  },
+  "frameStepForward004": {
+    "message": "Ďalšia snímka (0,04 s)"
+  },
+  "toggleFullscreen": {
+    "message": "Prepnúť celú obrazovku"
+  },
+  "togglePictureInPicture": {
+    "message": "Prepnúť obraz v obraze"
+  },
+  "pressKeysPlaceholder": {
+    "message": "Stlačte klávesy..."
+  },
+  "resetToDefault": {
+    "message": "Obnoviť predvolenú hodnotu"
+  },
+  "resetToDefaults": {
+    "message": "Obnoviť predvolené hodnoty"
+  },
+  "copyrightHtml": {
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Vydané pod <a href=\"#about\">licenciou MIT</a>."
+  },
+  "play": {
+    "message": "Prehrať"
+  },
+  "pause": {
+    "message": "Pozastaviť"
+  },
+  "previousVideo": {
+    "message": "Predchádzajúce"
+  },
+  "backToStart": {
+    "message": "Späť na začiatok"
+  },
+  "skipIntro": {
+    "message": "Preskočiť úvod"
+  },
+  "skipOutro": {
+    "message": "Preskočiť záver"
+  },
+  "nextVideo": {
+    "message": "Ďalšie"
+  },
+  "muteHud": {
+    "message": "Stlmiť"
+  },
+  "unmuteHud": {
+    "message": "Zapnúť zvuk"
+  },
+  "pictureInPictureTooltip": {
+    "message": "Obraz v obraze <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "exitFullscreen": {
+    "message": "Ukončiť celú obrazovku"
+  },
+  "fullscreenTooltip": {
+    "message": "Celá obrazovka <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "exitTheaterModeTooltip": {
+    "message": "Ukončiť režim kina <kbd>$TOGGLE$</kbd> alebo <kbd>$EXIT$</kbd>",
+    "placeholders": {
+      "toggle": {
+        "content": "$1"
+      },
+      "exit": {
+        "content": "$2"
+      }
+    }
+  },
+  "noSubtitlesAvailable": {
+    "message": "Žiadne dostupné titulky"
+  },
+  "disableSubtitles": {
+    "message": "Vypnúť titulky"
+  },
+  "enableSubtitles": {
+    "message": "Zapnúť titulky"
+  },
+  "searchSubtitles": {
+    "message": "Hľadať titulky…",
+    "description": "Placeholder and accessible label for filtering subtitle tracks in the player menu"
+  },
+  "subtitleNoMatches": {
+    "message": "Žiadne výsledky",
+    "description": "Empty result shown when no subtitle tracks match the search"
+  },
+  "noSubtitles": {
+    "message": "Bez titulkov"
+  },
+  "subtitlesOff": {
+    "message": "Vypnuté"
+  },
+  "subtitlesMenuTitle": {
+    "message": "Titulky"
+  },
+  "subtitleOptions": {
+    "message": "Možnosti"
+  },
+  "subtitleOptionsTitle": {
+    "message": "Možnosti titulkov"
+  },
+  "subtitleFont": {
+    "message": "Písmo"
+  },
+  "subtitleTextColor": {
+    "message": "Text"
+  },
+  "subtitleSize": {
+    "message": "Veľkosť"
+  },
+  "subtitleDropShadow": {
+    "message": "Tieň"
+  },
+  "subtitleBackground": {
+    "message": "Pozadie"
+  },
+  "subtitleOpacity": {
+    "message": "Krytie"
+  },
+  "subtitlePreviewSample": {
+    "message": "Ukážkový titulok"
+  },
+  "dialogDone": {
+    "message": "Hotovo"
+  },
+  "dialogClose": {
+    "message": "Zavrieť"
+  },
+  "autoGeneratedTrack": {
+    "message": "$1 (automatické)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "trackLabel": {
+    "message": "Stopa $NUMBER$",
+    "placeholders": {
+      "number": {
+        "content": "$1"
+      }
+    }
+  },
+  "switchVideoTooltip": {
+    "message": "Prepnúť video na stránke <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "keyboardShortcutsTooltip": {
+    "message": "Klávesové skratky <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "fiveSeconds": {
+    "message": "5 sekúnd"
+  },
+  "homepage": {
+    "message": "Domovská stránka"
+  },
+  "madeInPoland": {
+    "message": "Vytvorené s <span class=\"heart\">❤</span> v 🇵🇱"
+  },
+  "autoEnterTheaterTitle": {
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Prístupnosť"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Preskočiť odpočítavanie"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Vstúpiť ihneď, keď je prehrávanie pripravené, bez upozornenia s odpočítavaním."
+  },
+  "videoActivatorPromptTitle": {
+    "message": "Zapnúť spúšťač videa?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater je teraz vypnutý. Chcete na videách zobraziť malé tlačidlo na ručný vstup do režimu kina? Neskôr to môžete zmeniť v časti Nastavenia → Funkcie → Spúšťač videa."
+  },
+  "videoActivatorTitle": {
+    "message": "Spúšťač videa"
+  },
+  "videoActivatorDescription": {
+    "message": "Pri ukázaní na video zobraziť malé tlačidlo na jeho ľavom okraji. Kliknutím vstúpite do režimu kina. Pri niektorých službách s Rich Theater Experience je tlačidlo súčasťou rozhrania služby."
+  },
+  "videoActivatorLabel": {
+    "message": "Vstúpiť do režimu kina"
+  },
+  "autoEnterTheaterOn": {
+    "message": "Zapnuté"
+  },
+  "autoEnterTheaterOff": {
+    "message": "Vypnuté"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Vstúpiť do režimu kina pri spustení hlavného videa na stránkach sledovania podporovaných služieb so zapnutým Rich Theater Experience."
+  },
+  "autoEnterNoticeTitle": {
+    "message": "Spúšťanie režimu kina…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Zrušte kliknutím alebo klávesom <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Pripnúť ovládanie"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Pripnite ovládanie prehrávania a ukazovateľ priebehu, aby zostali v režime kina viditeľné. Názov a kurzor sa pri nečinnosti naďalej skrývajú."
+  },
+  "toggleControlsPin": {
+    "message": "Prepnúť pripnutie ovládania"
+  },
+  "controlsPinnedHud": {
+    "message": "Ovládanie pripnuté"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Ovládanie sa automaticky skrýva"
+  },
+  "showNativeChat": {
+    "message": "Zobraziť chat"
+  },
+  "toggleNativeChat": {
+    "message": "Prepnúť chat"
+  },
+  "hideNativeChat": {
+    "message": "Skryť chat"
+  },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionAudio": {
+    "message": "Zvuk"
+  },
+  "settingsSectionPlayer": {
+    "message": "Prehrávač"
+  },
+  "nativeChatWidth": {
+    "message": "Šírka"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Chat používa vzhľad služby. Zvolená téma nie je na tejto stránke dostupná."
+  },
+  "nativeChatTheme": {
+    "message": "Téma"
+  },
+  "nativeChatThemeLight": {
+    "message": "Svetlá"
+  },
+  "nativeChatThemeNative": {
+    "message": "Nastavenia služby"
+  },
+  "nativeChatThemeDark": {
+    "message": "Tmavá"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Celá obrazovka s chatom nie je dostupná. Režim kina zostáva aktívny."
+  },
+  "playerSettingsLabel": {
+    "message": "Nastavenia prehrávača"
+  },
+  "videoFitLabel": {
+    "message": "Prispôsobenie obrazu"
+  },
+  "controlsVisibilityOn": {
+    "message": "Zapnuté"
+  },
+  "controlsVisibilityOff": {
+    "message": "Vypnuté"
+  },
+  "extensionSettingsLabel": {
+    "message": "Nastavenia rozšírenia"
+  },
+  "shortcutUnassigned": {
+    "message": "Nepriradené"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Niektoré skratky sú priradené viacerým akciám. Upravte alebo obnovte zvýraznené skratky, aby ste vyriešili konflikty."
+  },
+  "shortcutConflictTitle": {
+    "message": "Skratka je už priradená"
+  },
+  "shortcutConflictDescription": {
+    "message": "Skratka $KEY$ je priradená týmto akciám: $OWNERS$. Priradiť ju namiesto toho akcii „$TARGET$“? Predchádzajúce akcie túto skratku stratia.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Ponechať súčasné priradenie"
+  },
+  "shortcutReassign": {
+    "message": "Presunúť skratku"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape slúži na zatváranie dialógov a ukončenie režimu kina. Zvoľte pre túto akciu inú skratku."
+  },
+  "shortcutSaveError": {
+    "message": "Skratku sa nepodarilo uložiť"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Vaše skratky sa nezmenili. Skúste to znova."
+  },
+  "cyclePictureLayout": {
+    "message": "Zmeniť rozloženie obrazu"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "Integrácia Bilibili.tv"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, značky úvodu/záveru, miniatúry. Rýchle akcie: preskočenie úvodu/záveru a ďalší diel (len pri epizódach)."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Integrácia Crunchyroll"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, značky úvodu/záverečných titulkov, miniatúry. Rýchle akcie: preskočenie úvodu/záverečných titulkov a ďalší diel."
+  },
+  "aboutTitle": {
+    "message": "O rozšírení"
+  },
+  "aboutTagline": {
+    "message": "Jeden prehrávač vládne všetkým."
+  },
+  "aboutVersion": {
+    "message": "verzia: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "aboutGreeting": {
+    "message": "Ahoj,"
+  },
+  "aboutLetterOrigin": {
+    "message": "Veľmi ďakujem, že ste si vybrali moje rozšírenie! Theater Mode Everywhere vzniklo z mojej frustrácie z mnohých rôznych riešení, ktoré mali zabezpečiť jedinú vec: pohodlné sledovanie videa. To však nespĺňajú. Väčšine prehrávačov na internete chýbajú funkcie, ktoré by mali byť samozrejmosťou."
+  },
+  "aboutLetterProduct": {
+    "message": "Preto som vytvoril Theater Mode Everywhere: univerzálny prehrávač, ktorý podľa môjho skromného názoru umožňuje pohodlne sledovať video všade a zvláda aj neštandardné, jedinečné funkcie mnohých webov."
+  },
+  "privacyPolicy": {
+    "message": "Zásady ochrany súkromia"
+  },
+  "privacyPolicyDescription": {
+    "message": "Ako rozšírenie zaobchádza s vašimi údajmi. Úplné zásady sú v angličtine."
+  },
+  "privacyPolicyRead": {
+    "message": "Prečítať zásady ochrany súkromia"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "Otvoriť online verziu"
+  },
+  "aboutLetterFreeHtml": {
+    "message": "Rozšírenie je zadarmo a neposiela vývojárovi ani nesúvisiacim tretím stranám žiadne informácie o vás ani o tom, čo sledujete. Nastavenia možno synchronizovať cez účet prehliadača a funkcie prehrávania môžu komunikovať priamo so sledovanou službou. Ak niečo nefunguje správne, môžete to nahlásiť na <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHube</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "Theater Mode Everywhere je dostupné v obchodoch <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> a <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. Budem rád, ak sa podelíte o svoj názor."
+  },
+  "aboutSignoffHtml": {
+    "message": "Príjemné sledovanie <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
+  },
+  "aboutLegalTitle": {
+    "message": "Podmienky používania • Licencia"
+  },
+  "aboutLicenseNote": {
+    "message": "Rozšírenie je dostupné pod licenciou MIT."
+  },
+  "languageTitle": {
+    "message": "Jazyk"
+  },
+  "languageDescription": {
+    "message": "Vyberte jazyk nastavení, okna rozšírenia a ovládania prehrávača."
+  },
+  "reportTranslationIssue": {
+    "message": "Nahlásiť chybu prekladu"
+  },
+  "languageAutomatic": {
+    "message": "Automaticky (jazyk prehliadača)"
+  },
+  "addExclusion": {
+    "message": "Pridať výnimku pre web"
+  },
+  "playbackPosition": {
+    "message": "Pozícia prehrávania"
+  },
+  "volumeLabel": {
+    "message": "Hlasitosť"
+  },
+  "playbackSpeed": {
+    "message": "Rýchlosť prehrávania"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "Podpora SponsorBlock"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Zobraziť na časovej osi YouTube v režime kina značky z nainštalovaného rozšírenia SponsorBlock v jeho farbách."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Sponzor"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Vlastná propagácia"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Exkluzívny prístup"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Výzva na interakciu"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Úvod"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Záver"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Upútavka"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Úvodné lákadlo"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Časť bez hudby"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Zaujímavý moment"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Výplň"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Kapitola"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "Úsek SponsorBlock"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Vyberte integrácie služieb a zistite, čo pridávajú do režimu kina. Funkcie závisia od videa a služby."
+  },
+  "rteAll": {
+    "message": "Všetky služby"
+  },
+  "rteAllShown": {
+    "message": "Všetky zobrazené služby"
+  },
+  "rteFilterLabel": {
+    "message": "Zobraziť služby s"
+  },
+  "rteCapabilityTitle": {
+    "message": "Názvy"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Titulky"
+  },
+  "rteCapabilityChapters": {
+    "message": "Kapitoly"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Tepelná mapa"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Miniatúry"
+  },
+  "rteCapabilityPlaylists": {
+    "message": "Zoznamy videí"
+  },
+  "rteCapabilityLauncher": {
+    "message": "Spúšťač videa"
+  },
+  "rteNoteLauncher": {
+    "message": "Používa lištu prehrávača služby, ak je v nej miesto pre spúšťač; inak zobrazí tlačidlo cez video."
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Rýchle akcie"
+  },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
+  "rteEmpty": {
+    "message": "Žiadna služba nemá všetky vybrané funkcie."
+  },
+  "rteClear": {
+    "message": "Vymazať filter"
+  },
+  "rteShown": {
+    "message": "Zobrazených $count$ z $total$ služieb",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Závisí od videa; preskočenie reklám a prechádzanie videí v poradí, ak sú dostupné."
+  },
+  "rteNoteVimeo": {
+    "message": "Kapitoly a náhľady, ak sú k dispozícii; ďalšie video v kolekciách Showcase."
+  },
+  "rteNotePatreon": {
+    "message": "Titulky, kapitoly a náhľady, ak sú k dispozícii."
+  },
+  "rteNoteTwitch": {
+    "message": "Titulky, kapitoly a náhľady len pri záznamoch."
+  },
+  "rteNoteDisney": {
+    "message": "Titulky, náhľady a preskočenie/ďalší diel, ak ich prehrávač poskytuje."
+  },
+  "rteNoteNetflix": {
+    "message": "Náhľady vyžadujú pripravenú reláciu náhľadového prehrávania; titulky a preskočenie/ďalší diel, ak sú dostupné."
+  },
+  "rteNoteBilibili": {
+    "message": "Niektoré titulky vyžadujú prihlásenie; ostatné funkcie závisia od videa."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Len značky úvodu/záveru; preskočenie/ďalší diel pri epizódach, nie pri nahraných videách."
+  },
+  "rteNoteTencent": {
+    "message": "Titulky a náhľady, ak sú k dispozícii; ďalší diel cez prehrávač."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Len značky úvodu/záverečných titulkov; titulky vložené do obrazu nemožno vypnúť."
+  },
+  "rteSaveError": {
+    "message": "Nastavenia služby sa nepodarilo uložiť. Skúste to znova."
+  },
+  "rteDetails": {
+    "message": "Podrobnosti"
+  },
+  "badgeBetaDescription": {
+    "message": "Beta, experimentálna funkcia"
+  },
+  "badgeNew": {
+    "message": "Nové",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Zvýrazniť nové funkcie"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Zobraziť pri nedávno pridaných funkciách označenie Nové."
+  },
+  "highlightNewFeaturesHide": {
+    "message": "Skryť do ďalšej verzie"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Obnoviť označenia"
+  },
+  "highContrastTitle": {
+    "message": "Vysoký kontrast"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Obmedziť priehľadnosť"
+  },
+  "reduceMotionTitle": {
+    "message": "Obmedziť pohyb"
+  },
+  "appearanceAutoDescription": {
+    "message": "Automatická voľba sa riadi nastavením systému."
+  },
+  "appearanceAuto": {
+    "message": "Automaticky"
+  }
+}
