@@ -226,7 +226,7 @@
     "message": "Šedá"
   },
   "useAccentColor": {
-    "message": "Použít $COLOR$ jako barvu zvýraznění",
+    "message": "Použít barvu zvýraznění: $COLOR$",
     "placeholders": {
       "color": {
         "content": "$1"
@@ -261,7 +261,7 @@
     "message": "Integrace Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Pokud je video nebo přehrávač poskytuje: název, kapitoly, miniatury. Rychlé akce: další video v přehlídce."
+    "message": "Pokud je video nebo přehrávač poskytuje: název, kapitoly, miniatury. Rychlé akce: další video v kolekci Showcase."
   },
   "patreonIntegrationTitle": {
     "message": "Integrace Patreon"
@@ -303,7 +303,7 @@
     "message": "ŽIVĚ"
   },
   "jumpToLive": {
-    "message": "Přejít na živé vysílání"
+    "message": "Sledovat živě"
   },
   "showTotalTime": {
     "message": "Zobrazit délku"
@@ -804,7 +804,7 @@
     "message": "Zkratka už je přiřazena"
   },
   "shortcutConflictDescription": {
-    "message": "Zkratka $KEY$ je přiřazena k $OWNERS$. Přesunout ji k $TARGET$? Předchozí akce tuto zkratku ztratí.",
+    "message": "Zkratka $KEY$ je přiřazena těmto akcím: $OWNERS$. Přiřadit ji místo toho akci „$TARGET$“? Předchozí akce tuto zkratku ztratí.",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -1032,7 +1032,7 @@
     "message": "Závisí na videu; přeskočení reklam a navigace ve frontě, pokud jsou dostupné."
   },
   "rteNoteVimeo": {
-    "message": "Kapitoly a náhledy, pokud jsou k dispozici; další video v přehlídkách."
+    "message": "Kapitoly a náhledy, pokud jsou k dispozici; další video v kolekcích Showcase."
   },
   "rteNotePatreon": {
     "message": "Titulky, kapitoly a náhledy, pokud jsou k dispozici."

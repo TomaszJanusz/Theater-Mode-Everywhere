@@ -226,7 +226,7 @@
     "message": "Sivá"
   },
   "useAccentColor": {
-    "message": "Použiť $COLOR$ ako farbu zvýraznenia",
+    "message": "Použiť farbu zvýraznenia: $COLOR$",
     "placeholders": {
       "color": {
         "content": "$1"
@@ -255,13 +255,13 @@
     "message": "Integrácia YouTube"
   },
   "youtubeIntegrationDescription": {
-    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, kapitoly, tepelná mapa, miniatúry. Rýchle akcie: preskočenie reklám a ďalšie video vo fronte. So zapnutými funkciami YouTube Rich Theater Experience a Spúšťač videa hľadajte tlačidlo na lište prehrávača vľavo od prepínača automatického prehrávania."
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, kapitoly, tepelná mapa, miniatúry. Rýchle akcie: preskočenie reklám a ďalšie video v poradí. So zapnutými funkciami YouTube Rich Theater Experience a Spúšťač videa hľadajte tlačidlo na lište prehrávača vľavo od prepínača automatického prehrávania."
   },
   "vimeoIntegrationTitle": {
     "message": "Integrácia Vimeo"
   },
   "vimeoIntegrationDescription": {
-    "message": "Ak ich video alebo prehrávač poskytuje: názov, kapitoly, miniatúry. Rýchle akcie: ďalšie video v prehliadke."
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, kapitoly, miniatúry. Rýchle akcie: ďalšie video v kolekcii Showcase."
   },
   "patreonIntegrationTitle": {
     "message": "Integrácia Patreon"
@@ -303,7 +303,7 @@
     "message": "NAŽIVO"
   },
   "jumpToLive": {
-    "message": "Prejsť na živé vysielanie"
+    "message": "Sledovať naživo"
   },
   "showTotalTime": {
     "message": "Zobraziť dĺžku"
@@ -465,7 +465,7 @@
     "message": "Nie"
   },
   "showHideHelp": {
-    "message": "Zobraziť/skryť pomoc"
+    "message": "Zobraziť/skryť pomocníka"
   },
   "playbackVolumeControlsTitle": {
     "message": "Ovládanie prehrávania a hlasitosti"
@@ -694,7 +694,7 @@
     "message": "Zapnúť spúšťač videa?"
   },
   "videoActivatorPromptDescription": {
-    "message": "AutoTheater je teraz vypnutý. Chcete na videách zobraziť malé tlačidlo na ručný vstup do režimu kina? Neskôr to môžete zmeniť v Nastavenia → Funkcie → Spúšťač videa."
+    "message": "AutoTheater je teraz vypnutý. Chcete na videách zobraziť malé tlačidlo na ručný vstup do režimu kina? Neskôr to môžete zmeniť v časti Nastavenia → Funkcie → Spúšťač videa."
   },
   "videoActivatorTitle": {
     "message": "Spúšťač videa"
@@ -804,7 +804,7 @@
     "message": "Skratka je už priradená"
   },
   "shortcutConflictDescription": {
-    "message": "Skratka $KEY$ je priradená k $OWNERS$. Presunúť ju k $TARGET$? Predchádzajúce akcie túto skratku stratia.",
+    "message": "Skratka $KEY$ je priradená týmto akciám: $OWNERS$. Priradiť ju namiesto toho akcii „$TARGET$“? Predchádzajúce akcie túto skratku stratia.",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -1029,10 +1029,10 @@
     }
   },
   "rteNoteYoutube": {
-    "message": "Závisí od videa; preskočenie reklám a navigácia vo fronte, ak sú dostupné."
+    "message": "Závisí od videa; preskočenie reklám a prechádzanie videí v poradí, ak sú dostupné."
   },
   "rteNoteVimeo": {
-    "message": "Kapitoly a náhľady, ak sú k dispozícii; ďalšie video v prehliadkach."
+    "message": "Kapitoly a náhľady, ak sú k dispozícii; ďalšie video v kolekciách Showcase."
   },
   "rteNotePatreon": {
     "message": "Titulky, kapitoly a náhľady, ak sú k dispozícii."
