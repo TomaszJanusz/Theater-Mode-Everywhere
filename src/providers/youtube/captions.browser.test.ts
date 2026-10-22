@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+
 import { chromium, type Page } from 'playwright';
+
+import { sharedTestBrowser } from '../../test-utils/test-browser';
+
+const chromiumBrowser = sharedTestBrowser(chromium);
 
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
@@ -66,15 +71,15 @@ async function ready(page: Page): Promise<void> {
 describe('YouTube captions request lifecycle', () => {
   it('acknowledges completion only after applying the requested track', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await chromiumBrowser.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await setup(page);
       await startPending(page);
       await ready(page);
       assert.equal(await page.evaluate('window.__result'), true);
       assert.equal((await calls(page)).filter(call => call.type === 'track' && call.language === 'en').length, 1);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   for (const [name, change] of [
@@ -87,24 +92,24 @@ describe('YouTube captions request lifecycle', () => {
   ] as const) {
     it(`rejects a pending request after ${name}`, async t => {
       if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await chromium.launch({ headless: true });
+      const context = await chromiumBrowser.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await startPending(page);
         await page.evaluate(change);
         await ready(page);
         assert.equal(await page.evaluate('window.__result'), false);
         assert.equal((await calls(page)).filter(call => call.language === 'en' || call.type === 'click').length, 0);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
   }
 
   it('rejects disable during the initial reset delay before loading the caption module', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await chromiumBrowser.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await setup(page);
       await page.evaluate(`window.__start();
         window.CaptionTest.requestYoutubePlayerCaptions({enabled:false});
@@ -112,7 +117,7 @@ describe('YouTube captions request lifecycle', () => {
       await page.waitForFunction('window.__result !== "pending"');
       assert.equal(await page.evaluate('window.__result'), false);
       assert.equal((await calls(page)).filter(call => call.type === 'load' || call.language === 'en' || call.type === 'click').length, 0);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   for (const [name, action] of [
@@ -121,24 +126,24 @@ describe('YouTube captions request lifecycle', () => {
   ] as const) {
     it(`does not mint captions from an earlier fetch after ${name}`, async t => {
       if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await chromium.launch({ headless: true });
+      const context = await chromiumBrowser.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`window.__tracks = [{languageCode:'en'}];
           window.__mint = window.CaptionTest.fetchTimedtextWithPot('https://www.youtube.com/api/timedtext?v=video-a&lang=en');
           ${action}`);
         assert.equal(await page.evaluate('window.__mint'), null);
         assert.equal((await calls(page)).filter(call => call.type === 'load' || call.language === 'en' || call.type === 'click').length, 0);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
   }
 
   it('rejects superseded selections and applies the newest language once', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await chromiumBrowser.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await setup(page);
       await startPending(page);
       await page.evaluate(`window.__second = window.CaptionTest.requestYoutubePlayerCaptions({enabled:true,language:'pl'});
@@ -147,14 +152,14 @@ describe('YouTube captions request lifecycle', () => {
       assert.equal(await page.evaluate('window.__result'), false);
       assert.equal(await page.evaluate('window.__second'), true);
       assert.deepEqual((await calls(page)).filter(call => call.language).map(call => call.language), ['pl']);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('responds false to async rejection without an unhandled rejection', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await chromiumBrowser.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await setup(page);
       await page.evaluate(`window.__unhandled = 0;
         window.addEventListener('unhandledrejection', () => window.__unhandled++);
@@ -163,14 +168,14 @@ describe('YouTube captions request lifecycle', () => {
       await page.waitForFunction('window.__result !== "pending"');
       assert.equal(await page.evaluate('window.__result'), false);
       assert.equal(await page.evaluate('window.__unhandled'), 0);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 
   it('retains title and storyboard data when a host caption list is malformed', async t => {
     if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await chromiumBrowser.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await setup(page);
       await page.evaluate(`document.getElementById('movie_player').getPlayerResponse = () => ({
         videoDetails:{videoId:'video-a',title:'Title',lengthSeconds:'100'},
@@ -181,6 +186,6 @@ describe('YouTube captions request lifecycle', () => {
       assert.equal(result.title, 'Title');
       assert.equal(result.storyboardSpec, 'storyboard');
       assert.deepEqual(result.captionTracks, []);
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
   });
 });

@@ -104,11 +104,9 @@
     "esbuild": 1
   },
   "src/providers/youtube/captions.browser.test.ts": {
-    "launch": 7,
     "esbuild": 1
   },
   "src/providers/youtube/queue.browser.test.ts": {
-    "launch": 8,
     "esbuild": 1
   },
   "src/providers/youtube/sponsorblock.browser.test.ts": {

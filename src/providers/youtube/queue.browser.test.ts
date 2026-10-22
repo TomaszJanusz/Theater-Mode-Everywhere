@@ -1,11 +1,16 @@
-import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
 import { chromium, firefox, type Page } from 'playwright';
+
+import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { selectTestEngines } from '../../test-utils/test-engines';
+
+const chromiumBrowser = sharedTestBrowser(chromium);
 
 const require = createRequire(import.meta.url);
 const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
@@ -95,12 +100,13 @@ async function setup(page: Page): Promise<void> {
 }
 
 for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['Firefox', firefox]] as const, ([name]) => name)) {
+  const shared = browserType === chromium ? chromiumBrowser : sharedTestBrowser(browserType);
   describe(`YouTube queue navigation (${name})`, () => {
     it('uses collapsed queue links with missing native controls and keeps previews tied to targets', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         // Queue takes precedence even when the native controls are available.
         assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Queue c']);
@@ -119,14 +125,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
           document.querySelector('ytd-playlist-panel-renderer').remove(); window.__stale.activate();`);
         assert.equal((await clicks(page)).length, 3);
         assert.deepEqual(await read(page), []);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('handles the linkless current-video placeholder in a new session queue', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`history.replaceState(null,'','/watch?v=b');
           window.__state={video:'b',queueId:'TLsession',sequence:['c'],index:0};
@@ -137,14 +143,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         assert.equal(actions[0].preview?.title, 'Queue c');
         await activate(page, 'next');
         assert.deepEqual(await clicks(page), ['/watch?v=c&list=TLsession&index=1']);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('navigates through the host endpoint when the collapsed panel has no rows or links', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`document.querySelectorAll('#movie_player button').forEach(b=>b.remove());
           document.querySelector('#items').replaceChildren();`);
@@ -167,14 +173,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         assert.deepEqual((await read(page)).map(a=>a.direction), ['next']);
         await activate(page, 'next');
         assert.deepEqual(await clicks(page), ['/watch?v=c&list=TLsession&index=1']);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('revalidates model-only commands against edits, route identity, and unavailable targets', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`document.querySelectorAll('#movie_player button').forEach(b=>b.remove());
           window.__state.sequence=['a','b','b','c'];window.__state.index=2;
@@ -213,14 +219,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
           document.documentElement.setAttribute('data-te-youtube-integration-off','');window.__stale.activate();`);
         assert.deepEqual(await clicks(page), []);
         assert.deepEqual(await read(page), []);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('uses effective shuffled order, distinguishes duplicate occurrences, and rejects stale actions', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`window.__state.sequence=['c','b','a'];`);
         assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue c','Queue a']);
@@ -241,14 +247,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await page.evaluate(`window.__stale=${readExpression}.find(a=>a.direction==='next');
           history.replaceState(null,'','/watch?v=c&list=PLfixture'); window.__state.video='c'; window.__stale.activate();`);
         assert.deepEqual(await clicks(page), []);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('falls back per direction for incomplete data and preserves native restart and wrapping', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         await page.evaluate(`window.__render(['a','b','c'],1,{unavailable:2});`);
         assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Native next']);
@@ -271,14 +277,14 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         await page.evaluate(`document.documentElement.removeAttribute('data-te-youtube-integration-off');
           document.querySelector('ytd-playlist-panel-renderer').data={};`);
         assert.equal((await read(page)).find(a=>a.direction==='next')?.preview?.title, 'Native next');
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
 
     it('uses the visible queue when YouTube hides player steps and its playlist index is wrong', async t => {
       if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-      const browser = await browserType.launch({headless:true});
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await setup(page);
         // Index 0 points at "a" while "b" is playing, and both player steps are hidden.
         await page.evaluate(`window.__state.index=0;
@@ -300,16 +306,16 @@ for (const [name, browserType] of selectTestEngines([['Chromium', chromium], ['F
         assert.deepEqual((await read(page)).map(a=>a.preview?.title), ['Queue a','Queue c']);
         await activate(page, 'previous');
         assert.deepEqual(await clicks(page), ['/watch?v=a&list=PLfixture']);
-      } finally { await browser.close(); }
+      } finally { await context.close(); }
     });
   });
 }
 
 it('bridges private YouTube data into a genuine Chromium isolated world', async t => {
   if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
-  const browser = await chromium.launch({headless:true});
+  const context = await chromiumBrowser.newContext(t);
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await setup(page);
     const client = await page.context().newCDPSession(page);
     const {frameTree} = await client.send('Page.getFrameTree');
@@ -322,5 +328,5 @@ it('bridges private YouTube data into a genuine Chromium isolated world', async 
     assert.deepEqual(JSON.parse(result.result.value), {privateDataVisible:false,directions:['previous','next'],titles:['Queue a','Queue c']});
     await client.send('Runtime.evaluate', {contextId:executionContextId,expression:`${readExpression}.find(a=>a.direction==='next').activate()`});
     assert.deepEqual(await clicks(page), ['/watch?v=c&list=PLfixture&index=3']);
-  } finally { await browser.close(); }
+  } finally { await context.close(); }
 });
