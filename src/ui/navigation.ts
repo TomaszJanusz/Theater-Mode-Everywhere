@@ -1,8 +1,9 @@
 import { DisposableScope } from '../core/disposable-scope';
+
 import { closeMenuPopover } from './menu-popover';
-import { isElementMotionReduced } from './spinner-exit';
 import type { PlayerChromeContext } from './runtime-context';
 import { matchesShortcut, NAVIGATION_DIRECTIONS, NAVIGATION_SHORTCUTS, type NavigationDirection, type Shortcuts } from './shortcuts';
+import { isElementMotionReduced } from './spinner-exit';
 
 export interface FocusRect { left: number; top: number; right: number; bottom: number }
 
@@ -96,12 +97,9 @@ export function createNavigation(ctx: PlayerChromeContext) {
     return active instanceof HTMLElement && container.contains(active) ? active : null;
   };
 
-  function cancelSettle(): void {
+  function end(): void {
     settling?.cancel();
     settling = null;
-  }
-  function end(): void {
-    cancelSettle();
     session?.dispose();
     session = null;
   }
@@ -110,7 +108,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
   function focusElement(element: HTMLElement, direction?: NavigationDirection): void {
     ctx.refs.toolbarKeyboardInteractionActive = true;
     element.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
-    cancelSettle();
+    settling?.cancel();
     if (isElementMotionReduced(element)) return;
     const [x, y] = direction ? SETTLE_OFFSETS[direction] : [0, 0];
     const animation = element.animate([
@@ -123,7 +121,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
     animation.addEventListener('cancel', done);
   }
 
-  /** Blurs the control itself (a host blur does not reliably reach focus inside the shadow root) and hands focus back to the page. */
+  /** A host blur does not reliably reach focus inside the shadow root, so blur the control itself. */
   function leaveBar(element: HTMLElement): void {
     end();
     element.blur();
