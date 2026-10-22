@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "画面适配"
   },
+  "stepperPrevious": {
+    "message": "$1：上一个选项",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1：下一个选项",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "开启"
   },

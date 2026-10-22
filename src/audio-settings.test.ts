@@ -5,6 +5,8 @@ import {
   BASS_LEVELS,
   audioLevelLabelKey,
   cycleAudioSetting,
+  stepAudioSetting,
+  audioLevels,
   bassLevels,
   bassRowSweeps,
   isAudioSettingActive,
@@ -84,5 +86,27 @@ describe('audio settings', () => {
     assert.equal(bassRowSweeps('original', 'more'), false);
     assert.equal(bassRowSweeps('moaaarr', 'moar'), false);
     assert.equal(bassRowSweeps(undefined, 'moaaarr'), false, 'the first state never sweeps');
+  });
+});
+
+describe('stepping audio levels', () => {
+  it('moves one level and holds at either end, unlike the wrapping cycle', () => {
+    for (const name of AUDIO_SETTING_NAMES) {
+      const levels = audioLevels(name);
+      let settings = { ...DEFAULT_AUDIO_SETTINGS, [name]: levels[0] };
+      assert.equal(stepAudioSetting(settings, name, -1)[name], levels[0]);
+      for (let index = 1; index < levels.length; index++) {
+        settings = stepAudioSetting(settings, name, 1);
+        assert.equal(settings[name], levels[index]);
+      }
+      assert.equal(stepAudioSetting(settings, name, 1)[name], levels.at(-1));
+      assert.equal(cycleAudioSetting(settings, name)[name], levels[0]);
+      assert.equal(stepAudioSetting(settings, name, -1)[name], levels.at(-2));
+    }
+  });
+
+  it('only changes the named setting', () => {
+    const settings = { voice: 'light', leveling: 'strong', bass: 'more' } as const;
+    assert.deepEqual(stepAudioSetting(settings, 'bass', -1), { ...settings, bass: 'original' });
   });
 });

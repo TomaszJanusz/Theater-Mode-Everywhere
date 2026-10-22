@@ -24,11 +24,11 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   const media = () => video.evaluate((video: HTMLVideoElement) => ({
     voice: video.dataset.theaterVoice, leveling: video.dataset.theaterLeveling, bass: video.dataset.theaterBass
   }));
-  const cycleTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string) => {
+  const stepTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string, direction: 1 | -1 = 1) => {
     const row = page.locator(`.audio-${name}-btn`);
-    await row.click();
+    await row.locator(`.theater-stepper-btn[data-direction="${direction}"]`).click();
     await page.waitForFunction(([name, detail]) => document.getElementById('theater-everywhere-ui')?.shadowRoot
-      ?.querySelector(`.audio-${name}-btn .theater-settings-detail`)?.textContent === detail, [name, detail]);
+      ?.querySelector(`.audio-${name}-btn .theater-stepper-value`)?.textContent === detail, [name, detail]);
     await hud.filter({ hasText: `${hudLabel}: ${detail}` }).waitFor();
     if (await hud.innerText() !== `${hudLabel}: ${detail}`) fail(`${hudLabel} HUD did not confirm ${detail}.`);
     if (await shapes(hud) !== await shapes(row)) fail(`${hudLabel} HUD icon differs from its settings row.`);
@@ -41,7 +41,7 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   const audioHeading = await section.locator('.theater-settings-heading').evaluate(heading =>
     Array.from(heading.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
   if (audioHeading !== 'Audio') fail(`Audio section heading is missing: ${JSON.stringify(audioHeading)}`);
-  const details = await section.locator('.theater-settings-detail').allInnerTexts();
+  const details = await section.locator('.theater-settings-detail, .theater-stepper-value').allInnerTexts();
   if (details.join('|') !== 'Off|Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
   if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
   const slider = page.locator('.theater-volume-slider');
@@ -75,15 +75,15 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   if (await slider.inputValue() !== '1' || await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') {
     fail('Unmute restored a boosted level after volume boost was turned off at zero volume.');
   }
-  await cycleTo('voice', 'Voice boost', 'Light');
+  await stepTo('voice', 'Voice boost', 'Light');
   // The click is the user activation the MAIN world needs to start Web Audio.
   await page.waitForFunction(() => {
     const player = document.querySelector<HTMLVideoElement>('video#player');
     return player?.dataset.theaterVoice === 'light' && player.dataset.theaterBoostReady === 'true';
   });
-  await cycleTo('leveling', 'Reduce loud sounds', 'Light');
-  await cycleTo('leveling', 'Reduce loud sounds', 'Strong');
-  await cycleTo('bass', 'Bass', 'More');
+  await stepTo('leveling', 'Reduce loud sounds', 'Light');
+  await stepTo('leveling', 'Reduce loud sounds', 'Strong');
+  await stepTo('bass', 'Bass', 'More');
   // One full lap of the configured levels from More, ending on More again.
   for (const level of bassLapFrom('more')) {
     await page.keyboard.press('b');
@@ -103,7 +103,7 @@ export async function assertAudioSettings(page: Page): Promise<void> {
       await page.keyboard.press(key);
       await page.waitForFunction(([name, before]) => document.querySelector<HTMLVideoElement>('video#player')
         ?.dataset[name === 'voice' ? 'theaterVoice' : 'theaterLeveling'] !== before, [name, before]);
-      const detail = await page.locator(`.audio-${name}-btn .theater-settings-detail`).innerText();
+      const detail = await page.locator(`.audio-${name}-btn .theater-stepper-value`).innerText();
       if (await hud.innerText() !== `${label}: ${detail}`) fail(`${label} shortcut did not confirm its new level.`);
     }
     if ((await media())[name] !== initial) fail(`${label} shortcut did not cycle through all levels.`);
@@ -171,11 +171,13 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
   await page.keyboard.press('Escape'); // Close settings before restoring effects.
     await gear.click();
-    await cycleTo('voice', 'Voice boost', 'Strong');
-    await cycleTo('voice', 'Voice boost', 'Off');
-    await cycleTo('leveling', 'Reduce loud sounds', 'Off');
-    const lap = bassLapFrom('more');
-    for (const level of lap.slice(0, lap.indexOf('original') + 1)) await cycleTo('bass', 'Bass', BASS_LABELS[level]);
+    // The stepper holds at the top instead of wrapping, so Off is reached by stepping down.
+    await stepTo('voice', 'Voice boost', 'Strong');
+    await stepTo('voice', 'Voice boost', 'Light', -1);
+    await stepTo('voice', 'Voice boost', 'Off', -1);
+    await stepTo('leveling', 'Reduce loud sounds', 'Light', -1);
+    await stepTo('leveling', 'Reduce loud sounds', 'Off', -1);
+    await stepTo('bass', 'Bass', BASS_LABELS.original, -1);
     await page.keyboard.press('Escape');
   if (await video.getAttribute('data-smoke-audio-emptied') !== '0') fail('An audio setting unnecessarily reloaded the same-origin video.');
 }
@@ -254,12 +256,15 @@ export async function assertPictureLayoutFixture(page: Page): Promise<void> {
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired in a shadow input.');
   await page.evaluate(() => document.getElementById('layout-input-test')?.remove());
   if (!await row.isVisible()) await page.locator('.player-settings-btn').click();
-  const fit = page.locator('.video-fit-btn');
-  await fit.click();
+  const fitNext = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="1"]');
+  const fitPrevious = page.locator('.video-fit-btn .theater-stepper-btn[data-direction="-1"]');
+  await fitNext.click();
   await row.click();
   await waitPosition('50% 50%');
-  await fit.click();
+  await fitNext.click();
   await waitPosition('50% 50%');
-  await fit.click();
+  // The stepper does not wrap: back to Fit takes two steps down.
+  await fitPrevious.click();
+  await fitPrevious.click();
   await waitPosition('50% 0%');
 }

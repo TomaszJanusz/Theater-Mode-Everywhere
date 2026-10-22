@@ -173,3 +173,6 @@ outputs/
 
 # Scratch files
 tmp/
+
+# Vitest browser-mode attachments and failure screenshots
+.vitest/

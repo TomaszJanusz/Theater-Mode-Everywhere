@@ -52,6 +52,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   playerSettingsLabel: "Player settings",
   extensionSettingsLabel: "Extension settings",
   videoFitLabel: "Video fit",
+  stepperPrevious: "$1: previous option",
+  stepperNext: "$1: next option",
   controlsVisibilityOn: "On",
   controlsVisibilityOff: "Off",
   autoEnterTheaterTitle: "AutoTheater",

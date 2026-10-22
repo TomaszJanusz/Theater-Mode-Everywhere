@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "Ajuste do vídeo"
   },
+  "stepperPrevious": {
+    "message": "$1: opção anterior",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: próxima opção",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "Sim"
   },

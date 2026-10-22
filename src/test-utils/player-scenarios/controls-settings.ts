@@ -116,7 +116,7 @@ export async function preparePinAndMenus(page: Page) {
       const row = root.querySelector(selector)!;
       const label = row.querySelector('.theater-settings-label')!.getBoundingClientRect();
       const keys = row.querySelector('.theater-settings-keys')!.getBoundingClientRect();
-      const detail = row.querySelector('.theater-settings-detail')!.getBoundingClientRect();
+      const detail = row.querySelector('.theater-settings-detail, .theater-stepper')!.getBoundingClientRect();
       return {
         selector,
         kbds: [...row.querySelectorAll('.theater-settings-keys kbd')].map((key) => key.textContent),
@@ -124,7 +124,7 @@ export async function preparePinAndMenus(page: Page) {
           .filter((node) => node.nodeType === Node.TEXT_NODE)
           .map((node) => node.textContent)
           .join(''),
-        value: row.querySelector('.theater-settings-detail')!.textContent ?? '',
+        value: row.querySelector('.theater-settings-detail, .theater-stepper-value')!.textContent ?? '',
         shortcutInValue: Boolean(row.querySelector('.theater-settings-detail kbd')),
         labelToKeys: Math.round(keys.left - label.right),
         keysToValue: detail.width === 0 ? null : Math.round(detail.left - keys.right),
@@ -194,7 +194,7 @@ export async function preparePinAndMenus(page: Page) {
 
   // Moved controls still execute commands, and keyboard activation never toggles video playback.
   const fitBefore = await page.locator('video#player').evaluate(video => getComputedStyle(video).objectFit);
-  await menu.locator('.video-fit-btn').click();
+  await menu.locator('.video-fit-btn [data-direction="1"]').click();
   await page.waitForFunction((before) => getComputedStyle(document.querySelector('video#player')!).objectFit !== before, fitBefore, { timeout: 5000 }).catch(async () => {
     const details = await page.evaluate(() => {
       const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
@@ -207,8 +207,10 @@ export async function preparePinAndMenus(page: Page) {
   });
   const fitAfter = await page.locator('video#player').evaluate(video => getComputedStyle(video).objectFit);
   if (fitBefore === fitAfter) fail('Video fit stopped working after moving into settings.');
-  await menu.locator('.video-fit-btn').click();
-  await menu.locator('.video-fit-btn').click();
+  // Steps do not wrap: Fill back down to Fit takes two.
+  await menu.locator('.video-fit-btn [data-direction="1"]').click();
+  await menu.locator('.video-fit-btn [data-direction="-1"]').click();
+  await menu.locator('.video-fit-btn [data-direction="-1"]').click();
   await pin.focus();
   const pausedBeforeSettings = await page.locator('video#player').evaluate((video: HTMLVideoElement) => video.paused);
   await page.keyboard.press('Space');
@@ -235,12 +237,15 @@ export async function preparePinAndMenus(page: Page) {
   if (!await menu.locator('.volume-boost-btn').evaluate(button => button.matches(':focus'))) {
     fail('Tab from the trigger skipped open settings.');
   }
-  for (const name of ['voice', 'leveling', 'bass']) {
+  // Both arrows of a stepper are tab stops (an arrow at the end of its range is aria-disabled, so it keeps focus).
+  for (const [name, direction] of [['voice', -1], ['voice', 1], ['leveling', -1], ['leveling', 1], ['bass', -1], ['bass', 1]] as const) {
     await page.keyboard.press('Tab');
-    if (!await menu.locator(`.audio-${name}-btn`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
+    if (!await menu.locator(`.audio-${name}-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail(`Tab skipped the ${name} audio setting.`);
   }
-  await page.keyboard.press('Tab');
-  if (!await menu.locator('.video-fit-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
+  for (const direction of [-1, 1]) {
+    await page.keyboard.press('Tab');
+    if (!await menu.locator(`.video-fit-btn [data-direction="${direction}"]`).evaluate(button => button.matches(':focus'))) fail('Tab skipped the video fit setting.');
+  }
   await page.keyboard.press('Tab');
   if (!await menu.locator('.picture-layout-btn').evaluate(button => button.matches(':focus'))) fail('Tab skipped the picture layout setting.');
   await page.keyboard.press('Tab');

@@ -91,7 +91,7 @@ describe('pinned controls geometry', () => {
         for (const raised of [false, true]) {
           if (raised) await page.keyboard.press('Shift+L');
           for (const fit of ['contain', 'cover', 'fill']) {
-            if (fit !== 'contain') await page.locator('.video-fit-btn').evaluate((e: HTMLButtonElement) => e.click());
+            if (fit !== 'contain') await page.locator('.video-fit-btn [data-direction="1"]').evaluate((e: HTMLButtonElement) => e.click());
             for (const captions of [false, true]) {
               if (captions) await page.keyboard.press('c');
               await page.waitForFunction(captions => {
@@ -142,7 +142,8 @@ describe('pinned controls geometry', () => {
             }
           }
           // Restore Fit and Centered for the next layout / fullscreen pass.
-          await page.locator('.video-fit-btn').evaluate((e: HTMLButtonElement) => e.click());
+          // The stepper stops at Fill rather than wrapping, so return to Fit with two steps down.
+          for (let step = 0; step < 2; step++) await page.locator('.video-fit-btn [data-direction="-1"]').evaluate((e: HTMLButtonElement) => e.click());
           if (raised) await page.keyboard.press('Shift+L');
         }
         if (fullscreen) {

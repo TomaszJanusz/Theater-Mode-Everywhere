@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "Dopasowanie obrazu"
   },
+  "stepperPrevious": {
+    "message": "$1: poprzednia opcja",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: następna opcja",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "Wł."
   },

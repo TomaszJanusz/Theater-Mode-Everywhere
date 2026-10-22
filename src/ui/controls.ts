@@ -1,3 +1,4 @@
+import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
@@ -34,7 +35,7 @@ import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
-import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevelLabelKeys, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
+import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover } from './menu-popover';
 import { beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
@@ -723,8 +724,8 @@ export function createControls(
     rightSec.appendChild(ccHost);
     rightSec.appendChild(speedContainer);
 
-    const fitBtn = document.createElement('button');
-    fitBtn.className = 'theater-control-btn video-fit-btn';
+    const fitBtn = document.createElement('div');
+    fitBtn.className = 'video-fit-btn';
     fitBtn.hidden = !video.capabilities.objectFit;
     const updateFitButtonIcon = () => {
       setIcon(fitBtn, `
@@ -738,14 +739,14 @@ export function createControls(
       `);
     };
     updateFitButtonIcon();
-    fitBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      executeCommand({ type: 'CYCLE_FIT' });
+    const fitRow = video.capabilities.objectFit
+      ? settings.addStepperRow(fitBtn, t('videoFitLabel'), 'player', direction => executeCommand({ type: 'STEP_FIT', direction }))
+      : null;
+    const updateFitRow = () => fitRow?.updateStepper(ui().shortcuts.cycleFit, {
+      value: t(VIDEO_FIT_LABEL_KEYS[ui().videoFit]),
+      index: VIDEO_FIT_MODES.indexOf(ui().videoFit),
+      count: VIDEO_FIT_MODES.length
     });
-    const fitRow = video.capabilities.objectFit ? settings.addRow(fitBtn, t('videoFitLabel')) : null;
-    const updateFitRow = () => fitRow?.update(ui().shortcuts.cycleFit, t(
-      ui().videoFit === 'cover' ? 'videoFitCover' : ui().videoFit === 'fill' ? 'videoFitFill' : 'videoFitContain'
-    ), ['videoFitContain', 'videoFitCover', 'videoFitFill'].map(key => t(key)));
     updateFitRow();
     controlsScope.add(ctx.uiStore.subscribe(updateFitRow));
 
@@ -777,10 +778,15 @@ export function createControls(
       const boost = video.capabilities.volumeBoost
         ? audioRow('volume-boost-btn', VOLUME_BOOST_ICONS.menu, 'volumeBoostLabel', { type: 'TOGGLE_VOLUME_BOOST' })
         : null;
-      const audioRows = AUDIO_SETTING_NAMES.map((name) => ({
-        name,
-        ...audioRow(`audio-${name}-btn`, AUDIO_SETTING_ICONS[name].menu, AUDIO_LABEL_KEYS[name], { type: 'CYCLE_AUDIO', setting: name })
-      }));
+      // Levels are ordered, so the menu steps them without wrapping; only the cycle shortcuts wrap.
+      const audioRows = AUDIO_SETTING_NAMES.map((name) => {
+        const button = document.createElement('div');
+        button.className = `audio-${name}-btn`;
+        setIcon(button, AUDIO_SETTING_ICONS[name].menu);
+        const row = settings.addStepperRow(button, t(AUDIO_LABEL_KEYS[name]), 'audio',
+          direction => executeCommand({ type: 'STEP_AUDIO', setting: name, direction }));
+        return { name, button, row };
+      });
       const SWEEP_CLASS = 'is-sweeping';
       let lastBassLevel: AudioSettings['bass'] | undefined;
       const updateAudioRows = () => {
@@ -808,8 +814,11 @@ export function createControls(
             }
             lastBassLevel = level;
           }
-          row.update(shortcuts[AUDIO_SHORTCUTS[name]], t(audioLevelLabelKey(ui().audio, name)),
-            audioLevelLabelKeys(name).map(key => t(key)));
+          row.updateStepper(shortcuts[AUDIO_SHORTCUTS[name]], {
+            value: t(audioLevelLabelKey(ui().audio, name)),
+            index: audioLevels(name).indexOf(ui().audio[name]),
+            count: audioLevels(name).length
+          });
         }
       };
       updateAudioRows();
