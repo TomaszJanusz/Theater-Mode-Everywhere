@@ -3246,7 +3246,7 @@ button.theater-time-end:hover {
 .theater-stepper-segment {
   flex: 1 1 0 !important;
   min-width: 0 !important;
-  height: 3px !important;
+  height: 2px !important;
   border-radius: 1px !important;
   background: var(--appearance-border, rgba(255, 255, 255, 0.2)) !important;
 }
