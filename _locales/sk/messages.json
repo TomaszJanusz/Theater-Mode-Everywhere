@@ -785,6 +785,22 @@
   "videoFitLabel": {
     "message": "Prispôsobenie obrazu"
   },
+  "stepperPrevious": {
+    "message": "$1: predchádzajúca možnosť",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: ďalšia možnosť",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
   "controlsVisibilityOn": {
     "message": "Zapnuté"
   },
