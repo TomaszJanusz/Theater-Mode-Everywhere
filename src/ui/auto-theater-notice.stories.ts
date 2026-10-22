@@ -30,9 +30,9 @@ export const Counting: Story = {
 };
 export const RingExit: Story = { ...Counting, args: { remainingMs: 900, frames: [0, 0.25, 0.5] } };
 export const NoRing: Story = {
-  ...Counting, args: { remainingMs: 400 },
+  ...Counting, args: { remainingMs: 100 },
   play: async context => {
     await Counting.play?.(context);
-    if (context.args.remainingMs < 500) await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
+    if (context.args.remainingMs <= 100) await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
   }
 };

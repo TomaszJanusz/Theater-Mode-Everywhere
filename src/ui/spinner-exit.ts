@@ -2,8 +2,9 @@ import { isMotionReduced } from '../appearance-runtime';
 
 import { systemClock, type UiClock } from './ui-clock';
 
-export const SPINNER_DEADLINE_START_MS = 1000;
-export const SPINNER_DEADLINE_END_MS = 500;
+/** A deadline ring zooms out between these remaining times; before that it holds full (see auto-theater-notice). */
+export const SPINNER_DEADLINE_START_MS = 500;
+export const SPINNER_DEADLINE_END_MS = 100;
 export const SPINNER_PASSIVE_EXIT_MS = 500;
 
 /** Reduce motion as seen by a shadow-hosted element: the UI host's marker, else the page's. */

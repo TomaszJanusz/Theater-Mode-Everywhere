@@ -70,9 +70,9 @@ const CleanupLeavesNothing: Story = {
 };
 test('CleanupLeavesNothing', () => runNoticeCase(CleanupLeavesNothing));
 
-/** A deadline already inside the final half second shows no ring exit at all: the notice just ends. */
+/** A deadline already inside the ring's final 100 ms shows no ring exit at all: the notice just ends. */
 const FinalHalfSecondNoRing: Story = {
-  args: { remainingMs: SPINNER_DEADLINE_END_MS - 100 },
+  args: { remainingMs: SPINNER_DEADLINE_END_MS },
   play: async () => {
     await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
   }
@@ -166,5 +166,105 @@ test('Per-digit ring replaces its eased turn on each digit change', () => runNot
     await expect(first.playState).toBe('idle');
     await expect(Number(turns[0]!.currentTime)).toBeLessThan(250);
     await expect(turns[0]!.effect?.getTiming().easing).not.toBe('linear');
+  }
+}));
+
+// The stage pins running animations to a fixed frame, so growth is checked by its timing; the clock-exact
+// frames live in spinner-exit.browser.test.ts.
+const arcs = () => [...(notice()?.querySelectorAll<HTMLElement>('.theater-auto-notice-arc') ?? [])];
+const arcTimings = () => arcs().flatMap(arc => arc.getAnimations().map(animation => {
+  const { delay, duration } = animation.effect!.getTiming();
+  return [Math.round(Number(delay)), Math.round(Number(duration))];
+}));
+const wait = () => notice()?.querySelector<HTMLElement>('.theater-auto-notice-wait');
+const dotsOn = () => wait()?.querySelectorAll('.is-on').length;
+
+const zoomOuts = () => (notice()?.querySelector('.caption-hud-spinner')?.getAnimations() ?? [])
+  .filter(animation => animation.effect instanceof KeyframeEffect && animation.effect.getKeyframes().some(frame => 'scale' in frame));
+
+test('The accent grows during the second before 0 and stays full until the ring zooms out', () => runNoticeCase({
+  args: { remainingMs: 3000 },
+  play: async () => {
+    run().elapse(999);
+    await expect(arcs().length).toBe(0);
+    run().elapse(1);
+    // 2 s left: three quadrants fade in one after another across the next second.
+    await expect(arcTimings()).toEqual([[0, 333], [333, 333], [667, 333]]);
+    const grown = arcs();
+    // 1 s down to 500 ms left: nothing else happens to the ring.
+    run().elapse(1499);
+    await expect(arcs()).toEqual(grown);
+    await expect(zoomOuts().length).toBe(0);
+    // From 500 ms left it zooms out over 400 ms.
+    run().elapse(1);
+    await expect(zoomOuts().map(animation => animation.effect?.getTiming().duration)).toEqual([400]);
+  }
+}));
+
+test('Joining late builds the growth once', () => runNoticeCase({
+  args: { remainingMs: 1500 },
+  play: async () => {
+    await expect(arcTimings().length).toBe(3);
+    run().elapse(500);
+    await expect(arcTimings().length).toBe(3);
+  }
+}));
+
+test('Reduced motion shows the full circle without fading or zooming', () => runNoticeCase({
+  globals: { reduceMotion: 'on' }, args: { remainingMs: 3000 },
+  play: async () => {
+    run().elapse(1000);
+    await expect(arcs().length).toBe(3);
+    await expect(arcTimings()).toEqual([]);
+    run().elapse(1499);
+    await expect(notice()?.querySelector('.caption-hud-spinner')).not.toBeNull();
+    run().elapse(1);
+    await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
+  }
+}));
+
+test('A 0 that waits on the video gets an ellipsis after 200 ms, cycling until hidden', () => runNoticeCase({
+  args: { remainingMs: 1000 },
+  play: async () => {
+    run().elapse(1000);
+    await expect(digit()).toBe('0');
+    run().elapse(199);
+    await expect(wait()?.parentElement?.classList.contains('is-waiting')).toBe(false);
+    run().elapse(1);
+    await expect(wait()?.parentElement?.classList.contains('is-waiting')).toBe(true);
+    await expect(dotsOn()).toBe(1);
+    for (const expected of [2, 3, 4, 1, 2]) {
+      run().elapse(399);
+      run().elapse(1);
+      await expect(dotsOn()).toBe(expected);
+    }
+    // Decorative and silent: hidden from assistive tech, so no frame is announced.
+    await expect(wait()?.getAttribute('aria-hidden')).toBe('true');
+    await expect(notice()?.getAttribute('aria-live')).toBe('polite');
+    run().stop();
+    run().stop();
+    await expect(run().stage.clock.pending).toBe(0);
+    await expect(notice()).toBeNull();
+  }
+}));
+
+test('Hiding inside the 200 ms grace never starts the ellipsis', () => runNoticeCase({
+  args: { remainingMs: 1000 },
+  play: async () => {
+    run().elapse(1100);
+    run().stop();
+    await expect(run().stage.clock.pending).toBe(0);
+    run().stage.clock.advance(5000);
+    await expect(notice()).toBeNull();
+  }
+}));
+
+test('A late join at 0 still waits 200 ms before the ellipsis', () => runNoticeCase({
+  args: { remainingMs: 0 },
+  play: async () => {
+    run().elapse(199);
+    await expect(wait()?.parentElement?.classList.contains('is-waiting')).toBe(false);
+    run().elapse(1);
+    await expect(dotsOn()).toBe(1);
   }
 }));

@@ -2518,7 +2518,44 @@ button.theater-time-end:hover {
   box-sizing: border-box !important;
   /* The countdown drives the ring from the notice's own clock (auto-theater-notice.ts). */
   animation: none !important;
+  position: relative !important;
 }
+
+/* Quadrants of accent that fade in after the spinner's own top arc until the ring is full. */
+.theater-auto-notice-arc {
+  position: absolute !important;
+  inset: -2.5px !important;
+  box-sizing: border-box !important;
+  border: 2.5px solid transparent !important;
+  border-radius: 50% !important;
+  pointer-events: none !important;
+}
+
+.theater-auto-notice-arc[data-side="right"] { border-right-color: var(--accent-color, #6366f1) !important; }
+.theater-auto-notice-arc[data-side="bottom"] { border-bottom-color: var(--accent-color, #6366f1) !important; }
+.theater-auto-notice-arc[data-side="left"] { border-left-color: var(--accent-color, #6366f1) !important; }
+
+/* Replaces the 0 while entry waits for the video; every dot keeps its slot so nothing shifts. */
+.theater-auto-notice-wait {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding-bottom: 7px !important;
+  box-sizing: border-box !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 0.5 !important;
+  color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+.theater-auto-notice-visual.is-waiting .theater-auto-notice-wait { visibility: visible !important; }
+.theater-auto-notice-visual.is-waiting .theater-auto-notice-count { visibility: hidden !important; }
+.theater-auto-notice-wait > span { opacity: 0 !important; }
+.theater-auto-notice-wait > span.is-on { opacity: 1 !important; }
 
 .theater-auto-notice-count {
   position: absolute !important;

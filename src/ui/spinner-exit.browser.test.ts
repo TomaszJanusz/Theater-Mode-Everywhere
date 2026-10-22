@@ -43,8 +43,8 @@ async function setup(page: Page) {
     Object.assign(window, { exits: [] });
     HTMLElement.prototype.animate = function (frames, options) {
       const animation = native.call(this, frames, options);
-      // The countdown's per-second ring turn is not an exit.
-      if (Array.isArray(frames) && frames.some(frame => 'rotate' in frame)) return animation;
+      // The countdown's per-second ring turn and its accent growth are not exits.
+      if (Array.isArray(frames) && frames.some(frame => 'rotate' in frame || Object.keys(frame).join() === 'opacity')) return animation;
       animation.pause();
       const duration = Number(animation.effect!.getTiming().duration);
       const record = { animation, element: this, started: performance.now(), duration };
@@ -153,60 +153,80 @@ for (const engine of testEngines()) {
     });
   }
 
-  it(`${engine}: deadline exit uses the intent clock, runs during the final 0 stage, and cleans up`, { timeout: 40_000 }, async t => {
+  it(`${engine}: the ring grows to full, holds, zooms out by 100 ms, then waits on 0 with an ellipsis`, { timeout: 40_000 }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`const deadline = performance.now() + 3000;
       window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => deadline - performance.now());`);
     const visual = page.locator('.theater-auto-notice-visual');
     const spinner = page.locator('.theater-auto-notice .caption-hud-spinner');
-    await page.clock.runFor(1500);
-    await capture(page, `${engine}-deadline-minus-1500`, 0);
+    // The document timeline is not driven by the test clock, so growth is checked by its schedule.
+    const arcs = () => page.evaluate(() => [...document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelectorAll('.theater-auto-notice-arc')]
+      .flatMap(arc => arc.getAnimations().map(animation => {
+        const { delay, duration } = animation.effect!.getTiming();
+        return [Math.round(Number(delay)), Math.round(Number(duration))];
+      })));
+    await page.clock.runFor(999);
+    assert.deepEqual(await arcs(), [], '5 s to 2 s: unchanged');
+    await page.clock.runFor(1);
+    assert.deepEqual(await arcs(), [[0, 333], [333, 333], [667, 333]], 'the accent grows over 2 s to 1 s');
+    await page.clock.runFor(1000);
+    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0');
     await page.clock.runFor(499);
+    assert.equal(await page.locator('.theater-auto-notice-arc').count(), 3, 'the full circle stays until 500 ms');
     assert.equal(await page.evaluate('exits.length'), 0);
-    await capture(page, `${engine}-deadline-before`, 0);
     await page.clock.runFor(1);
     assert.equal(await page.evaluate('exits.length'), 1);
-    assert.equal(await page.evaluate('exits[0].duration'), 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the exit starts as the digit reaches 0');
-    await capture(page, `${engine}-deadline-start`, 0);
+    assert.equal(await page.evaluate('exits[0].duration'), 400, 'zooms out from 500 ms to 100 ms');
     assert.equal(await page.evaluate('exits[0].element.className'), 'caption-hud-spinner');
-    // The 1→0 roll is still running here, so the glyph is checked once it settles.
-    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
-    await page.clock.runFor(250);
-    await capture(page, `${engine}-deadline-middle`, 250);
+    await capture(page, `${engine}-deadline-start`, 0);
+    await page.clock.runFor(200);
+    await capture(page, `${engine}-deadline-middle`, 200);
     await assertShrinking(page, '.theater-auto-notice .caption-hud-spinner');
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0');
-    await page.clock.runFor(249);
+    await page.clock.runFor(199);
     assert.equal(await spinner.count(), 1);
     await page.clock.runFor(1);
-    assert.equal(await spinner.count(), 0, 'removed exactly 500 ms before entry');
-    assert.equal(await page.locator('.theater-auto-notice').count(), 1, 'notice timing stays unchanged');
-    await capture(page, `${engine}-deadline-end`, 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the digit stays 0 as the ring clears');
-    await page.clock.runFor(250);
-    await capture(page, `${engine}-deadline-minus-250`, 500);
-    assert.equal(await visual.locator('.theater-time-glyph:not(.is-leaving)').innerText(), '0', 'the final stretch shows 0');
-    await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count');
+    assert.equal(await spinner.count(), 0, 'removed 100 ms before the countdown ends');
+    await capture(page, `${engine}-deadline-end`, 400);
+    // The countdown ends; the 0 waits 200 ms alone, then the ellipsis cycles.
+    const waiting = () => page.evaluate(() => {
+      const wait = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice-wait')!;
+      return { shown: getComputedStyle(wait).visibility === 'visible', on: wait.querySelectorAll('.is-on').length, hidden: wait.getAttribute('aria-hidden') };
+    });
+    await page.clock.runFor(100);
+    assert.equal((await waiting()).shown, false, 'the countdown has ended');
+    await page.clock.runFor(199);
+    assert.equal((await waiting()).shown, false, 'the 0 stands alone for 200 ms after the countdown');
+    await page.clock.runFor(1);
+    assert.deepEqual(await waiting(), { shown: true, on: 1, hidden: 'true' });
+    await capture(page, `${engine}-ellipsis-1`, 400);
+    for (const on of [2, 3, 4, 1]) {
+      await page.clock.runFor(400);
+      assert.equal((await waiting()).on, on);
+    }
+    assert.equal(await visual.locator('.theater-auto-notice-count').evaluate(e => getComputedStyle(e).visibility), 'hidden', 'the ellipsis replaces the 0');
     await page.evaluate('hide(); hide()');
+    await page.clock.runFor(5000);
+    assert.equal(await page.locator('.theater-auto-notice').count(), 0);
+    assert.equal(await page.evaluate('exits.length'), 1, 'dismissal cancels everything pending');
     await page.evaluate(`window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => 3000); hide(); hide();`);
     await page.clock.runFor(5000);
     assert.equal(await page.evaluate('exits.length'), 1, 'dismissal cancels the deadline alarm');
 
     // A callback that wakes early re-reads the source clock rather than guessing a deadline.
-    await page.evaluate(`window.remaining = 1500; window.ring = document.createElement('div'); document.body.append(ring);
+    await page.evaluate(`window.remaining = 1000; window.ring = document.createElement('div'); document.body.append(ring);
       window.stop = SpinnerTest.exitSpinner(ring, {mode:'deadline', remainingMs: () => remaining});`);
     await page.clock.runFor(500);
-    assert.equal(await page.evaluate('exits.length'), 1, 'the source clock still has 1500 ms remaining');
-    await page.evaluate('remaining = 1000');
+    assert.equal(await page.evaluate('exits.length'), 1, 'the source clock still has 1000 ms remaining');
+    await page.evaluate('remaining = 500');
     await page.clock.runFor(500);
     assert.equal(await page.evaluate('exits.length'), 2);
     await page.evaluate('stop(); stop()');
     await page.clock.runFor(500);
     assert.equal(await page.evaluate('ring.isConnected'), true, 'cancelled completion cannot remove its element');
-    await page.evaluate(`window.stop = SpinnerTest.exitSpinner(ring, {mode:'deadline', remainingMs: () => 750});`);
-    assert.equal(await page.evaluate('exits[2].animation.currentTime'), 250, 'a late start catches up to the real clock');
+    await page.evaluate(`window.stop = SpinnerTest.exitSpinner(ring, {mode:'deadline', remainingMs: () => 300});`);
+    assert.equal(await page.evaluate('exits[2].animation.currentTime'), 200, 'a late start catches up to the real clock');
     await page.evaluate('stop(); ring.remove()');
   });
 
@@ -513,7 +533,7 @@ for (const engine of testEngines()) {
     await page.evaluate('hud.removeCaptionHud()');
   });
 
-  it(`${engine}: reduced motion removes immediately, including a live preference change, and the final half second shows 0`, { timeout: 40_000 }, async t => {
+  it(`${engine}: reduced motion removes immediately, including a live preference change, and the final stretch shows 0`, { timeout: 40_000 }, async t => {
     const page = await (await shared.newContext(t)).newPage();
     await setup(page);
     await page.evaluate(`hud.triggerCaptionHud({kind:'loading',title:'Loading'})`);
@@ -533,10 +553,13 @@ for (const engine of testEngines()) {
       const deadline = performance.now() + 3000;
       window.hide = SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => deadline - performance.now());`);
     await page.clock.runFor(1999);
+    assert.equal(await page.locator('.theater-auto-notice-arc').count(), 3, 'the full circle appears at once, without fading');
+    assert.equal(await page.locator('.theater-auto-notice-arc').first().evaluate(e => e.getAnimations().length), 0);
+    await page.clock.runFor(500);
     assert.equal(await page.locator('.theater-auto-notice .caption-hud-spinner').count(), 1);
     await page.clock.runFor(1);
     assert.equal(await page.locator('.theater-auto-notice .caption-hud-spinner').count(), 0);
-    await page.clock.runFor(750);
+    await page.clock.runFor(250);
     assert.equal(await page.locator('.theater-auto-notice-count').innerText(), '0');
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.evaluate('hide()');
