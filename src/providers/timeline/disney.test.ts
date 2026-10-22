@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
+
 import { DISNEY_SNAPSHOT_SCRIPT_ID } from '../../media-features/parsers/disney-page';
+
 import { disneyTimeline } from './disney';
 
 type Stubs = { restore(): void; chromeReads(): number; publish(snapshot: object | null): void; setChrome(seconds: number | null): void };
@@ -44,19 +46,11 @@ describe('Disney VOD duration', () => {
   afterEach(() => { page?.restore(); page = null; });
   const video = {} as HTMLVideoElement;
 
-  it('does not scan the chrome while published metadata has a duration', () => {
-    page = installDisneyPage('www.disneyplus.com');
-    page.setChrome(5400);
-    page.publish({ duration: 1800 });
-    for (let attempt = 0; attempt < 10; attempt++) assert.equal(disneyTimeline.vodDuration?.(video), 1800);
-    assert.equal(page.chromeReads(), 0);
-  });
-
   it('follows changed metadata without consulting the chrome', () => {
     page = installDisneyPage('www.disneyplus.com');
     page.setChrome(5400);
     page.publish({ duration: 1800 });
-    assert.equal(disneyTimeline.vodDuration?.(video), 1800);
+    for (let attempt = 0; attempt < 10; attempt++) assert.equal(disneyTimeline.vodDuration?.(video), 1800);
     page.publish({ duration: 2400 });
     assert.equal(disneyTimeline.vodDuration?.(video), 2400);
     assert.equal(page.chromeReads(), 0);

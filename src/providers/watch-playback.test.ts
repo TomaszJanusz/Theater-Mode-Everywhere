@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { autoTheaterAvailability, readProviderWatchPage } from './watch-playback';
+
 import { defaultMediaProviderFlags, MEDIA_PROVIDER_IDS } from '../media-features/provider-flags';
+
+import { bilibiliVideoIdentity } from './bilibili/watch-playback';
+import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
+import { autoTheaterAvailability, readProviderWatchPage } from './watch-playback';
 
 function read(href: string) {
   const page = readProviderWatchPage(new URL(href));
@@ -108,4 +112,30 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('example.com', { ...flags, youtube: false }, true), 'unsupported');
   });
+});
+
+it('Bilibili video visits include the part and ignore tracking and playback timestamps', () => {
+  for (const suffix of ['', '/', '?p=1&t=10', '?spm_id_from=333.1007#reply']) {
+    assert.equal(bilibiliVideoIdentity(new URL(`https://www.bilibili.com/video/BV1xx411c7mu${suffix}`)), 'BV1xx411c7mu:1');
+  }
+  assert.equal(bilibiliVideoIdentity(new URL('https://www.bilibili.com/video/BV1xx411c7mu?p=2')), 'BV1xx411c7mu:2');
+  for (const path of ['/', '/video/', '/video/BVbad', '/video/BV1xx411c7mu/extra', '/bangumi/play/ep123', '/video/BV1xx411c7mu?p=0', '/video/BV1xx411c7mu?p=NaN', '/video/BV1xx411c7mu?p=1.5']) {
+    assert.equal(bilibiliVideoIdentity(new URL(`https://www.bilibili.com${path}`)), null, path);
+  }
+  for (const host of ['live.bilibili.com', 'search.bilibili.com', 'www.bilibili.tv', 'www.bilibili.com.evil.test']) {
+    assert.equal(bilibiliVideoIdentity(new URL(`https://${host}/video/BV1xx411c7mu`)), null);
+  }
+});
+
+it('Bilibili.tv identities distinguish uploads and episodes, ignoring locale and tracking', () => {
+  for (const locale of ['en', 'id', 'th', 'vi', 'es', 'pt', 'ar', 'ru', 'zh-Hant']) {
+    assert.equal(bilibiliIntlVideoIdentity(new URL(`https://www.bilibili.tv/${locale}/video/4801285774384128?bstar_from=home`)), 'ugc:4801285774384128');
+    assert.equal(bilibiliIntlVideoIdentity(new URL(`https://www.bilibili.tv/${locale}/play/1053337/11371243/`)), 'ogv:1053337:11371243');
+  }
+  for (const path of ['/en', '/en/search', '/en/play/1053337', '/en/video/0', '/en/video/123/extra', '/en/play/1/2/extra', '/en/video/NaN']) {
+    assert.equal(bilibiliIntlVideoIdentity(new URL(`https://www.bilibili.tv${path}`)), null, path);
+  }
+  for (const origin of ['http://www.bilibili.tv', 'https://www.bilibili.com', 'https://www.bilibili.tv.evil.test']) {
+    assert.equal(bilibiliIntlVideoIdentity(new URL(`${origin}/en/video/123`)), null);
+  }
 });
