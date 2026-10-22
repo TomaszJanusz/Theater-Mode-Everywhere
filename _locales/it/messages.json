@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "Navigazione"
+  },
+  "navigateUp": {
+    "message": "Naviga in alto"
+  },
+  "navigateLeft": {
+    "message": "Naviga a sinistra"
+  },
+  "navigateDown": {
+    "message": "Naviga in basso"
+  },
+  "navigateRight": {
+    "message": "Naviga a destra"
+  },
   "volumeBoostLabel": {
     "message": "Amplificazione volume"
   },

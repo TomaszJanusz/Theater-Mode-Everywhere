@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "탐색"
+  },
+  "navigateUp": {
+    "message": "위로 이동"
+  },
+  "navigateLeft": {
+    "message": "왼쪽으로 이동"
+  },
+  "navigateDown": {
+    "message": "아래로 이동"
+  },
+  "navigateRight": {
+    "message": "오른쪽으로 이동"
+  },
   "volumeBoostLabel": {
     "message": "음량 부스트"
   },

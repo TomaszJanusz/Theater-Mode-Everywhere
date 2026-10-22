@@ -28,6 +28,23 @@ export interface Shortcuts {
   cycleVoice: string;
   cycleLeveling: string;
   cycleBass: string;
+  navigateUp: string;
+  navigateLeft: string;
+  navigateDown: string;
+  navigateRight: string;
+}
+
+/**
+ * The Navigation group: one cluster of four keys that move focus around the controls bar and its menus.
+ * Their defaults are physical keys (`KeyW`...), so the cluster sits in the same place on QWERTY, QWERTZ and AZERTY.
+ */
+export const NAVIGATION_SHORTCUTS = ['navigateUp', 'navigateLeft', 'navigateDown', 'navigateRight'] as const satisfies ReadonlyArray<keyof Shortcuts>;
+export type NavigationShortcut = (typeof NAVIGATION_SHORTCUTS)[number];
+export const NAVIGATION_DIRECTIONS = { navigateUp: 'up', navigateLeft: 'left', navigateDown: 'down', navigateRight: 'right' } as const satisfies Record<NavigationShortcut, string>;
+export type NavigationDirection = (typeof NAVIGATION_DIRECTIONS)[NavigationShortcut];
+
+export function isNavigationShortcut(action: keyof Shortcuts): action is NavigationShortcut {
+  return (NAVIGATION_SHORTCUTS as readonly string[]).includes(action);
 }
 
 export const AUDIO_SHORTCUTS = {
@@ -63,11 +80,15 @@ export const defaultShortcuts: Shortcuts = {
   toggleVolumeBoost: 'Shift+B',
   cycleVoice: 'V',
   cycleLeveling: 'R',
-  cycleBass: 'B'
+  cycleBass: 'B',
+  navigateUp: 'KeyW',
+  navigateLeft: 'KeyA',
+  navigateDown: 'KeyS',
+  navigateRight: 'KeyD'
 };
 
 // Defaults added after release must not steal keys from existing custom actions.
-const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass'];
+const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', ...NAVIGATION_SHORTCUTS];
 
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
   const next = { ...defaultShortcuts };
@@ -93,9 +114,13 @@ function altLetter(event: KeyboardEvent): string | null {
   return event.altKey ? physical : null;
 }
 
-export function shortcutFromEvent(event: KeyboardEvent): string {
+/**
+ * `physical` records a letter or digit by its position (`KeyW`), which `matchesShortcut` already accepts
+ * through `event.code`, so a layout that prints another letter there still triggers it.
+ */
+export function shortcutFromEvent(event: KeyboardEvent, physical = false): string {
   if (event.isComposing || ['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'Dead', 'Unidentified', 'Process'].includes(event.key)) return '';
-  const key = altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
+  const key = (physical && /^(?:Key[A-Z]|Digit[0-9])$/.test(event.code) ? event.code : null) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
     : event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
     event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
@@ -144,10 +169,32 @@ export function isReservedShortcut(action: keyof Shortcuts, shortcut: string): b
   return action !== 'exit' && ['ESCAPE', 'ESC'].includes(mainKey(shortcut).toUpperCase());
 }
 
+const layoutNames = new Map<string, string>();
+
+/** Learns what the current keyboard prints on each position; Chromium only, and never needed for matching. */
+export async function loadKeyboardLayout(): Promise<void> {
+  const keyboard = (navigator as Navigator & { keyboard?: { getLayoutMap?: () => Promise<ReadonlyMap<string, string>> } }).keyboard;
+  try {
+    const map = await keyboard?.getLayoutMap?.();
+    layoutNames.clear();
+    map?.forEach((value, code) => layoutNames.set(code, value));
+  } catch {
+    // Not allowed in this context (for example a cross-origin frame): positions keep their default names.
+  }
+}
+
+/** A position is shown by what it prints, falling back to the QWERTY letter. */
+function physicalKeyName(code: string): string {
+  const printed = layoutNames.get(code);
+  if (printed) return printed.length === 1 ? printed.toUpperCase() : printed;
+  return code.replace(/^(?:Key|Digit)/, '');
+}
+
 export function shortcutDisplayParts(shortcutStr: string): string[] {
   if (!shortcutStr) return [];
   const parts = shortcutStr.split('+');
-  const mainKey = parts.pop() || '+';
+  let mainKey = parts.pop() || '+';
+  if (/^(?:Key[A-Z]|Digit[0-9])$/.test(mainKey)) mainKey = physicalKeyName(mainKey);
   return [...parts.filter(Boolean), mainKey];
 }
 

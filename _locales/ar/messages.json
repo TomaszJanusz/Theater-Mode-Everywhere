@@ -175,6 +175,21 @@
       }
     }
   },
+  "navigationGroupTitle": {
+    "message": "التنقل"
+  },
+  "navigateUp": {
+    "message": "تنقّل للأعلى"
+  },
+  "navigateLeft": {
+    "message": "تنقّل لليسار"
+  },
+  "navigateDown": {
+    "message": "تنقّل للأسفل"
+  },
+  "navigateRight": {
+    "message": "تنقّل لليمين"
+  },
   "volumeBoostLabel": {
     "message": "تضخيم الصوت"
   },
