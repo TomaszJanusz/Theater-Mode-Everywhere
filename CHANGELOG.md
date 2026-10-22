@@ -10,19 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Czech and Slovak translations for settings, the extension popup, player controls and store listings.
-
-### Added
-
-- Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. On a setting with several levels, A and D lower and raise the value; S on the bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
+- Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. W on a menu button opens the menu on its bottom row, the one nearest the bar (scrolling a long menu to it), and S below that row closes it again. The time readouts and the progress bar are passed over; Tab still reaches them. On a setting with several levels, A and D lower and raise the value, and while that row has keyboard focus its arrows show those keys instead; S on the bar's bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
 
 ### Changed
 
 - The AutoTheater countdown ring now fills to a full circle during the last two seconds, holds, then zooms out just before entry. If the video is still not ready when the countdown ends, the notice waits a moment and then shows an animated ellipsis until it is. With reduced motion the ring switches to full and disappears without animating.
-- Settings with several levels (Voice boost, Reduce loud sounds, Bass and Video fit) now have a stepper: arrows lower or raise the value one step at a time without wrapping around, and a row of segments under the value shows how many options there are and which one is active. Lowering Bass no longer means cycling up through every level. The highlight slides between segments, the value slides in and a press at the end of the range gives a small nudge, all of it short and switched off by Reduce motion. The cycle shortcuts keep wrapping as before.
+- Settings with several levels (Voice boost, Reduce loud sounds, Bass and Video fit) now have a stepper: arrows lower or raise the value one step at a time without wrapping around, and a row of segments under the value shows how many options there are and which one is active. Lowering Bass no longer means cycling up through every level. The whole row highlights on hover and keyboard focus like the other rows. The highlight slides between segments, the value slides in and a press at the end of the range gives a small nudge, all of it short and switched off by Reduce motion. The cycle shortcuts keep wrapping as before.
 - The volume and speed sliders now look and behave alike, with the same marker for 100% and 1x. Scrolling or using the volume keys always stops at 100% before going into boost, and stops there again on the way back down.
 
 ### Fixed
 
+- Keyboard focus is now visible on the volume and speed sliders, the caption sliders and the time-remaining button, which showed no focus frame before. A focused volume or speed button now shows the same focus frame as the other bar buttons instead of opening its panel around it; the panel opens when you point at it or move into the slider.
+- The player settings menu no longer closes when you click Pin controls, or click a row's label or an empty part of the menu after changing another setting.
 - The volume and speed sliders no longer stay open after you adjust them with the mouse and move away: they close five seconds after the pointer leaves, unless you are still dragging or reached them with the keyboard.
 - On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.

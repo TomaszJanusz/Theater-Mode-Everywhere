@@ -48,6 +48,14 @@ const focused = (page: Page) => page.evaluate(() => {
 });
 const barVisible = (page: Page) => page.evaluate(() => Boolean(document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-controls-wrapper.visible')));
 const pageKeys = (page: Page) => page.evaluate(() => (window as unknown as { pageKeys: Array<{ code: string; prevented: boolean }> }).pageKeys.splice(0));
+const menuOpen = (page: Page) => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-settings-container')!.classList.contains('is-open'));
+/** What the focused row's arrows currently show: the key each carries, and whether a chevron still paints. */
+const arrowKeys = (page: Page) => page.evaluate(() => {
+  const arrows = [...document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelectorAll<HTMLElement>('.video-fit-btn .theater-stepper-btn')]
+    .sort((first, second) => first.getBoundingClientRect().left - second.getBoundingClientRect().left);
+  const shown = (arrow: HTMLElement) => getComputedStyle(arrow, '::after').content.replaceAll('"', '');
+  return { left: shown(arrows[0]), right: shown(arrows[1]), chevrons: arrows.some(arrow => getComputedStyle(arrow.querySelector('svg')!).display !== 'none') };
+});
 const fitValue = (page: Page) => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.video-fit-btn .theater-stepper-value')!.textContent);
 
 describe('player bar navigation', () => {
@@ -78,16 +86,21 @@ describe('player bar navigation', () => {
       await press(page, QWERTY.d);
       assert.ok((await focused(page))?.classes.includes('player-settings-btn'), 'D moves back');
 
-      // Up from the gear opens its menu and focuses its first row; S moves down inside it.
+      // Up from the gear opens its menu on the row nearest the bar; S past that row closes it onto the gear.
       await press(page, QWERTY.w);
-      const first = await focused(page);
-      assert.ok(first?.inMenu, 'W opens the menu');
+      const bottom = await focused(page);
+      assert.ok(bottom?.inMenu && bottom.classes.includes('extension-settings-btn'), 'W opens the menu on its bottom row');
       await press(page, QWERTY.s);
-      assert.notDeepEqual(await focused(page), first, 'S moves down inside the menu');
+      assert.ok((await focused(page))?.classes.includes('player-settings-btn'), 'S below the last row closes the menu onto the gear');
+      assert.equal(await menuOpen(page), false);
+      await press(page, QWERTY.w);
+      await press(page, QWERTY.w);
+      assert.notEqual((await focused(page))?.classes.join(' '), bottom.classes.join(' '), 'W climbs inside the menu');
 
-      // Down to the Video fit row: D raises, A lowers, neither wraps.
-      for (let step = 0; step < 12 && !(await focused(page))?.row.includes('video-fit-btn'); step++) await press(page, QWERTY.s);
-      assert.ok((await focused(page))?.row.includes('video-fit-btn'), 'S reaches the Video fit row');
+      // Up to the Video fit row: D raises, A lowers, neither wraps.
+      for (let step = 0; step < 12 && !(await focused(page))?.row.includes('video-fit-btn'); step++) await press(page, QWERTY.w);
+      assert.ok((await focused(page))?.row.includes('video-fit-btn'), 'W reaches the Video fit row');
+      assert.deepEqual(await arrowKeys(page), { left: 'A', right: 'D', chevrons: false }, 'the focused stepper row shows its keys instead of arrows');
       const start = await fitValue(page);
       await press(page, QWERTY.a);
       assert.equal(await fitValue(page), start, 'A at the first option changes nothing');
@@ -126,6 +139,43 @@ describe('player bar navigation', () => {
       await pageKeys(page);
       assert.equal(await press(page, QWERTY.d), false, 'D is no longer navigation');
       assert.deepEqual(await pageKeys(page), [{ code: 'KeyD', prevented: false }]);
+    });
+
+    it(`brings the row it enters on into view when the menu scrolls in ${engine}`, { timeout: 30_000 }, async t => {
+      const page = await open(t);
+      await page.setViewportSize({ width: 760, height: 480 });
+      await press(page, QWERTY.w);
+      await press(page, QWERTY.w);
+      const view = await page.evaluate(() => {
+        const row = document.getElementById('theater-everywhere-ui')!.shadowRoot!.activeElement as HTMLElement;
+        row.getAnimations().forEach(animation => animation.finish());
+        const list = row.closest<HTMLElement>('.theater-settings-body')!;
+        const box = row.getBoundingClientRect();
+        const bounds = list.getBoundingClientRect();
+        return { scrolls: list.scrollHeight > list.clientHeight, inside: box.top >= bounds.top - 1 && box.bottom <= bounds.bottom + 1 };
+      });
+      assert.deepEqual(view, { scrolls: true, inside: true });
+    });
+
+    it(`passes over the time readouts and the scrubber, which stay with Tab, in ${engine}`, { timeout: 30_000 }, async t => {
+      const page = await open(t);
+      await press(page, QWERTY.w);
+      const visited: string[][] = [];
+      // Walk each way until focus stops moving; from every stop, W must not climb onto the scrubber.
+      for (const key of [QWERTY.a, QWERTY.d]) {
+        for (let step = 0; step < 30; step++) {
+          const before = (await focused(page))!.classes;
+          visited.push(before);
+          await press(page, key);
+          if ((await focused(page))!.classes.join(' ') === before.join(' ')) break;
+        }
+      }
+      const skipped = ['theater-time-display', 'theater-scrubber-container'];
+      assert.ok(visited.some(classes => classes.includes('play-pause-btn')) && visited.some(classes => classes.includes('fullscreen-btn')),
+        `the walk spans the bar: ${JSON.stringify(visited)}`);
+      assert.ok(!visited.flat().some(name => skipped.includes(name)), `the walk stays off the readouts: ${JSON.stringify(visited)}`);
+      await press(page, QWERTY.w);
+      assert.ok(!(await focused(page))!.classes.some(name => skipped.includes(name)), 'W from the bar stays off the scrubber');
     });
 
     it(`matches the physical key on AZERTY and QWERTZ, and ignores modifiers, composition and editable fields in ${engine}`, { timeout: 40_000 }, async t => {

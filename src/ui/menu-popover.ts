@@ -8,6 +8,18 @@ const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
 const SUPPRESS_CLASS = 'is-suppressed';
 
+/**
+ * A volume or speed panel is open under the pointer or while focus is inside it. Focus on its button
+ * alone does not open it: the button then shows focus like any other bar button.
+ */
+export const OPEN_SLIDER_PANEL = '.theater-popover:hover > :is(.theater-volume-panel, .theater-speed-panel), '
+  + ':is(.theater-volume-panel, .theater-speed-panel):focus-within';
+
+/** Whether any bar menu or slider panel is open under `root`. */
+export function playerChromeExpanded(root: ParentNode | null | undefined): boolean {
+  return Boolean(root?.querySelector(`.theater-menu.is-open, .theater-menu-panel.visible, ${OPEN_SLIDER_PANEL}`));
+}
+
 function releaseMenuPosition(panel: HTMLElement): void {
   panel.classList.remove('is-position-held');
   panel.style.removeProperty('--theater-menu-held-left');
@@ -171,12 +183,6 @@ export function bindMenuPopover(options: {
       options.onChange?.();
     });
   });
-  let ignoreFocusLeave = false;
-  const blurTrigger = () => {
-    ignoreFocusLeave = true;
-    trigger.blur();
-    ignoreFocusLeave = false;
-  };
   scope.listen(trigger, 'click', (event: MouseEvent) => {
     if (event.detail === 0) {
       show(true, true);
@@ -185,17 +191,19 @@ export function bindMenuPopover(options: {
     }
     if (panel.classList.contains(PINNED_CLASS)) {
       close();
-      blurTrigger();
+      trigger.blur();
       return;
     }
     show(true, false);
-    blurTrigger();
+    trigger.blur();
   });
 
+  // Focus moving to another control closes the menu. Focus that goes nowhere does not: a press on a
+  // non-focusable part of the panel, or a row blurring itself after a click, leaves the user in the menu.
+  // Outside presses, Escape, window blur and the bar hiding close it on their own paths.
   const closeOnFocusLeave = (event: FocusEvent) => {
-    if (ignoreFocusLeave) return;
     const next = event.relatedTarget;
-    if (next instanceof Node && host.contains(next)) return;
+    if (!(next instanceof Node) || host.contains(next)) return;
     close();
   };
   scope.listen(panel, 'focusout', closeOnFocusLeave);

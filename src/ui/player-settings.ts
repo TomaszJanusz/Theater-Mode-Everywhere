@@ -188,6 +188,11 @@ export function createPlayerSettings(
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
     if (newItem) highlight(row, icon, label, newItem, true);
+    /** A key the arrows can wear: one character, as A and D are by default. */
+    const singleKey = (shortcut: string) => {
+      const parts = shortcutDisplayParts(shortcut);
+      return parts.length === 1 && [...parts[0]].length === 1 ? parts[0] : undefined;
+    };
     function setShortcut(shortcut: string, name: string) {
       const item = newItems.get(row);
       if (item) item.label = name;
@@ -207,6 +212,8 @@ export function createPlayerSettings(
       updateStepper(shortcut: string, state: StepperState) {
         setShortcut(shortcut, label);
         stepper?.update(state);
+        const { navigateLeft, navigateRight } = ctx.ui().shortcuts;
+        stepper?.setKeys(singleKey(navigateLeft), singleKey(navigateRight));
       },
       /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
       update(shortcut: string, value?: string, values: readonly string[] = []) {

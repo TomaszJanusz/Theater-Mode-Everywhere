@@ -395,7 +395,8 @@
   padding: 0 !important;
 }
 
-.theater-control-btn:hover {
+.theater-control-btn:hover,
+.theater-settings-stepper-row:hover {
   background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)) !important;
   border-color: var(--appearance-border, color-mix(in srgb, var(--accent-color, #6366f1) 30%, transparent)) !important;
   color: var(--accent-color, #ffffff) !important;
@@ -432,8 +433,10 @@
   overflow: visible !important;
 }
 
+/* A slider button grows into its notch under the pointer or once its slider has focus; focus on the
+   button alone keeps it a plain focused button. :where keeps the old specificity, so the boost colour still wins. */
 .theater-menu.is-open > .theater-control-btn,
-.theater-popover:is(:hover, :focus-within) > .theater-control-btn {
+.theater-popover:is(:hover, :where(:has(> :focus-within:not(.theater-control-btn)))) > .theater-control-btn {
   transition: none !important;
   transform: none !important;
   box-sizing: border-box !important;
@@ -480,7 +483,7 @@
 .theater-settings-container.is-open > .theater-control-btn::after { inset-inline-end: -1px !important; }
 
 .theater-menu.is-open > .theater-control-btn:active,
-.theater-popover:is(:hover, :focus-within) > .theater-control-btn:active {
+.theater-popover:is(:hover, :where(:has(> :focus-within:not(.theater-control-btn)))) > .theater-control-btn:active {
   transform: none !important;
   background: var(--appearance-surface, rgb(20, 20, 20)) !important;
 }
@@ -526,10 +529,8 @@
   box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.45) !important;
 }
 
-.theater-volume-container:hover .theater-volume-panel,
-.theater-speed-container:hover .theater-speed-panel,
-.theater-volume-container:focus-within .theater-volume-panel,
-.theater-speed-container:focus-within .theater-speed-panel {
+.theater-popover:hover > :is(.theater-volume-panel, .theater-speed-panel),
+:is(.theater-volume-panel, .theater-speed-panel):focus-within {
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(-50%) !important;
@@ -1407,13 +1408,23 @@ button.theater-time-end:hover {
   background: var(--appearance-hover, rgba(255, 255, 255, 0.15)) !important;
   pointer-events: none !important;
 }
+.theater-control-btn:focus-visible,
 .theater-settings-row:focus-visible,
+button.theater-time-end:focus-visible,
+.theater-settings-stepper-row:has(:focus-visible),
 .theater-cc-search-input:focus,
 .player-settings-btn:focus-visible,
 .theater-chat-theme-select:focus-visible,
 .theater-chat-width-slider:focus-visible {
   outline: 2px solid var(--accent-color, #6366f1) !important;
   outline-offset: -2px !important;
+}
+
+/* Sliders hide the native ring so the track stays clean; the keyboard still needs to see where it is. */
+.theater-vertical-slider:focus-visible,
+.theater-caption-slider:focus-visible {
+  outline: 2px solid var(--accent-color, #6366f1) !important;
+  outline-offset: 3px !important;
 }
 
 .theater-settings-heading {
@@ -3200,6 +3211,8 @@ button.theater-time-end:hover {
   border-radius: 6px !important;
   color: inherit !important;
   cursor: pointer !important;
+  /* The row carries the focus frame; the arrow shows focus by its key or its darker fill. */
+  outline: none !important;
 }
 .theater-stepper-btn[data-direction="-1"] { grid-column: 1 !important; }
 .theater-stepper-btn[data-direction="1"] { grid-column: 3 !important; }
@@ -3211,18 +3224,34 @@ button.theater-time-end:hover {
 .theater-stepper-btn {
   transition: opacity var(--theater-stepper-fade), color var(--theater-stepper-fade), background-color var(--theater-stepper-fade), transform 0.08s var(--theater-stepper-ease) !important;
 }
-.theater-stepper-btn:hover:not([aria-disabled="true"]) {
-  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 15%, transparent)) !important;
-  color: var(--accent-color, #ffffff) !important;
+.theater-stepper-btn:is(:hover, :focus-visible):not([aria-disabled="true"]) {
+  /* The row is already tinted when the pointer is on it, so an arrow reads as pressed into it: darker, not lighter. */
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  color: var(--appearance-ink, #ffffff) !important;
 }
 /* Immediate press feedback, before the value has even changed. */
 .theater-stepper-btn:active:not([aria-disabled="true"]) {
   transform: scale(0.86) !important;
-  background-color: var(--appearance-tint, color-mix(in srgb, var(--accent-color, #6366f1) 25%, transparent)) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
 }
-.theater-stepper-btn:focus-visible {
-  outline: 2px solid var(--accent-color, #6366f1) !important;
-  outline-offset: -2px !important;
+/* With keyboard focus on the row the arrows become the keys that step it (A and D by default). */
+.theater-settings-stepper-row:has(:focus-visible) .theater-stepper-btn[data-key] svg { display: none !important; }
+.theater-settings-stepper-row:has(:focus-visible) .theater-stepper-btn[data-key]::after {
+  content: attr(data-key) !important;
+}
+.theater-controls-wrapper[dir="rtl"] .theater-settings-stepper-row:has(:focus-visible) .theater-stepper-btn[data-key]::after {
+  content: attr(data-key-rtl) !important;
+}
+.theater-settings-stepper-row:has(:focus-visible) .theater-stepper-btn[data-key]::after {
+  min-inline-size: 16px !important;
+  padding: 1px 3px !important;
+  box-sizing: border-box !important;
+  border: 1px solid currentColor !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
 }
 /* A blocked end keeps focus and the pointer, and fades instead of snapping. */
 .theater-stepper-btn[aria-disabled="true"] {
@@ -3237,7 +3266,7 @@ button.theater-time-end:hover {
 .theater-stepper-segments {
   position: absolute !important;
   inset-inline: 26px !important;
-  top: calc(50% + 10px) !important;
+  top: calc(50% + 13px) !important;
   display: flex !important;
   gap: 2px !important;
   --theater-stepper-sign: 1;
@@ -3246,9 +3275,14 @@ button.theater-time-end:hover {
 .theater-stepper-segment {
   flex: 1 1 0 !important;
   min-width: 0 !important;
-  height: 2px !important;
+  height: 1px !important;
   border-radius: 1px !important;
   background: var(--appearance-border, rgba(255, 255, 255, 0.2)) !important;
+}
+/* Under the pointer the row is tinted, and the idle segments sink into it as the arrows do. Keyboard focus
+   only frames the row, so the segments keep their colour there. */
+.theater-settings-stepper-row:hover .theater-stepper-segment {
+  background: rgba(0, 0, 0, 0.45) !important;
 }
 /* One highlight that slides to the current segment (transform only), instead of segments recolouring. */
 .theater-stepper-thumb {

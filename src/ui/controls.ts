@@ -36,8 +36,8 @@ import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST
 import { AUDIO_SHORTCUTS } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
-import { bindMenuPopover } from './menu-popover';
-import { beginPicturePress, clearPictureDismiss, playerChromeExpanded } from './picture-dismiss';
+import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
+import { beginPicturePress, clearPictureDismiss } from './picture-dismiss';
 import { mountServiceActionCta } from './service-actions';
 import { createPlayerSettings } from './player-settings';
 import { createSpeedControl } from './speed-control';
@@ -1548,9 +1548,7 @@ export function createControls(
         },
         subscribeToolbar: (listener) => ctx.uiStore.subscribe(listener),
         subscribeVisibility: listener => observeChromeVisibility(wrapper.getRootNode() as Document | ShadowRoot, listener),
-        menuOpen: () => queryPlayerUi(`.theater-menu.is-open, .theater-cc-menu.visible, .theater-settings-menu.visible,
-          .theater-volume-container:hover .theater-volume-panel, .theater-speed-container:hover .theater-speed-panel,
-          .theater-volume-container:focus-within .theater-volume-panel, .theater-speed-container:focus-within .theater-speed-panel`) !== null,
+        menuOpen: () => playerChromeExpanded(wrapper),
         controlsLift: () => {
           const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
           return bar && bar.offsetHeight > 0 ? bar.offsetHeight + 12 : 96;

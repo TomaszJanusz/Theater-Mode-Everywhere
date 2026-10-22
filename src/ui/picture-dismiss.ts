@@ -55,13 +55,3 @@ export function armPictureDismissOnLeave(event: Event, popover: Element): void {
 export const beginPicturePress = (chromeOpen: boolean): void => latch.press(chromeOpen);
 export const clearPictureDismiss = (): void => latch.clear();
 export const consumePictureDismiss = (): boolean => latch.consume();
-
-export function playerChromeExpanded(root: ParentNode | null | undefined): boolean {
-  if (!root) return false;
-  if (root.querySelector('.theater-menu.is-open, .theater-menu-panel.visible')) return true;
-  for (const selector of ['.theater-volume-container', '.theater-speed-container']) {
-    const host = root.querySelector(selector);
-    if (host instanceof Element && host.matches(':hover, :focus-within')) return true;
-  }
-  return false;
-}
