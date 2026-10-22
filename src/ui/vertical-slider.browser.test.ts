@@ -103,5 +103,60 @@ describe('vertical slider marker', () => {
         assert.equal(await slider.evaluate(input => (input.closest('[inert]') as HTMLElement | null) === null), true);
       });
     }
+
+    it(`hides a pointer-focused slider panel 5 s after the pointer leaves, keeping keyboard focus in ${engine}`, { timeout: 90_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      await serveFixture(page, FIXTURE, 'http://slider-marker.test/');
+      await bootPlayer(page, { settings: { keepControlsVisible: true, volumeBoostEnabled: true }, mainWorld: true });
+      await enterTheater(page);
+      // The fake clock still ticks in real time, so "before 5 s" checks keep seconds of slack.
+      await page.clock.install();
+      const slider = page.locator('.theater-volume-slider');
+      const focused = () => slider.evaluate(input => (input.getRootNode() as ShadowRoot).activeElement === input);
+      const inert = () => page.locator('.theater-volume-panel').evaluate(panel => (panel as HTMLElement).inert);
+      const dragAndLeave = async () => {
+        await page.locator('.volume-btn').hover();
+        await slider.waitFor({ state: 'visible' });
+        const track = (await slider.boundingBox())!;
+        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 3, { steps: 3 });
+        // An active drag never hides the panel, even when the pointer is far away.
+        await page.mouse.move(640, 200);
+        await page.clock.runFor(6000);
+        assert.equal(await focused(), true, 'a held drag keeps the panel');
+        await page.mouse.up();
+      };
+
+      await dragAndLeave();
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), true, 'still open before 5 s');
+      // Re-entering cancels the timer; leaving again starts a fresh 5 s.
+      await page.locator('.volume-btn').hover();
+      await page.clock.runFor(6000);
+      assert.equal(await focused(), true, 'hovering keeps the panel');
+      await page.mouse.move(640, 300);
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), true);
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), false, 'blurred after 5 s');
+      assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName), 'BODY', 'focus is not moved elsewhere');
+      assert.equal(await inert(), true);
+
+      // The picture click right after the hide still toggles playback (hidden chrome is not "open").
+      await page.clock.runFor(2000);
+      const video = page.locator('video');
+      const paused = await video.evaluate((v: HTMLVideoElement) => v.paused);
+      await page.mouse.click(640, 300);
+      await page.waitForFunction(was => document.querySelector('video')!.paused !== was, paused);
+
+      // Keyboard-reached focus has no timer.
+      await page.locator('.volume-btn').hover();
+      await slider.focus();
+      await page.keyboard.press('ArrowUp');
+      await page.mouse.move(640, 200);
+      await page.clock.runFor(30_000);
+      assert.equal(await focused(), true, 'keyboard focus stays until Escape or blur');
+    });
   }
 });
