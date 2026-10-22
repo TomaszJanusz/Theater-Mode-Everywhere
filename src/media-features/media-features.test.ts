@@ -1,7 +1,6 @@
-import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
+
 import {
   computeCaptionDockBottom,
   CAPTION_DOCK_RAISED_CENTER_GAP,
@@ -13,8 +12,19 @@ import {
   raisedCaptionRestBottom,
   raisedCaptionRowCount
 } from './caption-dock';
+import { captionPreferenceHost, findPreferredCaptionTrack, languagesCompatible, pickCaptionTrack, resolveCaptionPreferenceMap } from './caption-preference';
+import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
+import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle, vimeoPageTitle } from './content-title';
 import { classifyCaptionWord, findActiveCues, visibleCaptionLines } from './cue-index';
+import { DisneyAdapter } from './disney-adapter';
+import { captionSegmentsForWindow, dedupeCaptionCues } from './disney-adapter';
+import { MAX_CAPTION_BYTES } from './fetch-allowlist';
 import { isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl, isAllowedPageFetchUrl } from './fetch-allowlist';
+import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
+import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
+import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
+import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
+import { findYoutubeChapterMarkers, parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import {
   defaultMediaProviderFlags,
   mediaProviderFlagStorageUpdate,
@@ -23,13 +33,9 @@ import {
   richTheaterExperienceEnabled
 } from './provider-flags';
 import { shouldAttachDisneyAdapter, shouldAttachNetflixAdapter, shouldAttachPatreonAdapter, shouldAttachTwitchAdapter, shouldAttachVimeoAdapter, shouldAttachYouTubeAdapter } from './resolve-adapter';
-import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
-import { findDisneyContentTitle, readDisneyPlayerHeader, resolveDisneyTitle, vimeoPageTitle } from './content-title';
-import { normalizeYoutubePlayerResponse } from './probe';
-import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
-import { NativeTextTrackAdapter, cuesFromTrack, parseNativeTrackPayload } from './native-adapter';
-import { DisneyAdapter } from './disney-adapter';
 import { YouTubeAdapter } from './youtube-adapter';
+import { createTimedtextCacheRecord, findCachedTimedtextBody, mergeYoutubeCaptionAuth, selectCaptionTrackOption, signYoutubeCaptionUrl, timedtextHasPot, timedtextVideoId, youtubePageVideoId, youtubeSnapshotMatchesPage } from './youtube-caption-url';
+import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls } from './youtube-snapshot';
 
 describe('immediate provider titles', () => {
   it('reads published titles without loading captions and rejects a previous video', () => {
@@ -80,8 +86,6 @@ describe('immediate provider titles', () => {
     }
   });
 });
-import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
-import { findYoutubeChapterMarkers, parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
 import { heatmapRidgePath, heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import {
   findYoutubeHeatmap,
@@ -90,8 +94,6 @@ import {
   youtubeHeatmapHarvestMatchesPage
 } from './parsers/youtube-heatmap';
 import { getStoryboardFrame, parseStoryboardSpec } from './parsers/youtube-storyboard';
-import { getVimeoPreviewFrame, parseVimeoThumbPreview } from './parsers/vimeo-thumbs';
-import { getMuxPreviewFrame, parseMuxStoryboard } from './parsers/mux-storyboard';
 import { parsePatreonPageAssets, pickPatreonPageAssets, applyPatreonCaptionMeta, mergePatreonCaptionTracks } from './parsers/patreon-page';
 import { getTwitchPreviewFrame, parseTwitchSeekPreviews } from './parsers/twitch-storyboard';
 import { collectTwitchStoryboardUrls, extractTwitchPayloadFromJson, parseTwitchGraphqlBody, parseTwitchPageAssets, twitchPageVideoId } from './parsers/twitch-page';
@@ -119,28 +121,9 @@ import {
   rankDisneyMediaVideos,
   disneyMediaSeekLooksStuck
 } from './parsers/disney-page';
-import { CompositeMediaAdapter, preferProviderCaptionTracks } from './composite-adapter';
-import { captionSegmentsForWindow, dedupeCaptionCues } from './disney-adapter';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
 
 describe('caption parsers', () => {
-  it('parses WebVTT including multiline cues', () => {
-    const cues = parseWebVtt(`WEBVTT
-
-00:00:01.000 --> 00:00:03.000
-Hello
-world
-
-NOTE ignored
-
-00:00:04.000 --> 00:00:06.500
-Second`);
-    assert.equal(cues.length, 2);
-    assert.equal(cues[0].text, 'Hello\nworld');
-    assert.equal(cues[0].start, 1);
-    assert.equal(cues[1].end, 6.5);
-  });
-
   it('parses Disney HLS WebVTT with STYLE blocks, cue settings, and italic tags', () => {
     const cues = parseWebVtt(`WEBVTT
 
@@ -149,6 +132,15 @@ STYLE
   font-family: Arial;
 }
 
+NOTE ignored
+
+00:00:01.000 --> 00:00:03.000
+Hello
+world
+
+00:00:04.000 --> 00:00:06.500
+Second
+
 00:09:10.467 --> 00:09:14.471 line:83%,end
 <i>Wziął się do pracy, bo chciał kołaczy.</i>
 <i>Nie opuszczał treningów nóg.</i>
@@ -156,10 +148,14 @@ STYLE
 00:09:16.264 --> 00:09:18.933 line:83%,end
 <i>Rzeźbił rzeźbę i komasował masę.</i>
 `);
-    assert.equal(cues.length, 2);
-    assert.equal(cues[0].start, 9 * 60 + 10.467);
-    assert.equal(cues[0].end, 9 * 60 + 14.471);
-    assert.equal(cues[0].text, 'Wziął się do pracy, bo chciał kołaczy.\nNie opuszczał treningów nóg.');
+    assert.equal(cues.length, 4);
+    assert.deepEqual(cues.slice(0, 2).map(({ start, end, text }) => ({ start, end, text })), [
+      { start: 1, end: 3, text: 'Hello\nworld' },
+      { start: 4, end: 6.5, text: 'Second' }
+    ]);
+    assert.equal(cues[2].start, 9 * 60 + 10.467);
+    assert.equal(cues[2].end, 9 * 60 + 14.471);
+    assert.equal(cues[2].text, 'Wziął się do pracy, bo chciał kołaczy.\nNie opuszczał treningów nóg.');
     assert.equal(findActiveCues(cues, 9 * 60 + 12)[0]?.text.startsWith('Wziął'), true);
     assert.equal(findActiveCues(cues, 60).length, 0);
   });
@@ -625,18 +621,6 @@ describe('youtube page video identity', () => {
     assert.equal(youtubeSnapshotMatchesPage('sameVideo', 'sameVideo'), true);
     assert.equal(youtubeSnapshotMatchesPage(undefined, 'newVideo'), true);
     assert.equal(youtubeSnapshotMatchesPage('oldVideo', null), true);
-  });
-
-  it('keeps the player-response title on the youtube snapshot', () => {
-    const snapshot = normalizeYoutubePlayerResponse({
-      videoDetails: { videoId: 'abc123def45', title: '  Night   Drive  ', lengthSeconds: '12' },
-      microformat: { playerMicroformatRenderer: { title: { simpleText: 'Ignored' } } }
-    });
-    assert.equal(snapshot?.title, 'Night Drive');
-    assert.equal(normalizeYoutubePlayerResponse({
-      videoDetails: { videoId: 'abc123def45' },
-      microformat: { playerMicroformatRenderer: { title: { simpleText: 'From the microformat' } } }
-    })?.title, 'From the microformat');
   });
 
   it('prefers a published current-video snapshot over a stale playlist boot response', () => {

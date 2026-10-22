@@ -770,7 +770,7 @@
       "count": 2
     },
     "import/order": {
-      "count": 27
+      "count": 9
     },
     "max-lines": {
       "count": 1
@@ -1114,9 +1114,6 @@
     }
   },
   "src/media-features/youtube-player-response.test.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
