@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Czech and Slovak translations for settings, the extension popup, player controls and store listings.
-- Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. W on a menu button opens the menu on its bottom row, the one nearest the bar, and S below that row closes it again. On a setting with several levels, A and D lower and raise the value, and while that row has keyboard focus its arrows show those keys instead; S on the bar's bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
+- Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. W on a menu button opens the menu on its bottom row, the one nearest the bar (scrolling a long menu to it), and S below that row closes it again. The time readouts and the progress bar are passed over; Tab still reaches them. On a setting with several levels, A and D lower and raise the value, and while that row has keyboard focus its arrows show those keys instead; S on the bar's bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
 
 ### Changed
 
@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Keyboard focus is now visible on the volume and speed sliders, the caption sliders and the time-remaining button, which showed no focus frame before.
+- Keyboard focus is now visible on the volume and speed sliders, the caption sliders and the time-remaining button, which showed no focus frame before. A focused volume or speed button now shows the same focus frame as the other bar buttons instead of opening its panel around it; the panel opens when you point at it or move into the slider.
+- The player settings menu no longer closes when you click Pin controls, or click a row's label or an empty part of the menu after changing another setting.
 - The volume and speed sliders no longer stay open after you adjust them with the mouse and move away: they close five seconds after the pointer leaves, unless you are still dragging or reached them with the keyboard.
 - On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.

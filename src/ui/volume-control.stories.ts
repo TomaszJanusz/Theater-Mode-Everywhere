@@ -31,7 +31,7 @@ const meta: Meta<Args> = {
     });
     control.button.disabled = disabled;
     control.slider.disabled = disabled;
-    scope.raf(() => { if (open && !disabled) control.button.focus(); });
+    scope.raf(() => { if (open && !disabled) { control.button.focus(); control.slider.focus(); } });
     return [control.container];
   })
 };
@@ -58,7 +58,7 @@ export const Closed: Story = {
     await expect(slider().disabled).toBe(args.disabled);
     await waitFor(() => {
       // The deferred render focus can be lost in Firefox; drive the requested state here too.
-      if (args.open && !args.disabled) button().focus();
+      if (args.open && !args.disabled) { button().focus(); slider().focus(); }
       expect(panel().inert).toBe(args.disabled || !args.open);
     });
     if (args.open && !args.disabled && args.boost) await expectSliderMarker(slider(), marker(), 1);

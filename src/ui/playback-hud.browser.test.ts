@@ -144,7 +144,8 @@ describe('playback HUD browser regressions', () => {
         }
         await page.keyboard.press('m');
         await page.locator('.volume-btn:not(.boosted)').waitFor();
-        assert.equal((await colors()).speaker, 'rgb(81, 205, 0)', 'mute must clear orange even with remembered boost');
+        // Focus alone leaves the speaker a plain bar button (no notch), so it wears the bar's ink, not the accent.
+        assert.equal((await colors()).speaker, 'rgb(248, 250, 252)', 'mute must clear orange even with remembered boost');
         await page.keyboard.press('m');
         await page.locator('.volume-btn.boosted').waitFor();
         assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'unmute must restore orange');
@@ -153,7 +154,7 @@ describe('playback HUD browser regressions', () => {
         await page.keyboard.press('ArrowDown');
         await waitForHud(page, '95%');
         assert.equal((await colors()).hud, 'rgb(81, 205, 0)', 'normal-volume HUD must use the saved accent');
-        assert.equal((await colors()).speaker, 'rgb(81, 205, 0)');
+        assert.equal((await colors()).speaker, 'rgb(248, 250, 252)');
       } finally {
         await browser.close();
       }

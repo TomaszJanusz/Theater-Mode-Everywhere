@@ -64,6 +64,9 @@ const SETTLE_OFFSETS: Record<NavigationDirection, [number, number]> = { up: [0, 
 const FOCUSABLE = 'button, input, [tabindex]';
 const MENU_PANEL = '.theater-settings-menu, .theater-cc-menu';
 const SLIDER_PANEL = '.theater-volume-panel, .theater-speed-panel';
+/** Bar controls the keys pass over: panels are entered through their trigger, and the time readouts and the
+ *  scrubber stay with Tab and their own keys. */
+const OFF_BAR = `${MENU_PANEL}, ${SLIDER_PANEL}, .theater-time-display, .theater-scrubber-container`;
 
 function rectOf(element: Element): FocusRect {
   const { left, top, right, bottom } = element.getBoundingClientRect();
@@ -79,6 +82,12 @@ function focusable(root: ParentNode, exclude?: string): HTMLElement[] {
     if (element.closest('[hidden], [inert]') || element.getClientRects().length === 0) return false;
     return !(exclude && element.closest(exclude));
   });
+}
+
+/** Focus moves without scrolling the page, so a menu whose list scrolls brings the focused row into view itself.
+ *  `nearest` leaves every ancestor that already shows the row, the page included, where it is. */
+function revealInMenu(element: HTMLElement): void {
+  if (element.closest('.theater-settings-body, .theater-cc-menu-list')) element.scrollIntoView({ block: 'nearest' });
 }
 
 /**
@@ -108,6 +117,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
   function focusElement(element: HTMLElement, direction?: NavigationDirection): void {
     ctx.refs.toolbarKeyboardInteractionActive = true;
     element.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
+    revealInMenu(element);
     settling?.cancel();
     if (isElementMotionReduced(element)) return;
     const [x, y] = direction ? SETTLE_OFFSETS[direction] : [0, 0];
@@ -133,7 +143,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
     if (!wrapper) return false;
     end();
     ctx.actions.showToolbar();
-    const start = wrapper.querySelector<HTMLElement>('.player-settings-btn') ?? focusable(wrapper, MENU_PANEL)[0];
+    const start = wrapper.querySelector<HTMLElement>('.player-settings-btn') ?? focusable(wrapper, OFF_BAR)[0];
     if (!start) return false;
     focusElement(start);
     if (focusedIn(wrapper) !== start) return false;
@@ -166,7 +176,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
 
   function moveInBar(wrapper: HTMLElement, element: HTMLElement, direction: NavigationDirection): void {
     if (direction === 'up' && enter(element)) return;
-    const target = toTarget(element, focusable(wrapper, `${MENU_PANEL}, ${SLIDER_PANEL}`), direction);
+    const target = toTarget(element, focusable(wrapper, OFF_BAR), direction);
     if (target) focusElement(target, direction);
     else if (direction === 'down') {
       // Nothing below the bar's last row: put the bar away and hand the keys back to the player.

@@ -141,6 +141,43 @@ describe('player bar navigation', () => {
       assert.deepEqual(await pageKeys(page), [{ code: 'KeyD', prevented: false }]);
     });
 
+    it(`brings the row it enters on into view when the menu scrolls in ${engine}`, { timeout: 30_000 }, async t => {
+      const page = await open(t);
+      await page.setViewportSize({ width: 760, height: 480 });
+      await press(page, QWERTY.w);
+      await press(page, QWERTY.w);
+      const view = await page.evaluate(() => {
+        const row = document.getElementById('theater-everywhere-ui')!.shadowRoot!.activeElement as HTMLElement;
+        row.getAnimations().forEach(animation => animation.finish());
+        const list = row.closest<HTMLElement>('.theater-settings-body')!;
+        const box = row.getBoundingClientRect();
+        const bounds = list.getBoundingClientRect();
+        return { scrolls: list.scrollHeight > list.clientHeight, inside: box.top >= bounds.top - 1 && box.bottom <= bounds.bottom + 1 };
+      });
+      assert.deepEqual(view, { scrolls: true, inside: true });
+    });
+
+    it(`passes over the time readouts and the scrubber, which stay with Tab, in ${engine}`, { timeout: 30_000 }, async t => {
+      const page = await open(t);
+      await press(page, QWERTY.w);
+      const visited: string[][] = [];
+      // Walk each way until focus stops moving; from every stop, W must not climb onto the scrubber.
+      for (const key of [QWERTY.a, QWERTY.d]) {
+        for (let step = 0; step < 30; step++) {
+          const before = (await focused(page))!.classes;
+          visited.push(before);
+          await press(page, key);
+          if ((await focused(page))!.classes.join(' ') === before.join(' ')) break;
+        }
+      }
+      const skipped = ['theater-time-display', 'theater-scrubber-container'];
+      assert.ok(visited.some(classes => classes.includes('play-pause-btn')) && visited.some(classes => classes.includes('fullscreen-btn')),
+        `the walk spans the bar: ${JSON.stringify(visited)}`);
+      assert.ok(!visited.flat().some(name => skipped.includes(name)), `the walk stays off the readouts: ${JSON.stringify(visited)}`);
+      await press(page, QWERTY.w);
+      assert.ok(!(await focused(page))!.classes.some(name => skipped.includes(name)), 'W from the bar stays off the scrubber');
+    });
+
     it(`matches the physical key on AZERTY and QWERTZ, and ignores modifiers, composition and editable fields in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await open(t);
       const leaves = () => page.keyboard.press('Escape');

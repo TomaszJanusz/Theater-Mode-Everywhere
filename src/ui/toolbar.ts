@@ -16,7 +16,7 @@ import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
 import { renderKbdText } from './kbd-text';
-import { closeMenuPopover } from './menu-popover';
+import { closeMenuPopover, OPEN_SLIDER_PANEL } from './menu-popover';
 import { consumePictureDismiss } from './picture-dismiss';
 import { createPictureClickGate, type PictureClickGate } from './picture-click';
 import { closePlayerSettings } from './player-settings';
@@ -87,10 +87,7 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     '.theater-settings-menu.visible',
     '.theater-menu.is-open > .theater-settings-menu',
     '.theater-button-tooltip.visible',
-    '.theater-volume-container:hover .theater-volume-panel',
-    '.theater-speed-container:hover .theater-speed-panel',
-    '.theater-volume-container:focus-within .theater-volume-panel',
-    '.theater-speed-container:focus-within .theater-speed-panel'
+    OPEN_SLIDER_PANEL
   ].join(',');
   const candidateSelector = '.theater-service-action-host, .theater-scrubber-tooltip, .theater-cc-menu, '
     + '.theater-settings-menu, .theater-button-tooltip, .theater-volume-panel, .theater-speed-panel';

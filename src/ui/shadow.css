@@ -433,8 +433,10 @@
   overflow: visible !important;
 }
 
+/* A slider button grows into its notch under the pointer or once its slider has focus; focus on the
+   button alone keeps it a plain focused button. :where keeps the old specificity, so the boost colour still wins. */
 .theater-menu.is-open > .theater-control-btn,
-.theater-popover:is(:hover, :focus-within) > .theater-control-btn {
+.theater-popover:is(:hover, :where(:has(> :focus-within:not(.theater-control-btn)))) > .theater-control-btn {
   transition: none !important;
   transform: none !important;
   box-sizing: border-box !important;
@@ -481,7 +483,7 @@
 .theater-settings-container.is-open > .theater-control-btn::after { inset-inline-end: -1px !important; }
 
 .theater-menu.is-open > .theater-control-btn:active,
-.theater-popover:is(:hover, :focus-within) > .theater-control-btn:active {
+.theater-popover:is(:hover, :where(:has(> :focus-within:not(.theater-control-btn)))) > .theater-control-btn:active {
   transform: none !important;
   background: var(--appearance-surface, rgb(20, 20, 20)) !important;
 }
@@ -527,10 +529,8 @@
   box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.45) !important;
 }
 
-.theater-volume-container:hover .theater-volume-panel,
-.theater-speed-container:hover .theater-speed-panel,
-.theater-volume-container:focus-within .theater-volume-panel,
-.theater-speed-container:focus-within .theater-speed-panel {
+.theater-popover:hover > :is(.theater-volume-panel, .theater-speed-panel),
+:is(.theater-volume-panel, .theater-speed-panel):focus-within {
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(-50%) !important;
@@ -3279,8 +3279,9 @@ button.theater-time-end:focus-visible,
   border-radius: 1px !important;
   background: var(--appearance-border, rgba(255, 255, 255, 0.2)) !important;
 }
-/* On a tinted row the idle segments sink into it, like the arrows do under the pointer. */
-.theater-settings-stepper-row:is(:hover, :has(:focus-visible)) .theater-stepper-segment {
+/* Under the pointer the row is tinted, and the idle segments sink into it as the arrows do. Keyboard focus
+   only frames the row, so the segments keep their colour there. */
+.theater-settings-stepper-row:hover .theater-stepper-segment {
   background: rgba(0, 0, 0, 0.45) !important;
 }
 /* One highlight that slides to the current segment (transform only), instead of segments recolouring. */
