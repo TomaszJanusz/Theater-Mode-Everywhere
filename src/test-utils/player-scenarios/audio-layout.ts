@@ -24,9 +24,9 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   const media = () => video.evaluate((video: HTMLVideoElement) => ({
     voice: video.dataset.theaterVoice, leveling: video.dataset.theaterLeveling, bass: video.dataset.theaterBass
   }));
-  const cycleTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string) => {
+  const stepTo = async (name: 'voice' | 'leveling' | 'bass', hudLabel: string, detail: string, direction: 1 | -1 = 1) => {
     const row = page.locator(`.audio-${name}-btn`);
-    await row.locator('.theater-stepper-btn[data-direction="1"]').click();
+    await row.locator(`.theater-stepper-btn[data-direction="${direction}"]`).click();
     await page.waitForFunction(([name, detail]) => document.getElementById('theater-everywhere-ui')?.shadowRoot
       ?.querySelector(`.audio-${name}-btn .theater-stepper-value`)?.textContent === detail, [name, detail]);
     await hud.filter({ hasText: `${hudLabel}: ${detail}` }).waitFor();
@@ -75,15 +75,15 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   if (await slider.inputValue() !== '1' || await video.evaluate((video: HTMLVideoElement) => video.dataset.theaterBoost) !== '1.0') {
     fail('Unmute restored a boosted level after volume boost was turned off at zero volume.');
   }
-  await cycleTo('voice', 'Voice boost', 'Light');
+  await stepTo('voice', 'Voice boost', 'Light');
   // The click is the user activation the MAIN world needs to start Web Audio.
   await page.waitForFunction(() => {
     const player = document.querySelector<HTMLVideoElement>('video#player');
     return player?.dataset.theaterVoice === 'light' && player.dataset.theaterBoostReady === 'true';
   });
-  await cycleTo('leveling', 'Reduce loud sounds', 'Light');
-  await cycleTo('leveling', 'Reduce loud sounds', 'Strong');
-  await cycleTo('bass', 'Bass', 'More');
+  await stepTo('leveling', 'Reduce loud sounds', 'Light');
+  await stepTo('leveling', 'Reduce loud sounds', 'Strong');
+  await stepTo('bass', 'Bass', 'More');
   // One full lap of the configured levels from More, ending on More again.
   for (const level of bassLapFrom('more')) {
     await page.keyboard.press('b');
@@ -171,11 +171,13 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   await hud.filter({ hasText: 'Volume boost: Off' }).waitFor();
   await page.keyboard.press('Escape'); // Close settings before restoring effects.
     await gear.click();
-    await cycleTo('voice', 'Voice boost', 'Strong');
-    await cycleTo('voice', 'Voice boost', 'Off');
-    await cycleTo('leveling', 'Reduce loud sounds', 'Off');
-    const lap = bassLapFrom('more');
-    for (const level of lap.slice(0, lap.indexOf('original') + 1)) await cycleTo('bass', 'Bass', BASS_LABELS[level]);
+    // The stepper holds at the top instead of wrapping, so Off is reached by stepping down.
+    await stepTo('voice', 'Voice boost', 'Strong');
+    await stepTo('voice', 'Voice boost', 'Light', -1);
+    await stepTo('voice', 'Voice boost', 'Off', -1);
+    await stepTo('leveling', 'Reduce loud sounds', 'Light', -1);
+    await stepTo('leveling', 'Reduce loud sounds', 'Off', -1);
+    await stepTo('bass', 'Bass', BASS_LABELS.original, -1);
     await page.keyboard.press('Escape');
   if (await video.getAttribute('data-smoke-audio-emptied') !== '0') fail('An audio setting unnecessarily reloaded the same-origin video.');
 }
