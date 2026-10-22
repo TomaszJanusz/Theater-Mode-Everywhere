@@ -164,3 +164,30 @@ No authenticated real hosts or optional screenshot captures were exercised. Loca
 measurements do not establish CI timings. Firefox real installation/permissions/
 background coverage remains the pre-existing diagnostic gap; no advisory policy
 or `check` job changes were made.
+
+
+## Storybook overlap review (UI test cleanup)
+
+Reviewed against `origin/dev` at `8f2e9d9d`, including Storybook #237 and sliders
+#240. The historical before/after timings above describe the TME-106 migration;
+they are not measurements of this later cleanup. See the [UI coverage audit](ui-test-coverage.md)
+for the complete component/unit/browser mapping and exact migrated test names.
+
+| Current scenario / assertion | Decision | Coverage and integration boundary |
+| --- | --- | --- |
+| `assertPinStorage`: Extension settings row has no keycaps, value or shortcut | MOVE | `player-settings-order.browser.test.ts`, `opens Extension settings through the background in ${engine}`, now asserts all three facts for pointer and keyboard activation. The installed smoke still opens the actual options page through background messaging and checks storage, reload and cross-page live updates. |
+| Fixture `assertScrubberPreviewLeaves` | DELETE | `scrubber-tooltip.browser.test.ts`, `updates extras in place and cancels leave/reset/exit/replacement frames in ${engine}`, boots the production player, queues mousemove then mouseleave, advances 40ms and asserts no update/visible tooltip. This duplicates the same queued-frame race. Remove the unused support function too. |
+| Fixture `assertTheaterToggle`, `assertPictureClickReclaimsKeys`, `assertThumbPlayerSwap` | KEEP | Host event claiming/editable guards, real picture focus, media replacement/return and host restoration; the component stories fake these boundaries. |
+| Fixture `assertControlsPin` | KEEP | Menu/modal/caption geometry, live pin/chrome/idle behavior, rebuilding and cleanup in a complete player. Unit visibility rules and isolated stories cannot establish the event wiring. |
+| Fixture `assertFullscreenAndHelp` (including audio cycles), `assertPictureLayoutFixture` | KEEP | Native fullscreen, shortcut/modal/repeat guards, command-to-HUD and audio/layout application/restoration. HUD stories only invoke the presentation API. |
+| Fixture `assertPlayerLocalization` | KEEP | Real runtime updates of menus/help/tooltips/caption dialogs and host direction isolation; individual localized stories cannot prove all consumers update together. |
+| Installed startup, blacklist and parent blacklist | KEEP | Initialization and saved policy through the installed scripts, including early MAIN interception. |
+| Installed iframe handshake and embedded keys/fullscreen | KEEP | All-frames/MAIN/isolated relays, native/extension fullscreen ownership, child reload and exit cleanup. |
+| Installed audio world | KEEP | Actual isolated-to-MAIN graph readiness, saved settings, no media reload and exit bypass. The HUD/volume stories use fake audio state. |
+| Installed AutoTheater | KEEP | Default/saved options, live writes, acknowledgement and document reentry through installed provider bridges, plus iframe exclusion. Notice countdown presentation is tested in component cases and native spinner fixtures. |
+| Installed RTE, shortcut management, layout, language, pin, highlights and appearance | KEEP | Real storage/background delivery across options, popup and isolated player, fresh-document hydration, acknowledgements and live propagation. Similar fixture checks replace those APIs and cannot prove installation. |
+| Installed badge-world fallback | KEEP | CDP selects the actual isolated world; a Storybook/page-world custom-elements probe cannot establish its registry availability. |
+
+The fixture suite now runs seven scenario functions per engine (previously eight).
+No installed startup, script-world or iframe scenario was removed. No new
+screenshots are required: only assertions and test ownership changed.

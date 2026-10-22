@@ -134,9 +134,6 @@
   "src/ui/audio-block.browser.test.ts": {
     "launch": 1
   },
-  "src/ui/auto-theater-notice.browser.test.ts": {
-    "esbuild": 1
-  },
   "src/ui/auto-theater-runtime.browser.test.ts": {
     "esbuild": 1
   },
@@ -150,9 +147,6 @@
   "src/ui/auto-theater-storage.browser.test.ts": {
     "esbuild": 1
   },
-  "src/ui/bass-hud.browser.test.ts": {
-    "launch": 1
-  },
   "src/ui/bass-icon.browser.test.ts": {
     "launch": 1,
     "esbuild": 1
@@ -160,12 +154,6 @@
   "src/ui/caption-dock-lifecycle.browser.test.ts": {
     "launch": 1,
     "esbuild": 1
-  },
-  "src/ui/caption-loading.browser.test.ts": {
-    "launch": 3
-  },
-  "src/ui/caption-options-close.browser.test.ts": {
-    "launch": 2
   },
   "src/ui/caption-overlay-width.browser.test.ts": {
     "launch": 1
@@ -237,9 +225,6 @@
   },
   "src/ui/video-selection.browser.test.ts": {
     "esbuild": 1
-  },
-  "src/ui/volume-wheel.browser.test.ts": {
-    "launch": 1
   },
   "src/whatsNew-content.browser.test.ts": {
     "launch": 2,

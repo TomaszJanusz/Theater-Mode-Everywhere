@@ -111,3 +111,60 @@ test('Digit cleanup belongs to the notice clock and cancellation clears it', () 
     await expect(run().stage.clock.pending).toBe(0);
   }
 }));
+
+const ringTurns = () => (notice()?.querySelector('.caption-hud-spinner')?.getAnimations() ?? [])
+  .filter(animation => animation.effect instanceof KeyframeEffect && animation.effect.getKeyframes().some(frame => 'rotate' in frame));
+
+test('Countdown rolls to zero, holds, announces politely and cleans up', () => runNoticeCase({
+  args: { remainingMs: 3000 },
+  play: async () => {
+    const count = () => notice()!.querySelector('.theater-auto-notice-count')!;
+    await expect(digit()).toBe('2');
+    await expect(count().getAttribute('aria-hidden')).toBe('true');
+    await expect(count().querySelectorAll('.is-rolling').length).toBe(0);
+    run().elapse(999);
+    await expect(digit()).toBe('2');
+    run().elapse(1);
+    await expect(digit()).toBe('1');
+    await expect(count().querySelectorAll('.is-rolling').length).toBe(1);
+    const timing = ringTurns()[0]?.effect?.getTiming();
+    await expect([ringTurns().length, timing?.iterations, timing?.easing]).toEqual([1, Infinity, 'linear']);
+    run().elapse(999);
+    await expect(digit()).toBe('1');
+    run().elapse(1);
+    await expect(digit()).toBe('0');
+    run().elapse(5000);
+    await expect(digit()).toBe('0');
+    await expect(notice()?.getAttribute('aria-live')).toBe('polite');
+    await expect(notice()?.getAttribute('aria-label')).toContain('Entering theater mode');
+    run().stop();
+    run().stop();
+    run().stage.clock.advance(5000);
+    await expect(notice()).toBeNull();
+  }
+}));
+
+test('Reduced motion swaps the countdown without rolling or turning', () => runNoticeCase({
+  globals: { reduceMotion: 'on' }, args: { remainingMs: 3000 },
+  play: async () => {
+    run().elapse(1000);
+    await expect(digit()).toBe('1');
+    await expect(notice()?.querySelectorAll('.is-rolling').length).toBe(0);
+    await expect(ringTurns().length).toBe(0);
+  }
+}));
+
+test('Per-digit ring replaces its eased turn on each digit change', () => runNoticeCase({
+  args: { remainingMs: 3000, ringTurn: 'per-digit', progress: 0 },
+  play: async () => {
+    const first = ringTurns()[0]!;
+    run().elapse(1000);
+    await expect(digit()).toBe('1');
+    const turns = ringTurns();
+    await expect(turns.length).toBe(1);
+    await expect(turns[0]).not.toBe(first);
+    await expect(first.playState).toBe('idle');
+    await expect(Number(turns[0]!.currentTime)).toBeLessThan(250);
+    await expect(turns[0]!.effect?.getTiming().easing).not.toBe('linear');
+  }
+}));

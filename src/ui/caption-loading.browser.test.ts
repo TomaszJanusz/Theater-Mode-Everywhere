@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import type { Page } from 'playwright';
+
+import { chromium, type Page } from 'playwright';
+
 import { bootPlayer, bundlePlayer, enterTheater } from '../test-utils/player-boot';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+
+const shared = sharedTestBrowser(chromium);
 
 const BUNDLE = bundlePlayer([
   "export { createHud } from './ui/hud';",
@@ -74,60 +78,12 @@ async function screenshot(page: Page, filename: string): Promise<void> {
 }
 
 describe('caption loading browser regressions', () => {
-  it('delays the spinner and cancels pending feedback on completion, dismissal and session replacement', async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    try {
-      const page = await browser.newPage();
-      await page.clock.install();
-      await page.clock.pauseAt(new Date());
-      await page.setContent('<div id="player"></div>');
-      await page.addScriptTag({ content: BUNDLE });
-      await page.evaluate(`
-        window.session = { element: document.querySelector('#player'), currentEpoch: 1 };
-        window.hud = TheaterTest.createHud({ session,
-          queryPlayerUi: selector => document.querySelector(selector),
-          paintOverlay() {}, mountPlayerUi: overlay => document.body.appendChild(overlay)
-        });
-      `);
-      const spinner = page.locator('.caption-hud-spinner');
-      const loading = () => page.evaluate('hud.triggerCaptionHud({ kind: "loading", title: "Loading" })');
-      await loading();
-      await page.clock.runFor(399);
-      assert.equal(await spinner.count(), 0);
-      await page.evaluate('hud.triggerCaptionHud({ kind: "dismiss" })');
-      await page.clock.runFor(1000);
-      assert.equal(await spinner.count(), 0, 'a quick refresh never shows its spinner');
-
-      await loading();
-      await page.clock.runFor(400);
-      assert.equal(await spinner.count(), 1, 'a slow request shows feedback');
-      await page.evaluate('hud.triggerCaptionHud({ kind: "dismiss" })');
-      assert.equal(await spinner.count(), 0);
-
-      await loading();
-      await page.clock.runFor(100);
-      await page.evaluate('hud.triggerCaptionHud({ kind: "status", title: "Failed" })');
-      await page.clock.runFor(400);
-      assert.equal(await spinner.count(), 0);
-      assert.equal(await page.locator('.theater-everywhere-caption-hud').innerText(), 'Failed');
-
-      await loading();
-      await page.evaluate('session.currentEpoch += 1');
-      await page.clock.runFor(400);
-      assert.equal(await spinner.count(), 0, 'an old session cannot publish delayed feedback');
-    } finally { await browser.close(); }
-  });
-
   it('shows saved-caption loading in the real player, pulses both colors, handles reduced motion and failures', async t => {
-    const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
     const loading = gate();
     try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      const page = await context.newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.route('http://captions.test/**', async route => {
@@ -180,15 +136,14 @@ describe('caption loading browser regressions', () => {
       assert.equal(await page.locator('.cc-btn.active, .cc-btn.loading').count(), 0);
       await screenshot(page, 'load-failed.png');
       assert.deepEqual(errors, []);
-    } finally { loading.release(); await browser.close(); }
+    } finally { loading.release(); await context.close(); }
   });
 
   it('prepares Disney cue windows lazily, stays quiet within the loaded window and delegates through the composite', async t => {
-    const { chromium } = await import('playwright');
     if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       const mediaId = '00000000-0000-4000-8000-000000000001';
       const base = 'https://vod-akc-euwest1.media.dssott.com/ps01/';
       const requests: string[] = [];
@@ -228,6 +183,64 @@ describe('caption loading browser regressions', () => {
       await page.evaluate('adapter.invalidate()');
       assert.equal(await page.evaluate('adapter.prepareCaptionCueRefresh(trackId, 500)'), null);
       await page.evaluate('adapter.dispose()');
-    } finally { await browser.close(); }
+    } finally { await context.close(); }
+  });
+});
+
+describe('caption options dialog close button', () => {
+  for (const method of ['X button', 'Escape'] as const) {
+    it(`closes with the ${method} like a dismissal, keeping playback and theater and restoring focus`, async t => {
+      if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+      const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
+      try {
+        const page = await context.newPage();
+        await page.route('http://captions.test/**', async route => {
+          const pathname = new URL(route.request().url()).pathname;
+          if (pathname === '/en.vtt') await route.fulfill({ contentType: 'text/vtt', body: 'WEBVTT\n\n00:00:00.000 --> 00:01:00.000\nHello\n' });
+          else await route.fulfill({ contentType: 'text/html', body: FIXTURE.replace('</video>', '<track kind="subtitles" label="English" srclang="en" src="/en.vtt"></video>') });
+        });
+        await page.goto('http://captions.test/');
+        await boot(page, 'captions.test', false);
+        const video = page.locator('video#player');
+        const pausedBefore = await video.evaluate((v: HTMLVideoElement) => v.paused);
+        await page.locator('.cc-btn').click();
+        await page.locator('.theater-cc-menu-options').click();
+        const dialog = page.locator('.theater-caption-options-dialog');
+        await dialog.waitFor();
+        const close = dialog.getByRole('button', { name: 'Close', exact: true });
+        assert.equal(await close.count(), 1);
+        assert.equal(await close.evaluate(button => button.classList.contains('te-dialog-close')), true, 'shares the Help close button styling');
+        if (method === 'X button') await close.click();
+        else await page.keyboard.press('Escape');
+        await dialog.waitFor({ state: 'detached' });
+        assert.equal(await video.evaluate((v: HTMLVideoElement) => v.paused), pausedBefore, 'playback is untouched');
+        assert.equal(await page.locator('.theater-controls-wrapper').count(), 1, 'theater mode stays active');
+        assert.equal(await page.locator('.te-dialog-overlay').count(), 0);
+        assert.equal(await page.evaluate(() => document.body.classList.contains('te-dialog-open')), false);
+        assert.equal(await page.locator('.cc-btn').evaluate(button => button.matches(':focus')), true, 'focus returns to the CC trigger');
+      } finally { await context.close(); }
+    });
+  }
+
+  it('reaches the X button by keyboard and activates it with Enter', async t => {
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
+    try {
+      const page = await context.newPage();
+      await page.route('http://captions.test/**', async route => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/en.vtt') await route.fulfill({ contentType: 'text/vtt', body: 'WEBVTT\n\n00:00:00.000 --> 00:01:00.000\nHello\n' });
+        else await route.fulfill({ contentType: 'text/html', body: FIXTURE.replace('</video>', '<track kind="subtitles" label="English" srclang="en" src="/en.vtt"></video>') });
+      });
+      await page.goto('http://captions.test/');
+      await boot(page, 'captions.test', false);
+      await page.locator('.cc-btn').click();
+      await page.locator('.theater-cc-menu-options').click();
+      const dialog = page.locator('.theater-caption-options-dialog');
+      await dialog.waitFor();
+      await dialog.getByRole('button', { name: 'Close', exact: true }).focus();
+      await page.keyboard.press('Enter');
+      await dialog.waitFor({ state: 'detached' });
+    } finally { await context.close(); }
   });
 });

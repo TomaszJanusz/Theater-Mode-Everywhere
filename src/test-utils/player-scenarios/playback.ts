@@ -1,5 +1,7 @@
-import { assertLocalized } from '../language-audit';
 import type { Page } from 'playwright';
+
+import { assertLocalized } from '../language-audit';
+
 import { fail, theaterEntered, enterTheaterFromPicture, exitTheater, THEATER_VIDEO_CLASS, THEATER_HTML_CLASS } from './state';
 export async function assertTheaterToggle(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -127,48 +129,6 @@ export async function assertPictureClickReclaimsKeys(page: Page): Promise<void> 
   await page.keyboard.press('m');
   await page.mouse.click(640, 300);
   await page.evaluate(() => document.querySelector('#smoke-host-field')?.remove());
-  await exitTheater(page);
-}
-
-export async function assertScrubberPreviewLeaves(page: Page): Promise<void> {
-  await enterTheaterFromPicture(page);
-  await page.locator('video#player').evaluate(async (video: HTMLVideoElement & { _smokeStream?: MediaProvider | null }) => {
-    video._smokeStream = video.srcObject;
-    video.srcObject = null;
-    video.src = '/vod.webm';
-    video.loop = true;
-    await video.play();
-  });
-  await page.waitForFunction(() => {
-    const video = document.querySelector<HTMLVideoElement>('video#player');
-    return Boolean(video && Number.isFinite(video.duration) && video.seekable.length > 0);
-  });
-  const scrubber = page.locator('.theater-scrubber-container');
-  const box = await scrubber.boundingBox();
-  if (!box) fail('Scrubber is not laid out.');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  const tooltip = page.locator('.theater-scrubber-tooltip');
-  await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')?.shadowRoot
-    ?.querySelector('.theater-scrubber-tooltip.visible'));
-  await page.mouse.move(640, 200);
-  // A pointer that leaves before the queued hover frame must not bring the preview back.
-  const lingering = await scrubber.evaluate(async (element, x) => {
-    element.dispatchEvent(new MouseEvent('mousemove', { clientX: x, bubbles: true, composed: true }));
-    element.dispatchEvent(new MouseEvent('mouseleave'));
-
-    return element.closest('.theater-controls-row')?.querySelector('.theater-scrubber-tooltip')?.classList.contains('visible');
-  }, box.x + box.width / 3);
-  await page.clock.runFor(40);
-  if (lingering || await tooltip.evaluate((element) => element.classList.contains('visible'))) {
-    fail('The scrubber preview stayed visible after the pointer left the scrubber.');
-  }
-  await page.locator('video#player').evaluate(async (video: HTMLVideoElement & { _smokeStream?: MediaProvider | null }) => {
-    video.removeAttribute('src');
-    video.srcObject = video._smokeStream ?? null;
-    delete video._smokeStream;
-    video.loop = false;
-    await video.play();
-  });
   await exitTheater(page);
 }
 

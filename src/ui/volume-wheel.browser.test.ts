@@ -4,9 +4,12 @@ import { describe, it } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
 
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
-import { ownTestBrowser, sharedTestBrowser } from '../test-utils/test-browser';
+import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
-import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
+import { canvasVideoFixture, vodVideoFixture, serveFixture } from '../test-utils/video-fixtures';
+
+const POINTER_FIXTURE = vodVideoFixture({ title: 'Slider pointer regression' });
+const THUMB = 12;
 
 const FIXTURE = canvasVideoFixture({ title: 'Wheel volume regression', pageTitle: 'Wheel volume fixture' });
 
@@ -71,10 +74,9 @@ async function countWheelDelivery(page: Page): Promise<(delta: number) => Promis
 
 describe('wheel volume browser regressions', () => {
   for (const engine of testEngines()) {
+    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
     it(`shares keyboard volume behavior and disposes wheel gestures in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
       await serveFixture(page, FIXTURE, 'http://wheel-volume.test/');
       await boot(page, { volumeBoostEnabled: true });
       await page.keyboard.press('ArrowUp');
@@ -179,7 +181,6 @@ describe('wheel volume browser regressions', () => {
       assert.equal(await page.locator('.theater-volume-slider').inputValue(), '0.2');
     });
 
-    const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
     for (const boost of [false, true]) {
       it(`stops at 100% in both directions ${boost ? 'with' : 'without'} volume boost in ${engine}`, { timeout: 60_000 }, async t => {
         const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
@@ -214,5 +215,94 @@ describe('wheel volume browser regressions', () => {
         await waitForHud(page, '95%');
       });
     }
+    for (const [name, button, selector, press, drag] of [
+      ['speed', '.speed-btn', '.theater-speed-slider', { fraction: 5 / 7, value: '5' }, { fraction: 1 / 7, value: '1' }],
+      ['volume', '.volume-btn', '.theater-volume-slider', { fraction: 0.5, value: '0.75' }, { fraction: 0.2, value: '0.3' }]
+    ] as const) {
+      it(`takes a press beside the ${name} track and drags from there in ${engine}`, { timeout: 60_000 }, async t => {
+        const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+        await serveFixture(page, POINTER_FIXTURE, 'http://slider-marker.test/');
+        await bootPlayer(page, { settings: { keepControlsVisible: true, volumeBoostEnabled: true }, mainWorld: true });
+        await enterTheater(page);
+        await page.locator(button).hover();
+        const slider = page.locator(selector);
+        await slider.waitFor({ state: 'visible' });
+        const track = (await slider.boundingBox())!;
+        const x = track.x + track.width / 2;
+        const yAt = (fraction: number) => track.y + track.height - THUMB / 2 - fraction * (track.height - THUMB);
+        const before = await slider.inputValue();
+        // In the panel padding, beyond the 32px hit column: nothing moves.
+        await page.mouse.click(x + 20, yAt(0.9));
+        assert.equal(await slider.inputValue(), before);
+        // Ten pixels off the 6px track still jumps the thumb, then keeps dragging, even off the column.
+        await page.mouse.move(x + 10, yAt(press.fraction));
+        await page.mouse.down();
+        assert.equal(await slider.inputValue(), press.value);
+        await page.mouse.move(x + 40, yAt(drag.fraction), { steps: 3 });
+        assert.equal(await slider.inputValue(), drag.value);
+        await page.mouse.up();
+        assert.equal(await slider.inputValue(), drag.value);
+        // Focus and the label stay on the input; the popover stays open for the press.
+        assert.equal(await slider.evaluate(input => input.getRootNode() instanceof ShadowRoot
+          && (input.getRootNode() as ShadowRoot).activeElement === input), true);
+        assert.ok(await slider.getAttribute('aria-valuetext'));
+        assert.equal(await slider.evaluate(input => (input.closest('[inert]') as HTMLElement | null) === null), true);
+      });
+    }
+
+    it(`hides a pointer-focused slider panel 5 s after the pointer leaves, keeping keyboard focus in ${engine}`, { timeout: 90_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      await serveFixture(page, POINTER_FIXTURE, 'http://slider-marker.test/');
+      await bootPlayer(page, { settings: { keepControlsVisible: true, volumeBoostEnabled: true }, mainWorld: true });
+      await enterTheater(page);
+      // The fake clock still ticks in real time, so "before 5 s" checks keep seconds of slack.
+      await page.clock.install();
+      const slider = page.locator('.theater-volume-slider');
+      const focused = () => slider.evaluate(input => (input.getRootNode() as ShadowRoot).activeElement === input);
+      const inert = () => page.locator('.theater-volume-panel').evaluate(panel => (panel as HTMLElement).inert);
+      const dragAndLeave = async () => {
+        await page.locator('.volume-btn').hover();
+        await slider.waitFor({ state: 'visible' });
+        const track = (await slider.boundingBox())!;
+        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 3, { steps: 3 });
+        // An active drag never hides the panel, even when the pointer is far away.
+        await page.mouse.move(640, 200);
+        await page.clock.runFor(6000);
+        assert.equal(await focused(), true, 'a held drag keeps the panel');
+        await page.mouse.up();
+      };
+
+      await dragAndLeave();
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), true, 'still open before 5 s');
+      // Re-entering cancels the timer; leaving again starts a fresh 5 s.
+      await page.locator('.volume-btn').hover();
+      await page.clock.runFor(6000);
+      assert.equal(await focused(), true, 'hovering keeps the panel');
+      await page.mouse.move(640, 300);
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), true);
+      await page.clock.runFor(3000);
+      assert.equal(await focused(), false, 'blurred after 5 s');
+      assert.equal(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName), 'BODY', 'focus is not moved elsewhere');
+      assert.equal(await inert(), true);
+
+      // The picture click right after the hide still toggles playback (hidden chrome is not "open").
+      await page.clock.runFor(2000);
+      const video = page.locator('video');
+      const paused = await video.evaluate((v: HTMLVideoElement) => v.paused);
+      await page.mouse.click(640, 300);
+      await page.waitForFunction(was => document.querySelector('video')!.paused !== was, paused);
+
+      // Keyboard-reached focus has no timer.
+      await page.locator('.volume-btn').hover();
+      await slider.focus();
+      await page.keyboard.press('ArrowUp');
+      await page.mouse.move(640, 200);
+      await page.clock.runFor(30_000);
+      assert.equal(await focused(), true, 'keyboard focus stays until Escape or blur');
+    });
   }
 });

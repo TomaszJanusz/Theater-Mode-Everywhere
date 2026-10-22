@@ -1,11 +1,25 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { it } from 'node:test';
+
 import { chromium, firefox, type Page } from 'playwright';
+
 import { installChromeStub } from '../test-utils/chrome-stub';
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
+
+const browsers = Object.fromEntries(testEngines().map(engine => [engine, sharedTestBrowser({ chromium, firefox }[engine])]));
+
+declare global {
+  interface Window {
+    SpinnerTest: {
+      showAutoTheaterNotice(paint: (element: HTMLElement) => void, cancel: () => void, remainingMs: () => number, ringTurn?: 'uniform' | 'per-digit'): () => void;
+      setPlayerUiCss(css: string): void;
+    };
+    noticeHide: () => void;
+  }
+}
 
 const bundle = bundleModules([
   "export { exitSpinner } from './ui/spinner-exit';",
@@ -91,7 +105,7 @@ async function assertShrinking(page: Page, selector: string) {
 }
 
 for (const engine of testEngines()) {
-  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+  const shared = browsers[engine];
   for (const motion of ['normal', 'reduced', 'system'] as const) {
     it(`${engine}: centred confirmations reset their extra two seconds and clean up (${motion})`, { timeout: 40_000 }, async t => {
       const page = await (await shared.newContext(t)).newPage();
@@ -527,4 +541,63 @@ for (const engine of testEngines()) {
     await assertUnscaled(page, '.theater-auto-notice-visual, .theater-auto-notice-count, .theater-auto-notice-count .theater-time-glyph');
     await page.evaluate('hide()');
   });
+}
+
+/** Plate facts sampled on the page itself, so no frame between two samples can hide a transparent moment. */
+const SAMPLER = `(${(() => {
+  const samples: Array<Record<string, string | number>> = [];
+  const overlay = () => document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector<HTMLElement>('.theater-auto-notice');
+  const timer = setInterval(() => {
+    const el = overlay();
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const alpha = /rgba?\(([^)]*)\)/.exec(style.backgroundColor)?.[1].split(/[ ,/]+/).filter(Boolean)[3];
+    samples.push({
+      t: Math.round(performance.now()), alpha: alpha === undefined ? 1 : Number(alpha), opacity: Number(style.opacity),
+      width: el.getBoundingClientRect().width
+    });
+  }, 40);
+  Object.assign(window, { plateSamples: samples });
+  (window as unknown as { stopSamples: () => typeof samples }).stopSamples = () => { clearInterval(timer); return samples; };
+}).toString()})()`;
+
+for (const engine of testEngines()) {
+  const shared = browsers[engine];
+  for (const mode of ['normal', 'reduced transparency', 'high contrast', 'reduced motion'] as const) {
+    it(`${engine}: the notice plate stays opaque through appear, countdown, ring exit and 0 (${mode})`, { timeout: 40_000 }, async t => {
+      const page = await (await shared.newContext(t)).newPage();
+      await page.addInitScript('window.__name = target => target;');
+      await page.goto('about:blank');
+      await page.setContent('<body style="margin:0;background:#fff;height:900px"></body>');
+      await page.addScriptTag({ content: bundle });
+      await page.evaluate(([css, how]) => {
+        window.SpinnerTest.setPlayerUiCss(css!);
+        const host = document.getElementById('theater-everywhere-ui') ?? (() => { window.SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => 0)(); return document.getElementById('theater-everywhere-ui')!; })();
+        if (how === 'reduced transparency') host.setAttribute('data-transparency', 'reduced');
+        if (how === 'high contrast') host.setAttribute('data-contrast', 'high');
+        if (how === 'reduced motion') host.setAttribute('data-motion', 'reduced');
+      }, [css, mode]);
+      await page.evaluate(SAMPLER);
+      await page.evaluate(() => {
+        const deadline = performance.now() + 2200;
+        window.noticeHide = window.SpinnerTest.showAutoTheaterNotice(() => {}, () => {}, () => Math.max(0, deadline - performance.now()));
+      });
+      // Zero is the final displayed second; the ring's completed exit is the
+      // positive signal that sampling covered both the countdown and its fade.
+      await page.waitForFunction(() => {
+        const notice = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-auto-notice')!;
+        return notice.querySelector('.theater-time-glyph:not(.is-leaving)')?.textContent === '0'
+          && !notice.querySelector('.caption-hud-spinner')
+          && (window as unknown as { plateSamples: unknown[] }).plateSamples.length > 40;
+      });
+      const samples = await page.evaluate(() => (window as unknown as { stopSamples(): Array<Record<string, number | string>> }).stopSamples());
+      assert.ok(samples.length > 40, 'sampled across the whole countdown');
+      for (const s of samples) {
+        assert.equal(s.alpha, 1, `plate background opaque at ${JSON.stringify(s)}`);
+        assert.equal(s.opacity, 1, `notice opaque at ${JSON.stringify(s)}`);
+      }
+      const widths = new Set(samples.map(s => s.width));
+      assert.equal(widths.size, 1, 'the plate never morphs its width during the countdown');
+    });
+  }
 }

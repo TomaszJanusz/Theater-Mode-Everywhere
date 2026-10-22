@@ -154,3 +154,14 @@ const RapidResults: Story = hudStory(() => {}, {
   }
 });
 test('RapidResults', () => runHudCase(RapidResults));
+
+// Completion before the delay must cancel the pending loader, including when it becomes a status.
+test('Status before loading delay cancels the pending spinner', () => runHudCase(hudStory(h => h.triggerCaptionHud(LOADING), {
+  play: async () => {
+    stage().advance(100);
+    hud().triggerCaptionHud(status('Failed'));
+    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
+    await expect(notice()?.textContent).toBe('Failed');
+  }
+})));

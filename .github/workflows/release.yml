@@ -161,6 +161,18 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Storybook components Chromium
+        if: hashFiles('vitest.config.ts') != ''
+        timeout-minutes: 5
+        run: pnpm storybook:test
+
+      - name: Storybook components Firefox
+        if: hashFiles('vitest.config.ts') != ''
+        timeout-minutes: 5
+        run: pnpm storybook:test
+        env:
+          STORYBOOK_BROWSER: firefox
+
       - name: Smoke Chromium
         run: xvfb-run --auto-servernum pnpm smoke:chromium
 

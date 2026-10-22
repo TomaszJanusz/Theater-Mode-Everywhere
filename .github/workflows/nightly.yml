@@ -64,6 +64,21 @@ jobs:
         timeout-minutes: 25
         run: pnpm test
 
+      # main can predate the Storybook pilot until the 2.1 branch lands.
+      - name: Storybook components Chromium
+        id: components-chromium
+        if: ${{ !cancelled() && hashFiles('vitest.config.ts') != '' }}
+        timeout-minutes: 5
+        run: pnpm storybook:test
+
+      - name: Storybook components Firefox
+        id: components-firefox
+        if: ${{ !cancelled() && hashFiles('vitest.config.ts') != '' }}
+        timeout-minutes: 5
+        run: pnpm storybook:test
+        env:
+          STORYBOOK_BROWSER: firefox
+
       - name: Smoke Chromium
         id: chromium
         if: ${{ !cancelled() }}
@@ -80,12 +95,15 @@ jobs:
         env:
           NIGHTLY_REF: main
           TEST_RESULT: ${{ steps.tests.outcome }}
+          COMPONENTS_CHROMIUM: ${{ steps.components-chromium.outcome }}
+          COMPONENTS_FIREFOX: ${{ steps.components-firefox.outcome }}
           CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
           FIREFOX_RESULT: ${{ steps.firefox.outcome }}
         run: |
           {
             echo "## Nightly coverage on $NIGHTLY_REF"
             echo "Full suite (unit + Chromium + Firefox): $TEST_RESULT"
+            echo "Storybook components (Chromium / Firefox): $COMPONENTS_CHROMIUM / $COMPONENTS_FIREFOX"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
             echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
@@ -131,6 +149,21 @@ jobs:
         timeout-minutes: 25
         run: pnpm test
 
+      # main can predate the Storybook pilot until the 2.1 branch lands.
+      - name: Storybook components Chromium
+        id: components-chromium
+        if: ${{ !cancelled() && hashFiles('vitest.config.ts') != '' }}
+        timeout-minutes: 5
+        run: pnpm storybook:test
+
+      - name: Storybook components Firefox
+        id: components-firefox
+        if: ${{ !cancelled() && hashFiles('vitest.config.ts') != '' }}
+        timeout-minutes: 5
+        run: pnpm storybook:test
+        env:
+          STORYBOOK_BROWSER: firefox
+
       - name: Smoke Chromium
         id: chromium
         if: ${{ !cancelled() }}
@@ -147,12 +180,15 @@ jobs:
         env:
           NIGHTLY_REF: dev
           TEST_RESULT: ${{ steps.tests.outcome }}
+          COMPONENTS_CHROMIUM: ${{ steps.components-chromium.outcome }}
+          COMPONENTS_FIREFOX: ${{ steps.components-firefox.outcome }}
           CHROMIUM_RESULT: ${{ steps.chromium.outcome }}
           FIREFOX_RESULT: ${{ steps.firefox.outcome }}
         run: |
           {
             echo "## Nightly coverage on $NIGHTLY_REF"
             echo "Full suite (unit + Chromium + Firefox): $TEST_RESULT"
+            echo "Storybook components (Chromium / Firefox): $COMPONENTS_CHROMIUM / $COMPONENTS_FIREFOX"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
             echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'

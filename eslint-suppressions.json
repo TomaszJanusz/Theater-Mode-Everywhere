@@ -1,22 +1,4 @@
 {
-  "docs/research/prototypes/native-chat-opening.mjs": {
-    "import/order": {
-      "count": 3
-    }
-  },
-  "docs/research/prototypes/twitch-chat-fixes.mjs": {
-    "import/order": {
-      "count": 3
-    },
-    "no-empty": {
-      "count": 1
-    }
-  },
-  "docs/research/prototypes/youtube-replay-baseline.mjs": {
-    "import/order": {
-      "count": 2
-    }
-  },
   "options/appearance-choices.ts": {
     "import/order": {
       "count": 2
@@ -317,9 +299,6 @@
     }
   },
   "scripts/smoke/pin-storage.ts": {
-    "import/order": {
-      "count": 3
-    },
     "no-restricted-imports": {
       "count": 1
     }
@@ -2235,11 +2214,8 @@
     }
   },
   "src/test-utils/player-scenarios/playback.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
-      "count": 2
+      "count": 1
     }
   },
   "src/test-utils/release.ts": {
@@ -2308,11 +2284,6 @@
   "src/ui/auto-theater-intent.ts": {
     "local/max-symbol-name-length": {
       "count": 2
-    }
-  },
-  "src/ui/auto-theater-notice.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/auto-theater-notice.ts": {
@@ -2391,11 +2362,6 @@
       "count": 3
     }
   },
-  "src/ui/bass-hud.browser.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "src/ui/bass-icon.browser.test.ts": {
     "import/order": {
       "count": 4
@@ -2404,16 +2370,6 @@
   "src/ui/caption-dock-lifecycle.browser.test.ts": {
     "import/order": {
       "count": 1
-    }
-  },
-  "src/ui/caption-loading.browser.test.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
-  "src/ui/caption-options-close.browser.test.ts": {
-    "import/order": {
-      "count": 2
     }
   },
   "src/ui/caption-overlay-width.browser.test.ts": {
@@ -2656,11 +2612,6 @@
       "count": 2
     }
   },
-  "src/ui/player-settings-order.browser.test.ts": {
-    "import/order": {
-      "count": 7
-    }
-  },
   "src/ui/player-settings.ts": {
     "import/order": {
       "count": 5
@@ -2752,16 +2703,6 @@
     },
     "sonarjs/no-nested-conditional": {
       "count": 2
-    }
-  },
-  "src/ui/smoke-regressions.browser.test.ts": {
-    "import/order": {
-      "count": 6
-    }
-  },
-  "src/ui/spinner-exit.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/spinner-exit.ts": {

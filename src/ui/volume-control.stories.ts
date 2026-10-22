@@ -3,6 +3,7 @@ import { expect, waitFor } from 'storybook/test';
 
 import { volumeHost, volumeSurface } from '../../.storybook/player-fakes';
 import { renderPlayerBar } from '../../.storybook/player-stage';
+import { expectSliderMarker } from '../../.storybook/slider-assertions';
 
 import { t } from './messages';
 import { queryPlayerUi } from './root';
@@ -56,6 +57,7 @@ export const Closed: Story = {
     await expect(button().disabled).toBe(args.disabled);
     await expect(slider().disabled).toBe(args.disabled);
     await waitFor(() => expect(panel().inert).toBe(args.disabled || !args.open));
+    if (args.open && !args.disabled && args.boost) await expectSliderMarker(slider(), marker(), 1);
     const host = document.getElementById('theater-everywhere-ui')!;
     await expect(host.matches(':popover-open')).toBe(true);
     await expect(host.shadowRoot).not.toBeNull();
