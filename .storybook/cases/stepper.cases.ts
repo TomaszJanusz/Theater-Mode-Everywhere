@@ -61,7 +61,7 @@ const ThumbFollowsValue: Story = {
 test('ThumbFollowsValue', () => runStepperCase(ThumbFollowsValue));
 
 /** The label slides in from the pressed side and a quick second step replaces, never stacks, the first. */
-const LabelSlidesAndYieldsToTheNextStep: Story = {
+const LabelSlidesThenYields: Story = {
   play: async () => {
     arrow(1).click();
     await expect(stepperValue().getAnimations().length).toBe(1);
@@ -72,7 +72,7 @@ const LabelSlidesAndYieldsToTheNextStep: Story = {
     await expect(stepperValue().getAnimations().length).toBe(0);
   }
 };
-test('LabelSlidesAndYieldsToTheNextStep', () => runStepperCase(LabelSlidesAndYieldsToTheNextStep));
+test('LabelSlidesThenYields', () => runStepperCase(LabelSlidesThenYields));
 
 /** A press the range cannot take answers with a nudge toward the blocked side, and changes nothing. */
 const BlockedPressBumps: Story = {
@@ -146,7 +146,7 @@ const LtrOrder: Story = {
 test('LtrOrder', () => runStepperCase(LtrOrder));
 
 /** Reduce motion keeps every state and removes every movement. */
-const ReducedMotionKeepsStatesOnly: Story = {
+const ReducedMotionStatesOnly: Story = {
   globals: { reduceMotion: 'on' },
   args: { count: 3, index: 1 },
   play: async () => {
@@ -159,4 +159,4 @@ const ReducedMotionKeepsStatesOnly: Story = {
     await expect(current()).toBe(2);
   }
 };
-test('ReducedMotionKeepsStatesOnly', () => runStepperCase(ReducedMotionKeepsStatesOnly));
+test('ReducedMotionStatesOnly', () => runStepperCase(ReducedMotionStatesOnly));
