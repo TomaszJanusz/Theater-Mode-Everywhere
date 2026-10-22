@@ -14,13 +14,52 @@ export const AUTO_THEATER_NOTICE_CLASS = 'theater-auto-notice';
 export type CountdownRingTurn = 'uniform' | 'per-digit';
 export const DEFAULT_COUNTDOWN_RING_TURN: CountdownRingTurn = 'uniform';
 
+/** The 0 stays alone this long after the countdown ends before the ellipsis starts. */
+export const NOTICE_ELLIPSIS_DELAY_MS = 200;
+/** One frame of the ellipsis: ".", "..", "...", "....", then again. */
+export const NOTICE_ELLIPSIS_FRAME_MS = 400;
+const ELLIPSIS_DOTS = 4;
+/** The accent grows over the second before 0: one quadrant after another, after the top one it already has. */
+const RING_GROW_MS = 1000;
+const ARC_SIDES = ['right', 'bottom', 'left'] as const;
+
+/** The quadrants that complete the ring; faded in one after another unless `elapsed` is null (reduced motion). */
+function addArcs(spinner: HTMLElement, elapsed: number | null): Animation[] {
+  const part = RING_GROW_MS / ARC_SIDES.length;
+  return ARC_SIDES.flatMap((side, index) => {
+    const arc = document.createElement('i');
+    arc.className = 'theater-auto-notice-arc';
+    arc.dataset.side = side;
+    spinner.appendChild(arc);
+    if (elapsed === null) return [];
+    const fade = arc.animate([{ opacity: 0 }, { opacity: 1 }], { duration: part, delay: index * part, easing: 'linear', fill: 'both' });
+    fade.currentTime = elapsed;
+    return [fade];
+  });
+}
+
+function createEllipsis(): { element: HTMLElement; dots: HTMLElement[] } {
+  const element = document.createElement('span');
+  element.className = 'theater-auto-notice-wait';
+  element.setAttribute('aria-hidden', 'true');
+  const dots = Array.from({ length: ELLIPSIS_DOTS }, () => {
+    const dot = document.createElement('span');
+    dot.textContent = '.';
+    return dot;
+  });
+  element.append(...dots);
+  return { element, dots };
+}
+
 /**
  * Corner notice for a pending automatic theater entry. It reuses the caption
  * loading plate and spinner; unlike HUDs it takes clicks, but never focus.
  * The role=status region announces itself on insertion; the seconds counter inside the
  * spinner is decorative (aria-hidden), so ticks are never announced. The counter is
  * derived from `remainingMs`, the intent's own clock, and re-armed only at each change
- * of the displayed second (ending on 0). With `scrim`, a backdrop dims the loading page behind it for
+ * of the displayed second (ending on 0). The ring's accent grows to a full circle over the second before 0
+ * (instantly with reduced motion), holds, then zooms out (spinner-exit). If the video is still not ready 200 ms
+ * after the countdown ends, an aria-hidden ellipsis replaces the 0 until the owner hides the notice. With `scrim`, a backdrop dims the loading page behind it for
  * the same lifetime. Returns idempotent cleanup.
  */
 export function showAutoTheaterNotice(
@@ -52,7 +91,8 @@ export function showAutoTheaterNotice(
   count.setAttribute('aria-hidden', 'true');
   const visual = document.createElement('div');
   visual.className = 'theater-auto-notice-visual';
-  visual.append(spinner, count);
+  const { element: ellipsis, dots } = createEllipsis();
+  visual.append(spinner, count, ellipsis);
   icon.appendChild(visual);
   const copy = document.createElement('div');
   copy.className = 'volume-hud-copy';
@@ -93,27 +133,54 @@ export function showAutoTheaterNotice(
     turn = spinner.animate([{ rotate: '0deg' }, { rotate: '360deg' }], { duration: 1000, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
     turn.currentTime = Math.min(1000, Math.max(0, intoSecond));
   };
+  const arcs: Animation[] = [];
+  let grown = false;
+  // The second showing 1 grows the accent to a full circle; a late join catches up to the clock.
+  const growRing = (remaining: number): void => {
+    if (grown || noticeSecondsRemaining(remaining) > 1) return;
+    grown = true;
+    const reduced = isElementMotionReduced(spinner);
+    const elapsed = Math.min(RING_GROW_MS, Math.max(0, 2 * RING_GROW_MS - remaining));
+    arcs.push(...addArcs(spinner, reduced ? null : elapsed));
+  };
+  // After the countdown ends the 0 gets a short grace; then the ellipsis runs until the notice is hidden.
+  let frame = 0;
+  const waitStep = (): void => {
+    if (stopped) return;
+    const left = remainingMs();
+    if (frame === 0 && left > 0) {
+      timer = clock.setTimeout(waitStep, Math.ceil(left) + NOTICE_ELLIPSIS_DELAY_MS);
+      return;
+    }
+    frame = frame % ELLIPSIS_DOTS + 1;
+    visual.classList.add('is-waiting');
+    dots.forEach((dot, index) => dot.classList.toggle('is-on', index < frame));
+    timer = clock.setTimeout(waitStep, NOTICE_ELLIPSIS_FRAME_MS);
+  };
   const tick = (animate: boolean): void => {
     if (stopped) return;
     const remaining = remainingMs();
     renderTimeReadout(count, String(noticeSecondsRemaining(remaining)), animate, clock);
     turnRing(remaining);
+    growRing(remaining);
     const wait = msUntilNoticeSecondChanges(remaining);
     // A timer that fires a hair early re-reads the clock and re-arms instead of skipping a digit.
     if (wait !== null) timer = clock.setTimeout(() => tick(true), Math.max(1, Math.ceil(wait)));
+    else timer = clock.setTimeout(waitStep, Math.ceil(remaining) + NOTICE_ELLIPSIS_DELAY_MS);
   };
   // Mounted first, so the notice paints above it.
   const stopScrim = scrim?.video ? showAutoTheaterScrim(scrim) : undefined;
   mountPlayerUi(overlay);
   // After mounting, so reduced motion is read from the UI host.
   tick(false);
-  // The ring leaves while the digit keeps ticking; 0 is the last second, during which the ring clears.
+  // The ring holds full through most of 0, then zooms out while the digit stays.
   const stopExit = exitSpinner(spinner, { mode: 'deadline', remainingMs, clock });
   return () => {
     stopped = true;
     stopExit();
     clock.clearTimeout(timer);
     turn?.cancel();
+    for (const arc of arcs) arc.cancel();
     // Also settle any digit roll already in flight before discarding its DOM.
     renderTimeReadout(count, String(noticeSecondsRemaining(remainingMs())), false, clock);
     overlay.remove();
