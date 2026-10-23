@@ -12,6 +12,7 @@ import {
   TWITCH_CAPTIONS_EVENT,
   TWITCH_HOST_CAPTION_ID
 } from '../../media-features/parsers/twitch-page';
+import { parseTwitchCaptions } from '../../protocol/page-requests';
 import { isTwitchHost } from '../hosts';
 
 export function twitchIntegrationEnabled(): boolean {
@@ -412,11 +413,11 @@ function applyTwitchHarvestSnapshot(snapshot: {
 
 export function installTwitchMain(): void {
   window.addEventListener(TWITCH_CAPTIONS_EVENT, ((event: Event) => {
-    const detail = (event as CustomEvent<{ enabled?: boolean; requestId?: string }>).detail;
-    const enabled = Boolean(detail?.enabled);
-    const applied = setTwitchClosedCaptionsEnabled(enabled);
+    const request = parseTwitchCaptions((event as CustomEvent<unknown>).detail);
+    if (!request) return;
+    const applied = setTwitchClosedCaptionsEnabled(request.enabled);
     window.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_ACK_EVENT, {
-      detail: { requestId: detail?.requestId || '', enabled, applied }
+      detail: { requestId: request.requestId, enabled: request.enabled, applied }
     }));
   }) as EventListener);
   window.addEventListener('message', (event: MessageEvent) => {

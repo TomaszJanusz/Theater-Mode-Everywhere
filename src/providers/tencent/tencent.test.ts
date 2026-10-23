@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
+import { parseProbeRequest } from '../../protocol/page-requests';
+
 import { captureTencentJsonpScript, harvestTencentBody, readTencentSnapshot, tencentContentTitle, tencentPageVideoId } from './main';
 import { normalizeTencentMetadata, parseTencentCaptions, parseTencentStoryboard, tencentCaptionUrl, tencentPreviewFrame } from '../../media-features/parsers/tencent';
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl, assertSafeRedirect } from '../../media-features/fetch-allowlist';
@@ -158,7 +161,7 @@ describe('Tencent RTE', () => {
     const replies: Array<() => void> = [];
     let delay = false;
     page.win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       page.win.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', { detail: { requestId, tencent: snapshot } }));
     });
     (page.win as any).postMessage = (request: WorldEnvelope, _origin: string, ports: MessagePort[]) => {

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - In Firefox, seeking with the arrow keys, the progress bar or the live button on Netflix, Disney+ and live YouTube streams now reaches the site's own player. The request was blocked by Firefox's cross-script isolation, so those seeks were dropped and each one logged a "Permission denied" error in the page console. Chromium was not affected.
+- In Firefox, the extension's requests to a site's own scripts for site data on supported sites and for switching YouTube's and Twitch's built-in captions were also blocked by Firefox's cross-script isolation and never answered, so YouTube caption tracks waited several seconds to switch. They now go through. Chromium was not affected.
 
 ## [2.0.4] - 2026-10-21
 
