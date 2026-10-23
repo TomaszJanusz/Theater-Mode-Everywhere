@@ -1,4 +1,6 @@
-import { shortcutSeparator, shortcutTokens, type ShortcutDisplayEnv } from './shortcut-display';
+import { translateMessage } from '../i18n-runtime';
+
+import { KEY_LABEL_FALLBACKS, shortcutSeparator, shortcutTokens, type ShortcutDisplayEnv } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 
 /** A shortcut's caps: `<kbd>` elements, optionally joined by the platform's `+`. */
@@ -37,8 +39,16 @@ function createKeysGroup(): HTMLSpanElement {
   return group;
 }
 
-/** Renders a stored shortcut as one `<kbd>` cap per key, in a left-to-right row; empty when unassigned. */
-export function renderShortcutCaps(container: HTMLElement, stored: string, env: ShortcutDisplayEnv = shortcutDisplayEnv()): void {
+/** The display environment with spoken key names in the UI language; for the extension's own documents. */
+export function spokenShortcutEnv(): ShortcutDisplayEnv {
+  return { ...shortcutDisplayEnv(), spoken: message => translateMessage(KEY_LABEL_FALLBACKS, message) };
+}
+
+/**
+ * Renders a stored shortcut as one `<kbd>` cap per key, in a left-to-right row; empty when unassigned.
+ * A glyph or abbreviated cap (←, ⌘, Esc) carries its spoken name, so screen readers say the key, not the symbol.
+ */
+export function renderShortcutCaps(container: HTMLElement, stored: string, env: ShortcutDisplayEnv = spokenShortcutEnv()): void {
   const separator = shortcutSeparator(env.platform);
   container.dir = 'ltr';
   container.replaceChildren();
@@ -46,6 +56,11 @@ export function renderShortcutCaps(container: HTMLElement, stored: string, env: 
     if (index > 0 && separator) container.append(separator);
     const kbd = document.createElement('kbd');
     kbd.textContent = token.text;
+    // `aria-label` is prohibited on a bare `<kbd>` (generic role) and ignored by screen readers; an image role makes the name count.
+    if (token.label !== token.text) {
+      kbd.setAttribute('role', 'img');
+      kbd.setAttribute('aria-label', token.label);
+    }
     container.append(kbd);
   });
 }

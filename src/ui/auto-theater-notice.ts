@@ -1,10 +1,10 @@
 import { msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
 import { showAutoTheaterScrim, type AutoTheaterScrimOptions } from './auto-theater-scrim';
 import { HUD_PLATE_CLASS } from './hud';
-import { renderKbdText } from './kbd-text';
+import { renderKbdText, spokenShortcutEnv } from './kbd-text';
 import { t } from './messages';
 import { mountPlayerUi } from './root';
-import { shortcutMarkup } from './shortcut-display';
+import { shortcutMarkup, shortcutSpokenLabel } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 import { exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { renderTimeReadout } from './time-readout';
@@ -79,7 +79,7 @@ export function showAutoTheaterNotice(
   overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud loading ${AUTO_THEATER_NOTICE_CLASS}`;
   overlay.setAttribute('role', 'status');
   overlay.setAttribute('aria-live', 'polite');
-  overlay.setAttribute('aria-label', `${title} ${hint.replace(/<\/?kbd>/g, '')}`);
+  overlay.setAttribute('aria-label', `${title} ${t('autoEnterNoticeHint', shortcutSpokenLabel('Escape', spokenShortcutEnv()))}`);
   paintOverlay(overlay);
 
   const content = document.createElement('div');

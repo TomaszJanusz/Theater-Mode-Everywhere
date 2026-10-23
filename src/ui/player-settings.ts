@@ -5,7 +5,7 @@ import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover } from './menu-popover';
 import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
-import { shortcutKeyHint } from './shortcut-display';
+import { shortcutAriaKeyshortcuts, shortcutKeyHint } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 import { createStepper, type StepperState } from './stepper';
 
@@ -196,7 +196,7 @@ export function createPlayerSettings(
       if (item) item.label = name;
       row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
       renderShortcutCaps(keys, shortcut);
-      if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
+      if (shortcut) row.setAttribute('aria-keyshortcuts', shortcutAriaKeyshortcuts(shortcut));
       else row.removeAttribute('aria-keyshortcuts');
     }
     return {

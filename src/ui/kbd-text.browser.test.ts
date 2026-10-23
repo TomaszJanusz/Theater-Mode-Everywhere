@@ -8,7 +8,7 @@ import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
 const BUNDLE = bundleModules([
-  "export { renderKbdText } from './ui/kbd-text';",
+  "export { renderKbdText, renderShortcutCaps } from './ui/kbd-text';",
   "export { shortcutMarkup } from './ui/shortcut-display';"
 ], 'KbdText');
 
@@ -16,6 +16,7 @@ declare global {
   interface Window {
     KbdText: {
       renderKbdText(el: HTMLElement, rawText: string): void;
+      renderShortcutCaps(container: HTMLElement, stored: string, env: { platform: 'windows' | 'mac' | 'other' }): void;
       shortcutMarkup(stored: string, env: { platform: 'windows' | 'mac' | 'other' }): string;
     };
   }
@@ -45,6 +46,26 @@ describe('shortcut caps in right-to-left text', () => {
       // Arabic label; the glyph arrow and the macOS modifiers are the neutral runs that used to reorder.
       assert.deepEqual(await order('Ctrl+ArrowLeft', 'windows', 'ملء الشاشة'), { text: ['Ctrl', '←'], ascending: true });
       assert.deepEqual(await order('Ctrl+Shift+K', 'mac', 'ملء الشاشة'), { text: ['⌃', '⇧', 'K'], ascending: true });
+    });
+  }
+});
+
+describe('shortcut caps in the accessibility tree', () => {
+  for (const engine of testEngines()) {
+    it(`expose spoken names of glyph caps in ${engine}`, { timeout: 60_000 }, async t => {
+      const context = await sharedTestBrowser(({ chromium, firefox })[engine]).newContext(t);
+      const page = await context.newPage();
+      await page.setContent('<body><div id="caps"></div></body>');
+      await page.evaluate('window.__name = value => value');
+      await page.addScriptTag({ content: BUNDLE });
+      await page.evaluate(() => window.KbdText.renderShortcutCaps(document.getElementById('caps')!, 'Ctrl+Meta+ArrowLeft', { platform: 'mac' }));
+      // A bare <kbd> with aria-label has no name in the tree; the role makes the spoken label count.
+      // English fallbacks here; localized names travel the same path.
+      assert.deepEqual(
+        await page.getByRole('img').evaluateAll(caps => caps.map(cap => cap.getAttribute('aria-label'))),
+        ['Control', 'Command', 'Left arrow']
+      );
+      assert.equal(await page.getByRole('img', { name: 'Left arrow', exact: true }).textContent(), '←');
     });
   }
 });

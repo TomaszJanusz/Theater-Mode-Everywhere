@@ -14,7 +14,7 @@ import type { DisposableScope } from '../core/disposable-scope';
 import { holdMenuPosition } from './menu-popover';
 import { queryPlayerUi } from './root';
 import type { PlayerChromeContext } from './runtime-context';
-import { shortcutMarkup } from './shortcut-display';
+import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 
 export const CHAT_PREFERENCES_STORAGE_KEY = 'nativeChatPreferences';
@@ -211,7 +211,7 @@ export function mountNativeChatControls(
     button.setAttribute('aria-expanded', String(Boolean(state?.visible)));
     button.setAttribute('aria-label', label());
     const shortcut = ctx.ui().shortcuts.toggleChat;
-    if (shortcut) button.setAttribute('aria-keyshortcuts', shortcut);
+    if (shortcut) button.setAttribute('aria-keyshortcuts', shortcutAriaKeyshortcuts(shortcut));
     else button.removeAttribute('aria-keyshortcuts');
     button.classList.toggle('active', Boolean(state?.visible));
     if (chatSection) chatSection.hidden = !available;

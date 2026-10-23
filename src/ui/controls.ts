@@ -1,5 +1,5 @@
 import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
-import { shortcutMarkup } from './shortcut-display';
+import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
@@ -872,7 +872,7 @@ export function createControls(
       pinBtn.classList.toggle('active', pinned);
       pinBtn.setAttribute('aria-pressed', String(pinned));
       pinBtn.setAttribute('aria-label', t('keepControlsVisibleTitle'));
-      pinBtn.setAttribute('aria-keyshortcuts', ui().shortcuts.toggleControlsPin);
+      pinBtn.setAttribute('aria-keyshortcuts', shortcutAriaKeyshortcuts(ui().shortcuts.toggleControlsPin));
       pinRow.update(ui().shortcuts.toggleControlsPin, t(pinned ? 'controlsVisibilityOn' : 'controlsVisibilityOff'),
         ['controlsVisibilityOn', 'controlsVisibilityOff'].map(key => t(key)));
     };
