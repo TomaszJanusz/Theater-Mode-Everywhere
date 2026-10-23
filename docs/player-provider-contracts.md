@@ -1,5 +1,7 @@
 # Player and provider boundaries
 
+The enforced import rules live in [dependency-cruiser](../config/dependency-cruiser.cjs).
+
 The player owns the interface and the behavior of its features. Providers translate host services into those features: read host data, observe changes, validate identity and availability, and execute host interactions. Adding a service must not add its selectors or timing rules to a player component.
 
 ## Contextual actions
