@@ -56,7 +56,7 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 
 - **Docs only:** check content, links, symlinks and whitespace. Skip application tests and builds.
 - **Lint:** run `pnpm lint`; see [docs/code-style.md](docs/code-style.md). Lower existing allowances with `pnpm lint:suppressions:prune`. The baseline may only shrink without review.
-- **Repository gates:** `pnpm check` runs ESLint, typecheck and test-policy ratchets; `pnpm lint:fix` applies ESLint fixes. `pnpm verify` adds tests, build and bundle verification.
+- **Repository gates:** `pnpm check` runs ESLint, typecheck, test-policy ratchets and module boundaries (known violations may only shrink; `pnpm check:boundaries --update` drops fixed ones); `pnpm lint:fix` applies ESLint fixes. `pnpm verify` adds tests, build and bundle verification.
 - **TypeScript:** run `pnpm typecheck` and relevant tests with `pnpm exec tsx --test <test-file> [...]`. `pnpm test` discovers every `*.test.ts`/`*.test.mjs` through `scripts/run-tests.mjs`; name new tests that way and do not register them. Narrow a run with `pnpm test <path-or-substring>`.
 - **Regressions:** cover meaningful behavior and failure modes, including stale results and cleanup where relevant. Tests should catch a plausible bug, not mirror implementation. Simple reversible changes do not automatically need new tests.
 - **Determinism:** wait for observable state. Use fake timers or an injected clock for time semantics. Avoid arbitrary sleeps and retries that mask races; do not assert exact GPU-dependent output.

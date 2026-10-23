@@ -26,9 +26,10 @@
     "storybook:test": "vitest run --config vitest.config.ts",
     "lint": "eslint . --config config/eslint.config.mjs --max-warnings 0",
     "lint:fix": "pnpm lint --fix",
-    "check": "pnpm lint && pnpm typecheck && pnpm exec tsx --test scripts/test-determinism.test.ts scripts/test-harness.test.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm exec tsx --test scripts/test-determinism.test.ts scripts/test-harness.test.ts && pnpm check:boundaries",
     "verify": "pnpm check && pnpm test && pnpm build && pnpm verify:bundles",
-    "lint:suppressions:prune": "pnpm lint --prune-suppressions"
+    "lint:suppressions:prune": "pnpm lint --prune-suppressions",
+    "check:boundaries": "node scripts/boundaries-ratchet.mjs"
   },
   "author": "Tomasz Janusz",
   "license": "MIT",
@@ -46,6 +47,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/browser-playwright": "^5.0.5",
     "archiver": "^7.0.1",
+    "dependency-cruiser": "^18.7.0",
     "esbuild": "^0.25.0",
     "eslint": "^9.39.5",
     "eslint-plugin-import-x": "4.6.1",

@@ -1,0 +1,898 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/providers/bilibili-intl/service-actions.ts",
+    "to": "src/providers/navigation/bilibili-intl.ts",
+    "unresolvedTo": "../navigation/bilibili-intl",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/bilibili-intl/watch-playback.ts",
+    "to": "src/providers/bilibili/navigation.ts",
+    "unresolvedTo": "../bilibili/navigation",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/bilibili-intl/watch-playback.ts",
+    "to": "src/providers/navigation/bilibili-intl.ts",
+    "unresolvedTo": "../navigation/bilibili-intl",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/bilibili/service-actions.ts",
+    "to": "src/providers/navigation/bilibili.ts",
+    "unresolvedTo": "../navigation/bilibili",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/disney.ts",
+    "to": "src/providers/disney/play-next.ts",
+    "unresolvedTo": "../disney/play-next",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/netflix.ts",
+    "to": "src/providers/netflix/next-episode.ts",
+    "unresolvedTo": "../netflix/next-episode",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/netflix.ts",
+    "to": "src/providers/netflix/next-preview.ts",
+    "unresolvedTo": "../netflix/next-preview",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/netflix.ts",
+    "to": "src/providers/netflix/session.ts",
+    "unresolvedTo": "../netflix/session",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/watch.ts",
+    "to": "src/providers/disney/play-next.ts",
+    "unresolvedTo": "../disney/play-next",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/navigation/youtube.ts",
+    "to": "src/providers/youtube/queue-bridge.ts",
+    "unresolvedTo": "../youtube/queue-bridge",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/patreon/navigation.ts",
+    "to": "src/providers/navigation/history-publication.ts",
+    "unresolvedTo": "../navigation/history-publication",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/patreon/watch-playback.ts",
+    "to": "src/providers/navigation/watch-page.ts",
+    "unresolvedTo": "../navigation/watch-page",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/timeline/markers.ts",
+    "to": "src/providers/youtube/sponsorblock.ts",
+    "unresolvedTo": "../youtube/sponsorblock",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/twitch/navigation.ts",
+    "to": "src/providers/navigation/history-publication.ts",
+    "unresolvedTo": "../navigation/history-publication",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/twitch/watch-playback.ts",
+    "to": "src/providers/navigation/watch-page.ts",
+    "unresolvedTo": "../navigation/watch-page",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/vimeo/watch-playback.ts",
+    "to": "src/providers/navigation/watch-page.ts",
+    "unresolvedTo": "../navigation/watch-page",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/youtube/watch-playback.ts",
+    "to": "src/providers/navigation/watch-page.ts",
+    "unresolvedTo": "../navigation/watch-page",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/providers/youtube/watch-playback.ts",
+    "to": "src/providers/navigation/youtube.ts",
+    "unresolvedTo": "../navigation/youtube",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "providers-do-not-import-other-providers"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/feature-highlights.ts",
+    "to": "src/core/disposable-scope.ts",
+    "unresolvedTo": "../src/core/disposable-scope",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/feature-highlights.ts",
+    "to": "src/ui/new-badge.ts",
+    "unresolvedTo": "../src/ui/new-badge",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/accentTheme.ts",
+    "unresolvedTo": "../src/accentTheme",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/translation-issue.ts",
+    "unresolvedTo": "../src/translation-issue",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/appearance.ts",
+    "unresolvedTo": "../src/ui/appearance",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/auto-theater-settings.ts",
+    "unresolvedTo": "../src/ui/auto-theater-settings",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/auto-theater.ts",
+    "unresolvedTo": "../src/ui/auto-theater",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/controls-visibility.ts",
+    "unresolvedTo": "../src/ui/controls-visibility",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/sponsorblock-settings.ts",
+    "unresolvedTo": "../src/ui/sponsorblock-settings",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/svg-icon.ts",
+    "unresolvedTo": "../src/ui/svg-icon",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/video-activator-settings.ts",
+    "unresolvedTo": "../src/ui/video-activator-settings",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/ui/volume-boost-settings.ts",
+    "unresolvedTo": "../src/ui/volume-boost-settings",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/options.ts",
+    "to": "src/whatsNew.ts",
+    "unresolvedTo": "../src/whatsNew",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/privacy-policy.ts",
+    "to": "src/dialog.ts",
+    "unresolvedTo": "../src/dialog",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "options/shortcut-editor.ts",
+    "to": "src/dialog.ts",
+    "unresolvedTo": "../src/dialog",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "settings-ui-uses-public-settings-and-i18n"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/core/frame-coordinator.ts",
+    "to": "src/providers/tencent/wasm-player.ts",
+    "unresolvedTo": "../providers/tencent/wasm-player",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/controller.ts",
+    "to": "src/providers/timeline/markers.ts",
+    "unresolvedTo": "../providers/timeline/markers",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/native-adapter.ts",
+    "to": "src/providers/native/page-title.ts",
+    "unresolvedTo": "../providers/native/page-title",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/netflix-adapter.ts",
+    "to": "src/providers/netflix/session.ts",
+    "unresolvedTo": "../providers/netflix/session",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/bilibili-intl/adapter.ts",
+    "unresolvedTo": "../providers/bilibili-intl/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/bilibili/adapter.ts",
+    "unresolvedTo": "../providers/bilibili/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/crunchyroll/adapter.ts",
+    "unresolvedTo": "../providers/crunchyroll/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/disney/adapter.ts",
+    "unresolvedTo": "../providers/disney/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/native/adapter.ts",
+    "unresolvedTo": "../providers/native/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/netflix/adapter.ts",
+    "unresolvedTo": "../providers/netflix/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/patreon/adapter.ts",
+    "unresolvedTo": "../providers/patreon/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/tencent/adapter.ts",
+    "unresolvedTo": "../providers/tencent/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/twitch/adapter.ts",
+    "unresolvedTo": "../providers/twitch/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/vimeo/adapter.ts",
+    "unresolvedTo": "../providers/vimeo/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/media-features/resolve-adapter.ts",
+    "to": "src/providers/youtube/adapter.ts",
+    "unresolvedTo": "../providers/youtube/adapter",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/bilibili-intl/main.ts",
+    "unresolvedTo": "../providers/bilibili-intl/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/bilibili/main.ts",
+    "unresolvedTo": "../providers/bilibili/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/bilibili/navigation.ts",
+    "unresolvedTo": "../providers/bilibili/navigation",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/crunchyroll/main.ts",
+    "unresolvedTo": "../providers/crunchyroll/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/disney/main.ts",
+    "unresolvedTo": "../providers/disney/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/netflix/main.ts",
+    "unresolvedTo": "../providers/netflix/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/patreon/main.ts",
+    "unresolvedTo": "../providers/patreon/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/patreon/navigation.ts",
+    "unresolvedTo": "../providers/patreon/navigation",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/tencent/main.ts",
+    "unresolvedTo": "../providers/tencent/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/tencent/wasm-player.ts",
+    "unresolvedTo": "../providers/tencent/wasm-player",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/twitch/main.ts",
+    "unresolvedTo": "../providers/twitch/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/twitch/navigation.ts",
+    "unresolvedTo": "../providers/twitch/navigation",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/vimeo/main.ts",
+    "unresolvedTo": "../providers/vimeo/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/platform/main-world-runtime.ts",
+    "to": "src/providers/youtube/main.ts",
+    "unresolvedTo": "../providers/youtube/main",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/ui/controls.ts",
+    "to": "src/providers/timeline/index.ts",
+    "unresolvedTo": "../providers/timeline",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/ui/player-runtime.ts",
+    "to": "src/providers/navigation/watch.ts",
+    "unresolvedTo": "../providers/navigation/watch",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "shared-ui-does-not-import-service-implementations"
+    }
+  }
+]
