@@ -178,10 +178,25 @@ jobs:
         timeout-minutes: 5
 
       - name: Smoke Firefox
-        # Unsigned MV3 sideload is blocked in Playwright; the inject fallback is diagnostic-only.
+        id: firefox-smoke
+        # Installs the built extension as a temporary add-on. Advisory until it has passed 10 consecutive CI runs (TME-112); the next step keeps a failure visible.
         continue-on-error: true
         run: xvfb-run --auto-servernum pnpm smoke:firefox
         timeout-minutes: 5
+
+      - name: Report Firefox smoke result
+        if: ${{ !cancelled() && steps.firefox-smoke.outcome != 'skipped' }}
+        timeout-minutes: 1
+        env:
+          OUTCOME: ${{ steps.firefox-smoke.outcome }}
+        run: |
+          if [ "$OUTCOME" = failure ]; then
+            echo '::warning title=Firefox smoke failed::The installed-extension Firefox smoke failed. It stays non-blocking until it passes 10 consecutive CI runs (TME-112); inspect the Smoke Firefox log.'
+            echo '### :warning: Firefox smoke failed (non-blocking)' >> "$GITHUB_STEP_SUMMARY"
+            echo 'The installed-extension Firefox smoke failed. It is advisory until it has passed 10 consecutive CI runs (TME-112); inspect the Smoke Firefox log.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '### Firefox smoke passed (installed extension)' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Record source SHA
         timeout-minutes: 1

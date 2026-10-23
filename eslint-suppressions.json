@@ -244,9 +244,6 @@
     }
   },
   "scripts/smoke/browsers.ts": {
-    "import/order": {
-      "count": 7
-    },
     "no-restricted-imports": {
       "count": 1
     }

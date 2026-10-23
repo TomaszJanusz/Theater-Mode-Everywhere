@@ -194,10 +194,16 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
     await page.waitForFunction(() => document.fullscreenElement === document.documentElement);
     await page.locator('body').press('f');
     await page.waitForFunction(() => !document.fullscreenElement);
+    // The layout a session starts in depends on the profile (fresh installs differ from a run that already cycled it). The cycle is a two-state toggle, so assert the exact flip and the way back.
+    const layout = frame.locator('.picture-layout-btn .theater-settings-detail');
+    const flipped: Record<string, string> = { Centered: 'Raised', Raised: 'Centered' };
+    const startLayout = (await layout.innerText()).trim();
+    const nextLayout = flipped[startLayout];
+    if (!nextLayout) throw new Error(`Unexpected starting picture layout: ${startLayout}`);
     await page.locator('body').press('Shift+L');
-    await frame.locator('.picture-layout-btn .theater-settings-detail').filter({ hasText: 'Raised' }).waitFor({ state: 'attached' });
+    await layout.filter({ hasText: nextLayout }).waitFor({ state: 'attached' });
     await frame.locator('body').press('Shift+L');
-    await frame.locator('.picture-layout-btn .theater-settings-detail').filter({ hasText: 'Centered' }).waitFor({ state: 'attached' });
+    await layout.filter({ hasText: startLayout }).waitFor({ state: 'attached' });
     // A shortcut focused in the parent must update the child player exactly once.
     await page.locator('body').press('Shift+H');
     await frame.locator('.controls-visibility-toggle[aria-pressed="true"]').waitFor({ state: 'attached' });
@@ -245,7 +251,7 @@ export async function assertIframeHandshake(page: Page, origin: string): Promise
     await page.evaluate(() => (document.getElementById('child') as HTMLIFrameElement).contentWindow?.location.reload());
     await page.waitForFunction((videoClass) => !document.getElementById('child')?.classList.contains(videoClass)
       && !document.documentElement.classList.contains('theater-everywhere-html-active'), THEATER_VIDEO_CLASS, { timeout: 10_000 });
-    console.log('smoke:chromium iframe child T/Escape passed');
+    console.log('smoke iframe child T/Escape passed');
   });
 }
 
