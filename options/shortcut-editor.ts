@@ -1,6 +1,7 @@
 import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
-import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, shortcutConflicts, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { shortcutLabel } from '../src/ui/shortcut-display';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, shortcutConflicts, shortcutDisplayEnv, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
 
 export function createShortcutEditor(onSaved: () => Promise<void>) {
@@ -47,11 +48,22 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
     return result;
   }
 
+  const label = (shortcut: string) => shortcutLabel(shortcut, shortcutDisplayEnv());
+
+  /** Shows the keycap legends, never the stored form; a long combination ellipsizes, so `title` keeps it whole. */
+  function show(input: HTMLInputElement, shortcut: string): void {
+    input.value = label(shortcut);
+    input.title = input.value;
+    // Keys read left to right in every locale; the localized placeholder keeps the page direction.
+    if (shortcut) input.dir = 'ltr';
+    else input.removeAttribute('dir');
+  }
+
   function render(shortcuts: Shortcuts) {
     current = shortcuts;
     let conflictsFound = false;
     for (const entry of entries) {
-      entry.input.value = shortcuts[entry.action];
+      show(entry.input, shortcuts[entry.action]);
       entry.input.placeholder = shortcuts[entry.action] ? t('pressKeysPlaceholder') : t('shortcutUnassigned');
       const conflicts = shortcutConflicts(shortcuts, entry.action, shortcuts[entry.action]);
       entry.input.setAttribute('aria-invalid', String(conflicts.length > 0));
@@ -107,7 +119,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
         const conflicts = result.owners;
         const confirmed = await openDialog(() => ({
           title: t('shortcutConflictTitle'),
-          content: t('shortcutConflictDescription', [shortcut,
+          content: t('shortcutConflictDescription', [label(shortcut),
             conflicts.map(key => entries.find(entry => entry.action === key)?.label || key).join(', '),
             entries.find(entry => entry.action === action)!.label]),
           actions: { type: 'choice', falseLabel: t('shortcutKeepAssignment'), trueLabel: t('shortcutReassign'), initialFocus: 'cancel' }
@@ -153,7 +165,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
         // The Navigation group records positions, so the cluster follows the keyboard's shape on any layout.
         const shortcut = shortcutFromEvent(event, isNavigationShortcut(entry.action));
         if (!shortcut) return;
-        entry.input.value = shortcut;
+        show(entry.input, shortcut);
         void edit(entry.input, () => save(entry.action, shortcut));
       });
       entry.input.addEventListener('blur', () => { if (!busy) render(current); });
@@ -166,6 +178,8 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
         await onSaved();
       });
     });
+    // The keyboard layout can change while Settings is in the background.
+    document.defaultView?.addEventListener('focus', () => void loadKeyboardLayout().then(() => { if (!busy) render(current); }));
     grid?.setAttribute('aria-busy', 'false');
   }
   function localize(): void {
