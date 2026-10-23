@@ -48,4 +48,4 @@ Rich Theater Experience(RTE)는 인기 있는 온라인 서비스와 더 깊이 
 5. `Escape` 또는 `T`를 다시 누르면 시어터 모드가 종료됩니다.
 
 ## Suggested tags
-동영상, 시어터 모드, 영화관 모드, html5 동영상, 전체 화면, 화면 속 화면, 음량 부스트, 키보드 단축키, youtube, vimeo, 자막, 스트리밍, disney+, netflix, crunchyroll
+동영상, 시어터 모드, 영화관 모드, html5 동영상, 전체 화면, 화면 속 화면, 음량 부스트, 키보드 단축키, youtube, vimeo, 자막, 스트리밍, disney plus, netflix, crunchyroll
