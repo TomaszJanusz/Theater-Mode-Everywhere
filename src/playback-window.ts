@@ -1,4 +1,5 @@
 import { isPlaybackSurface, nativeVideoOf, type PlaybackSurface } from './playback-surface';
+import { encodeMediaSeekDetail, MEDIA_SEEK_EVENT } from './protocol/media-seek';
 import {
   hostIsAtLiveHead,
   hostLiveHint,
@@ -36,7 +37,6 @@ export type PlaybackWindowOptions = {
 };
 
 const SLIDING_DVR_START_SECONDS = 5;
-export const MEDIA_SEEK_EVENT = 'theater-everywhere-media-seek';
 const PENDING_MEDIA_SEEK_MS = 10_000;
 const PENDING_MEDIA_SEEK_ARRIVED_SECONDS = 1.25;
 const HOST_SEEK_RESUME_GRACE_MS = 4_000;
@@ -273,7 +273,7 @@ function rememberPendingMediaSeek(video: HTMLVideoElement, time: number): void {
 function requestHostMediaSeek(detail: MediaSeekDetail): boolean {
   const target = typeof globalThis === 'object' ? (globalThis as typeof globalThis & { window?: Window }).window : undefined;
   if (!target || typeof target.dispatchEvent !== 'function') return false;
-  target.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail }));
+  target.dispatchEvent(new CustomEvent(MEDIA_SEEK_EVENT, { detail: encodeMediaSeekDetail(detail) }));
   return true;
 }
 

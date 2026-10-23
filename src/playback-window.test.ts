@@ -426,14 +426,15 @@ describe('playback window', () => {
       seekToMediaTime(video, 3600);
       assert.equal(video.currentTime, before);
       assert.equal(dispatched.length, 1);
-      assert.equal((dispatched[0] as CustomEvent).detail.resumeAfterSeek, true);
+      assert.equal(typeof (dispatched[0] as CustomEvent).detail, 'string');
+      assert.equal(JSON.parse((dispatched[0] as CustomEvent).detail).resumeAfterSeek, true);
       // Disney+ can report the HTMLMediaElement as paused while the first
       // host seek is buffering. A rapid second arrow key must retain the
       // original intent to resume playback.
       (video as HTMLVideoElement & { paused: boolean }).paused = true;
       seekToMediaTime(video, 3605);
       assert.equal(dispatched.length, 2);
-      assert.equal((dispatched[1] as CustomEvent).detail.resumeAfterSeek, true);
+      assert.equal(JSON.parse((dispatched[1] as CustomEvent).detail).resumeAfterSeek, true);
       assert.ok(Math.abs(displayMediaTime(video) - 3605) < 0.5);
     } finally {
       if (previousWindow === undefined) {
@@ -451,7 +452,7 @@ describe('playback window', () => {
       seekToMediaTime(video, 3600);
       assert.equal(video.currentTime, 184);
       assert.equal(previous.dispatched.length, 1);
-      assert.equal((previous.dispatched[0] as CustomEvent).detail.time, 3600);
+      assert.equal(JSON.parse((previous.dispatched[0] as CustomEvent).detail).time, 3600);
     } finally {
       previous.restore();
     }
@@ -474,8 +475,8 @@ describe('playback window', () => {
       seekToMediaTime(video, 90);
       assert.equal(video.currentTime, 10);
       assert.equal(enabled.dispatched.length, 1);
-      assert.equal((enabled.dispatched[0] as CustomEvent).detail.resumeAfterSeek, true);
-      assert.equal((enabled.dispatched[0] as CustomEvent).detail.time, 90);
+      assert.equal(JSON.parse((enabled.dispatched[0] as CustomEvent).detail).resumeAfterSeek, true);
+      assert.equal(JSON.parse((enabled.dispatched[0] as CustomEvent).detail).time, 90);
     } finally {
       enabled.restore();
     }

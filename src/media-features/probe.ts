@@ -1,6 +1,7 @@
 import { sanitizeContentTitle } from './content-title';
 import { readYoutubePlayerMetadata, youtubeRecord } from './parsers/youtube-player-response';
 import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
+import { encodeProbeRequest, encodeYoutubeCaptions, type YoutubeCaptionsRequest } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
 import type { BilibiliSnapshot } from './parsers/bilibili';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
@@ -191,7 +192,7 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         ? 'theater-everywhere-bilibili-intl-probe-result'
         : MEDIA_PROBE_RESULT_EVENT;
     window.addEventListener(resultEvent, onResult as EventListener);
-    window.dispatchEvent(new CustomEvent<ProbeRequest>(MEDIA_PROBE_EVENT, { detail: { requestId: id } }));
+    window.dispatchEvent(new CustomEvent(MEDIA_PROBE_EVENT, { detail: encodeProbeRequest(id) }));
   });
 }
 
@@ -237,13 +238,9 @@ export function requestPageFetch(url: string, timeoutMs = 8000): Promise<string 
   });
 }
 
-export type YoutubeCaptionsRequest = {
-  enabled: boolean;
-  language?: string;
-  kind?: string | null;
-};
+export type YoutubeCaptionsOptions = Omit<YoutubeCaptionsRequest, 'requestId'>;
 
-export function requestYoutubePlayerCaptions(options: YoutubeCaptionsRequest, timeoutMs = 3000): Promise<boolean> {
+export function requestYoutubePlayerCaptions(options: YoutubeCaptionsOptions, timeoutMs = 3000): Promise<boolean> {
   return new Promise((resolve) => {
     const id = ++requestId;
     let settled = false;
@@ -265,7 +262,7 @@ export function requestYoutubePlayerCaptions(options: YoutubeCaptionsRequest, ti
 
     window.addEventListener(MEDIA_YT_CAPTIONS_RESULT_EVENT, onResult as EventListener);
     window.dispatchEvent(new CustomEvent(MEDIA_YT_CAPTIONS_EVENT, {
-      detail: { requestId: id, ...options }
+      detail: encodeYoutubeCaptions({ ...options, requestId: id })
     }));
   });
 }
