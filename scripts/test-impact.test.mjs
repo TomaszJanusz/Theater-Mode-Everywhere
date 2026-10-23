@@ -25,7 +25,7 @@ test('transitive imports select their test, exclude unrelated tests, and tolerat
 });
 
 test('shared inputs and unreadable/unknown graphs fail open to all tests and smoke', () => {
-  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'config/vite.config.ts', 'config/vitest.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml']) {
+  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'config/vite.config.ts', 'vitest.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml']) {
     assert.equal(isFullRun(file), true, file);
     assert.deepEqual(selectTests(tests, [file], graph).files, tests);
   }

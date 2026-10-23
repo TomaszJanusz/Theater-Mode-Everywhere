@@ -9,7 +9,7 @@ import { shouldRunChecks } from './ci-changes.mjs';
 import { baseRef } from './base-ref.mjs';
 
 // Add shared inputs here when they cannot be represented by an import edge.
-export const isFullRun = file => /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|config\/(?:vite|vitest)\.config\.[^/]+)$/.test(file)
+export const isFullRun = file => /^(?:package\.json|pnpm-(?:lock|workspace)\.[^/]+|tsconfig[^/]*\.json|manifest\.json|vitest\.config\.[^/]+|config\/vite\.config\.[^/]+)$/.test(file)
   || /^(?:config\/eslint(?:\.config\.mjs|-rules\/)|eslint-suppressions\.json$)/.test(file)
   || /^(?:scripts\/(?:build[^/]*|run-tests\.mjs|ci-changes\.mjs|test-impact(?:\.test)?\.mjs)|(?:src\/)?test-utils\/|test\/fixtures\/|\.github\/(?:workflows|actions)\/)/.test(file);
 const isBuildInput = file => isFullRun(file) && !/^(?:(?:src\/)?test-utils\/|test\/fixtures\/|scripts\/(?:run-tests|ci-changes|test-impact))/.test(file);
