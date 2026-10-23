@@ -1,10 +1,12 @@
-import { FALLBACK_MESSAGES } from '../src/i18n';
-import { PLAYER_I18N_FALLBACKS } from '../src/ui/messages';
 import assert from 'node:assert/strict';
-import { LANGUAGES } from '../src/language';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+
+import { FALLBACK_MESSAGES } from '../src/i18n';
+import { LANGUAGES } from '../src/language';
+import { PLAYER_I18N_FALLBACKS } from '../src/ui/messages';
+import { KEY_LABEL_FALLBACKS } from '../src/ui/shortcut-display';
 
 type MessagePlaceholder = {
   content: string;
@@ -83,6 +85,17 @@ describe('locale catalogs', () => {
       assert.equal(FALLBACK_MESSAGES[key], canonical[key].message, key);
       if (key !== 'addExclusion') assert.equal(PLAYER_I18N_FALLBACKS[key], canonical[key].message, key);
     }
+  });
+
+  it('leaves key caps to the caller, which renders one cap per key', () => {
+    for (const locale of locales) {
+      for (const [key, { message }] of Object.entries(readCatalog(locale))) assert.doesNotMatch(message, /<kbd>/, `${locale}.${key}`);
+    }
+    for (const [key, message] of [...Object.entries(FALLBACK_MESSAGES), ...Object.entries(PLAYER_I18N_FALLBACKS)]) assert.doesNotMatch(message, /<kbd>/, key);
+  });
+
+  it('keeps spoken key names aligned with the English fallbacks', () => {
+    for (const [key, message] of Object.entries(KEY_LABEL_FALLBACKS)) assert.equal(canonical[key]?.message, message, key);
   });
 
   it('keeps every locale in exact key parity with English', () => {

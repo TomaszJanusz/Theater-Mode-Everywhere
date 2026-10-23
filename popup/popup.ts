@@ -1,11 +1,13 @@
 import { observeDocumentAppearance } from '../src/appearance-runtime';
-import { LANGUAGE_STORAGE_KEY } from '../src/language';
-import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
-/* Popup script for Theater Everywhere */
-import { fetchAndApplyTheme } from '../src/themeHelper';
 import { localizeDocument, t } from '../src/i18n';
-import { withShortcutDefaults } from '../src/ui/shortcuts';
+import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
+import { LANGUAGE_STORAGE_KEY } from '../src/language';
+/* Popup script for Theater Everywhere */
 import { parentBlockedEntry, removeMatchingBlacklistEntry, resolveDomainPolicy } from '../src/platform/domain-policy';
+import { fetchAndApplyTheme } from '../src/themeHelper';
+import { renderShortcutCaps } from '../src/ui/kbd-text';
+import { withShortcutDefaults } from '../src/ui/shortcuts';
+
 import { setupPopupRte } from './rte-settings';
 
 // Apply browser theme colors immediately
@@ -38,8 +40,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   domainNameEl.removeAttribute('data-i18n');
   statusTextEl.removeAttribute('data-i18n');
   const renderShortcut = () => {
-    const keyCap = document.querySelector('.key-cap');
-    if (keyCap) keyCap.textContent = shortcuts.toggle || t('shortcutUnassigned');
+    const keyCaps = document.querySelector<HTMLElement>('.key-caps');
+    if (!keyCaps) return;
+    if (shortcuts.toggle) renderShortcutCaps(keyCaps, shortcuts.toggle);
+    else keyCaps.textContent = t('shortcutUnassigned');
   };
   const stopLanguageRendering = languageRuntime.subscribe(() => {
     localizeDocument();

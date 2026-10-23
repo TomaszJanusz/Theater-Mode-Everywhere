@@ -1,4 +1,5 @@
 import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
+import { shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
 import { observeChromeVisibility } from './chrome-visibility';
@@ -33,7 +34,7 @@ import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
-import { AUDIO_SHORTCUTS } from './shortcuts';
+import { AUDIO_SHORTCUTS, shortcutDisplayEnv } from './shortcuts';
 import type { AudioSettings } from '../audio-settings';
 import { AUDIO_BLOCK_KEYS, AUDIO_SETTINGS_EVENT, AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES, audioLevelLabelKey, audioLevels, bassRowSweeps, isAudioSettingActive } from '../audio-settings';
 import { bindMenuPopover, playerChromeExpanded } from './menu-popover';
@@ -77,7 +78,8 @@ export function createControls(
   const closeTheaterPopovers = () => ctx.actions.closeTheaterPopovers();
   const blurMouseToggle = (event: MouseEvent, button: HTMLElement) => ctx.actions.blurMouseToggle(event, button);
   const setIcon = (el: HTMLElement, svg: string) => ctx.actions.setIcon(el, svg);
-  const escapeHtml = (s: string) => ctx.actions.escapeHtml(s);
+  /** Tooltip markup for a stored shortcut: one cap per key. */
+  const shortcutKeys = (stored: string) => shortcutMarkup(stored, shortcutDisplayEnv());
   const applyVolumeAndBoost = (video: PlaybackSurface, slider: number) => ctx.actions.applyVolumeAndBoost(video, slider);
   const rememberAudibleVolume = (video: PlaybackSurface, volume: number) => ctx.actions.rememberAudibleVolume(video, volume);
   const isVideoSilent = (video: PlaybackSurface) => ctx.actions.isVideoSilent(video);
@@ -209,7 +211,7 @@ export function createControls(
   
     bindCustomTooltip(playPauseBtn, () => {
       const action = video.paused ? t('play') : t('pause');
-      return `${action} <kbd>${ui().shortcuts.playPause}</kbd>`;
+      return `${action} ${shortcutKeys(ui().shortcuts.playPause)}`;
     });
 
     const playIcon = `
@@ -262,8 +264,7 @@ export function createControls(
     };
     const playlistShortcutText = (direction: 'previous' | 'next') => {
       const shortcut = direction === 'previous' ? ui().shortcuts.previousVideo : ui().shortcuts.nextVideo;
-      const keys = shortcut.split('+').filter(Boolean).map((part) => `<kbd>${part}</kbd>`).join('+');
-      return `${playlistActionName(direction)} ${keys}`;
+      return `${playlistActionName(direction)} ${shortcutKeys(shortcut)}`;
     };
     const playlistLabel = (direction: 'previous' | 'next') => {
       const preview = playlistPreview(direction);
@@ -475,7 +476,7 @@ export function createControls(
       pipBtn.style.display = 'none';
     }
 
-    bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', ui().shortcuts.togglePiP));
+    bindCustomTooltip(pipBtn, () => t('pictureInPictureTooltip', shortcutKeys(ui().shortcuts.togglePiP)));
 
     setIcon(pipBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><rect x="13" y="11" width="7" height="7" rx="1" ry="1"></rect></svg>`);
     const syncPipButton = () => {
@@ -493,7 +494,7 @@ export function createControls(
     fullscreenBtn.className = 'theater-control-btn fullscreen-btn';
   
     bindCustomTooltip(fullscreenBtn, () => {
-      return document.fullscreenElement ? t('exitFullscreen') : t('fullscreenTooltip', ui().shortcuts.toggleFullscreen);
+      return document.fullscreenElement ? t('exitFullscreen') : t('fullscreenTooltip', shortcutKeys(ui().shortcuts.toggleFullscreen));
     });
 
     const enterFullscreenIcon = `
@@ -575,9 +576,9 @@ export function createControls(
     closeBtn.setAttribute('aria-label', t('exitTheaterMode'));
   
     bindCustomTooltip(closeBtn, () => {
-      const toggleKey = escapeHtml((ui().shortcuts.toggle || t('shortcutUnassigned')).toUpperCase());
-      const exitKey = escapeHtml(ui().shortcuts.exit === 'Escape' ? 'Esc' : (ui().shortcuts.exit || 'Esc'));
-      return t('exitTheaterModeTooltip', [toggleKey, exitKey]);
+      const { toggle, exit } = ui().shortcuts;
+      // Escape always leaves theater, so it stands in for an unassigned exit key.
+      return t('exitTheaterModeTooltip', [toggle ? shortcutKeys(toggle) : `<kbd>${t('shortcutUnassigned')}</kbd>`, shortcutKeys(exit || 'Escape')]);
     });
 
     setIcon(closeBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="4" x2="4" y2="20"></line><line x1="4" y1="4" x2="20" y2="20"></line></svg>`);
@@ -631,7 +632,7 @@ export function createControls(
 
     bindCustomTooltip(ccBtn, () => {
       if (mediaFeatures.ccTooltip() === t('noSubtitlesAvailable')) return t('noSubtitlesAvailable');
-      return t('subtitlesTooltip', ui().shortcuts.toggleCaptions);
+      return t('subtitlesTooltip', shortcutKeys(ui().shortcuts.toggleCaptions));
     });
 
     setIcon(ccBtn, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"></path><path d="M10 9H8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2" transform="translate(8 0)"></path></svg>`);

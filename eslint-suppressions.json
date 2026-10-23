@@ -121,9 +121,6 @@
     }
   },
   "popup/popup.ts": {
-    "import/order": {
-      "count": 4
-    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -170,11 +167,6 @@
   "scripts/ci-changes.test.mjs": {
     "import/order": {
       "count": 1
-    }
-  },
-  "scripts/locales.test.ts": {
-    "import/order": {
-      "count": 6
     }
   },
   "scripts/render-cws-screenshots.ts": {
@@ -2228,9 +2220,6 @@
     }
   },
   "src/ui/auto-theater-notice.ts": {
-    "import/order": {
-      "count": 6
-    },
     "local/max-symbol-name-length": {
       "count": 2
     },
@@ -2340,9 +2329,6 @@
     }
   },
   "src/ui/chat.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },

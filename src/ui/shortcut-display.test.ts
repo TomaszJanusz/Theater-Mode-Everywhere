@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { detectShortcutPlatform, parseShortcut, shortcutKeyHint, shortcutLabel, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
+import { detectShortcutPlatform, parseShortcut, shortcutKeyHint, shortcutLabel, shortcutMarkup, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
 import { defaultShortcuts, withShortcutDefaults } from './shortcuts';
 
 const windows: ShortcutDisplayEnv = { platform: 'windows' };
@@ -114,6 +114,14 @@ describe('shortcut display', () => {
     assert.equal(shortcutLabel('Shift+KeyA', cyrillic), 'Shift+Ф');
     // Characters (not positions) are what was typed; the layout does not relabel them.
     assert.equal(shortcutLabel('W', azerty), 'W');
+  });
+
+  it('marks up one tooltip cap per key, keeping the plus key whole', () => {
+    assert.equal(shortcutMarkup('Ctrl++', windows), '<kbd>Ctrl</kbd>+<kbd>+</kbd>');
+    assert.equal(shortcutMarkup('Shift+P', windows), '<kbd>Shift</kbd>+<kbd>P</kbd>');
+    assert.equal(shortcutMarkup('Ctrl++', mac), '<kbd>⌃</kbd><kbd>+</kbd>');
+    assert.equal(shortcutMarkup('Escape', linux), '<kbd>Esc</kbd>');
+    assert.equal(shortcutMarkup('', linux), '');
   });
 
   it('keeps a letter whose capital is longer as typed', () => {

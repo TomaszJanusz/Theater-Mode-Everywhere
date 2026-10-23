@@ -1,25 +1,46 @@
 import { shortcutSeparator, shortcutTokens, type ShortcutDisplayEnv } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 
-/** Renders localized text whose `<kbd>key</kbd>` spans become shared key-cap elements. */
+/** A shortcut's caps: `<kbd>` elements, optionally joined by the platform's `+`. */
+const KEY_RUN = /<kbd>.*?<\/kbd>(?:\+?<kbd>.*?<\/kbd>)*/g;
+
+/**
+ * Renders localized text whose `<kbd>key</kbd>` spans become shared key-cap elements. Each shortcut (a run
+ * of caps) sits in its own left-to-right isolate: caps describe physical keys, so `Ctrl+←` and `⌃⇧K` keep
+ * their order inside Arabic or Hebrew text, where the neutral `+` and glyphs would otherwise reorder.
+ */
 export function renderKbdText(el: HTMLElement, rawText: string): void {
   el.textContent = '';
-  const kbdRe = /<kbd>(.*?)<\/kbd>/g;
   let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = kbdRe.exec(rawText)) !== null) {
-    if (m.index > last) el.appendChild(document.createTextNode(rawText.slice(last, m.index)));
-    const kbd = document.createElement('kbd');
-    kbd.textContent = m[1];
-    el.appendChild(kbd);
-    last = m.index + m[0].length;
+  for (const run of rawText.matchAll(KEY_RUN)) {
+    if (run.index > last) el.appendChild(document.createTextNode(rawText.slice(last, run.index)));
+    const group = createKeysGroup();
+    let tail = 0;
+    for (const cap of run[0].matchAll(/<kbd>(.*?)<\/kbd>/g)) {
+      if (cap.index > tail) group.append(run[0].slice(tail, cap.index));
+      const kbd = document.createElement('kbd');
+      kbd.textContent = cap[1];
+      group.append(kbd);
+      tail = cap.index + cap[0].length;
+    }
+    el.appendChild(group);
+    last = run.index + run[0].length;
   }
   if (last < rawText.length) el.appendChild(document.createTextNode(rawText.slice(last)));
+}
+
+/** The shared isolated left-to-right wrapper for key caps; `dir` also gives it `unicode-bidi: isolate`. */
+function createKeysGroup(): HTMLSpanElement {
+  const group = document.createElement('span');
+  group.className = 'theater-keys';
+  group.dir = 'ltr';
+  return group;
 }
 
 /** Renders a stored shortcut as one `<kbd>` cap per key, in a left-to-right row; empty when unassigned. */
 export function renderShortcutCaps(container: HTMLElement, stored: string, env: ShortcutDisplayEnv = shortcutDisplayEnv()): void {
   const separator = shortcutSeparator(env.platform);
+  container.dir = 'ltr';
   container.replaceChildren();
   shortcutTokens(stored, env).forEach((token, index) => {
     if (index > 0 && separator) container.append(separator);

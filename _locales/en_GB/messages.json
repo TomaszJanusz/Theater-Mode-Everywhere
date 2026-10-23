@@ -399,7 +399,7 @@
     "message": "Decrease Subtitle Size"
   },
   "subtitlesTooltip": {
-    "message": "Subtitles <kbd>$KEY$</kbd>",
+    "message": "Subtitles $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Switching works only with HTML5 video"
   },
   "videoFitTooltip": {
-    "message": "Video Fit <kbd>$KEY$</kbd>",
+    "message": "Video Fit $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Unmute"
   },
   "pictureInPictureTooltip": {
-    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "message": "Picture-in-Picture $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Exit Fullscreen"
   },
   "fullscreenTooltip": {
-    "message": "Fullscreen <kbd>$KEY$</kbd>",
+    "message": "Fullscreen $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Exit Theater Mode <kbd>$TOGGLE$</kbd> or <kbd>$EXIT$</kbd>",
+    "message": "Exit Theater Mode $TOGGLE$ or $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Switch Video on Page <kbd>$KEY$</kbd>",
+    "message": "Switch Video on Page $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Keyboard Shortcuts <kbd>$KEY$</kbd>",
+    "message": "Keyboard Shortcuts $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Entering theater mode…"
   },
   "autoEnterNoticeHint": {
-    "message": "Click or press <kbd>$KEY$</kbd> to cancel",
+    "message": "Click or press $KEY$ to cancel",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Not assigned"
+  },
+  "keyLabelArrowUp": {
+    "message": "Up arrow"
+  },
+  "keyLabelArrowDown": {
+    "message": "Down arrow"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Left arrow"
+  },
+  "keyLabelArrowRight": {
+    "message": "Right arrow"
+  },
+  "keyLabelPlus": {
+    "message": "Plus"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Command"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Delete"
+  },
+  "keyLabelInsert": {
+    "message": "Insert"
   },
   "shortcutExistingConflicts": {
     "message": "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts."

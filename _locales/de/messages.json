@@ -399,7 +399,7 @@
     "message": "Untertitel verkleinern"
   },
   "subtitlesTooltip": {
-    "message": "Untertitel <kbd>$KEY$</kbd>",
+    "message": "Untertitel $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Wechseln funktioniert nur mit HTML5-Video"
   },
   "videoFitTooltip": {
-    "message": "Videoanpassung <kbd>$KEY$</kbd>",
+    "message": "Videoanpassung $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Ton an"
   },
   "pictureInPictureTooltip": {
-    "message": "Bild-in-Bild <kbd>$KEY$</kbd>",
+    "message": "Bild-in-Bild $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Vollbild verlassen"
   },
   "fullscreenTooltip": {
-    "message": "Vollbild <kbd>$KEY$</kbd>",
+    "message": "Vollbild $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Kinomodus verlassen <kbd>$TOGGLE$</kbd> oder <kbd>$EXIT$</kbd>",
+    "message": "Kinomodus verlassen $TOGGLE$ oder $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Video auf der Seite wechseln <kbd>$KEY$</kbd>",
+    "message": "Video auf der Seite wechseln $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Tastenkürzel <kbd>$KEY$</kbd>",
+    "message": "Tastenkürzel $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Kinomodus wird aktiviert…"
   },
   "autoEnterNoticeHint": {
-    "message": "Klicken oder <kbd>$KEY$</kbd> drücken zum Abbrechen",
+    "message": "Klicken oder $KEY$ drücken zum Abbrechen",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Nicht zugewiesen"
+  },
+  "keyLabelArrowUp": {
+    "message": "Pfeil nach oben"
+  },
+  "keyLabelArrowDown": {
+    "message": "Pfeil nach unten"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Pfeil nach links"
+  },
+  "keyLabelArrowRight": {
+    "message": "Pfeil nach rechts"
+  },
+  "keyLabelPlus": {
+    "message": "Plus"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Wahltaste"
+  },
+  "keyLabelShift": {
+    "message": "Umschalttaste"
+  },
+  "keyLabelCommand": {
+    "message": "Befehlstaste"
+  },
+  "keyLabelWindows": {
+    "message": "Windows-Taste"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Entfernen"
+  },
+  "keyLabelInsert": {
+    "message": "Einfügen"
   },
   "shortcutExistingConflicts": {
     "message": "Einige Tastenkürzel sind mehreren Aktionen zugewiesen. Bearbeite die markierten Kürzel oder setze sie zurück."

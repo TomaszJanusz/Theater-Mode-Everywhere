@@ -399,7 +399,7 @@
     "message": "Diminuir tamanho das legendas"
   },
   "subtitlesTooltip": {
-    "message": "Legendas <kbd>$KEY$</kbd>",
+    "message": "Legendas $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "A troca funciona apenas com vídeo HTML5"
   },
   "videoFitTooltip": {
-    "message": "Ajuste do vídeo <kbd>$KEY$</kbd>",
+    "message": "Ajuste do vídeo $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Som ativado"
   },
   "pictureInPictureTooltip": {
-    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "message": "Picture-in-Picture $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Sair da Tela Cheia"
   },
   "fullscreenTooltip": {
-    "message": "Tela Cheia <kbd>$KEY$</kbd>",
+    "message": "Tela Cheia $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Sair do Modo Cinema <kbd>$TOGGLE$</kbd> ou <kbd>$EXIT$</kbd>",
+    "message": "Sair do Modo Cinema $TOGGLE$ ou $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Alternar vídeo na página <kbd>$KEY$</kbd>",
+    "message": "Alternar vídeo na página $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Atalhos de Teclado <kbd>$KEY$</kbd>",
+    "message": "Atalhos de Teclado $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Ativando o modo cinema…"
   },
   "autoEnterNoticeHint": {
-    "message": "Clique ou pressione <kbd>$KEY$</kbd> para cancelar",
+    "message": "Clique ou pressione $KEY$ para cancelar",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Não atribuído"
+  },
+  "keyLabelArrowUp": {
+    "message": "Seta para cima"
+  },
+  "keyLabelArrowDown": {
+    "message": "Seta para baixo"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Seta para a esquerda"
+  },
+  "keyLabelArrowRight": {
+    "message": "Seta para a direita"
+  },
+  "keyLabelPlus": {
+    "message": "Mais"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Opção"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Comando"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Excluir"
+  },
+  "keyLabelInsert": {
+    "message": "Inserir"
   },
   "shortcutExistingConflicts": {
     "message": "Alguns atalhos estão atribuídos a várias ações. Edite ou redefina os atalhos destacados."

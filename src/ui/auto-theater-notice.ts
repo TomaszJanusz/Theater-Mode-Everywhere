@@ -1,12 +1,14 @@
-import { exitSpinner, isElementMotionReduced } from './spinner-exit';
-import { mountPlayerUi } from './root';
+import { msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
+import { showAutoTheaterScrim, type AutoTheaterScrimOptions } from './auto-theater-scrim';
 import { HUD_PLATE_CLASS } from './hud';
 import { renderKbdText } from './kbd-text';
 import { t } from './messages';
-import { msUntilNoticeSecondChanges, noticeSecondsRemaining } from './auto-theater-intent';
+import { mountPlayerUi } from './root';
+import { shortcutMarkup } from './shortcut-display';
+import { shortcutDisplayEnv } from './shortcuts';
+import { exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { renderTimeReadout } from './time-readout';
 import { systemClock, type UiClock } from './ui-clock';
-import { showAutoTheaterScrim, type AutoTheaterScrimOptions } from './auto-theater-scrim';
 
 export const AUTO_THEATER_NOTICE_CLASS = 'theater-auto-notice';
 
@@ -70,7 +72,8 @@ export function showAutoTheaterNotice(
   scrim?: AutoTheaterScrimOptions,
   clock: UiClock = systemClock
 ): () => void {
-  const hint = t('autoEnterNoticeHint', 'Esc');
+  // Escape cancels whatever the exit shortcut is (see player-runtime), so the hint names it, not the setting.
+  const hint = t('autoEnterNoticeHint', shortcutMarkup('Escape', shortcutDisplayEnv()));
   const title = t('autoEnterNoticeTitle');
   const overlay = document.createElement('div');
   overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud loading ${AUTO_THEATER_NOTICE_CLASS}`;

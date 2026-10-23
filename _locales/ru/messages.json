@@ -399,7 +399,7 @@
     "message": "Уменьшить размер субтитров"
   },
   "subtitlesTooltip": {
-    "message": "Субтитры <kbd>$KEY$</kbd>",
+    "message": "Субтитры $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Переключение работает только с HTML5-видео"
   },
   "videoFitTooltip": {
-    "message": "Масштаб видео <kbd>$KEY$</kbd>",
+    "message": "Масштаб видео $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Звук включён"
   },
   "pictureInPictureTooltip": {
-    "message": "Картинка в картинке <kbd>$KEY$</kbd>",
+    "message": "Картинка в картинке $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Выйти из полноэкранного режима"
   },
   "fullscreenTooltip": {
-    "message": "Полный экран <kbd>$KEY$</kbd>",
+    "message": "Полный экран $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Выйти из режима кино <kbd>$TOGGLE$</kbd> или <kbd>$EXIT$</kbd>",
+    "message": "Выйти из режима кино $TOGGLE$ или $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Переключить видео на странице <kbd>$KEY$</kbd>",
+    "message": "Переключить видео на странице $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Горячие клавиши <kbd>$KEY$</kbd>",
+    "message": "Горячие клавиши $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Включается режим кино…"
   },
   "autoEnterNoticeHint": {
-    "message": "Щёлкните или нажмите <kbd>$KEY$</kbd>, чтобы отменить",
+    "message": "Щёлкните или нажмите $KEY$, чтобы отменить",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Не назначено"
+  },
+  "keyLabelArrowUp": {
+    "message": "Стрелка вверх"
+  },
+  "keyLabelArrowDown": {
+    "message": "Стрелка вниз"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Стрелка влево"
+  },
+  "keyLabelArrowRight": {
+    "message": "Стрелка вправо"
+  },
+  "keyLabelPlus": {
+    "message": "Плюс"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Command"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Delete"
+  },
+  "keyLabelInsert": {
+    "message": "Insert"
   },
   "shortcutExistingConflicts": {
     "message": "Некоторые сочетания клавиш назначены нескольким действиям. Измените или сбросьте выделенные сочетания."

@@ -259,7 +259,17 @@ input:checked + .slider:before {
   border: 1px dashed var(--border-color);
 }
 
-.key-cap {
+.key-caps {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.key-caps kbd {
+  min-inline-size: 1.6em;
+  box-sizing: border-box;
+  text-align: center;
   background-color: #27272a;
   border: 1px solid #3f3f46;
   border-bottom: 2px solid #3f3f46;

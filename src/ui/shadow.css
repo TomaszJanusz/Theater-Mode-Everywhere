@@ -1785,8 +1785,17 @@ button.theater-time-end:focus-visible,
   direction: rtl !important;
 }
 
-.theater-button-tooltip[dir="rtl"] kbd {
+/* A shortcut's caps are one left-to-right unit inside right-to-left text. */
+.theater-keys {
   direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+/* One flex item in the tooltip row, so the row's reversal in RTL never reorders the caps. */
+.theater-button-tooltip .theater-keys {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: inherit !important;
 }
 
 .theater-button-tooltip.visible {
