@@ -55,6 +55,8 @@ jobs:
         run: echo 'Skipping dependency installation, tests, builds and smoke checks for reviewed prose only.'
 
   boundaries:
+    needs: changes
+    if: needs.changes.outputs.run != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -70,6 +72,8 @@ jobs:
         timeout-minutes: 3
 
   css-and-unused:
+    needs: changes
+    if: needs.changes.outputs.run != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -296,7 +300,7 @@ jobs:
           node - <<'NODE'
           const needs = JSON.parse(process.env.NEEDS);
           const failed = Object.entries(needs).filter(([, job]) => ['failure', 'cancelled'].includes(job.result));
-          const required = ['build', 'static', 'unit', 'browser-chromium', 'smoke'];
+          const required = ['boundaries', 'css-and-unused', 'build', 'static', 'unit', 'browser-chromium', 'smoke'];
           if (process.env.RUN_CHECKS !== 'false') {
             for (const name of required) if (needs[name].result !== 'success') failed.push([name, needs[name]]);
             if (needs.changes.outputs.firefox !== 'false' && needs['browser-firefox'].result !== 'success') failed.push(['browser-firefox', needs['browser-firefox']]);
