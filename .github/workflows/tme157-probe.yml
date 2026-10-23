@@ -1,0 +1,81 @@
+name: TME-157 probe
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/tme157-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Inspect image
+        timeout-minutes: 3
+        run: |
+          set +e
+          id; echo "HOME=$HOME PWD=$PWD PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
+          head -3 /etc/os-release
+          node -v; command -v pnpm corepack git
+          for b in Xvfb xvfb-run pulseaudio pactl pipewire pipewire-pulse wireplumber pw-cli aplay; do printf '%s: ' "$b"; command -v "$b" || echo missing; done
+          ls /ms-playwright
+          dpkg -l | grep -Ei 'pulse|pipewire|alsa|xvfb' | awk '{print $2, $3}'
+          df -h / | tail -1
+          apt-cache policy pulseaudio | head -4
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Playwright install (expect no-op)
+        timeout-minutes: 4
+        run: |
+          pnpm exec playwright --version
+          time pnpm exec playwright install chromium firefox
+      - name: Pulseaudio from apt inside the container (timing)
+        timeout-minutes: 5
+        continue-on-error: true
+        run: |
+          time (apt-get update -o Acquire::Retries=3 && apt-get install --no-install-recommends -y pulseaudio)
+      - name: Start sink as root
+        continue-on-error: true
+        timeout-minutes: 2
+        run: |
+          pulseaudio --start --exit-idle-time=-1 --daemonize=yes || pulseaudio -D --exit-idle-time=-1 --system --disallow-exit
+          pactl load-module module-null-sink sink_name=theater_tests rate=48000
+          pactl set-default-sink theater_tests
+          pactl list short sinks
+      - name: Native Firefox audio tests
+        timeout-minutes: 8
+        continue-on-error: true
+        env:
+          THEATER_TEST_ENGINES: firefox
+        run: pnpm test src/platform/media-audio-runtime.browser.test.ts
+      - name: Native Chromium audio tests
+        timeout-minutes: 8
+        continue-on-error: true
+        env:
+          THEATER_TEST_ENGINES: chromium
+        run: pnpm test src/platform/media-audio-runtime.browser.test.ts
+      - name: Smoke (Xvfb)
+        timeout-minutes: 8
+        continue-on-error: true
+        env:
+          CI: true
+        run: |
+          pnpm build
+          xvfb-run --auto-servernum pnpm smoke:chromium
+          xvfb-run --auto-servernum pnpm smoke:firefox
