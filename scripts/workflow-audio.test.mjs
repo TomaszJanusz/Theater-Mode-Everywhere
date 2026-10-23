@@ -59,6 +59,7 @@ test('browser lanes run in the pinned CI image and keep the release path on apt 
   assert.doesNotMatch(ci, /uses: \$\/\.github\/actions\/setup\n\s+timeout-minutes: (?!4\n)/);
   assert.match(setup, /--with-deps/);
   assert.match(setup, /Setup budget exceeded/);
+  assert.match(setup, /safe\.directory/);
   // Release has no container and no CI image: it must not opt into the prebuilt path.
   assert.doesNotMatch(release, /prebuilt|container:/);
 });

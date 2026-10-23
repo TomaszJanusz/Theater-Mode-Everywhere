@@ -16,6 +16,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Trust the workspace in the container
+      if: inputs.prebuilt == 'true'
+      shell: bash
+      # The container runs as root on a checkout owned by the runner user. actions/checkout trusts the directory
+      # only in a temporary git config, so git (the baseline history guards) would otherwise refuse it.
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
     - name: Install pnpm
       uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
     - name: Set up Node.js
