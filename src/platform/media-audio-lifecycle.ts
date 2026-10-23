@@ -37,8 +37,11 @@ export function createPlaybackReconciler(options: ReconcilerOptions): PlaybackRe
     if (!isAttached()) { onDetached(); return; }
     const playing = isPlaying();
     if (context.state === 'closed' || (playing ? context.state !== 'suspended' : context.state !== 'running')) return;
+    let operation: Promise<void>;
+    // A non-spec or patched context can throw instead of rejecting; `pending` is only set once the operation exists, so the next event retries.
+    try { operation = playing ? context.resume() : context.suspend(); } catch (error) { onError(error); return; }
     pending = true;
-    void (playing ? context.resume() : context.suspend()).then(() => {
+    void operation.then(() => {
       pending = false;
       // A pause or replacement can arrive while resume is pending, and vice versa.
       if (!disposed) reconcile();

@@ -149,6 +149,19 @@ describe('media audio playback lifecycle', () => {
     assert.deepEqual(context.calls, ['resume', 'resume'], 'the failed operation no longer blocks reconciliation');
   });
 
+  it('recovers on the next event when resume throws synchronously', () => {
+    const { context, events, reconciler } = setup('suspended', { playing: true, attached: true });
+    let throwing = true;
+    const resume = context.resume.bind(context);
+    context.resume = () => { if (throwing) throw new Error('patched context'); return resume(); };
+    reconciler.reconcile();
+    assert.equal(events.errors.length, 1);
+    assert.equal(context.inFlight, 0);
+    throwing = false;
+    reconciler.reconcile();
+    assert.deepEqual(context.calls, ['resume'], 'a synchronous throw does not leave the graph marked busy');
+  });
+
   it('keeps a failure of a retired graph silent', async () => {
     const { context, events, reconciler } = setup('suspended', { playing: true, attached: true });
     reconciler.reconcile();
