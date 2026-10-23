@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Авто"
+  },
+  "helpGroupPlayback": {
+    "message": "Воспроизведение"
+  },
+  "helpGroupLayout": {
+    "message": "Изображение и расположение"
+  },
+  "helpSeek": {
+    "message": "Перемотка назад / вперёд (5 сек)"
+  },
+  "helpPreviousNext": {
+    "message": "Предыдущее / следующее видео"
+  },
+  "helpFrameStep": {
+    "message": "Кадр назад / вперёд"
+  },
+  "helpVolume": {
+    "message": "Тише / громче (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Уменьшить / увеличить субтитры"
+  },
+  "helpNavigateControls": {
+    "message": "Переход между элементами управления"
+  },
+  "helpNavigationHint": {
+    "message": "$1 открывает панель управления на кнопке настроек. На кнопке меню $1 открывает меню, а $2 с его нижней строки закрывает его. $3 завершает навигацию.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Настроить горячие клавиши"
   }
 }

@@ -150,7 +150,8 @@ it('opens only the manifest options page for valid requests from this extension'
     assert.equal(listener(request, sender, () => assert.fail('replied to unknown sender')), false);
   }
   for (const payload of [null, {}, { action: 'other' }, { ...request, url: 'https://evil.test' },
-    { ...request, hash: '#unknown' }, { ...request, extra: true }]) {
+    { ...request, hash: '#unknown' }, { ...request, extra: true }, { ...request, section: 'about:blank' },
+    { ...request, section: undefined }, { ...request, section: 'shortcuts', url: 'https://evil.test' }]) {
     assert.equal(listener(payload, { id: 'extension' }, () => assert.fail('replied to invalid payload')), false);
   }
   assert.equal(opened, 0);
@@ -165,4 +166,41 @@ it('opens only the manifest options page for valid requests from this extension'
   const reply = await send({ id: 'extension' });
   assert.equal((reply as { ok: boolean }).ok, false);
   assert.equal(opened, 3);
+});
+
+it('opens Settings at the Shortcuts tab, reusing an open Settings tab', async () => {
+  let listener!: (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
+  const page = 'chrome-extension://extension/options/options.html';
+  const tabs = [{ id: 3, windowId: 1, url: 'https://player.test/' }];
+  const calls: unknown[] = [];
+  const ignore = { addListener() {} };
+  runInNewContext(bundle, {
+    console: { error() {} },
+    chrome: {
+      tabs: {
+        onActivated: ignore, onUpdated: ignore,
+        async query() { return tabs; },
+        async create(options: object) { calls.push(['create', options]); tabs.push({ id: 9, windowId: 2, url: page }); },
+        async update(id: number, options: object) { calls.push(['update', id, options]); }
+      },
+      windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
+      storage: { onChanged: ignore },
+      runtime: {
+        id: 'extension', onInstalled: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
+        getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
+        onMessage: { addListener(fn: typeof listener) { listener = fn; } },
+        async openOptionsPage() { calls.push(['openOptionsPage']); }
+      }
+    }
+  });
+  const send = () => new Promise<unknown>(resolve => {
+    assert.equal(listener({ action: 'open-options-page', section: 'shortcuts' }, { id: 'extension' }, resolve), true);
+  });
+  // Values from the bundle's realm compare by shape.
+  for (let request = 0; request < 2; request++) assert.equal((await send() as { ok: boolean }).ok, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    ['create', { url: `${page}#shortcuts` }],
+    ['update', 9, { url: `${page}#shortcuts`, active: true }],
+    ['focus', 2, { focused: true }]
+  ]);
 });

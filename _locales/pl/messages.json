@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Odtwarzanie"
+  },
+  "helpGroupLayout": {
+    "message": "Obraz i układ"
+  },
+  "helpSeek": {
+    "message": "Cofnij / przewiń (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Poprzedni / następny film"
+  },
+  "helpFrameStep": {
+    "message": "Poprzednia / następna klatka"
+  },
+  "helpVolume": {
+    "message": "Ciszej / głośniej (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Pomniejsz / powiększ napisy"
+  },
+  "helpNavigateControls": {
+    "message": "Przechodzenie między kontrolkami"
+  },
+  "helpNavigationHint": {
+    "message": "$1 otwiera pasek sterowania na przycisku ustawień. Na przycisku menu $1 otwiera menu, a $2 z jego dolnego wiersza je zamyka. $3 kończy nawigację.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Dostosuj skróty"
   }
 }

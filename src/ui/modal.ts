@@ -19,7 +19,7 @@ export interface ModalContent {
 }
 
 export interface ModalOptions extends ModalContent {
-  size?: 'default' | 'wide';
+  size?: 'default' | 'wide' | 'large';
   scrollable?: boolean;
   mount?: (overlay: HTMLElement) => void;
   decorate?: (overlay: HTMLElement) => void;

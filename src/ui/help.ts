@@ -1,11 +1,110 @@
 import { activeElementDeep } from '../accessibility';
-import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
+import { requestOptionsPage } from '../protocol/options-page';
 
-import { renderShortcutCaps } from './kbd-text';
+import { renderKbdText, renderShortcutCaps } from './kbd-text';
 import { createModal, type Modal } from './modal';
 import type { PlayerChromeContext } from './runtime-context';
-import { AUDIO_SHORTCUTS, defaultShortcuts, NAVIGATION_SHORTCUTS } from './shortcuts';
+import { shortcutMarkup } from './shortcut-display';
+import { SHORTCUT_HELP_GROUPS, SHORTCUT_LABELS, shortcutHelpRowLabel, type ShortcutHelpRow } from './shortcut-groups';
+import { defaultShortcuts, shortcutDisplayEnv, type Shortcuts } from './shortcuts';
 
+let helpSequence = 0;
+
+type Translate = PlayerChromeContext['t'];
+
+function unassigned(text: string): HTMLElement {
+  const span = document.createElement('span');
+  span.className = 'theater-help-unassigned';
+  span.textContent = text;
+  return span;
+}
+
+/** One cap row per action; a shared row names each half, so a screen reader hears which key does what. */
+function renderKeys(t: Translate, row: ShortcutHelpRow, shortcuts: Shortcuts): HTMLElement {
+  const keys = document.createElement('dd');
+  keys.className = 'theater-help-keys';
+  keys.dir = 'ltr';
+  if (!row.actions.some(action => shortcuts[action])) {
+    keys.append(unassigned(t('shortcutUnassigned')));
+    return keys;
+  }
+  row.actions.forEach((action, index) => {
+    const binding = document.createElement('span');
+    binding.className = 'theater-help-binding';
+    if (row.actions.length > 1) {
+      binding.setAttribute('role', 'group');
+      binding.setAttribute('aria-label', t(SHORTCUT_LABELS[action]));
+      binding.title = t(SHORTCUT_LABELS[action]);
+    }
+    if (shortcuts[action]) renderShortcutCaps(binding, shortcuts[action]);
+    else {
+      // Half of a pair is unassigned: a dash keeps its place, and the group still says so.
+      const gap = unassigned('–');
+      gap.setAttribute('role', 'img');
+      gap.setAttribute('aria-label', t('shortcutUnassigned'));
+      binding.append(gap);
+    }
+    // Opposites read as alternatives; the slash leads the second binding, so a wrapped pair starts its line with it.
+    // The navigation cluster is just four keys.
+    if (index > 0 && row.actions.length === 2) {
+      const or = document.createElement('span');
+      or.className = 'theater-help-or';
+      or.setAttribute('aria-hidden', 'true');
+      or.textContent = '/';
+      binding.prepend(or);
+    }
+    keys.append(binding);
+  });
+  return keys;
+}
+
+/** How to enter and leave the controls bar and its menus, in the keys the user actually has. */
+function navigationHint(t: Translate, shortcuts: Shortcuts): HTMLElement | null {
+  if (!shortcuts.navigateUp || !shortcuts.navigateDown) return null;
+  const env = shortcutDisplayEnv();
+  const hint = document.createElement('p');
+  hint.className = 'theater-help-hint';
+  renderKbdText(hint, t('helpNavigationHint', [shortcuts.navigateUp, shortcuts.navigateDown, 'Escape'].map(key => shortcutMarkup(key, env))));
+  return hint;
+}
+
+function renderGroups(t: Translate, shortcuts: Shortcuts): HTMLElement {
+  const grid = document.createElement('div');
+  grid.className = 'theater-help-grid';
+  const sequence = ++helpSequence;
+  for (const group of SHORTCUT_HELP_GROUPS) {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'theater-help-group';
+    groupEl.dataset.group = group.id;
+    groupEl.setAttribute('role', 'group');
+    const title = document.createElement('h3');
+    title.className = 'theater-help-group-title';
+    title.id = `theater-help-${sequence}-${group.id}`;
+    title.textContent = t(group.title);
+    groupEl.setAttribute('aria-labelledby', title.id);
+    const list = document.createElement('dl');
+    list.className = 'theater-help-list';
+    for (const row of group.rows) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'theater-help-row';
+      rowEl.dataset.actions = row.actions.join(' ');
+      const label = document.createElement('dt');
+      label.className = 'theater-help-label';
+      label.textContent = t(shortcutHelpRowLabel(row));
+      rowEl.append(label, renderKeys(t, row, shortcuts));
+      list.append(rowEl);
+    }
+    groupEl.append(title, list);
+    if (group.id === 'navigation') {
+      const hint = navigationHint(t, shortcuts);
+      if (hint) groupEl.append(hint);
+    }
+    grid.append(groupEl);
+  }
+  return grid;
+}
+
+/** The shortcuts help: groups from `SHORTCUT_HELP_GROUPS` in the shared modal; the stylesheet decides the columns. */
 export function createHelp(ctx: PlayerChromeContext) {
   let modal: Modal | null = null;
 
@@ -31,102 +130,12 @@ export function createHelp(ctx: PlayerChromeContext) {
     ctx.actions.showToolbar();
 
     const shortcuts = ctx.ui().shortcuts || defaultShortcuts;
-    const grid = document.createElement('div');
-    grid.className = 'theater-help-grid';
-    const theaterColumn = document.createElement('div');
-    const playbackColumn = document.createElement('div');
-    theaterColumn.className = playbackColumn.className = 'theater-help-column';
-
-    const groups = [
-      {
-        title: ctx.t('theaterFullscreenPipTitle'),
-        items: [
-          { label: ctx.t('toggleTheaterMode'), key: shortcuts.toggle },
-          { label: ctx.t('exitTheaterMode'), key: shortcuts.exit },
-          { label: ctx.t('toggleFullscreen'), key: shortcuts.toggleFullscreen },
-          { label: ctx.t('togglePictureInPicture'), key: shortcuts.togglePiP }
-        ]
-      },
-      {
-        title: ctx.t('playerControlsTitle'),
-        items: [
-          { label: ctx.t('cycleSwitchVideo'), key: shortcuts.cycle },
-          { label: ctx.t('cycleVideoFit'), key: shortcuts.cycleFit },
-          { label: ctx.t('cyclePictureLayout'), key: shortcuts.cycleLayout },
-          { label: ctx.t('toggleNativeChat'), key: shortcuts.toggleChat },
-          { label: ctx.t('toggleSubtitles'), key: shortcuts.toggleCaptions },
-          { label: ctx.t('increaseSubtitleSize'), key: shortcuts.increaseCaptionSize },
-          { label: ctx.t('decreaseSubtitleSize'), key: shortcuts.decreaseCaptionSize },
-          { label: ctx.t('toggleControlsPin'), key: shortcuts.toggleControlsPin },
-          { label: ctx.t('showHideHelp'), key: shortcuts.showHelp }
-        ]
-      },
-      {
-        title: ctx.t('playbackVolumeControlsTitle'),
-        items: [
-          { label: ctx.t('playPause'), key: shortcuts.playPause },
-          { label: ctx.t('previousVideo'), key: shortcuts.previousVideo },
-          { label: ctx.t('nextVideo'), key: shortcuts.nextVideo },
-          { label: ctx.t('seekBackward5'), key: shortcuts.seekBack },
-          { label: ctx.t('seekForward5'), key: shortcuts.seekForward },
-          { label: ctx.t('frameStepBackward'), key: shortcuts.frameBack },
-          { label: ctx.t('frameStepForward'), key: shortcuts.frameForward },
-          { label: ctx.t('volumeUp5'), key: shortcuts.volumeUp },
-          { label: ctx.t('volumeDown5'), key: shortcuts.volumeDown },
-          { label: ctx.t('toggleMute'), key: shortcuts.toggleMute }
-        ]
-      },
-      {
-        title: ctx.t('settingsSectionAudio'),
-        items: [
-          { label: ctx.t('volumeBoostLabel'), key: shortcuts.toggleVolumeBoost },
-          ...AUDIO_SETTING_NAMES.map((name) => ({ label: ctx.t(AUDIO_LABEL_KEYS[name]), key: shortcuts[AUDIO_SHORTCUTS[name]] }))
-        ]
-      },
-      {
-        title: ctx.t('navigationGroupTitle'),
-        items: NAVIGATION_SHORTCUTS.map((name) => ({ label: ctx.t(name), key: shortcuts[name] }))
-      }
-    ];
-
-    groups.forEach(group => {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'theater-help-group';
-
-      const groupTitle = document.createElement('div');
-      groupTitle.className = 'theater-help-group-title';
-      groupTitle.textContent = group.title;
-      groupEl.appendChild(groupTitle);
-
-      group.items.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'theater-help-row';
-
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'theater-help-label';
-        labelSpan.textContent = item.label;
-
-        const keyWrapper = document.createElement('div');
-        keyWrapper.className = 'theater-help-key-wrapper';
-        keyWrapper.dir = 'ltr';
-
-        if (item.key) renderShortcutCaps(keyWrapper, item.key);
-        else keyWrapper.textContent = ctx.t('shortcutUnassigned');
-
-        row.appendChild(labelSpan);
-        row.appendChild(keyWrapper);
-        groupEl.appendChild(row);
-      });
-
-      (groups.indexOf(group) < 2 ? theaterColumn : playbackColumn).appendChild(groupEl);
-    });
-    grid.append(theaterColumn, playbackColumn);
-
     modal = createModal({
       title: ctx.t('keyboardShortcutsTitle'),
       closeLabel: ctx.t('dialogClose'),
-      content: grid,
-      size: 'wide',
+      content: renderGroups(ctx.t, shortcuts),
+      actions: [{ label: ctx.t('helpCustomizeShortcuts'), kind: 'secondary', value: false, run: () => requestOptionsPage('shortcuts') }],
+      size: 'large',
       scrollable: true,
       initialFocus: 'close',
       dismissShortcut: shortcuts.showHelp,

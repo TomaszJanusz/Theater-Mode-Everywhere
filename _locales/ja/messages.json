@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "自動"
+  },
+  "helpGroupPlayback": {
+    "message": "再生"
+  },
+  "helpGroupLayout": {
+    "message": "映像とレイアウト"
+  },
+  "helpSeek": {
+    "message": "巻き戻し / 早送り (5秒)"
+  },
+  "helpPreviousNext": {
+    "message": "前 / 次の動画"
+  },
+  "helpFrameStep": {
+    "message": "1フレーム戻る / 進む"
+  },
+  "helpVolume": {
+    "message": "音量ダウン / アップ (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "字幕を小さく / 大きく"
+  },
+  "helpNavigateControls": {
+    "message": "コントロール間を移動"
+  },
+  "helpNavigationHint": {
+    "message": "$1 で設定ボタンからコントロールバーに入ります。メニューボタンで $1 を押すとメニューが開き、最下段で $2 を押すと閉じます。$3 でナビゲーションを終了します。",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "ショートカットをカスタマイズ"
   }
 }

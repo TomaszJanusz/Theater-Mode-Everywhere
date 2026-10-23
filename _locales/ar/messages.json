@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "تلقائي"
+  },
+  "helpGroupPlayback": {
+    "message": "التشغيل"
+  },
+  "helpGroupLayout": {
+    "message": "الصورة والتخطيط"
+  },
+  "helpSeek": {
+    "message": "إرجاع / تقديم (5 ثوان)"
+  },
+  "helpPreviousNext": {
+    "message": "الفيديو السابق / التالي"
+  },
+  "helpFrameStep": {
+    "message": "إطار للخلف / للأمام"
+  },
+  "helpVolume": {
+    "message": "خفض / رفع الصوت (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "تصغير / تكبير الترجمة"
+  },
+  "helpNavigateControls": {
+    "message": "التنقل بين عناصر التحكم"
+  },
+  "helpNavigationHint": {
+    "message": "يفتح $1 شريط التحكم عند زر الإعدادات. على زر قائمة، يفتح $1 القائمة ويغلقها $2 من صفها السفلي. ينهي $3 التنقل.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "تخصيص الاختصارات"
   }
 }

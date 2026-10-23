@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Riproduzione"
+  },
+  "helpGroupLayout": {
+    "message": "Immagine e disposizione"
+  },
+  "helpSeek": {
+    "message": "Indietro / avanti (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Video precedente / successivo"
+  },
+  "helpFrameStep": {
+    "message": "Fotogramma precedente / successivo"
+  },
+  "helpVolume": {
+    "message": "Abbassa / alza volume (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Riduci / ingrandisci sottotitoli"
+  },
+  "helpNavigateControls": {
+    "message": "Spostati tra i controlli"
+  },
+  "helpNavigationHint": {
+    "message": "$1 apre la barra dei controlli sul pulsante delle impostazioni. Su un pulsante di menu, $1 apre il menu e $2 dalla sua riga inferiore lo chiude. $3 termina la navigazione.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Personalizza scorciatoie"
   }
 }

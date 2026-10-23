@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Automaticky"
+  },
+  "helpGroupPlayback": {
+    "message": "Prehrávanie"
+  },
+  "helpGroupLayout": {
+    "message": "Obraz a rozloženie"
+  },
+  "helpSeek": {
+    "message": "Späť / dopredu (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Predchádzajúce / ďalšie video"
+  },
+  "helpFrameStep": {
+    "message": "Predchádzajúca / ďalšia snímka"
+  },
+  "helpVolume": {
+    "message": "Znížiť / zvýšiť hlasitosť (5 %)"
+  },
+  "helpSubtitleSize": {
+    "message": "Zmenšiť / zväčšiť titulky"
+  },
+  "helpNavigateControls": {
+    "message": "Pohyb medzi ovládacími prvkami"
+  },
+  "helpNavigationHint": {
+    "message": "$1 otvorí ovládací panel na tlačidle nastavení. Na tlačidle ponuky $1 ponuku otvorí a $2 z jej spodného riadka ju zatvorí. $3 navigáciu ukončí.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Upraviť skratky"
   }
 }

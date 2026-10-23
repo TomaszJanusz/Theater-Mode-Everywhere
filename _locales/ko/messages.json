@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "자동"
+  },
+  "helpGroupPlayback": {
+    "message": "재생"
+  },
+  "helpGroupLayout": {
+    "message": "영상 및 레이아웃"
+  },
+  "helpSeek": {
+    "message": "뒤로 / 앞으로 감기 (5초)"
+  },
+  "helpPreviousNext": {
+    "message": "이전 / 다음 동영상"
+  },
+  "helpFrameStep": {
+    "message": "이전 / 다음 프레임"
+  },
+  "helpVolume": {
+    "message": "음량 낮추기 / 높이기 (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "자막 작게 / 크게"
+  },
+  "helpNavigateControls": {
+    "message": "컨트롤 사이 이동"
+  },
+  "helpNavigationHint": {
+    "message": "$1 키를 누르면 설정 버튼에서 컨트롤 바가 열립니다. 메뉴 버튼에서 $1 키는 메뉴를 열고, 맨 아래 행에서 $2 키는 메뉴를 닫습니다. $3 키는 탐색을 끝냅니다.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "단축키 사용자 지정"
   }
 }
