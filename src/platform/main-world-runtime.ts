@@ -1,5 +1,6 @@
 import { installBilibiliNavigation } from '../providers/bilibili/navigation';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
+import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
@@ -581,8 +582,9 @@ export function installMainWorldRuntime(): void {
     handlePageFetch(envelope.requestId, url, envelope.nonce, envelope.origin, port);
   }, { capture: true });
 
-  window.addEventListener('theater-everywhere-media-seek', (event: Event) => {
-    const detail = (event as CustomEvent<{ live?: boolean; time?: number; resumeAfterSeek?: boolean; cancelPendingResume?: boolean }>).detail || {};
+  window.addEventListener(MEDIA_SEEK_EVENT, (event: Event) => {
+    const detail = parseMediaSeekDetail((event as CustomEvent<unknown>).detail);
+    if (!detail) return;
     const video = findActiveVideo(document) || document.querySelector('video');
     if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;

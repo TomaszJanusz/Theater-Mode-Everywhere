@@ -217,7 +217,7 @@ describe('playback chrome updates', () => {
       const loading = () => page.locator('.theater-loading-indicator').evaluate(e => e.classList.contains('visible'));
       const scrub = async (time: number) => page.locator('.theater-scrubber-container').evaluate((e, time) => {
         let target = time;
-        const capture = (event: Event) => { const time = (event as CustomEvent<{ time?: number }>).detail.time; if (typeof time === 'number') target = time; };
+        const capture = (event: Event) => { const time = JSON.parse((event as CustomEvent<string>).detail).time; if (typeof time === 'number') target = time; };
         window.addEventListener('theater-everywhere-media-seek', capture);
         const r = e.getBoundingClientRect();
         const options = { bubbles: true, composed: true, button: 0, clientX: r.left + r.width * time / 3600, clientY: r.top + r.height / 2 };
