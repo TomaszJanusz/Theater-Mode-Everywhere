@@ -8,44 +8,16 @@
   },
   "src/content.css": {
     "scale-unlimited/declaration-strict-value": 3,
-    "declaration-no-important": 79
+    "declaration-no-important": 79,
+    "selector-disallowed-list": 1
   },
   "src/host-frame.css": {
     "declaration-no-important": 12
   },
   "src/native-chat.css": {
     "scale-unlimited/declaration-strict-value": 6,
-    "declaration-no-important": 65
-  },
-  "src/providers/bilibili-intl/presentation.css": {
-    "declaration-no-important": 2
-  },
-  "src/providers/bilibili/presentation.css": {
-    "declaration-no-important": 4
-  },
-  "src/providers/crunchyroll/presentation.css": {
-    "scale-unlimited/declaration-strict-value": 1,
-    "declaration-no-important": 14
-  },
-  "src/providers/disney/presentation.css": {
-    "scale-unlimited/declaration-strict-value": 3,
-    "declaration-no-important": 23
-  },
-  "src/providers/netflix/presentation.css": {
-    "scale-unlimited/declaration-strict-value": 1,
-    "declaration-no-important": 54
-  },
-  "src/providers/tencent/presentation.css": {
-    "declaration-no-important": 9
-  },
-  "src/providers/twitch/presentation.css": {
-    "scale-unlimited/declaration-strict-value": 1,
-    "declaration-no-important": 19
-  },
-  "src/providers/youtube/presentation.css": {
-    "scale-unlimited/declaration-strict-value": 4,
-    "declaration-no-important": 30,
-    "selector-disallowed-list": 6
+    "declaration-no-important": 65,
+    "selector-disallowed-list": 1
   },
   "src/ui/modal.css": {
     "scale-unlimited/declaration-strict-value": 1,

@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import stylelint from 'stylelint';
 
 const baselinePath = 'config/stylelint-baseline.json';
-const cssFiles = ['src/**/*.css', 'popup/**/*.css', 'options/**/*.css'];
+const cssFiles = ['src/*.css', 'src/ui/**/*.css', 'popup/**/*.css', 'options/**/*.css'];
 const root = process.cwd();
 
 export function assertNoGrowth(current, baseline) {

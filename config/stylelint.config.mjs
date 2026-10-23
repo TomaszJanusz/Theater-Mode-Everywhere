@@ -18,7 +18,7 @@ export default {
     'color-no-invalid-hex': true,
     'declaration-no-important': true,
     'scale-unlimited/declaration-strict-value': ['z-index', { ignoreFunctions: false }],
-    'selector-disallowed-list': ['/\\.(?:ytp-|ytd-|netflix|disney|twitch)[\\w-]*/i'],
+    'selector-disallowed-list': ['/(?:^|[\\s>+~,:])(?:[.#]?)(?:ytp-|ytd-|netflix|disney|twitch)[\\w-]*/i'],
   },
   overrides: [{
     files: ['src/ui/shadow.css'],
