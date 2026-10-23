@@ -29,7 +29,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm exec tsx --test scripts/test-determinism.test.ts scripts/test-harness.test.ts && pnpm check:boundaries",
     "verify": "pnpm check && pnpm test && pnpm build && pnpm verify:bundles",
     "lint:suppressions:prune": "pnpm lint --prune-suppressions",
-    "check:boundaries": "depcruise --config config/dependency-cruiser.cjs --ignore-known config/.dependency-cruiser-known-violations.json src popup options"
+    "check:boundaries": "node scripts/boundaries-ratchet.mjs"
   },
   "author": "Tomasz Janusz",
   "license": "MIT",
