@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { it } from 'node:test';
-import { chromium } from 'playwright';
+import { describe, it } from 'node:test';
+import { chromium, type BrowserType } from 'playwright';
 import { sharedTestBrowser } from './test-browser';
 
 for (const fixture of ['browser-timeout', 'shared-browser-timeout']) it(`${fixture}: timeout fails and exits without an orphan transport`, { timeout: 45_000 }, async t => {
@@ -61,4 +61,28 @@ it('shared browser contexts isolate cookies, local storage, routes and pages', {
   await first.close();
   assert.equal(b.isClosed(), false);
   assert.equal(await b.title(), 'second');
+});
+
+const closed: string[] = [];
+const healthy = { launch: async () => ({ newContext: async () => ({ close: async () => undefined }), close: async () => { closed.push('healthy'); } }) } as unknown as BrowserType;
+const missing = { launch: async () => { throw new Error('browserType.launch: Executable does not exist'); } } as unknown as BrowserType;
+
+// A lane can lack one engine (the Firefox job once installed only Firefox). The failed launch must be
+// reported to the tests that asked for it, and must not abort teardown of the browsers that did start:
+// a Firefox left running keeps the test process alive until the CI step times out and the report is lost.
+describe('sharedTestBrowser teardown', () => {
+  const unavailable = sharedTestBrowser(missing);
+  const available = sharedTestBrowser(healthy);
+
+  it('reports the launch error to every test that needs the missing engine', async t => {
+    await assert.rejects(unavailable.newContext(t), /Executable does not exist/);
+    await assert.rejects(unavailable.newContext(t), /Executable does not exist/);
+    await available.newContext(t);
+  });
+});
+
+describe('after a sibling suite lost an engine', () => {
+  it('closed the browsers that did launch', () => {
+    assert.deepEqual(closed, ['healthy']);
+  });
 });
