@@ -1,3 +1,5 @@
+import { requestOptionsPage } from '../protocol/options-page';
+
 import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
 import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
@@ -949,15 +951,7 @@ export function createControls(
     extensionSettingsBtn.addEventListener('click', (event) => {
       event.stopPropagation();
       settings.close();
-      try {
-        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-          chrome.runtime.sendMessage({ action: 'open-options-page' }, () => {
-            void chrome.runtime.lastError;
-          });
-        }
-      } catch {
-        // The player can render where the extension runtime is unavailable.
-      }
+      requestOptionsPage();
     });
     settings.addRow(extensionSettingsBtn, t('extensionSettingsLabel'), 'footer');
 

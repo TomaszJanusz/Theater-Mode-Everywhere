@@ -1168,5 +1168,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Playback"
+  },
+  "helpGroupLayout": {
+    "message": "Picture and layout"
+  },
+  "helpSeek": {
+    "message": "Seek back / forward (5s)"
+  },
+  "helpPreviousNext": {
+    "message": "Previous / next video"
+  },
+  "helpFrameStep": {
+    "message": "Frame step back / forward"
+  },
+  "helpVolume": {
+    "message": "Volume down / up (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Subtitle size smaller / larger"
+  },
+  "helpNavigateControls": {
+    "message": "Move between controls"
+  },
+  "helpNavigationHint": {
+    "message": "$1 opens the controls bar at the settings button. On a menu button, $1 opens its menu and $2 from its bottom row closes it. $3 ends navigation.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Customize shortcuts"
   }
 }

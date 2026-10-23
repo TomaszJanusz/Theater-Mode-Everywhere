@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Lecture"
+  },
+  "helpGroupLayout": {
+    "message": "Image et disposition"
+  },
+  "helpSeek": {
+    "message": "Reculer / avancer (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Vidéo précédente / suivante"
+  },
+  "helpFrameStep": {
+    "message": "Image précédente / suivante"
+  },
+  "helpVolume": {
+    "message": "Baisser / augmenter le volume (5 %)"
+  },
+  "helpSubtitleSize": {
+    "message": "Réduire / agrandir les sous-titres"
+  },
+  "helpNavigateControls": {
+    "message": "Se déplacer entre les commandes"
+  },
+  "helpNavigationHint": {
+    "message": "$1 ouvre la barre de commandes sur le bouton des réglages. Sur un bouton de menu, $1 ouvre le menu et $2 depuis sa dernière ligne le ferme. $3 met fin à la navigation.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Personnaliser les raccourcis"
   }
 }

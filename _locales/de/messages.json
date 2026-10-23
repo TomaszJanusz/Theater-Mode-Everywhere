@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Wiedergabe"
+  },
+  "helpGroupLayout": {
+    "message": "Bild und Layout"
+  },
+  "helpSeek": {
+    "message": "5 s zurück / vor"
+  },
+  "helpPreviousNext": {
+    "message": "Vorheriges / nächstes Video"
+  },
+  "helpFrameStep": {
+    "message": "Ein Bild zurück / vor"
+  },
+  "helpVolume": {
+    "message": "Leiser / lauter (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Untertitel verkleinern / vergrößern"
+  },
+  "helpNavigateControls": {
+    "message": "Zwischen Bedienelementen wechseln"
+  },
+  "helpNavigationHint": {
+    "message": "$1 öffnet die Steuerleiste an der Einstellungen-Schaltfläche. Auf einer Menüschaltfläche öffnet $1 das Menü, $2 in seiner untersten Zeile schließt es. $3 beendet die Navigation.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Tastenkürzel anpassen"
   }
 }

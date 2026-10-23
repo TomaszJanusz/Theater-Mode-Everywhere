@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Авто"
+  },
+  "helpGroupPlayback": {
+    "message": "Відтворення"
+  },
+  "helpGroupLayout": {
+    "message": "Зображення та розташування"
+  },
+  "helpSeek": {
+    "message": "Назад / вперед (5 с)"
+  },
+  "helpPreviousNext": {
+    "message": "Попереднє / наступне відео"
+  },
+  "helpFrameStep": {
+    "message": "Попередній / наступний кадр"
+  },
+  "helpVolume": {
+    "message": "Тихіше / гучніше (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Зменшити / збільшити субтитри"
+  },
+  "helpNavigateControls": {
+    "message": "Перехід між елементами керування"
+  },
+  "helpNavigationHint": {
+    "message": "$1 відкриває панель керування на кнопці налаштувань. На кнопці меню $1 відкриває меню, а $2 з його нижнього рядка закриває його. $3 завершує навігацію.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Налаштувати гарячі клавіші"
   }
 }

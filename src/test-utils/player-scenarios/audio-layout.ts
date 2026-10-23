@@ -199,18 +199,18 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   const help = page.locator('.theater-help-overlay');
   await help.waitFor();
   const inspect = () => help.evaluate(overlay => {
-    const grid = overlay.querySelector('.theater-help-grid')!;
-    return { columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
-      rows: overlay.querySelectorAll('.theater-help-row').length,
+    const groups = [...overlay.querySelectorAll('.theater-help-group')];
+    return { columns: new Set(groups.map(group => Math.round(group.getBoundingClientRect().left))).size,
+      actions: [...overlay.querySelectorAll<HTMLElement>('.theater-help-row')].flatMap(row => row.dataset.actions!.split(' ')).length,
       closeVisible: overlay.querySelector('.te-dialog-close')!.getBoundingClientRect().top >= 0 };
   });
   await page.keyboard.press('Shift+L');
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
-  if (wide.columns !== 2 || wide.rows !== 31 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  if (wide.columns !== 2 || wide.actions !== 31 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
   // Keys read as printed on the keycap: one cap per key, arrows as symbols, never browser names or capitals.
-  const keys = await help.evaluate(overlay => [...overlay.querySelectorAll<HTMLElement>('.theater-help-key-wrapper')].map(wrapper => ({
-    text: wrapper.innerText.replace(/\s+/g, ''),
+  const keys = await help.evaluate(overlay => [...overlay.querySelectorAll<HTMLElement>('.theater-help-binding')].map(wrapper => ({
+    text: wrapper.innerText.replace(/\s+/g, '').replace(/^\//, ''),
     caps: wrapper.querySelectorAll('kbd').length,
     transform: getComputedStyle(wrapper.querySelector('kbd') ?? wrapper).textTransform
   })));
@@ -220,13 +220,16 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   if (keys.some(({ text, caps, transform }) => /Arrow|Key[A-Z]|SPACE|Escape/.test(text) || caps !== text.split(/\+(?=.)/).length || transform !== 'none'))
     fail(`Keyboard help shows raw or shouted key names: ${JSON.stringify(keys)}`);
   // Spoken names must reach the accessibility tree, not only an attribute a screen reader may ignore.
-  for (const name of ['Left arrow', 'Right arrow', 'Up arrow', 'Down arrow'])
+  for (const name of ['Left arrow', 'Right arrow', 'Down arrow', 'Up arrow'])
     if (await help.getByRole('img', { name, exact: true }).count() === 0) fail(`${name} is not exposed to assistive technology.`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });
+  // The theater surface follows the viewport on its resize event; the dialog then fits.
+  await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
+    .querySelector('.theater-help-overlay .te-dialog')!.getBoundingClientRect().right <= innerWidth);
   const narrow = await inspect();
-  if (narrow.columns !== 1 || narrow.rows !== 31 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  if (narrow.columns !== 1 || narrow.actions !== 31 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   await help.waitFor({ state: 'detached' });
   // Control-bar tooltips use the same caps: one per key, as printed.

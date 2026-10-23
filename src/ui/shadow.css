@@ -1883,74 +1883,72 @@ button.theater-time-end:focus-visible,
   text-align: center !important;
 }
 
-/* Keyboard shortcuts content; the modal shell lives in modal.css. */
+/* Keyboard shortcuts content; the modal shell lives in modal.css. Groups flow into as many
+   columns as fit (two in the large dialog, one on a narrow screen) and never split. */
 .theater-help-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 28px !important;
+  columns: 2 300px !important;
+  column-gap: 44px !important;
   direction: inherit !important;
-}
-
-.theater-help-column {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 20px !important;
-  min-width: 0 !important;
-}
-
-@media (max-width: 680px) {
-  .theater-help-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 .theater-help-group {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
+  break-inside: avoid !important;
+  margin: 0 0 24px !important;
   direction: inherit !important;
-}
-
-.theater-help-group + .theater-help-group {
-  border-top: 1px solid var(--appearance-border, rgba(63, 63, 70, 0.5)) !important;
-  padding-top: 16px !important;
 }
 
 .theater-help-group-title {
+  margin: 0 0 2px !important;
   font-size: 11px !important;
   font-weight: 700 !important;
+  line-height: 1.4 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.08em !important;
-  color: var(--appearance-muted, #a1a1aa) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  margin-bottom: 2px !important;
+  color: var(--accent-color, #6366f1) !important;
   text-align: start !important;
 }
 
+.theater-help-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* The label keeps at least 40% of the row; the keys take the rest and wrap between bindings, never inside one. */
 .theater-help-row {
-  display: flex !important;
-  justify-content: space-between !important;
+  display: grid !important;
+  grid-template-columns: minmax(40%, 1fr) auto !important;
   align-items: center !important;
-  gap: 12px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  column-gap: 16px !important;
+  box-sizing: border-box !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  border-bottom: 1px solid var(--appearance-border, rgba(63, 63, 70, 0.5)) !important;
   direction: inherit !important;
 }
 
+.theater-help-row:last-child { border-bottom: 0 !important; }
+
 .theater-help-label {
+  margin: 0 !important;
   min-width: 0 !important;
-  overflow-wrap: anywhere !important;
+  overflow-wrap: break-word !important;
   font-size: 13px !important;
+  line-height: 1.35 !important;
   color: var(--appearance-ink, #d4d4d8) !important;
   font-weight: 500 !important;
   text-align: start !important;
 }
 
-.theater-help-key-wrapper {
+/* Caps read left to right in every locale; the row's direction still puts them at its outer edge. */
+.theater-help-keys {
+  margin: 0 !important;
+  min-width: 0 !important;
+  display: flex !important;
   flex-wrap: wrap !important;
   justify-content: flex-end !important;
-  max-width: 60% !important;
-  display: flex !important;
   align-items: center !important;
-  gap: 4px !important;
-  flex-shrink: 0 !important;
+  gap: 4px 6px !important;
   color: var(--appearance-muted, #71717a) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
@@ -1958,22 +1956,57 @@ button.theater-time-end:focus-visible,
   unicode-bidi: isolate !important;
 }
 
-.theater-help-key-wrapper kbd {
+.theater-help-row:dir(rtl) .theater-help-keys { justify-content: flex-start !important; }
+
+.theater-help-binding {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+}
+
+.theater-help-or, .theater-help-unassigned {
+  color: var(--appearance-muted, #a1a1aa) !important;
+  font-size: 12px !important;
+}
+
+.theater-help-keys kbd, .theater-help-hint kbd {
+  display: inline-block !important;
   background-color: #27272a !important;
   border: 1px solid #3f3f46 !important;
   border-bottom: 2px solid #3f3f46 !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
   color: var(--appearance-ink, #f4f4f5) !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
-  padding: 3px 8px !important;
+  padding: 4px 8px !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1 !important;
   white-space: nowrap !important;
-  min-inline-size: 1.6em !important;
+  min-inline-size: 2em !important;
   box-sizing: border-box !important;
   text-align: center !important;
+}
+
+.theater-help-hint {
+  margin: 10px 0 0 !important;
+  padding: 10px 12px !important;
+  border-inline-start: 3px solid var(--accent-color, #6366f1) !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, var(--accent-color, #6366f1) 10%, transparent) !important;
+  color: var(--appearance-muted, #a1a1aa) !important;
+  font-size: 12.5px !important;
+  line-height: 1.9 !important;
+  text-align: start !important;
+}
+
+.theater-help-hint kbd {
+  padding: 3px 6px !important;
+  font-size: 11px !important;
+  min-inline-size: 1.8em !important;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
 }
 
 /* Volume level overlay HUD */

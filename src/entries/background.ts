@@ -1,4 +1,4 @@
-import { isOpenOptionsRequest } from '../protocol/options-page';
+import { isOpenOptionsRequest, type OptionsSection } from '../protocol/options-page';
 import { createFeatureHighlightsLifecycle } from '../feature-highlights-lifecycle';
 import { loadLanguageCatalog } from '../platform/locale-catalog';
 import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
@@ -113,6 +113,36 @@ const shortcutUpdates = createShortcutUpdateQueue({
 
 const highlights = createFeatureHighlightsLifecycle(chrome.storage.local, chrome.runtime.getManifest().version, Date.now);
 
+/**
+ * Settings, optionally at one tab. An open Settings tab is reused and moved to the section (the page follows
+ * `hashchange` without reloading); `openOptionsPage` cannot take a hash, so a section otherwise opens a new tab.
+ * Requests run one after another so two quick clicks cannot both find no tab and open two.
+ */
+let optionsRequests: Promise<unknown> = Promise.resolve();
+function openOptionsPage(section?: OptionsSection): Promise<void> {
+  const request = optionsRequests.then(() => openOptionsPageNow(section));
+  optionsRequests = request.catch(() => {});
+  return request;
+}
+
+async function openOptionsPageNow(section?: OptionsSection): Promise<void> {
+  const file = chrome.runtime.getManifest().options_ui?.page;
+  if (!section || !file) return chrome.runtime.openOptionsPage();
+  const page = chrome.runtime.getURL(file);
+  const url = `${page}#${section}`;
+  const open = (await chrome.tabs.query({})).find(tab => tab.url?.split('#')[0] === page);
+  if (open?.id !== undefined) {
+    try {
+      await chrome.tabs.update(open.id, { url, active: true });
+      await chrome.windows.update(open.windowId, { focused: true });
+      return;
+    } catch {
+      // The tab or its window closed since the query: open a fresh one instead of failing the click.
+    }
+  }
+  await chrome.tabs.create({ url });
+}
+
 chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.MessageSender, sendResponse: any) => {
   if (message?.action === 'feature-highlights') {
     const operations: Record<string, () => Promise<unknown>> = {
@@ -150,7 +180,7 @@ chrome.runtime.onMessage.addListener((message: any, _sender: chrome.runtime.Mess
   }
   if (message && message.action === 'open-options-page') {
     if (_sender.id !== chrome.runtime.id || !isOpenOptionsRequest(message)) return false;
-    chrome.runtime.openOptionsPage()
+    openOptionsPage(message.section)
       .then(() => sendResponse({ ok: true }))
       .catch((error: unknown) => {
         console.error('[Theater Everywhere] Error opening options page:', error);

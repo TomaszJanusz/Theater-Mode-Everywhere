@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Auto"
+  },
+  "helpGroupPlayback": {
+    "message": "Reprodução"
+  },
+  "helpGroupLayout": {
+    "message": "Imagem e disposição"
+  },
+  "helpSeek": {
+    "message": "Retroceder / avançar (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Vídeo anterior / próximo"
+  },
+  "helpFrameStep": {
+    "message": "Quadro anterior / próximo"
+  },
+  "helpVolume": {
+    "message": "Diminuir / aumentar volume (5%)"
+  },
+  "helpSubtitleSize": {
+    "message": "Diminuir / aumentar legendas"
+  },
+  "helpNavigateControls": {
+    "message": "Mover entre controles"
+  },
+  "helpNavigationHint": {
+    "message": "$1 abre a barra de controles no botão de configurações. Em um botão de menu, $1 abre o menu e $2 a partir da última linha o fecha. $3 encerra a navegação.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Personalizar atalhos"
   }
 }

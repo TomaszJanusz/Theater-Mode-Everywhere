@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "自动"
+  },
+  "helpGroupPlayback": {
+    "message": "播放"
+  },
+  "helpGroupLayout": {
+    "message": "画面与布局"
+  },
+  "helpSeek": {
+    "message": "后退 / 前进（5 秒）"
+  },
+  "helpPreviousNext": {
+    "message": "上一个 / 下一个视频"
+  },
+  "helpFrameStep": {
+    "message": "后退 / 前进一帧"
+  },
+  "helpVolume": {
+    "message": "降低 / 提高音量（5%）"
+  },
+  "helpSubtitleSize": {
+    "message": "缩小 / 增大字幕"
+  },
+  "helpNavigateControls": {
+    "message": "在控件间移动"
+  },
+  "helpNavigationHint": {
+    "message": "按 $1 从设置按钮进入控制栏。在菜单按钮上按 $1 打开菜单，在菜单最底行按 $2 关闭菜单。按 $3 结束导航。",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "自定义快捷键"
   }
 }

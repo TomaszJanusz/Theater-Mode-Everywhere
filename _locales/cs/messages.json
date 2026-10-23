@@ -1167,5 +1167,46 @@
   },
   "appearanceAuto": {
     "message": "Automaticky"
+  },
+  "helpGroupPlayback": {
+    "message": "Přehrávání"
+  },
+  "helpGroupLayout": {
+    "message": "Obraz a rozložení"
+  },
+  "helpSeek": {
+    "message": "Zpět / vpřed (5 s)"
+  },
+  "helpPreviousNext": {
+    "message": "Předchozí / další video"
+  },
+  "helpFrameStep": {
+    "message": "Předchozí / další snímek"
+  },
+  "helpVolume": {
+    "message": "Snížit / zvýšit hlasitost (5 %)"
+  },
+  "helpSubtitleSize": {
+    "message": "Zmenšit / zvětšit titulky"
+  },
+  "helpNavigateControls": {
+    "message": "Pohyb mezi ovládacími prvky"
+  },
+  "helpNavigationHint": {
+    "message": "$1 otevře ovládací panel na tlačítku nastavení. Na tlačítku nabídky $1 nabídku otevře a $2 z jejího spodního řádku ji zavře. $3 navigaci ukončí.",
+    "placeholders": {
+      "up": {
+        "content": "$1"
+      },
+      "down": {
+        "content": "$2"
+      },
+      "escape": {
+        "content": "$3"
+      }
+    }
+  },
+  "helpCustomizeShortcuts": {
+    "message": "Upravit zkratky"
   }
 }
