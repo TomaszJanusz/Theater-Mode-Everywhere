@@ -168,6 +168,8 @@ overrides:
   postcss: 8.5.23
   source-map-js: 1.2.2
 
+packageExtensionsChecksum: sha256-beavCqdeje2sh4QnNGwjhGrlqaUTkJMJaLWvJxF9Ups=
+
 patchedDependencies:
   '@privacy-thing/brand@0.2.1': 5785d554a258eb381ac547dae57fce6b63e33793427d19d47fba396fb703abfc
   '@storybook/addon-vitest@10.6.2': 62af1d236ac9c3db61e1c85ec6f9f098d611e6ba7a2fb2cb982b822c5b29f142
@@ -218,7 +220,7 @@ importers:
         version: 7.0.1
       dependency-cruiser:
         specifier: ^18.7.0
-        version: 18.7.0
+        version: 18.7.0(@typescript/typescript6@6.0.2)
       esbuild:
         specifier: ^0.25.0
         version: 0.25.12
@@ -1691,6 +1693,8 @@ packages:
     resolution: {integrity: sha512-WexT4OswA6Gy86ms2J7SJ4FJscN43dyS+i5skpbtXlPTFQW4yWbontjFip1TOBAVnc+U+9zdH0a56YTRZX/IGw==}
     engines: {node: ^22||^24||>=26}
     hasBin: true
+    peerDependencies:
+      typescript: '>=2.0.0 <7.0.0'
 
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
@@ -3748,7 +3752,7 @@ snapshots:
 
   define-lazy-prop@3.0.0: {}
 
-  dependency-cruiser@18.7.0:
+  dependency-cruiser@18.7.0(@typescript/typescript6@6.0.2):
     dependencies:
       acorn: 8.19.0
       acorn-jsx: 5.3.2(acorn@8.19.0)
@@ -3767,6 +3771,7 @@ snapshots:
       safe-regex: 2.1.1
       semver: 7.8.5
       tsconfig-paths-webpack-plugin: 4.2.0
+      typescript: '@typescript/typescript6@6.0.2'
       watskeburt: 6.0.0
 
   dequal@2.0.3: {}

@@ -35,3 +35,9 @@ patchedDependencies:
   # Interaction tests only: hide addon coverage and ignore its saved toggle. 10.6.2 has no disable option;
   # its reporter's require(ESM) export is incompatible with Vitest 5's dynamic-import reporter loader.
   '@storybook/addon-vitest@10.6.2': patches/@storybook__addon-vitest@10.6.2.patch
+packageExtensions:
+  # dependency-cruiser parses TypeScript only when it can resolve `typescript` from its own
+  # directory; with the shared virtual store it otherwise cruises nothing and reports no violations.
+  dependency-cruiser:
+    peerDependencies:
+      typescript: '>=2.0.0 <7.0.0'

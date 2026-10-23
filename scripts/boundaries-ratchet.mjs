@@ -41,6 +41,8 @@ function analyze() {
   assert.ifError(result.error);
   // depcruise exits non-zero when it reports violations, so judge its JSON, not its status.
   const report = JSON.parse(result.stdout);
+  // Without a TypeScript parser depcruise silently cruises nothing; never mistake that for "all fixed".
+  assert.ok(report.summary.totalCruised > 0, 'dependency-cruiser analysed no modules; is typescript resolvable from it?');
   return report.summary.violations.filter(violation => violation.rule.severity === 'error');
 }
 
