@@ -58,7 +58,7 @@ test('forwards arguments verbatim to the child process without a shell', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, process.execPath);
     assert.equal(calls[0].options.shell, undefined);
-    assert.deepEqual(calls[0].args.slice(1), ['--test', '--test-concurrency=2', '--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
+    assert.deepEqual(calls[0].args.slice(1), ['--test', '--test-concurrency=2', '--test-force-exit', '--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

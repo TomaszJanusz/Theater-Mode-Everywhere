@@ -70,6 +70,8 @@ function run(spawn, args, label) {
   return 0;
 }
 
+// `--test-force-exit` ends the runner once every test has reported, so a leaked browser or server
+// turns into an attributed result (and a written report) instead of a hang until the CI step times out.
 function runTsxTests(spawn, plan, root, reportDirectory) {
   // Static-preview tests need a fresh production Storybook, including in selected CI lanes.
   // Build once before starting test workers so parallel files cannot race over the output.
@@ -79,7 +81,7 @@ function runTsxTests(spawn, plan, root, reportDirectory) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...reporterFlags('tsx', reportDirectory), ...plan.flags, ...plan.files], 'tsx');
+  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', '--test-force-exit', ...reporterFlags('tsx', reportDirectory), ...plan.flags, ...plan.files], 'tsx');
 }
 
 function reporterFlags(label, directory) {
