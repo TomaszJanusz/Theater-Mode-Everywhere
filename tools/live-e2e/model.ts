@@ -27,3 +27,6 @@ export interface QuarantineEntry {
   expires: string;
   reason: string;
 }
+
+/** Reserved issue id for the lane itself (build or run produced nothing), as opposed to a page type. */
+export const LANE_ID = 'lane';

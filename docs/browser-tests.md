@@ -314,7 +314,7 @@ removed/moved coverage.
 `.github/workflows/live-e2e.yml` runs nightly (and on dispatch) against real public
 pages to catch host DOM or API changes before users do. It is never a required check
 and never runs on pull requests, so PR CI does not depend on third-party sites. It
-builds `main`, installs the unpacked Chromium build in a fresh profile per attempt,
+builds the ref it runs on (`main` for the schedule), installs the unpacked Chromium build in a fresh profile per attempt,
 and runs [`tools/live-e2e`](../tools/live-e2e).
 
 - **Targets are private.** The page types and URLs come from the `LIVE_E2E_TARGETS`
@@ -330,15 +330,18 @@ and runs [`tools/live-e2e`](../tools/live-e2e).
   unreachable page. Those results are `skipped` (environment), not `failed`. A
   skipped night neither opens nor closes an issue.
 - **Retry and evidence.** A failing page type is retried once, in a fresh profile; only
-  this lane retries. Every failed attempt keeps a trace and a video in the
-  `live-e2e-out` artifact (7 days; for a public repository, assume it is readable by
-  anyone signed in to GitHub, and that traces show the target URLs).
+  this lane retries. The repository is public, so nothing that can show a target is
+  published: no trace, video or screenshot is kept, and every URL, host and path of a
+  target is replaced by its `pageType` in logs, `results.json` (the only artifact, 7 days)
+  and issue text. The workflow also `::add-mask::`s each target's URL and host before any
+  output. To investigate a failure, run the lane locally with the private list.
 - **Quarantine.** `tools/live-e2e/quarantine.json` lists page types to skip, each with
   an `owner`, an `expires` date (`YYYY-MM-DD`) and a `reason`. An expired entry fails
   the run instead of hiding the page type for good.
 - **Alerting.** One rolling issue (`Live E2E: <pageType>`, label `live-e2e`) per failing
   page type is created or updated by the workflow's `alert` job, the only job with
-  `issues: write`. It closes itself after three consecutive green nights.
+  `issues: write`. It closes itself after three consecutive green nights. A failed build or
+  a live job that wrote no results opens `Live E2E: lane` the same way.
 
 Locally, `tools/live-e2e/live-e2e.browser.test.ts` runs the same runner against a
 fixture server (a generic player page and pages standing in for each environment

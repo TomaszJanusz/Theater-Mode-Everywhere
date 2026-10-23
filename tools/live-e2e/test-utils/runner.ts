@@ -2,6 +2,7 @@ import type { Page } from 'playwright';
 
 import { classifyPage, type PageKind } from '../classify';
 import type { QuarantineEntry, SpecResult, Target } from '../model';
+import { redactorFor } from '../redact';
 
 import { collectSignals } from './signals';
 import { SPECS } from './specs';
@@ -21,9 +22,16 @@ function skipAll(target: Target, detail: string): SpecResult[] {
 /**
  * Navigates, classifies the page, and only then runs the target's specs. An environment
  * problem (consent wall, challenge, geo block, ad break) or a quarantined page type yields
- * `skipped` results with the reason, never `failed`.
+ * `skipped` results with the reason, never `failed`. Details are redacted of the target's URL and host.
  */
-export async function runTarget(page: Page, target: Target, { afterNavigate, quarantine = [] }: RunTargetOptions = {}): Promise<SpecResult[]> {
+export async function runTarget(page: Page, target: Target, options: RunTargetOptions = {}): Promise<SpecResult[]> {
+  // Navigation and Playwright errors quote the URL; a result never leaves here naming the target.
+  const redact = redactorFor([target]);
+  const results = await checkTarget(page, target, options);
+  return results.map(result => result.detail === undefined ? result : { ...result, detail: redact(result.detail) });
+}
+
+async function checkTarget(page: Page, target: Target, { afterNavigate, quarantine = [] }: RunTargetOptions): Promise<SpecResult[]> {
   const held = quarantine.find(entry => entry.pageType === target.pageType);
   if (held) return skipAll(target, `quarantined until ${held.expires} (owner ${held.owner}): ${held.reason}`);
 

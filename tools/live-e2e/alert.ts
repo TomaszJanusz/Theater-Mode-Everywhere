@@ -1,3 +1,5 @@
+import { scrubUrls } from './redact';
+
 /** The rolling-issue state machine: one issue per failing page type, closed after enough green nights. */
 export const GREEN_NIGHTS_TO_CLOSE = 3;
 export const ISSUE_LABEL = 'live-e2e';
@@ -10,6 +12,11 @@ export type Action =
   | { type: 'update'; number: number; body: string }
   | { type: 'comment'; number: number; body: string }
   | { type: 'close'; number: number };
+
+/** The failing specs of a page type as issue text; URLs are scrubbed because the issue is public. */
+export function failureDetail(specs: ReadonlyArray<{ capability: string; status: string; detail?: string }>): string {
+  return scrubUrls(specs.filter(s => s.status === 'failed').map(s => `- ${s.capability}: ${s.detail ?? 'failed'}`).join('\n'));
+}
 
 export const issueTitle = (pageType: string): string => `Live E2E: ${pageType}`;
 const MARKER = /<!-- live-e2e-green: (\d+) -->/;

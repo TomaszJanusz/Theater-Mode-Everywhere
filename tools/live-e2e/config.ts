@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { CAPABILITIES, type Capability, type QuarantineEntry, type Target } from './model';
+import { CAPABILITIES, LANE_ID, type Capability, type QuarantineEntry, type Target } from './model';
 
 /** The lane's only retry: one second attempt per target, never more. */
 export const RETRIES = 1;
@@ -22,6 +22,7 @@ export function parseTargets(raw: string | undefined): Target[] {
     if (!isRecord(entry)) throw new Error(`target ${index} must be an object`);
     const pageType = text(entry.pageType, `target ${index} pageType`);
     if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(pageType)) throw new Error(`target ${index} pageType must be a short kebab-case id`);
+    if (pageType === LANE_ID) throw new Error(`pageType ${LANE_ID} is reserved for the lane's own health`);
     if (seen.has(pageType)) throw new Error(`duplicate pageType ${pageType}`);
     seen.add(pageType);
     const url = text(entry.url, `${pageType} url`);

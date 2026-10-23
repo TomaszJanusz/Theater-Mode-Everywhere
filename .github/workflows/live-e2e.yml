@@ -1,6 +1,6 @@
 name: Live E2E
 
-# Nightly, non-blocking lane: the built extension from main against real public pages
+# Nightly, non-blocking lane: the built extension from the triggering ref (main for the schedule) against real public pages
 # whose URLs live in the LIVE_E2E_TARGETS secret (docs/browser-tests.md). Never runs on
 # pull requests and is not a required check; a red run opens or updates a rolling issue.
 on:
@@ -17,14 +17,13 @@ concurrency:
 
 jobs:
   build:
-    name: Build main
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: main
           persist-credentials: false
       - name: Set up dependencies
         uses: $/.github/actions/setup
@@ -50,10 +49,9 @@ jobs:
     outputs:
       configured: ${{ steps.config.outputs.configured }}
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: main
           persist-credentials: false
       - name: Check private target list
         id: config
@@ -84,7 +82,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm exec tsx tools/live-e2e/test-utils/run.ts dist/chrome-unpacked live-e2e-out
         env:
           LIVE_E2E_TARGETS: ${{ secrets.LIVE_E2E_TARGETS }}
-      - name: Upload results, traces and videos
+      # Results only: the repository is public, so no trace, video or screenshot of a private target is uploaded.
+      - name: Upload results
         if: ${{ !cancelled() && steps.config.outputs.configured == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -95,22 +94,23 @@ jobs:
 
   alert:
     name: Update rolling issues
-    needs: live
-    if: ${{ !cancelled() && needs.live.outputs.configured == 'true' }}
+    needs: [build, live]
+    # A failed build skips `live`; it still has to be reported, or the nightly goes dark unnoticed.
+    if: ${{ !cancelled() && (needs.build.result == 'failure' || needs.live.outputs.configured == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       issues: write
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: main
           persist-credentials: false
       - name: Set up dependencies
         uses: $/.github/actions/setup
       - name: Download results
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: live-e2e-out
@@ -120,4 +120,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          BUILD_RESULT: ${{ needs.build.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
