@@ -2,19 +2,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-// Release can check out an older tag without our local action. Its inline
-// fallback must provide exactly the same Linux audio backend as PR/nightly CI.
-test('tag-pinned releases keep virtual audio setup in sync with CI and nightly', () => {
+// The self-repository action reference resolves at the workflow commit even
+// when release checks out an older tag that lacks the action.
+test('CI and tag-pinned releases use the shared audio setup', () => {
   const action = readFileSync(new URL('../.github/actions/virtual-audio/action.yml', import.meta.url), 'utf8');
+  const setup = readFileSync(new URL('../.github/actions/setup/action.yml', import.meta.url), 'utf8');
   const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
   const script = action.split('      run: |\n')[1].trim().split('\n').map(line => line.trim()).join('\n');
-  const releaseScript = release.split('      - name: Start virtual audio device\n')[1]
-    .split('        run: |\n')[1].split('\n\n')[0].trim().split('\n').map(line => line.trim()).join('\n');
-  assert.equal(releaseScript, script);
-  for (const workflow of ['ci', 'nightly']) {
-    const source = readFileSync(new URL(`../.github/workflows/${workflow}.yml`, import.meta.url), 'utf8');
-    assert.match(source, /uses: \.\/\.github\/actions\/virtual-audio/);
-  }
+  const setupScript = setup.split('    - name: Start virtual audio device\n')[1]
+    .split('      run: |\n')[1].trim().split('\n').map(line => line.trim()).join('\n');
+  assert.equal(setupScript, script);
+  assert.match(release, /uses: \$\/\.github\/actions\/setup/);
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(ci, /uses: \$\/\.github\/actions\/setup/);
+  const nightly = readFileSync(new URL('../.github/workflows/nightly.yml', import.meta.url), 'utf8');
+  assert.match(nightly, /uses: \.\/\.github\/actions\/virtual-audio/);
 });
 
 test('nightly runs the unrestricted default suite on main and dev and reports blocking suite/smoke outcomes', () => {

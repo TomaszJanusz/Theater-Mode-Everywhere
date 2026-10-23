@@ -58,7 +58,27 @@ test('forwards arguments verbatim to the child process without a shell', () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].command, process.execPath);
     assert.equal(calls[0].options.shell, undefined);
-    assert.deepEqual(calls[0].args.slice(1), ['--test', '--test-concurrency=2', '--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
+    assert.deepEqual(calls[0].args.slice(1), ['--test', '--test-concurrency=2', '--test-force-exit', '--test-name-pattern=it "x" & y | $HOME', 'a b.test.ts']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('JUnit reporting is opt-in and does not pass its option to Node', () => {
+  const root = mkdtempSync(join(tmpdir(), 'run-tests-report-'));
+  try {
+    writeFileSync(join(root, 'sample.test.mjs'), '');
+    const calls = [];
+    const reportDirectory = join(root, 'reports');
+    assert.equal(main([`--report-dir=${reportDirectory}`], root, (_command, args) => {
+      calls.push(args);
+      return { status: 0 };
+    }), 0);
+    assert.deepEqual(calls[0], [
+      '--test', '--test-reporter=spec', '--test-reporter-destination=stdout',
+      '--test-reporter=junit', `--test-reporter-destination=${join(reportDirectory, 'node.xml')}`,
+      'sample.test.mjs',
+    ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

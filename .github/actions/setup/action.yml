@@ -1,0 +1,57 @@
+name: Set up CI dependencies
+description: Install the pinned Node and pnpm toolchain, optional Playwright browsers, and optional audio sink
+inputs:
+  engines:
+    description: Space-separated Playwright engines to install (chromium, firefox), or empty
+    required: false
+    default: ''
+  audio:
+    description: Start a PulseAudio null sink for native Firefox Web Audio
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+    - name: Set up Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: 22
+        cache: pnpm
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+    - name: Cache Playwright browsers
+      if: inputs.engines != ''
+      uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ inputs.engines }}-${{ hashFiles('pnpm-lock.yaml') }}
+    - name: Configure apt retries
+      if: inputs.engines != '' || inputs.audio == 'true'
+      shell: bash
+      # Mirror stalls otherwise hold `playwright install --with-deps` until the step times out.
+      run: |
+        printf '%s\n' 'Acquire::Retries "3";' 'Acquire::http::Timeout "20";' 'Acquire::https::Timeout "20";' |
+          sudo tee /etc/apt/apt.conf.d/80-ci-resilience >/dev/null
+    - name: Install Playwright browsers
+      if: inputs.engines != ''
+      shell: bash
+      env:
+        ENGINES: ${{ inputs.engines }}
+      run: |
+        read -r -a engines <<< "$ENGINES"
+        for engine in "${engines[@]}"; do
+          case "$engine" in chromium|firefox) ;; *) echo "Invalid browser: $engine" >&2; exit 1 ;; esac
+        done
+        pnpm exec playwright install --with-deps "${engines[@]}"
+    - name: Start virtual audio device
+      if: inputs.audio == 'true'
+      shell: bash
+      run: |
+        sudo apt-get install --no-install-recommends -y pulseaudio
+        pulseaudio --start --exit-idle-time=-1
+        pactl load-module module-null-sink sink_name=theater_tests rate=48000
+        pactl set-default-sink theater_tests
+        pactl list short sinks
