@@ -3,6 +3,7 @@ import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlaybac
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
+import { parseProbeRequest } from '../protocol/page-requests';
 import { createWorldMessage, isSameWindowMessage, readWorldEnvelope, type WorldEnvelope } from '../protocol/world-messages';
 import { readBilibiliSnapshot, bilibiliIntegrationEnabled } from '../providers/bilibili/main';
 import { installBilibiliNavigation } from '../providers/bilibili/navigation';
@@ -451,7 +452,8 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);
 
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
-    const requestId = (event as CustomEvent<{ requestId?: number }>).detail?.requestId;
+    const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
+    if (requestId === null) return;
     let youtube: Record<string, unknown> | null = null;
     let vimeo: Record<string, unknown> | null = null;
     let patreon: Record<string, unknown> | null = null;
