@@ -28,11 +28,15 @@ jobs:
 
       - name: Determine Tag Name
         timeout-minutes: 1
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "RELEASE_TAG=${{ inputs.tag_name }}" >> "$GITHUB_ENV"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "RELEASE_TAG=$INPUT_TAG" >> "$GITHUB_ENV"
           else
-            echo "RELEASE_TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
+            echo "RELEASE_TAG=$REF_NAME" >> "$GITHUB_ENV"
           fi
 
       - name: Validate Release Tag
@@ -44,6 +48,8 @@ jobs:
             exit 1
           fi
 
+      # `$/` resolves the action from the commit that holds this workflow, not from the
+      # tag checked out below, so a release of a tag older than the action still finds it.
       - name: Set up tag creation
         if: github.event_name == 'workflow_dispatch'
         uses: $/.github/actions/setup
@@ -52,6 +58,8 @@ jobs:
       - name: Create, Bump version and Push Tag (Manual Run)
         if: github.event_name == 'workflow_dispatch'
         timeout-minutes: 5
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -59,11 +67,11 @@ jobs:
           # Fetch existing tags
           git fetch --tags
           
-          if git rev-parse --verify "refs/tags/${{ env.RELEASE_TAG }}^{commit}" >/dev/null 2>&1; then
-            echo "Tag ${{ env.RELEASE_TAG }} already exists. Skipping version bump and tag creation."
+          if git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null 2>&1; then
+            echo "Tag ${RELEASE_TAG} already exists. Skipping version bump and tag creation."
           else
             # Strip leading 'v' if present (e.g. v1.0.0 -> 1.0.0)
-            VERSION_NUMBER=$(echo "${{ env.RELEASE_TAG }}" | sed 's/^v//')
+            VERSION_NUMBER=$(echo "${RELEASE_TAG}" | sed 's/^v//')
             echo "Bumping version in package.json and manifest.json to $VERSION_NUMBER..."
             
             # Bump version in package.json
@@ -102,12 +110,12 @@ jobs:
             git commit -m "chore(release): bump version to $VERSION_NUMBER and update changelog"
             
             # Push changes back to the triggering branch
-            git push origin HEAD:${{ github.ref_name }}
+            git push origin HEAD:"$BRANCH_NAME"
             
             # Tag the new commit and push tag
-            echo "Creating and pushing tag ${{ env.RELEASE_TAG }}..."
-            git tag "${{ env.RELEASE_TAG }}"
-            git push origin "${{ env.RELEASE_TAG }}"
+            echo "Creating and pushing tag ${RELEASE_TAG}..."
+            git tag "${RELEASE_TAG}"
+            git push origin "${RELEASE_TAG}"
           fi
 
       - name: Pin release to tag SHA
@@ -128,9 +136,11 @@ jobs:
           echo "RELEASE_SHA=$RELEASE_SHA" >> "$GITHUB_ENV"
           echo "Building ${RELEASE_TAG} from $RELEASE_SHA"
 
+      # A stall here is safe to re-run: the tag already exists, so the manual-run step
+      # above skips the bump. The timeout leaves room for a cold browser and apt install.
       - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
-        timeout-minutes: 10
+        timeout-minutes: 20
         with:
           engines: chromium firefox
           audio: 'true'
@@ -182,7 +192,7 @@ jobs:
       - name: Extract Release Notes
         timeout-minutes: 2
         run: |
-          VERSION_NUMBER=$(echo "${{ env.RELEASE_TAG }}" | sed 's/^v//')
+          VERSION_NUMBER=$(echo "${RELEASE_TAG}" | sed 's/^v//')
           pnpm tsx scripts/extract-changelog.ts "$VERSION_NUMBER"
 
       - name: Create GitHub Release
@@ -190,11 +200,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ env.RELEASE_TAG }}" \
+          gh release create "${RELEASE_TAG}" \
             dist/theater-everywhere-chrome.zip \
             dist/theater-everywhere-firefox.zip \
             dist/build-info.json \
-            --title "Release ${{ env.RELEASE_TAG }}" \
+            --title "Release ${RELEASE_TAG}" \
             --notes-file dist/release_notes.md
 
       - name: Create source archive for AMO review
