@@ -369,11 +369,6 @@
       "count": 1
     }
   },
-  "scripts/verify-bundles.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
   "scripts/workflow-audio.test.mjs": {
     "no-regex-spaces": {
       "count": 1

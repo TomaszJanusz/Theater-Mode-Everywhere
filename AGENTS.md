@@ -63,7 +63,7 @@ Use the smallest useful proof. Broaden checks when risk crosses shared contracts
 - **Builds:** bundling, entrypoint, manifest and packaging changes warrant `pnpm build` and `pnpm verify:bundles`. A build does not establish type safety.
 - **Smoke:** run or extend smoke tests only for a named integration risk narrower checks cannot establish, such as installed startup, script-world wiring or iframe entry/exit. Reuse fixtures and build before `pnpm smoke:chromium` or `pnpm smoke:firefox`.
 - **Local browser setup:** see [`docs/browser-tests.md`](docs/browser-tests.md) for matching Playwright builds and the macOS 27 Firefox app-data access workaround.
-- **Real hosts:** verify host-dependent behavior with the intended extension build and active theater/RTE state. Capture screenshots for appearance, video for timing when useful. Fixture checks do not prove authenticated host behavior; diagnostic injection is not an installed-extension pass.
+- **Real hosts:** verify host-dependent behavior with the intended extension build and active theater/RTE state. Capture screenshots for appearance, video for timing when useful. Fixture checks do not prove authenticated host behavior; diagnostic injection is not an installed-extension pass. Recorded host fixtures (`test/host-fixtures`) are still fixture evidence; PRs label which kind they provide.
 - **Finish:** run `git diff --check`. Report skips and coverage gaps. Repeat successful checks only after relevant edits or new evidence.
 
 ## Storybook

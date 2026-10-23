@@ -1,0 +1,345 @@
+{
+ "format": "te-host-fixture/1",
+ "id": "twitch-chat-expanded",
+ "service": "twitch",
+ "capture": {
+  "date": "2026-10-23",
+  "extensionVersion": "2.0.5 (build 0.26.1023.1802)",
+  "hostVersion": "81013369-8d12-427f-9e90-0a426b985619",
+  "browser": "Chromium 153.0.0.0",
+  "method": "tools/host-fixtures/test-utils/capture.ts twitch-chat-expanded: public live channel page, logged out, chat expanded (host default), before theater entry; installed unpacked Chromium build, fresh profile, automatic sanitization"
+ },
+ "viewport": {
+  "width": 1600,
+  "height": 900
+ },
+ "signature": {
+  "column": {
+   "count": 1,
+   "rendered": false,
+   "transformed": false,
+   "within": []
+  },
+  "shell": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "column"
+   ]
+  },
+  "section": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "column",
+    "shell"
+   ]
+  },
+  "toggle": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "column"
+   ]
+  },
+  "video": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": []
+  }
+ },
+ "dom": {
+  "tag": "body",
+  "style": "display:flex;position:relative;top:0px;left:0px;width:1600px;height:900px;flex-direction:column;overflow:hidden",
+  "children": [
+   {
+    "tag": "div",
+    "attrs": {
+     "id": "root",
+     "class": "root"
+    },
+    "style": "display:flex;position:relative;top:0px;left:0px;width:1600px;height:900px;flex-direction:column",
+    "children": [
+     {
+      "tag": "div",
+      "attrs": {
+       "class": "Layout-sc-1xcs6mc-0 ioqHeC"
+      },
+      "style": "display:flex;position:absolute;top:0px;left:0px;width:1600px;height:900px;flex-direction:column;overflow:hidden",
+      "children": [
+       {
+        "tag": "div",
+        "attrs": {
+         "class": "Layout-sc-1xcs6mc-0 fkkvRk"
+        },
+        "style": "display:flex;width:1600px;height:900px;flex-direction:column",
+        "children": [
+         {
+          "tag": "div",
+          "attrs": {
+           "class": "Layout-sc-1xcs6mc-0 hyqqEQ"
+          },
+          "style": "display:flex;position:relative;top:0px;left:0px;width:1600px;height:657px;flex-direction:row;overflow:hidden",
+          "children": [
+           {
+            "tag": "main",
+            "attrs": {
+             "class": "dUtJpw twilight-main"
+            },
+            "style": "display:flex;position:relative;top:0px;left:0px;width:1360px;height:657px;flex-direction:column;overflow:hidden",
+            "children": [
+             {
+              "tag": "div",
+              "attrs": {
+               "class": "scrollable-area root-scrollable root-scrollable__content",
+               "data-a-target": "root-scroller"
+              },
+              "style": "display:flex;position:relative;top:0px;left:0px;width:1360px;height:657px;flex-direction:row",
+              "children": [
+               {
+                "tag": "div",
+                "attrs": {
+                 "class": "Layout-sc-1xcs6mc-0 eDiLRr root-scrollable__wrapper"
+                },
+                "style": "display:block;position:relative;top:0px;left:0px;width:1360px;height:657px",
+                "children": [
+                 {
+                  "tag": "div",
+                  "attrs": {
+                   "class": "persistent-player"
+                  },
+                  "style": "display:block;position:absolute;top:0px;left:0px;width:1020px;height:574px;transform:matrix(1, 0, 0, 1, 0, 0);overflow:hidden",
+                  "children": [
+                   {
+                    "tag": "div",
+                    "attrs": {
+                     "class": "jVFDMB tw-aspect"
+                    },
+                    "style": "display:block;position:relative;top:0px;left:0px;width:1020px;height:574px;overflow:hidden",
+                    "children": [
+                     {
+                      "tag": "div",
+                      "attrs": {
+                       "class": "Layout-sc-1xcs6mc-0 video-player",
+                       "data-a-target": "video-player",
+                       "data-test-selector": "video-player__video-layout"
+                      },
+                      "style": "display:block;position:absolute;top:0px;left:0px;width:1020px;height:574px",
+                      "children": [
+                       {
+                        "tag": "div",
+                        "attrs": {
+                         "class": "Layout-sc-1xcs6mc-0 ehakif video-player__container",
+                         "data-test-selector": "video-player__video-container"
+                        },
+                        "style": "display:block;position:absolute;top:0px;left:0px;width:1020px;height:574px;overflow:hidden",
+                        "children": [
+                         {
+                          "tag": "div",
+                          "attrs": {
+                           "class": "Layout-sc-1xcs6mc-0 video-ref",
+                           "data-a-target": "video-ref"
+                          },
+                          "style": "display:block;width:1020px;height:574px",
+                          "children": [
+                           {
+                            "tag": "video",
+                            "attrs": {
+                             "aria-label": "Recorded host textx"
+                            },
+                            "style": "display:block;position:absolute;top:0px;left:0px;width:1020px;height:574px"
+                           }
+                          ]
+                         }
+                        ]
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "attrs": {
+             "id": "fixture-id-1"
+            },
+            "style": "display:block;width:0px;height:657px",
+            "children": [
+             {
+              "tag": "div",
+              "attrs": {
+               "class": "Layout-sc-1xcs6mc-0 kaoNZj right-column right-column--beside",
+               "role": "complementary",
+               "aria-label": "Recorded hos",
+               "data-a-target": "right-column-chat-bar"
+              },
+              "style": "display:block;position:relative;top:0px;left:0px;width:0px;height:657px",
+              "children": [
+               {
+                "tag": "div",
+                "attrs": {
+                 "class": "Layout-sc-1xcs6mc-0 lgbpLE hFCRvl tw-root--theme-light"
+                },
+                "style": "display:block;width:0px;height:0px",
+                "children": [
+                 {
+                  "tag": "div",
+                  "attrs": {
+                   "class": "Layout-sc-1xcs6mc-0 kSrjLv right-column__toggle-visibility toggle-visibility__right-column toggle-visibility__right-column--expanded"
+                  },
+                  "style": "display:flex;position:absolute;top:3.5px;left:10px;width:32px;height:32px;transform:matrix(1, 0, 0, 1, -340, 0);flex-direction:row",
+                  "children": [
+                   {
+                    "tag": "div",
+                    "attrs": {
+                     "class": "bohlnR"
+                    },
+                    "style": "display:flex;width:32px;height:32px;flex-direction:row",
+                    "children": [
+                     {
+                      "tag": "button",
+                      "attrs": {
+                       "class": "fUHGSu jhFpVx",
+                       "aria-label": "Collapse Chat",
+                       "data-a-target": "right-column__toggle-collapse-btn"
+                      },
+                      "style": "display:flex;position:relative;top:0px;left:0px;width:32px;height:32px;flex-direction:row;overflow:hidden",
+                      "children": [
+                       {
+                        "tag": "div",
+                        "attrs": {
+                         "class": "jgYFuA"
+                        },
+                        "style": "display:block;width:20px;height:20px"
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               },
+               {
+                "tag": "div",
+                "attrs": {
+                 "class": "Layout-sc-1xcs6mc-0 dBNFxD"
+                },
+                "style": "display:block;position:relative;top:0px;left:0px;width:0px;height:657px",
+                "children": [
+                 {
+                  "tag": "aside",
+                  "attrs": {
+                   "id": "live-page-chat",
+                   "class": "Layout-sc-1xcs6mc-0 skip-to-target",
+                   "aria-hidden": "false",
+                   "aria-label": "Recorded ho"
+                  },
+                  "style": "display:block;width:0px;height:657px",
+                  "children": [
+                   {
+                    "tag": "div",
+                    "attrs": {
+                     "class": "channel-root__right-column channel-root__right-column--expanded"
+                    },
+                    "style": "display:flex;position:absolute;top:0px;left:0px;width:340px;height:657px;transform:matrix(1, 0, 0, 1, -340, 0);flex-direction:column",
+                    "children": [
+                     {
+                      "tag": "div",
+                      "attrs": {
+                       "class": "Layout-sc-1xcs6mc-0 blNlXS"
+                      },
+                      "style": "display:flex;width:340px;height:657px;flex-direction:column",
+                      "children": [
+                       {
+                        "tag": "div",
+                        "attrs": {
+                         "class": "Layout-sc-1xcs6mc-0 hIWzhZ chat-shell chat-shell__expanded"
+                        },
+                        "style": "display:block;width:340px;height:657px",
+                        "children": [
+                         {
+                          "tag": "div",
+                          "attrs": {
+                           "class": "Layout-sc-1xcs6mc-0 hJtYyR"
+                          },
+                          "style": "display:flex;width:340px;height:657px;flex-direction:column",
+                          "children": [
+                           {
+                            "tag": "div",
+                            "attrs": {
+                             "class": "Layout-sc-1xcs6mc-0 jUmLZD stream-chat"
+                            },
+                            "style": "display:flex;position:relative;top:0px;left:0px;width:340px;height:657px;flex-direction:column",
+                            "children": [
+                             {
+                              "tag": "section",
+                              "attrs": {
+                               "class": "cZjbEG chat-room",
+                               "data-a-target": "chat-theme-light",
+                               "data-test-selector": "chat-room-component-layout"
+                              },
+                              "style": "display:flex;width:340px;height:617px;flex-direction:column",
+                              "children": [
+                               {
+                                "tag": "div",
+                                "attrs": {
+                                 "class": "Layout-sc-1xcs6mc-0 jeukXd chat-room__content"
+                                },
+                                "style": "display:flex;position:relative;top:0px;left:0px;width:340px;height:617px;flex-direction:column"
+                               }
+                              ]
+                             }
+                            ]
+                           }
+                          ]
+                         }
+                        ]
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "media": {
+  "title": "Recorded host text Record",
+  "subtitle": null,
+  "mediaId": null,
+  "captionTracks": [],
+  "chapters": []
+ },
+ "playback": {
+  "live": true,
+  "paused": false,
+  "muted": true,
+  "duration": null
+ }
+}

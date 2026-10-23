@@ -642,33 +642,7 @@ describe('native chat controller', () => {
     }
   });
 
-  // Mirrors live Twitch: the column and its parent are zero-width and the visible shell is a translated descendant.
-  const twitchShell = (state: 'expanded' | 'collapsed') => `<div id="layout" style="width:800px"><div style="width:0"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0;position:relative"><div class="chat-shell${state === 'expanded' ? ' chat-shell__expanded' : ''}" style="position:absolute;top:0;width:${state === 'expanded' ? 340 : 0}px;height:200px;transform:translateX(-340px)"><section data-test-selector="chat-room-component-layout"></section></div></div></div></div><button data-a-target="right-column__toggle-collapse-btn" aria-label="${state === 'expanded' ? 'Collapse Chat' : 'Expand Chat'}"></button>`;
-
-  for (const state of ['expanded', 'collapsed'] as const) {
-    it(`reads ${state} Twitch chat behind a zero-width wrappers despite a saved hidden preference`, async t => {
-      if (!browser) { t.skip('Chromium is not installed'); return; }
-      const page = await pageWith(twitchShell(state));
-      try {
-        const report = await page.evaluate(`(() => {
-          const surface = NativeChat.detectChatSurface(document, 'https://www.twitch.tv/SomeChannel');
-          const controller = new NativeChat.ChatController({
-            document,
-            href: () => 'https://www.twitch.tv/SomeChannel',
-            onChange() {},
-            onLayoutChange() {},
-            initialPreferences: { twitch: { visible: false, width: 360 } }
-          });
-          return { initiallyVisible: surface.initiallyVisible, visible: controller.state.visible };
-        })()`) as { initiallyVisible: boolean | null; visible: boolean };
-        assert.deepEqual(report, state === 'expanded'
-          ? { initiallyVisible: true, visible: true }
-          : { initiallyVisible: null, visible: false });
-      } finally {
-        await page.close();
-      }
-    });
-  }
+  // Twitch's zero-width column around a translated shell: twitch-recorded.browser.test.ts, on recordings of the live host.
 
   it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }

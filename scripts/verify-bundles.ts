@@ -1,6 +1,9 @@
-import assert from 'node:assert/strict';
 import * as fs from 'fs';
+import assert from 'node:assert/strict';
 import * as path from 'path';
+
+import { FIXTURE_FORMAT } from '../tools/host-fixtures/format';
+
 import { assertBackgroundScriptLoading, assertSelfContainedBundles } from './bundle-integrity';
 
 const roots = process.argv.slice(2);
@@ -13,6 +16,11 @@ for (const dir of dirs) {
   console.log(`Verifying self-contained bundles in ${resolved}`);
   assertSelfContainedBundles(resolved);
   assertBackgroundScriptLoading(resolved);
+  // Recorded host fixtures are test data (tools/host-fixtures); none may reach a package.
+  for (const file of fs.readdirSync(resolved, { recursive: true, encoding: 'utf8' })) {
+    if (!/\.(?:js|json|html)$/.test(file)) continue;
+    assert.ok(!fs.readFileSync(path.join(resolved, file), 'utf8').includes(FIXTURE_FORMAT), `${file} contains a recorded host fixture`);
+  }
   const manifest = JSON.parse(fs.readFileSync(path.join(resolved, 'manifest.json'), 'utf8'));
   const settings = manifest.browser_specific_settings;
   if (!settings?.gecko) {

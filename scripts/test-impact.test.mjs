@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { changedFiles, impact, isFullRun, readGraph, selectTests } from './test-impact.mjs';
+import { changedFiles, impact, isFullRun, readGraph, selectTests, snapshot } from './test-impact.mjs';
 import { main } from './run-tests.mjs';
 
 const tests = ['src/a.test.ts', 'src/b.test.ts'];
@@ -63,6 +63,19 @@ test('real esbuild graph includes transitive, type-only and embedded browser imp
   put(files[4], "const stdin = `import { Leaf } from './src/leaf';`; export { stdin };");
   const actual = await readGraph(root, files, []);
   assert.deepEqual(selectTests([files[0], files[3], files[4]], [files[2]], actual, []).files, [files[0], files[4]]);
+});
+
+test('the base snapshot keeps export-ignored files that tests import', async t => {
+  const { root, put, git } = fixture(t);
+  put('.gitattributes', '/data export-ignore\n');
+  put('data/recorded.json', '{"a":1}');
+  put('src/a.test.ts', "import recorded from '../data/recorded.json'; export default recorded;");
+  git('add', '.'); git('commit', '-qm', 'base');
+  const dir = snapshot('HEAD', root);
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  assert.ok(existsSync(join(dir, 'data/recorded.json')));
+  assert.ok(!existsSync(join(dir, '.snapshot-index')));
+  assert.ok((await readGraph(dir, ['src/a.test.ts'], [])).get('src/a.test.ts')?.has('data/recorded.json'));
 });
 
 test('both sides of renames/deletions count; retained base edges select surviving tests', t => {

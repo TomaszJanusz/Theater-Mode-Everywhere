@@ -382,3 +382,56 @@ config parsing, retry and the issue state machine. These verify the harness, not
 any real host or the installed extension; only the nightly does. To try the installed
 path by hand: `pnpm build`, then
 `LIVE_E2E_TARGETS='[{"pageType":"demo","url":"<public page>"}]' pnpm exec tsx tools/live-e2e/test-utils/run.ts dist/chrome-unpacked /tmp/live-e2e-out`.
+
+## Recorded host fixtures (TME-134)
+
+Provider tests and stories can run on structure and data recorded from a real service
+instead of hand-written approximations. A recording is one JSON file in
+[`test/host-fixtures/`](../test/host-fixtures) named after its recipe in
+[`tools/host-fixtures/recipes.ts`](../tools/host-fixtures/recipes.ts) (format and
+validation: [`format.ts`](../tools/host-fixtures/format.ts)). It holds:
+
+- **`dom`:** a trimmed fragment of the host page: the `<body>`, the elements matched by the
+  recipe's probes (the selectors the provider itself uses, imported from it where it exports
+  them), their ancestors and a few descendants. Computed layout (display, position, size,
+  transform, visibility) is inlined, so it renders without the host's stylesheets.
+- **`signature`:** per probe, how many nodes match, whether the first is laid out with a size,
+  whether it is transformed and which other probes contain it. A test that renders the fragment
+  first asserts that it reproduces this signature, so a trimming or rendering error cannot pass
+  silently.
+- **`media` / `playback`:** provider-shaped data (title, caption tracks, chapters, live/paused
+  state) read through the installed extension's own MAIN-world probe.
+  [`recordedMediaAdapter`](../tools/host-fixtures/recorded-adapter.ts) serves it through the
+  `MediaFeaturesAdapter` contract.
+- **`capture`:** date, extension and host build versions, browser, and how it was captured.
+  Never the page URL.
+
+Capture with the built extension installed, logged out, on a public page, for a few seconds:
+
+```sh
+pnpm build
+pnpm exec tsx tools/host-fixtures/test-utils/capture.ts twitch-chat-expanded --url '<public live channel>'
+# or a page type from the live E2E target list:
+LIVE_E2E_TARGETS='[…]' pnpm exec tsx tools/host-fixtures/test-utils/capture.ts <recipe> --page-type <id>
+```
+
+The tool opens the page in a fresh profile, stops on a consent wall, challenge or other
+environment block (the live E2E lane's classification), waits until the probes settle,
+performs the recipe's single optional click, and records. Sanitization is automatic and has
+no manual step ([`sanitize.ts`](../tools/host-fixtures/sanitize.ts)): text nodes, URLs, SVG
+artwork and unlisted attributes are never read; ids carrying numbers are renumbered;
+`aria-label`s other than the native control labels the provider reads keep only their length;
+titles, labels and chapter names become same-length filler; host content ids keep their
+shape. The tool then refuses to write a file in which a URL, e-mail, token, UUID, long number
+or a string identifying the page (its URL path and query, title parts, recorded titles)
+survived, or one over the 24 KB budget. `tools/host-fixtures/host-fixtures.test.ts` repeats
+the leak, metadata and budget checks for every committed recording; import a new recording
+there and in the test that consumes it. Content behind a login, which cannot be sanitized
+automatically, is out of scope.
+
+`test/host-fixtures/` is `export-ignore`d (source archives) and `pnpm verify:bundles` fails
+if a recording reaches an extension package. A recording is **fixture evidence**: it shows
+the provider handles the structure the host had on the capture date, not that the host
+still has it. PRs say which kind of evidence they provide; behavior that depends on the
+live host still needs a real-host check. The maintainers' refresh procedure is in Notion:
+[TME-134: Refreshing recorded host fixtures](https://app.notion.com/p/TME-134-Refreshing-recorded-host-fixtures-40219f2ad83881fd8afaca7c0ad68347).
