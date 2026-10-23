@@ -68,7 +68,7 @@ for the right reason:
   `test/fixtures/tone.md` documents the fixture and its regeneration command.
 
 On headless Linux, native Firefox Web Audio needs an audio server and an output
-device. CI starts PulseAudio with a null sink for the job; the browser still executes
+device. Firefox CI lanes start PulseAudio with a null sink; the browser still executes
 native DSP without requiring speakers. Playwright's system dependencies provide
 libraries, but do not start that server. `requireAudioSink` (`src/test-utils/audio-sink.ts`)
 runs before the first native case of each browser and fails within five seconds with
@@ -99,14 +99,6 @@ The registered suite limits test-file concurrency to two. PR CI runs two
 Chromium browser shards (each capped at 10 minutes) and one Firefox browser
 lane (capped at 15 minutes when selected), alongside unit and static jobs.
 It cancels superseded runs for the same PR. Timeouts fail stalled checks.
-
-On headless Linux, native Firefox Web Audio also needs an audio server and an
-output device. Firefox CI lanes start PulseAudio with a null sink; the browser
-still executes native DSP without requiring speakers. Playwright's system
-dependencies provide libraries, but do not start that server. On a local Linux
-machine, use its existing audio server or an isolated null sink before running
-the native lifecycle cases. A context that stays suspended during playback is
-an environment failure, not a passing lifecycle check.
 
 ## Booting the player in a test
 
