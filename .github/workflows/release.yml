@@ -53,7 +53,7 @@ jobs:
       - name: Set up tag creation
         if: github.event_name == 'workflow_dispatch'
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
 
       - name: Create, Bump version and Push Tag (Manual Run)
         if: github.event_name == 'workflow_dispatch'
@@ -137,10 +137,12 @@ jobs:
           echo "Building ${RELEASE_TAG} from $RELEASE_SHA"
 
       # A stall here is safe to re-run: the tag already exists, so the manual-run step
-      # above skips the bump. The timeout leaves room for a cold browser and apt install.
+      # above skips the bump. The release job stays on the runner (not the CI image: it checks out tags older
+      # than the image), so apt is still used; the setup action fails within its 210 s apt budget, and 6 minutes
+      # leave room for a cold pnpm store and browser download before that.
       - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
-        timeout-minutes: 20
+        timeout-minutes: 6
         with:
           engines: chromium firefox
           audio: 'true'

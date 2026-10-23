@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -32,7 +33,7 @@ jobs:
       - name: Set up dependencies
         if: steps.classify.outputs.run != 'false'
         uses: $/.github/actions/setup
-        timeout-minutes: 6
+        timeout-minutes: 4
       - name: Select affected tests
         id: impact
         if: steps.classify.outputs.run != 'false'
@@ -54,6 +55,28 @@ jobs:
         if: steps.classify.outputs.run == 'false'
         run: echo 'Skipping dependency installation, tests, builds and smoke checks for reviewed prose only.'
 
+  # Browser lanes run in a GHCR image (Playwright browsers + PulseAudio) so they never download system
+  # packages from the runner's apt mirror. A missing tag, such as after a Playwright bump, is built here.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      ref: ${{ steps.image.outputs.ref }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Ensure browser image
+        id: image
+        uses: $/.github/actions/ci-image
+        timeout-minutes: 12
+        with:
+          token: ${{ github.token }}
+
   boundaries:
     needs: changes
     if: needs.changes.outputs.run != 'false'
@@ -66,7 +89,7 @@ jobs:
           persist-credentials: false
       - name: Set up dependencies
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
       - name: Check module boundaries
         run: pnpm check:boundaries
         timeout-minutes: 3
@@ -83,7 +106,7 @@ jobs:
           persist-credentials: false
       - name: Set up dependencies
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
       - name: Check shared CSS ratchet
         run: pnpm lint:css
         timeout-minutes: 3
@@ -104,7 +127,7 @@ jobs:
           persist-credentials: false
       - name: Set up dependencies
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
       - name: Build Extension
         run: pnpm build
         timeout-minutes: 5
@@ -131,7 +154,7 @@ jobs:
           fetch-depth: 0
       - name: Set up dependencies
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
       - name: Lint
         run: pnpm lint
         timeout-minutes: 5
@@ -160,7 +183,7 @@ jobs:
           fetch-depth: 0
       - name: Set up dependencies
         uses: $/.github/actions/setup
-        timeout-minutes: 7
+        timeout-minutes: 4
       - name: Download test selection
         if: needs.changes.outputs.smoke != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -175,7 +198,7 @@ jobs:
         timeout-minutes: 1
 
   browser-chromium:
-    needs: changes
+    needs: [changes, image]
     if: needs.changes.outputs.run != 'false'
     strategy:
       fail-fast: false
@@ -183,6 +206,14 @@ jobs:
         shard: [1, 2]
     runs-on: ubuntu-latest
     timeout-minutes: 16
+    container:
+      image: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images] pinned by digest in the image job
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    env:
+      # Firefox refuses to start when $HOME (the runner's /github/home) is not owned by the user running it.
+      HOME: /root
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -191,9 +222,10 @@ jobs:
           fetch-depth: 0
       - name: Set up dependencies and Chromium
         uses: $/.github/actions/setup
-        timeout-minutes: 10
+        timeout-minutes: 4
         with:
           engines: chromium
+          prebuilt: 'true'
       - name: Download test selection
         if: needs.changes.outputs.smoke != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -214,10 +246,18 @@ jobs:
         timeout-minutes: 1
 
   browser-firefox:
-    needs: changes
+    needs: [changes, image]
     if: needs.changes.outputs.run != 'false' && needs.changes.outputs.firefox != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 21
+    container:
+      image: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images] pinned by digest in the image job
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    env:
+      # Firefox refuses to start when $HOME (the runner's /github/home) is not owned by the user running it.
+      HOME: /root
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -227,10 +267,11 @@ jobs:
       # Many browser tests launch Chromium whatever THEATER_TEST_ENGINES selects, so this lane needs it too.
       - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
-        timeout-minutes: 10
+        timeout-minutes: 4
         with:
           engines: chromium firefox
           audio: 'true'
+          prebuilt: 'true'
       - name: Download test selection
         if: needs.changes.outputs.smoke != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -252,10 +293,18 @@ jobs:
         timeout-minutes: 1
 
   smoke:
-    needs: [changes, build]
+    needs: [changes, image, build]
     if: needs.changes.outputs.run != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 13
+    container:
+      image: ${{ needs.image.outputs.ref }} # zizmor: ignore[unpinned-images] pinned by digest in the image job
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    env:
+      # Firefox refuses to start when $HOME (the runner's /github/home) is not owned by the user running it.
+      HOME: /root
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -263,10 +312,11 @@ jobs:
           persist-credentials: false
       - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
-        timeout-minutes: 10
+        timeout-minutes: 4
         with:
           engines: ${{ needs.changes.outputs.firefox != 'false' && 'chromium firefox' || 'chromium' }}
           audio: ${{ needs.changes.outputs.firefox != 'false' && 'true' || 'false' }}
+          prebuilt: 'true'
       - name: Download build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -300,7 +350,7 @@ jobs:
   check:
     # Preserve the existing aggregate status name for external consumers.
     if: always()
-    needs: [changes, boundaries, css-and-unused, build, static, unit, browser-chromium, browser-firefox, smoke]
+    needs: [changes, image, boundaries, css-and-unused, build, static, unit, browser-chromium, browser-firefox, smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -312,7 +362,7 @@ jobs:
           node - <<'NODE'
           const needs = JSON.parse(process.env.NEEDS);
           const failed = Object.entries(needs).filter(([, job]) => ['failure', 'cancelled'].includes(job.result));
-          const required = ['boundaries', 'css-and-unused', 'build', 'static', 'unit', 'browser-chromium', 'smoke'];
+          const required = ['image', 'boundaries', 'css-and-unused', 'build', 'static', 'unit', 'browser-chromium', 'smoke'];
           if (process.env.RUN_CHECKS !== 'false') {
             for (const name of required) if (needs[name].result !== 'success') failed.push([name, needs[name]]);
             if (needs.changes.outputs.firefox !== 'false' && needs['browser-firefox'].result !== 'success') failed.push(['browser-firefox', needs['browser-firefox']]);

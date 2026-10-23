@@ -1,0 +1,60 @@
+name: Ensure CI browser image
+description: Resolve the GHCR image for the lockfile's Playwright version and build it when it is missing or a refresh is forced
+inputs:
+  token:
+    description: Token with packages access (github.token); pushing needs packages write
+    required: true
+  force:
+    description: Rebuild even when the tag exists, to pick up base image updates
+    required: false
+    default: 'false'
+outputs:
+  ref:
+    description: Image reference pinned by digest, for `container.image`
+    value: ${{ steps.pin.outputs.ref }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve image reference
+      id: ref
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
+      run: node scripts/ci-image.mjs "$REPOSITORY" | tee -a "$GITHUB_OUTPUT"
+    - name: Build and push the image when missing
+      shell: bash
+      env:
+        REF: ${{ steps.ref.outputs.ref }}
+        BASE: ${{ steps.ref.outputs.base }}
+        FORCE: ${{ inputs.force }}
+        TOKEN: ${{ inputs.token }}
+        ACTOR: ${{ github.actor }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        # Anonymous pulls work for a public package; the login only matters for a private one or a push.
+        printf '%s' "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin >/dev/null || echo '::warning::GHCR login failed; continuing anonymously.'
+        if [ "$FORCE" != true ] && docker buildx imagetools inspect "$REF" >/dev/null 2>&1; then
+          echo "$REF already exists."
+          exit 0
+        fi
+        digest="$(docker buildx imagetools inspect "$BASE" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+        case "$digest" in sha256:*) ;; *) echo "::error title=CI image::Could not resolve $BASE to a digest." >&2; exit 1 ;; esac
+        docker build --pull \
+          --build-arg "BASE=${BASE}@${digest}" \
+          --label "org.opencontainers.image.source=https://github.com/${REPOSITORY}" \
+          --label "org.opencontainers.image.base.name=${BASE}" \
+          --label "org.opencontainers.image.base.digest=${digest}" \
+          --tag "$REF" .github/ci-image
+        if ! docker push "$REF"; then
+          echo "::error title=CI image::$REF is missing and this run cannot push it (forks and Dependabot get a read-only token). Run the 'CI browser image' workflow for this branch, then re-run." >&2
+          exit 1
+        fi
+    - name: Pin the tag to its digest
+      id: pin
+      shell: bash
+      env:
+        REF: ${{ steps.ref.outputs.ref }}
+      run: |
+        digest="$(docker buildx imagetools inspect "$REF" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+        case "$digest" in sha256:*) ;; *) echo "::error title=CI image::Could not resolve $REF to a digest." >&2; exit 1 ;; esac
+        echo "ref=${REF}@${digest}" >> "$GITHUB_OUTPUT"

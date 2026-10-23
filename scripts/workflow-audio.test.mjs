@@ -8,10 +8,9 @@ test('CI and tag-pinned releases use the shared audio setup', () => {
   const action = readFileSync(new URL('../.github/actions/virtual-audio/action.yml', import.meta.url), 'utf8');
   const setup = readFileSync(new URL('../.github/actions/setup/action.yml', import.meta.url), 'utf8');
   const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
-  const script = action.split('      run: |\n')[1].trim().split('\n').map(line => line.trim()).join('\n');
-  const setupScript = setup.split('    - name: Start virtual audio device\n')[1]
-    .split('      run: |\n')[1].trim().split('\n').map(line => line.trim()).join('\n');
-  assert.equal(setupScript, script);
+  // The setup action adds a budgeted apt install around the same sink recipe the nightly action runs.
+  const sink = text => text.slice(text.indexOf('pulseaudio --start')).split('\n').map(line => line.trim()).filter(Boolean).join('\n');
+  assert.equal(sink(setup.split('    - name: Start virtual audio device\n')[1]), sink(action));
   assert.match(release, /uses: \$\/\.github\/actions\/setup/);
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(ci, /uses: \$\/\.github\/actions\/setup/);
@@ -42,4 +41,25 @@ test('nightly runs the unrestricted default suite on main and dev and reports bl
   }
   assert.match(source, /name: Coverage summary\n\s+if: always\(\)/);
   assert.match(source, /Full suite \(unit \+ Chromium \+ Firefox\): \$TEST_RESULT/);
+});
+
+test('browser lanes run in the pinned CI image and keep the release path on apt with a hard budget', () => {
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const setup = readFileSync(new URL('../.github/actions/setup/action.yml', import.meta.url), 'utf8');
+  const release = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+  for (const lane of ['browser-chromium', 'browser-firefox', 'smoke']) {
+    const job = ci.split(`\n  ${lane}:\n`)[1].split(/\n {2}[\w-]+:\n/)[0];
+    assert.match(job, /needs: \[changes, image/);
+    assert.match(job, /image: \$\{\{ needs\.image\.outputs\.ref \}\}/);
+    assert.match(job, /HOME: \/root/);
+    assert.match(job, /prebuilt: 'true'/);
+  }
+  assert.match(ci, /needs: \[changes, image, /);
+  assert.match(ci, /const required = \['image', /);
+  assert.doesNotMatch(ci, /uses: \$\/\.github\/actions\/setup\n\s+timeout-minutes: (?!4\n)/);
+  assert.match(setup, /--with-deps/);
+  assert.match(setup, /Setup budget exceeded/);
+  assert.match(setup, /safe\.directory/);
+  // Release has no container and no CI image: it must not opt into the prebuilt path.
+  assert.doesNotMatch(release, /prebuilt|container:/);
 });

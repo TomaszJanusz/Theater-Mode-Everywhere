@@ -91,7 +91,8 @@ for the right reason:
 On headless Linux, native Firefox Web Audio needs an audio server and an output
 device. Firefox CI lanes start PulseAudio with a null sink; the browser still executes
 native DSP without requiring speakers. Playwright's system dependencies provide
-libraries, but do not start that server. `requireAudioSink` (`src/test-utils/audio-sink.ts`)
+libraries, but do not start that server, and the Playwright image ships none (an ALSA
+`null` device does not substitute: Firefox's context stays `suspended`). `requireAudioSink` (`src/test-utils/audio-sink.ts`)
 runs before the first native case of each browser and fails within five seconds with
 `environment: no audio sink` when a context never starts, instead of a 30 s
 `waitForFunction` timeout that looks like a lifecycle regression. Treat that error as
@@ -115,6 +116,36 @@ the real chain with the same band-level helper as `audio-graph.browser.test.ts`
 (`src/test-utils/audio-render.ts`), so charts and assertions measure the same thing;
 `tools/audio-charts/audio-charts.browser.test.ts` cross-checks them. Crossfade is not
 charted (it has no steady spectrum), and there is no Storybook story. It needs Chromium.
+
+## CI browser image
+
+The Chromium lanes, the Firefox lane and smoke run as job containers (`container:` in
+[`ci.yml`](../.github/workflows/ci.yml)) from `ghcr.io/<repository>/ci-browsers`: the
+`mcr.microsoft.com/playwright:v<version>-noble` image plus PulseAudio
+([`Dockerfile`](../.github/ci-image/Dockerfile)). Browsers, Xvfb and the audio daemon are in the
+image, so these lanes never run `apt-get` and cannot stall on the runner's Ubuntu mirror (TME-157:
+single packages took 60-150 s there, ending the setup step at its limit). They pass `prebuilt: 'true'` to the
+[setup action](../.github/actions/setup/action.yml), which then only verifies the browsers.
+
+- **One version source.** The Playwright version is the one `pnpm-lock.yaml` resolves
+  ([`scripts/ci-image.mjs`](../scripts/ci-image.mjs) reads it); the image tag is
+  `pw<version>-<hash of the Dockerfile>`, so the browser revisions always match `pnpm exec playwright`.
+- **Pinned.** The `image` job in `ci.yml` resolves the tag and hands the lanes `ref@sha256:...`. The
+  base image is pinned by digest when the image is built.
+- **Self-building.** The `image` job builds and pushes a missing tag (for example after a Playwright bump or a
+  Dockerfile edit) with `packages: write`. A run that cannot push (forks, Dependabot's read-only token) fails
+  with a message: run the `CI browser image` workflow on that branch, then re-run. The same workflow
+  rebuilds `main` and `dev` weekly so base-image security fixes arrive without a version bump.
+- **`HOME=/root`.** The runner sets `HOME=/github/home`, which Firefox refuses as root; the lane jobs
+  override it.
+- **Package visibility.** Make the `ci-browsers` package public once (package settings), so fork PRs can pull it.
+- **Release and nightly** still run on the bare runner and use apt. The setup action gives apt a shared
+  210 s budget and fails with `Setup budget exceeded` instead of waiting for the step limit; setup steps
+  are capped at 4 minutes in CI and 6 in release (cold pnpm store, browser download, apt budget).
+  Releases cannot use the image: they check out tags older than it.
+
+To reproduce a lane locally with Docker: `docker run --rm -it -v "$PWD":/work -w /work -e HOME=/root
+mcr.microsoft.com/playwright:v<version>-noble bash`, then install PulseAudio inside it for Firefox audio.
 
 The registered suite limits test-file concurrency to two. PR CI runs two
 Chromium browser shards (each capped at 10 minutes) and one Firefox browser
