@@ -26,7 +26,7 @@ export function shouldRunFirefox(files) {
   return files.some(file => typeof file !== 'string' || !file ||
     file.split('/').some(part => !part || part === '.' || part === '..') ||
     ['manifest.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json'].includes(file) ||
-    ['src/platform/', 'src/protocol/', 'src/test-utils/', 'test/', 'scripts/', '.github/actions/', '.github/workflows/'].some(prefix => file.startsWith(prefix)));
+    ['src/platform/', 'src/protocol/', 'src/test-utils/', 'test/', 'scripts/', '.github/actions/', '.github/ci-image/', '.github/workflows/'].some(prefix => file.startsWith(prefix)));
 }
 
 export function checksForEvent(eventName, event, git = execFileSync, classify = shouldRunChecks) {

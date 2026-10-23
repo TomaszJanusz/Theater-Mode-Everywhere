@@ -9,6 +9,10 @@ inputs:
     description: Start a PulseAudio null sink for native Firefox Web Audio
     required: false
     default: 'false'
+  prebuilt:
+    description: Browsers, Xvfb and PulseAudio come from the CI browser image (job container); skip apt and the browser cache
+    required: false
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -23,34 +27,58 @@ runs:
       shell: bash
       run: pnpm install --frozen-lockfile
     - name: Cache Playwright browsers
-      if: inputs.engines != ''
+      if: inputs.engines != '' && inputs.prebuilt != 'true'
       uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ inputs.engines }}-${{ hashFiles('pnpm-lock.yaml') }}
-    - name: Configure apt retries
-      if: inputs.engines != '' || inputs.audio == 'true'
+    - name: Configure apt retries and budget
+      if: inputs.prebuilt != 'true' && (inputs.engines != '' || inputs.audio == 'true')
       shell: bash
-      # Mirror stalls otherwise hold `playwright install --with-deps` until the step times out.
+      # The mirror sometimes serves single packages at tens of KB/s. Retries do not help a slow download, so
+      # the apt steps below share one deadline and fail with a clear message well before the step limit.
       run: |
         printf '%s\n' 'Acquire::Retries "3";' 'Acquire::http::Timeout "20";' 'Acquire::https::Timeout "20";' |
           sudo tee /etc/apt/apt.conf.d/80-ci-resilience >/dev/null
+        echo $(( $(date +%s) + 210 )) > "$RUNNER_TEMP/apt-deadline"
     - name: Install Playwright browsers
       if: inputs.engines != ''
       shell: bash
       env:
         ENGINES: ${{ inputs.engines }}
+        PREBUILT: ${{ inputs.prebuilt }}
       run: |
         read -r -a engines <<< "$ENGINES"
         for engine in "${engines[@]}"; do
           case "$engine" in chromium|firefox) ;; *) echo "Invalid browser: $engine" >&2; exit 1 ;; esac
         done
-        pnpm exec playwright install --with-deps "${engines[@]}"
+        if [ "$PREBUILT" = true ]; then
+          # The image carries the lockfile's browser revisions; this only verifies that and would fetch a missing one.
+          timeout 120 pnpm exec playwright install "${engines[@]}"
+          exit 0
+        fi
+        left=$(( $(cat "$RUNNER_TEMP/apt-deadline") - $(date +%s) ))
+        timeout --kill-after=10 "$left" pnpm exec playwright install --with-deps "${engines[@]}" || {
+          status=$?
+          if [ "$status" = 124 ] || [ "$status" = 137 ]; then
+            echo "::error title=Setup budget exceeded::Playwright system dependencies did not install within 210 s; the apt mirror is stalling. Re-run the job."
+          fi
+          exit "$status"
+        }
     - name: Start virtual audio device
       if: inputs.audio == 'true'
       shell: bash
+      env:
+        PREBUILT: ${{ inputs.prebuilt }}
       run: |
-        sudo apt-get install --no-install-recommends -y pulseaudio
+        if [ "$PREBUILT" != true ]; then
+          left=$(( $(cat "$RUNNER_TEMP/apt-deadline") - $(date +%s) ))
+          [ "$left" -gt 30 ] || left=30
+          timeout --kill-after=10 "$left" sudo apt-get install --no-install-recommends -y pulseaudio || {
+            echo "::error title=Setup budget exceeded::The pulseaudio install did not finish within the 210 s setup budget; the apt mirror is stalling. Re-run the job."
+            exit 1
+          }
+        fi
         pulseaudio --start --exit-idle-time=-1
         pactl load-module module-null-sink sink_name=theater_tests rate=48000
         pactl set-default-sink theater_tests

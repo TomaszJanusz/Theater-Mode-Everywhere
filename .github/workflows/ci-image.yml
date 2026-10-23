@@ -1,0 +1,54 @@
+name: CI browser image
+
+# Rebuilds the image the browser lanes run in, so base-image fixes reach it without a Playwright bump.
+# CI builds a missing tag by itself; this workflow is the weekly refresh and the manual route for
+# branches whose own runs cannot push (forks, Dependabot). `main` and the 2.1 integration branch `dev`
+# can pin different Playwright versions, so each gets a job with a literal ref (as in nightly.yml).
+on:
+  schedule:
+    - cron: '41 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image-main:
+    name: Image for main
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Rebuild the image
+        uses: $/.github/actions/ci-image
+        timeout-minutes: 15
+        with:
+          token: ${{ github.token }}
+          force: 'true'
+
+  image-dev:
+    name: Image for dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: dev
+          persist-credentials: false
+      - name: Rebuild the image
+        uses: $/.github/actions/ci-image
+        timeout-minutes: 15
+        with:
+          token: ${{ github.token }}
+          force: 'true'
