@@ -12,14 +12,14 @@ import { logLine, serializeResults, type PageTypeReport } from '../report';
 
 import { runTarget } from './runner';
 
-// Lane entry: LIVE_E2E_TARGETS (private JSON) -> installed Chromium extension -> results.json.
+// Lane entry: LIVE_E2E_TARGETS (repository variable JSON) -> installed Chromium extension -> results.json.
 // Usage: tsx tools/live-e2e/test-utils/run.ts <unpacked-extension-dir> <output-dir>
 const [extensionDir, outDir] = process.argv.slice(2).map(p => path.resolve(p));
 if (!extensionDir || !outDir) throw new Error('usage: run.ts <unpacked-extension-dir> <output-dir>');
 
 const targets = parseTargets(process.env.LIVE_E2E_TARGETS);
 // The repository and its logs are public: mask every target before anything is printed, and
-// redact what is written afterwards. The workflow's own secret masking only covers the whole JSON.
+// redact what is written afterwards. Repository variables are not masked by Actions.
 if (process.env.GITHUB_ACTIONS === 'true') for (const value of maskValues(targets)) console.log(`::add-mask::${value}`);
 const redact = redactorFor(targets);
 const today = new Date().toISOString().slice(0, 10);

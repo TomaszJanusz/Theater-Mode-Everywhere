@@ -11,9 +11,9 @@ const text = (value: unknown, what: string): string => {
   return value;
 };
 
-/** Validates the private `LIVE_E2E_TARGETS` JSON (an array of targets). */
+/** Validates the `LIVE_E2E_TARGETS` repository variable JSON (an array of targets). */
 export function parseTargets(raw: string | undefined): Target[] {
-  if (!raw?.trim()) throw new Error('LIVE_E2E_TARGETS is empty; the lane needs a private target list');
+  if (!raw?.trim()) throw new Error('LIVE_E2E_TARGETS is empty; the lane needs a target list');
   let json: unknown;
   try { json = JSON.parse(raw); } catch { throw new Error('LIVE_E2E_TARGETS is not valid JSON'); }
   if (!Array.isArray(json) || !json.length) throw new Error('LIVE_E2E_TARGETS must be a non-empty array');

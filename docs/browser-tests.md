@@ -317,10 +317,10 @@ and never runs on pull requests, so PR CI does not depend on third-party sites. 
 builds the ref it runs on (`main` for the schedule), installs the unpacked Chromium build in a fresh profile per attempt,
 and runs [`tools/live-e2e`](../tools/live-e2e).
 
-- **Targets are private.** The page types and URLs come from the `LIVE_E2E_TARGETS`
-  secret (a JSON array of `{ pageType, url, capabilities?, videoSelector? }`); the
+- **Target configuration.** The page types and URLs come from the `LIVE_E2E_TARGETS`
+  Actions repository variable (a JSON array of `{ pageType, url, capabilities?, videoSelector? }`); the
   repository holds none. `pageType` is an opaque kebab-case id that also names the
-  rolling issue, so keep it generic. Without the secret the workflow reports that
+  rolling issue, so keep it generic. Without the variable the workflow reports that
   nothing ran.
 - **One spec per capability** in `test-utils/specs.ts` (`theater`, `active-video`). Specs assert the
   extension's contract (state classes and attributes, the control bar), never host
@@ -333,8 +333,9 @@ and runs [`tools/live-e2e`](../tools/live-e2e).
   this lane retries. The repository is public, so nothing that can show a target is
   published: no trace, video or screenshot is kept, and every URL, host and path of a
   target is replaced by its `pageType` in logs, `results.json` (the only artifact, 7 days)
-  and issue text. The workflow also `::add-mask::`s each target's URL and host before any
-  output. To investigate a failure, run the lane locally with the private list.
+  and issue text. GitHub Actions does not mask repository variables, so the runner
+  `::add-mask::`s each target URL, origin, host and path before other output. To
+  investigate a failure, run the lane locally with the target list.
 - **Quarantine.** `tools/live-e2e/quarantine.json` lists page types to skip, each with
   an `owner`, an `expires` date (`YYYY-MM-DD`) and a `reason`. An expired entry fails
   the run instead of hiding the page type for good.
