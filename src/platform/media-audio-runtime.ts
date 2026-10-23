@@ -1,7 +1,9 @@
 import { AUDIO_SETTINGS_EVENT, isNeutralAudio, readAudioDataset, sameAudioSettings, type AudioSettings } from '../audio-settings';
+
 import { findActiveVideo, THEATER_VIDEO_SELECTOR } from './active-video';
 import { createAudioChain, type AudioChain } from './audio-graph';
 import { mediaAudioAccess } from './media-audio-access';
+import { contextMayCapture, createPlaybackReconciler, type PlaybackReconciler } from './media-audio-lifecycle';
 
 const PLAYBACK_EVENTS = ['playing', 'pause', 'ended', 'emptied'] as const;
 
@@ -14,7 +16,7 @@ type MediaAudioGraph = {
   settings: AudioSettings;
   boost: number;
   disposed: boolean;
-  operation: Promise<void> | null;
+  lifecycle: PlaybackReconciler;
   playbackChanged(): void;
 };
 
@@ -64,6 +66,7 @@ export function installMediaAudioRuntime(): void {
     if (graph.disposed) return;
     graph.disposed = true;
     const { video, context } = graph;
+    graph.lifecycle.dispose();
     graphs.delete(video);
     // Closing releases the element, but it still cannot acquire another source.
     retiredVideos.add(video);
@@ -76,24 +79,6 @@ export function installMediaAudioRuntime(): void {
     graph.gain.disconnect();
     delete video.dataset.theaterBoostReady;
     if (context.state !== 'closed') void context.close().catch(console.error);
-  }
-
-  function reconcilePlayback(graph: MediaAudioGraph): void {
-    if (graph.disposed || graph.operation) return;
-    if (!inDocument(graph.video)) { retire(graph); refreshObservation(); return; }
-    const { context, video } = graph;
-    const playing = !video.paused && !video.ended;
-    if (context.state === 'closed' || (playing ? context.state !== 'suspended' : context.state !== 'running')) return;
-    const operation = playing ? context.resume() : context.suspend();
-    graph.operation = operation;
-    void operation.then(() => {
-      graph.operation = null;
-      // A pause or replacement can arrive while resume is pending, and vice versa.
-      if (!graph.disposed) reconcilePlayback(graph);
-    }, error => {
-      graph.operation = null;
-      if (!graph.disposed) console.error('[Theater Everywhere Main World] Web Audio state failed:', error);
-    });
   }
 
   function currentVideo(): HTMLVideoElement | null {
@@ -144,7 +129,7 @@ export function installMediaAudioRuntime(): void {
         existing.gain.gain.value = boost;
         existing.boost = boost;
       }
-      reconcilePlayback(existing);
+      existing.lifecycle.reconcile();
       return;
     }
     // Reset events from an old player may update its existing graph, but
@@ -168,10 +153,9 @@ export function installMediaAudioRuntime(): void {
       if (!AudioCtx) return;
       context = new AudioCtx();
       // A context the policy holds suspended would silence the captured
-      // element; leave it alone until a gesture. Chromium starts an allowed
-      // context synchronously; Firefox reports its policy instead.
+      // element; leave it alone until a gesture.
       const policy = (navigator as Navigator & { getAutoplayPolicy?(type: 'audiocontext'): string }).getAutoplayPolicy?.('audiocontext');
-      if (!activated && context.state !== 'running' && policy !== 'allowed') {
+      if (!contextMayCapture({ activated, state: context.state, policy })) {
         void context.close().catch(console.error);
         return;
       }
@@ -183,8 +167,15 @@ export function installMediaAudioRuntime(): void {
       const source = context.createMediaElementSource(video);
       source.connect(chain.input);
       const graph: MediaAudioGraph = {
-        video, context, chain, source, gain, settings, boost, disposed: false, operation: null,
-        playbackChanged: () => reconcilePlayback(graph)
+        video, context, chain, source, gain, settings, boost, disposed: false,
+        lifecycle: createPlaybackReconciler({
+          context,
+          isPlaying: () => !video.paused && !video.ended,
+          isAttached: () => inDocument(video),
+          onDetached: () => { retire(graph); refreshObservation(); },
+          onError: error => console.error('[Theater Everywhere Main World] Web Audio state failed:', error)
+        }),
+        playbackChanged: () => graph.lifecycle.reconcile()
       };
       graphs.set(video, graph);
       for (const event of PLAYBACK_EVENTS) video.addEventListener(event, graph.playbackChanged);
@@ -193,7 +184,7 @@ export function installMediaAudioRuntime(): void {
       refreshObservation();
       video.dataset.theaterBoostReady = 'true';
       window.dispatchEvent(new CustomEvent('theater-everywhere-boost-ready'));
-      reconcilePlayback(graph);
+      graph.lifecycle.reconcile();
     } catch (error) {
       retiredVideos.add(video);
       chain?.dispose();
