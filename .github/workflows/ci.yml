@@ -224,11 +224,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Set up dependencies and Firefox
+      # Many browser tests launch Chromium whatever THEATER_TEST_ENGINES selects, so this lane needs it too.
+      - name: Set up dependencies and browsers
         uses: $/.github/actions/setup
         timeout-minutes: 10
         with:
-          engines: firefox
+          engines: chromium firefox
           audio: 'true'
       - name: Download test selection
         if: needs.changes.outputs.smoke != ''
