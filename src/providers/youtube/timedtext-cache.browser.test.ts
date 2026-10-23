@@ -73,7 +73,7 @@ describe('YouTube timedtext cache budget', () => {
         const staleForNewVideo = api.readCachedTimedtextBody(track('video-b', 'en'));
         const returned = api.readCachedTimedtextBody(track('video-a', 'en'));
         window.dispatchEvent(new CustomEvent('theater-everywhere-youtube-captions', {
-          detail: { enabled: false, requestId: 'off' }
+          detail: JSON.stringify({ enabled: false, requestId: 1 })
         }));
         const video = document.querySelector('video');
         const replacement = document.createElement('video');

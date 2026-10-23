@@ -4,6 +4,7 @@ import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
 import { fetchPageMedia } from './page-fetch';
 import { readPageResponseBytes } from './page-body';
+import { parseProbeRequest } from '../protocol/page-requests';
 import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, type NetworkHarvestTarget } from '../providers/network-harvest';
 import { isOwnedHarvestInput, isOwnedHarvestResponse, markOwnedHarvestResponse } from './harvest-ownership';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
@@ -450,7 +451,8 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);
 
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
-    const requestId = (event as CustomEvent<{ requestId?: number }>).detail?.requestId;
+    const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
+    if (requestId === null) return;
     let youtube: Record<string, unknown> | null = null;
     let vimeo: Record<string, unknown> | null = null;
     let patreon: Record<string, unknown> | null = null;
