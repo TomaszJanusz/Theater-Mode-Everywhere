@@ -595,8 +595,9 @@ for (const engine of testEngines()) {
   // Expanding the miniplayer publishes yt-page-data-updated while the watch page is still hidden;
   // the host then reveals it and unparks the player with attribute flips only. Nothing else fires
   // for the already-playing video, so the reveal itself has to re-evaluate entry. On a slow page
-  // the host moves the player into the watch page even later, again without any event.
-  for (const flow of ['player parked in the miniplayer', 'watch page still hidden', 'player moved in after the reveal'] as const) {
+  // the host moves the player into the watch page even later, again without any event, and into
+  // the theater container when YouTube's own theater layout is on.
+  for (const flow of ['player parked in the miniplayer', 'watch page still hidden', 'player moved in after the reveal', 'player moved into the theater container after the reveal'] as const) {
     it(`YouTube auto entry in ${engine} follows the host's silent reveal after expanding the miniplayer (${flow})`, { timeout: 60_000 }, async t => {
       const browserType = (await import('playwright'))[engine];
       assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
@@ -605,11 +606,12 @@ for (const engine of testEngines()) {
         const page = await context.newPage();
         await page.addInitScript('window.__name = target => target;');
         const parked = flow !== 'watch page still hidden';
-        const movedLater = flow === 'player moved in after the reveal';
+        const movedLater = flow.startsWith('player moved ');
+        const destination = flow.includes('theater') ? 'player-theater-container' : 'player-container';
         const player = '<div id="movie_player"><video class="html5-main-video" muted style="width:640px;height:360px"></video></div>';
         await page.route('https://www.youtube.com/**', route => route.fulfill({
           contentType: 'text/html',
-          body: `<ytd-app${parked ? ' miniplayer-is-active' : ''}><ytd-miniplayer>${parked ? player : ''}</ytd-miniplayer><ytd-watch-flexy hidden><div id="player-container">${parked ? '' : player}</div></ytd-watch-flexy></ytd-app>`
+          body: `<ytd-app${parked ? ' miniplayer-is-active' : ''}><ytd-miniplayer>${parked ? player : ''}</ytd-miniplayer><ytd-watch-flexy hidden><div id="player-container">${parked ? '' : player}</div><div id="player-theater-container"></div></ytd-watch-flexy></ytd-app>`
         }));
         await page.goto('https://www.youtube.com/');
         await page.addScriptTag({ content: BUNDLE });
@@ -663,7 +665,7 @@ for (const engine of testEngines()) {
         await page.clock.runFor(6000);
         if (movedLater) {
           assert.equal((await probe()).entries, 0, 'the player is still in the miniplayer');
-          await page.evaluate(() => document.getElementById('player-container')!.append(document.getElementById('movie_player')!));
+          await page.evaluate(id => document.getElementById(id)!.append(document.getElementById('movie_player')!), destination);
           await page.clock.runFor(6000);
         }
         assert.deepEqual(await probe(), { entries: 1, shown: 1 }, 'the reveal alone re-evaluates entry');
