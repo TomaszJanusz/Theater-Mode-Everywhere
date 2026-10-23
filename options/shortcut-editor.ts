@@ -179,7 +179,7 @@ export function createShortcutEditor(onSaved: () => Promise<void>) {
       });
     });
     // The keyboard layout can change while Settings is in the background.
-    window.addEventListener('focus', () => void loadKeyboardLayout().then(() => { if (!busy) render(current); }));
+    document.defaultView?.addEventListener('focus', () => void loadKeyboardLayout().then(() => { if (!busy) render(current); }));
     grid?.setAttribute('aria-busy', 'false');
   }
   function localize(): void {
