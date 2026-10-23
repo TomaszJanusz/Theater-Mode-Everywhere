@@ -14,11 +14,12 @@ const extensionLocalesRoot = path.resolve(__dirname, '../_locales');
 // picked for regional relevance, and no other supported-service brand.
 const SERVICE_PACKS: Record<string, string[]> = {
   en: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  en_GB: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   cs: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   sk: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   de: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   pl: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
-  ko: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ko: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   ja: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   fr: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   es: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
@@ -133,7 +134,7 @@ describe('store listings', () => {
 
   it('names exactly the regional pack of four services in every Chrome description', () => {
     assert.deepEqual(Object.keys(SERVICE_PACKS).sort(), locales);
-    assert.equal(locales.length, 15);
+    assert.equal(locales.length, 16);
     for (const [locale, pack] of Object.entries(SERVICE_PACKS)) {
       assert.equal(new Set(pack).size, 4, `${locale}: pack must hold exactly 4 unique services`);
       assert.ok(pack.includes('YouTube'), `${locale}: pack must include YouTube`);

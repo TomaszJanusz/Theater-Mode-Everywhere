@@ -38,12 +38,14 @@ one, two
   it('matches the existing AMO locales and fans Spanish out to country variants', () => {
     const payload = buildAmoPayload(listingsRoot);
     const expectedLocales = [
-      'cs', 'sk', 'de', 'en-US', 'es-AR', 'es-CL', 'es-ES', 'es-MX', 'fr', 'it',
+      'cs', 'sk', 'de', 'en-GB', 'en-US', 'es-AR', 'es-CL', 'es-ES', 'es-MX', 'fr', 'it',
       'ja', 'ko', 'pl', 'pt-BR', 'ru', 'uk', 'zh-CN',
     ];
 
     assert.deepEqual(Object.keys(payload).sort(), ['description', 'summary']);
     assert.deepEqual(Object.keys(payload.summary).sort(), expectedLocales.sort());
+    assert.match(payload.description['en-GB'], /\bcolour\b/);
+    assert.notEqual(payload.description['en-GB'], payload.description['en-US']);
     assert.equal(payload.description['es-AR'], payload.description['es-ES']);
     assert.equal(payload.description['es-CL'], payload.description['es-MX']);
     assert.ok(!('ar' in payload.summary));

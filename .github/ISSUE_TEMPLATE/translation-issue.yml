@@ -9,6 +9,7 @@ body:
       label: Language
       options:
         - English
+        - English (UK)
         - Polski
         - Čeština
         - Slovenčina

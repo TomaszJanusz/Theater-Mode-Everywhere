@@ -1,0 +1,51 @@
+# AMO Listing - en_GB
+
+## Name
+Theater Mode Everywhere
+
+## Summary
+Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services.
+
+## Description
+Theater Mode Everywhere enlarges HTML5 players to fill the entire browser window, providing a convenient cinematic experience without headers, sidebars, comments and recommendations.
+
+Watch tutorials, streams, videos, and short clips with custom playback controls. Use subtitles, keyboard shortcuts, video fit, audio effects and volume controls, plus additional features on supported platforms.
+
+Rich Theater Experience (RTE) offers deeper integrations with popular online services. On YouTube and Twitch it adds chat beside the picture, and on Netflix and Disney+ skip buttons for intros and next-episode navigation. Depending on the service, the extension may display titles, subtitles, chapters, thumbnail previews, skip buttons, next-episode navigation and additional information on the timeline. Capabilities vary between platforms. The full list of supported services is in the extension's settings.
+
+MAIN FEATURES
+- One-key immersive mode: press `T` to instantly enlarge the active video into browser view. Press again or `Escape` to return. If there are several videos on the page, use `Shift+T` to switch them. Double-click the picture to enter or leave fullscreen without leaving theater mode.
+- Better subtitle support: select a track directly in cinema mode, turn subtitles on and off with the `C` key, and adjust font, size, colour, shadow, background and opacity. The extension remembers your preferred language separately for each website.
+- Rich Theater Experience: enable additional integrations with supported services. Available features depend on the service and can be managed with a switch for each service in the extension popup or in settings.
+- Chat beside the picture: on Twitch and YouTube with Rich Theater Experience, keep the live chat or chat replay next to the video or below it, and show or hide it with `Alt+R`.
+- A richer timeline: jump between chapters, preview thumbnails before seeking, and see YouTube's Most Replayed moments. Installed SponsorBlock markers can be shown on the YouTube timeline.
+- Skip buttons and next episodes: where the service offers them, skip intros, credits and recaps or YouTube ads, and move to the previous or next video or episode.
+- Video Fit and Raised layout: press `Z` or use the button in the player to toggle Fit, Fill and Stretch and remove black bars without additional extension. Choose a Raised layout (`Shift+L`) to move the picture to the top and use the space below it for subtitles.
+- Elegant custom controls: modern control bar with the video title, vertical volume and playback speed panels, semi-transparent tooltips, and elapsed and remaining time indicators. Keep the controls always visible with `Shift+H`.
+- Audio effects: Volume Boost (up to 300%), Voice boost, Reduce loud sounds and Bass in the player settings, processed with the Web Audio API only while an effect is on. Not available on DRM-protected media.
+- Visual HUD: Elegant animated overlays for changing volume, seeking, and toggling play/pause.
+- AutoTheater (Rich Theater Experience): enter theater mode automatically when a supported video starts, with a short countdown notice you can cancel with a click or `Esc`.
+- Video launcher (BETA, off by default): a small button over a paused video to enter theater mode with one click. On YouTube with Rich Theater Experience it sits in the player toolbar.
+- Shadow DOM support: finds and magnifies players hidden in modern shadow roots, improving compatibility with more sites.
+- Custom shortcuts and settings: configure keys to toggle theater mode, seek, manage subtitles, resize subtitles, and step frame by frame. Settings warn about conflicting shortcuts, and in-player help helps you check all of them. Choose the language, accent colour, High contrast, Reduce transparency and Reduce motion.
+- Exclusion list: exclude specific domains via popup in browser bar or options page to avoid conflicts with native page layout.
+
+WHERE AND HOW IT WORKS
+- Universal HTML5 Video: Works with standard HTML5 video elements on the web, including players placed in the Shadow DOM.
+- Embedded Players: Detects and enlarges videos embedded in frames, such as YouTube players or players from other video platforms.
+- HTML5 Subtitles: Displays standard HTML5 subtitle tracks in their own cinema mode overlay so you can customise their appearance.
+- Platform Integrations: besides those named at the top of this description, RTE supports many other video platforms, including creator, anime and Asian ones, with playlists, titles, subtitles, chapters and automatic theater entry. Available features depend on the service and video.
+- Live broadcasts: recognises LIVE broadcasts and, if the service provides a DVR window, allows you to rewind the recording and return to the current moment.
+- DRM-protected services: some platforms limit access to the player, so some functions, such as audio effects, may be unavailable on them.
+- Privacy: You're not a product. The extension does not send information about you or what you watch to the developer. Settings can sync through your browser account. The full privacy policy is available in Settings, under About.
+- Free and open source: Theater Mode Everywhere is free and always will be, and its source code is open.
+
+HOW TO START
+1. Open a video site, such as a streaming platform, news site, or blog.
+2. Press `T` to enter cinema mode. Make sure you are not writing in the text box.
+3. Use the player controls or shortcuts: `C` toggles subtitles, `Left` and `Right` seek, and the configurable frame-step shortcuts move frame by frame.
+4. On supported platforms, enable Rich Theater Experience in the extension popup or settings.
+5. Press `Escape` or `T` again to exit theater mode.
+
+## Suggested tags
+video, theater mode, cinema mode, html5 video, fullscreen, picture in picture, volume boost, keyboard shortcuts, youtube, vimeo, subtitles, streaming, twitch, netflix, crunchyroll
