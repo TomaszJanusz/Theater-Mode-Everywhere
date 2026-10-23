@@ -1,7 +1,7 @@
 {
   "options/options.css": {
     "scale-unlimited/declaration-strict-value": 5,
-    "declaration-no-important": 19
+    "declaration-no-important": 20
   },
   "src/appearance-tokens.css": {
     "declaration-no-important": 30
@@ -21,10 +21,10 @@
   },
   "src/ui/modal.css": {
     "scale-unlimited/declaration-strict-value": 1,
-    "declaration-no-important": 117
+    "declaration-no-important": 118
   },
   "src/ui/shadow.css": {
     "scale-unlimited/declaration-strict-value": 39,
-    "declaration-no-important": 1689
+    "declaration-no-important": 1723
   }
 }
