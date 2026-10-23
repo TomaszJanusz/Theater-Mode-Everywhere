@@ -56,7 +56,11 @@ export function renderShortcutCaps(container: HTMLElement, stored: string, env: 
     if (index > 0 && separator) container.append(separator);
     const kbd = document.createElement('kbd');
     kbd.textContent = token.text;
-    if (token.label !== token.text) kbd.setAttribute('aria-label', token.label);
+    // `aria-label` is prohibited on a bare `<kbd>` (generic role) and ignored by screen readers; an image role makes the name count.
+    if (token.label !== token.text) {
+      kbd.setAttribute('role', 'img');
+      kbd.setAttribute('aria-label', token.label);
+    }
     container.append(kbd);
   });
 }
