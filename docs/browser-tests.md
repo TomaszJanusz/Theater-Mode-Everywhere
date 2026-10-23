@@ -235,7 +235,7 @@ Browser harnesses often bundle imports inside strings or read source directly.
 Literal paths, including type-only imports, are conservatively matched against
 all repository path suffixes; ambiguous names select every match. Tests reading
 `dist/` depend on all five installed extension script entrypoints and the build
-roots (`scripts/build.ts` and `vite.config.ts`). Repository-wide
+roots (`scripts/build.ts` and `config/vite.config.ts`). Repository-wide
 DOM and determinism guards have explicit dependency edges for the trees they scan.
 Catalog changes select localization/i18n tests and consumers of `_locales`, rather
 than unrelated playback tests. Chromium smoke runs when the entrypoint graph is

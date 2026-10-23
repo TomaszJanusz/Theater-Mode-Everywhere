@@ -22,5 +22,5 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vitest.config.ts", ".storybook/**/*.ts", "src", "popup", "options", "scripts", "tools/cpu-suite", "tools/audio-charts"]
+  "include": ["vitest.config.ts", "config/*.ts", ".storybook/**/*.ts", "src", "popup", "options", "scripts", "tools/cpu-suite", "tools/audio-charts"]
 }

@@ -25,7 +25,7 @@ paths:
   - options
   - scripts
   - tools
-  - vite.config.ts
+  - config/vite.config.ts
   - .github
 
 # Generated output, tests and fixtures. Tests use fake hosts, static HTML and

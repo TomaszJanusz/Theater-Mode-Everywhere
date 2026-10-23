@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { bundleMinify, resolveBundleBuildMode } from './scripts/build-mode';
+import { bundleMinify, resolveBundleBuildMode } from '../scripts/build-mode';
 
 export default defineConfig(() => {
   const mode = resolveBundleBuildMode();
@@ -11,9 +11,9 @@ export default defineConfig(() => {
       minify: bundleMinify(mode),
       rollupOptions: {
         input: {
-          popup: resolve(__dirname, 'popup/popup.html'),
-          options: resolve(__dirname, 'options/options.html'),
-          background: resolve(__dirname, 'src/entries/background.ts'),
+          popup: resolve(__dirname, '../popup/popup.html'),
+          options: resolve(__dirname, '../options/options.html'),
+          background: resolve(__dirname, '../src/entries/background.ts'),
         },
         output: {
           entryFileNames: (chunkInfo) => {

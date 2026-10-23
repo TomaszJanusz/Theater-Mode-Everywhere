@@ -120,7 +120,7 @@ async function run() {
     
     // 1. Run Vite build
     console.log('Compiling TypeScript and HTML via Vite...');
-    await build();
+    await build({ configFile: path.resolve(__dirname, '../config/vite.config.ts') });
     console.log('Bundling isolated MV3 classic scripts...');
     await buildClassicScript('content', 'src/entries/content.ts', mode);
     await buildClassicScript('mainWorld', 'src/entries/main-world.ts', mode);

@@ -4,7 +4,7 @@
   "description": "Maximize any HTML5 video player to fill the browser viewport with a single keypress [T].",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config config/vite.config.ts",
     "build": "tsx scripts/build.ts",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.mjs",
@@ -23,8 +23,11 @@
     "storybook:build": "storybook build --output-dir output/storybook-static",
     "storybook:shots": "pnpm storybook:build && tsx scripts/storybook-shots.ts",
     "storybook:shots:firefox": "pnpm storybook:build && tsx scripts/storybook-shots.ts firefox",
-    "storybook:test": "vitest run --config .storybook/vitest.config.ts",
+    "storybook:test": "vitest run --config vitest.config.ts",
     "lint": "eslint . --config config/eslint.config.mjs --max-warnings 0",
+    "lint:fix": "pnpm lint --fix",
+    "check": "pnpm lint && pnpm typecheck && pnpm exec tsx --test scripts/test-determinism.test.ts scripts/test-harness.test.ts",
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm verify:bundles",
     "lint:suppressions:prune": "pnpm lint --prune-suppressions"
   },
   "author": "Tomasz Janusz",
