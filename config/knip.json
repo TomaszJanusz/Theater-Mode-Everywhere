@@ -1,0 +1,18 @@
+{
+  "entry": [
+    "src/entries/*.ts",
+    "popup/popup.ts",
+    "options/options.ts",
+    "scripts/*.ts",
+    "scripts/*.mjs",
+    "tools/**/*.ts",
+    "src/**/*.stories.ts",
+    ".storybook/main.ts",
+    ".storybook/preview.ts",
+    "config/*.ts",
+    "config/*.mjs",
+    "config/*.cjs"
+  ],
+  "project": ["src/**/*.{ts,css}", "popup/**/*.{ts,css}", "options/**/*.{ts,css}", "scripts/**/*.{ts,mjs}", "tools/**/*.ts", ".storybook/**/*.ts", "config/*.{ts,mjs,cjs}"],
+  "ignore": ["dist/**", "output/**", "**/*.d.ts"]
+}

@@ -1,0 +1,30 @@
+{
+  "options/options.css": {
+    "scale-unlimited/declaration-strict-value": 5,
+    "declaration-no-important": 20
+  },
+  "src/appearance-tokens.css": {
+    "declaration-no-important": 30
+  },
+  "src/content.css": {
+    "scale-unlimited/declaration-strict-value": 3,
+    "declaration-no-important": 79,
+    "selector-disallowed-list": 1
+  },
+  "src/host-frame.css": {
+    "declaration-no-important": 12
+  },
+  "src/native-chat.css": {
+    "scale-unlimited/declaration-strict-value": 6,
+    "declaration-no-important": 65,
+    "selector-disallowed-list": 1
+  },
+  "src/ui/modal.css": {
+    "scale-unlimited/declaration-strict-value": 1,
+    "declaration-no-important": 118
+  },
+  "src/ui/shadow.css": {
+    "scale-unlimited/declaration-strict-value": 39,
+    "declaration-no-important": 1723
+  }
+}
