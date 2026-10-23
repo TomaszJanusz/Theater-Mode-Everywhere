@@ -32,7 +32,7 @@ module.exports = {
     {
       name: 'production-does-not-import-test-tools', severity: 'error',
       from: { path: '^(?:src|popup|options)/', ...runtime },
-      to: { path: '^(?:src/test-utils/|test/|tools/)|^(?:playwright|esbuild)(?:/|$)' },
+      to: { path: '^(?:src/test-utils/|test/|tools/)|/node_modules/(?:playwright|esbuild)(?:/|$)' },
     },
   ],
   options: {
