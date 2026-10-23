@@ -1,108 +1,26 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { after, before, describe, it } from 'node:test';
-import type { Browser, Page } from 'playwright';
+
+import type { Browser } from 'playwright';
+
 import { BASS_MOAAARR_ENABLED, DEFAULT_AUDIO_SETTINGS, type AudioSettings } from '../audio-settings';
-
-const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const BUNDLE = esbuild.buildSync({
-  entryPoints: [path.join(SRC, 'platform/audio-graph.ts')],
-  bundle: true, write: false, format: 'iife', globalName: 'AudioGraph', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
-
-/**
- * Renders a scene offline through the chain (or untouched when settings are
- * null) and returns single-bin DFT levels and RMS windows after the fades and
- * compressors settle. Scenes are generated in the page from a formula string.
- */
-const RENDER = `(async ({ settings, channels, seconds, scene, bands, windows }) => {
-  const rate = 48000, n = rate * seconds;
-  const fill = new Function('t', 'ch', 'return ' + scene);
-  const ctx = new OfflineAudioContext(2, n, rate);
-  const buffer = ctx.createBuffer(channels, n, rate);
-  for (let ch = 0; ch < channels; ch++) {
-    const data = buffer.getChannelData(ch);
-    for (let i = 0; i < n; i++) data[i] = fill(i / rate, ch);
-  }
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  if (settings) {
-    const chain = AudioGraph.createAudioChain(ctx);
-    source.connect(chain.input);
-    chain.output.connect(ctx.destination);
-    chain.apply(settings);
-  } else {
-    source.connect(ctx.destination);
-  }
-  source.start();
-  const out = await ctx.startRendering();
-  const L = out.getChannelData(0), R = out.getChannelData(1);
-  const from = rate;
-  const signal = { mid: (i) => L[i] + R[i], side: (i) => L[i] - R[i] };
-  const levels = {};
-  for (const [name, [kind, frequency]] of Object.entries(bands)) {
-    let re = 0, im = 0;
-    for (let i = from; i < n; i++) {
-      const phase = 2 * Math.PI * frequency * i / rate;
-      re += signal[kind](i) * Math.cos(phase);
-      im += signal[kind](i) * Math.sin(phase);
-    }
-    levels[name] = Math.hypot(re, im) / (n - from);
-  }
-  for (const [name, [start, end]] of Object.entries(windows)) {
-    let sum = 0;
-    for (let i = start * rate; i < end * rate; i++) sum += L[i] * L[i];
-    levels[name] = Math.sqrt(sum / ((end - start) * rate));
-  }
-  let peak = 0;
-  for (let i = from; i < n; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
-  levels.peak = peak;
-  return levels;
-})`;
-
-type RenderOptions = {
-  channels?: number;
-  seconds?: number;
-  scene: string;
-  bands?: Record<string, ['mid' | 'side', number]>;
-  windows?: Record<string, [number, number]>;
-};
-
-const db = (value: number, reference: number) => 20 * Math.log10(value / reference);
-const settings = (overrides: Partial<AudioSettings>): AudioSettings => ({ ...DEFAULT_AUDIO_SETTINGS, ...overrides });
-
-// Speech and bass sit in the centre; a wide tone differs between channels.
-const STEREO_SCENE = `0.08 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 4 * t)) * Math.sin(2 * Math.PI * 1500 * t)
-  + 0.12 * Math.sin(2 * Math.PI * 80 * t) + (ch === 0 ? 1 : -1) * 0.1 * Math.sin(2 * Math.PI * 440 * t)`;
-const STEREO_BANDS: RenderOptions['bands'] = { speech: ['mid', 1500], side: ['side', 440], bass: ['mid', 80] };
-
-type Render = (s: AudioSettings | null, options: RenderOptions) => Promise<Record<string, number>>;
+import {
+  BASS_BANDS, BASS_SCENE, LEVELING_OPTIONS, STEREO_BANDS, STEREO_SCENE, db, openAudioRenderer, settings,
+  type Render, type RenderOptions
+} from '../test-utils/audio-render';
 
 describe('audio graph', () => {
   let browser: Browser | null = null;
-  let page: Page | null = null;
+  let renderer: Render | null = null;
   before(async () => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
-    browser = await chromium.launch({ headless: true });
-    page = await browser.newPage();
-    await page.addScriptTag({ content: BUNDLE });
+    const opened = await openAudioRenderer();
+    browser = opened?.browser ?? null;
+    renderer = opened?.render ?? null;
   });
   after(async () => { await browser?.close(); });
 
   async function withPage(run: (render: Render) => Promise<void>): Promise<void> {
-    const current = page;
-    if (!current) return;
-    await run((s, options) => current.evaluate(`${RENDER}(${JSON.stringify({
-      settings: s, channels: 2, seconds: 2, bands: {}, windows: {}, ...options
-    })})`) as Promise<Record<string, number>>);
+    if (renderer) await run(renderer);
   }
 
   it('passes untouched audio through when every setting is neutral', async () => {
@@ -138,12 +56,7 @@ describe('audio graph', () => {
 
   it('narrows the gap between quiet and loud passages, most at the strong level', async () => {
     await withPage(async (render) => {
-      // Two seconds quiet, two seconds about 22 dB louder.
-      const options = {
-        seconds: 4,
-        scene: `(t < 2 ? 0.016 : 0.2) * (Math.sin(2 * Math.PI * 440 * t) + 0.5 * Math.sin(2 * Math.PI * 1300 * t))`,
-        windows: { quiet: [0.5, 2], loud: [2.5, 4] }
-      } satisfies RenderOptions;
+      const options = LEVELING_OPTIONS;
       const ref = await render(null, options);
       const light = await render(settings({ leveling: 'light' }), options);
       const strong = await render(settings({ leveling: 'strong' }), options);
@@ -157,7 +70,7 @@ describe('audio graph', () => {
 
   it('shelves bass without touching the midrange', async () => {
     await withPage(async (render) => {
-      const options = { scene: `0.1 * Math.sin(2 * Math.PI * 60 * t) + 0.1 * Math.sin(2 * Math.PI * 1000 * t)`, bands: { low: ['mid', 60], mid: ['mid', 1000] } } satisfies RenderOptions;
+      const options = { scene: BASS_SCENE, bands: BASS_BANDS } satisfies RenderOptions;
       const ref = await render(null, options);
       const less = await render(settings({ bass: 'less' }), options);
       const more = await render(settings({ bass: 'more' }), options);
