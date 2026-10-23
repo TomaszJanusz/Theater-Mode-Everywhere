@@ -162,6 +162,7 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+.playwright-cli/
 
 # Browser extension artifacts
 web-ext-artifacts/

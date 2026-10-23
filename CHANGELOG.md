@@ -28,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
 
+## [2.0.5] - 2026-10-23
+
+### Fixed
+
+- In Firefox, seeking with the arrow keys, the progress bar or the live button on Netflix, Disney+ and live YouTube streams now reaches the site's own player. The request was blocked by Firefox's cross-script isolation, so those seeks were dropped and each one logged a "Permission denied" error in the page console. Chromium was not affected.
+- In Firefox, the extension's requests to a site's own scripts for site data on supported sites and for switching YouTube's and Twitch's built-in captions were also blocked by Firefox's cross-script isolation and never answered, so YouTube caption tracks waited several seconds to switch. They now go through. Chromium was not affected.
+
+## [2.0.4] - 2026-10-21
+
+### Fixed
+
+- Theater mode now exits when you navigate back or forward to a page without the player on single-page sites, instead of leaving the stage on screen or switching it to another video.
+
 ## [2.0.3] - 2026-10-20
 
 ### Fixed

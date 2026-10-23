@@ -1,3 +1,5 @@
+import { encodeTwitchCaptions } from '../protocol/page-requests';
+
 import { parseCaptionPayload } from './parsers/captions';
 import {
   getTwitchPreviewFrame,
@@ -57,7 +59,7 @@ export function requestTwitchHostCaptions(
     };
     const timer = target.setTimeout(() => finish(false), timeoutMs);
     target.addEventListener(TWITCH_CAPTIONS_ACK_EVENT, onAck);
-    target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_EVENT, { detail: { enabled, requestId } }));
+    target.dispatchEvent(new CustomEvent(TWITCH_CAPTIONS_EVENT, { detail: encodeTwitchCaptions({ enabled, requestId }) }));
   });
 }
 

@@ -6,7 +6,7 @@ export const netflixWatchPlayback: WatchPlayback = {
   pageIdentity(url) {
     return /^\/watch\/\d+\/?$/.test(url.pathname) ? netflixWatchId(url.pathname) : null;
   },
-  mainVideo(doc, identity) {
+  mainVideo(doc, identity, purpose) {
     const root = findNetflixPlayerRoot(doc);
     if (!root?.closest('.watch-video')) return null;
     const labeledId = root.getAttribute('data-videoid');
@@ -16,7 +16,7 @@ export const netflixWatchPlayback: WatchPlayback = {
     const api = readNetflixPlayerAppApi();
     if (api?.videoPlayer && !selectNetflixSession(api, root, identity)) return null;
     const videos = Array.from(root.querySelectorAll<HTMLVideoElement>('video'))
-      .filter(video => !video.paused && !video.ended && isSwitchableTheaterVideo(video));
+      .filter(video => (purpose === 'replacement' || (!video.paused && !video.ended)) && isSwitchableTheaterVideo(video));
     // Ads in this player belong to the watch session; catalog previews do not.
     return videos.length === 1 ? videos[0] : null;
   }

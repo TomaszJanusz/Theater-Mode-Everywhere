@@ -1,9 +1,6 @@
-export type MediaSeekDetail = {
-  live?: boolean;
-  time?: number;
-  resumeAfterSeek?: boolean;
-  cancelPendingResume?: boolean;
-};
+import type { MediaSeekDetail } from '../../protocol/media-seek';
+
+export type { MediaSeekDetail };
 
 export type TimelineBounds = {
   start: number;

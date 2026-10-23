@@ -140,6 +140,19 @@ state, iframe players and season-only URLs remain manual. Both Bilibili provider
 reuse the history publication and shared countdown runtime.
 Vimeo showcases, live events and OTT pages are also excluded.
 
+A theater session that starts on a declared watch route ends through the
+normal exit path when navigation leaves that route, independent of media state or
+other videos on the destination page. History traversal, provider navigation
+publications and replacement discovery revalidate the route. Replacement videos
+on routes with a declared content identity must pass the provider's current
+`mainVideo` identity check through the same string-only bridge, including with RTE
+disabled. The replacement purpose accepts paused primary media; automatic entry retains its
+integration gate. Sessions entered outside declared watch routes retain generic
+video discovery and replacement behavior. A provider's optional `playbackPage`
+can preserve manual playback routes without a stable URL content identity (such
+as season pages); those retain generic replacement behavior and remain ineligible
+for automatic entry.
+
 ## Video launcher
 
 `ProviderDefinition.launcherPlacement` supplies an optional `LauncherPlacement`
