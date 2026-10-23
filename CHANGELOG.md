@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- With AutoTheater on, a page opened in a background tab no longer shows its native chat as closed when you switch to it if the site's chat was already open.
+
 ## [2.0.5] - 2026-10-23
 
 ### Fixed
