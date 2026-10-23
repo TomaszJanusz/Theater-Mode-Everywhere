@@ -45,14 +45,47 @@ test-owned hook closes it even when the body is still waiting. The regression
 in `test-browser.test.ts` deliberately times out a child runner and checks its
 failure, disconnection and exit rather than weakening the timeout assertion.
 
-The audio lifecycle cases exercise real Web Audio. The delayed-operation case
-controls the context's state and promise completion: native Firefox autoplay
-can resume without invoking the overridden `resume()` method. That controlled
-case checks reconciliation after pause and retirement independently of native
-autoplay policy. It also forces an external auto-resume notification and checks
-that paused media suspends again; native autoplay policy and statechange timing
-vary across platforms. The separate native case checks real
-playback, pause, reload, replacement, reparenting and removal.
+Audio is tested in three tiers; put a new case in the cheapest one that can fail
+for the right reason:
+
+- **Node** (`media-audio-lifecycle.test.ts`, `audio-graph.test.ts`,
+  `audio-crossfade.test.ts`): the suspend/resume/retire rules run against an injected
+  context facade whose `resume()`/`suspend()` the test settles by hand, so races such
+  as a pause during a pending resume are exact. The DSP graph topology is checked
+  against a fake context.
+- **Browser, no audio device** (`audio-graph.browser.test.ts` renders through
+  `OfflineAudioContext`; `media-audio-runtime-wiring.browser.test.ts` drives the real
+  runtime against a controlled `AudioContext` stand-in for events, observers,
+  activation and iframes). Neither needs an audio server.
+- **Native** (`media-audio-runtime.browser.test.ts`, at most three cases per engine):
+  real playback, pause, reload, reparenting and removal on a real context, and the
+  spectrum of the stereo tone fixture. These launch with the autoplay policy relaxed
+  (`nativeAudioLaunchOptions`), so a context follows playback and not the browser's
+  gesture rules; the runtime's policy gate is covered by the tiers above. The tone case
+  puts an `AnalyserNode` after the runtime's last node and compares band levels within
+  one run (gain +6 dB, bass shelf, voice stereo leakage and dialogue lift) with
+  tolerances; never assert exact samples or absolute dB, which depend on the engine.
+  `test/fixtures/tone.md` documents the fixture and its regeneration command.
+
+On headless Linux, native Firefox Web Audio needs an audio server and an output
+device. CI starts PulseAudio with a null sink for the job; the browser still executes
+native DSP without requiring speakers. Playwright's system dependencies provide
+libraries, but do not start that server. `requireAudioSink` (`src/test-utils/audio-sink.ts`)
+runs before the first native case of each browser and fails within five seconds with
+`environment: no audio sink` when a context never starts, instead of a 30 s
+`waitForFunction` timeout that looks like a lifecycle regression. Treat that error as
+an environment failure, never as a passing lifecycle check.
+
+On a local Linux machine, reuse its audio server, or start a throwaway null sink:
+
+```sh
+pactl load-module module-null-sink sink_name=te_null   # PulseAudio, or PipeWire with pipewire-pulse
+pactl set-default-sink te_null
+# when done:
+pactl unload-module module-null-sink
+```
+
+On macOS and Windows the system audio device is used and nothing needs starting.
 
 The registered suite limits test-file concurrency to two. CI caps Chromium browser
 tests at ten minutes, Firefox at fifteen, and the job at thirty, and cancels

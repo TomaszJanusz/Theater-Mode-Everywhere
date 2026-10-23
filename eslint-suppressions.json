@@ -1206,18 +1206,7 @@
       "count": 1
     }
   },
-  "src/platform/media-audio-runtime.browser.test.ts": {
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/platform/media-audio-runtime.ts": {
-    "import/order": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -2183,11 +2172,6 @@
   "src/test-utils/test-browser.test.ts": {
     "import/order": {
       "count": 2
-    }
-  },
-  "src/test-utils/test-browser.ts": {
-    "import/order": {
-      "count": 1
     }
   },
   "src/test-utils/test-engines.test.ts": {
