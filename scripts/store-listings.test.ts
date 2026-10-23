@@ -19,7 +19,7 @@ const SERVICE_PACKS: Record<string, string[]> = {
   sk: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   de: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
   pl: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
-  ko: ['YouTube', 'Twitch', 'Netflix', 'Disney+'],
+  ko: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   ja: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   fr: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],
   es: ['YouTube', 'Netflix', 'Disney+', 'Crunchyroll'],

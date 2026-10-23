@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Korean store listing now highlights Crunchyroll alongside YouTube, Netflix and Disney+.
 - The AutoTheater countdown ring now fills to a full circle during the last two seconds, holds, then zooms out just before entry. If the video is still not ready when the countdown ends, the notice waits a moment and then shows an animated ellipsis until it is. With reduced motion the ring switches to full and disappears without animating.
 - Settings with several levels (Voice boost, Reduce loud sounds, Bass and Video fit) now have a stepper: arrows lower or raise the value one step at a time without wrapping around, and a row of segments under the value shows how many options there are and which one is active. Lowering Bass no longer means cycling up through every level. The whole row highlights on hover and keyboard focus like the other rows. The highlight slides between segments, the value slides in and a press at the end of the range gives a small nudge, all of it short and switched off by Reduce motion. The cycle shortcuts keep wrapping as before.
 - The volume and speed sliders now look and behave alike, with the same marker for 100% and 1x. Scrolling or using the volume keys always stops at 100% before going into boost, and stops there again on the way back down.
