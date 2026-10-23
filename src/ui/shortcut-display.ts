@@ -120,6 +120,12 @@ export function shortcutLabel(stored: string, env: ShortcutDisplayEnv): string {
   return shortcutTokens(stored, env).map(({ text }) => text).join(shortcutSeparator(env.platform));
 }
 
+/** The one glyph a compact hint can show (letters, digits, punctuation, arrows); words and chords never hint. */
+export function shortcutKeyHint(stored: string, env: ShortcutDisplayEnv): string | undefined {
+  const tokens = shortcutTokens(stored, env);
+  return tokens.length === 1 && [...tokens[0].text].length === 1 ? tokens[0].text : undefined;
+}
+
 /** Resolves once per context: `userAgentData` where available, `navigator.platform` otherwise. */
 export function detectShortcutPlatform(nav: { platform?: string; userAgentData?: { platform?: string } }): ShortcutPlatform {
   const platform = nav.userAgentData?.platform || nav.platform || '';

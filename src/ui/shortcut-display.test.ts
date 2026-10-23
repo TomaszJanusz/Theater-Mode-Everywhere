@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { detectShortcutPlatform, parseShortcut, shortcutLabel, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
+import { detectShortcutPlatform, parseShortcut, shortcutKeyHint, shortcutLabel, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
 import { defaultShortcuts, withShortcutDefaults } from './shortcuts';
 
 const windows: ShortcutDisplayEnv = { platform: 'windows' };
@@ -80,6 +80,16 @@ describe('shortcut display', () => {
     assert.deepEqual(spoken('Escape', linux), ['Escape']);
     assert.deepEqual(spoken('Delete', linux), ['Delete']);
     assert.deepEqual(spoken('Space', linux), ['Space']);
+  });
+
+  it('hints a single glyph, arrows included, and never a word or a chord', () => {
+    assert.equal(shortcutKeyHint('A', windows), 'A');
+    assert.equal(shortcutKeyHint('KeyW', azerty), 'Z');
+    assert.equal(shortcutKeyHint('ArrowLeft', windows), '←');
+    assert.equal(shortcutKeyHint('ArrowRight', mac), '→');
+    assert.equal(shortcutKeyHint('Space', windows), undefined);
+    assert.equal(shortcutKeyHint('Shift+A', windows), undefined);
+    assert.equal(shortcutKeyHint('', windows), undefined);
   });
 
   it('localizes spoken names only, never the visible legend', () => {

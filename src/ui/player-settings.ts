@@ -5,7 +5,7 @@ import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover } from './menu-popover';
 import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
-import { shortcutTokens } from './shortcut-display';
+import { shortcutKeyHint } from './shortcut-display';
 import { shortcutDisplayEnv } from './shortcuts';
 import { createStepper, type StepperState } from './stepper';
 
@@ -191,11 +191,6 @@ export function createPlayerSettings(
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
     if (newItem) highlight(row, icon, label, newItem, true);
-    /** A key the arrows can wear: one character, as A and D are by default. */
-    const singleKey = (shortcut: string) => {
-      const tokens = shortcutTokens(shortcut, shortcutDisplayEnv());
-      return tokens.length === 1 && [...tokens[0].text].length === 1 ? tokens[0].text : undefined;
-    };
     function setShortcut(shortcut: string, name: string) {
       const item = newItems.get(row);
       if (item) item.label = name;
@@ -210,7 +205,8 @@ export function createPlayerSettings(
         setShortcut(shortcut, label);
         stepper?.update(state);
         const { navigateLeft, navigateRight } = ctx.ui().shortcuts;
-        stepper?.setKeys(singleKey(navigateLeft), singleKey(navigateRight));
+        const env = shortcutDisplayEnv();
+        stepper?.setKeys(shortcutKeyHint(navigateLeft, env), shortcutKeyHint(navigateRight, env));
       },
       /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
       update(shortcut: string, value?: string, values: readonly string[] = []) {
