@@ -2,6 +2,8 @@ import type { Meta } from '@storybook/html-vite';
 import { expect, waitFor } from 'storybook/test';
 
 import { hudStory, type HudArgs } from '../../.storybook/hud-story';
+import { committedFixture } from '../../tools/host-fixtures/committed';
+import { recordedMediaAdapter } from '../../tools/host-fixtures/recorded-adapter';
 
 import { HEADER_HUD_CLASS, TITLE_HUD_CLASS } from './hud';
 import { queryPlayerUi } from './root';
@@ -39,3 +41,7 @@ function content(args: Partial<Args> = {}) {
 export const Short = content();
 export const WithSubtitle = content({ title: 'Severance', subtitle: 'S2 E4 • Woe’s Hollow' });
 export const Overflow = content({ title: LONG_TITLE });
+// Provider data recorded from a live Twitch channel (sanitized: the title keeps only its length),
+// read through the provider contract. Fixture evidence, not the live host.
+const recordedTwitch = recordedMediaAdapter(committedFixture('twitch-chat-expanded'));
+export const RecordedTwitch = content({ title: recordedTwitch.getTitle?.() ?? '', subtitle: recordedTwitch.getSubtitle?.() ?? '' });

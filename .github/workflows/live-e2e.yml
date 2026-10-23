@@ -2,7 +2,8 @@ name: Live E2E
 
 # Nightly, non-blocking lane: the built extension from the triggering ref (main for the schedule) against real public pages
 # whose URLs live in the LIVE_E2E_TARGETS repository variable (docs/browser-tests.md). Never runs on
-# pull requests and is not a required check; a red run opens or updates a rolling issue.
+# pull requests and is not a required check; a red run opens or updates a rolling issue. It also checks the
+# recorded host fixtures for drift against the same targets.
 on:
   schedule:
     - cron: '47 3 * * *'
@@ -80,6 +81,14 @@ jobs:
         if: steps.config.outputs.configured == 'true'
         timeout-minutes: 15
         run: xvfb-run --auto-servernum pnpm exec tsx tools/live-e2e/test-utils/run.ts dist/chrome-unpacked live-e2e-out
+        env:
+          LIVE_E2E_TARGETS: ${{ vars.LIVE_E2E_TARGETS }}
+      # Recorded host fixtures against their live page types (docs/browser-tests.md). Drift is reported
+      # (annotation, summary, rolling issue) without failing the step; runs even when a live page failed.
+      - name: Check host drift
+        if: ${{ !cancelled() && steps.config.outputs.configured == 'true' }}
+        timeout-minutes: 8
+        run: xvfb-run --auto-servernum pnpm exec tsx tools/host-fixtures/test-utils/drift-run.ts dist/chrome-unpacked live-e2e-out
         env:
           LIVE_E2E_TARGETS: ${{ vars.LIVE_E2E_TARGETS }}
       # Results only: the repository is public, so no trace, video or screenshot of a target is uploaded.

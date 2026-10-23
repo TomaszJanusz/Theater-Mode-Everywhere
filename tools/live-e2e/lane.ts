@@ -1,7 +1,8 @@
 import type { Status, SpecResult } from './model';
 
-export interface AttemptOutcome {
-  results: SpecResult[];
+/** Results of one attempt: spec results here, drift results for the host fixture check. */
+export interface AttemptOutcome<T extends { status: Status; detail?: string } = SpecResult> {
+  results: T[];
 }
 
 /**
@@ -9,7 +10,7 @@ export interface AttemptOutcome {
  * and passes are final at once: only a genuine failure earns the single retry. The last
  * attempt's results win, and a pass after a retry is flagged so flakiness stays visible.
  */
-export async function runWithRetries(attempt: (n: number) => Promise<AttemptOutcome>, retries: number): Promise<{ results: SpecResult[]; attempts: number }> {
+export async function runWithRetries<T extends { status: Status; detail?: string } = SpecResult>(attempt: (n: number) => Promise<AttemptOutcome<T>>, retries: number): Promise<{ results: T[]; attempts: number }> {
   let outcome = await attempt(1);
   let attempts = 1;
   while (outcome.results.some(r => r.status === 'failed') && attempts <= retries) {

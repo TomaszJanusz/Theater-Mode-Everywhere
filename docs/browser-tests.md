@@ -429,6 +429,23 @@ the leak, metadata and budget checks for every committed recording; import a new
 there and in the test that consumes it. Content behind a login, which cannot be sanitized
 automatically, is out of scope.
 
+Recordings in the repository: `twitch-chat-expanded` and `twitch-chat-collapsed` (the chat
+column, used by `src/chat/twitch-recorded.browser.test.ts` and the title HUD story),
+`youtube-watch-player` (the launcher's native slot and a caption track list, used by
+`src/providers/youtube/launcher-recorded.browser.test.ts`). Register a new one in
+[`committed.ts`](../tools/host-fixtures/committed.ts).
+
+**Drift.** The nightly live E2E lane runs
+[`drift-run.ts`](../tools/host-fixtures/test-utils/drift-run.ts) after its page checks: for
+every recording it opens the recipe's `pageType` from `LIVE_E2E_TARGETS` with the built
+extension, as the capture did, and compares the live probe signature with the recorded one.
+A difference is `DRIFT` (one line per changed probe field, a warning annotation, the job
+summary and a rolling `Host drift: <recording>` issue under the same rules as the lane's
+issues: one retry, skipped nights change nothing, closed after three green nights). It never
+fails the step. A recipe whose page type has no target is skipped, and an environment block
+is a skip, not drift. Output carries the recording id and page type, never a target URL. On
+drift, refresh the recording first, then fix the provider if its tests fail on the new one.
+
 `test/host-fixtures/` is `export-ignore`d (source archives) and `pnpm verify:bundles` fails
 if a recording reaches an extension package. A recording is **fixture evidence**: it shows
 the provider handles the structure the host had on the capture date, not that the host
