@@ -1,9 +1,12 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { after, before, describe, it } from 'node:test';
-import type { Browser, Page } from 'playwright';
+
+import { chromium, firefox, type Browser, type Page } from 'playwright';
+
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
 
 const require = createRequire(import.meta.url);
 
@@ -175,6 +178,38 @@ describe('native chat controller', () => {
       } finally { await testBrowser.close(); }
     }
   });
+
+  for (const engine of testEngines()) {
+    const browserType = { chromium, firefox }[engine];
+    const shared = sharedTestBrowser(browserType);
+    it(`keeps an open native chat open when theater starts in a background tab (${engine})`, async t => {
+      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      try {
+        await page.setContent(`<!doctype html><html><body><div style="width:900px"><div id="chat" class="right-column" style="width:340px"><section class="chat-room"></section></div></div></body></html>`, { waitUntil: 'domcontentloaded' });
+        await page.addScriptTag({ content: code || bundle() });
+        const report = await page.evaluate(`(() => {
+          let hidden = true;
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+          const c = new NativeChat.ChatController({ document, href: () => 'https://www.twitch.tv/SomeChannel', onChange() {}, onLayoutChange() {},
+            initialPreferences: { twitch: { visible: false, width: 420, theme: 'native' } } });
+          const whileHidden = c.state.available;
+          // Theater presentation hides the page's unbound panels before the tab is shown.
+          document.head.insertAdjacentHTML('beforeend', '<style>html.theater-everywhere-html-active #chat:not([data-theater-chat]){display:none!important}</style>');
+          document.documentElement.classList.add('theater-everywhere-html-active');
+          hidden = false;
+          document.dispatchEvent(new Event('visibilitychange'));
+          const shown = document.documentElement.hasAttribute('data-theater-chat-visible');
+          const state = { whileHidden, available: c.state.available, visible: c.state.visible, shown, active: document.documentElement.hasAttribute('data-theater-chat-active') };
+          c.dispose();
+          return state;
+        })()`);
+        assert.deepEqual(report, { whileHidden: false, available: true, visible: true, shown: true, active: true }, engine);
+      } finally {
+        await page.close();
+      }
+    });
+  }
 
   it('preserves Twitch VOD replay without replacing it with the live channel chat', async t => {
     if (!browser) { t.skip('Chromium is not installed'); return; }
