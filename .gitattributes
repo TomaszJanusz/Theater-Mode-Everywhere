@@ -4,3 +4,4 @@
 /docs/research export-ignore
 /docs/screenshots export-ignore
 /tmp export-ignore
+/.playwright-cli export-ignore
