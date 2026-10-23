@@ -37,10 +37,6 @@
   "src/entries/background.test.ts": {
     "esbuild": 1
   },
-  "src/platform/audio-graph.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
   "src/platform/network-harvest.browser.test.ts": {
     "launch": 5,
     "esbuild": 1

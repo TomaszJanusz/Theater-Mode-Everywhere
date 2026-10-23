@@ -87,6 +87,14 @@ pactl unload-module module-null-sink
 
 On macOS and Windows the system audio device is used and nothing needs starting.
 
+`pnpm audio:charts [dir]` (default `output/audio-charts`) renders one self-contained
+HTML page showing, for voice, stereo ambience, bass and volume leveling, the spectrum
+of the audio graph's test tones without and with the effect. It renders offline through
+the real chain with the same band-level helper as `audio-graph.browser.test.ts`
+(`src/test-utils/audio-render.ts`), so charts and assertions measure the same thing;
+`tools/audio-charts/audio-charts.browser.test.ts` cross-checks them. Crossfade is not
+charted (it has no steady spectrum), and there is no Storybook story. It needs Chromium.
+
 The registered suite limits test-file concurrency to two. CI caps Chromium browser
 tests at ten minutes, Firefox at fifteen, and the job at thirty, and cancels
 superseded runs for the same PR. These limits fail stalled checks; they do not turn them into passing tests.
