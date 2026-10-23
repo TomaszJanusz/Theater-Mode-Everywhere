@@ -163,10 +163,8 @@ jobs:
         with:
           name: test-selection
       - name: Unit tests
-        run: pnpm test --lane=unit --files-from=.test-impact.json
+        run: pnpm test --lane=unit --files-from=.test-impact.json --report-dir=test-reports
         timeout-minutes: 8
-        env:
-          THEATER_TEST_REPORT_DIR: test-reports
       - name: Summarize tests
         if: always()
         run: node scripts/ci-test-summary.mjs test-reports
@@ -202,11 +200,10 @@ jobs:
         run: pnpm storybook:test
         timeout-minutes: 5
       - name: Browser tests Chromium
-        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/2
+        run: pnpm test --lane=browser --files-from=.test-impact.json --test-shard=${{ matrix.shard }}/2 --report-dir=test-reports
         timeout-minutes: 10
         env:
           THEATER_TEST_ENGINES: chromium
-          THEATER_TEST_REPORT_DIR: test-reports
       - name: Summarize tests
         if: always()
         run: node scripts/ci-test-summary.mjs test-reports
@@ -240,11 +237,10 @@ jobs:
         env:
           STORYBOOK_BROWSER: firefox
       - name: Browser tests Firefox
-        run: pnpm test --lane=browser --files-from=.test-impact.json
+        run: pnpm test --lane=browser --files-from=.test-impact.json --report-dir=test-reports
         timeout-minutes: 15
         env:
           THEATER_TEST_ENGINES: firefox
-          THEATER_TEST_REPORT_DIR: test-reports
       - name: Summarize tests
         if: always()
         run: node scripts/ci-test-summary.mjs test-reports

@@ -70,7 +70,7 @@ function run(spawn, args, label) {
   return 0;
 }
 
-function runTsxTests(spawn, plan, root) {
+function runTsxTests(spawn, plan, root, reportDirectory) {
   // Static-preview tests need a fresh production Storybook, including in selected CI lanes.
   // Build once before starting test workers so parallel files cannot race over the output.
   if (plan.files.some(file => /from\s*['"]\.\.\/\.storybook\/static-server(?:\.ts)?['"]/.test(readFileSync(join(root, file), 'utf8')))) {
@@ -79,11 +79,10 @@ function runTsxTests(spawn, plan, root) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...reporterFlags('tsx'), ...plan.flags, ...plan.files], 'tsx');
+  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...reporterFlags('tsx', reportDirectory), ...plan.flags, ...plan.files], 'tsx');
 }
 
-function reporterFlags(label) {
-  const directory = process.env.THEATER_TEST_REPORT_DIR;
+function reporterFlags(label, directory) {
   if (!directory) return [];
   mkdirSync(directory, { recursive: true });
   return [
@@ -94,6 +93,9 @@ function reporterFlags(label) {
 
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
   let plan;
+  const reportArg = args.find(arg => arg.startsWith('--report-dir='));
+  const reportDirectory = reportArg?.slice('--report-dir='.length);
+  if (reportArg) args = args.filter(arg => arg !== reportArg);
   try {
     let discovered = discoverTests(root);
     const selectionArg = args.find(arg => arg.startsWith('--files-from='));
@@ -117,11 +119,11 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
     return 1;
   }
   if (plan.node.files.length > 0) {
-    const status = run(spawn, ['--test', ...reporterFlags('node'), ...plan.node.flags, ...plan.node.files], 'Node');
+    const status = run(spawn, ['--test', ...reporterFlags('node', reportDirectory), ...plan.node.flags, ...plan.node.files], 'Node');
     if (status !== 0) return status;
   }
   if (plan.tsx.files.length > 0) {
-    return runTsxTests(spawn, plan.tsx, root);
+    return runTsxTests(spawn, plan.tsx, root, reportDirectory);
   }
   return 0;
 }
