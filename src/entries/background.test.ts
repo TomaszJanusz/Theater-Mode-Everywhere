@@ -204,3 +204,42 @@ it('opens Settings at the Shortcuts tab, reusing an open Settings tab', async ()
     ['focus', 2, { focused: true }]
   ]);
 });
+
+it('opens one Settings tab for rapid clicks and falls back to a new tab when the open one is gone', async () => {
+  let listener!: (message: unknown, sender: object, reply: (value: unknown) => void) => boolean;
+  const page = 'chrome-extension://extension/options/options.html';
+  const tabs: Array<{ id: number; windowId: number; url: string }> = [];
+  const calls: unknown[] = [];
+  let closedSincePing = false;
+  const ignore = { addListener() {} };
+  runInNewContext(bundle, {
+    console: { error() {} },
+    chrome: {
+      tabs: {
+        onActivated: ignore, onUpdated: ignore,
+        async query() { await Promise.resolve(); return tabs.slice(); },
+        async create(options: object) { await Promise.resolve(); calls.push(['create', options]); tabs.push({ id: tabs.length + 1, windowId: 1, url: page }); },
+        async update(id: number, options: object) { calls.push(['update', id, options]); if (closedSincePing) throw new Error('No tab with id'); }
+      },
+      windows: { async update(id: number, options: object) { calls.push(['focus', id, options]); } },
+      storage: { onChanged: ignore },
+      runtime: {
+        id: 'extension', onInstalled: ignore, getURL: (file: string) => `chrome-extension://extension/${file}`,
+        getManifest: () => ({ version: CURRENT_VERSION, options_ui: { page: 'options/options.html' } }),
+        onMessage: { addListener(fn: typeof listener) { listener = fn; } }
+      }
+    }
+  });
+  const send = () => new Promise<{ ok: boolean }>(resolve => {
+    assert.equal(listener({ action: 'open-options-page', section: 'shortcuts' }, { id: 'extension' }, resolve as (value: unknown) => void), true);
+  });
+  // Two clicks before the first request finishes still open a single tab.
+  const replies = await Promise.all([send(), send()]);
+  assert.deepEqual(replies.map(reply => reply.ok), [true, true]);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)).map((call: unknown[]) => call[0]), ['create', 'update', 'focus']);
+  // The tab the query found closes before it is updated: the click still lands on a fresh Settings tab.
+  calls.length = 0;
+  closedSincePing = true;
+  assert.equal((await send()).ok, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)).map((call: unknown[]) => call[0]), ['update', 'create']);
+});
