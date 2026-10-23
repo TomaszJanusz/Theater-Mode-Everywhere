@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Entering theater with the site's live chat already open now keeps the chat visible, even if you had last hidden the chat panel; previously the open chat could be ignored on some live-stream pages.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
+- In Firefox, seeking with the arrow keys, the progress bar or the live button on Netflix, Disney+ and live YouTube streams now reaches the site's own player. The request was blocked by Firefox's cross-script isolation, so those seeks were dropped and each one logged a "Permission denied" error in the page console. Chromium was not affected.
 
 ## [2.0.3] - 2026-10-20
 
