@@ -114,13 +114,25 @@ function altLetter(event: KeyboardEvent): string | null {
   return event.altKey ? physical : null;
 }
 
+// A Cyrillic, Greek or Hebrew layout prints a letter that no Latin shortcut can name. When `key` is such a letter
+// the position (`KeyM`) is the only portable identity, so letter shortcuts fall back to it. A Latin `key` never does:
+// on AZERTY, QWERTZ or Dvorak the printed letter decides, and punctuation printed on a letter position (Dvorak `,` at
+// `KeyW`) keeps meaning that punctuation.
+function nonLatinLetterPosition(event: KeyboardEvent): string | null {
+  if (!/^Key[A-Z]$/.test(event.code) || [...event.key].length !== 1) return null;
+  return /\p{L}/u.test(event.key) && !/\p{Script=Latin}/u.test(event.key) ? event.code.slice(3) : null;
+}
+
 /**
  * `physical` records a letter or digit by its position (`KeyW`), which `matchesShortcut` already accepts
  * through `event.code`, so a layout that prints another letter there still triggers it.
  */
+// On a non-Latin layout a letter is recorded as the Latin letter of its position, not the printed one: the stored
+// value then fires on every layout and conflicts with a Latin binding of the same key, where a Cyrillic `Ь` would
+// neither match on QWERTY nor collide with `M`.
 export function shortcutFromEvent(event: KeyboardEvent, physical = false): string {
   if (event.isComposing || ['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'Dead', 'Unidentified', 'Process'].includes(event.key)) return '';
-  const key = (physical && /^(?:Key[A-Z]|Digit\d)$/.test(event.code) ? event.code : null) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
+  const key = (physical && /^(?:Key[A-Z]|Digit\d)$/.test(event.code) ? event.code : null) ?? nonLatinLetterPosition(event) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
     : event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
     event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
@@ -221,7 +233,7 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
     || e.code === 'Equal'
   );
   if (!isCompatiblePlus && eventKey !== targetKey && e.code.toUpperCase() !== targetKey
-      && altLetter(e) !== targetKey) return false;
+      && altLetter(e) !== targetKey && nonLatinLetterPosition(e) !== targetKey) return false;
 
   const hasCtrl = parts.includes('Ctrl');
   const hasAlt = parts.includes('Alt');

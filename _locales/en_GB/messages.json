@@ -1,0 +1,1132 @@
+{
+  "extensionName": {
+    "message": "Theater Mode Everywhere — One player to rule them all"
+  },
+  "extensionNameCompact": {
+    "message": "Theater Mode Everywhere"
+  },
+  "extensionDescription": {
+    "message": "Expand any HTML5 video to fill the browser. Use custom controls, subtitles, audio effects and integrations with video services."
+  },
+  "cwsPromoBeforeLabel": {
+    "message": "BEFORE"
+  },
+  "cwsPromoAfterLabel": {
+    "message": "AFTER"
+  },
+  "cwsPromoPlayerUiLabel": {
+    "message": "Player UI"
+  },
+  "cwsPromoShortcutsLabel": {
+    "message": "Shortcuts"
+  },
+  "settingsTitle": {
+    "message": "Settings"
+  },
+  "settingsPageTitle": {
+    "message": "Theater Mode Everywhere - Settings"
+  },
+  "settingsSubtitle": {
+    "message": "Configure website exclusions, appearance, and theater mode keyboard shortcuts."
+  },
+  "websiteLabel": {
+    "message": "Website"
+  },
+  "loadingLabel": {
+    "message": "Loading..."
+  },
+  "systemPage": {
+    "message": "System page"
+  },
+  "noActivePage": {
+    "message": "No active page"
+  },
+  "errorLoading": {
+    "message": "Error loading"
+  },
+  "statusActive": {
+    "message": "Active"
+  },
+  "statusDisabled": {
+    "message": "Disabled"
+  },
+  "statusDisabledByParent": {
+    "message": "Disabled by $1",
+    "placeholders": {
+      "domain": {
+        "content": "$1"
+      }
+    }
+  },
+  "statusInactiveSystem": {
+    "message": "Inactive (system)"
+  },
+  "statusUnavailable": {
+    "message": "Unavailable"
+  },
+  "toggleTheaterModeLower": {
+    "message": "Toggle theater mode"
+  },
+  "createdBy": {
+    "message": "Created by Tomasz Janusz"
+  },
+  "createdByHtml": {
+    "message": "Created by <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>"
+  },
+  "appearanceTitle": {
+    "message": "Appearance"
+  },
+  "appearanceDescription": {
+    "message": "Choose where the picture sits, and the accent for controls, sliders, shortcuts, and highlights."
+  },
+  "pictureAlignLabel": {
+    "message": "Layout"
+  },
+  "pictureAlignCenter": {
+    "message": "Centred"
+  },
+  "pictureAlignCenterDescription": {
+    "message": "Picture stays in the middle of the screen. Best for 16:9 screens."
+  },
+  "pictureAlignTop": {
+    "message": "Raised"
+  },
+  "pictureAlignTopDescription": {
+    "message": "Picture sits at the top, with a black band below for captions. Best for 16:10 and 4:3 screens."
+  },
+  "pictureAlignSubtitlesOnlyTitle": {
+    "message": "Raised only with subtitles"
+  },
+  "pictureAlignSubtitlesOnlyDescription": {
+    "message": "Use Raised when subtitles are on and Centred when they are off."
+  },
+  "voiceBoostLabel": {
+    "message": "Voice boost"
+  },
+  "voiceBoostOff": {
+    "message": "Off"
+  },
+  "voiceBoostLight": {
+    "message": "Light"
+  },
+  "voiceBoostStrong": {
+    "message": "Strong"
+  },
+  "audioProtected": {
+    "message": "Audio settings are unavailable: this video is DRM-protected."
+  },
+  "audioRefused": {
+    "message": "Audio settings are unavailable: the video’s server doesn’t allow it."
+  },
+  "audioUnavailableHud": {
+    "message": "Audio settings are unavailable for this video"
+  },
+  "voiceBoostHud": {
+    "message": "Voice boost: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "volumeLevelingLabel": {
+    "message": "Reduce loud sounds"
+  },
+  "volumeLevelingOff": {
+    "message": "Off"
+  },
+  "volumeLevelingLight": {
+    "message": "Light"
+  },
+  "volumeLevelingStrong": {
+    "message": "Strong"
+  },
+  "volumeLevelingHud": {
+    "message": "Reduce loud sounds: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "bassLabel": {
+    "message": "Bass"
+  },
+  "bassLess": {
+    "message": "Less"
+  },
+  "bassOriginal": {
+    "message": "Original"
+  },
+  "bassMore": {
+    "message": "More"
+  },
+  "bassMoar": {
+    "message": "MOAAR"
+  },
+  "bassMoaaarr": {
+    "message": "MOAAARR!"
+  },
+  "bassHud": {
+    "message": "Bass: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "navigationGroupTitle": {
+    "message": "Navigation"
+  },
+  "navigateUp": {
+    "message": "Navigate up"
+  },
+  "navigateLeft": {
+    "message": "Navigate left"
+  },
+  "navigateDown": {
+    "message": "Navigate down"
+  },
+  "navigateRight": {
+    "message": "Navigate right"
+  },
+  "volumeBoostLabel": {
+    "message": "Volume boost"
+  },
+  "volumeBoostOff": {
+    "message": "Off"
+  },
+  "volumeBoostOn": {
+    "message": "On"
+  },
+  "volumeBoostHud": {
+    "message": "Volume boost: $1",
+    "placeholders": {
+      "level": {
+        "content": "$1"
+      }
+    }
+  },
+  "accentColorLabel": {
+    "message": "Accent colour"
+  },
+  "accentColorSystem": {
+    "message": "System"
+  },
+  "accentColorTeal": {
+    "message": "Teal"
+  },
+  "accentColorBlue": {
+    "message": "Blue"
+  },
+  "accentColorGreen": {
+    "message": "Green"
+  },
+  "accentColorYellow": {
+    "message": "Yellow"
+  },
+  "accentColorOrange": {
+    "message": "Orange"
+  },
+  "accentColorRed": {
+    "message": "Red"
+  },
+  "accentColorPink": {
+    "message": "Pink"
+  },
+  "accentColorPurple": {
+    "message": "Purple"
+  },
+  "accentColorGray": {
+    "message": "Grey"
+  },
+  "useAccentColor": {
+    "message": "Use $COLOR$ as the accent colour",
+    "placeholders": {
+      "color": {
+        "content": "$1"
+      }
+    }
+  },
+  "featuresTitle": {
+    "message": "Features"
+  },
+  "featuresDescription": {
+    "message": "Turn optional theater mode behaviour on or off."
+  },
+  "volumeBoostTitle": {
+    "message": "Volume Boost"
+  },
+  "volumeBoostDescription": {
+    "message": "Amplify volume up to 300% using Web Audio API. A brief loading spinner may appear the first time you enter theater mode while this is enabled."
+  },
+  "richTheaterExperienceTitle": {
+    "message": "Rich Theater Experience (Experimental)"
+  },
+  "richTheaterExperiencePopupDescription": {
+    "message": "Enable richer integrations only for this service."
+  },
+  "youtubeIntegrationTitle": {
+    "message": "YouTube integration"
+  },
+  "youtubeIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: skip ads and next video in the queue. With YouTube Rich Theater Experience and Video launcher enabled, look in the player toolbar, just left of the autoplay switch."
+  },
+  "vimeoIntegrationTitle": {
+    "message": "Vimeo integration"
+  },
+  "vimeoIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Chapters, Thumbnails. Quick actions: next showcase video."
+  },
+  "patreonIntegrationTitle": {
+    "message": "Patreon integration"
+  },
+  "patreonIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Thumbnails."
+  },
+  "twitchIntegrationTitle": {
+    "message": "Twitch integration"
+  },
+  "twitchIntegrationDescription": {
+    "message": "Shows the channel or video title, plus VOD subtitle selection, chapter markers and timeline previews when supplied."
+  },
+  "disneyIntegrationTitle": {
+    "message": "Disney+ integration"
+  },
+  "disneyIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: skip intro, recap or credits and next episode."
+  },
+  "netflixIntegrationTitle": {
+    "message": "Netflix integration"
+  },
+  "netflixIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: skip intro, recap or credits and next episode."
+  },
+  "bilibiliIntegrationTitle": {
+    "message": "Bilibili (bilibili.com) integration"
+  },
+  "bilibiliIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Chapters, Heatmap, Thumbnails. Quick actions: native skip confirmations and next video."
+  },
+  "tencentIntegrationTitle": {
+    "message": "Tencent Video / WeTV integration"
+  },
+  "tencentIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: next episode through the player."
+  },
+  "liveBadge": {
+    "message": "LIVE"
+  },
+  "jumpToLive": {
+    "message": "Go to live"
+  },
+  "showTotalTime": {
+    "message": "Show duration"
+  },
+  "showRemainingTime": {
+    "message": "Show time remaining"
+  },
+  "websiteExclusionsTitle": {
+    "message": "Website Exclusions"
+  },
+  "websiteExclusionsDescription": {
+    "message": "Exclude websites where you do not want theater mode to activate automatically."
+  },
+  "domainInputPlaceholder": {
+    "message": "e.g., youtube.com or paste a URL"
+  },
+  "excludedWebsitesTitle": {
+    "message": "Excluded Websites"
+  },
+  "exclusionsFooterTip": {
+    "message": "Tip: You can also manage exclusions directly by clicking the extension icon in your browser toolbar."
+  },
+  "invalidDomain": {
+    "message": "Invalid domain or URL format."
+  },
+  "websiteAlreadyExcluded": {
+    "message": "This website is already excluded."
+  },
+  "errorSavingSettings": {
+    "message": "Error saving settings."
+  },
+  "noExclusionsYet": {
+    "message": "No exclusions yet"
+  },
+  "noExclusionsDescription": {
+    "message": "Theater mode will activate automatically on all video pages."
+  },
+  "removeExclusion": {
+    "message": "Remove exclusion"
+  },
+  "errorLoadingSettings": {
+    "message": "Error loading settings."
+  },
+  "keyboardShortcutsTitle": {
+    "message": "Keyboard Shortcuts"
+  },
+  "keyboardShortcutsDescription": {
+    "message": "Click any input field and press your desired key combination to configure. Modifiers like Ctrl, Alt, and Shift are supported."
+  },
+  "playerControlsTitle": {
+    "message": "Player Controls"
+  },
+  "toggleTheaterMode": {
+    "message": "Toggle Theater Mode"
+  },
+  "exitTheaterMode": {
+    "message": "Exit Theater Mode"
+  },
+  "cycleSwitchPlayer": {
+    "message": "Switch Video on Page"
+  },
+  "cycleSwitchVideo": {
+    "message": "Switch Video on Page"
+  },
+  "cycleSwitchPlayerDescription": {
+    "message": "Works only when the page has more than one HTML5 video."
+  },
+  "cycleVideoFit": {
+    "message": "Cycle Video Fit"
+  },
+  "toggleSubtitles": {
+    "message": "Toggle Subtitles"
+  },
+  "increaseSubtitleSize": {
+    "message": "Increase Subtitle Size"
+  },
+  "decreaseSubtitleSize": {
+    "message": "Decrease Subtitle Size"
+  },
+  "subtitlesTooltip": {
+    "message": "Subtitles <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOnHud": {
+    "message": "Subtitles on"
+  },
+  "subtitlesOnNamedHud": {
+    "message": "Subtitles on: $1",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "subtitlesOffHud": {
+    "message": "Subtitles off"
+  },
+  "subtitlesLoadingHud": {
+    "message": "Loading subtitles..."
+  },
+  "subtitlesLoadFailedHud": {
+    "message": "Couldn't load subtitles"
+  },
+  "onlyOneVideoHud": {
+    "message": "Feature unavailable. Video switching is only possible when there are more players on the page."
+  },
+  "cycleIframeHud": {
+    "message": "Switching works only with HTML5 video"
+  },
+  "videoFitTooltip": {
+    "message": "Video Fit <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "videoFitContain": {
+    "message": "Fit"
+  },
+  "videoFitCover": {
+    "message": "Fill"
+  },
+  "videoFitFill": {
+    "message": "Stretch"
+  },
+  "reportABug": {
+    "message": "Report a Bug"
+  },
+  "privacyThingLabel": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverTitle": {
+    "message": "Privacy Thing"
+  },
+  "privacyThingPopoverBody": {
+    "message": "Here is my new extension! With Privacy Thing, you decide what any website can see about you: location, language, time zone, and much more. It reduces how you can be tracked from site to site."
+  },
+  "privacyThingPopoverNote": {
+    "message": "Free and open source."
+  },
+  "whatsNew": {
+    "message": "Update highlights"
+  },
+  "whatsNewDialogTitle": {
+    "message": "Update highlights"
+  },
+  "dialogAcknowledge": {
+    "message": "Got it"
+  },
+  "dialogChoiceTrue": {
+    "message": "Yes"
+  },
+  "dialogChoiceFalse": {
+    "message": "No"
+  },
+  "showHideHelp": {
+    "message": "Show/Hide Help"
+  },
+  "playbackVolumeControlsTitle": {
+    "message": "Playback & Volume Controls"
+  },
+  "playPause": {
+    "message": "Play / Pause"
+  },
+  "seekBackward5": {
+    "message": "Seek Backward (5s)"
+  },
+  "seekForward5": {
+    "message": "Seek Forward (5s)"
+  },
+  "volumeUp5": {
+    "message": "Volume Up (5%)"
+  },
+  "volumeDown5": {
+    "message": "Volume Down (5%)"
+  },
+  "toggleMute": {
+    "message": "Toggle mute"
+  },
+  "theaterFullscreenPipTitle": {
+    "message": "Theater, Fullscreen & PiP"
+  },
+  "frameStepBackward": {
+    "message": "Frame Step Backward"
+  },
+  "frameStepForward": {
+    "message": "Frame Step Forward"
+  },
+  "frameStepBackward004": {
+    "message": "Frame Step Backward (0.04s)"
+  },
+  "frameStepForward004": {
+    "message": "Frame Step Forward (0.04s)"
+  },
+  "toggleFullscreen": {
+    "message": "Toggle Fullscreen"
+  },
+  "togglePictureInPicture": {
+    "message": "Toggle Picture-in-Picture"
+  },
+  "pressKeysPlaceholder": {
+    "message": "Press keys..."
+  },
+  "resetToDefault": {
+    "message": "Reset to default"
+  },
+  "resetToDefaults": {
+    "message": "Reset to defaults"
+  },
+  "copyrightHtml": {
+    "message": "© 2026 <a href=\"https://tomaszjanusz.dev\" target=\"_blank\" rel=\"noopener noreferrer\">Tomasz Janusz</a>. Released under the <a href=\"#about\">MIT license</a>."
+  },
+  "play": {
+    "message": "Play"
+  },
+  "pause": {
+    "message": "Pause"
+  },
+  "previousVideo": {
+    "message": "Previous"
+  },
+  "backToStart": {
+    "message": "Back to start"
+  },
+  "skipIntro": {
+    "message": "Skip intro"
+  },
+  "skipOutro": {
+    "message": "Skip outro"
+  },
+  "nextVideo": {
+    "message": "Next"
+  },
+  "muteHud": {
+    "message": "Mute"
+  },
+  "unmuteHud": {
+    "message": "Unmute"
+  },
+  "pictureInPictureTooltip": {
+    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "exitFullscreen": {
+    "message": "Exit Fullscreen"
+  },
+  "fullscreenTooltip": {
+    "message": "Fullscreen <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "exitTheaterModeTooltip": {
+    "message": "Exit Theater Mode <kbd>$TOGGLE$</kbd> or <kbd>$EXIT$</kbd>",
+    "placeholders": {
+      "toggle": {
+        "content": "$1"
+      },
+      "exit": {
+        "content": "$2"
+      }
+    }
+  },
+  "noSubtitlesAvailable": {
+    "message": "No subtitles available"
+  },
+  "disableSubtitles": {
+    "message": "Disable Subtitles"
+  },
+  "enableSubtitles": {
+    "message": "Enable Subtitles"
+  },
+  "searchSubtitles": {
+    "message": "Search subtitles…",
+    "description": "Placeholder and accessible label for filtering subtitle tracks in the player menu"
+  },
+  "subtitleNoMatches": {
+    "message": "No matches",
+    "description": "Empty result shown when no subtitle tracks match the search"
+  },
+  "noSubtitles": {
+    "message": "No subtitles"
+  },
+  "subtitlesOff": {
+    "message": "Off"
+  },
+  "subtitlesMenuTitle": {
+    "message": "Subtitles"
+  },
+  "subtitleOptions": {
+    "message": "Options"
+  },
+  "subtitleOptionsTitle": {
+    "message": "Subtitle options"
+  },
+  "subtitleFont": {
+    "message": "Font"
+  },
+  "subtitleTextColor": {
+    "message": "Text"
+  },
+  "subtitleSize": {
+    "message": "Size"
+  },
+  "subtitleDropShadow": {
+    "message": "Shadow"
+  },
+  "subtitleBackground": {
+    "message": "Background"
+  },
+  "subtitleOpacity": {
+    "message": "Opacity"
+  },
+  "subtitlePreviewSample": {
+    "message": "Sample caption"
+  },
+  "dialogDone": {
+    "message": "Done"
+  },
+  "dialogClose": {
+    "message": "Close"
+  },
+  "autoGeneratedTrack": {
+    "message": "$1 (auto)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "trackLabel": {
+    "message": "Track $NUMBER$",
+    "placeholders": {
+      "number": {
+        "content": "$1"
+      }
+    }
+  },
+  "switchVideoTooltip": {
+    "message": "Switch Video on Page <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "keyboardShortcutsTooltip": {
+    "message": "Keyboard Shortcuts <kbd>$KEY$</kbd>",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "fiveSeconds": {
+    "message": "5 seconds"
+  },
+  "homepage": {
+    "message": "Homepage"
+  },
+  "madeInPoland": {
+    "message": "Made with <span class=\"heart\">❤</span> in 🇵🇱"
+  },
+  "autoEnterTheaterTitle": {
+    "message": "AutoTheater"
+  },
+  "accessibilityTitle": {
+    "message": "Accessibility"
+  },
+  "autoTheaterSkipCountdownTitle": {
+    "message": "Skip countdown"
+  },
+  "autoTheaterSkipCountdownDescription": {
+    "message": "Enter as soon as playback is ready, without the countdown notice."
+  },
+  "videoActivatorPromptTitle": {
+    "message": "Enable the video launcher?"
+  },
+  "videoActivatorPromptDescription": {
+    "message": "AutoTheater is now off. Would you like a small button on videos to enter theater mode manually? You can change this later in Settings → Features → Video launcher."
+  },
+  "videoActivatorTitle": {
+    "message": "Video launcher"
+  },
+  "videoActivatorDescription": {
+    "message": "Show a small button on the left edge of a video when you point at it. Click it to enter theater mode. On some services with Rich Theater Experience, the button is built into the service’s interface."
+  },
+  "videoActivatorLabel": {
+    "message": "Enter theater mode"
+  },
+  "autoEnterTheaterOn": {
+    "message": "On"
+  },
+  "autoEnterTheaterOff": {
+    "message": "Off"
+  },
+  "autoEnterTheaterDescription": {
+    "message": "Enter theater mode when the main video starts playing on supported services’ watch pages with Rich Theater Experience enabled."
+  },
+  "autoEnterNoticeTitle": {
+    "message": "Entering theater mode…"
+  },
+  "autoEnterNoticeHint": {
+    "message": "Click or press <kbd>$KEY$</kbd> to cancel",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      }
+    }
+  },
+  "keepControlsVisibleTitle": {
+    "message": "Pin controls"
+  },
+  "keepControlsVisibleDescription": {
+    "message": "Pin the playback controls and progress bar in theater mode to keep them visible. The title and cursor still hide when idle."
+  },
+  "toggleControlsPin": {
+    "message": "Toggle controls pinning"
+  },
+  "controlsPinnedHud": {
+    "message": "Controls pinned"
+  },
+  "controlsUnpinnedHud": {
+    "message": "Controls auto-hide"
+  },
+  "showNativeChat": {
+    "message": "Show chat"
+  },
+  "toggleNativeChat": {
+    "message": "Toggle chat"
+  },
+  "hideNativeChat": {
+    "message": "Hide chat"
+  },
+  "settingsSectionChat": {
+    "message": "Chat"
+  },
+  "settingsSectionAudio": {
+    "message": "Audio"
+  },
+  "settingsSectionPlayer": {
+    "message": "Player"
+  },
+  "nativeChatWidth": {
+    "message": "Width"
+  },
+  "nativeChatThemeUnavailable": {
+    "message": "Chat is using the service appearance. The selected theme is unavailable on this page."
+  },
+  "nativeChatTheme": {
+    "message": "Theme"
+  },
+  "nativeChatThemeLight": {
+    "message": "Light"
+  },
+  "nativeChatThemeNative": {
+    "message": "Service settings"
+  },
+  "nativeChatThemeDark": {
+    "message": "Dark"
+  },
+  "nativeChatFullscreenUnavailable": {
+    "message": "Fullscreen with chat is unavailable. Theater mode remains active."
+  },
+  "playerSettingsLabel": {
+    "message": "Player settings"
+  },
+  "videoFitLabel": {
+    "message": "Video fit"
+  },
+  "stepperPrevious": {
+    "message": "$1: previous option",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "stepperNext": {
+    "message": "$1: next option",
+    "placeholders": {
+      "setting": {
+        "content": "$1"
+      }
+    }
+  },
+  "controlsVisibilityOn": {
+    "message": "On"
+  },
+  "controlsVisibilityOff": {
+    "message": "Off"
+  },
+  "extensionSettingsLabel": {
+    "message": "Extension settings"
+  },
+  "shortcutUnassigned": {
+    "message": "Not assigned"
+  },
+  "shortcutExistingConflicts": {
+    "message": "Some shortcuts are assigned to multiple actions. Edit or reset the highlighted shortcuts to resolve the conflicts."
+  },
+  "shortcutConflictTitle": {
+    "message": "Shortcut already assigned"
+  },
+  "shortcutConflictDescription": {
+    "message": "$KEY$ is assigned to $OWNERS$. Move it to $TARGET$? The previous actions will no longer have this shortcut.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
+      },
+      "owners": {
+        "content": "$2"
+      },
+      "target": {
+        "content": "$3"
+      }
+    }
+  },
+  "shortcutKeepAssignment": {
+    "message": "Keep current assignment"
+  },
+  "shortcutReassign": {
+    "message": "Move shortcut"
+  },
+  "shortcutEscapeReserved": {
+    "message": "Escape is reserved for closing dialogs and exiting theater mode. Choose another shortcut for this action."
+  },
+  "shortcutSaveError": {
+    "message": "Shortcut could not be saved"
+  },
+  "shortcutSaveErrorDescription": {
+    "message": "Your shortcuts were not changed. Please try again."
+  },
+  "cyclePictureLayout": {
+    "message": "Change picture layout"
+  },
+  "bilibiliIntlIntegrationTitle": {
+    "message": "Bilibili.tv integration"
+  },
+  "bilibiliIntlIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, intro/outro markers, Thumbnails. Quick actions: skip intro/outro and next episode (episodes only)."
+  },
+  "crunchyrollIntegrationTitle": {
+    "message": "Crunchyroll integration"
+  },
+  "crunchyrollIntegrationDescription": {
+    "message": "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode."
+  },
+  "aboutTitle": {
+    "message": "About"
+  },
+  "aboutTagline": {
+    "message": "One player to rule them all."
+  },
+  "aboutVersion": {
+    "message": "version: $version$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "aboutGreeting": {
+    "message": "Hi,"
+  },
+  "aboutLetterOrigin": {
+    "message": "Thank you so much for choosing my extension! Theater Mode Everywhere was born out of my frustration with the many different solutions that were all supposed to provide one thing: a comfortable way to watch video. They don't deliver it. Most players on the internet lack features that should be standard."
+  },
+  "aboutLetterProduct": {
+    "message": "That's why I created Theater Mode Everywhere: a universal player that, in my humble opinion, gives you a comfortable way to watch video everywhere, and can handle the non-standard, unique features of many websites."
+  },
+  "privacyPolicy": {
+    "message": "Privacy policy"
+  },
+  "privacyPolicyDescription": {
+    "message": "How the extension handles your data. The full policy is written in English."
+  },
+  "privacyPolicyRead": {
+    "message": "Read privacy policy"
+  },
+  "privacyPolicyOpenOnline": {
+    "message": "Open online version"
+  },
+  "aboutLetterFreeHtml": {
+    "message": "The extension is free and doesn't send any information about you or what you watch to the developer or unrelated third parties. Settings can sync through your browser account, and playback features can contact the service you are watching directly. If something doesn't work right, you can report it on <a href=\"https://github.com/TomaszJanusz/Theater-Mode-Everywhere/issues/new?template=bug_report.yml\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>."
+  },
+  "aboutLetterStoresHtml": {
+    "message": "Theater Mode Everywhere is available on the <a href=\"https://chromewebstore.google.com/detail/theater-mode-everywhere/cncfdfheagoagmoeiaecfpbcljncoepe\" target=\"_blank\" rel=\"noopener noreferrer\">Chrome Web Store</a>, <a href=\"https://addons.mozilla.org/firefox/addon/theater-mode-everywhere/\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Add-ons</a> and <a href=\"https://microsoftedge.microsoft.com/addons/detail/daammcppiohibmlfnaafaeaggbmlhlik\" target=\"_blank\" rel=\"noopener noreferrer\">Microsoft Edge Add-ons</a>. I'd be happy if you share your opinion about it."
+  },
+  "aboutSignoffHtml": {
+    "message": "Happy watching <span class=\"heart\" aria-hidden=\"true\">❤</span>!"
+  },
+  "aboutLegalTitle": {
+    "message": "Terms of use • License"
+  },
+  "aboutLicenseNote": {
+    "message": "The extension is available under the MIT license."
+  },
+  "languageTitle": {
+    "message": "Language"
+  },
+  "languageDescription": {
+    "message": "Choose the language for Settings, the popup, and player controls."
+  },
+  "reportTranslationIssue": {
+    "message": "Report a translation issue"
+  },
+  "languageAutomatic": {
+    "message": "Automatic (browser language)"
+  },
+  "addExclusion": {
+    "message": "Add website exclusion"
+  },
+  "playbackPosition": {
+    "message": "Playback position"
+  },
+  "volumeLabel": {
+    "message": "Volume"
+  },
+  "playbackSpeed": {
+    "message": "Playback speed"
+  },
+  "sponsorBlockMarkersTitle": {
+    "message": "SponsorBlock support"
+  },
+  "sponsorBlockMarkersDescription": {
+    "message": "Show markers from the installed SponsorBlock extension on the YouTube theater timeline, using its colours."
+  },
+  "sponsorBlockCategory_sponsor": {
+    "message": "Sponsor"
+  },
+  "sponsorBlockCategory_selfpromo": {
+    "message": "Self-promotion"
+  },
+  "sponsorBlockCategory_exclusive_access": {
+    "message": "Exclusive access"
+  },
+  "sponsorBlockCategory_interaction": {
+    "message": "Interaction reminder"
+  },
+  "sponsorBlockCategory_intro": {
+    "message": "Intro"
+  },
+  "sponsorBlockCategory_outro": {
+    "message": "Outro"
+  },
+  "sponsorBlockCategory_preview": {
+    "message": "Preview"
+  },
+  "sponsorBlockCategory_hook": {
+    "message": "Hook"
+  },
+  "sponsorBlockCategory_music_offtopic": {
+    "message": "Non-music section"
+  },
+  "sponsorBlockCategory_poi_highlight": {
+    "message": "Highlight"
+  },
+  "sponsorBlockCategory_filler": {
+    "message": "Filler"
+  },
+  "sponsorBlockCategory_chapter": {
+    "message": "Chapter"
+  },
+  "sponsorBlockCategory_unknown": {
+    "message": "SponsorBlock segment"
+  },
+  "rteSectionTitle": {
+    "message": "Rich Theater Experience"
+  },
+  "rteSectionDescription": {
+    "message": "Choose service integrations and explore what each adds to theater mode. Features depend on the video and the service."
+  },
+  "rteAll": {
+    "message": "All services"
+  },
+  "rteAllShown": {
+    "message": "All shown services"
+  },
+  "rteFilterLabel": {
+    "message": "Show services with"
+  },
+  "rteCapabilityTitle": {
+    "message": "Titles"
+  },
+  "rteCapabilitySubtitles": {
+    "message": "Subtitles"
+  },
+  "rteCapabilityChapters": {
+    "message": "Chapters"
+  },
+  "rteCapabilityHeatmap": {
+    "message": "Heatmap"
+  },
+  "rteCapabilityThumbnails": {
+    "message": "Thumbnails"
+  },
+  "rteCapabilityPlaylists": {
+    "message": "Playlists"
+  },
+  "rteCapabilityLauncher": {
+    "message": "Video launcher"
+  },
+  "rteNoteLauncher": {
+    "message": "Uses the native player toolbar when its launcher slot is available; otherwise uses the video overlay."
+  },
+  "rteCapabilityQuickActions": {
+    "message": "Quick actions"
+  },
+  "rteCapabilityAutoTheater": {
+    "message": "AutoTheater"
+  },
+  "rteEmpty": {
+    "message": "No service has all the selected capabilities."
+  },
+  "rteClear": {
+    "message": "Clear filter"
+  },
+  "rteShown": {
+    "message": "$count$ of $total$ services shown",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "rteNoteYoutube": {
+    "message": "Depends on the video; ad skip and queue navigation when available."
+  },
+  "rteNoteVimeo": {
+    "message": "Chapters and previews when provided; next in showcases."
+  },
+  "rteNotePatreon": {
+    "message": "Subtitles, chapters and previews when provided."
+  },
+  "rteNoteTwitch": {
+    "message": "Subtitles, chapters and previews on VODs only."
+  },
+  "rteNoteDisney": {
+    "message": "Subtitles, previews and skip/next when the player provides them."
+  },
+  "rteNoteNetflix": {
+    "message": "Previews need a ready trick-play session; subtitles and skip/next when available."
+  },
+  "rteNoteBilibili": {
+    "message": "Some subtitles require login; other features depend on the video."
+  },
+  "rteNoteBilibiliIntl": {
+    "message": "Intro/outro markers only; skip/next on episodes, not uploads."
+  },
+  "rteNoteTencent": {
+    "message": "Subtitles and previews when provided; next via the player."
+  },
+  "rteNoteCrunchyroll": {
+    "message": "Intro/credits markers only; burned-in subtitles cannot be turned off."
+  },
+  "rteSaveError": {
+    "message": "Could not save service settings. Please try again."
+  },
+  "rteDetails": {
+    "message": "Details"
+  },
+  "badgeBetaDescription": {
+    "message": "Beta, experimental feature"
+  },
+  "badgeNew": {
+    "message": "New",
+    "description": "Noun labeling a newly added feature; used with labels of different grammatical genders."
+  },
+  "highlightNewFeaturesTitle": {
+    "message": "Highlight new features"
+  },
+  "highlightNewFeaturesDescription": {
+    "message": "Show New badges for recently added features."
+  },
+  "highlightNewFeaturesHide": {
+    "message": "Hide until next version"
+  },
+  "highlightNewFeaturesRestore": {
+    "message": "Restore badges"
+  },
+  "highContrastTitle": {
+    "message": "High contrast"
+  },
+  "reduceTransparencyTitle": {
+    "message": "Reduce transparency"
+  },
+  "reduceMotionTitle": {
+    "message": "Reduce motion"
+  },
+  "appearanceAutoDescription": {
+    "message": "Auto follows your system setting."
+  },
+  "appearanceAuto": {
+    "message": "Auto"
+  }
+}

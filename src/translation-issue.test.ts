@@ -16,6 +16,7 @@ it('pre-fills the template, language name and version', () => {
 });
 
 it('maps browser locale spellings to supported languages', () => {
+  assert.equal(params(translationIssueUrl('en-GB', '1')).get('language'), 'English (UK)');
   assert.equal(params(translationIssueUrl('pt_BR', '1')).get('language'), 'Português (Brasil)');
   assert.equal(params(translationIssueUrl('pt-BR', '1')).get('language'), 'Português (Brasil)');
   assert.equal(params(translationIssueUrl('zh-CN', '1')).get('language'), '简体中文');
