@@ -18,7 +18,9 @@ export default {
     'color-no-invalid-hex': true,
     'declaration-no-important': true,
     'scale-unlimited/declaration-strict-value': ['z-index', { ignoreFunctions: false }],
-    'selector-disallowed-list': ['/(?:^|[\\s>+~,:])(?:[.#]?)(?:ytp-|ytd-|netflix|disney|twitch)[\\w-]*/i'],
+    // Host names are matched wherever a selector can mention them: bare elements, class or id
+    // fragments in compound selectors (`div.ytp-x`, `.a.ytp-x`) and attribute values (`[class*="ytp-"]`).
+    'selector-disallowed-list': ['/(?:^|[\\s>+~,(.#:=\\["\'])(?:ytp-|ytd-|netflix|disney|twitch)/i'],
   },
   overrides: [{
     files: ['src/ui/shadow.css'],

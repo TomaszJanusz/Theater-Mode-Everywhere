@@ -9,13 +9,26 @@ const baselinePath = 'config/stylelint-baseline.json';
 const cssFiles = ['src/*.css', 'src/ui/**/*.css', 'popup/**/*.css', 'options/**/*.css'];
 const root = process.cwd();
 
-export function assertNoGrowth(current, baseline) {
-  for (const [file, rules] of Object.entries(current)) {
-    for (const [rule, count] of Object.entries(rules)) {
+// Allowances only move down: growth always fails, and an improvement fails until the
+// baseline is lowered (`pnpm lint:css --update`) so the gain cannot silently drift back.
+export function compareBaseline(current, baseline) {
+  const grown = [];
+  const improved = [];
+  for (const file of new Set([...Object.keys(current), ...Object.keys(baseline)])) {
+    for (const rule of new Set([...Object.keys(current[file] ?? {}), ...Object.keys(baseline[file] ?? {})])) {
+      const now = current[file]?.[rule] ?? 0;
       const allowed = baseline[file]?.[rule] ?? 0;
-      assert.ok(count <= allowed, `${file}: ${rule} grew from ${allowed} to ${count}`);
+      if (now > allowed) grown.push(`${file}: ${rule} grew from ${allowed} to ${now}`);
+      else if (now < allowed) improved.push(`${file}: ${rule} dropped from ${allowed} to ${now}`);
     }
   }
+  return { grown, improved };
+}
+
+export function assertNoGrowth(current, baseline, { allowImprovement = false } = {}) {
+  const { grown, improved } = compareBaseline(current, baseline);
+  assert.deepEqual(grown, [], grown.join('\n'));
+  if (!allowImprovement) assert.deepEqual(improved, [], `${improved.join('\n')}\nLock in the improvement with: pnpm lint:css --update`);
 }
 
 export function readBaseline(source) {
@@ -49,8 +62,9 @@ export async function inventory(files = cssFiles) {
 export async function main(args = process.argv.slice(2)) {
   const current = await inventory();
   const baseline = readBaseline(readFileSync(baselinePath, 'utf8'));
-  assertNoGrowth(current, baseline);
-  if (args.includes('--update')) writeFileSync(baselinePath, `${JSON.stringify(current, null, 2)}\n`);
+  const update = args.includes('--update');
+  assertNoGrowth(current, baseline, { allowImprovement: update });
+  if (update) writeFileSync(baselinePath, `${JSON.stringify(current, null, 2)}\n`);
   const total = Object.values(current).reduce((sum, rules) => sum + Object.values(rules).reduce((a, b) => a + b, 0), 0);
   console.log(`CSS ratchet passed: ${total} existing violations across ${Object.keys(current).length} files`);
 }
