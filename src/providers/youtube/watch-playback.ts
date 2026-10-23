@@ -53,13 +53,26 @@ export const youtubeWatchPlayback: WatchPlayback = {
   },
   observeReveal(doc, onChange) {
     // Expanding the miniplayer fires yt-page-data-updated while the watch page is still
-    // hidden; the host reveals it and takes the player out of the miniplayer a moment later
-    // with attribute flips only. On a slow page that can outlast the entry countdown.
-    const observer = new MutationObserver(onChange);
-    const watch = doc.querySelector('ytd-watch-flexy');
-    if (watch) observer.observe(watch, { attributes: true, attributeFilter: ['hidden'] });
-    const app = doc.querySelector('ytd-app');
-    if (app) observer.observe(app, { attributes: true, attributeFilter: ['miniplayer-is-active'] });
+    // hidden; the host reveals it with attribute flips and moves the player out of the
+    // miniplayer into the watch page only later (1-2 s on a slow page), with no event for
+    // the already-playing video. That can outlast the entry countdown. The destination
+    // depends on the layout (#player-container, #player-theater-container, full-bleed) and
+    // the watch page itself may not exist yet, so watch a stable ancestor and react only to
+    // the host revealing the page or the player arriving.
+    const root = doc.querySelector('ytd-app') ?? doc.querySelector('ytd-watch-flexy');
+    if (!root) return () => {};
+    const observer = new MutationObserver(records => {
+      if (records.some(revealsPlayer)) onChange();
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ['hidden', 'miniplayer-is-active'], childList: true, subtree: true });
     return () => observer.disconnect();
   }
 };
+
+function revealsPlayer(record: MutationRecord): boolean {
+  if (record.type === 'attributes') return record.target.nodeName === 'YTD-WATCH-FLEXY' || record.target.nodeName === 'YTD-APP';
+  for (const node of record.addedNodes) {
+    if (node instanceof Element && (node.matches(YOUTUBE_PLAYER_SELECTOR) || node.querySelector(YOUTUBE_PLAYER_SELECTOR))) return true;
+  }
+  return false;
+}
