@@ -12,6 +12,8 @@ jobs:
   pulse:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      HOME: /root
     defaults:
       run:
         shell: bash
@@ -86,6 +88,8 @@ jobs:
   alsa:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      HOME: /root
     defaults:
       run:
         shell: bash
