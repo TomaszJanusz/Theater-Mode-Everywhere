@@ -1376,8 +1376,10 @@ button.theater-time-end:hover {
   padding: 2px 5px !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   line-height: 1 !important;
-  text-transform: uppercase !important;
   white-space: nowrap !important;
+  min-inline-size: 1.6em !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
 }
 .theater-settings-detail {
   display: grid !important;
@@ -1866,7 +1868,10 @@ button.theater-time-end:focus-visible,
   padding: 2px 5px !important;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   line-height: 1 !important;
-  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  min-inline-size: 1.6em !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
 }
 
 /* Keyboard shortcuts content; the modal shell lives in modal.css. */
@@ -1956,7 +1961,10 @@ button.theater-time-end:focus-visible,
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   line-height: 1 !important;
-  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  min-inline-size: 1.6em !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
 }
 
 /* Volume level overlay HUD */

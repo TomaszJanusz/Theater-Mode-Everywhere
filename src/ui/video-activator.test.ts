@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import {
   activatorZoneMargin,
   isInActivatorZone,
@@ -141,11 +142,13 @@ describe('video activator fresh-visit window', () => {
 
 describe('video activator title', () => {
   it('appends the shortcut in square brackets', () => {
-    assert.equal(activatorTitle('Enter theater mode', 'T'), 'Enter theater mode [T]');
-    assert.equal(activatorTitle('Enter theater mode', 'Shift+H'), 'Enter theater mode [Shift+H]');
-    assert.equal(activatorTitle('Enter theater mode', 'Alt++'), 'Enter theater mode [Alt++]');
+    const windows = { platform: 'windows' } as const;
+    assert.equal(activatorTitle('Enter theater mode', 'T', windows), 'Enter theater mode [T]');
+    assert.equal(activatorTitle('Enter theater mode', 'Shift+H', windows), 'Enter theater mode [Shift+H]');
+    assert.equal(activatorTitle('Enter theater mode', 'Alt++', windows), 'Enter theater mode [Alt++]');
+    assert.equal(activatorTitle('Enter theater mode', 'Shift+H', { platform: 'mac' }), 'Enter theater mode [⇧H]');
   });
   it('has no suffix while the shortcut is unassigned', () => {
-    assert.equal(activatorTitle('Enter theater mode', ''), 'Enter theater mode');
+    assert.equal(activatorTitle('Enter theater mode', '', { platform: 'windows' }), 'Enter theater mode');
   });
 });

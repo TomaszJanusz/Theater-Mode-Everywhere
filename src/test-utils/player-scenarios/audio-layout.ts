@@ -208,6 +208,17 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
   if (wide.columns !== 2 || wide.rows !== 31 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  // Keys read as printed on the keycap: one cap per key, arrows as symbols, never browser names or capitals.
+  const keys = await help.evaluate(overlay => [...overlay.querySelectorAll<HTMLElement>('.theater-help-key-wrapper')].map(wrapper => ({
+    text: wrapper.innerText.replace(/\s+/g, ''),
+    caps: wrapper.querySelectorAll('kbd').length,
+    transform: getComputedStyle(wrapper.querySelector('kbd') ?? wrapper).textTransform
+  })));
+  const shown = keys.map(({ text }) => text);
+  for (const expected of ['Space', '←', '→', '↑', '↓', 'Shift+T', 'W'])
+    if (!shown.includes(expected)) fail(`Keyboard help does not show ${expected}: ${JSON.stringify(shown)}`);
+  if (keys.some(({ text, caps, transform }) => /Arrow|Key[A-Z]|SPACE|Escape/.test(text) || caps !== text.split(/\+(?=.)/).length || transform !== 'none'))
+    fail(`Keyboard help shows raw or shouted key names: ${JSON.stringify(keys)}`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });

@@ -1,9 +1,11 @@
-import { createProviderLauncherPlacement, type LauncherPlacement, type LauncherSlot } from '../providers/launcher-placement';
-import { observeProviderWatchPlaybackChanges } from '../providers/watch-playback';
 import { isMotionReduced } from '../appearance-runtime';
 import { DisposableScope } from '../core/disposable-scope';
+import { createProviderLauncherPlacement, type LauncherPlacement, type LauncherSlot } from '../providers/launcher-placement';
+import { observeProviderWatchPlaybackChanges } from '../providers/watch-playback';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
+
 import { mountPlayerUi, peekPlayerUiRoot } from './root';
+import { shortcutDisplayEnv } from './shortcuts';
 import {
   ACTIVATOR_PRESS_WINDOW_MS,
   ACTIVATOR_SIZE,
@@ -254,7 +256,7 @@ export function createVideoActivator(options: {
     }, ms);
   }
 
-  const currentTitle = () => activatorTitle(options.label(), options.shortcut());
+  const currentTitle = () => activatorTitle(options.label(), options.shortcut(), shortcutDisplayEnv());
 
   function syncTitles(): void {
     const title = currentTitle();

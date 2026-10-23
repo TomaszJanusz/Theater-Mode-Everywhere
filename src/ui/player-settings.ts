@@ -1,9 +1,12 @@
-import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
-import { createNewBadge } from './new-badge';
 import type { DisposableScope } from '../core/disposable-scope';
+import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
+
+import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover } from './menu-popover';
+import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
-import { shortcutDisplayParts } from './shortcuts';
+import { shortcutKeyHint } from './shortcut-display';
+import { shortcutDisplayEnv } from './shortcuts';
 import { createStepper, type StepperState } from './stepper';
 
 /** Close the settings panel, optionally returning keyboard focus to its trigger. */
@@ -188,22 +191,11 @@ export function createPlayerSettings(
       body.insertBefore(row, shortcutsAnchor ?? footerStart);
     }
     if (newItem) highlight(row, icon, label, newItem, true);
-    /** A key the arrows can wear: one character, as A and D are by default. */
-    const singleKey = (shortcut: string) => {
-      const parts = shortcutDisplayParts(shortcut);
-      return parts.length === 1 && [...parts[0]].length === 1 ? parts[0] : undefined;
-    };
     function setShortcut(shortcut: string, name: string) {
       const item = newItems.get(row);
       if (item) item.label = name;
       row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
-      keys.replaceChildren();
-      shortcutDisplayParts(shortcut).forEach((part, index) => {
-        if (index > 0) keys.append('+');
-        const key = document.createElement('kbd');
-        key.textContent = part;
-        keys.append(key);
-      });
+      renderShortcutCaps(keys, shortcut);
       if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
       else row.removeAttribute('aria-keyshortcuts');
     }
@@ -213,7 +205,8 @@ export function createPlayerSettings(
         setShortcut(shortcut, label);
         stepper?.update(state);
         const { navigateLeft, navigateRight } = ctx.ui().shortcuts;
-        stepper?.setKeys(singleKey(navigateLeft), singleKey(navigateRight));
+        const env = shortcutDisplayEnv();
+        stepper?.setKeys(shortcutKeyHint(navigateLeft, env), shortcutKeyHint(navigateRight, env));
       },
       /** `values` lists every state the row can show; the widest sets the value's width so toggling never resizes the menu. */
       update(shortcut: string, value?: string, values: readonly string[] = []) {

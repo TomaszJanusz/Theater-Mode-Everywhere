@@ -1,5 +1,7 @@
 import type { AudioSettingName } from '../audio-settings';
 
+import { detectShortcutPlatform, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
+
 export interface Shortcuts {
   toggle: string;
   exit: string;
@@ -196,19 +198,12 @@ export async function loadKeyboardLayout(): Promise<void> {
   }
 }
 
-/** A position is shown by what it prints, falling back to the QWERTY letter. */
-function physicalKeyName(code: string): string {
-  const printed = layoutNames.get(code);
-  if (printed) return printed.length === 1 ? printed.toUpperCase() : printed;
-  return code.replace(/^(?:Key|Digit)/, '');
-}
+let platform: ShortcutPlatform | undefined;
 
-export function shortcutDisplayParts(shortcutStr: string): string[] {
-  if (!shortcutStr) return [];
-  const parts = shortcutStr.split('+');
-  let mainKey = parts.pop() || '+';
-  if (/^(?:Key[A-Z]|Digit\d)$/.test(mainKey)) mainKey = physicalKeyName(mainKey);
-  return [...parts.filter(Boolean), mainKey];
+/** This context's display environment: the platform, resolved once, and the layout learned so far. */
+export function shortcutDisplayEnv(): ShortcutDisplayEnv {
+  platform ??= detectShortcutPlatform(navigator as Navigator & { userAgentData?: { platform?: string } });
+  return { platform, layout: layoutNames };
 }
 
 export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {

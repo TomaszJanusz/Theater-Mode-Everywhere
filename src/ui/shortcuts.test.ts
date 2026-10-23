@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { createShortcutEditor } from '../../options/shortcut-editor';
+
+import { shortcutLabel } from './shortcut-display';
 import { createShortcutUpdateQueue, readShortcutUpdate } from './shortcut-updates';
-import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, matchesShortcut, NAVIGATION_SHORTCUTS, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayParts, withShortcutDefaults } from './shortcuts';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, matchesShortcut, NAVIGATION_SHORTCUTS, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayEnv, withShortcutDefaults } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -93,12 +96,6 @@ describe('shortcut matching', () => {
       assert.equal(shortcutFromEvent(event), `Alt+${name}`, produced);
       assert.equal(matchesShortcut(event, name), false, produced);
     }
-  });
-
-  it('renders + and Ctrl++ as real keys instead of empty kbd parts', () => {
-    assert.deepEqual(shortcutDisplayParts('+'), ['+']);
-    assert.deepEqual(shortcutDisplayParts('Ctrl++'), ['Ctrl', '+']);
-    assert.deepEqual(shortcutDisplayParts('Shift+T'), ['Shift', 'T']);
   });
 });
 
@@ -402,19 +399,19 @@ describe('navigation shortcuts', () => {
   });
 
   it('shows what the layout prints where it can say, and the default letter where it cannot', async () => {
-    assert.deepEqual(shortcutDisplayParts('KeyW'), ['W']);
-    assert.deepEqual(shortcutDisplayParts('Shift+KeyS'), ['Shift', 'S']);
-    assert.deepEqual(shortcutDisplayParts('T'), ['T']);
+    const shown = (stored: string) => shortcutLabel(stored, shortcutDisplayEnv());
+    assert.equal(shown('KeyW'), 'W');
+    assert.equal(shown('T'), 'T');
     const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
-    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { keyboard: { getLayoutMap: async () => new Map([['KeyW', 'z'], ['KeyA', 'q']]) } } });
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { platform: 'Win32', keyboard: { getLayoutMap: async () => new Map([['KeyW', 'z'], ['KeyA', 'q']]) } } });
     try {
       await loadKeyboardLayout();
-      assert.deepEqual(shortcutDisplayParts('KeyW'), ['Z']);
-      assert.deepEqual(shortcutDisplayParts('KeyA'), ['Q']);
-      assert.deepEqual(shortcutDisplayParts('KeyS'), ['S']);
+      assert.equal(shown('KeyW'), 'Z');
+      assert.equal(shown('KeyA'), 'Q');
+      assert.equal(shown('KeyS'), 'S');
       Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { keyboard: { getLayoutMap: async () => { throw new Error('blocked'); } } } });
       await loadKeyboardLayout();
-      assert.deepEqual(shortcutDisplayParts('KeyW'), ['W']);
+      assert.equal(shown('KeyW'), 'W');
     } finally {
       if (original) Object.defineProperty(globalThis, 'navigator', original);
       await loadKeyboardLayout();

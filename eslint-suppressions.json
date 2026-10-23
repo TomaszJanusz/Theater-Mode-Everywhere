@@ -2416,9 +2416,6 @@
     }
   },
   "src/ui/help.ts": {
-    "import/order": {
-      "count": 5
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -2554,9 +2551,6 @@
     }
   },
   "src/ui/player-settings.ts": {
-    "import/order": {
-      "count": 5
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -2628,11 +2622,6 @@
   "src/ui/shortcut-updates.ts": {
     "local/max-symbol-name-length": {
       "count": 1
-    }
-  },
-  "src/ui/shortcuts.test.ts": {
-    "import/order": {
-      "count": 2
     }
   },
   "src/ui/shortcuts.ts": {
@@ -2736,15 +2725,7 @@
       "count": 4
     }
   },
-  "src/ui/video-activator.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/ui/video-activator.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 2
     },

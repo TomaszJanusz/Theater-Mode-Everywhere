@@ -1,8 +1,10 @@
 import { activeElementDeep } from '../accessibility';
-import { createModal, type Modal } from './modal';
 import { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from '../audio-settings';
-import { AUDIO_SHORTCUTS, defaultShortcuts, NAVIGATION_SHORTCUTS, shortcutDisplayParts } from './shortcuts';
+
+import { renderShortcutCaps } from './kbd-text';
+import { createModal, type Modal } from './modal';
 import type { PlayerChromeContext } from './runtime-context';
+import { AUDIO_SHORTCUTS, defaultShortcuts, NAVIGATION_SHORTCUTS } from './shortcuts';
 
 export function createHelp(ctx: PlayerChromeContext) {
   let modal: Modal | null = null;
@@ -108,16 +110,8 @@ export function createHelp(ctx: PlayerChromeContext) {
         keyWrapper.className = 'theater-help-key-wrapper';
         keyWrapper.dir = 'ltr';
 
-        const keys = shortcutDisplayParts(item.key);
-        if (!keys.length) keyWrapper.textContent = ctx.t('shortcutUnassigned');
-        keys.forEach((k, idx) => {
-          if (idx > 0) {
-            keyWrapper.appendChild(document.createTextNode(' + '));
-          }
-          const kbd = document.createElement('kbd');
-          kbd.textContent = k;
-          keyWrapper.appendChild(kbd);
-        });
+        if (item.key) renderShortcutCaps(keyWrapper, item.key);
+        else keyWrapper.textContent = ctx.t('shortcutUnassigned');
 
         row.appendChild(labelSpan);
         row.appendChild(keyWrapper);

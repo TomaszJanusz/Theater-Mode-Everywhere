@@ -3,7 +3,7 @@
  * Geometry and occlusion arrive as plain data or an injected probe, so nothing here
  * touches the DOM.
  */
-import { shortcutDisplayParts } from './shortcuts';
+import { shortcutLabel, type ShortcutDisplayEnv } from './shortcut-display';
 
 export type Box = { left: number; top: number; width: number; height: number };
 export type Viewport = { width: number; height: number };
@@ -36,8 +36,8 @@ export function activatorPlayGraceRemaining(sinceVisitMs: number): number {
 }
 
 /** The launcher tooltip: the label plus the user's theater shortcut in brackets, none while unassigned. */
-export function activatorTitle(label: string, shortcut: string): string {
-  const keys = shortcutDisplayParts(shortcut).join('+');
+export function activatorTitle(label: string, shortcut: string, env: ShortcutDisplayEnv): string {
+  const keys = shortcutLabel(shortcut, env);
   return keys ? `${label} [${keys}]` : label;
 }
 
