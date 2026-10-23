@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Czech and Slovak translations for settings, the extension popup, player controls and store listings.
+- British English wording in the extension and store listings.
 - Navigate the player bar from the keyboard: W opens the controls bar and focuses the settings button, then W, A, S and D move up, left, down and right across the bar and into its menus. W on a menu button opens the menu on its bottom row, the one nearest the bar (scrolling a long menu to it), and S below that row closes it again. The time readouts and the progress bar are passed over; Tab still reaches them. On a setting with several levels, A and D lower and raise the value, and while that row has keyboard focus its arrows show those keys instead; S on the bar's bottom row hides the bar, and Escape ends navigation (a second Escape leaves theater as before). The four keys are one "Navigation" group in the shortcut settings and the shortcuts help, and they work by position, so the same cluster is under your left hand on QWERTY, QWERTZ and AZERTY keyboards. Outside theater, and while typing in a field, the keys stay the page's own.
 
 ### Changed

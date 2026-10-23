@@ -4,6 +4,7 @@ export const DEFAULT_LANGUAGE = 'automatic';
 /** Catalog identifiers also serve as the Settings menu's source of truth. */
 export const LANGUAGES = [
   { locale: 'en', name: 'English' },
+  { locale: 'en_GB', name: 'English (UK)' },
   { locale: 'pl', name: 'Polski' },
   { locale: 'cs', name: 'Čeština' },
   { locale: 'sk', name: 'Slovenčina' },
