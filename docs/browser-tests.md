@@ -308,3 +308,42 @@ restoration. The existing `THEATER_SMOKE_*_ONLY` switches select the correspondi
 installed-storage scenario (shortcuts mode retains its existing skip-pin meaning).
 See [the scenario audit](smoke-coverage.md) for the retained capabilities and
 removed/moved coverage.
+
+## Live E2E lane (TME-124)
+
+`.github/workflows/live-e2e.yml` runs nightly (and on dispatch) against real public
+pages to catch host DOM or API changes before users do. It is never a required check
+and never runs on pull requests, so PR CI does not depend on third-party sites. It
+builds `main`, installs the unpacked Chromium build in a fresh profile per attempt,
+and runs [`tools/live-e2e`](../tools/live-e2e).
+
+- **Targets are private.** The page types and URLs come from the `LIVE_E2E_TARGETS`
+  secret (a JSON array of `{ pageType, url, capabilities?, videoSelector? }`); the
+  repository holds none. `pageType` is an opaque kebab-case id that also names the
+  rolling issue, so keep it generic. Without the secret the workflow reports that
+  nothing ran.
+- **One spec per capability** in `test-utils/specs.ts` (`theater`, `active-video`). Specs assert the
+  extension's contract (state classes and attributes, the control bar), never host
+  copy or geometry. A new capability needs a stable, host-independent signal first.
+- **Pre-flight classification.** Before any assertion the page is classified
+  (`classify.ts`, `test-utils/signals.ts`): consent wall, challenge or bot check, geo block, ad break, or an
+  unreachable page. Those results are `skipped` (environment), not `failed`. A
+  skipped night neither opens nor closes an issue.
+- **Retry and evidence.** A failing page type is retried once, in a fresh profile; only
+  this lane retries. Every failed attempt keeps a trace and a video in the
+  `live-e2e-out` artifact (7 days; for a public repository, assume it is readable by
+  anyone signed in to GitHub, and that traces show the target URLs).
+- **Quarantine.** `tools/live-e2e/quarantine.json` lists page types to skip, each with
+  an `owner`, an `expires` date (`YYYY-MM-DD`) and a `reason`. An expired entry fails
+  the run instead of hiding the page type for good.
+- **Alerting.** One rolling issue (`Live E2E: <pageType>`, label `live-e2e`) per failing
+  page type is created or updated by the workflow's `alert` job, the only job with
+  `issues: write`. It closes itself after three consecutive green nights.
+
+Locally, `tools/live-e2e/live-e2e.browser.test.ts` runs the same runner against a
+fixture server (a generic player page and pages standing in for each environment
+block) with the player injected, and `live-e2e.test.ts` covers classification,
+config parsing, retry and the issue state machine. These verify the harness, not
+any real host or the installed extension; only the nightly does. To try the installed
+path by hand: `pnpm build`, then
+`LIVE_E2E_TARGETS='[{"pageType":"demo","url":"<public page>"}]' pnpm exec tsx tools/live-e2e/test-utils/run.ts dist/chrome-unpacked /tmp/live-e2e-out`.

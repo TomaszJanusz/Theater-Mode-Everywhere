@@ -1,0 +1,123 @@
+name: Live E2E
+
+# Nightly, non-blocking lane: the built extension from main against real public pages
+# whose URLs live in the LIVE_E2E_TARGETS secret (docs/browser-tests.md). Never runs on
+# pull requests and is not a required check; a red run opens or updates a rolling issue.
+on:
+  schedule:
+    - cron: '47 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-e2e
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build main
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Set up dependencies
+        uses: $/.github/actions/setup
+        timeout-minutes: 7
+      - name: Build Extension
+        run: pnpm build
+        timeout-minutes: 5
+        env:
+          CI: true
+      - name: Upload build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: extension-build
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  live:
+    name: Live pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      configured: ${{ steps.config.outputs.configured }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Check private target list
+        id: config
+        env:
+          TARGETS: ${{ secrets.LIVE_E2E_TARGETS }}
+        run: |
+          if [ -n "$TARGETS" ]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'LIVE_E2E_TARGETS is not set; nothing to run.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Set up dependencies
+        if: steps.config.outputs.configured == 'true'
+        uses: $/.github/actions/setup
+        timeout-minutes: 7
+        with:
+          engines: chromium
+      - name: Download build
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: extension-build
+          path: dist/
+      - name: Run live pages
+        if: steps.config.outputs.configured == 'true'
+        timeout-minutes: 15
+        run: xvfb-run --auto-servernum pnpm exec tsx tools/live-e2e/test-utils/run.ts dist/chrome-unpacked live-e2e-out
+        env:
+          LIVE_E2E_TARGETS: ${{ secrets.LIVE_E2E_TARGETS }}
+      - name: Upload results, traces and videos
+        if: ${{ !cancelled() && steps.config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-e2e-out
+          path: live-e2e-out/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  alert:
+    name: Update rolling issues
+    needs: live
+    if: ${{ !cancelled() && needs.live.outputs.configured == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Set up dependencies
+        uses: $/.github/actions/setup
+      - name: Download results
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: live-e2e-out
+          path: live-e2e-out/
+      - name: Update issues
+        run: pnpm exec tsx tools/live-e2e/alert-cli.ts live-e2e-out/results.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
