@@ -1,4 +1,4 @@
-import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative, sep } from 'node:path';
@@ -79,7 +79,17 @@ function runTsxTests(spawn, plan, root) {
     if (result.error) throw result.error;
     if (result.status !== 0) return result.status ?? 1;
   }
-  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...plan.flags, ...plan.files], 'tsx');
+  return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', ...reporterFlags('tsx'), ...plan.flags, ...plan.files], 'tsx');
+}
+
+function reporterFlags(label) {
+  const directory = process.env.THEATER_TEST_REPORT_DIR;
+  if (!directory) return [];
+  mkdirSync(directory, { recursive: true });
+  return [
+    '--test-reporter=spec', '--test-reporter-destination=stdout',
+    '--test-reporter=junit', `--test-reporter-destination=${join(directory, label + '.xml')}`,
+  ];
 }
 
 export function main(args, root = fileURLToPath(new URL('..', import.meta.url)), spawn = spawnSync) {
@@ -98,7 +108,7 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
       } catch (error) {
         const message = `Test selection unavailable (${error.message}); running all tests in this lane.`;
         console.warn(message);
-        if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n${message}\n\n${discovered.map(file => `- \`${file}\``).join('\n')}\n`);
+        if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n${message}\n\n${discovered.map(file => '- `' + file + '`').join('\n')}\n`);
       }
     }
     plan = planRun(discovered, args, file => isBrowserTest(join(root, file)));
@@ -107,7 +117,7 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
     return 1;
   }
   if (plan.node.files.length > 0) {
-    const status = run(spawn, ['--test', ...plan.node.flags, ...plan.node.files], 'Node');
+    const status = run(spawn, ['--test', ...reporterFlags('node'), ...plan.node.flags, ...plan.node.files], 'Node');
     if (status !== 0) return status;
   }
   if (plan.tsx.files.length > 0) {

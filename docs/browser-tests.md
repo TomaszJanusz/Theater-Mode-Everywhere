@@ -95,12 +95,13 @@ the real chain with the same band-level helper as `audio-graph.browser.test.ts`
 `tools/audio-charts/audio-charts.browser.test.ts` cross-checks them. Crossfade is not
 charted (it has no steady spectrum), and there is no Storybook story. It needs Chromium.
 
-The registered suite limits test-file concurrency to two. CI caps Chromium browser
-tests at ten minutes, Firefox at fifteen, and the job at thirty, and cancels
-superseded runs for the same PR. These limits fail stalled checks; they do not turn them into passing tests.
+The registered suite limits test-file concurrency to two. PR CI runs two
+Chromium browser shards (each capped at 10 minutes) and one Firefox browser
+lane (capped at 15 minutes when selected), alongside unit and static jobs.
+It cancels superseded runs for the same PR. Timeouts fail stalled checks.
 
 On headless Linux, native Firefox Web Audio also needs an audio server and an
-output device. CI starts PulseAudio with a null sink for the job; the browser
+output device. Firefox CI lanes start PulseAudio with a null sink; the browser
 still executes native DSP without requiring speakers. Playwright's system
 dependencies provide libraries, but do not start that server. On a local Linux
 machine, use its existing audio server or an isolated null sink before running
@@ -177,8 +178,11 @@ and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
 cases explicitly tied to Chromium still use Chromium in either browser lane;
 the switch does not claim to port those cases to Firefox.
 
-PRs run typecheck, build, bundle verification, affected unit/Chromium browser
-tests, and Chromium smoke when shipped inputs are affected (see below).
+PRs classify changes, then run typecheck, one build with bundle verification,
+affected unit and Chromium browser tests, and Chromium smoke when shipped inputs
+are affected (see below). The build artifact is shared with verification and
+smoke. Each test lane publishes its 15 slowest tests and failures in the job
+summary.
 `scripts/ci-changes.mjs` additionally enables Firefox browser coverage and Firefox smoke when any changed path is:
 
 - `manifest.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, or `tsconfig.json`;
@@ -188,8 +192,8 @@ tests, and Chromium smoke when shipped inputs are affected (see below).
 Both sides of renames count. Missing or invalid change metadata enables Firefox.
 This deliberately broad infrastructure rule avoids a per-test exception list;
 UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
-the existing inexpensive CI pass. The CI workflow and `check` job names are
-unchanged for branch-protection compatibility.
+the existing inexpensive CI pass. The aggregate `check` status remains available
+for consumers of the former serial job name.
 
 PR Firefox smoke remains non-blocking and emits a warning annotation on failure.
 TME-112 owns making it blocking after ten consecutive green runs on the real

@@ -196,9 +196,6 @@
     "sonarjs/no-nested-conditional": {
       "count": 1
     },
-    "sonarjs/no-nested-template-literals": {
-      "count": 1
-    },
     "sonarjs/super-linear-regex": {
       "count": 1
     }
