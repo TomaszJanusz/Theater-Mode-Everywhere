@@ -1,9 +1,12 @@
-import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
-import { createNewBadge } from './new-badge';
 import type { DisposableScope } from '../core/disposable-scope';
+import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
+
+import { renderShortcutCaps } from './kbd-text';
 import { closeMenuPopover, bindMenuPopover } from './menu-popover';
+import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
-import { shortcutDisplayParts } from './shortcuts';
+import { shortcutTokens } from './shortcut-display';
+import { shortcutDisplayEnv } from './shortcuts';
 import { createStepper, type StepperState } from './stepper';
 
 /** Close the settings panel, optionally returning keyboard focus to its trigger. */
@@ -190,20 +193,14 @@ export function createPlayerSettings(
     if (newItem) highlight(row, icon, label, newItem, true);
     /** A key the arrows can wear: one character, as A and D are by default. */
     const singleKey = (shortcut: string) => {
-      const parts = shortcutDisplayParts(shortcut);
-      return parts.length === 1 && [...parts[0]].length === 1 ? parts[0] : undefined;
+      const tokens = shortcutTokens(shortcut, shortcutDisplayEnv());
+      return tokens.length === 1 && [...tokens[0].text].length === 1 ? tokens[0].text : undefined;
     };
     function setShortcut(shortcut: string, name: string) {
       const item = newItems.get(row);
       if (item) item.label = name;
       row.setAttribute('aria-label', name + (item?.visible ? `, ${ctx.t('badgeNew')}` : ''));
-      keys.replaceChildren();
-      shortcutDisplayParts(shortcut).forEach((part, index) => {
-        if (index > 0) keys.append('+');
-        const key = document.createElement('kbd');
-        key.textContent = part;
-        keys.append(key);
-      });
+      renderShortcutCaps(keys, shortcut);
       if (shortcut) row.setAttribute('aria-keyshortcuts', shortcut);
       else row.removeAttribute('aria-keyshortcuts');
     }
