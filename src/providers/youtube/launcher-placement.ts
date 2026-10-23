@@ -1,5 +1,8 @@
 import type { LauncherPlacementFactory } from '../launcher-placement';
 
+export const YOUTUBE_PLAYER_SELECTOR = '.html5-video-player';
+export const YOUTUBE_AUTOPLAY_TOGGLE = '.ytp-right-controls .ytp-autonav-toggle-button';
+
 /** Never rearrange host or extension controls: insert only against the live autoplay anchor. */
 export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChange) => {
   let player: Element | null = null;
@@ -8,14 +11,14 @@ export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChan
   return {
     read() {
       if (disposed || !video.isConnected) return null;
-      const current = video.closest('.html5-video-player');
+      const current = video.closest(YOUTUBE_PLAYER_SELECTOR);
       if (current !== player) {
         observer.disconnect();
         player = current;
         if (player) observer.observe(player, { childList: true, subtree: true });
       }
       if (!player || player.querySelector('video') !== video) return null;
-      const toggle = player.querySelector<HTMLElement>('.ytp-right-controls .ytp-autonav-toggle-button');
+      const toggle = player.querySelector<HTMLElement>(YOUTUBE_AUTOPLAY_TOGGLE);
       const before = toggle?.closest<HTMLElement>('button');
       if (!before) return null;
       return {

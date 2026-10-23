@@ -18,7 +18,13 @@ export function failureDetail(specs: ReadonlyArray<{ capability: string; status:
   return scrubUrls(specs.filter(s => s.status === 'failed').map(s => `- ${s.capability}: ${s.detail ?? 'failed'}`).join('\n'));
 }
 
-export const issueTitle = (pageType: string): string => `Live E2E: ${pageType}`;
+/** `page`: the extension's live contract on a page type; `drift`: a recorded host fixture no longer matches its live page. */
+export type IssueKind = 'page' | 'drift';
+export const issueTitle = (key: string, kind: IssueKind = 'page'): string => (kind === 'drift' ? `Host drift: ${key}` : `Live E2E: ${key}`);
+const INTRO: Record<IssueKind, (key: string) => string> = {
+  page: key => `The extension's live contract checks failed for page type \`${key}\`.`,
+  drift: key => `The live host no longer matches the recorded host fixture \`${key}\` (test/host-fixtures). Refresh the recording first (docs/browser-tests.md, "Recorded host fixtures"), then fix the provider if its tests fail on the new one.`
+};
 const MARKER = /<!-- live-e2e-green: (\d+) -->/;
 const withGreen = (body: string, n: number): string =>
   MARKER.test(body) ? body.replace(MARKER, `<!-- live-e2e-green: ${n} -->`) : `${body}\n\n<!-- live-e2e-green: ${n} -->`;
@@ -28,13 +34,13 @@ const greenNights = (issue: ExistingIssue): number => Number(MARKER.exec(issue.b
  * What to do for one page type after a night. Skipped nights change nothing: an environment
  * block is neither evidence of a fix nor of a regression.
  */
-export interface Night { pageType: string; status: 'passed' | 'failed' | 'skipped'; runUrl: string; detail: string }
+export interface Night { pageType: string; status: 'passed' | 'failed' | 'skipped'; runUrl: string; detail: string; kind?: IssueKind }
 
-export function decide({ pageType, status, runUrl, detail }: Night, issue: ExistingIssue | undefined): Action[] {
+export function decide({ pageType, status, runUrl, detail, kind = 'page' }: Night, issue: ExistingIssue | undefined): Action[] {
   if (status === 'skipped') return [];
   if (status === 'failed') {
     const note = `Failed in ${runUrl}\n\n${detail}`;
-    if (!issue) return [{ type: 'create', title: issueTitle(pageType), body: withGreen(`The extension's live contract checks failed for page type \`${pageType}\`.\n\n${note}`, 0) }];
+    if (!issue) return [{ type: 'create', title: issueTitle(pageType, kind), body: withGreen(`${INTRO[kind](pageType)}\n\n${note}`, 0) }];
     return [
       ...(issue.state === 'CLOSED' ? [{ type: 'reopen', number: issue.number } as const] : []),
       { type: 'update', number: issue.number, body: withGreen(issue.body, 0) },

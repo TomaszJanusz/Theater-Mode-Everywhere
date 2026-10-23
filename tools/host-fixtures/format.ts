@@ -7,7 +7,7 @@ export const FIXTURE_FORMAT = 'te-host-fixture/1';
 /** One fragment, not a page: a capture over this fails instead of committing a page dump. */
 export const FIXTURE_BYTE_BUDGET = 24 * 1024;
 /** Services the extension already integrates; recordings are data about those providers only. */
-export const FIXTURE_SERVICES = ['twitch'] as const;
+export const FIXTURE_SERVICES = ['twitch', 'youtube'] as const;
 export type FixtureService = (typeof FIXTURE_SERVICES)[number];
 
 /** One element of the fragment. Text nodes are never recorded; layout is inlined in `style`. */

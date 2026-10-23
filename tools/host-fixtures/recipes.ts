@@ -1,4 +1,5 @@
 import { TWITCH_CHAT_COLUMN_SELECTOR, TWITCH_CHAT_SECTION_SELECTOR } from '../../src/chat/selectors';
+import { YOUTUBE_AUTOPLAY_TOGGLE, YOUTUBE_PLAYER_SELECTOR } from '../../src/providers/youtube/launcher-placement';
 
 import type { FixtureService } from './format';
 import type { InspectOptions } from './page-inspect';
@@ -23,6 +24,11 @@ export interface FixtureRecipe extends Omit<InspectOptions, 'attributes'>, Omit<
   hostVersion?: string;
   /** One user-like click before recording, and the selector that confirms it took effect. */
   prepare?: { click: string; until: string };
+  /**
+   * The `LIVE_E2E_TARGETS` page type whose public page the nightly drift check compares with
+   * this recording. The target list is private; without a matching entry the check is skipped.
+   */
+  pageType: string;
 }
 
 const TWITCH_TOGGLE = '[data-a-target="right-column__toggle-collapse-btn"]';
@@ -43,7 +49,8 @@ const twitchChat = {
   labels: ['Collapse Chat', 'Expand Chat'],
   opaque: [],
   publicWords: ['twitch', 'videos', 'directory'],
-  hostVersion: 'window.__twilightBuildID'
+  hostVersion: 'window.__twilightBuildID',
+  pageType: 'live-chat'
 } as const satisfies Partial<FixtureRecipe>;
 
 export const RECIPES: Record<string, FixtureRecipe> = {
@@ -60,6 +67,29 @@ export const RECIPES: Record<string, FixtureRecipe> = {
     id: 'twitch-chat-collapsed',
     page: 'public live channel page, logged out, chat collapsed with the native toggle, before theater entry',
     prepare: { click: TWITCH_TOGGLE, until: '.right-column--collapsed' }
+  },
+  // The launcher's native slot (before the autoplay toggle) and the caption track list.
+  'youtube-watch-player': {
+    id: 'youtube-watch-player',
+    service: 'youtube',
+    page: 'public watch page of a captioned video, logged out, before theater entry',
+    viewport: { width: 1600, height: 900 },
+    // The watch component stamps its video id after the player's controls exist.
+    ready: `ytd-watch-flexy[video-id] ${YOUTUBE_AUTOPLAY_TOGGLE}`,
+    probes: {
+      flexy: 'ytd-watch-flexy[video-id]',
+      player: YOUTUBE_PLAYER_SELECTOR,
+      video: `${YOUTUBE_PLAYER_SELECTOR} video`,
+      rightControls: '.ytp-right-controls',
+      autoplay: YOUTUBE_AUTOPLAY_TOGGLE
+    },
+    keepDepth: 1,
+    maxChildren: 3,
+    labels: [],
+    opaque: ['video-id'],
+    publicWords: ['youtube', 'watch'],
+    hostVersion: "window.ytcfg?.get?.('INNERTUBE_CLIENT_VERSION')",
+    pageType: 'watch-captions'
   }
 };
 

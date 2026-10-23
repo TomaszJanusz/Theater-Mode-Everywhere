@@ -1,0 +1,583 @@
+{
+ "format": "te-host-fixture/1",
+ "id": "youtube-watch-player",
+ "service": "youtube",
+ "capture": {
+  "date": "2026-10-23",
+  "extensionVersion": "2.0.5 (build 0.26.1023.1802)",
+  "hostVersion": "2.20261022.01.00",
+  "browser": "Chromium 153.0.0.0",
+  "method": "tools/host-fixtures/test-utils/capture.ts youtube-watch-player: public watch page of a captioned video, logged out, before theater entry; installed unpacked Chromium build, fresh profile, automatic sanitization"
+ },
+ "viewport": {
+  "width": 1600,
+  "height": 900
+ },
+ "signature": {
+  "flexy": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": []
+  },
+  "player": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "flexy"
+   ]
+  },
+  "video": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "flexy",
+    "player"
+   ]
+  },
+  "rightControls": {
+   "count": 1,
+   "rendered": true,
+   "transformed": false,
+   "within": [
+    "flexy",
+    "player"
+   ]
+  },
+  "autoplay": {
+   "count": 1,
+   "rendered": true,
+   "transformed": true,
+   "within": [
+    "flexy",
+    "player",
+    "rightControls"
+   ]
+  }
+ },
+ "dom": {
+  "tag": "body",
+  "style": "display:block;width:1585px;height:0px",
+  "children": [
+   {
+    "tag": "ytd-app",
+    "style": "display:block;position:absolute;top:0px;left:0px;width:1585px;height:3820px",
+    "children": [
+     {
+      "tag": "div",
+      "attrs": {
+       "id": "content",
+       "class": "style-scope ytd-app"
+      },
+      "style": "display:block;width:1585px;height:3764px",
+      "children": [
+       {
+        "tag": "ytd-page-manager",
+        "attrs": {
+         "id": "page-manager",
+         "class": "style-scope ytd-app"
+        },
+        "style": "display:flex;width:1585px;height:3764px;flex-direction:row",
+        "children": [
+         {
+          "tag": "ytd-watch-flexy",
+          "attrs": {
+           "class": "style-scope ytd-page-manager watch-root-element hide-skeleton",
+           "role": "main",
+           "video-id": "xXxXxxxXXxX"
+          },
+          "style": "display:block;width:1585px;height:3764px",
+          "children": [
+           {
+            "tag": "iron-media-query",
+            "attrs": {
+             "id": "two-column-query",
+             "class": "style-scope ytd-watch-flexy"
+            },
+            "style": "display:none;width:0px;height:0px"
+           },
+           {
+            "tag": "iron-media-query",
+            "attrs": {
+             "id": "small-window-query",
+             "class": "style-scope ytd-watch-flexy"
+            },
+            "style": "display:none;width:0px;height:0px"
+           },
+           {
+            "tag": "iron-media-query",
+            "attrs": {
+             "id": "large-window-query",
+             "class": "style-scope ytd-watch-flexy"
+            },
+            "style": "display:none;width:0px;height:0px"
+           },
+           {
+            "tag": "div",
+            "attrs": {
+             "id": "columns",
+             "class": "style-scope ytd-watch-flexy"
+            },
+            "style": "display:flex;width:1585px;height:3764px;flex-direction:row",
+            "children": [
+             {
+              "tag": "div",
+              "attrs": {
+               "id": "primary",
+               "class": "style-scope ytd-watch-flexy"
+              },
+              "style": "display:block;width:1051px;height:3764px",
+              "children": [
+               {
+                "tag": "div",
+                "attrs": {
+                 "id": "primary-inner",
+                 "class": "style-scope ytd-watch-flexy"
+                },
+                "style": "display:block;width:1035px;height:647px",
+                "children": [
+                 {
+                  "tag": "div",
+                  "attrs": {
+                   "id": "player",
+                   "class": "style-scope ytd-watch-flexy"
+                  },
+                  "style": "display:block;position:relative;top:0px;left:0px;width:1035px;height:441px",
+                  "children": [
+                   {
+                    "tag": "div",
+                    "attrs": {
+                     "id": "player-container-outer",
+                     "class": "style-scope ytd-watch-flexy"
+                    },
+                    "style": "display:block;width:1035px;height:441px",
+                    "children": [
+                     {
+                      "tag": "div",
+                      "attrs": {
+                       "id": "player-container-inner",
+                       "class": "style-scope ytd-watch-flexy"
+                      },
+                      "style": "display:block;position:relative;top:0px;left:0px;width:1035px;height:441px",
+                      "children": [
+                       {
+                        "tag": "div",
+                        "attrs": {
+                         "id": "player-container",
+                         "class": "style-scope ytd-watch-flexy",
+                         "role": "complementary"
+                        },
+                        "style": "display:block;position:absolute;top:0px;left:0px;width:1035px;height:441px",
+                        "children": [
+                         {
+                          "tag": "ytd-player",
+                          "attrs": {
+                           "id": "ytd-player",
+                           "class": "style-scope ytd-watch-flexy"
+                          },
+                          "style": "display:block;width:1035px;height:441px;overflow:hidden",
+                          "children": [
+                           {
+                            "tag": "div",
+                            "attrs": {
+                             "id": "container",
+                             "class": "style-scope ytd-player"
+                            },
+                            "style": "display:block;width:1035px;height:441px",
+                            "children": [
+                             {
+                              "tag": "div",
+                              "attrs": {
+                               "id": "movie_player",
+                               "class": "html5-video-player ytp-transparent ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-exp-ppp-update ytp-livebadge-color ytp-grid-scrollable ytp-delhi-modern ytp-delhi-modern-icons ytp-delhi-horizontal-volume-controls ytp-delhi-modern-compact-controls ytp-fit-cover-video ytp-fine-scrubbing-exp ytp-cards-teaser-dismissible ytp-hide-info-bar ytp-large-width-mode ytp-disable-bottom-gradient ytp-rounded-miniplayer-not-regular-wide-video ytp-autonav-endscreen-cancelled-state ytp-branding-shown ytp-hide-fullscreen-title ytp-fullscreen-metadata-top ytp-heat-map paused-mode",
+                               "aria-label": "Recorded host text R"
+                              },
+                              "style": "display:block;position:relative;top:0px;left:0px;width:1035px;height:441px;overflow:hidden",
+                              "children": [
+                               {
+                                "tag": "div",
+                                "attrs": {
+                                 "class": "html5-video-container"
+                                },
+                                "style": "display:block;position:relative;top:0px;left:0px;width:1035px;height:0px",
+                                "children": [
+                                 {
+                                  "tag": "video",
+                                  "attrs": {
+                                   "class": "video-stream html5-main-video"
+                                  },
+                                  "style": "display:block;position:absolute;top:0px;left:0px;width:1035px;height:441px"
+                                 }
+                                ]
+                               },
+                               {
+                                "tag": "div",
+                                "attrs": {
+                                 "class": "ytp-gradient-top"
+                                },
+                                "style": "display:none;position:absolute;top:0px;width:0px;height:0px"
+                               },
+                               {
+                                "tag": "div",
+                                "attrs": {
+                                 "class": "ytp-chrome-top"
+                                },
+                                "style": "display:flex;position:absolute;top:0px;left:12px;width:1011px;height:0px;flex-direction:row"
+                               },
+                               {
+                                "tag": "button",
+                                "attrs": {
+                                 "class": "ytp-unmute ytp-popup ytp-button ytp-unmute-animated ytp-unmute-shrink"
+                                },
+                                "style": "display:none;position:absolute;top:0px;left:0px;width:0px;height:0px;overflow:hidden"
+                               },
+                               {
+                                "tag": "div",
+                                "attrs": {
+                                 "class": "ytp-chrome-bottom"
+                                },
+                                "style": "display:block;position:absolute;top:381.516px;left:12px;width:1011px;height:59px",
+                                "children": [
+                                 {
+                                  "tag": "div",
+                                  "attrs": {
+                                   "class": "ytp-chrome-controls"
+                                  },
+                                  "style": "display:flex;width:1011px;height:56px;flex-direction:row",
+                                  "children": [
+                                   {
+                                    "tag": "div",
+                                    "attrs": {
+                                     "class": "ytp-right-controls"
+                                    },
+                                    "style": "display:flex;width:248px;height:40px;flex-direction:row",
+                                    "children": [
+                                     {
+                                      "tag": "div",
+                                      "attrs": {
+                                       "class": "ytp-right-controls-left"
+                                      },
+                                      "style": "display:flex;width:144px;height:40px;flex-direction:row",
+                                      "children": [
+                                       {
+                                        "tag": "button",
+                                        "attrs": {
+                                         "class": "ytp-button ytp-autonav-toggle delhi-fast-follow-autonav-toggle",
+                                         "aria-label": "Recorded hostx"
+                                        },
+                                        "style": "display:block;position:relative;top:0px;left:0px;width:48px;height:40px;overflow:hidden",
+                                        "children": [
+                                         {
+                                          "tag": "div",
+                                          "attrs": {
+                                           "class": "ytp-autonav-toggle-button-container"
+                                          },
+                                          "style": "display:inline-block;width:48px;height:40px",
+                                          "children": [
+                                           {
+                                            "tag": "div",
+                                            "attrs": {
+                                             "class": "ytp-autonav-toggle-button"
+                                            },
+                                            "style": "display:block;position:relative;top:20px;left:0px;width:30px;height:18px;transform:matrix(1, 0, 0, 1, 0, -9)"
+                                           }
+                                          ]
+                                         }
+                                        ]
+                                       }
+                                      ]
+                                     },
+                                     {
+                                      "tag": "div",
+                                      "attrs": {
+                                       "class": "ytp-right-controls-right"
+                                      },
+                                      "style": "display:flex;width:96px;height:40px;flex-direction:row"
+                                     },
+                                     {
+                                      "tag": "button",
+                                      "attrs": {
+                                       "class": "ytp-pip-button ytp-button"
+                                      },
+                                      "style": "display:none;position:relative;width:0px;height:0px;overflow:hidden"
+                                     }
+                                    ]
+                                   }
+                                  ]
+                                 }
+                                ]
+                               }
+                              ]
+                             }
+                            ]
+                           }
+                          ]
+                         }
+                        ]
+                       }
+                      ]
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "media": {
+  "title": "Recorded host text Recorded host text Rec",
+  "subtitle": null,
+  "mediaId": "xXxXxxxXXxX",
+  "captionTracks": [
+   {
+    "id": "track-1",
+    "language": "sq",
+    "label": "Recorded",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-2",
+    "language": "ar",
+    "label": "Record",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-3",
+    "language": "bn",
+    "label": "Record",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-4",
+    "language": "zh-Hans",
+    "label": "Recorded host text R",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-5",
+    "language": "da",
+    "label": "Record",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-6",
+    "language": "nl",
+    "label": "Recorded host text",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-7",
+    "language": "en",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-8",
+    "language": "en",
+    "label": "Recorded host text Recor",
+    "kind": "captions",
+    "autoGenerated": true
+   },
+   {
+    "id": "track-9",
+    "language": "fi",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-10",
+    "language": "fr",
+    "label": "Recorded host tex",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-11",
+    "language": "gl",
+    "label": "Recorded",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-12",
+    "language": "de",
+    "label": "Recorded host te",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-13",
+    "language": "el",
+    "label": "Recor",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-14",
+    "language": "iw",
+    "label": "Record",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-15",
+    "language": "hu",
+    "label": "Recordedx",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-16",
+    "language": "it",
+    "label": "Recorded host text",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-17",
+    "language": "ja",
+    "label": "Recorded",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-18",
+    "language": "ku",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-19",
+    "language": "no",
+    "label": "Recorded host text",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-20",
+    "language": "pl",
+    "label": "Recorded host t",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-21",
+    "language": "pt",
+    "label": "Recorded host text Rec",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-22",
+    "language": "pa",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-23",
+    "language": "ro",
+    "label": "Recorded",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-24",
+    "language": "ru",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-25",
+    "language": "sk",
+    "label": "Record",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-26",
+    "language": "es",
+    "label": "Recorded host tex",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-27",
+    "language": "sv",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-28",
+    "language": "tr",
+    "label": "Recorde",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-29",
+    "language": "uk",
+    "label": "Recordedx",
+    "kind": "subtitles",
+    "autoGenerated": false
+   },
+   {
+    "id": "track-30",
+    "language": "vi",
+    "label": "Recorded h",
+    "kind": "subtitles",
+    "autoGenerated": false
+   }
+  ],
+  "chapters": [
+   {
+    "start": 0,
+    "title": "Recorded hos"
+   },
+   {
+    "start": 93,
+    "title": "Recorded host text Recor"
+   },
+   {
+    "start": 433,
+    "title": "Recorded host text Reco"
+   },
+   {
+    "start": 745,
+    "title": "Recorded host text Rec"
+   }
+  ]
+ },
+ "playback": {
+  "live": false,
+  "paused": true,
+  "muted": false,
+  "duration": 888
+ }
+}
