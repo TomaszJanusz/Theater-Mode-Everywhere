@@ -7,6 +7,7 @@ import { createButtonTooltip, type ButtonTooltipPlace } from './button-tooltip';
 import { renderKbdText } from './kbd-text';
 import { t } from './messages';
 import { mountPlayerUi, queryPlayerUi } from './root';
+import { shortcutMarkup } from './shortcut-display';
 import { setSvgIcon } from './svg-icon';
 
 interface Args {
@@ -16,7 +17,8 @@ interface Args {
   open: boolean;
 }
 
-const SHORTCUT_KEYS = { fullscreenTooltip: ['F'], exitTheaterModeTooltip: ['T', 'Esc'] } satisfies Record<Args['tooltip'], string[]>;
+const SHORTCUTS = { fullscreenTooltip: ['F'], exitTheaterModeTooltip: ['T', 'Escape'] } satisfies Record<Args['tooltip'], string[]>;
+const SHORTCUT_ENV = { platform: 'windows' } as const;
 
 const FULLSCREEN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
 
@@ -44,7 +46,7 @@ const meta: Meta<Args> = {
     button.setAttribute('aria-label', t(action.label));
     button.disabled = disabled;
     setSvgIcon(button, action.icon);
-    tooltips.bind(button, () => t(tooltip, SHORTCUT_KEYS[tooltip]), undefined, place);
+    tooltips.bind(button, () => t(tooltip, SHORTCUTS[tooltip].map(shortcut => shortcutMarkup(shortcut, SHORTCUT_ENV))), undefined, place);
     scope.raf(() => { if (open && !disabled) button.dispatchEvent(new MouseEvent('mouseenter')); });
     return [button];
   }, { liftBar: place === 'below' })
@@ -64,7 +66,7 @@ export const Closed: Story = {
     await expect(button().disabled).toBe(args.disabled);
     await waitFor(() => expect(tooltip()?.classList.contains('visible') ?? false).toBe(args.open && !args.disabled));
     if (args.open && !args.disabled) {
-      await expect(tooltip()?.querySelector('kbd')?.textContent).toBe(SHORTCUT_KEYS[args.tooltip][0]);
+      await expect(tooltip()?.querySelector('kbd')?.textContent).toBe(SHORTCUTS[args.tooltip][0]);
       await expect(tooltip()?.classList.contains('is-below')).toBe(args.place === 'below');
     }
   }

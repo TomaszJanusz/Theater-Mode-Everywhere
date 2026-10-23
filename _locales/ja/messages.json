@@ -399,7 +399,7 @@
     "message": "字幕を小さくする"
   },
   "subtitlesTooltip": {
-    "message": "字幕 <kbd>$KEY$</kbd>",
+    "message": "字幕 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "切り替えは HTML5 動画でのみ動作します"
   },
   "videoFitTooltip": {
-    "message": "動画フィット <kbd>$KEY$</kbd>",
+    "message": "動画フィット $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "ミュート解除"
   },
   "pictureInPictureTooltip": {
-    "message": "ピクチャーインピクチャー <kbd>$KEY$</kbd>",
+    "message": "ピクチャーインピクチャー $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "全画面表示終了"
   },
   "fullscreenTooltip": {
-    "message": "全画面表示 <kbd>$KEY$</kbd>",
+    "message": "全画面表示 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "シアターモード終了 <kbd>$TOGGLE$</kbd> または <kbd>$EXIT$</kbd>",
+    "message": "シアターモード終了 $TOGGLE$ または $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "ページ内の動画を切り替え <kbd>$KEY$</kbd>",
+    "message": "ページ内の動画を切り替え $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "キーボードショートカット <kbd>$KEY$</kbd>",
+    "message": "キーボードショートカット $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "シアターモードに切り替えています…"
   },
   "autoEnterNoticeHint": {
-    "message": "クリックまたは <kbd>$KEY$</kbd> キーでキャンセル",
+    "message": "クリックまたは $KEY$ キーでキャンセル",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "未割り当て"
+  },
+  "keyLabelArrowUp": {
+    "message": "上矢印"
+  },
+  "keyLabelArrowDown": {
+    "message": "下矢印"
+  },
+  "keyLabelArrowLeft": {
+    "message": "左矢印"
+  },
+  "keyLabelArrowRight": {
+    "message": "右矢印"
+  },
+  "keyLabelPlus": {
+    "message": "プラス"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Command"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Delete"
+  },
+  "keyLabelInsert": {
+    "message": "Insert"
   },
   "shortcutExistingConflicts": {
     "message": "一部のショートカットが複数の操作に割り当てられています。強調表示された項目を編集するかリセットしてください。"

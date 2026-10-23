@@ -399,7 +399,7 @@
     "message": "Zmenšit titulky"
   },
   "subtitlesTooltip": {
-    "message": "Titulky <kbd>$KEY$</kbd>",
+    "message": "Titulky $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Přepínání funguje jen s HTML5 videem"
   },
   "videoFitTooltip": {
-    "message": "Přizpůsobení obrazu <kbd>$KEY$</kbd>",
+    "message": "Přizpůsobení obrazu $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Zapnout zvuk"
   },
   "pictureInPictureTooltip": {
-    "message": "Obraz v obraze <kbd>$KEY$</kbd>",
+    "message": "Obraz v obraze $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Ukončit celou obrazovku"
   },
   "fullscreenTooltip": {
-    "message": "Celá obrazovka <kbd>$KEY$</kbd>",
+    "message": "Celá obrazovka $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Ukončit režim kina <kbd>$TOGGLE$</kbd> nebo <kbd>$EXIT$</kbd>",
+    "message": "Ukončit režim kina $TOGGLE$ nebo $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Přepnout video na stránce <kbd>$KEY$</kbd>",
+    "message": "Přepnout video na stránce $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Klávesové zkratky <kbd>$KEY$</kbd>",
+    "message": "Klávesové zkratky $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Spouštění režimu kina…"
   },
   "autoEnterNoticeHint": {
-    "message": "Zrušte kliknutím nebo klávesou <kbd>$KEY$</kbd>",
+    "message": "Zrušte kliknutím nebo klávesou $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Nepřiřazeno"
+  },
+  "keyLabelArrowUp": {
+    "message": "Šipka nahoru"
+  },
+  "keyLabelArrowDown": {
+    "message": "Šipka dolů"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Šipka vlevo"
+  },
+  "keyLabelArrowRight": {
+    "message": "Šipka vpravo"
+  },
+  "keyLabelPlus": {
+    "message": "Plus"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Command"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Delete"
+  },
+  "keyLabelInsert": {
+    "message": "Insert"
   },
   "shortcutExistingConflicts": {
     "message": "Některé zkratky jsou přiřazeny více akcím. Upravte nebo obnovte zvýrazněné zkratky, abyste vyřešili konflikty."

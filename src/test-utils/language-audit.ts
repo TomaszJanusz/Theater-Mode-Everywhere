@@ -38,6 +38,8 @@ export async function assertLocalized(page: Page, locale: string, selector = 'ht
       if (element.closest('.whats-new-announcement[lang="en"]')) return;
       // Endonyms deliberately retain their own language, including English.
       if (element.closest('#language-combobox [lang], #language-combobox-listbox [lang]')) return;
+      // Key caps show the legend printed on the key (Shift, Esc), which is never translated; their spoken names are.
+      if (element.matches('kbd')) return;
       if (!element.matches('script, style, svg, svg *')) {
         const values = [
           ['text', visibleText(element)],

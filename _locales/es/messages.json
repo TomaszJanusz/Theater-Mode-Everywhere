@@ -399,7 +399,7 @@
     "message": "Reducir tamaño de subtítulos"
   },
   "subtitlesTooltip": {
-    "message": "Subtítulos <kbd>$KEY$</kbd>",
+    "message": "Subtítulos $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "El cambio solo funciona con vídeo HTML5"
   },
   "videoFitTooltip": {
-    "message": "Ajuste del vídeo <kbd>$KEY$</kbd>",
+    "message": "Ajuste del vídeo $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Sonido activado"
   },
   "pictureInPictureTooltip": {
-    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "message": "Picture-in-Picture $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Salir de pantalla completa"
   },
   "fullscreenTooltip": {
-    "message": "Pantalla completa <kbd>$KEY$</kbd>",
+    "message": "Pantalla completa $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Salir del modo cine <kbd>$TOGGLE$</kbd> o <kbd>$EXIT$</kbd>",
+    "message": "Salir del modo cine $TOGGLE$ o $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Cambiar vídeo de la página <kbd>$KEY$</kbd>",
+    "message": "Cambiar vídeo de la página $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Atajos de teclado <kbd>$KEY$</kbd>",
+    "message": "Atajos de teclado $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Activando el modo cine…"
   },
   "autoEnterNoticeHint": {
-    "message": "Haz clic o pulsa <kbd>$KEY$</kbd> para cancelar",
+    "message": "Haz clic o pulsa $KEY$ para cancelar",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Sin asignar"
+  },
+  "keyLabelArrowUp": {
+    "message": "Flecha arriba"
+  },
+  "keyLabelArrowDown": {
+    "message": "Flecha abajo"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Flecha izquierda"
+  },
+  "keyLabelArrowRight": {
+    "message": "Flecha derecha"
+  },
+  "keyLabelPlus": {
+    "message": "Más"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Opción"
+  },
+  "keyLabelShift": {
+    "message": "Mayúsculas"
+  },
+  "keyLabelCommand": {
+    "message": "Comando"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Suprimir"
+  },
+  "keyLabelInsert": {
+    "message": "Insertar"
   },
   "shortcutExistingConflicts": {
     "message": "Algunos atajos están asignados a varias acciones. Edita o restablece los atajos resaltados."

@@ -10,9 +10,12 @@ import {
   normalizeChatTheme
 } from '../chat';
 import type { DisposableScope } from '../core/disposable-scope';
-import type { PlayerChromeContext } from './runtime-context';
-import { queryPlayerUi } from './root';
+
 import { holdMenuPosition } from './menu-popover';
+import { queryPlayerUi } from './root';
+import type { PlayerChromeContext } from './runtime-context';
+import { shortcutMarkup } from './shortcut-display';
+import { shortcutDisplayEnv } from './shortcuts';
 
 export const CHAT_PREFERENCES_STORAGE_KEY = 'nativeChatPreferences';
 type ChatPreferences = Partial<Record<ChatProvider, ChatPreference>>;
@@ -122,7 +125,7 @@ export function mountNativeChatControls(
   const label = () => ctx.t(nativeChatState()?.visible ? 'hideNativeChat' : 'showNativeChat');
   tooltip(button, () => {
     const shortcut = ctx.ui().shortcuts.toggleChat;
-    return shortcut ? `${label()} <kbd>${shortcut}</kbd>` : label();
+    return shortcut ? `${label()} ${shortcutMarkup(shortcut, shortcutDisplayEnv())}` : label();
   });
   scope.listen(button, 'click', () => {
     controller?.toggle();

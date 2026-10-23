@@ -399,7 +399,7 @@
     "message": "Riduci dimensione sottotitoli"
   },
   "subtitlesTooltip": {
-    "message": "Sottotitoli <kbd>$KEY$</kbd>",
+    "message": "Sottotitoli $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Il cambio funziona solo con video HTML5"
   },
   "videoFitTooltip": {
-    "message": "Adattamento video <kbd>$KEY$</kbd>",
+    "message": "Adattamento video $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Audio riattivato"
   },
   "pictureInPictureTooltip": {
-    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "message": "Picture-in-Picture $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Esci da schermo intero"
   },
   "fullscreenTooltip": {
-    "message": "Schermo intero <kbd>$KEY$</kbd>",
+    "message": "Schermo intero $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Esci dalla modalità cinema <kbd>$TOGGLE$</kbd> o <kbd>$EXIT$</kbd>",
+    "message": "Esci dalla modalità cinema $TOGGLE$ o $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Cambia video nella pagina <kbd>$KEY$</kbd>",
+    "message": "Cambia video nella pagina $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Scorciatoie da tastiera <kbd>$KEY$</kbd>",
+    "message": "Scorciatoie da tastiera $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Attivazione della modalità cinema…"
   },
   "autoEnterNoticeHint": {
-    "message": "Fai clic o premi <kbd>$KEY$</kbd> per annullare",
+    "message": "Fai clic o premi $KEY$ per annullare",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Non assegnata"
+  },
+  "keyLabelArrowUp": {
+    "message": "Freccia su"
+  },
+  "keyLabelArrowDown": {
+    "message": "Freccia giù"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Freccia sinistra"
+  },
+  "keyLabelArrowRight": {
+    "message": "Freccia destra"
+  },
+  "keyLabelPlus": {
+    "message": "Più"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Opzione"
+  },
+  "keyLabelShift": {
+    "message": "Maiuscole"
+  },
+  "keyLabelCommand": {
+    "message": "Comando"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Cancella"
+  },
+  "keyLabelInsert": {
+    "message": "Inserisci"
   },
   "shortcutExistingConflicts": {
     "message": "Alcune scorciatoie sono assegnate a più azioni. Modifica o ripristina quelle evidenziate."

@@ -399,7 +399,7 @@
     "message": "Réduire la taille des sous-titres"
   },
   "subtitlesTooltip": {
-    "message": "Sous-titres <kbd>$KEY$</kbd>",
+    "message": "Sous-titres $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "Le changement fonctionne uniquement avec la vidéo HTML5"
   },
   "videoFitTooltip": {
-    "message": "Ajustement vidéo <kbd>$KEY$</kbd>",
+    "message": "Ajustement vidéo $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "Son rétabli"
   },
   "pictureInPictureTooltip": {
-    "message": "Picture-in-Picture <kbd>$KEY$</kbd>",
+    "message": "Picture-in-Picture $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "Quitter le plein écran"
   },
   "fullscreenTooltip": {
-    "message": "Plein écran <kbd>$KEY$</kbd>",
+    "message": "Plein écran $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "Quitter le mode cinéma <kbd>$TOGGLE$</kbd> ou <kbd>$EXIT$</kbd>",
+    "message": "Quitter le mode cinéma $TOGGLE$ ou $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "Changer de vidéo sur la page <kbd>$KEY$</kbd>",
+    "message": "Changer de vidéo sur la page $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "Raccourcis clavier <kbd>$KEY$</kbd>",
+    "message": "Raccourcis clavier $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "Activation du mode cinéma…"
   },
   "autoEnterNoticeHint": {
-    "message": "Cliquez ou appuyez sur <kbd>$KEY$</kbd> pour annuler",
+    "message": "Cliquez ou appuyez sur $KEY$ pour annuler",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "Non attribué"
+  },
+  "keyLabelArrowUp": {
+    "message": "Flèche vers le haut"
+  },
+  "keyLabelArrowDown": {
+    "message": "Flèche vers le bas"
+  },
+  "keyLabelArrowLeft": {
+    "message": "Flèche vers la gauche"
+  },
+  "keyLabelArrowRight": {
+    "message": "Flèche vers la droite"
+  },
+  "keyLabelPlus": {
+    "message": "Plus"
+  },
+  "keyLabelControl": {
+    "message": "Contrôle"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Majuscule"
+  },
+  "keyLabelCommand": {
+    "message": "Commande"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Échappement"
+  },
+  "keyLabelDelete": {
+    "message": "Supprimer"
+  },
+  "keyLabelInsert": {
+    "message": "Insérer"
   },
   "shortcutExistingConflicts": {
     "message": "Certains raccourcis sont attribués à plusieurs actions. Modifiez ou réinitialisez les raccourcis signalés."

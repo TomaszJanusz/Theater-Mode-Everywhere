@@ -226,6 +226,13 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   if (narrow.columns !== 1 || narrow.rows !== 31 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   await help.waitFor({ state: 'detached' });
+  // Control-bar tooltips use the same caps: one per key, as printed.
+  await page.locator('.theater-control-btn.play-pause-btn').hover();
+  const tooltip = page.locator('.theater-button-tooltip.visible');
+  await tooltip.waitFor();
+  const tip = await tooltip.evaluate(element => [...element.querySelectorAll('kbd')].map(kbd => `${kbd.textContent}:${getComputedStyle(kbd).textTransform}`));
+  if (JSON.stringify(tip) !== JSON.stringify(['Space:none'])) fail(`Play tooltip does not show the Space cap: ${JSON.stringify(tip)}`);
+  await page.mouse.move(0, 0);
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.keyboard.press('Escape');
   await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });

@@ -399,7 +399,7 @@
     "message": "减小字幕大小"
   },
   "subtitlesTooltip": {
-    "message": "字幕 <kbd>$KEY$</kbd>",
+    "message": "字幕 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -433,7 +433,7 @@
     "message": "切换仅适用于 HTML5 视频"
   },
   "videoFitTooltip": {
-    "message": "视频适配 <kbd>$KEY$</kbd>",
+    "message": "视频适配 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -564,7 +564,7 @@
     "message": "取消静音"
   },
   "pictureInPictureTooltip": {
-    "message": "画中画 <kbd>$KEY$</kbd>",
+    "message": "画中画 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -575,7 +575,7 @@
     "message": "退出全屏"
   },
   "fullscreenTooltip": {
-    "message": "全屏 <kbd>$KEY$</kbd>",
+    "message": "全屏 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -583,7 +583,7 @@
     }
   },
   "exitTheaterModeTooltip": {
-    "message": "退出剧场模式 <kbd>$TOGGLE$</kbd> 或 <kbd>$EXIT$</kbd>",
+    "message": "退出剧场模式 $TOGGLE$ 或 $EXIT$",
     "placeholders": {
       "toggle": {
         "content": "$1"
@@ -669,7 +669,7 @@
     }
   },
   "switchVideoTooltip": {
-    "message": "切换页面中的视频 <kbd>$KEY$</kbd>",
+    "message": "切换页面中的视频 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -677,7 +677,7 @@
     }
   },
   "keyboardShortcutsTooltip": {
-    "message": "键盘快捷键 <kbd>$KEY$</kbd>",
+    "message": "键盘快捷键 $KEY$",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -733,7 +733,7 @@
     "message": "正在进入剧场模式…"
   },
   "autoEnterNoticeHint": {
-    "message": "点击或按 <kbd>$KEY$</kbd> 取消",
+    "message": "点击或按 $KEY$ 取消",
     "placeholders": {
       "key": {
         "content": "$1"
@@ -827,6 +827,45 @@
   },
   "shortcutUnassigned": {
     "message": "未分配"
+  },
+  "keyLabelArrowUp": {
+    "message": "上箭头"
+  },
+  "keyLabelArrowDown": {
+    "message": "下箭头"
+  },
+  "keyLabelArrowLeft": {
+    "message": "左箭头"
+  },
+  "keyLabelArrowRight": {
+    "message": "右箭头"
+  },
+  "keyLabelPlus": {
+    "message": "加号"
+  },
+  "keyLabelControl": {
+    "message": "Control"
+  },
+  "keyLabelOption": {
+    "message": "Option"
+  },
+  "keyLabelShift": {
+    "message": "Shift"
+  },
+  "keyLabelCommand": {
+    "message": "Command"
+  },
+  "keyLabelWindows": {
+    "message": "Windows"
+  },
+  "keyLabelEscape": {
+    "message": "Escape"
+  },
+  "keyLabelDelete": {
+    "message": "Delete"
+  },
+  "keyLabelInsert": {
+    "message": "Insert"
   },
   "shortcutExistingConflicts": {
     "message": "部分快捷键已分配给多个操作。请编辑或重置突出显示的快捷键。"
