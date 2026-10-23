@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { detectShortcutPlatform, parseShortcut, shortcutKeyHint, shortcutLabel, shortcutMarkup, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
+import { detectShortcutPlatform, parseShortcut, shortcutKeyHint, shortcutAriaKeyshortcuts, shortcutLabel, shortcutMarkup, shortcutSpokenLabel, shortcutTokens, type ShortcutDisplayEnv, type ShortcutPlatform } from './shortcut-display';
 import { defaultShortcuts, withShortcutDefaults } from './shortcuts';
 
 const windows: ShortcutDisplayEnv = { platform: 'windows' };
@@ -122,6 +122,19 @@ describe('shortcut display', () => {
     assert.equal(shortcutMarkup('Ctrl++', mac), '<kbd>⌃</kbd><kbd>+</kbd>');
     assert.equal(shortcutMarkup('Escape', linux), '<kbd>Esc</kbd>');
     assert.equal(shortcutMarkup('', linux), '');
+  });
+
+  it('writes aria-keyshortcuts in the WAI-ARIA key grammar', () => {
+    for (const [stored, aria] of [
+      ['T', 'T'], ['Shift+T', 'Shift+T'], ['Ctrl+Shift+K', 'Control+Shift+K'], ['Ctrl+Alt+Shift+Meta+K', 'Control+Alt+Shift+Meta+K'],
+      ['Alt+R', 'Alt+R'], ['Space', 'Space'], ['Escape', 'Escape'], ['ArrowLeft', 'ArrowLeft'], ['PageDown', 'PageDown'],
+      ['+', 'Plus'], ['Ctrl++', 'Control+Plus'], ['-', '-'], ['<', '<'], ['KeyW', 'W'], ['Shift+Digit1', 'Shift+1'], ['F5', 'F5'], ['', '']
+    ] as const) assert.equal(shortcutAriaKeyshortcuts(stored), aria, stored);
+  });
+
+  it('speaks a shortcut one key name per cap', () => {
+    assert.equal(shortcutSpokenLabel('Ctrl+Shift+ArrowLeft', mac), 'Control Shift Left arrow');
+    assert.equal(shortcutSpokenLabel('Escape', windows), 'Escape');
   });
 
   it('keeps a letter whose capital is longer as typed', () => {

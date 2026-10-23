@@ -219,6 +219,8 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
     if (!shown.includes(expected)) fail(`Keyboard help does not show ${expected}: ${JSON.stringify(shown)}`);
   if (keys.some(({ text, caps, transform }) => /Arrow|Key[A-Z]|SPACE|Escape/.test(text) || caps !== text.split(/\+(?=.)/).length || transform !== 'none'))
     fail(`Keyboard help shows raw or shouted key names: ${JSON.stringify(keys)}`);
+  const spoken = await help.evaluate(overlay => [...overlay.querySelectorAll('kbd')].filter(kbd => /[←→↑↓]/.test(kbd.textContent ?? '')).map(kbd => kbd.getAttribute('aria-label')));
+  if (JSON.stringify(spoken) !== JSON.stringify(['Left arrow', 'Right arrow', 'Up arrow', 'Down arrow'])) fail(`Arrow caps are not named for screen readers: ${JSON.stringify(spoken)}`);
   await help.evaluate(async overlay => { await Promise.all(overlay.getAnimations({ subtree: true }).map(animation => animation.finished)); });
   if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT.replace(/\.png$/, '-help-columns.png') });
   await page.setViewportSize({ width: 540, height: 480 });

@@ -134,6 +134,25 @@ export function shortcutMarkup(stored: string, env: ShortcutDisplayEnv): string 
   return shortcutTokens(stored, env).map(({ text }) => `<kbd>${text}</kbd>`).join(shortcutSeparator(env.platform));
 }
 
+const ARIA_MODIFIERS: Record<ShortcutModifier, string> = { Ctrl: 'Control', Alt: 'Alt', Shift: 'Shift', Meta: 'Meta' };
+const ARIA_KEYS: Record<string, string> = { '+': 'Plus', Space: 'Space', Esc: 'Escape' };
+
+/**
+ * The WAI-ARIA 1.2 `aria-keyshortcuts` form: `KeyboardEvent.key` names joined by `+`, modifiers first,
+ * with `Plus` and `Space` standing in for the delimiter and the space character. Empty when unassigned.
+ */
+export function shortcutAriaKeyshortcuts(stored: string): string {
+  if (!stored) return '';
+  const { modifiers, key } = parseShortcut(stored);
+  const main = ARIA_KEYS[key] ?? key.replace(/^(?:Key([A-Z])|Digit(\d))$/, '$1$2');
+  return [...modifiers.map(modifier => ARIA_MODIFIERS[modifier]), main].join('+');
+}
+
+/** Words for a screen reader, one per cap: `Control Shift K`. */
+export function shortcutSpokenLabel(stored: string, env: ShortcutDisplayEnv): string {
+  return shortcutTokens(stored, env).map(({ label }) => label).join(' ');
+}
+
 /** Resolves once per context: `userAgentData` where available, `navigator.platform` otherwise. */
 export function detectShortcutPlatform(nav: { platform?: string; userAgentData?: { platform?: string } }): ShortcutPlatform {
   const platform = nav.userAgentData?.platform || nav.platform || '';
