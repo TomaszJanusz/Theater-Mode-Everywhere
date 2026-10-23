@@ -88,7 +88,7 @@ exercise different integration contracts. Removing classic assertions without a
 component gate would silently reduce automated coverage. This cleanup therefore
 adds explicit component steps to PR CI (Chromium, plus Firefox under the existing
 infrastructure gate) and both nightly/release engines. Nightly and release skip
-those steps for checked-out revisions predating `vitest.config.ts`, so the
+those steps for checked-out revisions predating `config/vitest.config.ts`, so the
 nightly main job remains compatible until the Storybook pilot reaches main.
 Nightly summaries report the component outcomes separately from classic tests.
 This adds component work to CI; the overall `check` comparison must account for

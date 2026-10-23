@@ -2940,7 +2940,7 @@
       "count": 1
     }
   },
-  "vite.config.ts": {
+  "config/vite.config.ts": {
     "import/order": {
       "count": 3
     }

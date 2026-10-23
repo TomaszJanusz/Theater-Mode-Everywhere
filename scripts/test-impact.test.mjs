@@ -25,7 +25,7 @@ test('transitive imports select their test, exclude unrelated tests, and tolerat
 });
 
 test('shared inputs and unreadable/unknown graphs fail open to all tests and smoke', () => {
-  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'vite.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml']) {
+  for (const file of ['config/eslint.config.mjs', 'config/eslint-rules/max-symbol-name-length.mjs', 'eslint-suppressions.json', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'manifest.json', 'scripts/build-mode.ts', 'config/vite.config.ts', 'config/vitest.config.ts', 'scripts/run-tests.mjs', 'scripts/ci-changes.mjs', 'scripts/test-impact.mjs', 'src/test-utils/a.ts', 'test-utils/a.ts', 'test/fixtures/a.webm', '.github/workflows/ci.yml']) {
     assert.equal(isFullRun(file), true, file);
     assert.deepEqual(selectTests(tests, [file], graph).files, tests);
   }
@@ -223,11 +223,11 @@ test('an unreadable CSS import graph fails open to the full suite', async t => {
 test('smoke harness roots and smoke-only dependencies trigger Chromium without selecting dist tests', () => {
   const files = ['src/dist.browser.test.ts', 'src/unrelated.test.ts'];
   const actual = new Map([
-    [files[0], new Set(['src/entries/content.ts', 'scripts/build.ts', 'vite.config.ts'])],
+    [files[0], new Set(['src/entries/content.ts', 'scripts/build.ts', 'config/vite.config.ts'])],
     [files[1], new Set()],
     ['src/entries/content.ts', new Set()],
     ['scripts/build.ts', new Set()],
-    ['vite.config.ts', new Set()],
+    ['config/vite.config.ts', new Set()],
     ['scripts/smoke.ts', new Set(['scripts/harness-helper.ts'])],
     ['scripts/harness-helper.ts', new Set()],
     ['scripts/smoke-extra.ts', new Set()],

@@ -162,12 +162,12 @@ jobs:
         run: pnpm test
 
       - name: Storybook components Chromium
-        if: hashFiles('vitest.config.ts') != ''
+        if: hashFiles('config/vitest.config.ts') != ''
         timeout-minutes: 5
         run: pnpm storybook:test
 
       - name: Storybook components Firefox
-        if: hashFiles('vitest.config.ts') != ''
+        if: hashFiles('config/vitest.config.ts') != ''
         timeout-minutes: 5
         run: pnpm storybook:test
         env:
