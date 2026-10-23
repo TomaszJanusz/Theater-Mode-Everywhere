@@ -26,10 +26,11 @@ export function changedFiles(base, head = 'HEAD', root = process.cwd()) {
 export function snapshot(ref, root) {
   const dir = mkdtempSync(join(tmpdir(), 'tme-impact-'));
   try {
-    const archive = join(dir, 'snapshot.tar');
-    execFileSync('git', ['archive', '--output', archive, ref], { cwd: root });
-    execFileSync('tar', ['-xf', archive, '-C', dir]);
-    rmSync(archive);
+    // A private index, not `git archive`: export-ignored inputs (recorded host fixtures) are imported by tests.
+    const env = { ...process.env, GIT_INDEX_FILE: join(dir, '.snapshot-index') };
+    execFileSync('git', ['read-tree', ref], { cwd: root, env });
+    execFileSync('git', ['checkout-index', '--all', `--prefix=${dir}/`], { cwd: root, env });
+    rmSync(env.GIT_INDEX_FILE);
     return dir;
   } catch (error) {
     rmSync(dir, { recursive: true, force: true });

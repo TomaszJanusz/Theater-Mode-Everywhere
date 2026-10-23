@@ -22,6 +22,7 @@
 ## Verification
 
 <!-- Commands you ran (for example `pnpm typecheck`, `pnpm test`, `pnpm build`) and what you checked by hand. -->
+<!-- Label host evidence: fixture (hand-written DOM or a recorded host fixture) or real host (installed extension on the live service). -->
 <!-- Say what you could not verify. Please add screenshots or a short video for visual changes. -->
 
 ## Checklist

@@ -5,3 +5,5 @@
 /docs/screenshots export-ignore
 /tmp export-ignore
 /.playwright-cli export-ignore
+# Recorded host fixtures are test data captured from real services (tools/host-fixtures).
+/test/host-fixtures export-ignore
