@@ -1,16 +1,19 @@
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import net from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+
 import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
 
-import { ROOT, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, THEATER_VIDEO_CLASS, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, theaterEntered, injectBundledPlayer, setBlacklist, timeScenario } from './helpers';
-import { assertRteSettings, assertPictureLayout } from './settings';
-import { assertFeatureHighlights } from './highlights';
 import { assertAppearanceModes } from './appearance';
-import { assertAutoTheater } from './auto-theater';
-import { assertEmbeddedKeysAndFullscreen } from './frames';
-import { assertPinStorage } from './pin-storage';
 import { assertAudioWorld } from './audio';
+import { assertAutoTheater } from './auto-theater';
+import { FirefoxRemote } from './firefox-rdp';
+import { assertEmbeddedKeysAndFullscreen } from './frames';
+import { injectBundledPlayer, setFirefoxBackground, theaterEntered, timeScenario, extensionWorker, type ExtensionBackground, PLAYER_FIXTURE, IFRAME_FIXTURE, YOUTUBE_EMBED_FIXTURE, VOD_FIXTURE, fail, skipLocally, playwrightExecutable, requestedBrowsers, requireBuiltExtension, startFixtureServer, waitForPlayer, setBlacklist } from './helpers';
+import { assertFeatureHighlights } from './highlights';
+import { assertPinStorage } from './pin-storage';
+import { assertRteSettings, assertPictureLayout } from './settings';
 
 interface EntryScenarios {
   assertShortcutManagement(page: Page, context: BrowserContext): Promise<void>;
@@ -105,78 +108,126 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     rmSync(userDataDir, { recursive: true, force: true });
   }
 }
-async function tryFirefoxSideload(origin: string): Promise<boolean> {
-  const xpiSource = path.join(ROOT, 'dist/theater-everywhere-firefox.zip');
-  if (!existsSync(xpiSource)) return false;
-  const userDataDir = mkdtempSync(path.join(tmpdir(), 'te-smoke-firefox-'));
-  const extensionsDir = path.join(userDataDir, 'extensions');
-  mkdirSync(extensionsDir, { recursive: true });
-  copyFileSync(xpiSource, path.join(extensionsDir, 'theater-everywhere@tomaszjanusz.dev.xpi'));
-  let context: BrowserContext | null = null;
-  let sideloadVerified = false;
-  try {
-    context = await firefox.launchPersistentContext(userDataDir, {
-      headless: true,
-      viewport: { width: 1280, height: 720 },
-      firefoxUserPrefs: {
-        'xpinstall.signatures.required': false,
-        'extensions.autoDisableScopes': 0,
-        'extensions.enabledScopes': 15,
-        'extensions.startupScanScopes': 15,
-        'media.videocontrols.picture-in-picture.video-toggle.enabled': false
-      }
-    });
-    const page = context.pages()[0] || await context.newPage();
-    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
-    await waitForPlayer(page);
-    await page.click('video#player');
-    await page.keyboard.press('t');
-    await page.waitForFunction(videoClass => document.querySelector('video#player')?.classList.contains(videoClass), THEATER_VIDEO_CLASS, { timeout: 1500 });
-    const entered = await theaterEntered(page);
-    if (!entered) return false;
-    sideloadVerified = true;
-    await page.keyboard.press('Escape');
-    await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
+// Firefox's browser-owned hover PiP widget intercepts clicks above page overlays.
+// Exercise extension UI independently of that native browser widget.
+const NO_PIP = { 'media.videocontrols.picture-in-picture.video-toggle.enabled': false };
+const VIEWPORT = { width: 1280, height: 720 };
 
-    console.log('smoke:firefox passed (sideloaded MV3 xpi)');
-    return true;
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(error => (error ? reject(error) : resolve(port)));
+    });
+  });
+}
+
+/** Evaluates in the background page over RDP; results travel as JSON so values round-trip like Playwright's. */
+function backgroundOver(remote: FirefoxRemote, consoleActor: string, origin: string): ExtensionBackground {
+  return {
+    url: () => `${origin}_generated_background_page.html`,
+    async evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg?: A): Promise<R> {
+      const call = `(${fn})(${arg === undefined ? '' : JSON.stringify(arg)})`;
+      const json = await remote.evaluateString(consoleActor, `(async () => JSON.stringify({ value: await ${call} }))()`);
+      return (JSON.parse(json) as { value: R }).value;
+    }
+  };
+}
+
+/** Loads the built extension as a temporary add-on over Firefox's remote debugging protocol, as `web-ext run` does. */
+async function installedFirefox(userDataDir: string, unpackedDir: string): Promise<{ context: BrowserContext; remote: FirefoxRemote }> {
+  const port = await freePort();
+  const context = await firefox.launchPersistentContext(userDataDir, {
+    headless: true,
+    viewport: VIEWPORT,
+    args: ['-start-debugger-server', String(port)],
+    firefoxUserPrefs: {
+      ...NO_PIP,
+      'devtools.debugger.remote-enabled': true,
+      'devtools.debugger.prompt-connection': false,
+      // The event page must outlive idle gaps between scenarios; the debugger evaluates inside it.
+      'extensions.background.idle.timeout': 3_600_000
+    }
+  });
+  try {
+    const remote = await FirefoxRemote.connect(port);
+    try {
+      const addonId = await remote.installTemporaryAddon(unpackedDir);
+      const { consoleActor, origin } = await remote.background(addonId);
+      setFirefoxBackground(context, backgroundOver(remote, consoleActor, origin));
+      return { context, remote };
+    } catch (error) {
+      remote.close();
+      throw error;
+    }
   } catch (error) {
-    if (sideloadVerified) throw error;
-    return false;
-  } finally {
-    await context?.close();
-    rmSync(userDataDir, { recursive: true, force: true });
+    await context.close();
+    throw error;
   }
 }
-async function smokeFirefox(origin: string, unpackedDir: string): Promise<void> {
-  if (!playwrightExecutable('firefox')) {
-    skipLocally('Skipping smoke:firefox. Run: pnpm exec playwright install chromium firefox');
-  }
 
-  if (await tryFirefoxSideload(origin)) return;
-
-  // Playwright cannot sideload an unsigned MV3 Firefox addon. Chromium smoke
-  // covers the packaged extension; this path only checks the bundled player
-  // script as a local/CI diagnostic, not Firefox permissions or background.
-
-  // Firefox's browser-owned hover PiP widget intercepts clicks above page overlays.
-  // Exercise extension UI independently of that native browser widget.
-  const browser = await firefox.launch({ headless: true, firefoxUserPrefs: {
-    'media.videocontrols.picture-in-picture.video-toggle.enabled': false
-  } });
+/** Local diagnostic only (`THEATER_SMOKE_FIREFOX_INJECT=1`): runs the bundles as page scripts, with no extension installed. */
+async function smokeInjectedBundles(origin: string, unpackedDir: string): Promise<void> {
+  const browser = await firefox.launch({ headless: true, firefoxUserPrefs: NO_PIP });
   try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const page = await browser.newPage({ viewport: VIEWPORT });
     page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
     page.on('console', (message) => { if (message.type() === 'error') console.warn('Firefox console:', message.text()); });
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
     await waitForPlayer(page);
     await injectBundledPlayer(page, unpackedDir);
     await assertInstalledStartup(page);
-    console.log('smoke:firefox passed (injected bundled mainWorld.js and content.js; sideload of unsigned MV3 xpi is blocked)');
+    console.log('smoke:firefox DIAGNOSTIC ONLY passed (injected bundles; no extension installed, so permissions, background and storage are not covered)');
   } finally {
     await browser.close();
   }
 }
+
+async function smokeFirefox(origin: string, unpackedDir: string, scenarios: EntryScenarios): Promise<void> {
+  if (!playwrightExecutable('firefox')) {
+    skipLocally('Skipping smoke:firefox. Run: pnpm exec playwright install chromium firefox');
+  }
+  if (process.env.THEATER_SMOKE_FIREFOX_INJECT === '1') return smokeInjectedBundles(origin, unpackedDir);
+
+  const userDataDir = mkdtempSync(path.join(tmpdir(), 'te-smoke-firefox-'));
+  let installed: Awaited<ReturnType<typeof installedFirefox>> | null = null;
+  try {
+    installed = await installedFirefox(userDataDir, unpackedDir);
+    const { context } = installed;
+    const page = context.pages()[0] || await context.newPage();
+    page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
+    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertInstalledStartup(page);
+    console.log('smoke:firefox installed extension startup passed');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertStorageWorlds(page, context);
+    console.log('smoke:firefox background storage reaches isolated and MAIN worlds');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPlayer(page);
+    await assertAudioWorld(page, context);
+    console.log('smoke:firefox installed audio graph and storage passed');
+    await setBlacklist(context, ['127.0.0.1']);
+    await scenarios.assertBlacklistBlocksTheater(page);
+    await setBlacklist(context, []);
+    console.log('smoke:firefox blacklist exact host passed');
+    await scenarios.assertIframeHandshake(page, origin);
+    console.log('smoke:firefox same-origin iframe handshake passed');
+    await assertEmbeddedKeysAndFullscreen(page, origin);
+    console.log('smoke:firefox host-claimed keys and embedded fullscreen ownership passed');
+    await scenarios.assertParentBlacklist(page, origin, context);
+    await setBlacklist(context, []);
+    console.log('smoke:firefox parent-domain blacklist passed');
+  } finally {
+    installed?.remote.close();
+    await installed?.context.close();
+    rmSync(userDataDir, { recursive: true, force: true });
+  }
+}
+
 export async function runBrowsers(scenarios: EntryScenarios): Promise<void> {
   if (!existsSync(PLAYER_FIXTURE) || !existsSync(IFRAME_FIXTURE) || !existsSync(YOUTUBE_EMBED_FIXTURE) || !existsSync(VOD_FIXTURE)) {
     fail('Missing smoke fixtures under test/fixtures.');
@@ -189,7 +240,7 @@ export async function runBrowsers(scenarios: EntryScenarios): Promise<void> {
     for (const kind of targets) {
       const unpackedDir = requireBuiltExtension(kind);
       if (kind === 'chromium') await smokeChromium(fixture.origin, unpackedDir, scenarios);
-      else await smokeFirefox(fixture.origin, unpackedDir);
+      else await smokeFirefox(fixture.origin, unpackedDir, scenarios);
     }
   } finally {
     await fixture.close();
@@ -205,5 +256,30 @@ async function assertInstalledStartup(page: Page): Promise<void> {
     if (process.env.THEATER_SMOKE_SCREENSHOT) await page.screenshot({ path: process.env.THEATER_SMOKE_SCREENSHOT });
     await page.keyboard.press('Escape');
     await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
+  });
+}
+
+/**
+ * Extension storage written in the background reaches the isolated content script, which publishes
+ * the entry shortcuts that the MAIN-world script reads before the page can claim the key.
+ */
+async function assertStorageWorlds(page: Page, context: BrowserContext): Promise<void> {
+  await timeScenario('assertStorageWorlds', async () => {
+    const background = await extensionWorker(context);
+    const published = (key: string) => page.waitForFunction(expected => document.documentElement.getAttribute('data-theater-everywhere-entry-shortcuts')?.includes(expected), key);
+    try {
+      await background.evaluate(() => chrome.storage.sync.set({ shortcuts: { toggle: 'Shift+T' } }));
+      await published('"toggle":"Shift+T"');
+      await page.locator('video#player').click();
+      await page.keyboard.press('t');
+      if (await theaterEntered(page)) fail('The replaced theater key still activates TME.');
+      await page.keyboard.press('Shift+T');
+      await page.locator('.theater-controls-wrapper').waitFor();
+      await page.keyboard.press('Escape');
+      await page.locator('.theater-controls-wrapper').waitFor({ state: 'detached' });
+    } finally {
+      await background.evaluate(() => chrome.storage.sync.remove('shortcuts'));
+    }
+    await published('"toggle":"T"');
   });
 }

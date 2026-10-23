@@ -138,7 +138,24 @@ export async function injectBundledPlayer(page: Page, unpackedDir: string): Prom
   await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
 }
 
-export async function extensionWorker(context: BrowserContext) {
+/** The installed extension's background context: a Chromium service worker, or Firefox's event page over RDP. */
+export interface ExtensionBackground {
+  /** A URL inside the extension, the base for its pages. */
+  url(): string;
+  evaluate<R>(fn: () => R | Promise<R>): Promise<R>;
+  evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg: A): Promise<R>;
+}
+
+const firefoxBackgrounds = new WeakMap<BrowserContext, ExtensionBackground>();
+
+/** Playwright cannot attach to Firefox extension contexts, so the Firefox smoke registers its own. */
+export function setFirefoxBackground(context: BrowserContext, background: ExtensionBackground): void {
+  firefoxBackgrounds.set(context, background);
+}
+
+export async function extensionWorker(context: BrowserContext): Promise<ExtensionBackground> {
+  const firefoxBackground = firefoxBackgrounds.get(context);
+  if (firefoxBackground) return firefoxBackground;
   let [worker] = context.serviceWorkers();
   if (!worker) worker = await context.waitForEvent('serviceworker', { timeout: 15_000 });
   return worker;

@@ -11,10 +11,31 @@ Browser tests (`*.browser.test.ts`) run through `pnpm test` or individually with
 `pnpm exec tsx --test <test-file>`. `pnpm test` discovers test files by name
 (`scripts/run-tests.mjs`); `pnpm test <path-or-substring> [--test-name-pattern=…]`
 runs a subset. Build before running `pnpm smoke:firefox`
-or `pnpm smoke:chromium`. The [Firefox smoke script](../scripts/smoke.ts) reports
-whether it exercised a sideloaded extension or its fallback diagnostic with
-injected bundles. A fallback pass verifies bundled player behavior, but does
-not verify Firefox extension installation, permissions, or the background script.
+or `pnpm smoke:chromium`.
+
+## Firefox smoke installs the built extension
+
+`pnpm smoke:firefox` launches Playwright's Firefox with `-start-debugger-server`
+and installs `dist/firefox-unpacked` as a temporary add-on over Firefox's remote
+debugging protocol, the way `web-ext run` does
+([`scripts/smoke/firefox-rdp.ts`](../scripts/smoke/firefox-rdp.ts); Playwright has no
+API for Firefox extensions). The extension's background, permissions, storage and
+isolated/MAIN content scripts are therefore the real ones.
+
+Playwright cannot drive `moz-extension:` pages in Firefox, so scenarios that open
+Settings or the popup stay Chromium-only (their UI is covered by the Firefox
+browser tests). The same RDP connection evaluates code in the background page,
+which stands in for the Chromium service worker: `extensionWorker(context)` returns
+it, so shared scenarios read and write real extension storage on both engines.
+Firefox runs startup, storage-to-worlds propagation, the installed audio graph,
+exact/parent blacklists and the iframe and embedded-fullscreen scenarios. The
+background page's idle timeout is raised for the run because the debugger evaluates
+inside it.
+
+`THEATER_SMOKE_FIREFOX_INJECT=1` runs a local diagnostic that injects `content.js`
+and `mainWorld.js` into a page with no extension installed. It checks bundled player
+behavior only, never Firefox installation, permissions, storage or the background,
+and CI does not use it. A failed install fails the smoke; there is no fallback.
 
 ## Deterministic waits
 
@@ -187,9 +208,10 @@ UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
 the existing inexpensive CI pass. The aggregate `check` status remains available
 for consumers of the former serial job name.
 
-PR Firefox smoke remains non-blocking and emits a warning annotation on failure.
-TME-112 owns making it blocking after ten consecutive green runs on the real
-installed-extension path; diagnostic injection does not meet that requirement.
+PR and release Firefox smoke remain non-blocking (`continue-on-error`) but never
+pass silently: a failure adds a warning annotation and a job-summary line, and a
+pass adds a summary line. TME-112 owns making it blocking after ten consecutive
+green CI runs of the installed-extension path.
 
 Merging to main starts **no CI test round**. The coverage model is affected tests
 on PRs, the full suite nightly, and the full suite on release. Nightly runs on `main`
@@ -199,8 +221,7 @@ ref's failure does not hide the other) at 02:23 UTC and can also be dispatched m
 by both smokes. Full history preserves the suite's baseline/history guards. The
 suite has a 25-minute limit inside the existing 30-minute job. Failures fail the
 job and appear in its summary; both smokes still run after a test failure unless
-the run is cancelled. Firefox smoke failures are not suppressed. Its unsigned
-extension injection fallback is still diagnostic-only. Regressions outside a
+the run is cancelled. Firefox smoke failures are not suppressed. Regressions outside a
 PR's selected paths can first surface in the full nightly run rather than block
 that PR. Release also retains unrestricted `pnpm test`.
 
@@ -276,8 +297,8 @@ Smoke protects installation/startup, background messages, MAIN/isolated wiring,
 real extension storage shared by Settings/popup/player, and iframe ownership.
 Fixture-only interaction regressions run in `src/ui/smoke-regressions.browser.test.ts`
 with `sharedTestBrowser`; its support modules live in `src/test-utils/player-scenarios/`
-and remain covered by the determinism guard. No Firefox installation or CI
-advisory policy changes are implied by this split.
+and remain covered by the determinism guard. The same installed scope applies to
+Firefox, which installs the built add-on (see above) but cannot open extension pages.
 
 Set `THEATER_SMOKE_TIMING=1` on either smoke command to print seconds for each
 `assert*` scenario and a `TOTAL` wall duration including browser startup/cleanup.

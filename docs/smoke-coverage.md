@@ -5,7 +5,7 @@ background requests, real extension storage across pages and frames, and browser
 fullscreen/iframe ownership. Layout, idle chrome and ordinary input belong in
 fixture browser tests. This audit compares `origin/main` at `c6f121e` with this
 change. No application, manifest, packaging, changelog or Firefox installation
-policy changes are part of the audit.
+policy changes were part of the audit.
 
 ## Timing method
 
@@ -135,9 +135,13 @@ actual assertions, not just similar file names.
   validator or provider/session implementation changes. Generic HTML5 and RTE
   disabled/unsupported paths remain covered by fixture/unit tests; real hosts
   were not exercised.
-- Firefox's unsigned-XPI attempt and diagnostic injection fallback are unchanged;
-  only the duplicate fixture scenarios leave that runner. TME-112 still owns
-  installed Firefox coverage and advisory/blocking policy.
+- Firefox smoke installs the built add-on as a temporary add-on over the remote
+  debugging protocol ([how](browser-tests.md#firefox-smoke-installs-the-built-extension), TME-112).
+  It cannot open `moz-extension:` pages, so it keeps only the KEEP scenarios that
+  need no Settings/popup page: installed startup, storage reaching both content-script
+  worlds, `assertAudioWorld`, both blacklists and the two frame scenarios. Pin,
+  shortcut, RTE, layout, auto-theater, language, highlights and appearance stay
+  Chromium-only here, with their UI covered by the Firefox browser tests.
 
 ## Harness guards and verification
 
@@ -155,15 +159,15 @@ instead of resetting their per-file allowance through a move.
 - `pnpm test --lane=unit`: **726 passed**, none skipped.
 - `THEATER_TEST_ENGINES=chromium,firefox pnpm exec tsx --test --test-concurrency=2 src/ui/smoke-regressions.browser.test.ts src/ui/auto-theater-storage.browser.test.ts src/appearance.browser.test.ts options/shortcut-management.browser.test.ts`: **36 passed**, none skipped. Focused fullscreen/help recheck after removing the obsolete installed-only branch: **2 passed**.
 - Three final full `pnpm smoke:chromium` runs passed; samples above.
-- `pnpm smoke:firefox` passed through the **existing injected diagnostic fallback**; unsigned-XPI installation remains unverified, unchanged and owned by TME-112.
+- `pnpm smoke:firefox` passed through the injected diagnostic fallback at the time of this audit; TME-112 replaced that fallback with the installed add-on.
 - All five standalone switches passed independently: `THEATER_SMOKE_AUTO_THEATER_ONLY`, `THEATER_SMOKE_APPEARANCE_ONLY`, `THEATER_SMOKE_LANGUAGE_ONLY`, `THEATER_SMOKE_HIGHLIGHTS_ONLY`, `THEATER_SMOKE_SHORTCUTS_ONLY`.
 - `pnpm exec tsx --test scripts/test-determinism.test.ts scripts/test-impact.test.mjs`: **23 passed**, including inventory/history ratchet and nested-module selector coverage.
 - Named test citations, local document links, relative `CLAUDE.md` symlink, module sizes, and `git diff --check` checked.
 
 No authenticated real hosts or optional screenshot captures were exercised. Local
-measurements do not establish CI timings. Firefox real installation/permissions/
-background coverage remains the pre-existing diagnostic gap; no advisory policy
-or `check` job changes were made.
+measurements do not establish CI timings. At the time of this audit Firefox
+installation/permissions/background coverage was a diagnostic gap, since closed by
+TME-112; the advisory policy and `check` job were unchanged by this audit.
 
 
 ## Storybook overlap review (UI test cleanup)
