@@ -451,9 +451,6 @@
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
     },
-    "import/order": {
-      "count": 4
-    },
     "max-lines": {
       "count": 1
     }
