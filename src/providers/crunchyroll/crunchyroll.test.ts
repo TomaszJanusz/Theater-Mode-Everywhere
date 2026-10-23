@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, type TestContext } from 'node:test';
+
+import { parseProbeRequest } from '../../protocol/page-requests';
 import { preferProviderCaptionTracks } from '../../media-features/composite-adapter';
 import { crunchyrollCdnFile } from '../../media-features/crunchyroll-cdn';
 import { classifyMediaFetchUrl, isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
@@ -140,7 +142,7 @@ function installPage(pathname = `/watch/${MEDIA}/07-ghost-episode-2`) {
   const queuedProbes: Array<() => void> = [];
   let holdProbes = false;
   win.addEventListener('theater-everywhere-media-probe', (event) => {
-    const requestId = (event as CustomEvent<{ requestId: number }>).detail.requestId;
+    const requestId = parseProbeRequest((event as CustomEvent).detail);
     const respond = () => {
       win.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
         detail: { requestId, crunchyroll: readCrunchyrollSnapshot() }

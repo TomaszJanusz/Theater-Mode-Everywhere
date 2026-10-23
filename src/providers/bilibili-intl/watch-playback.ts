@@ -40,6 +40,12 @@ function contentVideo(doc: Document, identity: string): HTMLVideoElement | null 
 
 export const bilibiliIntlWatchPlayback: WatchPlayback = {
   pageIdentity: bilibiliIntlVideoIdentity,
+  playbackPage(url) {
+    // Season routes still host manual playback; only automatic entry needs an episode id.
+    if (url.protocol !== 'https:' || url.hostname !== 'www.bilibili.tv') return false;
+    const path = url.pathname.replace(/^\/[a-z]{2}(?:-[A-Za-z0-9]{2,8})?(?=\/)/, '');
+    return /^\/(?:video\/[1-9]\d{0,19}|play\/[1-9]\d{0,19}(?:\/[1-9]\d{0,19})?)\/?$/.test(path);
+  },
   mainVideo: contentVideo,
   preparingVideo: contentVideo,
   refreshEvents: [BILIBILI_NAVIGATE_EVENT, 'popstate'],

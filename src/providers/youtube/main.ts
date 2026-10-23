@@ -24,6 +24,7 @@ import { mediaProviderIntegrationEnabled } from '../../media-features/provider-f
 import { sanitizeContentTitle } from '../../media-features/content-title';
 import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/parsers/youtube-player-response';
 import { publishHiddenJson } from '../../platform/hidden-json';
+import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
@@ -754,24 +755,25 @@ export function installYoutubeMain(): void {
   });
 
   window.addEventListener('theater-everywhere-youtube-captions', (event: Event) => {
-    const detail = youtubeRecord((event as CustomEvent<unknown>).detail) || {};
-    const requestId = detail.requestId;
+    const request = parseYoutubeCaptions((event as CustomEvent<unknown>).detail);
+    if (!request) return;
+    const { requestId } = request;
     const respond = (ok: boolean) => {
       window.dispatchEvent(new CustomEvent('theater-everywhere-youtube-captions-result', {
         detail: { requestId, ok }
       }));
     };
     try {
-      if (typeof detail.enabled !== 'boolean' || !youtubeIntegrationEnabled()) {
-        if (detail.enabled === false) invalidateYoutubeCaptions();
+      if (!youtubeIntegrationEnabled()) {
+        if (!request.enabled) invalidateYoutubeCaptions();
         respond(false);
         return;
       }
-      if (detail.enabled === true) {
+      if (request.enabled) {
         void ensureYoutubeCaptions(
-          typeof detail.language === 'string' ? detail.language : null,
-          typeof detail.kind === 'string' ? detail.kind : null,
-          typeof detail.translation === 'string' ? detail.translation : null,
+          request.language ?? null,
+          request.kind ?? null,
+          request.translation ?? null,
           true
         ).then(respond, () => respond(false));
         return;
