@@ -1,8 +1,3 @@
-const providerDirectories = [
-  'bilibili', 'bilibili-intl', 'crunchyroll', 'disney', 'native',
-  'navigation', 'netflix', 'patreon', 'tencent', 'timeline',
-  'twitch', 'vimeo', 'youtube',
-];
 const runtime = { pathNot: '(?:\\.test\\.|/test-utils/|^scripts/|^tools/|^\\.storybook/)' };
 
 module.exports = {
@@ -12,11 +7,11 @@ module.exports = {
       from: { path: '^src/(?:ui|core|media-features|platform)/', ...runtime },
       to: { path: '^src/providers/[^/]+/' },
     },
-    ...providerDirectories.map(service => ({
-      name: `provider-${service}-isolation`, severity: 'error',
-      from: { path: `^src/providers/${service}/`, ...runtime },
-      to: { path: '^src/providers/[^/]+/', pathNot: `^src/providers/${service}/` },
-    })),
+    {
+      name: 'providers-do-not-import-other-providers', severity: 'error',
+      from: { path: '^src/providers/([^/]+)/', ...runtime },
+      to: { path: '^src/providers/[^/]+/', pathNot: '^src/providers/$1/' },
+    },
     {
       name: 'settings-ui-uses-public-settings-and-i18n', severity: 'error',
       from: { path: '^(?:popup|options)/', ...runtime },
@@ -27,7 +22,7 @@ module.exports = {
     },
     {
       name: 'no-runtime-cycles', severity: 'error',
-      from: { path: '^src/', ...runtime }, to: { circular: true },
+      from: { path: '^src/', ...runtime }, to: { circular: true, viaOnly: { dependencyTypesNot: ['type-only'] } },
     },
     {
       name: 'production-does-not-import-test-tools', severity: 'error',

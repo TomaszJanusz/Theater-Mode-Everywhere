@@ -10,7 +10,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-bilibili-intl-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -24,7 +24,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-bilibili-intl-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -38,7 +38,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-bilibili-intl-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -52,7 +52,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-bilibili-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -66,7 +66,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -80,7 +80,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -94,7 +94,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -108,7 +108,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -122,7 +122,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -136,7 +136,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-navigation-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -150,7 +150,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-patreon-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -164,7 +164,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-patreon-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -178,7 +178,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-timeline-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -192,7 +192,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-twitch-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -206,7 +206,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-twitch-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -220,7 +220,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-vimeo-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -234,7 +234,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-youtube-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
@@ -248,7 +248,7 @@
     ],
     "rule": {
       "severity": "error",
-      "name": "provider-youtube-isolation"
+      "name": "providers-do-not-import-other-providers"
     }
   },
   {
