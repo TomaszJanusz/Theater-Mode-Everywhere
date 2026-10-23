@@ -53,11 +53,14 @@ export const youtubeWatchPlayback: WatchPlayback = {
   },
   observeReveal(doc, onChange) {
     // Expanding the miniplayer fires yt-page-data-updated while the watch page is still
-    // hidden; the host reveals it and takes the player out of the miniplayer a moment later
-    // with attribute flips only. On a slow page that can outlast the entry countdown.
+    // hidden; the host reveals it with attribute flips and moves the player out of the
+    // miniplayer into the watch page's container only later (1-2 s on a slow page), with no
+    // event for the already-playing video. That can outlast the entry countdown.
     const observer = new MutationObserver(onChange);
     const watch = doc.querySelector('ytd-watch-flexy');
     if (watch) observer.observe(watch, { attributes: true, attributeFilter: ['hidden'] });
+    const container = watch?.querySelector('#player-container');
+    if (container) observer.observe(container, { childList: true });
     const app = doc.querySelector('ytd-app');
     if (app) observer.observe(app, { attributes: true, attributeFilter: ['miniplayer-is-active'] });
     return () => observer.disconnect();

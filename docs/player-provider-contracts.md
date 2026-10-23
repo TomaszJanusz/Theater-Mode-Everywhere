@@ -61,8 +61,9 @@ refresh. YouTube observes the main player's ad-state classes, since ad
 completion need not emit another playing event. A provider may also declare
 `WatchPlayback.observeReveal`, attached while an entry is still possible and before any
 video is found, for host reveals with no event of their own: YouTube's expanding the
-miniplayer un-hides the watch page and unparks the player with attribute flips shortly
-after its last publication, which can land after the countdown has run out. The opt-in preference defaults
+miniplayer un-hides the watch page with attribute flips shortly after its last publication
+and moves the player into the watch page's container later still, which can land after the
+countdown has run out. The opt-in preference defaults
 off; a visit records entry so exiting or changing preferences cannot reenter the
 same content. New content identities reset
 Entry is announced first: once the provider confirms the main video's identity and
