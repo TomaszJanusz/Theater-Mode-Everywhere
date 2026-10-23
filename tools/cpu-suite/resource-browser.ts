@@ -189,7 +189,7 @@ export async function runFixture(browser: Browser, build: Build, fixture: Fixtur
       if (fixture === 'disney-hidden') await page.evaluate(`Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>'hidden'});document.dispatchEvent(new Event('visibilitychange'))`);
       await checkpoint('clock-4s', () => page.clock.runFor(4000));
       if (fixture === 'disney-pause-seek') await checkpoint('paused-seek', async () => {
-        await page.evaluate(`(() => {document.querySelector('video').pause();window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek',{detail:{time:30,resumeAfterSeek:false}}));})()`);
+        await page.evaluate(`(() => {document.querySelector('video').pause();window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek',{detail:JSON.stringify({time:30,resumeAfterSeek:false})}));})()`);
         await page.clock.runFor(1000);
         const reached = await page.evaluate(`document.querySelector('video').paused && window.__hive.stats.seeks >= 1 && document.querySelector('video').dataset.teDisneyPlayhead === '30'`);
         if (!reached) throw new Error('Paused seek did not reach hive clock');

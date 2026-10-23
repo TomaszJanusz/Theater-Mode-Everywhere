@@ -14,6 +14,7 @@ import {
   parseBilibiliIntlSkipChapters,
   parseBilibiliIntlStoryboard
 } from '../../media-features/parsers/bilibili-intl';
+import { parseProbeRequest } from '../../protocol/page-requests';
 import { BilibiliIntlAdapter } from './adapter';
 import { bilibiliIntlPageId, readBilibiliIntlSnapshot } from './main';
 import { createWorldMessage, type WorldEnvelope } from '../../protocol/world-messages';
@@ -468,7 +469,7 @@ describe('Bilibili.tv RTE', () => {
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
         detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
@@ -527,7 +528,7 @@ describe('Bilibili.tv RTE', () => {
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
         detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
@@ -602,7 +603,7 @@ describe('Bilibili.tv RTE', () => {
     } as any;
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
         detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [{ url: SUBTITLE_URL, lang: 'English', lang_key: 'en' }]
@@ -666,7 +667,7 @@ describe('Bilibili.tv RTE', () => {
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     const replies: Array<(payload: ReturnType<typeof normalizeBilibiliIntlSnapshot> | null) => void> = [];
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       replies.push((payload) => {
         win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
           detail: { requestId, bilibiliIntl: payload }
@@ -794,7 +795,7 @@ describe('Bilibili.tv RTE', () => {
     delete legacy.chapters;
     const replies: Array<(payload: typeof published | null) => void> = [];
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       replies.push((payload) => {
         win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
           detail: { requestId, bilibiliIntl: payload }
@@ -866,7 +867,7 @@ describe('Bilibili.tv RTE', () => {
     }, null);
     const replies: Array<(publish: string | null, payload: ReturnType<typeof normalizeBilibiliIntlSnapshot> | null) => void> = [];
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       replies.push((publish, payload) => {
         if (publish) attrs.set('data-te-bilibili-intl-episode', publish);
         win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
@@ -955,7 +956,7 @@ describe('Bilibili.tv RTE', () => {
     }, null);
     const replies: Array<() => void> = [];
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       replies.push(() => {
         attrs.set('data-te-bilibili-intl-episode', '11371243');
         win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
@@ -1033,7 +1034,7 @@ describe('Bilibili.tv RTE', () => {
     attrs.set('data-te-bilibili-intl-episode', '11371243');
     const arabic = JSON.stringify({ body: [{ from: 1, to: 2, content: 'سطر جديد' }] });
     win.addEventListener('theater-everywhere-media-probe', (event) => {
-      const requestId = (event as CustomEvent).detail.requestId;
+      const requestId = parseProbeRequest((event as CustomEvent).detail);
       win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
         detail: { requestId, bilibiliIntl: normalizeBilibiliIntlSnapshot('11371243', 'The Last Summoner E1', 1504, {
           subtitles: [
@@ -1282,7 +1283,7 @@ describe('Bilibili.tv RTE', () => {
       const win = globalThis.window as EventTarget & { location: { pathname: string }; postMessage?: (request: WorldEnvelope, origin: string, ports: MessagePort[]) => void };
       const ugcCues = JSON.stringify({ body: [{ from: 1, to: 2, content: 'uploaded line' }] });
       win.addEventListener('theater-everywhere-media-probe', (event) => {
-        const requestId = (event as CustomEvent).detail.requestId;
+        const requestId = parseProbeRequest((event as CustomEvent).detail);
         win.dispatchEvent(new CustomEvent('theater-everywhere-bilibili-intl-probe-result', {
           detail: { requestId, bilibiliIntl: fresh }
         }));

@@ -505,7 +505,7 @@ describe('netflix runtime browser regressions', () => {
         const stale = request('T:pl;', '70248291');
         const language = request('T:pl;');
         const selected = snapshot().selectedTrackId;
-        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: { time: 152.25, resumeAfterSeek: false } }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: JSON.stringify({ time: 152.25, resumeAfterSeek: false }) }));
         window.dispatchEvent(new CustomEvent('theater-everywhere-netflix-preview', { detail: JSON.stringify({ videoId: '70248290', time: 120 }) }));
         const preview = JSON.parse(document.getElementById('theater-everywhere-netflix-preview-frame')!.textContent!);
         const off = request(null);
@@ -523,7 +523,7 @@ describe('netflix runtime browser regressions', () => {
       assert.equal(result.preview.url, 'data:image/jpeg;base64,/9j/2Q==');
       assert.deepEqual(result.calls, [['caption', 'T:pl;'], ['seek', 152250], ['pause'], ['caption', 'T:NONE;']]);
       const timedAction = await page.evaluate(() => {
-        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: { time: 90, resumeAfterSeek: false } }));
+        window.dispatchEvent(new CustomEvent('theater-everywhere-media-seek', { detail: JSON.stringify({ time: 90, resumeAfterSeek: false }) }));
         const id = 'intro:70248290:60853:151402';
         const acks: string[] = [];
         window.addEventListener('theater-everywhere-netflix-action-ack', event => acks.push((event as CustomEvent).detail));

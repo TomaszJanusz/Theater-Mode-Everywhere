@@ -6,8 +6,12 @@ import { PROVIDER_DEFINITIONS } from './registry';
 /** URL qualification first, then provider-specific confirmation of the watch player. */
 export type WatchPlayback = {
   pageIdentity(url: URL): string | null;
-  /** Called only in MAIN; reject auxiliary players and validate available host identity. */
-  mainVideo(doc: Document, identity: string): HTMLVideoElement | null;
+  /** Manual playback routes may lack the stable content identity required for automatic entry. */
+  playbackPage?(url: URL): boolean;
+  /** Called only in MAIN; reject auxiliary players and validate available host identity.
+   * Replacement checks also accept paused primary media; automatic entry keeps its readiness rules.
+   */
+  mainVideo(doc: Document, identity: string, purpose?: 'replacement'): HTMLVideoElement | null;
   /**
    * Looser, countdown-only form of `mainVideo` for the window where the host has not yet
    * revealed or sized the watch player (SPA entry from a non-watch page). It may return a
@@ -43,6 +47,17 @@ export function readProviderWatchPage(url: URL): ProviderWatchPage | null {
   return null;
 }
 
+/**
+ * Single-page sites keep the player element across history traversal and may not hide it, so
+ * element removal alone cannot signal that navigation left the watch page.
+ */
+export function leftProviderWatchPage(enteredOnWatchPage: boolean, href: string): boolean {
+  if (!enteredOnWatchPage) return false;
+  const url = new URL(href);
+  return !readProviderWatchPage(url) && !PROVIDER_DEFINITIONS.some(definition =>
+    definition.matchesHost(url.hostname) && definition.watchPlayback?.playbackPage?.(url));
+}
+
 export type AutoTheaterAvailability = 'available' | 'unsupported' | 'integrationOff';
 
 /** Mirrors the gates `readProviderWatchPage` and the runtime apply, without needing a watch URL, so menus can explain them. */
@@ -67,6 +82,8 @@ export function observeProviderWatchPlaybackChanges(onChange: () => void): () =>
 
 const WATCH_QUERY = 'theater-everywhere-watch-playback-query';
 const WATCH_RESPONSE = 'data-te-watch-playback-response';
+const REPLACEMENT_QUERY = 'theater-everywhere-watch-replacement-query';
+const REPLACEMENT_RESPONSE = 'data-te-watch-replacement-response';
 const PREPARING_QUERY = 'theater-everywhere-watch-preparing-query';
 const PREPARING_RESPONSE = 'data-te-watch-preparing-response';
 
@@ -88,18 +105,23 @@ export function confirmProviderWatchVideo(video: HTMLVideoElement): boolean {
   return confirmThroughBridge(video, WATCH_QUERY, WATCH_RESPONSE);
 }
 
+/** Manual sessions need the same identity check even with the integration disabled. */
+export function confirmWatchReplacement(video: HTMLVideoElement): boolean {
+  return confirmThroughBridge(video, REPLACEMENT_QUERY, REPLACEMENT_RESPONSE);
+}
+
 /** Countdown-only confirmation (`WatchPlayback.preparingVideo`); never sufficient to enter theater. */
 export function confirmProviderPreparingVideo(video: HTMLVideoElement): boolean {
   return confirmThroughBridge(video, PREPARING_QUERY, PREPARING_RESPONSE);
 }
 
 function installQuery(query: string, responseAttribute: string,
-  confirm: (page: ProviderWatchPage) => HTMLVideoElement | null | undefined): void {
+  confirm: (page: ProviderWatchPage) => HTMLVideoElement | null | undefined, requireIntegration = true): void {
   window.addEventListener(query, (event: Event) => {
     const requestId: unknown = (event as CustomEvent<unknown>).detail;
     if (typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(requestId) || window !== window.top) return;
     const page = readProviderWatchPage(new URL(window.location.href));
-    if (!page || !mediaProviderIntegrationEnabled(page.provider)) return;
+    if (!page || (requireIntegration && !mediaProviderIntegrationEnabled(page.provider))) return;
     try {
       const video = confirm(page);
       if (video?.isConnected) video.setAttribute(responseAttribute, requestId);
@@ -111,9 +133,11 @@ function installQuery(query: string, responseAttribute: string,
 
 export function installWatchPlaybackQueries(): void {
   // Identity only: whether the video is playing or still loading is the caller's decision.
-  installQuery(WATCH_QUERY, WATCH_RESPONSE, page => {
-    const video = page.playback.mainVideo(document, page.identity);
+  const mainVideo = (page: ProviderWatchPage, purpose?: 'replacement'): HTMLVideoElement | null => {
+    const video = page.playback.mainVideo(document, page.identity, purpose);
     return video && isSwitchableTheaterVideo(video) ? video : null;
-  });
+  };
+  installQuery(WATCH_QUERY, WATCH_RESPONSE, mainVideo);
+  installQuery(REPLACEMENT_QUERY, REPLACEMENT_RESPONSE, page => mainVideo(page, 'replacement'), false);
   installQuery(PREPARING_QUERY, PREPARING_RESPONSE, page => page.playback.preparingVideo?.(document, page.identity));
 }
