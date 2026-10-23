@@ -421,3 +421,75 @@ describe('navigation shortcuts', () => {
     }
   });
 });
+
+describe('letter shortcuts on non-Latin layouts', () => {
+  const press = (keyName: string, code: string, extra: { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean } = {}) =>
+    ({ ...key({ key: keyName, code, ...extra }), isComposing: false }) as KeyboardEvent;
+
+  it('fires a letter shortcut by position when the layout prints a non-Latin letter', () => {
+    const cases: Array<[string, string, string, boolean]> = [
+      ['M', 'ь', 'KeyM', true], // Cyrillic
+      ['W', 'ц', 'KeyW', true],
+      ['M', 'μ', 'KeyM', true], // Greek
+      ['T', 'τ', 'KeyT', true],
+      ['T', 'א', 'KeyT', true], // Hebrew
+      ['M', 'ь', 'KeyN', false], // another position
+      ['Y', 'н', 'KeyN', false] // the printed letter's QWERTY twin must not match: position decides
+    ];
+    for (const [shortcut, printed, code, expected] of cases) {
+      assert.equal(matchesShortcut(key({ key: printed, code }), shortcut), expected, `${shortcut} vs ${printed}/${code}`);
+    }
+  });
+
+  it('keeps modifiers exact on a non-Latin layout', () => {
+    assert.equal(matchesShortcut(key({ key: 'Ь', code: 'KeyM', shiftKey: true }), 'Shift+M'), true);
+    assert.equal(matchesShortcut(key({ key: 'ь', code: 'KeyM', ctrlKey: true }), 'Ctrl+M'), true);
+    assert.equal(matchesShortcut(key({ key: 'ь', code: 'KeyM', ctrlKey: true }), 'M'), false);
+    assert.equal(matchesShortcut(key({ key: 'Ь', code: 'KeyM', shiftKey: true }), 'M'), false);
+    assert.equal(matchesShortcut(key({ key: 'ь', code: 'KeyM', altKey: true }), 'Alt+M'), true);
+  });
+
+  it('lets the printed Latin letter win over the position on other layouts', () => {
+    assert.equal(matchesShortcut(key({ key: 'z', code: 'KeyW' }), 'Z'), true); // AZERTY
+    assert.equal(matchesShortcut(key({ key: 'z', code: 'KeyW' }), 'W'), false);
+    assert.equal(matchesShortcut(key({ key: 'z', code: 'KeyY' }), 'Z'), true); // QWERTZ
+    assert.equal(matchesShortcut(key({ key: 'z', code: 'KeyY' }), 'Y'), false);
+    assert.equal(matchesShortcut(key({ key: 'y', code: 'KeyT' }), 'T'), false); // Dvorak
+    assert.equal(matchesShortcut(key({ key: 'y', code: 'KeyT' }), 'Y'), true);
+    assert.equal(matchesShortcut(key({ key: ',', code: 'KeyW' }), 'W'), false); // Dvorak punctuation at KeyW
+    assert.equal(matchesShortcut(key({ key: 'm', code: 'KeyM', ctrlKey: true, shiftKey: true }), 'Ctrl+Shift+M'), true);
+  });
+
+  it('leaves punctuation and position-stored shortcuts alone', () => {
+    assert.equal(matchesShortcut(key({ key: '<', code: 'Comma', shiftKey: true }), '<'), true);
+    assert.equal(matchesShortcut(key({ key: 'ь', code: 'KeyM' }), '<'), false);
+    assert.equal(matchesShortcut(key({ key: 'ц', code: 'KeyW' }), defaultShortcuts.navigateUp), true);
+    assert.equal(matchesShortcut(key({ key: 'ц', code: 'KeyW' }), defaultShortcuts.navigateDown), false);
+    // A binding recorded earlier on a Cyrillic layout keeps working there.
+    assert.equal(matchesShortcut(key({ key: 'ь', code: 'KeyM' }), 'Ь'), true);
+  });
+
+  it('ignores events that lack key or code', () => {
+    for (const event of [{ key: 'ь' }, { code: 'KeyM' }, { key: 'ь', code: undefined }, {}]) {
+      assert.equal(matchesShortcut(event as unknown as KeyboardEvent, 'M'), false);
+    }
+  });
+
+  it('records the Latin letter of the position, so the binding is portable', () => {
+    assert.equal(shortcutFromEvent(press('ь', 'KeyM')), 'M');
+    assert.equal(shortcutFromEvent(press('Ц', 'KeyW', { shiftKey: true })), 'Shift+W');
+    assert.equal(shortcutFromEvent(press('μ', 'KeyM', { ctrlKey: true })), 'Ctrl+M');
+    assert.equal(shortcutFromEvent(press('א', 'KeyT')), 'T');
+    assert.equal(shortcutFromEvent(press('z', 'KeyW')), 'Z'); // AZERTY still records the printed letter
+    assert.equal(shortcutFromEvent(press('ь', 'KeyM'), true), 'KeyM');
+    assert.equal(shortcutFromEvent(press('ь', 'Comma')), 'Ь'); // not a letter position: unchanged
+  });
+
+  it('detects a conflict between a recorded Cyrillic letter and the Latin default on that position', () => {
+    const recorded = shortcutFromEvent(press('ь', 'KeyM'));
+    assert.equal(shortcutsConflict(recorded, defaultShortcuts.toggleMute), true);
+    assert.deepEqual(shortcutConflicts(defaultShortcuts, 'togglePiP', recorded), ['toggleMute']);
+    assert.equal(shortcutsConflict(recorded, 'KeyM'), true);
+    assert.equal(shortcutsConflict(recorded, 'N'), false);
+  });
+});
