@@ -1,23 +1,20 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
 
 import type { Page } from 'playwright';
 import { chromium, firefox } from 'playwright';
 
+import { bootPlayer, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules([
+  "import { installWatchPlaybackQueries } from './providers/watch-playback';",
+  'installWatchPlaybackQueries();',
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';"
+]);
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 const ID_A = 'aaaaaaaaaaa';
@@ -30,8 +27,7 @@ async function openSinglePageSite(page: Page): Promise<void> {
     body: `<style>body{margin:0}video{display:block;width:640px;height:360px}</style><div id="host"><video id="player" muted loop src="${MEDIA}"></video></div>`
   }));
   await page.goto('https://www.youtube.com/results?search_query=x');
-  await page.addScriptTag({ content: 'window.__name = target => target;' });
-  await page.addScriptTag({ content: BUNDLE });
+  await bootPlayer(page, { bundle: BUNDLE });
   await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
   await page.waitForFunction(() => document.querySelector<HTMLVideoElement>('#player')!.readyState >= 2);
 }
@@ -62,6 +58,7 @@ async function openFeedSite(page: Page): Promise<void> {
       <div id="feed" hidden><video id="ad" title="ADVERTISEMENT" muted loop src="${MEDIA}"></video></div>`
   }));
   await page.goto('https://www.youtube.com/');
+  // The host fixture runs before bootPlayer installs its serialized callback shim.
   await page.addScriptTag({ content: 'window.__name = target => target;' });
   await page.evaluate(() => {
     const player = document.querySelector('#movie_player') as HTMLElement & { getVideoData(): object };
@@ -81,7 +78,7 @@ async function openFeedSite(page: Page): Promise<void> {
     });
     render();
   });
-  await page.addScriptTag({ content: BUNDLE });
+  await bootPlayer(page, { bundle: BUNDLE });
   await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
   await route(page, `/watch?v=${ID_A}`);
   await page.evaluate(() => {
