@@ -33,6 +33,29 @@ jobs:
       - name: Check module boundaries
         run: pnpm check:boundaries
 
+  css-and-unused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check shared CSS ratchet
+        run: pnpm lint:css
+      - name: Report unused code
+        continue-on-error: true
+        run: pnpm check:unused
+
   check:
     runs-on: ubuntu-latest
     # Includes conditional Firefox coverage on infrastructure changes.
