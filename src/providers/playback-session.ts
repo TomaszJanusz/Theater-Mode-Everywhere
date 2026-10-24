@@ -1,5 +1,5 @@
 import type { PlaybackSurface } from '../playback-surface';
-import { isInactiveStandbyVideo, selectSwitchableVideos } from '../switchable-videos';
+import { isInactiveStandbyVideo, isOnMiniplayerSurface, selectSwitchableVideos } from '../switchable-videos';
 import { isTencentHost } from './hosts';
 import { openTencentPlaybackSession } from './tencent/playback-session';
 import {
@@ -9,6 +9,7 @@ import {
   readTencentWasmHostToggle,
   selectTencentTheaterTarget
 } from './tencent/wasm-player';
+import { readMiniplayerIdentity } from './watch-playback';
 
 export type ProviderPlaybackSession = {
   surface: PlaybackSurface;
@@ -22,12 +23,24 @@ export function isProviderPlaybackFrameDocument(): boolean {
 
 export const readProviderHostToggle = readTencentWasmHostToggle;
 
+/** A parked miniplayer video whose identity the host player confirms; never a discovery candidate. */
+export function isMiniplayerTarget(video: HTMLVideoElement): boolean {
+  return window === window.top && isOnMiniplayerSurface(video) && readMiniplayerIdentity(video) !== null;
+}
+
 export function findProviderTheaterTarget(discovery: {
   findBestVideo(): HTMLVideoElement | null;
   findAllVideosDeep(): HTMLVideoElement[];
+  /** The video under the pointer or chosen with the launcher, if any. */
+  pointed?: HTMLVideoElement | null;
 }): HTMLElement | null {
   if (isProviderPlaybackFrameDocument()) return null;
-  if (!isTencentHost()) return discovery.findBestVideo();
+  if (!isTencentHost()) {
+    // Manual entry only: the miniplayer stays out of discovery, Switch Video and AutoTheater.
+    // It is the target when pointed at, or when nothing else on the page is one.
+    if (discovery.pointed && isMiniplayerTarget(discovery.pointed)) return discovery.pointed;
+    return discovery.findBestVideo() ?? discovery.findAllVideosDeep().find(isMiniplayerTarget) ?? null;
+  }
   const pool = selectSwitchableVideos(discovery.findAllVideosDeep().filter(video => !isInactiveStandbyVideo(video)));
   const best = discovery.findBestVideo();
   const switchable = pool.length > 0 ? (best && pool.includes(best) ? best : pool[0]) : null;

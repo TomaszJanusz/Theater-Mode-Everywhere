@@ -1,6 +1,7 @@
 import { isMotionReduced } from '../appearance-runtime';
 import { DisposableScope } from '../core/disposable-scope';
 import { createProviderLauncherPlacement, type LauncherPlacement, type LauncherSlot } from '../providers/launcher-placement';
+import { isMiniplayerTarget } from '../providers/playback-session';
 import { observeProviderWatchPlaybackChanges } from '../providers/watch-playback';
 import { isSwitchableTheaterVideo } from '../switchable-videos';
 
@@ -198,7 +199,8 @@ export function createVideoActivator(options: {
       width: box.width, height: box.height,
       visible: video.isConnected && (typeof video.checkVisibility !== 'function'
         || video.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })),
-      playable: isSwitchableTheaterVideo(video),
+      // The provider confirms a parked miniplayer video, which discovery itself never offers.
+      playable: isSwitchableTheaterVideo(video) || isMiniplayerTarget(video),
       muted: video.muted, loop: video.loop,
       inExtensionUi: video.hasAttribute('data-theater-everywhere')
         || (root instanceof ShadowRoot && root.host.id === EXTENSION_UI_HOST_ID),

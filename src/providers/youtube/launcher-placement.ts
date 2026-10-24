@@ -18,6 +18,8 @@ export const youtubeLauncherPlacement: LauncherPlacementFactory = (video, onChan
         if (player) observer.observe(player, { childList: true, subtree: true });
       }
       if (!player || player.querySelector('video') !== video) return null;
+      // The parked miniplayer keeps the right cluster but never shows it: use the overlay there.
+      if (player.closest('ytd-miniplayer')) return null;
       const toggle = player.querySelector<HTMLElement>(YOUTUBE_AUTOPLAY_TOGGLE);
       const before = toggle?.closest<HTMLElement>('button');
       if (!before) return null;

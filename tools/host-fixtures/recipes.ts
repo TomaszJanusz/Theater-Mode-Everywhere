@@ -1,4 +1,5 @@
 import { TWITCH_CHAT_COLUMN_SELECTOR, TWITCH_CHAT_SECTION_SELECTOR } from '../../src/chat/selectors';
+import { MINIPLAYER_SURFACE } from '../../src/providers/video-candidates';
 import { YOUTUBE_AUTOPLAY_TOGGLE, YOUTUBE_PLAYER_SELECTOR } from '../../src/providers/youtube/launcher-placement';
 
 import type { FixtureService } from './format';
@@ -87,6 +88,30 @@ export const RECIPES: Record<string, FixtureRecipe> = {
     maxChildren: 3,
     labels: [],
     opaque: ['video-id'],
+    publicWords: ['youtube', 'watch'],
+    hostVersion: "window.ytcfg?.get?.('INNERTUBE_CLIENT_VERSION')",
+    pageType: 'watch-captions'
+  },
+  // Theater on the miniplayer (TME-129): the playing player parked in the miniplayer after the
+  // viewer leaves the watch page for Home, with the watch page still in the DOM, hidden.
+  'youtube-miniplayer': {
+    id: 'youtube-miniplayer',
+    service: 'youtube',
+    page: 'public watch page, logged out, then Home through the masthead logo; miniplayer showing, before theater entry',
+    viewport: { width: 1600, height: 900 },
+    ready: `ytd-watch-flexy[video-id] ${YOUTUBE_AUTOPLAY_TOGGLE}`,
+    prepare: { click: 'ytd-masthead a#logo', until: `${MINIPLAYER_SURFACE} ${YOUTUBE_PLAYER_SELECTOR} video` },
+    probes: {
+      surface: MINIPLAYER_SURFACE,
+      player: `ytd-miniplayer ${YOUTUBE_PLAYER_SELECTOR}`,
+      video: `ytd-miniplayer ${YOUTUBE_PLAYER_SELECTOR} video`,
+      hiddenWatch: 'ytd-watch-flexy[hidden]',
+      autoplay: `ytd-miniplayer ${YOUTUBE_AUTOPLAY_TOGGLE}`
+    },
+    keepDepth: 1,
+    maxChildren: 3,
+    labels: [],
+    opaque: ['video-id', 'miniplayer-is-active'],
     publicWords: ['youtube', 'watch'],
     hostVersion: "window.ytcfg?.get?.('INNERTUBE_CLIENT_VERSION')",
     pageType: 'watch-captions'

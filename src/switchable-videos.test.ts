@@ -180,4 +180,19 @@ describe('switchable theater videos', () => {
     assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-shorts'] })), false);
     assert.equal(hasLeftPlaybackSurface(mainYouTubeVideo()), false);
   });
+
+  it('keeps a miniplayer session on the parked player until closing or expanding moves it', () => {
+    const parked = ['ytd-miniplayer', 'ytd-app[miniplayer-is-active] ytd-miniplayer'];
+    // Parked and shown: the session's surface, on any route.
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: parked }), 'miniplayer'), false);
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: parked }), 'miniplayer', true), false);
+    // Closing clears the mark and moves the player back into the hidden watch page.
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-miniplayer'] }), 'miniplayer'), true);
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-watch-flexy[hidden]', '[hidden]'] }), 'miniplayer'), true);
+    // Expanding clears the mark first: on the watch route the player is still on its way.
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: ['ytd-miniplayer'] }), 'miniplayer', true), false);
+    // Once in the watch page it has left the miniplayer; the runtime then confirms it for the route.
+    assert.equal(hasLeftPlaybackSurface(mainYouTubeVideo(), 'miniplayer', true), true);
+    assert.equal(hasLeftPlaybackSurface(fakeVideo({ hosts: [...parked, '[hidden]'] }), 'miniplayer'), true);
+  });
 });
