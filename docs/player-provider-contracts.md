@@ -156,6 +156,22 @@ can preserve manual playback routes without a stable URL content identity (such
 as season pages); those retain generic replacement behavior and remain ineligible
 for automatic entry.
 
+A provider may declare `WatchPlayback.miniplayerVideo` for a player the host parks in a
+miniplayer on non-watch routes. MAIN returns the parked video with the content identity its
+player reports, or null while that identity is unknown, disagrees between player reads, or
+belongs to an ad; a separate bridge query (same string-only, top-frame, href-checked protocol,
+also with the integration disabled) carries the identity. The miniplayer is never a discovery,
+Switch Video or AutoTheater candidate: `findProviderTheaterTarget` offers it to manual entry
+only, when it is pointed at or chosen with the launcher, or when nothing else is a target. A
+session entered there is keyed to the miniplayer, not the route: navigation between listing
+pages keeps it, the next queue item on the same element keeps it (title, chapters, heatmap and
+captions are cleared until the player confirms the new identity, then reloaded), and closing
+the miniplayer ends it after the lost-surface grace. Expanding it continues the session as a
+watch session once the provider confirms the player for the watch route. YouTube declares it
+for `ytd-app[miniplayer-is-active] ytd-miniplayer`; entry re-pins the video after the ancestor
+overrides, which remove the miniplayer's containing block, and the YouTube stage hides the
+listing page behind it.
+
 ## Video launcher
 
 `ProviderDefinition.launcherPlacement` supplies an optional `LauncherPlacement`
@@ -178,7 +194,8 @@ brackets, whichever surface renders the button.
 
 YouTube inserts immediately before the autoplay control in the right cluster,
 without moving any existing controls, including other extensions' buttons, and
-declares the slot `persistent`. A missing anchor falls back to the overlay. The native `ytp-button` class supplies
+declares the slot `persistent`. A missing anchor falls back to the overlay, as does the
+miniplayer, which keeps the right cluster hidden. The native `ytp-button` class supplies
 control color and the monochrome mark uses `currentColor` with a transparent
 play cutout and no background. Generic overlays use the `left-third` slot: a 12 px inset from the left edge and
 one third of the video height down (clamped inside the margins for tiny videos),

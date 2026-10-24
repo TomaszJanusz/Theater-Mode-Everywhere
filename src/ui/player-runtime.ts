@@ -11,7 +11,14 @@ import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, reso
 import { showAutoTheaterNotice } from './auto-theater-notice';
 import { createVideoActivator, VIDEO_ACTIVATOR_CLASS, type VideoActivator } from './video-activator';
 import { resolveVideoActivator, VIDEO_ACTIVATOR_STORAGE_KEY } from './video-activator-settings';
-import { autoTheaterAvailability, confirmWatchReplacement, leftProviderWatchPage, observeProviderWatchPlaybackChanges, readProviderWatchPage } from '../providers/watch-playback';
+import {
+  autoTheaterAvailability,
+  confirmWatchReplacement,
+  leftProviderWatchPage,
+  observeProviderWatchPlaybackChanges,
+  readMiniplayerIdentity,
+  readProviderWatchPage
+} from '../providers/watch-playback';
 import { createAutoTheaterRuntime, type AutoTheaterRuntime } from './auto-theater-runtime';
 import { togglePictureInPicture } from './picture-in-picture';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from './volume-boost-settings';
@@ -60,7 +67,7 @@ import {
   seekBy,
   seekToMediaTime
 } from '../playback-window';
-import { hasLeftPlaybackSurface, isInactiveStandbyVideo } from '../switchable-videos';
+import { hasLeftPlaybackSurface, isInactiveStandbyVideo, isOnMiniplayerSurface } from '../switchable-videos';
 import { THEATER_VIDEO_ATTR } from '../platform/active-video';
 import { providerSharesPlaybackHost, providerVideoAbandoned } from '../providers/discovery';
 import {
@@ -1064,6 +1071,20 @@ async function toggleTheaterCaptions(): Promise<void> {
   }
 }
 
+/**
+ * A host that lays out its video while theater holds it (YouTube sizing the player after the
+ * miniplayer expands) wants that geometry back on exit, not the one recorded at entry. Every
+ * theater value is `!important`; a host write through the style API is not.
+ */
+function adoptHostInlineStyles(element: HTMLElement): void {
+  for (const saved of theaterElementInlineStyleState.get(element)?.styles ?? []) {
+    const value = element.style.getPropertyValue(saved.property);
+    if (!value || element.style.getPropertyPriority(saved.property) === 'important') continue;
+    saved.value = value;
+    saved.priority = '';
+  }
+}
+
 function restoreTheaterElementInlineStyles(element: HTMLElement): void {
   const savedState = theaterElementInlineStyleState.get(element);
   if (!savedState) return;
@@ -1983,7 +2004,8 @@ function focusTheaterPage(): void {
 }
 
 function findTheaterTarget(): HTMLElement | null {
-  return findProviderTheaterTarget({ findBestVideo, findAllVideosDeep });
+  refreshPointerVideo();
+  return findProviderTheaterTarget({ findBestVideo, findAllVideosDeep, pointed: refs.activeVideo });
 }
 
 function releaseProviderPlayback(): void {
@@ -2102,10 +2124,62 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
     if (!needsWatchIdentity()) return findBestVideo();
     return findAllVideosDeep(document).find(acceptsReplacement) ?? null;
   };
-  const rebindIfReplaced = (candidate?: HTMLVideoElement): void => {
+  /** Clears the previous video's title, chapters, heatmap and captions; reloads once the next one is known. */
+  const resetSessionMedia = (reload: boolean): void => {
+    const features = (queryPlayerUi('.theater-controls-wrapper') as ExtendedHTMLDivElement | null)?._mediaFeatures;
+    features?.invalidate();
+    if (reload) void features?.refresh();
+  };
+  // The parked player reuses its element for the next queue item; only the player API tells
+  // the videos apart. Unknown while it moves on: nothing of the previous video stays on screen.
+  const followMiniplayerIdentity = (current: HTMLVideoElement): void => {
+    if (!miniplayerSession) return;
+    const identity = readMiniplayerIdentity(current);
+    if (identity === miniplayerSession.identity) return;
+    miniplayerSession.identity = identity;
+    resetSessionMedia(identity !== null);
+  };
+  // Expanding the miniplayer returns its player to the watch page: the session continues there
+  // as a watch session once the provider confirms the player for that route.
+  const continuesOnWatchPage = (current: HTMLVideoElement): boolean => {
+    if (!readProviderWatchPage(new URL(window.location.href)) || !confirmWatchReplacement(current)) return false;
+    const identity = miniplayerSession?.identity;
+    miniplayerSession = null;
+    enteredOnWatchPage = true;
+    cancelSurfaceRecheck();
+    if (readProviderWatchPage(new URL(window.location.href))?.identity !== identity) resetSessionMedia(true);
+    return true;
+  };
+  const followMiniplayer = (current: HTMLVideoElement, readIdentity: boolean): void => {
+    if (!isElementInDOMDeep(current)) {
+      exitTheaterMode();
+      return;
+    }
+    const onWatchRoute = (): boolean => readProviderWatchPage(new URL(window.location.href)) !== null;
+    if (!hasLeftPlaybackSurface(current, 'miniplayer', onWatchRoute())) {
+      cancelSurfaceRecheck();
+      if (readIdentity) followMiniplayerIdentity(current);
+      return;
+    }
+    if (continuesOnWatchPage(current) || surfaceRecheck) return;
+    // Closing the miniplayer moves the paused player back into the hidden watch page.
+    const recheck = bindingScope.child();
+    surfaceRecheck = recheck;
+    recheck.timeout(() => {
+      surfaceRecheck = null;
+      if (session.element !== current || !miniplayerSession) return;
+      if (!hasLeftPlaybackSurface(current, 'miniplayer', onWatchRoute()) || continuesOnWatchPage(current)) return;
+      exitTheaterMode();
+    }, LOST_SURFACE_GRACE_MS);
+  };
+  const rebindIfReplaced = (candidate?: HTMLVideoElement, readIdentity = false): void => {
     if (bindingScope.isDisposed) return;
     const current = session.element;
     if (current?.tagName !== 'VIDEO') return;
+    if (miniplayerSession) {
+      followMiniplayer(current as HTMLVideoElement, readIdentity);
+      return;
+    }
     // The route no longer shows a watch page: another video here (a feed's autoplaying ad, a
     // preview) must not inherit the session.
     if (leftProviderWatchPage(enteredOnWatchPage, window.location.href)) {
@@ -2147,8 +2221,14 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   };
 
   bindingScope.add(observeProviderWatchPlaybackChanges(() => {
+    if (bindingScope.isDisposed) return;
+    // A miniplayer session is not tied to the route; publications announce its next video.
+    if (miniplayerSession) {
+      rebindIfReplaced(undefined, true);
+      return;
+    }
     // Publications can precede the host revealing its next player; only the route is final here.
-    if (!bindingScope.isDisposed && leftProviderWatchPage(enteredOnWatchPage, window.location.href)) {
+    if (leftProviderWatchPage(enteredOnWatchPage, window.location.href)) {
       exitTheaterMode();
     }
   }));
@@ -2213,6 +2293,10 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
   bindingScope.listen(video, 'emptied', holdViewport);
   bindingScope.listen(document, 'yt-navigate-start', holdViewport);
   bindingScope.listen(video, 'loadedmetadata', () => scheduleStabilize(true));
+  // The player API reports the next queue item's identity by the time its media plays.
+  for (const type of ['loadedmetadata', 'playing']) {
+    bindingScope.listen(video, type, () => { if (miniplayerSession) rebindIfReplaced(undefined, true); });
+  }
   bindingScope.listen(document, 'loadedmetadata', (event: Event) => {
     const candidate = event.target;
     if (!(candidate instanceof HTMLVideoElement)) return;
@@ -2241,11 +2325,12 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
       });
     });
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'miniplayer-is-active'] });
   bindingScope.add(() => observer.disconnect());
 
   const styleObserver = new MutationObserver(() => {
     if (ignoreStyleMutations > 0 || session.element !== video) return;
+    adoptHostInlineStyles(video);
     rebindIfReplaced();
     if (session.element !== video) return;
     if (!theaterVideoNeedsRestyle(video)) return;
@@ -2308,10 +2393,26 @@ function refreshTheaterAncestors(element: HTMLElement): void {
 
 /** Whether the active session began on a provider watch page; navigation off it ends the session. */
 let enteredOnWatchPage = false;
+/**
+ * A session entered on the host's miniplayer: its surface is the miniplayer, not the route. It
+ * keeps the host-reported identity of the video it shows, null while the player moves to the
+ * next one, and follows that next video.
+ */
+let miniplayerSession: { identity: string | null } | null = null;
+
+/** The surface a new session starts on decides what ends it: the miniplayer, a watch page or neither. */
+function recordEntrySurface(element: HTMLElement): void {
+  const topLevel = window === window.top;
+  const parked = topLevel && element instanceof HTMLVideoElement && isOnMiniplayerSurface(element)
+    ? readMiniplayerIdentity(element)
+    : null;
+  miniplayerSession = parked ? { identity: parked } : null;
+  enteredOnWatchPage = !parked && topLevel && readProviderWatchPage(new URL(window.location.href)) !== null;
+}
 
 function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: string): void {
   if (session.element) return;
-  enteredOnWatchPage = window === window.top && readProviderWatchPage(new URL(window.location.href)) !== null;
+  recordEntrySurface(element);
 
   session.rebind(element, sessionId, nonce);
   refs.childPlaylistNav = emptyPlaylistNav();
@@ -2366,6 +2467,9 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   refreshTheaterAncestors(element);
+  // The ancestor overrides can remove a containing block the first pin measured against, such
+  // as the one YouTube's miniplayer gives its parked player.
+  pinProviderViewport(element, applyTheaterViewportPin);
 
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');
@@ -2481,6 +2585,7 @@ function exitTheaterMode(
   refs.parentPlaylistNav = emptyPlaylistNav();
   refs.childPlaylistNav = emptyPlaylistNav();
   refs.embedderLinked = false;
+  miniplayerSession = null;
   session.finishExit();
   uiStore.dispatch({ type: 'SET_THEATER_ACTIVE', value: false });
   updateCaptionDock();

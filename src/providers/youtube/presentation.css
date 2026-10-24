@@ -77,6 +77,13 @@ html.theater-everywhere-html-active #movie_player .sponsorSkipNoticeParent {
   pointer-events: auto !important;
 }
 
+/* A session on the miniplayer's parked player: the listing page around it (and the hidden
+ * watch page) would show through the same way. The miniplayer is outside the page manager. */
+html.theater-everywhere-html-active:has(ytd-miniplayer [data-theater-everywhere]) ytd-page-manager {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 html[data-theater-everywhere-motion="reduced"].theater-everywhere-picture-moving .ytp-caption-window-container {
   transition: none !important;
 }

@@ -1,7 +1,7 @@
 import { mediaHasSource } from './host-play';
 import { isInactiveStandbyVideo, isProviderAuxiliaryVideo } from './providers/video-candidates';
 
-export { AUXILIARY_VIDEO_HOST_SELECTOR, hasLeftPlaybackSurface, isInactiveStandbyVideo, isTransientVideo } from './providers/video-candidates';
+export { AUXILIARY_VIDEO_HOST_SELECTOR, hasLeftPlaybackSurface, isInactiveStandbyVideo, isOnMiniplayerSurface, isTransientVideo } from './providers/video-candidates';
 
 const MIN_SWITCHABLE_EDGE = 80;
 
@@ -23,7 +23,11 @@ export function isAuxiliaryTheaterVideo(video: HTMLVideoElement): boolean {
 }
 
 export function isSwitchableTheaterVideo(video: HTMLVideoElement): boolean {
-  if (isAuxiliaryTheaterVideo(video)) return false;
+  return !isAuxiliaryTheaterVideo(video) && hasPlayableTheaterMedia(video);
+}
+
+/** The media and box checks alone, for providers that confirm an auxiliary surface themselves. */
+export function hasPlayableTheaterMedia(video: HTMLVideoElement): boolean {
   if (isInactiveStandbyVideo(video)) return false;
   if (video.closest('[hidden]')) return false;
   if (!mediaHasSource(video)) return false;

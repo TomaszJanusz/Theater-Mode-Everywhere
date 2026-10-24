@@ -161,3 +161,36 @@ it('Bilibili.tv identities distinguish uploads and episodes, ignoring locale and
     assert.equal(bilibiliIntlVideoIdentity(new URL(`${origin}/en/video/123`)), null);
   }
 });
+
+describe('YouTube miniplayer identity', () => {
+  const miniplayerVideo = providerDefinition('youtube').watchPlayback!.miniplayerVideo!;
+  const video = {} as HTMLVideoElement;
+  function parked(init: { videoData?: unknown; response?: unknown; ad?: boolean; videos?: HTMLVideoElement[]; selector?: string[] } = {}): Document {
+    const player = {
+      matches: (selector: string) => Boolean(init.ad) && selector.includes('ad-showing'),
+      getVideoData: () => ({ video_id: 'videoData' in init ? init.videoData : 'abcdefghijk' }),
+      getPlayerResponse: () => ({ videoDetails: { videoId: 'response' in init ? init.response : 'abcdefghijk' } }),
+      querySelectorAll: () => init.videos ?? [video]
+    };
+    return { querySelector: (selector: string) => (selector.startsWith('ytd-app[miniplayer-is-active] ytd-miniplayer') ? player : null) } as unknown as Document;
+  }
+
+  it('confirms the parked video only when both player reads agree on a content id', () => {
+    assert.deepEqual(miniplayerVideo(parked()), { video, identity: 'abcdefghijk' });
+    // getPlayerResponse() lags getVideoData() while the next queue item loads.
+    assert.equal(miniplayerVideo(parked({ response: 'lmnopqrstuv' })), null);
+    assert.equal(miniplayerVideo(parked({ videoData: '', response: '' })), null);
+    assert.equal(miniplayerVideo(parked({ videoData: undefined, response: undefined })), null);
+    assert.equal(miniplayerVideo(parked({ videoData: 'not an id', response: 'not an id' })), null);
+    // An ad's ids are not the content's, and the player must hold exactly one main video.
+    assert.equal(miniplayerVideo(parked({ ad: true })), null);
+    assert.equal(miniplayerVideo(parked({ videos: [] })), null);
+    assert.equal(miniplayerVideo(parked({ videos: [video, video] })), null);
+    // Nothing parked: the miniplayer is closed or the player sits in the watch page.
+    assert.equal(miniplayerVideo({ querySelector: () => null } as unknown as Document), null);
+  });
+
+  it('is declared by YouTube only', () => {
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.miniplayerVideo), ['youtube']);
+  });
+});

@@ -1,10 +1,15 @@
 import { YOUTUBE_PLAYER_SELECTOR } from '../navigation/youtube';
 import { youtubeWatchPageId } from '../navigation/watch-page';
+import { MINIPLAYER_SURFACE } from '../video-candidates';
 import type { WatchPlayback } from '../watch-playback';
 
 type WatchPlayer = HTMLElement & {
   getVideoData?: () => { video_id?: unknown };
+  getPlayerResponse?: () => { videoDetails?: { videoId?: unknown } } | null;
 };
+
+/** Parked players sit inside the miniplayer only while `ytd-app` marks it active. */
+const MINIPLAYER_PLAYER = `${MINIPLAYER_SURFACE} ${YOUTUBE_PLAYER_SELECTOR}`;
 
 function singleMainVideo(player: HTMLElement): HTMLVideoElement | null {
   const videos = player.querySelectorAll<HTMLVideoElement>('video.html5-main-video');
@@ -35,6 +40,16 @@ export const youtubeWatchPlayback: WatchPlayback = {
     const reported = player.getVideoData?.().video_id;
     if (reported !== undefined && reported !== '' && reported !== identity) return null;
     return singleMainVideo(player);
+  },
+  miniplayerVideo(doc) {
+    const player = doc.querySelector<WatchPlayer>(MINIPLAYER_PLAYER);
+    // An ad's ids are not the content's; the player API can also lag a new video for a moment.
+    if (!player || player.matches('.ad-showing, .ad-interrupting')) return null;
+    const identity = player.getVideoData?.().video_id;
+    if (typeof identity !== 'string' || !/^[\w-]{11}$/.test(identity)
+      || player.getPlayerResponse?.()?.videoDetails?.videoId !== identity) return null;
+    const video = singleMainVideo(player);
+    return video ? { video, identity } : null;
   },
   observe(video, onChange) {
     const player = video.ownerDocument.querySelector(YOUTUBE_PLAYER_SELECTOR);
