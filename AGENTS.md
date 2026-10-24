@@ -7,7 +7,8 @@ Theater Everywhere is a TypeScript extension for Chromium and Firefox, built wit
 `AGENTS.md` is the canonical guide. Keep `CLAUDE.md` as a relative symlink to it. Follow the developer's explicit instructions when they override these defaults.
 
 ## Progress tracking
-- Linear, `TME` prefix. 
+- Linear, `TME` prefix.
+- GitHub Issues 
 
 ## Taste
 
