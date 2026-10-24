@@ -46,7 +46,7 @@ export function createMediaFeaturesAdapter(
 ): MediaFeaturesAdapter {
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
-  if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter());
+  if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter(surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());

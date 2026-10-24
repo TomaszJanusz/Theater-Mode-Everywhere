@@ -25,7 +25,7 @@ const HOME = `<style>
 <ytd-app miniplayer-is-active>
   <ytd-page-manager>
     <ytd-browse><p id="listing">Home</p><ytd-video-preview><video id="preview" style="position:static;width:320px;height:180px"></video></ytd-video-preview></ytd-browse>
-    <ytd-watch-flexy hidden><div id="player-container"></div></ytd-watch-flexy>
+    <ytd-watch-flexy hidden><div id="player-container"></div><h1 class="ytd-watch-metadata">Previous watch page</h1></ytd-watch-flexy>
   </ytd-page-manager>
   <ytd-miniplayer style="right: 16px; bottom: 16px;"><div id="movie_player" class="html5-video-player ytp-player-minimized"><video id="parked" class="html5-main-video" style="width: 400px; height: 225px; left: 0px; top: 0px;"></video></div></ytd-miniplayer>
 </ytd-app>`;
@@ -34,6 +34,8 @@ declare global {
   interface Window {
     /** What the fake player API reports: `getVideoData()` and, when set, a lagging `getPlayerResponse()`. */
     host: { id: string; responseId?: string };
+    /** Titles the fake player response carries per video id. */
+    titles: Record<string, string>;
   }
 }
 
@@ -43,9 +45,15 @@ async function openHome(t: TestContext, shared: ReturnType<typeof sharedTestBrow
   await page.goto('https://www.youtube.com/');
   await page.evaluate(media => {
     window.host = { id: 'aaaaaaaaaaa' };
+    window.titles = { aaaaaaaaaaa: 'Parked video', bbbbbbbbbbb: 'Next in queue' };
+    // Page metadata left over from the watch page and Home's own: neither describes the parked video.
+    document.title = 'Previous watch page - YouTube';
     const player = document.getElementById('movie_player') as HTMLElement & Record<string, unknown>;
     player.getVideoData = () => ({ video_id: window.host.id });
-    player.getPlayerResponse = () => ({ videoDetails: { videoId: window.host.responseId ?? window.host.id } });
+    player.getPlayerResponse = () => {
+      const videoId = window.host.responseId ?? window.host.id;
+      return { videoDetails: { videoId, title: window.titles[videoId], lengthSeconds: '10' } };
+    };
     // Muted and looping reads as decoration to the launcher; the parked player is neither.
     for (const video of document.querySelectorAll('video')) { video.muted = video.loop = video.id === 'preview'; video.src = media; }
   }, MEDIA);
@@ -178,5 +186,27 @@ for (const engine of testEngines()) {
     assert.equal(await active(page), false);
     // Exit restores the host's latest geometry, not the miniplayer's from entry.
     assert.equal(await page.evaluate(() => document.getElementById('parked')!.getAttribute('style')), 'width: 800px; height: 450px; left: 0px; top: 0px;');
+  });
+
+  it(`${engine}: the title follows the parked video and never shows the page's or the previous video's`, { timeout: 40_000 }, async t => {
+    const page = await openHome(t, shared);
+    const title = async (): Promise<string> => {
+      await page.clock.runFor(1000);
+      // A long title scrolls as two copies of the text; the first is the title.
+      return (await page.locator('.theater-everywhere-title-hud .theater-title-hud-text').allTextContents())[0] ?? '';
+    };
+    await toggle(page);
+    assert.equal(await title(), 'Parked video');
+    // The next queue item: getPlayerResponse() still describes the previous video for a moment.
+    await page.evaluate(() => { window.host = { id: 'bbbbbbbbbbb', responseId: 'aaaaaaaaaaa' }; });
+    await publish(page, 'yt-player-updated');
+    assert.equal(await title(), '', 'unknown while the player reads disagree');
+    await page.evaluate(() => { delete window.host.responseId; });
+    await publish(page, 'yt-player-updated');
+    assert.equal(await title(), 'Next in queue');
+    // A parked video without a title of its own shows none, not the page's.
+    await page.evaluate(() => { window.host = { id: 'ccccccccccc' }; });
+    await publish(page, 'yt-player-updated');
+    assert.equal(await title(), '');
   });
 }

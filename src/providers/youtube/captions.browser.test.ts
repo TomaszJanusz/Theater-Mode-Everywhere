@@ -23,19 +23,25 @@ const bundle = esbuild.buildSync({
   bundle: true, write: false, format: 'iife', globalName: 'CaptionTest', platform: 'browser', target: 'es2022'
 }).outputFiles[0].text;
 
-async function setup(page: Page): Promise<void> {
+const WATCH_PLAYER = '<div id="movie_player"><video></video><button class="ytp-subtitles-button" aria-pressed="false">CC</button></div>';
+// Home with the player parked in the miniplayer: no ?v=, so the parked player's own id is the identity.
+const PARKED = `<ytd-app miniplayer-is-active><ytd-miniplayer>${WATCH_PLAYER.replace('id="movie_player"', 'id="movie_player" class="html5-video-player"').replace('<video>', '<video class="html5-main-video">')}</ytd-miniplayer></ytd-app>`;
+
+async function setup(page: Page, { body = WATCH_PLAYER, url = 'https://www.youtube.com/watch?v=video-a' } = {}): Promise<void> {
   await page.route('https://www.youtube.com/**', route => route.fulfill({
     status: 200, contentType: 'text/html',
-    body: '<!doctype html><div id="movie_player"><video></video><button class="ytp-subtitles-button" aria-pressed="false">CC</button></div>'
+    body: `<!doctype html>${body}`
   }));
-  await page.goto('https://www.youtube.com/watch?v=video-a');
+  await page.goto(url);
   await page.addScriptTag({ content: `${bundle}\nwindow.CaptionTest = CaptionTest;` });
   await page.evaluate(`(() => {
     window.__calls = [];
     window.__tracks = [];
     window.__responseId = 'video-a';
+    window.__videoId = 'aaaaaaaaaaa';
     window.__installPlayer = player => {
       player.getPlayerResponse = () => ({videoDetails: {videoId: window.__responseId}});
+      player.getVideoData = () => ({video_id: window.__videoId});
       player.getOption = () => window.__tracks;
       player.loadModule = () => window.__calls.push({type:'load',player:player.id});
       player.unloadModule = () => {};
@@ -187,5 +193,52 @@ describe('YouTube captions request lifecycle', () => {
       assert.equal(result.storyboardSpec, 'storyboard');
       assert.deepEqual(result.captionTracks, []);
     } finally { await context.close(); }
+  });
+});
+
+describe('YouTube captions on the parked miniplayer player', () => {
+  const parked = async (page: Page): Promise<void> => {
+    await setup(page, { body: PARKED, url: 'https://www.youtube.com/' });
+    await page.evaluate("window.__responseId = 'aaaaaaaaaaa'");
+  };
+
+  it('applies the track on the parked player, identified by its own id', async t => {
+    if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
+    const context = await chromiumBrowser.newContext(t);
+    const page = await context.newPage();
+    await parked(page);
+    await startPending(page);
+    await ready(page);
+    assert.equal(await page.evaluate('window.__result'), true);
+    assert.equal((await calls(page)).filter(call => call.type === 'track' && call.language === 'en').length, 1);
+  });
+
+  for (const [name, change] of [
+    ['the next queue item', "window.__videoId = 'bbbbbbbbbbb'"],
+    ['the miniplayer closing', "document.querySelector('ytd-app').removeAttribute('miniplayer-is-active')"]
+  ] as const) {
+    it(`rejects a pending request after ${name}`, async t => {
+      if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
+      const context = await chromiumBrowser.newContext(t);
+      const page = await context.newPage();
+      await parked(page);
+      await startPending(page);
+      await page.evaluate(change);
+      await ready(page);
+      assert.equal(await page.evaluate('window.__result'), false);
+      assert.equal((await calls(page)).filter(call => call.language === 'en' || call.type === 'click').length, 0);
+    });
+  }
+
+  it('does not start while the two player reads disagree', async t => {
+    if (!existsSync(chromium.executablePath())) { t.skip('Browser not installed'); return; }
+    const context = await chromiumBrowser.newContext(t);
+    const page = await context.newPage();
+    await parked(page);
+    // getPlayerResponse() still describes the previous video.
+    await page.evaluate("window.__responseId = 'zzzzzzzzzzz'; window.__start()");
+    await page.waitForFunction('window.__result !== "pending"');
+    assert.equal(await page.evaluate('window.__result'), false);
+    assert.equal((await calls(page)).length, 0);
   });
 });
