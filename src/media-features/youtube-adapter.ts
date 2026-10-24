@@ -1,3 +1,6 @@
+import { isOnMiniplayerSurface } from '../providers/video-candidates';
+import { readMiniplayerIdentity } from '../providers/watch-playback';
+
 import { parseCaptionPayload } from './parsers/captions';
 import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
 import { heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
@@ -63,9 +66,13 @@ function youtubePageVideoId(href: string): string | null {
   }
 }
 
-function youtubeSnapshotMatchesPage(snapshotVideoId: string | undefined, pageVideoId: string | null): boolean {
-  if (!snapshotVideoId || !pageVideoId) return true;
-  return snapshotVideoId === pageVideoId;
+/** The MAIN world's `ExpectedVideo` rule (providers/youtube/main.ts), for the adapter's bound video. */
+type ExpectedVideo = { id: string | null; strict: boolean };
+
+function youtubeSnapshotMatchesPage(snapshotVideoId: string | undefined, expected: ExpectedVideo): boolean {
+  if (expected.strict) return expected.id !== null && snapshotVideoId === expected.id;
+  if (!snapshotVideoId || !expected.id) return true;
+  return snapshotVideoId === expected.id;
 }
 
 const CAPTION_AUTH_KEYS = [
@@ -241,18 +248,33 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   private storyboards: StoryboardSet | null = null;
   private tracks: YoutubeCaptionMeta[] = [];
   private lastVideoId: string | null = null;
+  /** Whether the last load was for a parked miniplayer video; its identity changes reset the session. */
+  private loadedParked = false;
+
+  /** @param video The bound video: parked in the miniplayer, it, not the URL, identifies the content. */
+  constructor(private readonly video: HTMLVideoElement | null = null) {}
+
+  /**
+   * The content id this adapter's data must describe: the URL's, or for a video parked in the
+   * miniplayer the id its player confirms (null while unknown, which matches nothing).
+   */
+  private expected(): ExpectedVideo {
+    if (this.video && isOnMiniplayerSurface(this.video)) return { id: readMiniplayerIdentity(this.video), strict: true };
+    return { id: youtubePageVideoId(window.location.href), strict: false };
+  }
 
   async load(): Promise<void> {
     const previousId = this.lastVideoId;
     const probed = await requestMediaProbe();
-    const pageVideoId = youtubePageVideoId(window.location.href);
+    const expected = this.expected();
+    this.loadedParked = expected.strict;
     const boot = (window as unknown as { ytInitialPlayerResponse?: unknown }).ytInitialPlayerResponse;
-    this.snapshot = firstMatchingYoutubeSnapshot(pageVideoId, [
+    this.snapshot = firstMatchingYoutubeSnapshot(expected.id, [
       probed.youtube,
       readPublishedYoutubeSnapshot(),
       readYoutubeSnapshotFromDom(),
       boot ? normalizeYoutubePlayerResponse(boot) : null
-    ]);
+    ], expected.strict);
     if (this.snapshot?.videoId) this.lastVideoId = this.snapshot.videoId;
     if (previousId && this.snapshot?.videoId && previousId !== this.snapshot.videoId) {
       cueCache.clear();
@@ -268,7 +290,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     this.snapshot = null;
     this.storyboards = null;
     this.tracks = [];
-    const pageId = youtubePageVideoId(window.location.href);
+    const pageId = this.expected().id;
     for (let attempt = 0; attempt < 6; attempt++) {
       await this.load();
       if (!pageId || this.mediaId() === pageId) return;
@@ -290,17 +312,17 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 
   getTitle(): string | null {
-    const pageId = youtubePageVideoId(window.location.href);
-    const snapshot = firstMatchingYoutubeSnapshot(pageId, [
+    const expected = this.expected();
+    const snapshot = firstMatchingYoutubeSnapshot(expected.id, [
       readPublishedYoutubeSnapshot(),
       readYoutubeSnapshotFromDom(),
       this.snapshot
-    ]);
+    ], expected.strict);
     return sanitizeContentTitle(snapshot?.title);
   }
 
   private snapshotMatchesPage(): boolean {
-    return youtubeSnapshotMatchesPage(this.snapshot?.videoId, youtubePageVideoId(window.location.href));
+    return youtubeSnapshotMatchesPage(this.snapshot?.videoId, this.expected());
   }
 
   async probe(): Promise<MediaCapabilities> {
@@ -367,6 +389,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 
   getHeatmap(): TimelineHeatmap | null {
+    const parked = this.expected().strict;
     if (this.snapshotMatchesPage()) {
       const stored = this.snapshot?.heatmap;
       if (stored?.segments && stored.segments.length > 0) {
@@ -376,6 +399,8 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
       }
       if (stored?.svgPath) return stored;
     }
+    // The rendered heatmap belongs to the hidden watch page, not to a parked player.
+    if (parked) return null;
     const svgPath = readRenderedYoutubeHeatmapPath();
     return svgPath ? { source: 'svg', svgPath } : null;
   }
@@ -388,7 +413,9 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
   }
 
   getPreviewFrame(time: number, _duration: number): PreviewFrame | null {
-    if (!this.storyboards || !this.snapshotMatchesPage()) return null;
+    // Called per pointer frame. A parked load already matched the player's id, and an identity
+    // change there resets the session, so only URL-identified loads are rechecked.
+    if (!this.storyboards || (!this.loadedParked && !this.snapshotMatchesPage())) return null;
     const targetWidth = Math.round(PREVIEW_DISPLAY_WIDTH * (window.devicePixelRatio || 1));
     return getStoryboardFrame(this.storyboards, time, targetWidth);
   }

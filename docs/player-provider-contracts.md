@@ -172,6 +172,13 @@ for `ytd-app[miniplayer-is-active] ytd-miniplayer`; entry re-pins the video afte
 overrides, which remove the miniplayer's containing block, and the YouTube stage hides the
 listing page behind it.
 
+The YouTube data readers in both worlds resolve one expected content id: the URL's on watch
+routes, otherwise the parked player's confirmed id while the miniplayer shows (MAIN reads it
+from the player, the adapter through the miniplayer bridge for its bound video). In that case
+matching is strict: data without that id, or any data while it is unknown, is rejected, and the
+page-DOM fallbacks (watch heading, `og:title`, document title, rendered heatmap) are skipped
+because they describe the page. An empty title hides the chip.
+
 ## Video launcher
 
 `ProviderDefinition.launcherPlacement` supplies an optional `LauncherPlacement`

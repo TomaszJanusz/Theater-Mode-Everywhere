@@ -26,12 +26,14 @@ import { readYoutubePlayerMetadata, youtubeRecord } from '../../media-features/p
 import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
+import { MINIPLAYER_SURFACE } from '../video-candidates';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
   createTimedtextBodyCache,
   MAX_TIMEDTEXT_STRING_LENGTH,
   TIMEDTEXT_CACHE_STRING_BUDGET
 } from './timedtext-cache';
+import { youtubeWatchPlayback } from './watch-playback';
 
 export function youtubeIntegrationEnabled(): boolean {
   return mediaProviderIntegrationEnabled('youtube');
@@ -54,6 +56,27 @@ function notifyYoutubeHarvest(): void {
   }, 80);
 }
 
+/**
+ * The content id YouTube data must describe. Off a watch URL nothing identifies the video, and
+ * nothing is checked (`strict` false, `id` null), except while the player is parked in the
+ * miniplayer: then data must match that player's own confirmed id, it is unknown (null) while
+ * the player reads disagree, and page DOM, which describes the page, never stands in for it.
+ * The isolated adapter applies the same rule with the id it reads through the miniplayer bridge.
+ */
+type ExpectedVideo = { id: string | null; strict: boolean };
+
+function expectedYoutubeVideo(): ExpectedVideo {
+  const pageId = youtubePageVideoId(window.location.href);
+  if (pageId || !document.querySelector(`${MINIPLAYER_SURFACE} #movie_player`)) return { id: pageId, strict: false };
+  return { id: youtubeWatchPlayback.miniplayerVideo?.(document)?.identity ?? null, strict: true };
+}
+
+/** Whether data reporting `videoId` (null when it reports none) may describe the expected video. */
+function describesExpected(expected: ExpectedVideo, videoId: string | null | undefined): boolean {
+  if (expected.strict) return expected.id !== null && videoId === expected.id;
+  return !expected.id || !videoId || videoId === expected.id;
+}
+
 function rememberYoutubeHeatmap(found: YoutubeHeatmap, videoId: string | null): boolean {
   const segments = found.segments || [];
   const prev = youtubeHeatmapHarvest;
@@ -71,9 +94,8 @@ function rememberYoutubeHeatmap(found: YoutubeHeatmap, videoId: string | null): 
   return !same;
 }
 
-function dropStaleYoutubeHeatmapHarvest(): void {
-  const pageId = youtubePageVideoId(window.location.href);
-  if (youtubeHeatmapHarvest && pageId && youtubeHeatmapHarvest.videoId && youtubeHeatmapHarvest.videoId !== pageId) {
+function dropStaleYoutubeHeatmapHarvest(expected: ExpectedVideo): void {
+  if (youtubeHeatmapHarvest && expected.id && youtubeHeatmapHarvest.videoId && youtubeHeatmapHarvest.videoId !== expected.id) {
     youtubeHeatmapHarvest = null;
   }
 }
@@ -86,25 +108,26 @@ function heatmapPayload(found: YoutubeHeatmap): YoutubeHeatmap {
   };
 }
 
-function heatmapForCurrentPage(playerRaw: unknown): YoutubeHeatmap | undefined {
-  dropStaleYoutubeHeatmapHarvest();
-  const pageId = youtubePageVideoId(window.location.href);
+function heatmapForCurrentPage(playerRaw: unknown, expected: ExpectedVideo): YoutubeHeatmap | undefined {
+  dropStaleYoutubeHeatmapHarvest(expected);
+  const pageId = expected.id;
   const win = window as Window & { ytInitialData?: unknown };
   const fromInitial = findYoutubeHeatmap(win.ytInitialData, pageId);
   const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
-  if (fromInitial?.segments && youtubeHeatmapHarvestMatchesPage(pageId, initialId)) {
+  if (fromInitial?.segments && youtubeHeatmapHarvestMatchesPage(pageId, initialId) && describesExpected(expected, initialId)) {
     rememberYoutubeHeatmap(fromInitial, pageId || initialId);
     return heatmapPayload(fromInitial);
   }
   const fromPlayer = findYoutubeHeatmap(playerRaw, pageId);
   const playerId = youtubeWatchJsonVideoId(playerRaw) || youtubeResponseVideoId(playerRaw);
-  if (fromPlayer?.segments && youtubeHeatmapHarvestMatchesPage(pageId, playerId)) {
+  if (fromPlayer?.segments && youtubeHeatmapHarvestMatchesPage(pageId, playerId) && describesExpected(expected, playerId)) {
     rememberYoutubeHeatmap(fromPlayer, pageId || playerId);
     return heatmapPayload(fromPlayer);
   }
   if (
     youtubeHeatmapHarvest?.segments
     && youtubeHeatmapHarvestMatchesPage(pageId, youtubeHeatmapHarvest.videoId)
+    && describesExpected(expected, youtubeHeatmapHarvest.videoId)
   ) {
     return heatmapPayload(youtubeHeatmapHarvest);
   }
@@ -113,11 +136,12 @@ function heatmapForCurrentPage(playerRaw: unknown): YoutubeHeatmap | undefined {
 
 export function harvestYoutubeHeatmapJson(url: string, data: unknown): void {
   if (!qualifiesYoutubeHeatmap(window.location.hostname, youtubeIntegrationEnabled(), url, window.location.href)) return;
-  const found = findYoutubeHeatmap(data, youtubePageVideoId(window.location.href));
+  const expected = expectedYoutubeVideo();
+  const pageId = expected.id;
+  const found = findYoutubeHeatmap(data, pageId);
   if (!found?.segments) return;
-  const pageId = youtubePageVideoId(window.location.href);
   const jsonId = youtubeWatchJsonVideoId(data);
-  if (!youtubeHeatmapHarvestMatchesPage(pageId, jsonId)) return;
+  if (!youtubeHeatmapHarvestMatchesPage(pageId, jsonId) || !describesExpected(expected, jsonId)) return;
   const changed = rememberYoutubeHeatmap(found, pageId || jsonId);
   if (!changed) return;
   publishCurrentYoutubeSnapshot();
@@ -157,11 +181,23 @@ type YoutubePlayer = Element & {
   seekToLiveHead?: () => void;
 };
 
+/** Hover and inline previews: their player responses never describe the viewer's video. */
+function isPreviewYoutubePlayer(el: Element): boolean {
+  return el.id === 'inline-player' || el.id === 'inline-preview-player'
+    || Boolean(el.closest('ytd-video-preview, ytd-moving-thumbnail-renderer, ytd-inline-playback-player'));
+}
+
 function findYoutubePlayer(): YoutubePlayer | null {
   const movie = document.getElementById('movie_player');
   if (movie && !isAuxiliaryYoutubePlayer(movie)) return movie;
   const players = Array.from(document.querySelectorAll('.html5-video-player'));
-  return players.find((el) => !isAuxiliaryYoutubePlayer(el)) || movie || players[0] || null;
+  // Then the player parked in the miniplayer while it shows, then a hidden watch page or Shorts
+  // player; never a preview's.
+  return players.find((el) => !isAuxiliaryYoutubePlayer(el))
+    || document.querySelector(`${MINIPLAYER_SURFACE} .html5-video-player`)
+    || (movie && !isPreviewYoutubePlayer(movie) ? movie : null)
+    || players.find((el) => !isPreviewYoutubePlayer(el))
+    || null;
 }
 
 function publishYoutubeSnapshot(snapshot: Record<string, unknown> | null): void {
@@ -179,7 +215,7 @@ function timedtextUrlsFromPerformance(): string[] {
 }
 
 function youtubeCaptionAuthSources(videoId: string | null): string[] {
-  const pageId = youtubePageVideoId(window.location.href);
+  const pageId = expectedYoutubeVideo().id;
   const want = videoId || pageId;
   const urls = [
     ...timedtextUrlsFromPerformance(),
@@ -203,7 +239,7 @@ function publishYoutubeCaptionAuth(): void {
       publishHiddenJson(YOUTUBE_CAPTION_AUTH_ID, null);
       return;
     }
-    const urls = youtubeCaptionAuthSources(youtubePageVideoId(window.location.href));
+    const urls = youtubeCaptionAuthSources(expectedYoutubeVideo().id);
     publishHiddenJson(YOUTUBE_CAPTION_AUTH_ID, urls.slice(0, 8));
   } catch {
     // Publishing must never break the host player.
@@ -293,7 +329,7 @@ let captionOperation = 0;
 
 function invalidateYoutubeCaptions(): void {
   captionOperation += 1;
-  timedtextCache.notePageVideo(youtubePageVideoId(window.location.href));
+  timedtextCache.notePageVideo(expectedYoutubeVideo().id);
 }
 
 function playerCaptionTracks(player: YoutubePlayer): Record<string, unknown>[] {
@@ -337,9 +373,10 @@ function captionRequestIsCurrent(player: YoutubePlayer | null, generation: numbe
   const currentSrc = video?.currentSrc || '';
   const source = video?.getAttribute('src');
   const sourceObject = video?.srcObject;
-  const pageId = youtubePageVideoId(window.location.href);
+  const expected = expectedYoutubeVideo();
+  const pageId = expected.id;
   const responseId = typeof player.getPlayerResponse === 'function' ? youtubeResponseVideoId(player.getPlayerResponse()) : null;
-  if (pageId && responseId && pageId !== responseId) return () => false;
+  if (!describesExpected(expected, responseId)) return () => false;
   return () => generation === captionOperation
     && youtubeIntegrationEnabled()
     && findYoutubePlayer() === player
@@ -347,7 +384,7 @@ function captionRequestIsCurrent(player: YoutubePlayer | null, generation: numbe
     && (video?.currentSrc || '') === currentSrc
     && video?.getAttribute('src') === source
     && video?.srcObject === sourceObject
-    && youtubePageVideoId(window.location.href) === pageId
+    && expectedYoutubeVideo().id === pageId
     && (typeof player.getPlayerResponse === 'function' ? youtubeResponseVideoId(player.getPlayerResponse()) : null) === responseId;
 }
 
@@ -447,7 +484,7 @@ async function fetchTimedtextDirect(url: string): Promise<string | null> {
   const add = (value: string) => {
     if (value && !candidates.includes(value) && isAllowedTimedtextUrl(value)) candidates.push(value);
   };
-  const videoId = timedtextVideoId(url) || youtubePageVideoId(window.location.href);
+  const videoId = timedtextVideoId(url) || expectedYoutubeVideo().id;
   const signed = signYoutubeCaptionUrl(url, youtubeCaptionAuthSources(videoId));
   publishYoutubeCaptionAuth();
   add(signed);
@@ -501,8 +538,8 @@ export async function fetchTimedtextWithPot(url: string): Promise<string | null>
   }
 
   if (!current()) return findCachedBody(url);
-  const pageVideoId = youtubePageVideoId(window.location.href);
-  if (requestedVideoId && pageVideoId && requestedVideoId !== pageVideoId) return null;
+  const expected = expectedYoutubeVideo();
+  if (requestedVideoId ? !describesExpected(expected, requestedVideoId) : expected.strict && !expected.id) return null;
 
   captionMintInFlight = (async () => {
     let languageCode: string | null = null;
@@ -536,7 +573,7 @@ function youtubeResponseVideoId(raw: unknown): string | null {
   return typeof videoId === 'string' ? videoId : null;
 }
 
-function pickYoutubePlayerResponse(): unknown {
+function pickYoutubePlayerResponse(expected: ExpectedVideo): unknown {
   const win = window as Window & { ytInitialPlayerResponse?: unknown; ytplayer?: unknown };
   let live: unknown = null;
   try {
@@ -557,16 +594,16 @@ function pickYoutubePlayerResponse(): unknown {
   } catch {
     config = null;
   }
-  const pageId = youtubePageVideoId(window.location.href);
+  const pageId = expected.id;
   const candidates = [live, boot, config].filter((item) => item && typeof item === 'object');
   const matching = candidates.find((item) => {
     const videoId = youtubeResponseVideoId(item);
-    return videoId && (!pageId || videoId === pageId);
+    return videoId && describesExpected(expected, videoId);
   });
   if (matching) return matching;
   // Playlist advances update ?v= before getPlayerResponse(). Returning the
   // previous video here would keep stale storyboards in theater chrome.
-  return pageId ? null : (live || boot || config);
+  return pageId || expected.strict ? null : (live || boot || config);
 }
 
 function usableYoutubeDomTitle(value: string | null): string | null {
@@ -589,13 +626,15 @@ function readYoutubeDomTitle(): string | null {
 
 export function readYoutubeSnapshot(): Record<string, unknown> | null {
   try {
-    const raw = pickYoutubePlayerResponse();
+    const expected = expectedYoutubeVideo();
+    const raw = pickYoutubePlayerResponse(expected);
     const metadata = readYoutubePlayerMetadata(raw);
-    const heatmap = heatmapForCurrentPage(raw);
-    const domTitle = readYoutubeDomTitle() || undefined;
+    const heatmap = heatmapForCurrentPage(raw, expected);
+    // The watch heading, og:title and document title describe the page, which a parked player is not.
+    const domTitle = (!expected.strict && readYoutubeDomTitle()) || undefined;
     if (!metadata) {
       if (!heatmap && !domTitle) return null;
-      const videoId = youtubePageVideoId(window.location.href);
+      const videoId = expected.id;
       return {
         ...(videoId ? { videoId: videoId.slice(0, 20) } : {}),
         ...(domTitle ? { title: domTitle } : {}),
@@ -603,14 +642,14 @@ export function readYoutubeSnapshot(): Record<string, unknown> | null {
       };
     }
 
-    const pageVideoId = youtubePageVideoId(window.location.href);
     const playerVideoId = metadata.videoId || null;
     let markers = findYoutubeChapterMarkers(raw);
     if (markers.length === 0) {
       const win = window as Window & { ytInitialData?: unknown };
       const initialId = youtubeWatchJsonVideoId(win.ytInitialData);
-      const wantId = pageVideoId || playerVideoId;
-      if (!wantId || !initialId || initialId === wantId) {
+      const wantId = expected.id || playerVideoId;
+      // ytInitialData is the page's: a parked player's chapters come from it only when it names that video.
+      if (expected.strict ? initialId === wantId : !wantId || !initialId || initialId === wantId) {
         markers = findYoutubeChapterMarkers(win.ytInitialData);
       }
     }
@@ -715,7 +754,7 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
 
 export function installYoutubeMain(): void {
   installYouTubeQueueNavigation();
-  timedtextCache.notePageVideo(youtubePageVideoId(window.location.href));
+  timedtextCache.notePageVideo(expectedYoutubeVideo().id);
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;
     try {

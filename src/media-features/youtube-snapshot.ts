@@ -31,13 +31,19 @@ export function readPublishedYoutubeCaptionAuthUrls(
   }
 }
 
+/**
+ * @param strict Only snapshots naming `pageVideoId` qualify, and none while it is null: a video
+ * parked in the miniplayer, where the page itself does not identify the content.
+ */
 export function firstMatchingYoutubeSnapshot(
   pageVideoId: string | null,
-  candidates: Array<YoutubePlayerSnapshot | null | undefined>
+  candidates: Array<YoutubePlayerSnapshot | null | undefined>,
+  strict = false
 ): YoutubePlayerSnapshot | null {
   let match: YoutubePlayerSnapshot | null = null;
   for (const snapshot of candidates) {
     if (!snapshot) continue;
+    if (strict && (!pageVideoId || snapshot.videoId !== pageVideoId)) continue;
     if (snapshot.videoId && pageVideoId && snapshot.videoId !== pageVideoId) continue;
     if (!match) {
       match = snapshot;

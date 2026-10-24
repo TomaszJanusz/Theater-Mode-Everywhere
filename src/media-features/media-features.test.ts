@@ -623,6 +623,16 @@ describe('youtube page video identity', () => {
     assert.equal(youtubeSnapshotMatchesPage('oldVideo', null), true);
   });
 
+  it('matches only the parked miniplayer video, never an unidentified or other snapshot', () => {
+    const parked = { videoId: 'bbbbbbbbbbb', title: 'Parked' };
+    // Home has no ?v=: without strict matching any snapshot passes, including a page-DOM one without an id.
+    assert.equal(firstMatchingYoutubeSnapshot(null, [{ title: 'Home page' }, parked])?.title, 'Home page');
+    assert.equal(firstMatchingYoutubeSnapshot('bbbbbbbbbbb', [{ title: 'Home page' }, { videoId: 'aaaaaaaaaaa', title: 'Previous' }, parked], true)?.title, 'Parked');
+    assert.equal(firstMatchingYoutubeSnapshot('bbbbbbbbbbb', [{ title: 'Home page' }, { videoId: 'aaaaaaaaaaa', title: 'Previous' }], true), null);
+    // While the player reads disagree the identity is unknown and nothing qualifies.
+    assert.equal(firstMatchingYoutubeSnapshot(null, [parked], true), null);
+  });
+
   it('prefers a published current-video snapshot over a stale playlist boot response', () => {
     const stale = { videoId: 'uNKERzNED28', captionTracks: [] };
     const current = {
