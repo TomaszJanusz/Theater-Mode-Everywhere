@@ -1071,6 +1071,20 @@ async function toggleTheaterCaptions(): Promise<void> {
   }
 }
 
+/**
+ * A host that lays out its video while theater holds it (YouTube sizing the player after the
+ * miniplayer expands) wants that geometry back on exit, not the one recorded at entry. Every
+ * theater value is `!important`; a host write through the style API is not.
+ */
+function adoptHostInlineStyles(element: HTMLElement): void {
+  for (const saved of theaterElementInlineStyleState.get(element)?.styles ?? []) {
+    const value = element.style.getPropertyValue(saved.property);
+    if (!value || element.style.getPropertyPriority(saved.property) === 'important') continue;
+    saved.value = value;
+    saved.priority = '';
+  }
+}
+
 function restoreTheaterElementInlineStyles(element: HTMLElement): void {
   const savedState = theaterElementInlineStyleState.get(element);
   if (!savedState) return;
@@ -2316,6 +2330,7 @@ function keepTheaterVideoBound(video: HTMLVideoElement): void {
 
   const styleObserver = new MutationObserver(() => {
     if (ignoreStyleMutations > 0 || session.element !== video) return;
+    adoptHostInlineStyles(video);
     rebindIfReplaced();
     if (session.element !== video) return;
     if (!theaterVideoNeedsRestyle(video)) return;

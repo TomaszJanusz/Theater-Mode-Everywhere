@@ -169,9 +169,14 @@ for (const engine of testEngines()) {
     });
     await page.clock.runFor(2000);
     assert.equal(await bound(page), 'parked');
+    // YouTube sizes the video for the watch page while theater holds it.
+    await page.evaluate(() => Object.assign(document.getElementById('parked')!.style, { width: '800px', height: '450px' }));
+    await page.clock.runFor(300);
     // Now a watch session: leaving the watch page ends it, as for any watch session.
     await page.evaluate(() => { history.pushState({}, '', '/'); window.dispatchEvent(new Event('yt-navigate-start')); });
     await page.clock.runFor(300);
     assert.equal(await active(page), false);
+    // Exit restores the host's latest geometry, not the miniplayer's from entry.
+    assert.equal(await page.evaluate(() => document.getElementById('parked')!.getAttribute('style')), 'width: 800px; height: 450px; left: 0px; top: 0px;');
   });
 }
