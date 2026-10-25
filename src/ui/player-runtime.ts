@@ -681,6 +681,7 @@ function bindChromeActions(): void {
   Object.assign(ctx.actions, {
     applyTheaterElementInlineStyles,
     restoreTheaterElementInlineStyles,
+    bindTheaterAncestors,
     injectStylesIntoShadowRoot,
     preventDoubleToggle,
     createCustomControls,
@@ -2049,7 +2050,7 @@ function rebindProviderPlayback(next: HTMLElement): void {
   markTheaterVideo(next);
   remountProviderStages(window.location.hostname, next);
   applyTheaterElementInlineStyles(next);
-  refreshTheaterAncestors(next);
+  bindTheaterAncestors(next);
   attachProviderPlayback(next);
 }
 
@@ -2391,6 +2392,16 @@ function refreshTheaterAncestors(element: HTMLElement): void {
   refs.ancestorsList = next;
 }
 
+/**
+ * Moves the ancestor overrides to `element` and pins it again. The overrides can remove a containing
+ * block the first pin measured against, such as a post bubble's drop-shadow filter on Telegram's post
+ * list or the one YouTube's miniplayer gives its parked player.
+ */
+function bindTheaterAncestors(element: HTMLElement): void {
+  refreshTheaterAncestors(element);
+  pinProviderViewport(element, applyTheaterViewportPin);
+}
+
 /** Whether the active session began on a provider watch page; navigation off it ends the session. */
 let enteredOnWatchPage = false;
 /**
@@ -2466,10 +2477,7 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
     });
   }
 
-  refreshTheaterAncestors(element);
-  // The ancestor overrides can remove a containing block the first pin measured against, such
-  // as the one YouTube's miniplayer gives its parked player.
-  pinProviderViewport(element, applyTheaterViewportPin);
+  bindTheaterAncestors(element);
 
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');

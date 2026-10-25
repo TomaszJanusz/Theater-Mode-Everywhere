@@ -56,6 +56,7 @@ export type ChromeRefs = {
 export type PlayerChromeActions = {
   applyTheaterElementInlineStyles(element: HTMLElement): void;
   restoreTheaterElementInlineStyles(element: HTMLElement): void;
+  bindTheaterAncestors(element: HTMLElement): void;
   injectStylesIntoShadowRoot(shadowRoot: ShadowRoot): void;
   preventDoubleToggle(event: Event): void;
   createCustomControls(video: HTMLVideoElement | PlaybackSurface): void;
