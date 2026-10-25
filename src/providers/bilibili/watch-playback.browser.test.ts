@@ -1,22 +1,18 @@
-import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from '../../test-utils/test-browser';
 
-const bundle = buildSync({
-  stdin: {
-    contents: "export { bilibiliWatchPlayback as playback } from './watch-playback'; export { installBilibiliNavigation as install } from './navigation';",
-    resolveDir: new URL('.', import.meta.url).pathname, loader: 'ts'
-  }, bundle: true, write: false, format: 'iife', globalName: 'BilibiliTest'
-}).outputFiles[0].text;
+import { bundleModules } from '../../test-utils/player-boot';
+import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { testEngines } from '../../test-utils/test-engines';
 
-for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
-  it(`Bilibili ${engine.name()} confirms current content only and cleans up observations`, { timeout: 60_000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+const bundle = bundleModules(["export { bilibiliWatchPlayback as playback } from './providers/bilibili/watch-playback'; export { installBilibiliNavigation as install } from './providers/bilibili/navigation';"], 'BilibiliTest');
+
+for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+  it(`Bilibili ${engine} confirms current content only and cleans up observations`, { timeout: 60_000 }, async t => {
+    const page = await (await shared.newContext(t)).newPage();
     await page.route('https://www.bilibili.com/**', route => route.fulfill({ contentType: 'text/html', body: `
       <div class="bpx-player-container" data-screen="normal"><div class="bpx-player-primary-area">
       <div class="bpx-player-video-wrap"><video></video></div></div></div><video id="preview"></video>` }));
@@ -52,6 +48,5 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
       return output;
     })()`);
     assert.ok(Array.isArray(results) && results.every(value => value === true), JSON.stringify(results));
-    await browser.close();
   });
 }

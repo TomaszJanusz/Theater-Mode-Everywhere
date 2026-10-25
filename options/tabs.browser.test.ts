@@ -1,19 +1,13 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import { describe, it } from 'node:test';
-import type { Page } from 'playwright';
-import { ownTestBrowser } from '../src/test-utils/test-browser';
+import { describe, it, type TestContext } from 'node:test';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "import { setupSettingsTabs } from './tabs'; window.setupSettingsTabs = setupSettingsTabs;",
-    resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+import { chromium, type Page } from 'playwright';
+
+import { bundleModules } from '../src/test-utils/player-boot';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
+
+const BUNDLE = bundleModules(["import { setupSettingsTabs } from '../options/tabs'; window.setupSettingsTabs = setupSettingsTabs;"]);
 
 const IDS = ['appearance', 'features', 'shortcuts'];
 const FIXTURE = `<!doctype html><html><body>
@@ -37,15 +31,14 @@ async function open(page: Page, hash: string): Promise<string[]> {
 const visiblePanels = (page: Page) =>
   page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('[role="tabpanel"]')).filter((p) => !p.hidden).map((p) => p.id));
 
-async function withPage(t: Parameters<typeof ownTestBrowser>[0], run: (page: Page) => Promise<void>): Promise<void> {
-  const { chromium } = await import('playwright');
-  if (!existsSync(chromium.executablePath())) { (t as { skip(message: string): void }).skip('Chromium is not installed'); return; }
-  const browser = await chromium.launch({ headless: true });
-  ownTestBrowser(t, browser);
-  try { await run(await browser.newPage()); } finally { await browser.close(); }
-}
-
 describe('settings tabs', () => {
+  const shared = sharedTestBrowser(chromium);
+
+  async function withPage(t: TestContext, run: (page: Page) => Promise<void>): Promise<void> {
+    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
+    await run(await (await shared.newContext(t)).newPage());
+  }
+
   it('restores the tab named by the URL hash and keeps the hash in sync with clicks and arrow keys', async (t) => {
     await withPage(t, async (page) => {
       const errors = await open(page, '#features');

@@ -1,35 +1,37 @@
-import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox, type Page } from 'playwright';
-import { sharedTestBrowser } from '../src/test-utils/test-browser';
-import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
-import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
-import { brightestStop, hexRgb, luminance, over } from './rte-colors';
+
 import { LANGUAGES } from '../src/language';
+import { MEDIA_PROVIDER_FLAG_KEYS } from '../src/media-features/provider-flags';
+import { MEDIA_CAPABILITIES, PROVIDER_CAPABILITIES } from '../src/providers/capabilities';
+import { bundleModules } from '../src/test-utils/player-boot';
+import { readStylesheet } from '../src/test-utils/styles';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
+import { selectTestEngines } from '../src/test-utils/test-engines';
+
+import { brightestStop, hexRgb, luminance, over } from './rte-colors';
+
 
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
-const css = buildSync({ entryPoints: [new URL('./options.css', import.meta.url).pathname], bundle: true, write: false }).outputFiles[0].text;
+const css = readStylesheet(new URL('./options.css', import.meta.url));
 const catalogs = Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))]));
-const bundle = (empty = false) => buildSync({
-  stdin: { contents: `
-    import { setupRteSettings } from './rte-settings';
-    import { localizeDocument } from '../src/i18n';
-    import { languageRuntime } from '../src/i18n-runtime';
-    import { observeAppearance } from '../src/appearance-runtime';
-    import { setupSettingsTabs } from './tabs';
-    ${empty ? "import { PROVIDER_CAPABILITIES } from '../src/providers/capabilities'; PROVIDER_CAPABILITIES.splice(0, PROVIDER_CAPABILITIES.length, { ...PROVIDER_CAPABILITIES[0], capabilities: { ...PROVIDER_CAPABILITIES[0].capabilities, heatmap: { status: 'no' } } });" : ''}
+const bundle = (empty = false) => bundleModules([`
+    import { setupRteSettings } from '../options/rte-settings';
+    import { localizeDocument } from './i18n';
+    import { languageRuntime } from './i18n-runtime';
+    import { observeAppearance } from './appearance-runtime';
+    import { setupSettingsTabs } from '../options/tabs';
+    ${empty ? "import { PROVIDER_CAPABILITIES } from './providers/capabilities'; PROVIDER_CAPABILITIES.splice(0, PROVIDER_CAPABILITIES.length, { ...PROVIDER_CAPABILITIES[0], capabilities: { ...PROVIDER_CAPABILITIES[0].capabilities, heatmap: { status: 'no' } } });" : ''}
     window.setLanguage = async locale => { await languageRuntime.set(locale); localizeDocument(); };
     window.ready = (async () => {
       await window.setLanguage('en');
       setupSettingsTabs(document.getElementById('settings-tabs'));
       observeAppearance(document.documentElement);
       await setupRteSettings(async () => {});
-    })();`, resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+    })();`]);
 const BUNDLE = bundle();
 
 type Harness = {

@@ -1,24 +1,22 @@
-import { selectTestEngines } from './test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox } from 'playwright';
+
 import { LANGUAGES } from './language';
-import { ownTestBrowser } from './test-utils/test-browser';
+import { bundleModules } from './test-utils/player-boot';
+import { sharedTestBrowser } from './test-utils/test-browser';
+import { testEngines } from './test-utils/test-engines';
 
-const bundle = buildSync({
-  stdin: { contents: "export { localizedMarkup } from './localized-markup'; export { createSvgIcon } from './ui/svg-icon'; export { createHud } from './ui/hud'; export { definePrivacyThingLogo } from '@privacy-thing/brand';",
-    resolveDir: __dirname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'SafeDom', target: 'es2022'
-}).outputFiles[0].text;
+const bundle = bundleModules(
+  ["export { localizedMarkup } from './localized-markup'; export { createSvgIcon } from './ui/svg-icon'; export { createHud } from './ui/hud'; export { definePrivacyThingLogo } from '@privacy-thing/brand';"], 'SafeDom');
 
-for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium, firefox }), ([name]) => name)) {
+for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
   it(`keeps locale formatting and rejects executable markup in ${engine}`, async t => {
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await shared.newContext(t)).newPage();
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.setContent('<body></body>');

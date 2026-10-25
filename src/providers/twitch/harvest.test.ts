@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
+import { chromium } from 'playwright';
+
+import { bundleModules } from '../../test-utils/player-boot';
+import { sharedTestBrowser } from '../../test-utils/test-browser';
+
 import { twitchHarvestSnapshotMatchesPage } from './main';
+
+const shared = sharedTestBrowser(chromium);
 
 describe('Twitch harvest snapshot binding', () => {
   it('rejects a child snapshot for a different VOD than the top page', () => {
@@ -26,19 +34,13 @@ describe('Twitch harvest snapshot binding', () => {
   });
 });
 
-it('preserves Twitch transport replacements and decorated promises while harvesting response metadata', async () => {
-  const { chromium } = await import('playwright');
-  const { createRequire } = await import('node:module');
-  const esbuild = createRequire(import.meta.url)('esbuild');
-  const content = esbuild.buildSync({
-    stdin: { contents: `import {installMainWorldRuntime} from './src/platform/main-world-runtime';
-      import {readTwitchSnapshot} from './src/providers/twitch/main';
-      window.installRuntime = installMainWorldRuntime; window.readSnapshot = readTwitchSnapshot;`, resolveDir: process.cwd() },
-    bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022', logLevel: 'silent'
-  }).outputFiles[0].text;
-  const browser = await chromium.launch({ headless: true });
+it('preserves Twitch transport replacements and decorated promises while harvesting response metadata', async t => {
+  const content = bundleModules([`import { installMainWorldRuntime } from './platform/main-world-runtime';
+      import { readTwitchSnapshot } from './providers/twitch/main';
+      window.installRuntime = installMainWorldRuntime; window.readSnapshot = readTwitchSnapshot;`]);
+  const context = await shared.newContext(t);
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await page.route('https://www.twitch.tv/**', route => route.fulfill({ contentType: 'text/html', body: '<div class="video-player"></div>' }));
     await page.goto('https://www.twitch.tv/videos/123');
     await page.addScriptTag({ content });
@@ -59,7 +61,7 @@ it('preserves Twitch transport replacements and decorated promises while harvest
       return {unchanged,writable,sameReplacement,decorated,duration:window.readSnapshot().duration};
     })()`);
     assert.deepEqual(report, { unchanged: true, writable: true, sameReplacement: true, decorated: true, duration: 1200 });
-  } finally { await browser.close(); }
+  } finally { await context.close(); }
 });
 
 it('parses native JSON metadata and caption URLs without serializing or reparsing the body', async () => {

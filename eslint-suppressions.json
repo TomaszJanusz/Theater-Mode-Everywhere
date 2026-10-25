@@ -7,16 +7,6 @@
       "count": 1
     }
   },
-  "options/choice-grid.browser.test.ts": {
-    "import/order": {
-      "count": 4
-    }
-  },
-  "options/combobox.browser.test.ts": {
-    "import/order": {
-      "count": 4
-    }
-  },
   "options/combobox.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -31,11 +21,6 @@
     },
     "sonarjs/no-unenclosed-multiline-block": {
       "count": 1
-    }
-  },
-  "options/localization.browser.test.ts": {
-    "import/order": {
-      "count": 7
     }
   },
   "options/markdown.test.ts": {
@@ -88,11 +73,6 @@
       "count": 1
     }
   },
-  "options/rte-settings.browser.test.ts": {
-    "import/order": {
-      "count": 10
-    }
-  },
   "options/rte-settings.ts": {
     "import/order": {
       "count": 2
@@ -115,19 +95,9 @@
       "count": 1
     }
   },
-  "options/tabs.browser.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "popup/popup.ts": {
     "max-lines-per-function": {
       "count": 1
-    }
-  },
-  "popup/rte-settings.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "scripts/base-ref.test.mjs": {
@@ -1241,9 +1211,6 @@
     }
   },
   "src/playlist-nav.test.ts": {
-    "import/order": {
-      "count": 4
-    },
     "max-lines": {
       "count": 1
     }
@@ -1296,9 +1263,6 @@
     }
   },
   "src/providers/bilibili-intl/runtime.browser.test.ts": {
-    "import/order": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     }
@@ -1312,11 +1276,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    }
-  },
-  "src/providers/bilibili-intl/watch-playback.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/providers/bilibili-intl/watch-playback.ts": {
@@ -1354,11 +1313,6 @@
     },
     "local/max-symbol-name-length": {
       "count": 1
-    }
-  },
-  "src/providers/bilibili/watch-playback.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/providers/bilibili/watch-playback.ts": {
@@ -1519,11 +1473,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    }
-  },
-  "src/providers/disney/stage.test.ts": {
-    "import/order": {
-      "count": 3
     }
   },
   "src/providers/disney/stage.ts": {
@@ -1812,11 +1761,6 @@
       "count": 11
     }
   },
-  "src/providers/service-actions.browser.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "src/providers/service-actions.ts": {
     "import/order": {
       "count": 10
@@ -1914,11 +1858,6 @@
     }
   },
   "src/providers/twitch/discovery.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/providers/twitch/harvest.test.ts": {
     "import/order": {
       "count": 1
     }
@@ -2031,11 +1970,6 @@
       "count": 3
     }
   },
-  "src/providers/youtube/sponsorblock.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/providers/youtube/sponsorblock.ts": {
     "import/order": {
       "count": 1
@@ -2077,11 +2011,6 @@
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
     },
-    "import/order": {
-      "count": 4
-    }
-  },
-  "src/safe-dom.browser.test.ts": {
     "import/order": {
       "count": 4
     }
@@ -2711,11 +2640,6 @@
   "src/ui/volume-boost-settings.ts": {
     "local/max-symbol-name-length": {
       "count": 2
-    }
-  },
-  "src/whatsNew-content.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "src/whatsNew-release.test.ts": {
