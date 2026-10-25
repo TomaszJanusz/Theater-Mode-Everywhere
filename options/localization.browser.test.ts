@@ -6,10 +6,10 @@ import { it } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
 
 import { LANGUAGES } from '../src/language';
+import { sharedEngineBrowsers } from '../src/test-utils/engine-browsers';
 import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
 import { bundleQueryModules } from '../src/test-utils/query-bundle';
 import { readStylesheet } from '../src/test-utils/styles';
-import { sharedTestBrowser } from '../src/test-utils/test-browser';
 import { selectTestEngines } from '../src/test-utils/test-engines';
 import { WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
@@ -51,7 +51,7 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
   }
 }
 
-const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
+const browsers = sharedEngineBrowsers();
 
 it('Settings groups AutoTheater and accessibility, persists countdown choices, and fits narrow layouts', { timeout: 30_000 }, async t => {
   const context = await browsers.chromium.newContext(t);
