@@ -6,12 +6,12 @@ import playerScript from 'virtual:player-fixture';
 
 import { resolveReduceMotion } from '../src/appearance-preferences';
 import pageCss from '../src/content.css?inline';
+import { createChromeStub, type ChromeStub } from '../src/test-utils/page-chrome-stub';
 import { ENTRY_SHORTCUT_ATTRIBUTE } from '../src/ui/entry-shortcuts';
 import uiCss from '../src/ui/shadow.css?inline';
 import { WHATS_NEW_ACK_STORAGE_KEY, WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 import vod from '../test/fixtures/vod.webm?url';
 
-import { createChromeStub, type ChromeStub } from './chrome-stub';
 import { waitForFonts } from './fonts';
 import { beginStage } from './stage-owner';
 

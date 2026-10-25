@@ -1,8 +1,8 @@
 import { afterEach } from 'vitest';
 
 import { languageRuntime } from '../src/i18n-runtime';
+import { setSyncStorage } from '../src/test-utils/page-chrome-stub';
 
-import { setSyncStorage } from './chrome-stub';
 import type { HudStage } from './hud-stage';
 import { renderHud, type Hud, type HudArgs, type HudStoryOptions } from './hud-story';
 import { renderNotice, type NoticeArgs } from './notice-story';

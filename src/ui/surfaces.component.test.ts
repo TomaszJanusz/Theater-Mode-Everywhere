@@ -1,0 +1,218 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
+
+import { activeElementDeep } from '../accessibility';
+import { controlButton, mountSurface, type MountedSurface, type SurfacePolicy, type SurfaceRegistration } from '../test-utils/component-surface';
+
+import { createModal, type Modal } from './modal';
+
+// Conformance suite for top-layer surfaces (TME-125 contract). Each registration runs the shared
+// lifecycle cases of its policy: state and ARIA, Escape, outside press, focus containment, cleanup
+// and owner disposal. Cases assert hooks, roles, ARIA and focus, never copy or pixels.
+
+const registrations: SurfaceRegistration[] = [
+  {
+    name: 'modal',
+    policy: 'modal',
+    mount({ root, stage, owner }) {
+      const trigger = controlButton('Open dialog');
+      stage.append(trigger);
+      let modal: Modal | undefined;
+      owner.listen(trigger, 'click', () => {
+        modal = createModal({
+          title: 'Surface', closeLabel: 'Close', content: 'Body',
+          actions: [{ label: 'Cancel', kind: 'secondary', value: false }, { label: 'Confirm', kind: 'primary', value: true }],
+          mount: overlay => root.append(overlay),
+          signal: owner.signal
+        });
+      });
+      return { trigger, surface: () => modal?.overlay ?? null, close: () => modal?.close() };
+    }
+  }
+];
+
+interface Policy {
+  /** Pointer opening moves focus inside too, not only keyboard opening. */
+  pointerFocusesInside: boolean;
+  /** Tab cycles inside the open surface instead of leaving it. */
+  trapsFocus: boolean;
+  /** After a press where the outside control is: does that control get it, or the surface's dismissal? */
+  outsidePress: 'reaches-control' | 'dismisses-to-trigger';
+  /** Policy-specific roles and ARIA for the current state. */
+  expectAria(mounted: MountedSurface, open: boolean): void;
+}
+
+const policies: Record<SurfacePolicy, Policy> = {
+  modal: {
+    pointerFocusesInside: true,
+    trapsFocus: true,
+    outsidePress: 'dismisses-to-trigger',
+    expectAria(mounted, open) {
+      const overlay = mounted.surface();
+      if (!open) {
+        expect(overlay?.isConnected ?? false).toBe(false);
+        expect(mounted.trigger.closest('[inert]')).toBeNull();
+        expect(document.body.style.overflow).toBe('');
+        return;
+      }
+      const dialog = overlay!.querySelector('[role="dialog"]')!;
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      const label = mounted.root.getElementById(dialog.getAttribute('aria-labelledby') ?? '');
+      expect(label?.textContent).toBeTruthy();
+      expect(mounted.trigger.closest('[inert]'), 'content outside the modal is inert').not.toBeNull();
+    }
+  },
+  'anchored-menu': {
+    pointerFocusesInside: false,
+    trapsFocus: false,
+    outsidePress: 'reaches-control',
+    expectAria(mounted, open) {
+      const panel = mounted.surface()!.querySelector<HTMLElement>(':scope > .theater-menu-panel')!;
+      expect(mounted.trigger.getAttribute('aria-expanded')).toBe(String(open));
+      expect(panel.inert).toBe(!open);
+    }
+  }
+};
+
+const state = (mounted: MountedSurface) => mounted.surface()?.dataset.teState ?? 'closed';
+const focusInside = (mounted: MountedSurface) => {
+  const active = activeElementDeep();
+  return Boolean(active && mounted.surface()?.contains(active));
+};
+
+async function openWith(mounted: MountedSurface, input: 'keyboard' | 'pointer'): Promise<void> {
+  if (input === 'pointer') await userEvent.click(mounted.trigger);
+  else {
+    mounted.trigger.focus();
+    await userEvent.keyboard('{Enter}');
+  }
+  expect(state(mounted)).toBe('open');
+}
+
+function expectOpen(mounted: MountedSurface, family: string): void {
+  const surface = mounted.surface()!;
+  expect(surface.dataset.teState).toBe('open');
+  expect(surface.dataset.teSurface).toBe(family);
+  expect(surface.dataset.teOwner).toBeTruthy();
+}
+
+/** Host shortcuts listen on the document; a key a surface consumes must not reach them. */
+function documentKeys(): { keys: string[]; stop(): void } {
+  const keys: string[] = [];
+  const listener = (event: KeyboardEvent) => keys.push(event.key);
+  document.addEventListener('keydown', listener);
+  return { keys, stop: () => document.removeEventListener('keydown', listener) };
+}
+
+const family: Record<SurfacePolicy, string> = { modal: 'modal', 'anchored-menu': 'menu' };
+
+for (const registration of registrations) {
+  const policy = policies[registration.policy];
+
+  describe(`${registration.name} (${registration.policy})`, () => {
+    // Installed before mount, so any timer or frame the surface schedules is under the test's control.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame'] });
+    });
+
+    for (const input of ['keyboard', 'pointer'] as const) {
+      test(`opens by ${input} with state, hooks and ARIA; closing restores them`, async () => {
+        const mounted = mountSurface(registration);
+        policy.expectAria(mounted, false);
+        await openWith(mounted, input);
+        expectOpen(mounted, family[registration.policy]);
+        policy.expectAria(mounted, true);
+        expect(focusInside(mounted)).toBe(input === 'keyboard' || policy.pointerFocusesInside);
+        mounted.close();
+        expect(state(mounted)).toBe('closed');
+        policy.expectAria(mounted, false);
+      });
+    }
+
+    test('Escape closes it, stays out of host shortcuts and returns focus to the trigger', async () => {
+      const mounted = mountSurface(registration);
+      await openWith(mounted, 'keyboard');
+      const host = documentKeys();
+      await userEvent.keyboard('{Escape}');
+      host.stop();
+      expect(state(mounted)).toBe('closed');
+      expect(host.keys).toEqual([]);
+      expect(activeElementDeep()).toBe(mounted.trigger);
+      policy.expectAria(mounted, false);
+    });
+
+    test('a press where an outside control is follows the policy', async () => {
+      const mounted = mountSurface(registration);
+      await openWith(mounted, 'keyboard');
+      let reached = 0;
+      mounted.outside.addEventListener('click', () => { reached += 1; });
+      // Press the point, not the element: whatever is on top there receives the real pointer input.
+      const box = mounted.outside.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      const target = mounted.root.elementFromPoint(x, y)!;
+      const at = target.getBoundingClientRect();
+      await userEvent.click(target, { position: { x: x - at.left, y: y - at.top } });
+      expect(state(mounted)).toBe('closed');
+      if (policy.outsidePress === 'reaches-control') {
+        expect(reached).toBe(1);
+        expect(activeElementDeep()).toBe(mounted.outside);
+      } else {
+        expect(reached, 'the surface covers outside controls').toBe(0);
+        expect(activeElementDeep()).toBe(mounted.trigger);
+      }
+    });
+
+    test(policy.trapsFocus ? 'Tab keeps focus inside' : 'Tab past the last control leaves and closes it', async () => {
+      const mounted = mountSurface(registration);
+      await openWith(mounted, 'keyboard');
+      const controls = mounted.surface()!.querySelectorAll('button').length;
+      for (let press = 0; press <= controls && state(mounted) === 'open'; press += 1) {
+        await userEvent.keyboard('{Tab}');
+        if (policy.trapsFocus) expect(focusInside(mounted)).toBe(true);
+      }
+      if (policy.trapsFocus) expect(state(mounted)).toBe('open');
+      else {
+        expect(state(mounted)).toBe('closed');
+        expect(activeElementDeep()).toBe(mounted.outside);
+      }
+    });
+
+    test('owner disposal closes it, releases host state, leaves no late work and cannot reopen', async () => {
+      const mounted = mountSurface(registration);
+      await openWith(mounted, 'keyboard');
+      const surface = mounted.surface()!;
+      mounted.owner.dispose();
+      expect(surface.isConnected).toBe(false);
+      expect(mounted.root.querySelector('[inert]')).toBeNull();
+      expect(document.body.style.overflow).toBe('');
+      expect(document.body.classList.contains('te-dialog-open')).toBe(false);
+      expect(activeElementDeep() ?? document.body, 'disposal never focuses into a retired surface').toBe(document.body);
+      const settled = mounted.root.innerHTML;
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(mounted.root.innerHTML).toBe(settled);
+      // Repeated close and dispose are safe; the retired trigger opens nothing.
+      mounted.close();
+      mounted.close();
+      mounted.owner.dispose();
+      mounted.trigger.click();
+      expect(mounted.root.querySelector('[data-te-state="open"]')).toBeNull();
+    });
+
+    test('a retired mount cannot close, focus or mutate its replacement', async () => {
+      const retired = mountSurface(registration);
+      await openWith(retired, 'keyboard');
+      retired.owner.dispose();
+      const current = mountSurface(registration);
+      await openWith(current, 'keyboard');
+      expect(current.surface()!.dataset.teOwner).not.toBe(retired.surface()!.dataset.teOwner);
+      const active = activeElementDeep();
+      retired.close();
+      retired.owner.dispose();
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(state(current)).toBe('open');
+      expect(activeElementDeep()).toBe(active);
+      policy.expectAria(current, true);
+    });
+  });
+}
