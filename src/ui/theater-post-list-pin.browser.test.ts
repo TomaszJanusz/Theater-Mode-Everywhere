@@ -55,7 +55,7 @@ const viewport = (page: Page) => page.evaluate(() => ({ width: innerWidth, heigh
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
 
-  it(`${engine}: Switch Video pins the next post's video to the viewport and exit restores every post`, { timeout: 60_000 }, async t => {
+  it(`${engine}: entry and Switch Video pin each post's video to the viewport and exit restores every post`, { timeout: 60_000 }, async t => {
     const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
     await openPostList(page);
     const size = await viewport(page);
@@ -65,10 +65,11 @@ for (const engine of testEngines()) {
     await page.keyboard.press('t');
     await page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
     assert.equal(await activeVideo(page), 'shadowed');
-    assert.deepEqual(await activeBox(page), fullViewport);
+    // Before the overrides the bubble is the containing block; a pin measured then left the video
+    // shifted up and left by the bubble's offset (TME-140).
+    assert.deepEqual(await activeBox(page), fullViewport, 'entry');
 
-    // Each next post sits lower in the list; its bubble used to be the containing block the pin
-    // measured against, leaving the video shifted up and left by the bubble's offset.
+    // Switch Video pinned the next post's video against its own bubble the same way.
     for (const next of ['transformed', 'contained', 'shadowed']) {
       await page.keyboard.press('Shift+T');
       await page.waitForFunction(id => document.querySelector('video[data-theater-everywhere]')?.id === id, next);
