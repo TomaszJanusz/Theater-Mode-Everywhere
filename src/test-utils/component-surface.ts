@@ -49,7 +49,7 @@ export function mountSurface(registration: SurfaceRegistration): MountedSurface 
   const root = getPlayerUiRoot();
   const stage = document.createElement('div');
   // The host has `pointer-events: none`; real controls opt back in, as the control bar does.
-  stage.style.cssText = 'position:absolute;inset:auto 0 0 0;display:flex;align-items:flex-end;gap:16px;padding:16px;pointer-events:auto';
+  stage.style.cssText = 'position:absolute;inset:auto 0 0 0;display:flex;align-items:flex-end;justify-content:flex-end;gap:16px;padding:16px;pointer-events:auto';
   root.append(stage);
   const owner = new DisposableScope();
   owner.add(() => stage.remove());

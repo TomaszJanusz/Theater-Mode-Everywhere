@@ -28,9 +28,10 @@ Limits:
 
 - A page element that entered the top layer **before** the host stays below it; one that enters
   **after** covers it unless the host hears an event. Page popovers fire `toggle`, so they are handled.
-  `dialog.showModal()` fired none in the Chromium and Firefox builds tested, so a modal dialog shown after theater
-  starts covers the UI. Detecting it needs an attribute observer on every dialog, which was not worth
-  its cost. (Z-index never beat a modal dialog either.)
+- A page **modal** dialog makes the rest of the document inert while it is open, the player UI included,
+  whether it opened before or after theater (Chromium and Firefox, `src/ui/surfaces.component.test.ts`).
+  Re-entering the top layer cannot undo that, so the UI is unusable until the page closes the dialog and
+  works again afterwards. (Z-index never beat a modal dialog either.)
 - While native chat is active (`data-theater-chat-active`) the host leaves the top layer and uses
   z-index again: service popups (Twitch, YouTube) rely on z-index to sit above the chrome, which the
   top layer would defeat. Those pages do not get the top-layer benefit.

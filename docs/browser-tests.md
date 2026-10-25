@@ -201,7 +201,9 @@ through these hooks, roles, ARIA and focus, never copy. A new surface with an ex
 policy needs only an entry in `registrations`: `mount({ root, stage, owner })` builds its
 trigger in `stage` and returns `{ trigger, surface(), close() }`; disposing `owner` must
 close the surface and release what it holds. New interaction semantics need a policy or
-targeted tests.
+targeted tests. Hostile host pages (maximum z-index overlay, transformed/contained/filtered
+ancestors, an aggressive global stylesheet, page popovers and modal dialogs before and
+after opening, document fullscreen) run once per policy, on its first registration.
 
 ## Firefox on macOS 27
 

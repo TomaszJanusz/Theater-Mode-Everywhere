@@ -7,6 +7,8 @@ export const MENU_CLOSE_EVENT = 'theater-menu-close';
 const OPEN_CLASS = 'is-open';
 const PINNED_CLASS = 'visible';
 const SUPPRESS_CLASS = 'is-suppressed';
+// Stable test hooks on the menu host: the shell family, an opaque identity per bind, and the state.
+let bindSequence = 0;
 
 /**
  * A volume or speed panel is open under the pointer or while focus is inside it. Focus on its button
@@ -53,6 +55,7 @@ export function closeMenuPopover(host: HTMLElement | null | undefined, restoreFo
   host.classList.add(SUPPRESS_CLASS);
   releaseMenuPosition(panel);
   trigger.setAttribute('aria-expanded', 'false');
+  host.dataset.teState = 'closed';
   panel.inert = true;
   const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
   if (restoreFocus) trigger.focus({ preventScroll: true });
@@ -95,10 +98,12 @@ export function bindMenuPopover(options: {
   const { host, trigger, panel, scope } = options;
   host.classList.add('theater-menu');
   panel.classList.add('theater-menu-panel');
+  Object.assign(host.dataset, { teSurface: 'menu', teOwner: `menu-${++bindSequence}` });
 
   const syncExpanded = () => {
     const open = host.classList.contains(OPEN_CLASS) || panel.classList.contains(PINNED_CLASS);
     trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    host.dataset.teState = open ? 'open' : 'closed';
     panel.inert = !open;
   };
   syncExpanded();
