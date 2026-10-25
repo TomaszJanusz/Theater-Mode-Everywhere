@@ -1,40 +1,38 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { build } from 'esbuild';
+import { fileURLToPath } from 'node:url';
+
 import type { Page } from 'playwright';
+
 import type { MediaFeaturesController, TooltipMediaExtras } from '../media-features/controller';
-import { ownTestBrowser } from '../test-utils/test-browser';
-import { readStylesheet } from '../test-utils/styles';
+import { installChromeStub } from '../test-utils/chrome-stub';
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { playerStylesheets } from '../test-utils/player-boot';
+import { bundleQueryModules } from '../test-utils/query-bundle';
+import { testEngines } from '../test-utils/test-engines';
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
+const CSS = playerStylesheets().ui;
+const browsers = sharedEngineBrowsers();
 const MEDIA = readFileSync(path.join(SRC, '../test/fixtures/vod.webm'));
 const controls = readFileSync(path.join(SRC, 'ui/controls.ts'), 'utf8');
 // Expose the real synchronous body so counters exclude unrelated runtime/dock frames.
 assert.equal(controls.split('let tooltipFrame = 0;').length, 2);
-const BUNDLE = build({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';",
-      "export { MediaFeaturesController } from './media-features/controller';"
-    ].join('\n'), resolveDir: SRC, loader: 'ts'
-  },
-  plugins: [{ name: 'scrubber-test-hook', setup(build) {
-    build.onLoad({ filter: /\/ui\/controls\.ts$/ }, () => ({
-      contents: controls.replace('let tooltipFrame = 0;',
-        'Object.assign(window, { scrubberUpdateTooltip: updateTooltip });\n    let tooltipFrame = 0;')
-        .replace('const updateTooltip = (clientX: number) => {',
-          'const updateTooltip = (clientX: number) => { globalThis.scrubberUpdates++;'),
-      loader: 'ts'
-    }));
-  } }],
-  bundle: true, write: false, format: 'iife', globalName: 'ScrubberTest', platform: 'browser', target: 'es2022'
-}).then(result => result.outputFiles![0].text);
+const BUNDLE = bundleQueryModules([
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';",
+  "export { MediaFeaturesController } from './media-features/controller';"
+], 'ScrubberTest', [{ name: 'scrubber-test-hook', setup(build) {
+  build.onLoad({ filter: /\/ui\/controls\.ts$/ }, () => ({
+    contents: controls.replace('let tooltipFrame = 0;',
+      'Object.assign(window, { scrubberUpdateTooltip: updateTooltip });\n    let tooltipFrame = 0;')
+      .replace('const updateTooltip = (clientX: number) => {',
+        'const updateTooltip = (clientX: number) => { globalThis.scrubberUpdates++;'),
+    loader: 'ts'
+  }));
+} }]);
 
 declare global {
   interface Window {
@@ -78,14 +76,11 @@ async function boot(page: Page): Promise<void> {
       currentTime: { configurable: true, writable: true, value: 1200 },
       buffered: { configurable: true, value: { length: 1, start: () => 0, end: () => 2400 } }
     });
-    Object.assign(window, { chrome: { storage: {
-      sync: { get: async () => ({ keepControlsVisible: true }), set: async () => {} },
-      onChanged: { addListener() {} }
-    } } });
     window.scrubberExtras = { chapterTitle: '', preview: null };
     window.scrubberHeatmap = [];
     window.scrubberUpdates = 0;
   });
+  await installChromeStub(page, { sync: { keepControlsVisible: true } });
   await page.addStyleTag({ content: CSS });
   await page.addScriptTag({ content: await BUNDLE });
   await page.evaluate(css => {
@@ -125,10 +120,7 @@ async function freezeClock(page: Page): Promise<void> {
 
 describe('scrubber tooltip', () => {
   it('captures time, chapter, sprite and edge positioning in Chromium', { timeout: 60_000 }, async t => {
-    const { chromium } = await import('playwright');
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    const page = await (await browsers.chromium.newContext(t, { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })).newPage();
     await boot(page);
     for (const [name, value, ratio] of [
       ['time', extras(), 0.5], ['chapter', extras('Fixture chapter'), 0.5],
@@ -162,9 +154,7 @@ describe('scrubber tooltip', () => {
   for (const engine of testEngines()) {
     for (const [name, value] of [['time', extras()], ['preview + chapter', extras('Fixture chapter', true)]] as const) {
       it(`reuses ${name} nodes and reads geometry before writes in ${engine}`, { timeout: 60_000 }, async t => {
-        const browser = await (await import('playwright'))[engine].launch({ headless: true });
-        ownTestBrowser(t, browser);
-        const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+        const page = await (await browsers[engine].newContext(t, { viewport: { width: 1440, height: 900 } })).newPage();
         await boot(page);
         await freezeClock(page);
         await paint(page, value);
@@ -215,9 +205,7 @@ describe('scrubber tooltip', () => {
     }
 
     it(`updates extras in place and cancels leave/reset/exit/replacement frames in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1440, height: 900 } })).newPage();
       await boot(page);
       await freezeClock(page);
       await paint(page, extras());
@@ -296,9 +284,7 @@ describe('scrubber tooltip', () => {
     });
 
     it(`preserves mouse seek, VOD/DVR/live clamps, fill and buffer in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1440, height: 900 } })).newPage();
       await boot(page);
       await freezeClock(page);
       const progress = () => page.evaluate(() => {
@@ -350,9 +336,7 @@ describe('scrubber tooltip', () => {
     });
 
     it(`keeps caption dock clear of tooltip extras after resize in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1440, height: 900 } })).newPage();
       await boot(page);
       await page.evaluate(() => {
         window.ScrubberTest.MediaFeaturesController.prototype.readHostCaptionLayout = () => ({ width: 500, height: 40, rows: 2, lineHeight: 20 });

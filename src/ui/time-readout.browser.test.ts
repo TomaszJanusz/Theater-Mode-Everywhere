@@ -1,11 +1,15 @@
-import { testEngines } from '../test-utils/test-engines';
-import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
+
 import type { Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
+import { testEngines } from '../test-utils/test-engines';
+
 import { clockLabels, TIME_DIGIT_STAGGER_MS } from './time-readout';
 
+const browsers = sharedEngineBrowsers();
 const UI_CSS = playerStylesheets().ui;
 const BUNDLE = bundleModules(["export * from './ui/time-readout';"], 'TimeReadout');
 
@@ -44,124 +48,110 @@ async function mountBar(page: Page): Promise<void> {
 }
 
 describe('split time readout', () => {
-  it('keeps the scrubber still while digits and the duration toggle change', async () => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage({ viewport: { width: 900, height: 400 } });
-      await mountBar(page);
+  it('keeps the scrubber still while digits and the duration toggle change', async (t) => {
+    const page = await (await browsers.chromium.newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
+    await mountBar(page);
 
-      const end = 2 * 3600 + 15 * 60;
-      const frames = [
-        clockLabels(0, end, false),
-        clockLabels(59, end, false),
-        clockLabels(3600, end, false),
-        clockLabels(end - 1, end, false),
-        clockLabels(end - 1, end, true)
-      ];
-      const measure = async (labels: { elapsed: string; edge: string }) => {
-        await page.evaluate(`window.paint(${JSON.stringify(labels.elapsed)}, ${JSON.stringify(labels.edge)}, false)`);
-        return await page.evaluate(`(() => {
-          const scrubber = window.box('#scrubber');
-          const elapsed = window.box('#elapsed');
-          const edge = window.box('#end');
-          return {
-            scrubberX: scrubber.x,
-            scrubberW: scrubber.w,
-            elapsedRight: elapsed.x + elapsed.w,
-            edgeX: edge.x,
-            order: elapsed.x < scrubber.x && scrubber.x + scrubber.w <= edge.x + 0.5
-          };
-        })()`) as {
-          scrubberX: number;
-          scrubberW: number;
-          elapsedRight: number;
-          edgeX: number;
-          order: boolean;
+    const end = 2 * 3600 + 15 * 60;
+    const frames = [
+      clockLabels(0, end, false),
+      clockLabels(59, end, false),
+      clockLabels(3600, end, false),
+      clockLabels(end - 1, end, false),
+      clockLabels(end - 1, end, true)
+    ];
+    const measure = async (labels: { elapsed: string; edge: string }) => {
+      await page.evaluate(`window.paint(${JSON.stringify(labels.elapsed)}, ${JSON.stringify(labels.edge)}, false)`);
+      return await page.evaluate(`(() => {
+        const scrubber = window.box('#scrubber');
+        const elapsed = window.box('#elapsed');
+        const edge = window.box('#end');
+        return {
+          scrubberX: scrubber.x,
+          scrubberW: scrubber.w,
+          elapsedRight: elapsed.x + elapsed.w,
+          edgeX: edge.x,
+          order: elapsed.x < scrubber.x && scrubber.x + scrubber.w <= edge.x + 0.5
         };
+      })()`) as {
+        scrubberX: number;
+        scrubberW: number;
+        elapsedRight: number;
+        edgeX: number;
+        order: boolean;
       };
+    };
 
-      const first = await measure(frames[0]);
-      assert.equal(first.order, true, JSON.stringify(first));
-      for (const frame of frames.slice(1)) {
-        const next = await measure(frame);
-        assert.ok(Math.abs(next.scrubberX - first.scrubberX) < 0.6, JSON.stringify({ first, next, frame }));
-        assert.ok(Math.abs(next.scrubberW - first.scrubberW) < 0.6, JSON.stringify({ first, next, frame }));
-        assert.ok(Math.abs(next.elapsedRight - first.elapsedRight) < 0.6, JSON.stringify({ first, next, frame }));
-        assert.ok(Math.abs(next.edgeX - first.edgeX) < 0.6, JSON.stringify({ first, next, frame }));
-      }
-    } finally {
-      await browser.close();
+    const first = await measure(frames[0]);
+    assert.equal(first.order, true, JSON.stringify(first));
+    for (const frame of frames.slice(1)) {
+      const next = await measure(frame);
+      assert.ok(Math.abs(next.scrubberX - first.scrubberX) < 0.6, JSON.stringify({ first, next, frame }));
+      assert.ok(Math.abs(next.scrubberW - first.scrubberW) < 0.6, JSON.stringify({ first, next, frame }));
+      assert.ok(Math.abs(next.elapsedRight - first.elapsedRight) < 0.6, JSON.stringify({ first, next, frame }));
+      assert.ok(Math.abs(next.edgeX - first.edgeX) < 0.6, JSON.stringify({ first, next, frame }));
     }
   });
 
-  it('rolls a changed digit in the clock color and settles sharp', async () => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage({ viewport: { width: 900, height: 400 } });
-      await mountBar(page);
-      await page.evaluate(`window.paint('1:23:45', '-0:36:15', false)`);
-      const steadyScrubber = await page.evaluate(`window.box('#scrubber')`);
-      await page.evaluate(`window.paint('1:23:46', '-0:36:14', true)`);
+  it('rolls a changed digit in the clock color and settles sharp', async (t) => {
+    const page = await (await browsers.chromium.newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
+    await mountBar(page);
+    await page.evaluate(`window.paint('1:23:45', '-0:36:15', false)`);
+    const steadyScrubber = await page.evaluate(`window.box('#scrubber')`);
+    await page.evaluate(`window.paint('1:23:46', '-0:36:14', true)`);
 
-      type Glyph = { text: string; color: string; opacity: string; textShadow: string; filter: string; y: number };
-      const sample = async (time: number) => await page.evaluate(`(() => {
-        const shadow = document.querySelector('#theater-everywhere-ui').shadowRoot;
-        for (const animation of shadow.getAnimations()) {
-          animation.pause();
-          animation.currentTime = ${time};
-        }
-        const glyphs = (id) => [...shadow.querySelectorAll(id + ' .theater-time-slot:last-child .theater-time-glyph')].map((glyph) => {
-          const style = getComputedStyle(glyph);
-          return {
-            text: glyph.textContent,
-            color: style.color,
-            opacity: style.opacity,
-            textShadow: style.textShadow,
-            filter: style.filter,
-            y: new DOMMatrixReadOnly(style.transform).m42
-          };
-        });
-        return { elapsed: glyphs('#elapsed'), edge: glyphs('#end'), scrubber: window.box('#scrubber') };
-      })()`) as { elapsed: Glyph[]; edge: Glyph[]; scrubber: { x: number; w: number } };
-      const blur = (glyph: Glyph | undefined) => Number(glyph?.filter.match(/blur\(([\d.]+)px\)/)?.[1] ?? 0);
-
-      for (const time of [0, 160, 320]) {
-        const frame = await sample(time);
-        const detail = JSON.stringify({ time, frame });
-        assert.deepEqual(frame.scrubber, steadyScrubber, detail);
-        for (const glyph of [...frame.elapsed, ...frame.edge]) {
-          assert.equal(glyph.color, 'rgb(161, 161, 170)', detail);
-          assert.equal(glyph.opacity, '1', detail);
-          assert.equal(glyph.textShadow, 'none', detail);
-        }
-        const entering = frame.elapsed.find((glyph) => glyph.text === '6');
-        if (time === 0) {
-          assert.ok((entering?.y ?? 0) > 0, `elapsed counts up from below: ${detail}`);
-          assert.ok((frame.edge.find((glyph) => glyph.text === '4')?.y ?? 0) < 0, `remaining counts down from above: ${detail}`);
-        }
-        if (time === 160) assert.ok(blur(entering) > 0.2 && blur(entering) < 1.2, `soft but readable: ${detail}`);
-        if (time === 320) assert.equal(blur(entering), 0, detail);
+    type Glyph = { text: string; color: string; opacity: string; textShadow: string; filter: string; y: number };
+    const sample = async (time: number) => await page.evaluate(`(() => {
+      const shadow = document.querySelector('#theater-everywhere-ui').shadowRoot;
+      for (const animation of shadow.getAnimations()) {
+        animation.pause();
+        animation.currentTime = ${time};
       }
+      const glyphs = (id) => [...shadow.querySelectorAll(id + ' .theater-time-slot:last-child .theater-time-glyph')].map((glyph) => {
+        const style = getComputedStyle(glyph);
+        return {
+          text: glyph.textContent,
+          color: style.color,
+          opacity: style.opacity,
+          textShadow: style.textShadow,
+          filter: style.filter,
+          y: new DOMMatrixReadOnly(style.transform).m42
+        };
+      });
+      return { elapsed: glyphs('#elapsed'), edge: glyphs('#end'), scrubber: window.box('#scrubber') };
+    })()`) as { elapsed: Glyph[]; edge: Glyph[]; scrubber: { x: number; w: number } };
+    const blur = (glyph: Glyph | undefined) => Number(glyph?.filter.match(/blur\(([\d.]+)px\)/)?.[1] ?? 0);
 
-      await page.evaluate(`(() => {
-        for (const animation of document.querySelector('#theater-everywhere-ui').shadowRoot.getAnimations()) animation.play();
-        window.paint('1:23:47', '-0:36:13', true);
-      })()`);
-      const midway = await page.evaluate(`document.querySelector('#theater-everywhere-ui').shadowRoot
-        .querySelectorAll('#elapsed .theater-time-slot:last-child .theater-time-glyph').length`);
-      assert.equal(midway, 2, 'a fresh tick replaces the glyph still leaving');
-      await page.waitForFunction(`!document.querySelector('#theater-everywhere-ui').shadowRoot
-        .querySelector('.is-rolling, .is-entering, .is-leaving')`);
-      const settled = await page.evaluate(`[...document.querySelector('#theater-everywhere-ui').shadowRoot
-        .querySelectorAll('.theater-time-glyph')].map((glyph) => glyph.textContent).join('')`);
-      assert.equal(settled, '1:23:47-0:36:13');
-    } finally {
-      await browser.close();
+    for (const time of [0, 160, 320]) {
+      const frame = await sample(time);
+      const detail = JSON.stringify({ time, frame });
+      assert.deepEqual(frame.scrubber, steadyScrubber, detail);
+      for (const glyph of [...frame.elapsed, ...frame.edge]) {
+        assert.equal(glyph.color, 'rgb(161, 161, 170)', detail);
+        assert.equal(glyph.opacity, '1', detail);
+        assert.equal(glyph.textShadow, 'none', detail);
+      }
+      const entering = frame.elapsed.find((glyph) => glyph.text === '6');
+      if (time === 0) {
+        assert.ok((entering?.y ?? 0) > 0, `elapsed counts up from below: ${detail}`);
+        assert.ok((frame.edge.find((glyph) => glyph.text === '4')?.y ?? 0) < 0, `remaining counts down from above: ${detail}`);
+      }
+      if (time === 160) assert.ok(blur(entering) > 0.2 && blur(entering) < 1.2, `soft but readable: ${detail}`);
+      if (time === 320) assert.equal(blur(entering), 0, detail);
     }
+
+    await page.evaluate(`(() => {
+      for (const animation of document.querySelector('#theater-everywhere-ui').shadowRoot.getAnimations()) animation.play();
+      window.paint('1:23:47', '-0:36:13', true);
+    })()`);
+    const midway = await page.evaluate(`document.querySelector('#theater-everywhere-ui').shadowRoot
+      .querySelectorAll('#elapsed .theater-time-slot:last-child .theater-time-glyph').length`);
+    assert.equal(midway, 2, 'a fresh tick replaces the glyph still leaving');
+    await page.waitForFunction(`!document.querySelector('#theater-everywhere-ui').shadowRoot
+      .querySelector('.is-rolling, .is-entering, .is-leaving')`);
+    const settled = await page.evaluate(`[...document.querySelector('#theater-everywhere-ui').shadowRoot
+      .querySelectorAll('.theater-time-glyph')].map((glyph) => glyph.textContent).join('')`);
+    assert.equal(settled, '1:23:47-0:36:13');
   });
 });
 
@@ -169,18 +159,10 @@ for (const engineName of testEngines()) {
   describe(`${engineName}: digit roll stagger and overshoot`, () => {
     type Probe = { text: string; slot: number; delay: number; y: number; leaving: boolean };
 
-    async function withBar(run: (page: Page) => Promise<void>): Promise<void> {
-      const playwright = await import('playwright');
-      const engine = playwright[engineName];
-      if (!existsSync(engine.executablePath())) return;
-      const browser = await engine.launch({ headless: true });
-      try {
-        const page = await browser.newPage({ viewport: { width: 900, height: 400 } });
-        await mountBar(page);
-        await run(page);
-      } finally {
-        await browser.close();
-      }
+    async function withBar(t: TestContext, run: (page: Page) => Promise<void>): Promise<void> {
+      const page = await (await browsers[engineName].newContext(t, { viewport: { width: 900, height: 400 } })).newPage();
+      await mountBar(page);
+      await run(page);
     }
 
     /** Freezes every animation `offset` ms after its own delay and reads the glyph transforms. */
@@ -203,8 +185,8 @@ for (const engineName of testEngines()) {
       });
     })()`) as Promise<Probe[]>;
 
-    it('starts the left digit before the right one', async () => {
-      await withBar(async (page) => {
+    it('starts the left digit before the right one', async (t) => {
+      await withBar(t, async (page) => {
         await page.evaluate(`window.paint('0:39', '-0:21', false)`);
         await page.evaluate(`window.paint('0:40', '-0:20', true)`);
         const probes = await sampleAt(page, 0);
@@ -219,8 +201,8 @@ for (const engineName of testEngines()) {
       });
     });
 
-    it('overshoots past the rest line in the travel direction and ends at rest', async () => {
-      await withBar(async (page) => {
+    it('overshoots past the rest line in the travel direction and ends at rest', async (t) => {
+      await withBar(t, async (page) => {
         await page.evaluate(`window.paint('0:41', '-0:21', false)`);
         await page.evaluate(`window.paint('0:42', '-0:21', true)`);
         const climbing = (await sampleAt(page, 320 * 0.65)).find((probe) => probe.text === '2' && !probe.leaving);
@@ -237,8 +219,8 @@ for (const engineName of testEngines()) {
       });
     });
 
-    it('rolls a carry the way the clock moves', async () => {
-      await withBar(async (page) => {
+    it('rolls a carry the way the clock moves', async (t) => {
+      await withBar(t, async (page) => {
         await page.evaluate(`window.paint('0:59', '-0:21', false)`);
         await page.evaluate(`window.paint('1:00', '-0:21', true)`);
         const probes = await sampleAt(page, 320 * 0.65);
@@ -248,8 +230,8 @@ for (const engineName of testEngines()) {
       });
     });
 
-    it('reduced motion swaps digits with no animation or delay', async () => {
-      await withBar(async (page) => {
+    it('reduced motion swaps digits with no animation or delay', async (t) => {
+      await withBar(t, async (page) => {
         await page.evaluate(`(() => {
           document.documentElement.dataset.motion = 'reduced';
           document.querySelector('#theater-everywhere-ui').setAttribute('data-motion', 'reduced');
@@ -269,8 +251,8 @@ for (const engineName of testEngines()) {
       });
     });
 
-    it('leaves no stale transform after rapid successive updates', async () => {
-      await withBar(async (page) => {
+    it('leaves no stale transform after rapid successive updates', async (t) => {
+      await withBar(t, async (page) => {
         await page.evaluate(`window.paint('0:30', '-0:21', false)`);
         await page.evaluate(`(() => {
           const root = document.querySelector('#theater-everywhere-ui').shadowRoot;

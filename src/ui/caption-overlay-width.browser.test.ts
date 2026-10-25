@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { ownTestBrowser } from '../test-utils/test-browser';
 
-const shadowCss = readFileSync(new URL('./shadow.css', import.meta.url), 'utf8');
+import { chromium } from 'playwright';
+
+import { playerStylesheets } from '../test-utils/player-boot';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+
+const shadowCss = playerStylesheets().ui;
 
 describe('caption overlay width', () => {
+  const shared = sharedTestBrowser(chromium);
+
   it('wraps within the video frame, not within half of it', async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 1200, height: 700 } });
+    const page = await (await shared.newContext(t, { viewport: { width: 1200, height: 700 } })).newPage();
     // The player UI host is a layout-contained fixed frame the size of the video.
     await page.setContent(`<style>${shadowCss}</style>
       <div style="position:fixed;inset:0;width:1000px;height:600px;contain:layout">

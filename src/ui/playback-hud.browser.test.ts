@@ -1,13 +1,15 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import type { Page } from 'playwright';
-import { bootPlayer, enterTheater } from '../test-utils/player-boot';
-import { canvasVideoFixture } from '../test-utils/video-fixtures';
-import { ownTestBrowser } from '../test-utils/test-browser';
 
+import type { Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { testEngines } from '../test-utils/test-engines';
+import { canvasVideoFixture } from '../test-utils/video-fixtures';
+
+const browsers = sharedEngineBrowsers();
 const FIXTURE = canvasVideoFixture({ title: 'Playback HUD regression', pageTitle: 'Playback HUD fixture' });
 
 /**
@@ -44,15 +46,13 @@ async function waitForHud(page: Page, text: string): Promise<void> {
 describe('playback HUD browser regressions', () => {
   for (const engine of testEngines()) {
     it(`centers the feedback HUD on the picture across layout, fit and resize in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
       for (const settings of [
         { pictureAlign: 'center', videoFitMode: 'contain' },
         { pictureAlign: 'top', videoFitMode: 'contain' },
         { pictureAlign: 'top', videoFitMode: 'cover' },
         { pictureAlign: 'top', videoFitMode: 'fill' }
       ]) {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
         await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
         await page.goto('http://playback-hud.test/');
         await boot(page, settings);
@@ -83,9 +83,7 @@ describe('playback HUD browser regressions', () => {
     });
 
     it(`shares one vertical axis between the seek circles and the buffering spinner in ${engine}`, { timeout: 60_000 }, async t => {
-      const browser = await (await import('playwright'))[engine].launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 900 } })).newPage();
       await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
       await page.goto('http://playback-hud.test/');
       await boot(page, { pictureAlign: 'top', videoFitMode: 'contain' });
@@ -105,68 +103,84 @@ describe('playback HUD browser regressions', () => {
       assert.ok(Math.abs(centers.spinner - centers.seek) < 1, JSON.stringify(centers));
     });
 
-    it(`keeps boosted HUD and toolbar speakers orange over a green accent in ${engine}`, { timeout: 60_000 }, async () => {
-      const browserType = (await import('playwright'))[engine];
-      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-        await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
-        await page.goto('http://playback-hud.test/');
-        await boot(page, { volumeBoostEnabled: true, accentColor: 'green' });
-        const slider = page.locator('.theater-volume-slider');
-        const speaker = page.locator('.volume-btn');
-        const setVolume = (value: string) => slider.evaluate((input: HTMLInputElement, value) => {
-          input.value = value;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        }, value);
-        // A drag cannot jump over 100%; pass through it to reach boost.
-        await setVolume('1');
-        await setVolume('1.25');
-        // The trusted key can create the first Web Audio graph in either engine.
-        await page.keyboard.press('ArrowUp');
-        await waitForHud(page, '220%');
-        await speaker.hover();
-        const colors = () => page.evaluate(() => {
-          const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
-          return {
-            speaker: getComputedStyle(root.querySelector('.volume-btn svg')!).color,
-            hud: getComputedStyle(root.querySelector('.volume-hud-icon svg')!).color,
-            text: getComputedStyle(root.querySelector('.volume-hud-text')!).color
-          };
-        });
-        assert.deepEqual(await colors(), { speaker: 'rgb(245, 158, 11)', hud: 'rgb(245, 158, 11)', text: 'rgb(245, 158, 11)' });
-        await speaker.focus();
-        await page.mouse.move(80, 80);
-        assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'focus must not replace the boost color');
-        if (process.env.THEATER_ICON_SCREENSHOTS) {
-          await page.screenshot({ path: path.join(process.env.THEATER_ICON_SCREENSHOTS, `${engine}-boosted.png`) });
-        }
-        await page.keyboard.press('m');
-        await page.locator('.volume-btn:not(.boosted)').waitFor();
-        // Focus alone leaves the speaker a plain bar button (no notch), so it wears the bar's ink, not the accent.
-        assert.equal((await colors()).speaker, 'rgb(248, 250, 252)', 'mute must clear orange even with remembered boost');
-        await page.keyboard.press('m');
-        await page.locator('.volume-btn.boosted').waitFor();
-        assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'unmute must restore orange');
-        await setVolume('1');
-        assert.equal(await speaker.evaluate(button => button.classList.contains('boosted')), false, 'returning to 100% must clear boost without another media event');
-        await page.keyboard.press('ArrowDown');
-        await waitForHud(page, '95%');
-        assert.equal((await colors()).hud, 'rgb(81, 205, 0)', 'normal-volume HUD must use the saved accent');
-        assert.equal((await colors()).speaker, 'rgb(248, 250, 252)');
-      } finally {
-        await browser.close();
+    it(`keeps boosted HUD and toolbar speakers orange over a green accent in ${engine}`, { timeout: 60_000 }, async t => {
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      await page.route('http://playback-hud.test/**', route => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
+      await page.goto('http://playback-hud.test/');
+      await boot(page, { volumeBoostEnabled: true, accentColor: 'green' });
+      const slider = page.locator('.theater-volume-slider');
+      const speaker = page.locator('.volume-btn');
+      const setVolume = (value: string) => slider.evaluate((input: HTMLInputElement, value) => {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, value);
+      // A drag cannot jump over 100%; pass through it to reach boost.
+      await setVolume('1');
+      await setVolume('1.25');
+      // The trusted key can create the first Web Audio graph in either engine.
+      await page.keyboard.press('ArrowUp');
+      await waitForHud(page, '220%');
+      await speaker.hover();
+      const colors = () => page.evaluate(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        return {
+          speaker: getComputedStyle(root.querySelector('.volume-btn svg')!).color,
+          hud: getComputedStyle(root.querySelector('.volume-hud-icon svg')!).color,
+          text: getComputedStyle(root.querySelector('.volume-hud-text')!).color
+        };
+      });
+      assert.deepEqual(await colors(), { speaker: 'rgb(245, 158, 11)', hud: 'rgb(245, 158, 11)', text: 'rgb(245, 158, 11)' });
+      await speaker.focus();
+      await page.mouse.move(80, 80);
+      assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'focus must not replace the boost color');
+      if (process.env.THEATER_ICON_SCREENSHOTS) {
+        await page.screenshot({ path: path.join(process.env.THEATER_ICON_SCREENSHOTS, `${engine}-boosted.png`) });
       }
+      await page.keyboard.press('m');
+      await page.locator('.volume-btn:not(.boosted)').waitFor();
+      // Focus alone leaves the speaker a plain bar button (no notch), so it wears the bar's ink, not the accent.
+      assert.equal((await colors()).speaker, 'rgb(248, 250, 252)', 'mute must clear orange even with remembered boost');
+      await page.keyboard.press('m');
+      await page.locator('.volume-btn.boosted').waitFor();
+      assert.equal((await colors()).speaker, 'rgb(245, 158, 11)', 'unmute must restore orange');
+      await setVolume('1');
+      assert.equal(await speaker.evaluate(button => button.classList.contains('boosted')), false, 'returning to 100% must clear boost without another media event');
+      await page.keyboard.press('ArrowDown');
+      await waitForHud(page, '95%');
+      assert.equal((await colors()).hud, 'rgb(81, 205, 0)', 'normal-volume HUD must use the saved accent');
+      assert.equal((await colors()).speaker, 'rgb(248, 250, 252)');
     });
   }
 
   it('shows the play/pause HUD for the control, the video surface, and the shortcut', async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const page = await (await browsers.chromium.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.route('http://playback-hud.test/**', route => route.fulfill({
+      contentType: 'text/html',
+      body: FIXTURE
+    }));
+    await page.goto('http://playback-hud.test/');
+    await boot(page);
+
+    await page.locator('.play-pause-btn').click();
+    await waitForHud(page, 'Pause');
+    assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
+
+    await page.locator('video').click({ position: { x: 80, y: 80 } });
+    // The HUD previews the click's action before the double-click window ends.
+    await waitForHud(page, 'Play');
+    await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
+
+    await page.keyboard.press('k');
+    await waitForHud(page, 'Pause');
+    assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
+    assert.deepEqual(errors, []);
+  });
+
+  for (const engine of testEngines()) {
+    it(`dismisses settings, speed, and volume on a video click without pausing in ${engine}`, async t => {
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.route('http://playback-hud.test/**', route => route.fulfill({
@@ -175,127 +189,83 @@ describe('playback HUD browser regressions', () => {
       }));
       await page.goto('http://playback-hud.test/');
       await boot(page);
+      const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
+      const clickPicture = () => page.locator('video').click({ position: { x: 120, y: 80 } });
+      const panelShown = (selector: string) => page.waitForFunction((panelSelector) => {
+        const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
+        return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '1';
+      }, selector);
+      const panelHidden = (selector: string) => page.waitForFunction((panelSelector) => {
+        const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
+        return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '0';
+      }, selector);
 
-      await page.locator('.play-pause-btn').click();
-      await waitForHud(page, 'Pause');
-      assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
+      await page.locator('.player-settings-btn').click();
+      await page.locator('.theater-settings-menu.visible').waitFor();
+      await clickPicture();
+      await page.locator('.theater-settings-menu.visible').waitFor({ state: 'hidden' });
+      assert.equal(await paused(), false, 'settings dismiss must leave playback running');
 
-      await page.locator('video').click({ position: { x: 80, y: 80 } });
-      // The HUD previews the click's action before the double-click window ends.
+      await page.locator('.volume-btn').hover();
+      await panelShown('.theater-volume-panel');
+      await clickPicture();
+      await panelHidden('.theater-volume-panel');
+      assert.equal(await paused(), false, 'volume dismiss must leave playback running');
+
+      // This fixture is a live capture, so the speed control stays hidden.
+      // Leaving that control uses the same dismiss latch as the volume panel.
+      await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
+      await clickPicture();
+      assert.equal(await paused(), false, 'speed dismiss must leave playback running');
+
+      await clickPicture();
+      // A plain click waits out the double-click window before pausing.
+      await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
+      assert.equal(await paused(), true, 'a later video click still pauses');
+      assert.deepEqual(errors, []);
+    });
+
+    it(`keeps stale popover leaves from swallowing clicks and keeps double-click off playback in ${engine}`, async t => {
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('http://playback-hud.test/**', route => route.fulfill({
+        contentType: 'text/html',
+        body: FIXTURE
+      }));
+      // Own fixture, runtime and click-disambiguation timers from startup.
+      await page.clock.install();
+      await page.goto('http://playback-hud.test/');
+      await boot(page);
+      const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
+
+      // A popover left earlier must not turn a later, unrelated click into a no-op.
+      await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
+      await page.clock.runFor(1100);
+      await page.locator('video').click({ position: { x: 120, y: 80 } });
+      await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
+
+      // The HUD names the intended action as soon as the click lands.
+      await page.locator('video').click({ position: { x: 120, y: 80 } });
       await waitForHud(page, 'Play');
       await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
 
-      await page.keyboard.press('k');
-      await waitForHud(page, 'Pause');
-      assert.equal(await page.locator('video').evaluate(node => (node as HTMLVideoElement).paused), true);
+      // A fast double-click is fullscreen only: no play/pause events, no leftover HUD.
+      await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot
+        ?.querySelector('.theater-everywhere-volume-overlay'));
+      await page.evaluate(() => {
+        const video = document.querySelector('video') as HTMLVideoElement;
+        const w = window as unknown as { playbackEvents: string[] };
+        w.playbackEvents = [];
+        video.addEventListener('pause', () => w.playbackEvents.push('pause'));
+        video.addEventListener('play', () => w.playbackEvents.push('play'));
+      });
+      await page.locator('video').dblclick({ position: { x: 120, y: 80 } });
+      await page.clock.runFor(500);
+      assert.deepEqual(await page.evaluate(() => (window as unknown as { playbackEvents: string[] }).playbackEvents), []);
+      assert.equal(await paused(), false);
+      assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0, 'cancelled click leaves no HUD');
       assert.deepEqual(errors, []);
-    } finally {
-      await browser.close();
-    }
-  });
-
-  for (const engine of testEngines()) {
-    it(`dismisses settings, speed, and volume on a video click without pausing in ${engine}`, async () => {
-      const browserType = (await import('playwright'))[engine];
-      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-        const errors: string[] = [];
-        page.on('pageerror', error => errors.push(error.message));
-        await page.route('http://playback-hud.test/**', route => route.fulfill({
-          contentType: 'text/html',
-          body: FIXTURE
-        }));
-        await page.goto('http://playback-hud.test/');
-        await boot(page);
-        const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
-        const clickPicture = () => page.locator('video').click({ position: { x: 120, y: 80 } });
-        const panelShown = (selector: string) => page.waitForFunction((panelSelector) => {
-          const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
-          return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '1';
-        }, selector);
-        const panelHidden = (selector: string) => page.waitForFunction((panelSelector) => {
-          const panel = document.querySelector('#theater-everywhere-ui')?.shadowRoot?.querySelector(panelSelector);
-          return panel instanceof HTMLElement && getComputedStyle(panel).opacity === '0';
-        }, selector);
-
-        await page.locator('.player-settings-btn').click();
-        await page.locator('.theater-settings-menu.visible').waitFor();
-        await clickPicture();
-        await page.locator('.theater-settings-menu.visible').waitFor({ state: 'hidden' });
-        assert.equal(await paused(), false, 'settings dismiss must leave playback running');
-
-        await page.locator('.volume-btn').hover();
-        await panelShown('.theater-volume-panel');
-        await clickPicture();
-        await panelHidden('.theater-volume-panel');
-        assert.equal(await paused(), false, 'volume dismiss must leave playback running');
-
-        // This fixture is a live capture, so the speed control stays hidden.
-        // Leaving that control uses the same dismiss latch as the volume panel.
-        await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
-        await clickPicture();
-        assert.equal(await paused(), false, 'speed dismiss must leave playback running');
-
-        await clickPicture();
-        // A plain click waits out the double-click window before pausing.
-        await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
-        assert.equal(await paused(), true, 'a later video click still pauses');
-        assert.deepEqual(errors, []);
-      } finally {
-        await browser.close();
-      }
-    });
-
-    it(`keeps stale popover leaves from swallowing clicks and keeps double-click off playback in ${engine}`, async () => {
-      const browserType = (await import('playwright'))[engine];
-      assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-      const browser = await browserType.launch({ headless: true });
-      try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-        const errors: string[] = [];
-        page.on('pageerror', error => errors.push(error.message));
-        await page.route('http://playback-hud.test/**', route => route.fulfill({
-          contentType: 'text/html',
-          body: FIXTURE
-        }));
-        // Own fixture, runtime and click-disambiguation timers from startup.
-        await page.clock.install();
-        await page.goto('http://playback-hud.test/');
-        await boot(page);
-        const paused = () => page.locator('video').evaluate(node => (node as HTMLVideoElement).paused);
-
-        // A popover left earlier must not turn a later, unrelated click into a no-op.
-        await page.locator('.theater-speed-container').dispatchEvent('pointerleave');
-        await page.clock.runFor(1100);
-        await page.locator('video').click({ position: { x: 120, y: 80 } });
-        await page.waitForFunction(() => (document.querySelector('video') as HTMLVideoElement).paused);
-
-        // The HUD names the intended action as soon as the click lands.
-        await page.locator('video').click({ position: { x: 120, y: 80 } });
-        await waitForHud(page, 'Play');
-        await page.waitForFunction(() => !(document.querySelector('video') as HTMLVideoElement).paused);
-
-        // A fast double-click is fullscreen only: no play/pause events, no leftover HUD.
-        await page.waitForFunction(() => !document.querySelector('#theater-everywhere-ui')?.shadowRoot
-          ?.querySelector('.theater-everywhere-volume-overlay'));
-        await page.evaluate(() => {
-          const video = document.querySelector('video') as HTMLVideoElement;
-          const w = window as unknown as { playbackEvents: string[] };
-          w.playbackEvents = [];
-          video.addEventListener('pause', () => w.playbackEvents.push('pause'));
-          video.addEventListener('play', () => w.playbackEvents.push('play'));
-        });
-        await page.locator('video').dblclick({ position: { x: 120, y: 80 } });
-        await page.clock.runFor(500);
-        assert.deepEqual(await page.evaluate(() => (window as unknown as { playbackEvents: string[] }).playbackEvents), []);
-        assert.equal(await paused(), false);
-        assert.equal(await page.locator('.theater-everywhere-volume-overlay').count(), 0, 'cancelled click leaves no HUD');
-        assert.deepEqual(errors, []);
-      } finally {
-        await browser.close();
-      }
     });
   }
 });

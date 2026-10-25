@@ -1,27 +1,26 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
-import { chromium, firefox, type Page } from 'playwright';
-import { sharedTestBrowser } from '../test-utils/test-browser';
-import { readStylesheet } from '../test-utils/styles';
-import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from '../test-utils/release';
 
-const bundle = buildSync({
-  stdin: { contents: `
-    export * from './src/ui/new-badge';
-    export { NEW_FEATURE_ITEMS, HIGHLIGHTS_WINDOW_STORAGE_KEY, FEATURE_HIGHLIGHTS_MAX_AGE_MS } from './src/feature-highlights';
-    export { createFeatureHighlightsLifecycle } from './src/feature-highlights-lifecycle';
-    export { setupFeatureHighlights } from './options/feature-highlights';
-    export { localizeDocument } from './src/i18n';
-    export { languageRuntime } from './src/i18n-runtime';
-    export { openWhatsNewDialog, hasUnseenWhatsNew } from './src/whatsNew';
-    export { bootstrapPlayerRuntime } from './src/ui/player-runtime';
-    export { setPlayerUiCss } from './src/ui/root';`,
-  resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'BadgeTest', target: 'es2022'
-}).outputFiles[0].text;
+import { chromium, firefox, type Page } from 'playwright';
+
+import { bundleModules } from '../test-utils/player-boot';
+import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from '../test-utils/release';
+import { readStylesheet } from '../test-utils/styles';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
+
+const bundle = bundleModules([
+  "export * from './ui/new-badge';",
+  "export { NEW_FEATURE_ITEMS, HIGHLIGHTS_WINDOW_STORAGE_KEY, FEATURE_HIGHLIGHTS_MAX_AGE_MS } from './feature-highlights';",
+  "export { createFeatureHighlightsLifecycle } from './feature-highlights-lifecycle';",
+  "export { setupFeatureHighlights } from '../options/feature-highlights';",
+  "export { localizeDocument } from './i18n';",
+  "export { languageRuntime } from './i18n-runtime';",
+  "export { openWhatsNewDialog, hasUnseenWhatsNew } from './whatsNew';",
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';"
+], 'BadgeTest');
 const optionsHtml = readFileSync(new URL('../../options/options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 const optionsCss = readStylesheet(new URL('../../options/options.css', import.meta.url));
 const uiCss = readStylesheet(new URL('./shadow.css', import.meta.url));

@@ -53,9 +53,6 @@
     "launch": 2,
     "esbuild": 2
   },
-  "src/ui/accessibility.browser.test.ts": {
-    "esbuild": 1
-  },
   "src/ui/audio-block.browser.test.ts": {
     "launch": 1
   },
@@ -65,34 +62,13 @@
   "src/ui/auto-theater-scrim.browser.test.ts": {
     "esbuild": 1
   },
-  "src/ui/auto-theater-settings.browser.test.ts": {
-    "esbuild": 1,
-    "chromeStub": 1
-  },
-  "src/ui/auto-theater-storage.browser.test.ts": {
-    "esbuild": 1
-  },
   "src/ui/bass-icon.browser.test.ts": {
     "launch": 1,
     "esbuild": 1
   },
-  "src/ui/caption-dock-lifecycle.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
-  "src/ui/caption-overlay-width.browser.test.ts": {
-    "launch": 1
-  },
   "src/ui/cc-menu-rows.browser.test.ts": {
     "launch": 1,
     "esbuild": 1
-  },
-  "src/ui/cc-menu.browser.test.ts": {
-    "launch": 2,
-    "esbuild": 1
-  },
-  "src/ui/controls-notch.browser.test.ts": {
-    "launch": 2
   },
   "src/ui/discovery.browser.test.ts": {
     "launch": 1,
@@ -105,54 +81,22 @@
   "src/ui/hud-spacing.browser.test.ts": {
     "launch": 1
   },
-  "src/ui/modal.browser.test.ts": {
-    "launch": 3,
-    "esbuild": 1
-  },
-  "src/ui/native-chat.browser.test.ts": {
-    "launch": 9,
-    "esbuild": 1
-  },
-  "src/ui/netflix-runtime.browser.test.ts": {
-    "launch": 3,
-    "esbuild": 2
-  },
-  "src/ui/new-badge.browser.test.ts": {
-    "esbuild": 1
-  },
   "src/ui/pinned-controls-backing.browser.test.ts": {
     "launch": 1
   },
-  "src/ui/playback-hud.browser.test.ts": {
-    "launch": 6
-  },
   "src/ui/player-settings-order.browser.test.ts": {
     "launch": 1,
-    "esbuild": 1
-  },
-  "src/ui/scrubber-tooltip.browser.test.ts": {
-    "launch": 5,
-    "esbuild": 1
-  },
-  "src/ui/service-actions.browser.test.ts": {
-    "launch": 5,
     "esbuild": 1
   },
   "src/ui/settings-rows.browser.test.ts": {
     "launch": 1,
     "esbuild": 1
   },
-  "src/ui/time-readout.browser.test.ts": {
-    "launch": 3
-  },
   "src/ui/title-hud-reduced.browser.test.ts": {
     "launch": 1
   },
   "src/ui/video-selection.browser.test.ts": {
     "esbuild": 1
-  },
-  "tools/cpu-suite/browser.test.ts": {
-    "launch": 1
   },
   "tools/cpu-suite/resource.browser.test.ts": {
     "launch": 2
