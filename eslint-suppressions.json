@@ -2096,11 +2096,6 @@
       "count": 1
     }
   },
-  "src/ui/accessibility.browser.test.ts": {
-    "import/order": {
-      "count": 6
-    }
-  },
   "src/ui/appearance.test.ts": {
     "import/order": {
       "count": 2
@@ -2172,11 +2167,6 @@
       "count": 2
     }
   },
-  "src/ui/auto-theater-settings.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/ui/auto-theater-settings.test.ts": {
     "import/order": {
       "count": 1
@@ -2185,11 +2175,6 @@
   "src/ui/auto-theater-settings.ts": {
     "import/order": {
       "count": 1
-    }
-  },
-  "src/ui/auto-theater-storage.browser.test.ts": {
-    "import/order": {
-      "count": 6
     }
   },
   "src/ui/auto-theater.test.ts": {
@@ -2207,27 +2192,12 @@
       "count": 4
     }
   },
-  "src/ui/caption-dock-lifecycle.browser.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/ui/caption-overlay-width.browser.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/ui/cc-menu-rows.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 8
     },
     "import/order": {
       "count": 6
-    }
-  },
-  "src/ui/cc-menu.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/cc-menu.ts": {
@@ -2244,11 +2214,6 @@
     },
     "max-params": {
       "count": 1
-    }
-  },
-  "src/ui/controls-notch.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/controls-visibility.test.ts": {
@@ -2349,37 +2314,19 @@
       "count": 1
     }
   },
-  "src/ui/modal.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/ui/modal.ts": {
     "import/order": {
       "count": 1
     }
   },
   "src/ui/native-chat.browser.test.ts": {
-    "import/order": {
-      "count": 6
-    },
     "max-lines": {
       "count": 1
-    }
-  },
-  "src/ui/netflix-runtime.browser.test.ts": {
-    "import/order": {
-      "count": 3
     }
   },
   "src/ui/netflix-stage.test.ts": {
     "import/order": {
       "count": 2
-    }
-  },
-  "src/ui/new-badge.browser.test.ts": {
-    "import/order": {
-      "count": 6
     }
   },
   "src/ui/new-badge.ts": {
@@ -2408,11 +2355,6 @@
     }
   },
   "src/ui/playback-chrome.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
-  "src/ui/playback-hud.browser.test.ts": {
     "import/order": {
       "count": 5
     }
@@ -2478,21 +2420,8 @@
       "count": 1
     }
   },
-  "src/ui/scrubber-tooltip.browser.test.ts": {
-    "import/order": {
-      "count": 6
-    }
-  },
   "src/ui/seek-completion.ts": {
     "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    }
-  },
-  "src/ui/service-actions.browser.test.ts": {
-    "import/order": {
-      "count": 4
-    },
-    "max-lines": {
       "count": 1
     }
   },
@@ -2551,11 +2480,6 @@
   "src/ui/theater-layout.test.ts": {
     "import/order": {
       "count": 2
-    }
-  },
-  "src/ui/time-readout.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "src/ui/time-readout.test.ts": {
@@ -2671,11 +2595,6 @@
   "test/fixtures/shared-browser-timeout.mjs": {
     "import/order": {
       "count": 2
-    }
-  },
-  "tools/cpu-suite/browser.test.ts": {
-    "import/order": {
-      "count": 3
     }
   },
   "tools/cpu-suite/browser.ts": {

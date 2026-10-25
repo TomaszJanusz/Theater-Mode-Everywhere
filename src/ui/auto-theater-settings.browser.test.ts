@@ -1,47 +1,31 @@
-import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
-import { build } from 'esbuild';
+
 import { chromium, firefox, type BrowserContext, type Page } from 'playwright';
-import { sharedTestBrowser } from '../test-utils/test-browser';
+
+import { installContextChromeStub } from '../test-utils/chrome-stub-context';
+import { bundleQueryModules } from '../test-utils/query-bundle';
 import { readStylesheet } from '../test-utils/styles';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { selectTestEngines } from '../test-utils/test-engines';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const ROOT = path.resolve(__dirname, '../..');
-const bundles = Promise.all(['options/options.ts', 'player'].map(entry => build({
-  ...(entry === 'player' ? { stdin: { contents: `export { bootstrapPlayerRuntime } from './src/ui/player-runtime';
-    export { setPlayerUiCss } from './src/ui/root';
-    export { saveAutoTheaterEnabled } from './src/ui/auto-theater-settings';`, resolveDir: ROOT, loader: 'ts' as const } }
-    : { entryPoints: [path.join(ROOT, entry)] }),
-  plugins: [{ name: 'raw', setup(builder) {
-    builder.onResolve({ filter: /\?raw$/ }, args => ({ path: path.resolve(args.resolveDir, args.path.slice(0, -4)), namespace: 'raw' }));
-    builder.onLoad({ filter: /.*/, namespace: 'raw' }, args => ({ contents: readFileSync(args.path, 'utf8'), loader: 'text' }));
-  } }],
-  bundle: true, write: false, format: 'iife', globalName: 'SettingsFixture', target: 'es2022'
-}).then(result => result.outputFiles![0].text)));
+const bundles = Promise.all([
+  bundleQueryModules(["import '../options/options';"], 'SettingsFixture'),
+  bundleQueryModules([
+    "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+    "export { setPlayerUiCss } from './ui/root';",
+    "export { saveAutoTheaterEnabled } from './ui/auto-theater-settings';"
+  ], 'SettingsFixture')
+]);
 
 type Saved = Record<string, unknown>;
 async function storage(context: BrowserContext, saved: Saved): Promise<void> {
-  await context.exposeBinding('readSettings', () => ({ ...saved }));
-  await context.exposeBinding('writeSettings', async (_source, values: Saved) => {
-    const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { oldValue: saved[key], newValue }]));
-    Object.assign(saved, values);
-    await Promise.all(context.pages().map(page => page.evaluate(changes => {
-      window.dispatchEvent(new CustomEvent('fixture-storage', { detail: changes }));
-    }, changes)));
-  });
-  await context.addInitScript({ content: `window.__name = fn => fn;
-    const listeners = new Set();
-    window.addEventListener('fixture-storage', event => listeners.forEach(fn => fn(event.detail, 'sync')));
-    const sync = { get: async (_keys, cb) => { const data = await window.readSettings(); cb?.(data); return data; },
-      set: values => window.writeSettings(values) };
-    window.chrome = { runtime: { getURL: file => file, sendMessage: async () => ({}), onMessage: { addListener() {} }, getManifest: () => ({ version: '2.0.0' }) },
-      storage: { sync, local: { get: async () => ({}), set: async () => {} },
-        onChanged: { addListener: fn => listeners.add(fn), removeListener: fn => listeners.delete(fn) } },
-      tabs: { query: async () => [] } };
-    localStorage.setItem('whatsNewAcknowledgedId', ${JSON.stringify(WHATS_NEW_RELEASE.id)});` });
+  await installContextChromeStub(context, saved);
+  await context.addInitScript({ content: `localStorage.setItem('whatsNewAcknowledgedId', ${JSON.stringify(WHATS_NEW_RELEASE.id)});` });
 }
 
 // AutoTheater is only available where a provider declares watch playback.

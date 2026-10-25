@@ -4,8 +4,8 @@ import { describe, it, type TestContext } from 'node:test';
 
 import { chromium, firefox, type Page } from 'playwright';
 
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bundleModules } from '../test-utils/player-boot';
-import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
 const bundle = (): string => bundleModules(["export * from './chat/index';"], 'NativeChat');
@@ -38,7 +38,7 @@ const YOUTUBE = `<div id="columns">
 describe('native chat controller', () => {
   const installed = existsSync(chromium.executablePath());
   const code = installed ? bundle() : '';
-  const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
+  const browsers = sharedEngineBrowsers();
 
   async function pageWith(t: TestContext, html: string, viewport = { width: 1280, height: 800 }): Promise<Page> {
     const page = await (await browsers.chromium.newContext(t, { viewport })).newPage();

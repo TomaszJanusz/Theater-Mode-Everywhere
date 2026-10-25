@@ -1,12 +1,14 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { describe, it } from 'node:test';
-import type { Frame, Page, Route } from 'playwright';
-import { readStylesheet } from '../test-utils/styles';
+import { readFileSync } from 'node:fs';
+import { describe, it, type TestContext } from 'node:test';
+
+import type { BrowserContextOptions, Frame, Page, Route } from 'playwright';
+
 import type { ChatState } from '../chat';
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
+import type { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
 
 declare global {
   interface Window {
@@ -14,31 +16,16 @@ declare global {
   }
 }
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const PAGE_CSS = readStylesheet(path.join(SRC, 'content.css'));
-const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
+const PAGE_CSS = playerStylesheets().page;
+const UI_CSS = playerStylesheets().ui;
+const browsers = sharedEngineBrowsers();
 const VOD = readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url));
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { setPlayerUiCss } from './ui/root';",
-      "export { installMainWorldRuntime } from './platform/main-world-runtime';",
-      "export { nativeChatState } from './ui/chat';"
-    ].join('\n'),
-    resolveDir: SRC,
-    loader: 'ts'
-  },
-  bundle: true,
-  write: false,
-  format: 'iife',
-  globalName: 'NativeChatTest',
-  platform: 'browser',
-  target: 'es2022',
-  logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules([
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';",
+  "export { nativeChatState } from './ui/chat';"
+], 'NativeChatTest');
 
 const YOUTUBE_WATCH = 'https://www.youtube.com/watch?v=abcdefghijk';
 const TWITCH_CHANNEL = 'https://www.twitch.tv/example';
@@ -545,6 +532,11 @@ async function leaveTheater(page: Page): Promise<void> {
   await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
 }
 
+/** `browser.newPage`-shaped pages from a shared browser: one context per page, closed with test `t`. */
+function pagesOf(shared: ReturnType<typeof sharedTestBrowser>, t: TestContext): { newPage(options: BrowserContextOptions): Promise<Page> } {
+  return { newPage: async options => (await shared.newContext(t, options)).newPage() };
+}
+
 async function openPage(browser: { newPage(options: { viewport: { width: number; height: number } }): Promise<Page> }, target: { url: string; youtube?: string; twitch?: string }, viewport: { width: number; height: number }, seed: Record<string, unknown> = {}, navigationStorageKey?: string): Promise<{ page: Page; read(): Record<string, unknown> }> {
   const page = await browser.newPage({ viewport });
   const errors: string[] = [];
@@ -643,905 +635,861 @@ async function expectAppliedTheme(page: Page, theme: 'light' | 'native' | 'dark'
 describe('native chat browser session', () => {
   for (const engine of testEngines()) {
     it(`fixes Twitch Option+R, native toggle, and slider drift in ${engine}`, { timeout: 120_000 }, async t => {
-      const browserType = (await import('playwright'))[engine];
-      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
-      const browser = await browserType.launch({ headless: true });
-      try {
-        const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
-        const nativeToggle = page.locator('[data-a-target="right-column__toggle-collapse-btn"]');
-        assert.equal(await nativeToggle.isVisible(), true);
-        await boot(page);
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
-        assert.equal(await nativeToggle.isVisible(), false);
-        const optionR = () => page.evaluate(() => {
-          // macOS Option+R produces ®; Linux Playwright Alt+R alone cannot cover this.
-          document.querySelector('video')!.dispatchEvent(new KeyboardEvent('keydown', {
-            key: '®', code: 'KeyR', altKey: true, bubbles: true, cancelable: true
-          }));
-        });
-        await optionR();
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === false);
-        await optionR();
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === true);
+      const browser = pagesOf(browsers[engine], t);
+      const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
+      const nativeToggle = page.locator('[data-a-target="right-column__toggle-collapse-btn"]');
+      assert.equal(await nativeToggle.isVisible(), true);
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+      assert.equal(await nativeToggle.isVisible(), false);
+      const optionR = () => page.evaluate(() => {
+        // macOS Option+R produces ®; Linux Playwright Alt+R alone cannot cover this.
+        document.querySelector('video')!.dispatchEvent(new KeyboardEvent('keydown', {
+          key: '®', code: 'KeyR', altKey: true, bubbles: true, cancelable: true
+        }));
+      });
+      await optionR();
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === false);
+      await optionR();
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible === true);
 
-        await revealChatSettings(page);
-        const menu = page.locator('.theater-settings-menu');
-        const slider = page.locator('.theater-chat-width-slider');
-        const before = await menu.boundingBox();
-        const track = await slider.boundingBox();
-        assert.ok(before && track);
-        await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
-        await page.mouse.down();
-        for (const fraction of [.8, .15, .95]) {
-          await page.mouse.move(track.x + track.width * fraction, track.y + track.height / 2, { steps: 8 });
-          const after = await menu.boundingBox();
-          assert.ok(after);
-          assert.ok(Math.abs(after.x - before.x) < 1, `settings drifted during drag: ${JSON.stringify({before, after})}`);
-        }
-        await page.mouse.up();
-        const width = Number(await slider.inputValue());
-        assert.ok(width > 540, `the gauge stopped following the pointer: ${width}`);
-        const layout = await layoutOf(page);
-        assert.equal(layout.state?.width, width);
-        assertRightDock(layout, `${engine} resized`);
-        const released = await menu.boundingBox();
-        assert.ok(released && Math.abs(released.x - before.x) < 1, 'pointerup moved the menu');
-        await closeChatSettings(page);
-        await revealChatSettings(page);
-        const reopened = await menu.boundingBox();
-        assert.ok(reopened && Math.abs(reopened.x - before.x) > 100, 'reopening did not reanchor to the resized bar');
-        await leaveTheater(page);
-        assert.equal(await nativeToggle.isVisible(), true);
-        assert.deepEqual(pageErrors(page), []);
-      } finally { await browser.close(); }
+      await revealChatSettings(page);
+      const menu = page.locator('.theater-settings-menu');
+      const slider = page.locator('.theater-chat-width-slider');
+      const before = await menu.boundingBox();
+      const track = await slider.boundingBox();
+      assert.ok(before && track);
+      await page.mouse.move(track.x + track.width / 2, track.y + track.height / 2);
+      await page.mouse.down();
+      for (const fraction of [.8, .15, .95]) {
+        await page.mouse.move(track.x + track.width * fraction, track.y + track.height / 2, { steps: 8 });
+        const after = await menu.boundingBox();
+        assert.ok(after);
+        assert.ok(Math.abs(after.x - before.x) < 1, `settings drifted during drag: ${JSON.stringify({before, after})}`);
+      }
+      await page.mouse.up();
+      const width = Number(await slider.inputValue());
+      assert.ok(width > 540, `the gauge stopped following the pointer: ${width}`);
+      const layout = await layoutOf(page);
+      assert.equal(layout.state?.width, width);
+      assertRightDock(layout, `${engine} resized`);
+      const released = await menu.boundingBox();
+      assert.ok(released && Math.abs(released.x - before.x) < 1, 'pointerup moved the menu');
+      await closeChatSettings(page);
+      await revealChatSettings(page);
+      const reopened = await menu.boundingBox();
+      assert.ok(reopened && Math.abs(reopened.x - before.x) > 100, 'reopening did not reanchor to the resized bar');
+      await leaveTheater(page);
+      assert.equal(await nativeToggle.isVisible(), true);
+      assert.deepEqual(pageErrors(page), []);
     });
 
     it(`provides the missing light palette on a dark Twitch startup in ${engine}`, { timeout: 120_000 }, async t => {
-      const browserType = (await import('playwright'))[engine];
-      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
-      const browser = await browserType.launch({ headless: true });
-      try {
-        // Only the dark declaration is emitted on a native dark startup.
-        const darkCSS = TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark'));
-        const html = twitchDocument().replace('<html>', '<html class="NativeDark tw-root--theme-dark">')
-          .replace('</head>', `<style id="service-palette">${darkCSS}</style></head>`)
-          .replace('class="right-column"', 'class="right-column NativeDark tw-root--theme-dark"');
-        const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: html }, { width: 1280, height: 800 });
-        await boot(page);
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.available);
-        await chooseChatTheme(page, 'light');
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
-        // Compare all 1002 native tokens with a separate full service palette,
-        // including shared primitives and tokens outside the compiled bridge.
-        const verify = async (selector = '[data-theater-chat]') => page.evaluate(({ css, selector }) => {
-          const reference = document.createElement('div');
-          const shadow = reference.attachShadow({ mode: 'open' });
-          shadow.innerHTML = `<style>${css}</style><div class="NativeLight"></div>`;
-          document.body.append(reference);
-          const expected = getComputedStyle(shadow.querySelector('div')!);
-          const actual = getComputedStyle(document.querySelector(selector)!);
-          const names = [...(shadow.querySelector('style')!.sheet!.cssRules[0] as CSSStyleRule).style];
-          const mismatches = names.filter(name => name.startsWith('--') &&
-            actual.getPropertyValue(name).trim() !== expected.getPropertyValue(name).trim());
-          reference.remove();
-          return { checked: names.length, mismatches };
-        }, { css: TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeLight.NativeLight'), TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark')), selector });
-        const comparison = await verify();
-        assert.ok(comparison.checked >= 1002);
-        assert.deepEqual(comparison.mismatches, []);
-        await page.evaluate(() => {
-          const portal = document.createElement('div');
-          portal.className = 'ReactModalPortal';
-          portal.innerHTML = '<div id="late-popup" class="NativeDark tw-root--theme-dark">Native popup</div>';
-          document.body.append(portal);
-        });
-        await page.waitForFunction(() => document.querySelector('#late-popup')?.classList.contains('theater-chat-theme-light'));
-        assert.deepEqual((await verify('#late-popup')).mismatches, []);
-        const detachedPortal = await page.evaluate(async () => {
-          const popup = document.getElementById('late-popup');
-          const portal = popup?.parentElement;
-          if (!popup || !portal) return 'missing';
-          portal.remove();
-          await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
-          return popup.className;
-        });
-        assert.notEqual(detachedPortal, 'missing');
-        assert.equal(String(detachedPortal).includes('theater-chat-theme-'), false, engine);
-        await page.evaluate(() => {
-          const portal = document.createElement('div');
-          portal.className = 'ReactModalPortal';
-          portal.innerHTML = '<div id="next-popup" class="NativeDark tw-root--theme-dark">Next</div>';
-          document.body.append(portal);
-        });
-        await page.waitForFunction(() => document.querySelector('#next-popup')?.classList.contains('theater-chat-theme-light'));
-        await expectSavedTheme(read, 'twitch', { visible: true, width: 360, theme: 'light' });
-        await chooseChatTheme(page, 'dark');
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
-        await chooseChatTheme(page, 'light');
-        assert.deepEqual((await verify()).mismatches, []);
-        await chooseChatTheme(page, 'native');
-        assert.equal(await page.locator('[data-theater-chat]').evaluate(el => el.className.includes('theater-chat-theme-')), false);
-        assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
-        assert.equal(await page.evaluate(() => document.documentElement.classList.contains('tw-root--theme-dark')), true);
-        await chooseChatTheme(page, 'light');
-        const nativeText = await page.evaluate(() => {
-          const rule = (document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule);
-          const previous = rule.style.getPropertyValue('--color-text-base');
-          rule.style.setProperty('--color-text-base', 'magenta');
-          return previous;
-        });
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'unavailable');
-        assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
-        await page.evaluate(value => {
-          const rule = document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule;
-          rule.style.setProperty('--color-text-base', value);
-        }, nativeText);
-        await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
-        assert.deepEqual((await verify()).mismatches, []);
-        await leaveTheater(page);
-        assert.deepEqual(pageErrors(page), []);
-      } finally { await browser.close(); }
+      const browser = pagesOf(browsers[engine], t);
+      // Only the dark declaration is emitted on a native dark startup.
+      const darkCSS = TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark'));
+      const html = twitchDocument().replace('<html>', '<html class="NativeDark tw-root--theme-dark">')
+        .replace('</head>', `<style id="service-palette">${darkCSS}</style></head>`)
+        .replace('class="right-column"', 'class="right-column NativeDark tw-root--theme-dark"');
+      const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: html }, { width: 1280, height: 800 });
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.available);
+      await chooseChatTheme(page, 'light');
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+      // Compare all 1002 native tokens with a separate full service palette,
+      // including shared primitives and tokens outside the compiled bridge.
+      const verify = async (selector = '[data-theater-chat]') => page.evaluate(({ css, selector }) => {
+        const reference = document.createElement('div');
+        const shadow = reference.attachShadow({ mode: 'open' });
+        shadow.innerHTML = `<style>${css}</style><div class="NativeLight"></div>`;
+        document.body.append(reference);
+        const expected = getComputedStyle(shadow.querySelector('div')!);
+        const actual = getComputedStyle(document.querySelector(selector)!);
+        const names = [...(shadow.querySelector('style')!.sheet!.cssRules[0] as CSSStyleRule).style];
+        const mismatches = names.filter(name => name.startsWith('--') &&
+          actual.getPropertyValue(name).trim() !== expected.getPropertyValue(name).trim());
+        reference.remove();
+        return { checked: names.length, mismatches };
+      }, { css: TWITCH_THEME_CSS.slice(TWITCH_THEME_CSS.indexOf('.NativeLight.NativeLight'), TWITCH_THEME_CSS.indexOf('.NativeDark.NativeDark')), selector });
+      const comparison = await verify();
+      assert.ok(comparison.checked >= 1002);
+      assert.deepEqual(comparison.mismatches, []);
+      await page.evaluate(() => {
+        const portal = document.createElement('div');
+        portal.className = 'ReactModalPortal';
+        portal.innerHTML = '<div id="late-popup" class="NativeDark tw-root--theme-dark">Native popup</div>';
+        document.body.append(portal);
+      });
+      await page.waitForFunction(() => document.querySelector('#late-popup')?.classList.contains('theater-chat-theme-light'));
+      assert.deepEqual((await verify('#late-popup')).mismatches, []);
+      const detachedPortal = await page.evaluate(async () => {
+        const popup = document.getElementById('late-popup');
+        const portal = popup?.parentElement;
+        if (!popup || !portal) return 'missing';
+        portal.remove();
+        await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+        return popup.className;
+      });
+      assert.notEqual(detachedPortal, 'missing');
+      assert.equal(String(detachedPortal).includes('theater-chat-theme-'), false, engine);
+      await page.evaluate(() => {
+        const portal = document.createElement('div');
+        portal.className = 'ReactModalPortal';
+        portal.innerHTML = '<div id="next-popup" class="NativeDark tw-root--theme-dark">Next</div>';
+        document.body.append(portal);
+      });
+      await page.waitForFunction(() => document.querySelector('#next-popup')?.classList.contains('theater-chat-theme-light'));
+      await expectSavedTheme(read, 'twitch', { visible: true, width: 360, theme: 'light' });
+      await chooseChatTheme(page, 'dark');
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+      await chooseChatTheme(page, 'light');
+      assert.deepEqual((await verify()).mismatches, []);
+      await chooseChatTheme(page, 'native');
+      assert.equal(await page.locator('[data-theater-chat]').evaluate(el => el.className.includes('theater-chat-theme-')), false);
+      assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
+      assert.equal(await page.evaluate(() => document.documentElement.classList.contains('tw-root--theme-dark')), true);
+      await chooseChatTheme(page, 'light');
+      const nativeText = await page.evaluate(() => {
+        const rule = (document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule);
+        const previous = rule.style.getPropertyValue('--color-text-base');
+        rule.style.setProperty('--color-text-base', 'magenta');
+        return previous;
+      });
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'unavailable');
+      assert.equal(await page.locator('[data-theater-chat-palette]').count(), 0);
+      await page.evaluate(value => {
+        const rule = document.querySelector<HTMLStyleElement>('#service-palette')!.sheet!.cssRules[0] as CSSStyleRule;
+        rule.style.setProperty('--color-text-base', value);
+      }, nativeText);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+      assert.deepEqual((await verify()).mismatches, []);
+      await leaveTheater(page);
+      assert.deepEqual(pageErrors(page), []);
     });
   }
 
   it('keeps YouTube chat in place while docking, resizing, remembering width, and restoring the page', { timeout: 120_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const { page, read } = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('visible') }, { width: 1280, height: 800 });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      let layout = await layoutOf(page);
-      assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assert.equal(layout.active, true, JSON.stringify(layout));
-      assert.equal(layout.visibleAttr, true, JSON.stringify(layout));
-      assert.equal(layout.chatHidden, false, JSON.stringify(layout));
-      assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
-      assert.equal(layout.toggleExpanded, 'true', JSON.stringify(layout));
-      assert.equal(layout.toggleLabel, 'Hide chat', JSON.stringify(layout));
-      assert.equal(layout.secondaryAncestor, true, JSON.stringify(layout));
-      assertRightDock(layout, 'youtube initial');
-      // Hit testing ignores the pointer-free backdrop; check the composited pixels.
-      // Native view-transition names must not trap a clickable chat below the stage.
-      const screenshot = await page.locator('iframe#chatframe').screenshot();
-      const pixel = await page.evaluate(async dataUrl => {
-        const image = new Image();
-        const loaded = new Promise<void>(resolve => { image.onload = () => resolve(); });
-        image.src = dataUrl; await loaded;
-        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(image, image.width/2, image.height/2, 1, 1, 0, 0, 1, 1);
-        return [...ctx.getImageData(0,0,1,1).data];
-      }, 'data:image/png;base64,' + screenshot.toString('base64'));
-      assert.deepEqual(pixel, [253,250,245,255], 'native chat must paint above the TME backdrop');
+    const browser = pagesOf(browsers.chromium, t);
+    const { page, read } = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('visible') }, { width: 1280, height: 800 });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    let layout = await layoutOf(page);
+    assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    assert.equal(layout.active, true, JSON.stringify(layout));
+    assert.equal(layout.visibleAttr, true, JSON.stringify(layout));
+    assert.equal(layout.chatHidden, false, JSON.stringify(layout));
+    assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
+    assert.equal(layout.toggleExpanded, 'true', JSON.stringify(layout));
+    assert.equal(layout.toggleLabel, 'Hide chat', JSON.stringify(layout));
+    assert.equal(layout.secondaryAncestor, true, JSON.stringify(layout));
+    assertRightDock(layout, 'youtube initial');
+    // Hit testing ignores the pointer-free backdrop; check the composited pixels.
+    // Native view-transition names must not trap a clickable chat below the stage.
+    const screenshot = await page.locator('iframe#chatframe').screenshot();
+    const pixel = await page.evaluate(async dataUrl => {
+      const image = new Image();
+      const loaded = new Promise<void>(resolve => { image.onload = () => resolve(); });
+      image.src = dataUrl; await loaded;
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(image, image.width/2, image.height/2, 1, 1, 0, 0, 1, 1);
+      return [...ctx.getImageData(0,0,1,1).data];
+    }, 'data:image/png;base64,' + screenshot.toString('base64'));
+    assert.deepEqual(pixel, [253,250,245,255], 'native chat must paint above the TME backdrop');
 
 
-      const frame = page.frameLocator('#chatframe');
-      await frame.locator('#draft').fill('hello-1');
-      const preserved = await layoutOf(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-hidden') || document.querySelector('[data-theater-chat-hidden]'));
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
-      assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
-      assert.equal(layout.chatHidden, true, JSON.stringify(layout));
-      assert.equal(layout.toggleLabel, 'Show chat', JSON.stringify(layout));
-      assert.equal(layout.connected, true, JSON.stringify(layout));
-      assert.equal(layout.parentId, preserved.parentId, JSON.stringify(layout));
-      assert.equal(layout.src, preserved.src, JSON.stringify(layout));
-      assert.equal(layout.identity, 'primary', JSON.stringify(layout));
-      assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
-      assert.equal(layout.draft, 'hello-1', JSON.stringify(layout));
-      assert.equal(layout.chatCount, 1, JSON.stringify(layout));
-      assertFullVideo(layout, 'youtube hidden');
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      layout = await layoutOf(page);
-      assert.equal(layout.draft, 'hello-1', JSON.stringify(layout));
-      assert.equal(layout.src, preserved.src, JSON.stringify(layout));
-      assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
-      assert.equal(layout.parentId, preserved.parentId, JSON.stringify(layout));
-      assertRightDock(layout, 'youtube shown again');
-      await page.keyboard.press('c');
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      await page.keyboard.press('Alt+R');
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
-      assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
-      await page.keyboard.press('Alt+R');
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    const frame = page.frameLocator('#chatframe');
+    await frame.locator('#draft').fill('hello-1');
+    const preserved = await layoutOf(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-hidden') || document.querySelector('[data-theater-chat-hidden]'));
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
+    assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
+    assert.equal(layout.chatHidden, true, JSON.stringify(layout));
+    assert.equal(layout.toggleLabel, 'Show chat', JSON.stringify(layout));
+    assert.equal(layout.connected, true, JSON.stringify(layout));
+    assert.equal(layout.parentId, preserved.parentId, JSON.stringify(layout));
+    assert.equal(layout.src, preserved.src, JSON.stringify(layout));
+    assert.equal(layout.identity, 'primary', JSON.stringify(layout));
+    assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
+    assert.equal(layout.draft, 'hello-1', JSON.stringify(layout));
+    assert.equal(layout.chatCount, 1, JSON.stringify(layout));
+    assertFullVideo(layout, 'youtube hidden');
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    layout = await layoutOf(page);
+    assert.equal(layout.draft, 'hello-1', JSON.stringify(layout));
+    assert.equal(layout.src, preserved.src, JSON.stringify(layout));
+    assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
+    assert.equal(layout.parentId, preserved.parentId, JSON.stringify(layout));
+    assertRightDock(layout, 'youtube shown again');
+    await page.keyboard.press('c');
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    await page.keyboard.press('Alt+R');
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
+    assert.equal(layout.loads, preserved.loads, JSON.stringify(layout));
+    await page.keyboard.press('Alt+R');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
 
-      await setChatWidth(page, CHOSEN_WIDTH);
-      await page.waitForFunction(width => {
-        const chat = document.querySelector('[data-theater-chat]');
-        return chat !== null && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
-      }, CHOSEN_WIDTH);
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.width, CHOSEN_WIDTH, JSON.stringify(layout.state));
-      assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
-      assertRightDock(layout, 'youtube chosen width');
-      await waitForSaved(read, 'youtube', preference => preference.visible === true && preference.width === CHOSEN_WIDTH);
+    await setChatWidth(page, CHOSEN_WIDTH);
+    await page.waitForFunction(width => {
+      const chat = document.querySelector('[data-theater-chat]');
+      return chat !== null && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
+    }, CHOSEN_WIDTH);
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.width, CHOSEN_WIDTH, JSON.stringify(layout.state));
+    assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
+    assertRightDock(layout, 'youtube chosen width');
+    await waitForSaved(read, 'youtube', preference => preference.visible === true && preference.width === CHOSEN_WIDTH);
 
-      await installFrameRuntime(page);
-      await armPlaybackProbe(page);
-      const chatFrame = page.frames().find(candidate => candidate.url().includes('/live_chat'));
-      assert.ok(chatFrame);
-      await chatFrame.locator('#send').focus();
-      await page.keyboard.press('Space');
-      await page.keyboard.press('Enter');
-      assert.equal(await chatFrame.evaluate(() => (window as unknown as { __buttonClicks: number }).__buttonClicks), 2);
-      await chatFrame.locator('#send').focus();
-      await page.keyboard.press('t');
-      await page.keyboard.press('m');
-      await chatFrame.locator('#draft').focus();
-      await page.keyboard.press('t');
-      await page.keyboard.press('m');
-      await page.keyboard.press('Space');
-      layout = await layoutOf(page);
-      const frameKeys = await chatFrame.evaluate(() => (window as unknown as { __chatKeyLog: Array<{ key: string; defaultPrevented: boolean }> }).__chatKeyLog);
-      assert.equal(layout.theater, true, JSON.stringify(layout));
-      assert.equal(layout.paused, false, JSON.stringify(layout));
-      assert.equal(layout.muted, true, JSON.stringify(layout));
-      assert.equal(layout.pauseCalls, 0, JSON.stringify(layout));
-      assert.equal(layout.draft?.replace(/\u00a0/g, ' '), 'hello-1tm ', JSON.stringify(layout));
-      for (const key of [' ', 't', 'm']) assertKeyReached(frameKeys, key, 'youtube chat frame');
+    await installFrameRuntime(page);
+    await armPlaybackProbe(page);
+    const chatFrame = page.frames().find(candidate => candidate.url().includes('/live_chat'));
+    assert.ok(chatFrame);
+    await chatFrame.locator('#send').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
+    assert.equal(await chatFrame.evaluate(() => (window as unknown as { __buttonClicks: number }).__buttonClicks), 2);
+    await chatFrame.locator('#send').focus();
+    await page.keyboard.press('t');
+    await page.keyboard.press('m');
+    await chatFrame.locator('#draft').focus();
+    await page.keyboard.press('t');
+    await page.keyboard.press('m');
+    await page.keyboard.press('Space');
+    layout = await layoutOf(page);
+    const frameKeys = await chatFrame.evaluate(() => (window as unknown as { __chatKeyLog: Array<{ key: string; defaultPrevented: boolean }> }).__chatKeyLog);
+    assert.equal(layout.theater, true, JSON.stringify(layout));
+    assert.equal(layout.paused, false, JSON.stringify(layout));
+    assert.equal(layout.muted, true, JSON.stringify(layout));
+    assert.equal(layout.pauseCalls, 0, JSON.stringify(layout));
+    assert.equal(layout.draft?.replace(/\u00a0/g, ' '), 'hello-1tm ', JSON.stringify(layout));
+    for (const key of [' ', 't', 'm']) assertKeyReached(frameKeys, key, 'youtube chat frame');
 
-      await page.setViewportSize({ width: 800, height: 720 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
-      await page.waitForFunction(() => document.getElementById('below')?.hasAttribute('data-theater-chat-ancestor'));
-      layout = await layoutOf(page);
-      assertBottomDock(layout, 'youtube narrow');
-      const narrowAncestor = await page.locator('#below').evaluate(element => ({
-        containsChat: element.contains(document.getElementById('chat')),
-        opacity: getComputedStyle(element).opacity,
-        visibility: getComputedStyle(element).visibility
-      }));
-      assert.deepEqual(narrowAncestor, { containsChat: true, opacity: '1', visibility: 'visible' });
-      const beforeNarrowToggle = await layoutOf(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.locator('.theater-chat-toggle').click();
-      layout = await layoutOf(page);
-      assert.equal(layout.src, beforeNarrowToggle.src, JSON.stringify(layout));
-      assert.equal(layout.loads, beforeNarrowToggle.loads, JSON.stringify(layout));
-      assert.equal(layout.parentId, beforeNarrowToggle.parentId, JSON.stringify(layout));
-      assert.equal(layout.draft, beforeNarrowToggle.draft, JSON.stringify(layout));
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
-      await page.waitForFunction(() => document.getElementById('secondary')?.hasAttribute('data-theater-chat-ancestor'));
-      layout = await layoutOf(page);
-      assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
-      assertRightDock(layout, 'youtube wide again');
+    await page.setViewportSize({ width: 800, height: 720 });
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
+    await page.waitForFunction(() => document.getElementById('below')?.hasAttribute('data-theater-chat-ancestor'));
+    layout = await layoutOf(page);
+    assertBottomDock(layout, 'youtube narrow');
+    const narrowAncestor = await page.locator('#below').evaluate(element => ({
+      containsChat: element.contains(document.getElementById('chat')),
+      opacity: getComputedStyle(element).opacity,
+      visibility: getComputedStyle(element).visibility
+    }));
+    assert.deepEqual(narrowAncestor, { containsChat: true, opacity: '1', visibility: 'visible' });
+    const beforeNarrowToggle = await layoutOf(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.locator('.theater-chat-toggle').click();
+    layout = await layoutOf(page);
+    assert.equal(layout.src, beforeNarrowToggle.src, JSON.stringify(layout));
+    assert.equal(layout.loads, beforeNarrowToggle.loads, JSON.stringify(layout));
+    assert.equal(layout.parentId, beforeNarrowToggle.parentId, JSON.stringify(layout));
+    assert.equal(layout.draft, beforeNarrowToggle.draft, JSON.stringify(layout));
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
+    await page.waitForFunction(() => document.getElementById('secondary')?.hasAttribute('data-theater-chat-ancestor'));
+    layout = await layoutOf(page);
+    assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
+    assertRightDock(layout, 'youtube wide again');
 
-      await page.locator('.theater-chat-toggle').click();
-      await waitForSaved(read, 'youtube', preference => preference.visible === false && preference.width === CHOSEN_WIDTH);
-      await page.evaluate(() => {
-        const chat = document.querySelector('[data-theater-chat]');
-        if (!(chat instanceof HTMLElement)) throw new Error('missing chat');
-        chat.dataset.siteRevision = 'kept';
-        chat.classList.add('site-chat-theme');
-        chat.style.caretColor = 'rgb(7, 8, 9)';
-      });
-      await leaveTheater(page);
-      layout = await layoutOf(page);
-      assert.equal(layout.theater, false, JSON.stringify(layout));
-      assert.equal(layout.chatCount, 0, JSON.stringify(layout));
-      assert.equal(layout.active, false, JSON.stringify(layout));
-      assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
-      assert.equal(layout.videoMarked, false, JSON.stringify(layout));
-      assert.equal(layout.videoPosition, '', JSON.stringify(layout));
-      assert.equal(layout.vars.videoWidth, '', JSON.stringify(layout.vars));
-      assert.equal(layout.vars.chatWidth, '', JSON.stringify(layout.vars));
-      const restored = await page.evaluate(() => {
-        const chat = document.getElementById('chat');
-        return {
-          revision: chat?.dataset.siteRevision ?? null,
-          theme: Boolean(chat?.classList.contains('site-chat-theme')),
-          caret: chat instanceof HTMLElement ? chat.style.caretColor : '',
-          color: chat instanceof HTMLElement ? chat.style.color : '',
-          parent: chat?.parentElement?.id ?? null
-        };
-      });
-      assert.deepEqual(restored, {
-        revision: 'kept',
-        theme: true,
-        caret: 'rgb(7, 8, 9)',
-        color: 'rgb(1, 2, 3)',
-        parent: 'chat-container'
-      });
+    await page.locator('.theater-chat-toggle').click();
+    await waitForSaved(read, 'youtube', preference => preference.visible === false && preference.width === CHOSEN_WIDTH);
+    await page.evaluate(() => {
+      const chat = document.querySelector('[data-theater-chat]');
+      if (!(chat instanceof HTMLElement)) throw new Error('missing chat');
+      chat.dataset.siteRevision = 'kept';
+      chat.classList.add('site-chat-theme');
+      chat.style.caretColor = 'rgb(7, 8, 9)';
+    });
+    await leaveTheater(page);
+    layout = await layoutOf(page);
+    assert.equal(layout.theater, false, JSON.stringify(layout));
+    assert.equal(layout.chatCount, 0, JSON.stringify(layout));
+    assert.equal(layout.active, false, JSON.stringify(layout));
+    assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
+    assert.equal(layout.videoMarked, false, JSON.stringify(layout));
+    assert.equal(layout.videoPosition, '', JSON.stringify(layout));
+    assert.equal(layout.vars.videoWidth, '', JSON.stringify(layout.vars));
+    assert.equal(layout.vars.chatWidth, '', JSON.stringify(layout.vars));
+    const restored = await page.evaluate(() => {
+      const chat = document.getElementById('chat');
+      return {
+        revision: chat?.dataset.siteRevision ?? null,
+        theme: Boolean(chat?.classList.contains('site-chat-theme')),
+        caret: chat instanceof HTMLElement ? chat.style.caretColor : '',
+        color: chat instanceof HTMLElement ? chat.style.color : '',
+        parent: chat?.parentElement?.id ?? null
+      };
+    });
+    assert.deepEqual(restored, {
+      revision: 'kept',
+      theme: true,
+      caret: 'rgb(7, 8, 9)',
+      color: 'rgb(1, 2, 3)',
+      parent: 'chat-container'
+    });
 
-      await page.reload({ waitUntil: 'load' });
-      await boot(page);
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.width, CHOSEN_WIDTH, JSON.stringify(layout.state));
-      assert.equal(pixels(layout.vars.chatWidth), CHOSEN_WIDTH, JSON.stringify(layout.vars));
-      assertRightDock(layout, 'native visibility overrides the saved hidden preference');
-      await page.waitForFunction(width => {
-        const chat = document.querySelector('[data-theater-chat]');
-        return chat !== null && !chat.hasAttribute('data-theater-chat-hidden') && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
-      }, CHOSEN_WIDTH);
-      assertRightDock(await layoutOf(page), 'youtube restored width');
-      assert.deepEqual(pageErrors(page), []);
-    } finally {
-      await browser.close();
-    }
+    await page.reload({ waitUntil: 'load' });
+    await boot(page);
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    assert.equal(layout.state?.width, CHOSEN_WIDTH, JSON.stringify(layout.state));
+    assert.equal(pixels(layout.vars.chatWidth), CHOSEN_WIDTH, JSON.stringify(layout.vars));
+    assertRightDock(layout, 'native visibility overrides the saved hidden preference');
+    await page.waitForFunction(width => {
+      const chat = document.querySelector('[data-theater-chat]');
+      return chat !== null && !chat.hasAttribute('data-theater-chat-hidden') && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
+    }, CHOSEN_WIDTH);
+    assertRightDock(await layoutOf(page), 'youtube restored width');
+    assert.deepEqual(pageErrors(page), []);
   });
 
   it('keeps Twitch chat input and menu keys in the native column without pausing the video', { timeout: 120_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      let layout = await layoutOf(page);
-      assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assert.equal(layout.parentTag, 'BODY', JSON.stringify(layout));
-      assert.equal(layout.toggleLabel, 'Hide chat', JSON.stringify(layout));
-      assertRightDock(layout, 'twitch initial');
-      const sectionInsideColumn = await page.evaluate(() => {
-        const column = document.querySelector('[data-theater-chat]');
-        const section = document.querySelector('[data-test-selector="chat-room-component-layout"]');
-        return Boolean(column && section && column.contains(section) && section.parentElement?.classList.contains('stream-chat'));
-      });
-      assert.equal(sectionInsideColumn, true);
+    const browser = pagesOf(browsers.chromium, t);
+    const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    let layout = await layoutOf(page);
+    assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    assert.equal(layout.parentTag, 'BODY', JSON.stringify(layout));
+    assert.equal(layout.toggleLabel, 'Hide chat', JSON.stringify(layout));
+    assertRightDock(layout, 'twitch initial');
+    const sectionInsideColumn = await page.evaluate(() => {
+      const column = document.querySelector('[data-theater-chat]');
+      const section = document.querySelector('[data-test-selector="chat-room-component-layout"]');
+      return Boolean(column && section && column.contains(section) && section.parentElement?.classList.contains('stream-chat'));
+    });
+    assert.equal(sectionInsideColumn, true);
 
-      await page.locator('#draft').fill('hello-1');
-      const preserved = await layoutOf(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
-      layout = await layoutOf(page);
-      assert.equal(layout.parentTag, 'BODY', JSON.stringify(layout));
-      assert.equal(layout.connected, true, JSON.stringify(layout));
-      assert.equal(layout.chatCount, 1, JSON.stringify(layout));
-      assert.equal(layout.draft, preserved.draft, JSON.stringify(layout));
-      assert.ok(layout.draft?.includes('hello-1'), JSON.stringify(layout));
-      assertFullVideo(layout, 'twitch hidden');
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      layout = await layoutOf(page);
-      assert.equal(layout.parentTag, preserved.parentTag, JSON.stringify(layout));
-      assert.equal(layout.draft, preserved.draft, JSON.stringify(layout));
-      assertRightDock(layout, 'twitch shown again');
+    await page.locator('#draft').fill('hello-1');
+    const preserved = await layoutOf(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+    layout = await layoutOf(page);
+    assert.equal(layout.parentTag, 'BODY', JSON.stringify(layout));
+    assert.equal(layout.connected, true, JSON.stringify(layout));
+    assert.equal(layout.chatCount, 1, JSON.stringify(layout));
+    assert.equal(layout.draft, preserved.draft, JSON.stringify(layout));
+    assert.ok(layout.draft?.includes('hello-1'), JSON.stringify(layout));
+    assertFullVideo(layout, 'twitch hidden');
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    layout = await layoutOf(page);
+    assert.equal(layout.parentTag, preserved.parentTag, JSON.stringify(layout));
+    assert.equal(layout.draft, preserved.draft, JSON.stringify(layout));
+    assertRightDock(layout, 'twitch shown again');
 
-      await setChatWidth(page, CHOSEN_WIDTH);
-      await page.waitForFunction(width => {
-        const chat = document.querySelector('[data-theater-chat]');
-        return chat !== null && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
-      }, CHOSEN_WIDTH);
-      await waitForSaved(read, 'twitch', preference => preference.visible === true && preference.width === CHOSEN_WIDTH);
-      assertRightDock(await layoutOf(page), 'twitch chosen width');
+    await setChatWidth(page, CHOSEN_WIDTH);
+    await page.waitForFunction(width => {
+      const chat = document.querySelector('[data-theater-chat]');
+      return chat !== null && Math.abs(chat.getBoundingClientRect().width - width) <= 4;
+    }, CHOSEN_WIDTH);
+    await waitForSaved(read, 'twitch', preference => preference.visible === true && preference.width === CHOSEN_WIDTH);
+    assertRightDock(await layoutOf(page), 'twitch chosen width');
 
-      await armPlaybackProbe(page);
-      await page.locator('#chat-menu').focus();
-      await page.keyboard.press('Space');
-      await page.keyboard.press('Enter');
-      assert.equal(await page.evaluate(() => (window as unknown as { __buttonClicks: number }).__buttonClicks), 2);
-      await page.locator('#chat-menu').focus();
-      await page.keyboard.press('t');
-      await page.keyboard.press('m');
-      await page.locator('#draft').focus();
-      await page.keyboard.press('t');
-      await page.keyboard.press('m');
-      await page.keyboard.press('Space');
-      layout = await layoutOf(page);
-      const keys = await page.evaluate(() => (window as unknown as { __chatKeyLog: Array<{ key: string; defaultPrevented: boolean }> }).__chatKeyLog);
-      assert.equal(layout.theater, true, JSON.stringify(layout));
-      assert.equal(layout.paused, false, JSON.stringify(layout));
-      assert.equal(layout.muted, true, JSON.stringify(layout));
-      assert.equal(layout.pauseCalls, 0, JSON.stringify(layout));
-      assert.ok(layout.draft?.replace(/\u00a0/g, ' ').includes('hello-1tm'), JSON.stringify(layout));
-      for (const key of [' ', 't', 'm']) assertKeyReached(keys, key, 'twitch chat');
+    await armPlaybackProbe(page);
+    await page.locator('#chat-menu').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => (window as unknown as { __buttonClicks: number }).__buttonClicks), 2);
+    await page.locator('#chat-menu').focus();
+    await page.keyboard.press('t');
+    await page.keyboard.press('m');
+    await page.locator('#draft').focus();
+    await page.keyboard.press('t');
+    await page.keyboard.press('m');
+    await page.keyboard.press('Space');
+    layout = await layoutOf(page);
+    const keys = await page.evaluate(() => (window as unknown as { __chatKeyLog: Array<{ key: string; defaultPrevented: boolean }> }).__chatKeyLog);
+    assert.equal(layout.theater, true, JSON.stringify(layout));
+    assert.equal(layout.paused, false, JSON.stringify(layout));
+    assert.equal(layout.muted, true, JSON.stringify(layout));
+    assert.equal(layout.pauseCalls, 0, JSON.stringify(layout));
+    assert.ok(layout.draft?.replace(/\u00a0/g, ' ').includes('hello-1tm'), JSON.stringify(layout));
+    for (const key of [' ', 't', 'm']) assertKeyReached(keys, key, 'twitch chat');
 
-      await page.setViewportSize({ width: 800, height: 720 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
-      assertBottomDock(await layoutOf(page), 'twitch narrow');
-      await page.setViewportSize({ width: 1280, height: 800 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
-      layout = await layoutOf(page);
-      assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
-      assertRightDock(layout, 'twitch wide again');
+    await page.setViewportSize({ width: 800, height: 720 });
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
+    assertBottomDock(await layoutOf(page), 'twitch narrow');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
+    layout = await layoutOf(page);
+    assert.ok(layout.chat && near(layout.chat.width, CHOSEN_WIDTH), JSON.stringify(layout));
+    assertRightDock(layout, 'twitch wide again');
 
-      await page.evaluate(() => {
-        const chat = document.querySelector('[data-theater-chat]');
-        if (!(chat instanceof HTMLElement)) throw new Error('missing chat');
-        chat.dataset.siteRevision = 'kept';
-        chat.classList.add('site-chat-theme');
-        chat.style.caretColor = 'rgb(7, 8, 9)';
-      });
-      await leaveTheater(page);
-      const restored = await page.evaluate(() => {
-        const chat = document.querySelector('.right-column');
-        const player = document.querySelector('.persistent-player');
-        return {
-          marked: document.querySelector('[data-theater-chat], [data-theater-chat-hidden]') !== null,
-          active: document.documentElement.hasAttribute('data-theater-chat-active'),
-          visible: document.documentElement.hasAttribute('data-theater-chat-visible'),
-          revision: chat?.getAttribute('data-site-revision') ?? null,
-          theme: Boolean(chat?.classList.contains('site-chat-theme')),
-          caret: chat instanceof HTMLElement ? chat.style.caretColor : '',
-          color: document.querySelector('.chat-room') instanceof HTMLElement
-            ? (document.querySelector('.chat-room') as HTMLElement).style.color
-            : '',
-          playerPosition: player instanceof HTMLElement ? getComputedStyle(player).position : '',
-          stage: document.documentElement.classList.contains('theater-everywhere-twitch-stage'),
-          videoPosition: document.querySelector('video') instanceof HTMLElement
-            ? (document.querySelector('video') as HTMLElement).style.getPropertyValue('position')
-            : 'missing'
-        };
-      });
-      assert.deepEqual(restored, {
-        marked: false,
-        active: false,
-        visible: false,
-        revision: 'kept',
-        theme: true,
-        caret: 'rgb(7, 8, 9)',
-        color: 'rgb(1, 2, 3)',
-        playerPosition: 'static',
-        stage: false,
-        videoPosition: ''
-      });
-      assert.deepEqual(pageErrors(page), []);
-    } finally {
-      await browser.close();
-    }
+    await page.evaluate(() => {
+      const chat = document.querySelector('[data-theater-chat]');
+      if (!(chat instanceof HTMLElement)) throw new Error('missing chat');
+      chat.dataset.siteRevision = 'kept';
+      chat.classList.add('site-chat-theme');
+      chat.style.caretColor = 'rgb(7, 8, 9)';
+    });
+    await leaveTheater(page);
+    const restored = await page.evaluate(() => {
+      const chat = document.querySelector('.right-column');
+      const player = document.querySelector('.persistent-player');
+      return {
+        marked: document.querySelector('[data-theater-chat], [data-theater-chat-hidden]') !== null,
+        active: document.documentElement.hasAttribute('data-theater-chat-active'),
+        visible: document.documentElement.hasAttribute('data-theater-chat-visible'),
+        revision: chat?.getAttribute('data-site-revision') ?? null,
+        theme: Boolean(chat?.classList.contains('site-chat-theme')),
+        caret: chat instanceof HTMLElement ? chat.style.caretColor : '',
+        color: document.querySelector('.chat-room') instanceof HTMLElement
+          ? (document.querySelector('.chat-room') as HTMLElement).style.color
+          : '',
+        playerPosition: player instanceof HTMLElement ? getComputedStyle(player).position : '',
+        stage: document.documentElement.classList.contains('theater-everywhere-twitch-stage'),
+        videoPosition: document.querySelector('video') instanceof HTMLElement
+          ? (document.querySelector('video') as HTMLElement).style.getPropertyValue('position')
+          : 'missing'
+      };
+    });
+    assert.deepEqual(restored, {
+      marked: false,
+      active: false,
+      visible: false,
+      revision: 'kept',
+      theme: true,
+      caret: 'rgb(7, 8, 9)',
+      color: 'rgb(1, 2, 3)',
+      playerPosition: 'static',
+      stage: false,
+      videoPosition: ''
+    });
+    assert.deepEqual(pageErrors(page), []);
   });
 
   it('exposes the chat toggle before YouTube mounts a frame and opens it with Alt+R', { timeout: 120_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const { page } = await openPage(browser, {url:YOUTUBE_WATCH,youtube:youtubeDocument('none')}, {width:1280,height:800});
-      await page.evaluate(() => {
-        const card = document.createElement('yt-video-metadata-carousel-view-model');
-        card.setAttribute('role','button');card.setAttribute('aria-label','Live chat');
-        card.innerHTML='<button>Open panel</button>';
-        card.dataset.clicks='0';
-        card.addEventListener('click',() => {
-          card.dataset.clicks=String(Number(card.dataset.clicks)+1);
-          const chat = document.createElement('ytd-live-chat-frame');chat.id='chat';
-          const iframe=document.createElement('iframe');iframe.id='chatframe';
-          iframe.src='https://www.youtube.com/live_chat?v=abcdefghijk';
-          chat.append(iframe);document.querySelector('#secondary')?.append(chat);
-          (card.querySelector('button') as HTMLButtonElement).disabled=true;
-        });
-        document.querySelector('ytd-watch-flexy')?.append(card);
+    const browser = pagesOf(browsers.chromium, t);
+    const { page } = await openPage(browser, {url:YOUTUBE_WATCH,youtube:youtubeDocument('none')}, {width:1280,height:800});
+    await page.evaluate(() => {
+      const card = document.createElement('yt-video-metadata-carousel-view-model');
+      card.setAttribute('role','button');card.setAttribute('aria-label','Live chat');
+      card.innerHTML='<button>Open panel</button>';
+      card.dataset.clicks='0';
+      card.addEventListener('click',() => {
+        card.dataset.clicks=String(Number(card.dataset.clicks)+1);
+        const chat = document.createElement('ytd-live-chat-frame');chat.id='chat';
+        const iframe=document.createElement('iframe');iframe.id='chatframe';
+        iframe.src='https://www.youtube.com/live_chat?v=abcdefghijk';
+        chat.append(iframe);document.querySelector('#secondary')?.append(chat);
+        (card.querySelector('button') as HTMLButtonElement).disabled=true;
       });
-      await boot(page);
-      const initial=await layoutOf(page);
-      assert.equal(initial.state?.available,true);
-      assert.equal(initial.state?.visible,false);
-      assert.equal(initial.toggleHidden,false);
-      assert.equal(initial.chatCount,0);
-      assertFullVideo(initial,'YouTube activation card only');
-      await page.keyboard.press('Alt+R');
-      await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
-      await page.locator('#chatframe').contentFrame().locator('#draft').fill('keep the native draft');
-      assertRightDock(await layoutOf(page),'YouTube opened through native card');
-      await page.locator('.theater-chat-toggle').focus();
-      await page.keyboard.press('Alt+R');
-      await page.waitForFunction(()=>!window.NativeChatTest.nativeChatState()?.visible);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
-      assert.equal(await page.locator('yt-video-metadata-carousel-view-model').getAttribute('data-clicks'),'1');
-      assert.equal(await page.locator('#chatframe').contentFrame().locator('#draft').inputValue(),'keep the native draft');
-      assert.deepEqual(pageErrors(page),[]);
-    } finally { await browser.close(); }
+      document.querySelector('ytd-watch-flexy')?.append(card);
+    });
+    await boot(page);
+    const initial=await layoutOf(page);
+    assert.equal(initial.state?.available,true);
+    assert.equal(initial.state?.visible,false);
+    assert.equal(initial.toggleHidden,false);
+    assert.equal(initial.chatCount,0);
+    assertFullVideo(initial,'YouTube activation card only');
+    await page.keyboard.press('Alt+R');
+    await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
+    await page.locator('#chatframe').contentFrame().locator('#draft').fill('keep the native draft');
+    assertRightDock(await layoutOf(page),'YouTube opened through native card');
+    await page.locator('.theater-chat-toggle').focus();
+    await page.keyboard.press('Alt+R');
+    await page.waitForFunction(()=>!window.NativeChatTest.nativeChatState()?.visible);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(()=>window.NativeChatTest.nativeChatState()?.visible);
+    assert.equal(await page.locator('yt-video-metadata-carousel-view-model').getAttribute('data-clicks'),'1');
+    assert.equal(await page.locator('#chatframe').contentFrame().locator('#draft').inputValue(),'keep the native draft');
+    assert.deepEqual(pageErrors(page),[]);
   });
 
   it('leaves ordinary videos alone, adopts a late chat, and rebinds when that root is replaced', { timeout: 120_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
-      // Capture controller timers before boot, then observe absence across two
-      // complete 500ms discovery polls without waiting for wall-clock time.
-      await absent.page.clock.install();
-      await boot(absent.page);
-      await absent.page.clock.runFor(1000);
-      let layout = await layoutOf(absent.page);
-      assert.equal(layout.state?.available, false, JSON.stringify(layout.state));
-      assert.equal(layout.toggleHidden, true, JSON.stringify(layout));
-      assert.equal(layout.chatCount, 0, JSON.stringify(layout));
-      assert.equal(layout.active, false, JSON.stringify(layout));
-      assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
-      assert.equal(layout.secondaryAncestor, false, JSON.stringify(layout));
-      assert.equal(layout.secondaryHidden, true, JSON.stringify(layout));
-      assertFullVideo(layout, 'youtube without chat');
-      assert.deepEqual(pageErrors(absent.page), []);
-      await absent.page.close();
+    const browser = pagesOf(browsers.chromium, t);
+    const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
+    // Capture controller timers before boot, then observe absence across two
+    // complete 500ms discovery polls without waiting for wall-clock time.
+    await absent.page.clock.install();
+    await boot(absent.page);
+    await absent.page.clock.runFor(1000);
+    let layout = await layoutOf(absent.page);
+    assert.equal(layout.state?.available, false, JSON.stringify(layout.state));
+    assert.equal(layout.toggleHidden, true, JSON.stringify(layout));
+    assert.equal(layout.chatCount, 0, JSON.stringify(layout));
+    assert.equal(layout.active, false, JSON.stringify(layout));
+    assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
+    assert.equal(layout.secondaryAncestor, false, JSON.stringify(layout));
+    assert.equal(layout.secondaryHidden, true, JSON.stringify(layout));
+    assertFullVideo(layout, 'youtube without chat');
+    assert.deepEqual(pageErrors(absent.page), []);
+    await absent.page.close();
 
-      const collapsed = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('collapsed') }, { width: 1280, height: 800 });
-      await boot(collapsed.page);
-      await collapsed.page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      layout = await layoutOf(collapsed.page);
-      assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
-      assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
-      assert.equal(layout.toggleExpanded, 'false', JSON.stringify(layout));
-      assert.equal(layout.chatHidden, true, JSON.stringify(layout));
-      assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
-      assertFullVideo(layout, 'youtube natively collapsed');
-      await collapsed.page.locator('.theater-chat-toggle').click();
-      await collapsed.page.waitForFunction(() => {
-        const chat = document.querySelector('[data-theater-chat]');
-        return chat !== null && chat.getBoundingClientRect().width > 200 && !chat.hasAttribute('data-theater-chat-hidden');
-      });
-      layout = await layoutOf(collapsed.page);
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assertRightDock(layout, 'youtube opened from collapsed');
-      assert.deepEqual(pageErrors(collapsed.page), []);
-      await collapsed.page.close();
+    const collapsed = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('collapsed') }, { width: 1280, height: 800 });
+    await boot(collapsed.page);
+    await collapsed.page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    layout = await layoutOf(collapsed.page);
+    assert.equal(layout.state?.available, true, JSON.stringify(layout.state));
+    assert.equal(layout.state?.visible, false, JSON.stringify(layout.state));
+    assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
+    assert.equal(layout.toggleExpanded, 'false', JSON.stringify(layout));
+    assert.equal(layout.chatHidden, true, JSON.stringify(layout));
+    assert.equal(layout.visibleAttr, false, JSON.stringify(layout));
+    assertFullVideo(layout, 'youtube natively collapsed');
+    await collapsed.page.locator('.theater-chat-toggle').click();
+    await collapsed.page.waitForFunction(() => {
+      const chat = document.querySelector('[data-theater-chat]');
+      return chat !== null && chat.getBoundingClientRect().width > 200 && !chat.hasAttribute('data-theater-chat-hidden');
+    });
+    layout = await layoutOf(collapsed.page);
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    assertRightDock(layout, 'youtube opened from collapsed');
+    assert.deepEqual(pageErrors(collapsed.page), []);
+    await collapsed.page.close();
 
-      const delayed = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
-      await boot(delayed.page);
-      await delayed.page.evaluate(() => {
-        const secondary = document.getElementById('secondary');
-        if (!secondary) throw new Error('missing secondary');
-        const container = document.createElement('div');
-        container.id = 'chat-container';
-        const chat = document.createElement('ytd-live-chat-frame');
-        chat.id = 'chat';
-        chat.style.display = 'block';
-        chat.style.width = '340px';
-        chat.style.height = '420px';
-        const iframe = document.createElement('iframe');
-        iframe.id = 'chatframe';
-        iframe.dataset.fixtureIdentity = 'delayed';
-        const probe = window as Window & { __chatLoads?: number };
-        probe.__chatLoads = 0;
-        iframe.addEventListener('load', () => { probe.__chatLoads = (probe.__chatLoads ?? 0) + 1; });
-        iframe.src = 'https://www.youtube.com/live_chat?v=abcdefghijk';
-        chat.append(iframe);
-        container.append(chat);
-        secondary.append(container);
-      });
-      await delayed.page.waitForFunction(() => {
-        const chat = document.querySelector('[data-theater-chat]');
-        return chat?.id === 'chat' && document.documentElement.hasAttribute('data-theater-chat-visible');
-      });
-      layout = await layoutOf(delayed.page);
-      assert.equal(layout.identity, 'delayed', JSON.stringify(layout));
-      assert.equal(layout.secondaryAncestor, true, JSON.stringify(layout));
-      assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
-      assertRightDock(layout, 'youtube delayed chat');
+    const delayed = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
+    await boot(delayed.page);
+    await delayed.page.evaluate(() => {
+      const secondary = document.getElementById('secondary');
+      if (!secondary) throw new Error('missing secondary');
+      const container = document.createElement('div');
+      container.id = 'chat-container';
+      const chat = document.createElement('ytd-live-chat-frame');
+      chat.id = 'chat';
+      chat.style.display = 'block';
+      chat.style.width = '340px';
+      chat.style.height = '420px';
+      const iframe = document.createElement('iframe');
+      iframe.id = 'chatframe';
+      iframe.dataset.fixtureIdentity = 'delayed';
+      const probe = window as Window & { __chatLoads?: number };
+      probe.__chatLoads = 0;
+      iframe.addEventListener('load', () => { probe.__chatLoads = (probe.__chatLoads ?? 0) + 1; });
+      iframe.src = 'https://www.youtube.com/live_chat?v=abcdefghijk';
+      chat.append(iframe);
+      container.append(chat);
+      secondary.append(container);
+    });
+    await delayed.page.waitForFunction(() => {
+      const chat = document.querySelector('[data-theater-chat]');
+      return chat?.id === 'chat' && document.documentElement.hasAttribute('data-theater-chat-visible');
+    });
+    layout = await layoutOf(delayed.page);
+    assert.equal(layout.identity, 'delayed', JSON.stringify(layout));
+    assert.equal(layout.secondaryAncestor, true, JSON.stringify(layout));
+    assert.equal(layout.toggleHidden, false, JSON.stringify(layout));
+    assertRightDock(layout, 'youtube delayed chat');
 
-      const beforeReplace = await layoutOf(delayed.page);
-      await delayed.page.evaluate(() => {
-        const current = document.getElementById('chat');
-        if (!current) throw new Error('missing chat');
-        const next = document.createElement('ytd-live-chat-frame');
-        next.id = 'chat';
-        next.dataset.fixtureGeneration = '2';
-        next.style.display = 'block';
-        next.style.width = '340px';
-        next.style.height = '420px';
-        const iframe = document.createElement('iframe');
-        iframe.id = 'chatframe';
-        iframe.dataset.fixtureIdentity = 'replaced';
-        const probe = window as Window & { __replacedLoads?: number; __detachedConnected?: () => boolean };
-        probe.__replacedLoads = 0;
-        iframe.addEventListener('load', () => { probe.__replacedLoads = (probe.__replacedLoads ?? 0) + 1; });
-        iframe.src = 'https://www.youtube.com/live_chat?v=abcdefghijk&replaced=1';
-        next.append(iframe);
-        probe.__detachedConnected = () => current.isConnected;
-        current.replaceWith(next);
-      });
-      await delayed.page.waitForFunction(() => {
-        const chat = document.getElementById('chat');
-        const frame = chat?.querySelector('#chatframe');
-        return chat?.dataset.fixtureGeneration === '2'
-          && chat.hasAttribute('data-theater-chat')
-          && frame instanceof HTMLIFrameElement
-          && frame.getAttribute('src')?.includes('replaced=1')
-          && frame.contentDocument?.readyState === 'complete';
-      });
-      await delayed.page.frameLocator('#chatframe').locator('#draft').fill('replaced-draft');
-      const replaced = await layoutOf(delayed.page);
-      assert.equal(replaced.detachedConnected, false, JSON.stringify(replaced));
-      assert.equal(replaced.generation, '2', JSON.stringify(replaced));
-      assert.equal(replaced.identity, 'replaced', JSON.stringify(replaced));
-      assert.equal(replaced.chatCount, 1, JSON.stringify(replaced));
-      assert.ok(replaced.loads >= beforeReplace.loads, JSON.stringify(replaced));
-      await delayed.page.locator('.theater-chat-toggle').click();
-      await delayed.page.locator('.theater-chat-toggle').click();
-      await delayed.page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      layout = await layoutOf(delayed.page);
-      assert.equal(layout.src, replaced.src, JSON.stringify(layout));
-      assert.equal(layout.replacedLoads, replaced.replacedLoads, JSON.stringify(layout));
-      assert.equal(layout.draft, 'replaced-draft', JSON.stringify(layout));
-      assert.equal(layout.parentId, 'chat-container', JSON.stringify(layout));
-      assert.equal(layout.detachedConnected, false, JSON.stringify(layout));
-      assertRightDock(layout, 'youtube replaced chat');
-      assert.deepEqual(pageErrors(delayed.page), []);
-    } finally {
-      await browser.close();
-    }
+    const beforeReplace = await layoutOf(delayed.page);
+    await delayed.page.evaluate(() => {
+      const current = document.getElementById('chat');
+      if (!current) throw new Error('missing chat');
+      const next = document.createElement('ytd-live-chat-frame');
+      next.id = 'chat';
+      next.dataset.fixtureGeneration = '2';
+      next.style.display = 'block';
+      next.style.width = '340px';
+      next.style.height = '420px';
+      const iframe = document.createElement('iframe');
+      iframe.id = 'chatframe';
+      iframe.dataset.fixtureIdentity = 'replaced';
+      const probe = window as Window & { __replacedLoads?: number; __detachedConnected?: () => boolean };
+      probe.__replacedLoads = 0;
+      iframe.addEventListener('load', () => { probe.__replacedLoads = (probe.__replacedLoads ?? 0) + 1; });
+      iframe.src = 'https://www.youtube.com/live_chat?v=abcdefghijk&replaced=1';
+      next.append(iframe);
+      probe.__detachedConnected = () => current.isConnected;
+      current.replaceWith(next);
+    });
+    await delayed.page.waitForFunction(() => {
+      const chat = document.getElementById('chat');
+      const frame = chat?.querySelector('#chatframe');
+      return chat?.dataset.fixtureGeneration === '2'
+        && chat.hasAttribute('data-theater-chat')
+        && frame instanceof HTMLIFrameElement
+        && frame.getAttribute('src')?.includes('replaced=1')
+        && frame.contentDocument?.readyState === 'complete';
+    });
+    await delayed.page.frameLocator('#chatframe').locator('#draft').fill('replaced-draft');
+    const replaced = await layoutOf(delayed.page);
+    assert.equal(replaced.detachedConnected, false, JSON.stringify(replaced));
+    assert.equal(replaced.generation, '2', JSON.stringify(replaced));
+    assert.equal(replaced.identity, 'replaced', JSON.stringify(replaced));
+    assert.equal(replaced.chatCount, 1, JSON.stringify(replaced));
+    assert.ok(replaced.loads >= beforeReplace.loads, JSON.stringify(replaced));
+    await delayed.page.locator('.theater-chat-toggle').click();
+    await delayed.page.locator('.theater-chat-toggle').click();
+    await delayed.page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    layout = await layoutOf(delayed.page);
+    assert.equal(layout.src, replaced.src, JSON.stringify(layout));
+    assert.equal(layout.replacedLoads, replaced.replacedLoads, JSON.stringify(layout));
+    assert.equal(layout.draft, 'replaced-draft', JSON.stringify(layout));
+    assert.equal(layout.parentId, 'chat-container', JSON.stringify(layout));
+    assert.equal(layout.detachedConnected, false, JSON.stringify(layout));
+    assertRightDock(layout, 'youtube replaced chat');
+    assert.deepEqual(pageErrors(delayed.page), []);
   });
 
   it('shares theme options and retains independent preferences for Twitch and YouTube', { timeout: 120_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const browser = pagesOf(browsers.chromium, t);
     const themeOptions = [
       { value: 'light', text: 'Light' },
       { value: 'native', text: 'Service settings' },
       { value: 'dark', text: 'Dark' }
     ];
-    try {
-      const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
-      // Capture controller timers before boot, then observe absence across two
-      // complete 500ms discovery polls without waiting for wall-clock time.
-      await absent.page.clock.install();
-      await boot(absent.page);
-      await absent.page.clock.runFor(1000);
-      const absentTheme = await readThemeControl(absent.page);
-      assert.equal(absentTheme.hidden, true, JSON.stringify(absentTheme));
-      assert.equal(absentTheme.disabled, true, JSON.stringify(absentTheme));
-      assert.deepEqual(pageErrors(absent.page), []);
-      await absent.page.close();
+    const absent = await openPage(browser, { url: YOUTUBE_WATCH, youtube: youtubeDocument('none') }, { width: 1280, height: 800 });
+    // Capture controller timers before boot, then observe absence across two
+    // complete 500ms discovery polls without waiting for wall-clock time.
+    await absent.page.clock.install();
+    await boot(absent.page);
+    await absent.page.clock.runFor(1000);
+    const absentTheme = await readThemeControl(absent.page);
+    assert.equal(absentTheme.hidden, true, JSON.stringify(absentTheme));
+    assert.equal(absentTheme.disabled, true, JSON.stringify(absentTheme));
+    assert.deepEqual(pageErrors(absent.page), []);
+    await absent.page.close();
 
-      const seeded = {
-        nativeChatPreferences: {
-          youtube: { visible: true, width: 400, theme: 'dark' },
-          twitch: { visible: true, width: 380 }
-        }
+    const seeded = {
+      nativeChatPreferences: {
+        youtube: { visible: true, width: 400, theme: 'dark' },
+        twitch: { visible: true, width: 380 }
+      }
+    };
+    const { page, read } = await openPage(
+      browser,
+      { url: TWITCH_CHANNEL, youtube: youtubeDocument('visible'), twitch: twitchDocument() },
+      { width: 1280, height: 800 },
+      seeded
+    );
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    let theme = await readThemeControl(page);
+    assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
+    assert.equal(theme.label, 'Theme', JSON.stringify(theme));
+    assert.equal(theme.text, 'Theme', JSON.stringify(theme));
+    await revealChatSettings(page);
+    const menu = await page.evaluate(() => {
+      const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
+      const body = root?.querySelector('.theater-settings-body');
+      const chat = body?.querySelector('[data-settings-section="chat"]');
+      const width = root?.querySelector('.theater-chat-width-row');
+      const themeRow = root?.querySelector('.theater-chat-theme-row');
+      const sameRow = (row: Element | null | undefined) => {
+        const label = row?.querySelector('.theater-settings-label');
+        const control = row?.querySelector('input, select');
+        if (!(label instanceof HTMLElement) || !(control instanceof HTMLElement)) return false;
+        return Math.abs(label.getBoundingClientRect().top - control.getBoundingClientRect().top) < 12;
       };
-      const { page, read } = await openPage(
-        browser,
-        { url: TWITCH_CHANNEL, youtube: youtubeDocument('visible'), twitch: twitchDocument() },
-        { width: 1280, height: 800 },
-        seeded
-      );
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      let theme = await readThemeControl(page);
-      assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
-      assert.equal(theme.label, 'Theme', JSON.stringify(theme));
-      assert.equal(theme.text, 'Theme', JSON.stringify(theme));
-      await revealChatSettings(page);
-      const menu = await page.evaluate(() => {
-        const root = document.getElementById('theater-everywhere-ui')?.shadowRoot;
-        const body = root?.querySelector('.theater-settings-body');
-        const chat = body?.querySelector('[data-settings-section="chat"]');
-        const width = root?.querySelector('.theater-chat-width-row');
-        const themeRow = root?.querySelector('.theater-chat-theme-row');
-        const sameRow = (row: Element | null | undefined) => {
-          const label = row?.querySelector('.theater-settings-label');
-          const control = row?.querySelector('input, select');
-          if (!(label instanceof HTMLElement) || !(control instanceof HTMLElement)) return false;
-          return Math.abs(label.getBoundingClientRect().top - control.getBoundingClientRect().top) < 12;
-        };
-        return {
-          order: [...(body?.children ?? [])].slice(0, 5).map(node =>
-            node instanceof HTMLElement && node.dataset.settingsSection
-              ? node.dataset.settingsSection : node.className),
-          chatHeading: chat?.querySelector('.theater-settings-heading')?.textContent ?? null,
-          playerHeading: body?.querySelector(':scope > .theater-settings-heading')?.textContent ?? null,
-          widthLabel: width?.querySelector('.theater-settings-label')?.textContent ?? null,
-          themeInChat: Boolean(themeRow && chat?.contains(themeRow)),
-          widthInline: sameRow(width),
-          themeInline: sameRow(themeRow),
-          chatActive: root?.querySelector('.theater-chat-toggle')?.classList.contains('active') ?? false,
-          chatColor: (() => {
-            const toggle = root?.querySelector('.theater-chat-toggle');
-            return toggle instanceof HTMLElement ? getComputedStyle(toggle).color : null;
-          })(),
-          idleColor: (() => {
-            const idle = root?.querySelector('.fullscreen-btn');
-            return idle instanceof HTMLElement ? getComputedStyle(idle).color : null;
-          })()
-        };
-      });
-      assert.deepEqual(menu.order, [
-        'chat',
-        'theater-settings-separator',
-        'audio',
-        'theater-settings-separator',
-        'theater-settings-heading'
-      ], JSON.stringify(menu));
-      assert.equal(menu.chatHeading, 'Chat');
-      assert.equal(menu.playerHeading, 'Player');
-      assert.equal(menu.widthLabel, 'Width');
-      assert.equal(menu.themeInChat, true);
-      assert.equal(menu.widthInline, true);
-      assert.equal(menu.themeInline, true);
-      assert.equal(menu.chatActive, true);
-      assert.notEqual(menu.chatColor, menu.idleColor, JSON.stringify(menu));
-      await closeChatSettings(page);
-      assert.equal(theme.value, 'native', JSON.stringify(theme));
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
-      assert.equal(theme.inSettings, true, JSON.stringify(theme));
-      assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
+      return {
+        order: [...(body?.children ?? [])].slice(0, 5).map(node =>
+          node instanceof HTMLElement && node.dataset.settingsSection
+            ? node.dataset.settingsSection : node.className),
+        chatHeading: chat?.querySelector('.theater-settings-heading')?.textContent ?? null,
+        playerHeading: body?.querySelector(':scope > .theater-settings-heading')?.textContent ?? null,
+        widthLabel: width?.querySelector('.theater-settings-label')?.textContent ?? null,
+        themeInChat: Boolean(themeRow && chat?.contains(themeRow)),
+        widthInline: sameRow(width),
+        themeInline: sameRow(themeRow),
+        chatActive: root?.querySelector('.theater-chat-toggle')?.classList.contains('active') ?? false,
+        chatColor: (() => {
+          const toggle = root?.querySelector('.theater-chat-toggle');
+          return toggle instanceof HTMLElement ? getComputedStyle(toggle).color : null;
+        })(),
+        idleColor: (() => {
+          const idle = root?.querySelector('.fullscreen-btn');
+          return idle instanceof HTMLElement ? getComputedStyle(idle).color : null;
+        })()
+      };
+    });
+    assert.deepEqual(menu.order, [
+      'chat',
+      'theater-settings-separator',
+      'audio',
+      'theater-settings-separator',
+      'theater-settings-heading'
+    ], JSON.stringify(menu));
+    assert.equal(menu.chatHeading, 'Chat');
+    assert.equal(menu.playerHeading, 'Player');
+    assert.equal(menu.widthLabel, 'Width');
+    assert.equal(menu.themeInChat, true);
+    assert.equal(menu.widthInline, true);
+    assert.equal(menu.themeInline, true);
+    assert.equal(menu.chatActive, true);
+    assert.notEqual(menu.chatColor, menu.idleColor, JSON.stringify(menu));
+    await closeChatSettings(page);
+    assert.equal(theme.value, 'native', JSON.stringify(theme));
+    assert.equal(theme.hidden, false, JSON.stringify(theme));
+    assert.equal(theme.disabled, false, JSON.stringify(theme));
+    assert.equal(theme.inSettings, true, JSON.stringify(theme));
+    assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
 
-      await page.goto(YOUTUBE_WATCH, { waitUntil: 'load' });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.value, 'dark', JSON.stringify(theme));
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.equal(theme.disabled, false, JSON.stringify(theme));
-      assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
-      assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
-      await setChatWidth(page, 440);
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
-      assert.equal(await page.locator('.theater-chat-theme-hint').isVisible(), false);
-      await chooseChatTheme(page, 'light');
-      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
-      await closeChatSettings(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.value,'light');
-      assert.equal(theme.disabled,false);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
-      let layout = await layoutOf(page);
-      assert.equal(layout.state?.width,440);
+    await page.goto(YOUTUBE_WATCH, { waitUntil: 'load' });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.value, 'dark', JSON.stringify(theme));
+    assert.equal(theme.hidden, false, JSON.stringify(theme));
+    assert.equal(theme.disabled, false, JSON.stringify(theme));
+    assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
+    assert.deepEqual(read().nativeChatPreferences, seeded.nativeChatPreferences);
+    await setChatWidth(page, 440);
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.themeStatus === 'applied');
+    assert.equal(await page.locator('.theater-chat-theme-hint').isVisible(), false);
+    await chooseChatTheme(page, 'light');
+    await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
+    await closeChatSettings(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.value,'light');
+    assert.equal(theme.disabled,false);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    await expectSavedTheme(read, 'youtube', {visible:true,width:440,theme:'light'});
+    let layout = await layoutOf(page);
+    assert.equal(layout.state?.width,440);
 
-      await page.goto(TWITCH_CHANNEL, { waitUntil: 'load' });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.value, 'native', JSON.stringify(theme));
-      assert.equal(theme.hidden, false, JSON.stringify(theme));
-      assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
-      await chooseChatTheme(page, 'light');
-      await expectSavedTheme(read, 'twitch', { visible: true, width: 380, theme: 'light' });
-      await expectAppliedTheme(page, 'light');
-      const separated = read().nativeChatPreferences as Record<string, { visible: boolean; width: number; theme: string }>;
-      assert.deepEqual(Object.keys(separated).sort(), ['twitch', 'youtube']);
-      assert.deepEqual(separated.youtube, { visible: true, width: 440, theme: 'light' });
-      assert.deepEqual(Object.keys(separated.twitch).sort(), ['theme', 'visible', 'width']);
+    await page.goto(TWITCH_CHANNEL, { waitUntil: 'load' });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.value, 'native', JSON.stringify(theme));
+    assert.equal(theme.hidden, false, JSON.stringify(theme));
+    assert.deepEqual(theme.options, themeOptions, JSON.stringify(theme));
+    await chooseChatTheme(page, 'light');
+    await expectSavedTheme(read, 'twitch', { visible: true, width: 380, theme: 'light' });
+    await expectAppliedTheme(page, 'light');
+    const separated = read().nativeChatPreferences as Record<string, { visible: boolean; width: number; theme: string }>;
+    assert.deepEqual(Object.keys(separated).sort(), ['twitch', 'youtube']);
+    assert.deepEqual(separated.youtube, { visible: true, width: 440, theme: 'light' });
+    assert.deepEqual(Object.keys(separated.twitch).sort(), ['theme', 'visible', 'width']);
 
-      await chooseChatTheme(page, 'dark');
-      await expectAppliedTheme(page, 'dark');
-      await closeChatSettings(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.hidden,false);
-      assert.equal(theme.disabled,false);
-      assert.equal(theme.value,'dark');
-      await page.setViewportSize({width:800,height:720});
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
-      await chooseChatTheme(page,'light');
-      await expectSavedTheme(read,'twitch',{visible:false,width:380,theme:'light'});
-      await closeChatSettings(page);
-      await page.locator('.theater-chat-toggle').click();
-      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
-      assertBottomDock(await layoutOf(page),'Twitch theme on bottom dock');
-      await page.setViewportSize({width:1280,height:800});
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
-      await page.reload({ waitUntil: 'load' });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.value, 'light', JSON.stringify(theme));
-      await expectAppliedTheme(page, 'light');
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.width, 380, JSON.stringify(layout.state));
+    await chooseChatTheme(page, 'dark');
+    await expectAppliedTheme(page, 'dark');
+    await closeChatSettings(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat-hidden]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.hidden,false);
+    assert.equal(theme.disabled,false);
+    assert.equal(theme.value,'dark');
+    await page.setViewportSize({width:800,height:720});
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'bottom');
+    await chooseChatTheme(page,'light');
+    await expectSavedTheme(read,'twitch',{visible:false,width:380,theme:'light'});
+    await closeChatSettings(page);
+    await page.locator('.theater-chat-toggle').click();
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-chat-visible'));
+    assertBottomDock(await layoutOf(page),'Twitch theme on bottom dock');
+    await page.setViewportSize({width:1280,height:800});
+    await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.dock === 'right');
+    await page.reload({ waitUntil: 'load' });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.value, 'light', JSON.stringify(theme));
+    await expectAppliedTheme(page, 'light');
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.width, 380, JSON.stringify(layout.state));
 
-      await page.goto(YOUTUBE_WATCH, { waitUntil: 'load' });
-      await boot(page);
-      await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
-      theme = await readThemeControl(page);
-      assert.equal(theme.value, 'light', JSON.stringify(theme));
-      await expectAppliedTheme(page, 'light');
-      layout = await layoutOf(page);
-      assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
-      assert.equal(layout.state?.width, 440, JSON.stringify(layout.state));
-      assert.deepEqual(pageErrors(page), []);
-    } finally {
-      await browser.close();
-    }
+    await page.goto(YOUTUBE_WATCH, { waitUntil: 'load' });
+    await boot(page);
+    await page.waitForFunction(() => document.querySelector('[data-theater-chat]'));
+    theme = await readThemeControl(page);
+    assert.equal(theme.value, 'light', JSON.stringify(theme));
+    await expectAppliedTheme(page, 'light');
+    layout = await layoutOf(page);
+    assert.equal(layout.state?.visible, true, JSON.stringify(layout.state));
+    assert.equal(layout.state?.width, 440, JSON.stringify(layout.state));
+    assert.deepEqual(pageErrors(page), []);
   });
   it('flushes pending chat preferences on theater exit and immediate page reload', { timeout: 60_000 }, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
-    try {
-      for (const provider of ['youtube', 'twitch'] as const) {
-        for (const ending of ['exit', 'reload'] as const) {
-          const seed = { nativeChatPreferences: { [provider]: { visible: true, width: 360, theme: 'native' } } };
-          const { page, read } = await openPage(browser, {
-            url: provider === 'youtube' ? YOUTUBE_WATCH : TWITCH_CHANNEL,
-            youtube: youtubeDocument('visible'), twitch: twitchDocument()
-          }, { width: 1280, height: 800 }, seed, 'tme-navigation-storage');
-          await boot(page);
-          const mutate = () => page.evaluate(ending => {
-            const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
-            const chrome = (window as unknown as { chrome: { storage: { sync: { set(data: Record<string, unknown>): Promise<void> } } } }).chrome;
-            const writes: Record<string, unknown>[] = [];
-            const save = chrome.storage.sync.set;
-            chrome.storage.sync.set = data => {
-              writes.push(structuredClone(data));
-              localStorage.setItem('tme-navigation-storage', JSON.stringify(data));
-              return save(data);
-            };
-            const width = root.querySelector<HTMLInputElement>('.theater-chat-width-slider')!;
-            width.value = '440'; width.dispatchEvent(new Event('input', { bubbles: true }));
-            const theme = root.querySelector<HTMLSelectElement>('.theater-chat-theme-select')!;
-            theme.value = 'dark'; theme.dispatchEvent(new Event('change', { bubbles: true }));
-            root.querySelector<HTMLButtonElement>('.theater-chat-toggle')!.click();
-            // All changes happen in one task, before the debounce can expire.
-            const pendingWrites = writes.length;
-            if (ending === 'exit') root.querySelector<HTMLButtonElement>('.close-btn')!.click();
-            else window.location.reload();
-            return { pendingWrites, writes };
-          }, ending);
-          const result = ending === 'reload'
-            ? (await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), mutate()]))[1]
-            : await mutate();
-          assert.equal(result.pendingWrites, 0, provider + ' should debounce ordinary changes');
-          if (ending === 'exit') assert.deepEqual(result.writes, [{ nativeChatPreferences: {
-            [provider]: { visible: false, width: 440, theme: 'dark' }
-          } }], provider + ' should flush once during exit');
-          if (ending === 'exit') await waitForSaved(read, provider, value => !value.visible && value.width === 440 && value.theme === 'dark');
-          const durable = await page.evaluate(() => JSON.parse(localStorage.getItem('tme-navigation-storage') || '{}'));
-          assert.deepEqual(durable.nativeChatPreferences?.[provider], { visible: false, width: 440, theme: 'dark' });
-          await page.reload({ waitUntil: 'load' });
-          await boot(page);
-          const state = await page.evaluate(() => window.NativeChatTest.nativeChatState());
-          assert.equal(state?.visible, true); assert.equal(state?.width, 440); assert.equal(state?.theme, 'dark');
-          assert.deepEqual(pageErrors(page), []);
-          await page.close();
-        }
-      }
-    } finally { await browser.close(); }
-  });
-
-  it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', {timeout: 60000}, async t => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({headless: true});
-    try {
-      for (const provider of ['twitch', 'youtube', 'youtube-dialog'] as const) {
-        const { page } = await openPage(browser, {url: provider === 'twitch' ? TWITCH_CHANNEL : YOUTUBE_WATCH,
-          twitch: twitchDocument(), youtube: youtubeDocument('visible')}, {width:1280,height:800});
-        // Native portal is already mounted before the extension's UI host.
-        await page.evaluate(provider => {
-          const popup = document.createElement(provider === 'youtube' ? 'ytd-popup-container' : provider === 'youtube-dialog' ? 'tp-yt-paper-dialog' : 'div');
-          if (provider === 'twitch') popup.className = 'tw-dialog-layer';
-          popup.id = 'native-popup'; popup.style.cssText = 'position:fixed;width:120px;height:70px;z-index:4';
-          popup.innerHTML = '<button id="native-popup-action" style="width:100%;height:100%">Native action</button>';
-          popup.querySelector('button')!.addEventListener('click', () => popup.setAttribute('data-clicked','true'));
-          if (provider === 'youtube-dialog') {
-            const backdrop = document.createElement('tp-yt-iron-overlay-backdrop');
-            backdrop.style.cssText = 'position:fixed;inset:0;z-index:2201';
-            document.body.append(backdrop);
-          }
-          document.body.append(popup);
-        }, provider);
+    const browser = pagesOf(browsers.chromium, t);
+    for (const provider of ['youtube', 'twitch'] as const) {
+      for (const ending of ['exit', 'reload'] as const) {
+        const seed = { nativeChatPreferences: { [provider]: { visible: true, width: 360, theme: 'native' } } };
+        const { page, read } = await openPage(browser, {
+          url: provider === 'youtube' ? YOUTUBE_WATCH : TWITCH_CHANNEL,
+          youtube: youtubeDocument('visible'), twitch: twitchDocument()
+        }, { width: 1280, height: 800 }, seed, 'tme-navigation-storage');
         await boot(page);
-        await page.evaluate(() => {
-          const settings = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.player-settings-btn')!;
-          const rect = settings.getBoundingClientRect(), popup = document.getElementById('native-popup')!;
-          popup.style.left = rect.x - 20 + 'px'; popup.style.top = rect.y - 20 + 'px';
-        });
-        const hit = await page.evaluate(() => {
-          const button = document.getElementById('native-popup-action')!, r = button.getBoundingClientRect();
-          return button.contains(document.elementFromPoint(r.x + r.width/2, r.y + r.height/2));
-        });
-        assert.equal(hit, true, provider + ' native popup was covered by TME');
-        await page.locator('#native-popup-action').click();
-        assert.equal(await page.locator('#native-popup').getAttribute('data-clicked'), 'true');
+        const mutate = () => page.evaluate(ending => {
+          const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+          const chrome = (window as unknown as { chrome: { storage: { sync: { set(data: Record<string, unknown>): Promise<void> } } } }).chrome;
+          const writes: Record<string, unknown>[] = [];
+          const save = chrome.storage.sync.set;
+          chrome.storage.sync.set = data => {
+            writes.push(structuredClone(data));
+            localStorage.setItem('tme-navigation-storage', JSON.stringify(data));
+            return save(data);
+          };
+          const width = root.querySelector<HTMLInputElement>('.theater-chat-width-slider')!;
+          width.value = '440'; width.dispatchEvent(new Event('input', { bubbles: true }));
+          const theme = root.querySelector<HTMLSelectElement>('.theater-chat-theme-select')!;
+          theme.value = 'dark'; theme.dispatchEvent(new Event('change', { bubbles: true }));
+          root.querySelector<HTMLButtonElement>('.theater-chat-toggle')!.click();
+          // All changes happen in one task, before the debounce can expire.
+          const pendingWrites = writes.length;
+          if (ending === 'exit') root.querySelector<HTMLButtonElement>('.close-btn')!.click();
+          else window.location.reload();
+          return { pendingWrites, writes };
+        }, ending);
+        const result = ending === 'reload'
+          ? (await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), mutate()]))[1]
+          : await mutate();
+        assert.equal(result.pendingWrites, 0, provider + ' should debounce ordinary changes');
+        if (ending === 'exit') assert.deepEqual(result.writes, [{ nativeChatPreferences: {
+          [provider]: { visible: false, width: 440, theme: 'dark' }
+        } }], provider + ' should flush once during exit');
+        if (ending === 'exit') await waitForSaved(read, provider, value => !value.visible && value.width === 440 && value.theme === 'dark');
+        const durable = await page.evaluate(() => JSON.parse(localStorage.getItem('tme-navigation-storage') || '{}'));
+        assert.deepEqual(durable.nativeChatPreferences?.[provider], { visible: false, width: 440, theme: 'dark' });
+        await page.reload({ waitUntil: 'load' });
+        await boot(page);
+        const state = await page.evaluate(() => window.NativeChatTest.nativeChatState());
+        assert.equal(state?.visible, true); assert.equal(state?.width, 440); assert.equal(state?.theme, 'dark');
         assert.deepEqual(pageErrors(page), []);
         await page.close();
       }
-    } finally { await browser.close(); }
+    }
+  });
+
+  it('keeps native service popovers clickable above the video and TME settings button regardless of insertion order', {timeout: 60000}, async t => {
+    const browser = pagesOf(browsers.chromium, t);
+    for (const provider of ['twitch', 'youtube', 'youtube-dialog'] as const) {
+      const { page } = await openPage(browser, {url: provider === 'twitch' ? TWITCH_CHANNEL : YOUTUBE_WATCH,
+        twitch: twitchDocument(), youtube: youtubeDocument('visible')}, {width:1280,height:800});
+      // Native portal is already mounted before the extension's UI host.
+      await page.evaluate(provider => {
+        const popup = document.createElement(provider === 'youtube' ? 'ytd-popup-container' : provider === 'youtube-dialog' ? 'tp-yt-paper-dialog' : 'div');
+        if (provider === 'twitch') popup.className = 'tw-dialog-layer';
+        popup.id = 'native-popup'; popup.style.cssText = 'position:fixed;width:120px;height:70px;z-index:4';
+        popup.innerHTML = '<button id="native-popup-action" style="width:100%;height:100%">Native action</button>';
+        popup.querySelector('button')!.addEventListener('click', () => popup.setAttribute('data-clicked','true'));
+        if (provider === 'youtube-dialog') {
+          const backdrop = document.createElement('tp-yt-iron-overlay-backdrop');
+          backdrop.style.cssText = 'position:fixed;inset:0;z-index:2201';
+          document.body.append(backdrop);
+        }
+        document.body.append(popup);
+      }, provider);
+      await boot(page);
+      await page.evaluate(() => {
+        const settings = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.player-settings-btn')!;
+        const rect = settings.getBoundingClientRect(), popup = document.getElementById('native-popup')!;
+        popup.style.left = rect.x - 20 + 'px'; popup.style.top = rect.y - 20 + 'px';
+      });
+      const hit = await page.evaluate(() => {
+        const button = document.getElementById('native-popup-action')!, r = button.getBoundingClientRect();
+        return button.contains(document.elementFromPoint(r.x + r.width/2, r.y + r.height/2));
+      });
+      assert.equal(hit, true, provider + ' native popup was covered by TME');
+      await page.locator('#native-popup-action').click();
+      assert.equal(await page.locator('#native-popup').getAttribute('data-clicked'), 'true');
+      assert.deepEqual(pageErrors(page), []);
+      await page.close();
+    }
   });
 
 });

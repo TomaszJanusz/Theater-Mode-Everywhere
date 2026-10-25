@@ -1,30 +1,24 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox, type BrowserContext, type Frame, type Page } from 'playwright';
+
 import { mediaProviderFlagStorageKeys } from '../media-features/provider-flags';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
-import { readStylesheet } from '../test-utils/styles';
+import { testEngines } from '../test-utils/test-engines';
+
 import { AUTO_ENTER_NOTICE_MIN_MS } from './auto-theater-intent';
 import { AUTO_ENTER_NOTICE_DELAY_MS } from './auto-theater-runtime';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 
-const BUNDLE = buildSync({
-  stdin: {
-    contents: [
-      "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
-      "export { installMainWorldRuntime } from './platform/main-world-runtime';",
-      "export { setPlayerUiCss } from './ui/root';"
-    ].join('\n'),
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'AutoTheaterStorageTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
-const PAGE_CSS = readStylesheet(new URL('../content.css', import.meta.url));
-const UI_CSS = readStylesheet(new URL('./shadow.css', import.meta.url));
+const BUNDLE = bundleModules([
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';",
+  "export { setPlayerUiCss } from './ui/root';"
+], 'AutoTheaterStorageTest');
+const { page: PAGE_CSS, ui: UI_CSS } = playerStylesheets();
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 const WATCH = 'https://www.youtube.com/watch?v=abcdefghijk';
 const ACTIVE = 'theater-everywhere-html-active';

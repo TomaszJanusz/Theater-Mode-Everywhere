@@ -1,31 +1,26 @@
-import { selectTestEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
-import { build, buildSync } from 'esbuild';
+
 import { chromium, firefox, type Page } from 'playwright';
-import { sharedTestBrowser } from '../test-utils/test-browser';
-import { readStylesheet } from '../test-utils/styles';
+
 import { assertLocalized, readCatalog } from '../test-utils/language-audit';
+import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
+import { bundleQueryModules } from '../test-utils/query-bundle';
+import { readStylesheet } from '../test-utils/styles';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { selectTestEngines } from '../test-utils/test-engines';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
 const ROOT = path.resolve(__dirname, '../..');
-const PLAYER = buildSync({
-  stdin: { contents: `export { bootstrapPlayerRuntime } from './ui/player-runtime';
-    export { setPlayerUiCss } from './ui/root';
-    export { openDialog } from './dialog';
-    export { installMainWorldRuntime } from './platform/main-world-runtime';`, resolveDir: path.join(ROOT, 'src'), loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'AccessibilityFixture', target: 'es2022'
-}).outputFiles[0].text;
-const OPTIONS = build({
-  entryPoints: [path.join(ROOT, 'options/options.ts')],
-  bundle: true, write: false, format: 'iife', target: 'es2022',
-  plugins: [{ name: 'raw-license', setup(build) {
-    build.onResolve({ filter: /\?raw$/ }, args => ({ path: path.resolve(args.resolveDir, args.path.slice(0, -4)), namespace: 'raw' }));
-    build.onLoad({ filter: /.*/, namespace: 'raw' }, args => ({ contents: readFileSync(args.path, 'utf8'), loader: 'text' }));
-  } }]
-}).then(result => result.outputFiles![0].text);
+const PLAYER = bundleModules([
+  "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
+  "export { setPlayerUiCss } from './ui/root';",
+  "export { openDialog } from './dialog';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';"
+], 'AccessibilityFixture');
+const OPTIONS = bundleQueryModules(["import '../options/options';"], 'OptionsFixture');
 
 async function mockStorage(page: Page): Promise<void> {
   await page.addInitScript({ content: `
@@ -64,9 +59,9 @@ async function playerPage(page: Page): Promise<void> {
     ? { contentType: 'video/webm', body: readFileSync(path.join(ROOT, 'test/fixtures/vod.webm')) }
     : { contentType: 'text/html', body: '<html lang="ar" dir="rtl"><body><button id="host-button">Host action</button><video src="/vod.webm" muted style="width:640px;height:360px"></video></body></html>' }));
   await page.goto('http://accessibility.test/player');
-  await page.addStyleTag({ content: readStylesheet(path.join(ROOT, 'src/content.css')) });
+  await page.addStyleTag({ content: playerStylesheets().page });
   await page.addScriptTag({ content: PLAYER });
-  await page.evaluate(`AccessibilityFixture.setPlayerUiCss(${JSON.stringify(readStylesheet(path.join(ROOT, 'src/ui/shadow.css')))}); AccessibilityFixture.installMainWorldRuntime(); AccessibilityFixture.bootstrapPlayerRuntime();`);
+  await page.evaluate(`AccessibilityFixture.setPlayerUiCss(${JSON.stringify(playerStylesheets().ui)}); AccessibilityFixture.installMainWorldRuntime(); AccessibilityFixture.bootstrapPlayerRuntime();`);
   await page.locator('video').evaluate(async (video: HTMLVideoElement) => {
     const track = video.addTextTrack('subtitles', 'English', 'en');
     track.addCue(new VTTCue(0, 2, 'Fixture captions'));

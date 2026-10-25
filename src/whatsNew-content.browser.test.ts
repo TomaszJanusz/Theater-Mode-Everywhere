@@ -2,11 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
 
-import { chromium, firefox } from 'playwright';
 
+import { sharedEngineBrowsers } from './test-utils/engine-browsers';
 import { bundleModules } from './test-utils/player-boot';
 import { readStylesheet } from './test-utils/styles';
-import { sharedTestBrowser } from './test-utils/test-browser';
 import { testEngines } from './test-utils/test-engines';
 import { WHATS_NEW_CONTENT } from './whatsNew-content';
 
@@ -15,7 +14,7 @@ const bundle = bundleModules([
   "export { openWhatsNewDialog } from './whatsNew';",
   "export { languageRuntime } from './i18n-runtime';"
 ], 'Announcement');
-const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
+const browsers = sharedEngineBrowsers();
 const catalogs = Object.fromEntries(['en', 'pl', 'ar'].map(locale => [locale,
   JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))
 ]));
