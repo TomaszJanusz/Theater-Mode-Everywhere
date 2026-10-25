@@ -16,9 +16,9 @@ for (const registration of surfaceRegistrations) {
         mode.apply(host);
         expect(mode.applied(host), 'the mode is on').toBe(true);
         expect(await blockingViolations(host), 'closed').toEqual([]);
-        mounted.trigger.focus();
-        await userEvent.keyboard('{Enter}');
-        expect(mounted.surface()?.dataset.teState).toBe('open');
+        // A real pointer click needs no page focus, which Firefox may not have yet in the first test of a file.
+        await userEvent.click(mounted.trigger);
+        await expect.poll(() => mounted.surface()?.dataset.teState).toBe('open');
         expect(await blockingViolations(host), 'open').toEqual([]);
       });
     }
