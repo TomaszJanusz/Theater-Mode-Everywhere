@@ -28,6 +28,8 @@ export default defineConfig({
           name: 'components',
           include: ['src/**/*.component.test.ts'],
           setupFiles: ['src/test-utils/component-setup.ts'],
+          // Focus, keyboard input and fullscreen activation belong to one page at a time; files side by side steal them from each other.
+          fileParallelism: false,
           browser: {
             enabled: true, headless: true, provider: playwright(),
             viewport: { width: 1280, height: 800 },
