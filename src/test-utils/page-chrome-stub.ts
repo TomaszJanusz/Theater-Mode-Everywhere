@@ -1,16 +1,17 @@
-import { isMessageCatalog, type MessageCatalog } from '../src/message-catalog';
+import { isMessageCatalog, type MessageCatalog } from '../message-catalog';
 
-// Stories stub only the extension edge: `chrome.storage` and the language-catalog message the
-// background answers. Everything past that edge is the production code.
+// In-page typed stub for stories and component tests (the page-level harness serializes its own in
+// chrome-stub.ts). It stubs only the extension edge: `chrome.storage` and the language-catalog message
+// the background answers. Everything past that edge is the production code.
 type StorageListener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => void;
 type Area = 'sync' | 'local';
 type Items = Record<string, unknown>;
 type Request = { action?: string; locale?: string };
 
-const catalogs = import.meta.glob<MessageCatalog>('../_locales/*/messages.json', { import: 'default' });
+const catalogs = import.meta.glob<MessageCatalog>('../../_locales/*/messages.json', { import: 'default' });
 
 async function languageCatalog(locale: string): Promise<MessageCatalog> {
-  const load = catalogs[`../_locales/${locale}/messages.json`];
+  const load = catalogs[`../../_locales/${locale}/messages.json`];
   const catalog: unknown = load ? await load() : undefined;
   if (!isMessageCatalog(catalog)) throw new Error(`No catalog for ${locale}`);
   return catalog;

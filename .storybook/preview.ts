@@ -4,10 +4,10 @@ import '../src/content.css';
 import { resolveReduceMotion } from '../src/appearance-preferences';
 import { languageRuntime } from '../src/i18n-runtime';
 import { LANGUAGES } from '../src/language';
+import { installChromeStub, setSyncStorage } from '../src/test-utils/page-chrome-stub';
 import { setPlayerUiCss } from '../src/ui/root';
 import shadowCss from '../src/ui/shadow.css?inline';
 
-import { installChromeStub, setSyncStorage } from './chrome-stub';
 import { waitForFonts } from './fonts';
 import { disposeStage } from './stage-owner';
 import './preview.css';

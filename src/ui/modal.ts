@@ -44,6 +44,8 @@ export interface Modal {
 
 let activeModal: Modal | null = null;
 let titleSequence = 0;
+// Stable test hooks on the overlay: the shell family, an opaque identity per mount, and the state.
+let mountSequence = 0;
 
 /** The sole modal shell and lifecycle, for page DOM and player shadow DOM alike. */
 export function createModal(options: ModalOptions): Modal {
@@ -53,6 +55,7 @@ export function createModal(options: ModalOptions): Modal {
   const events = new AbortController();
   const overlay = document.createElement('div');
   overlay.className = 'te-dialog-overlay';
+  Object.assign(overlay.dataset, { teSurface: 'modal', teOwner: `modal-${++mountSequence}`, teState: 'open' });
   const dialog = document.createElement('div');
   dialog.className = 'te-dialog';
   dialog.dataset.size = options.size ?? 'default';
@@ -87,6 +90,7 @@ export function createModal(options: ModalOptions): Modal {
   const close = (value = options.dismissValue ?? false, restoreFocus = true): void => {
     if (settled) return;
     settled = true;
+    overlay.dataset.teState = 'closed';
     if (activeModal === modal) activeModal = null;
     events.abort();
     observer?.disconnect();

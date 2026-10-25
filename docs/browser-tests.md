@@ -173,6 +173,36 @@ rule and local skip as the determinism guard). After migrating a file, run
 Omit `--update` to print the counts. The same guard budgets `src/test-utils/*.ts`
 at 150 lines per file and four properties per exported `*Options` interface.
 
+## Component tests
+
+`*.component.test.ts` files run in Vitest browser mode (the `components` project in
+`vitest.config.ts`), inside Vitest's tester iframe, in Chromium and Firefox per
+`THEATER_TEST_ENGINES`. They mount production UI in the real player UI root without the
+player runtime, MAIN world, video, providers or network; those paths stay in
+`*.browser.test.ts`, smoke and real-host checks. `pnpm test` dispatches them to Vitest in
+the browser lane, so selectors, `--files-from`, `--test-name-pattern` (as `-t`),
+`--test-shard` and `--report-dir` work as for other files:
+
+```sh
+pnpm test surfaces.component
+THEATER_TEST_ENGINES=firefox pnpm test --lane=browser surfaces.component
+```
+
+`src/test-utils/component-setup.ts` installs the typed in-page chrome stub
+(`page-chrome-stub.ts`, shared with Storybook) and the player UI skin before each test and
+removes the player UI root after it. Use `userEvent` from `vitest/browser` for input (it is
+trusted) and `vi.useFakeTimers()` installed before mount for time. Engine-only cases use
+`test.skipIf(server.browser !== 'firefox')` from `vitest/browser`, not a new file suffix.
+
+**Top-layer surfaces.** `src/ui/surfaces.component.test.ts` is the conformance suite for
+modal and anchored-menu surfaces. Their owners write `data-te-surface` (family),
+`data-te-owner` (opaque per mount) and `data-te-state` (`open`/`closed`); tests read state
+through these hooks, roles, ARIA and focus, never copy. A new surface with an existing
+policy needs only an entry in `registrations`: `mount({ root, stage, owner })` builds its
+trigger in `stage` and returns `{ trigger, surface(), close() }`; disposing `owner` must
+close the surface and release what it holds. New interaction semantics need a policy or
+targeted tests.
+
 ## Firefox on macOS 27
 
 Playwright 1.63.0's Firefox 155 (revision 1543) can exit at launch with
@@ -213,7 +243,7 @@ THEATER_TEST_ENGINES=firefox pnpm test --lane=browser
 ```
 
 The runner partitions discovered tests into `unit` and `browser`: browser files
-use `.browser.test.ts`, or import Playwright (including legacy names such as
+use `.browser.test.ts` or `.component.test.ts`, or import Playwright (including legacy names such as
 `playlist-nav.test.ts`). Each discovered file belongs to exactly one lane.
 Selectors and Node test flags work within either lane. Without `--lane`, all
 tests run. `THEATER_TEST_ENGINES` selects parameterized browser cases; unset means

@@ -21,7 +21,8 @@ export function summarize(xmlFiles) {
       const failure = /<(?:failure|error)\b/.test(body);
       tests.push({
         name: attribute(attrs, 'name'),
-        file: relative(process.cwd(), attribute(attrs, 'file')),
+        // Vitest's JUnit report names the file in `classname`; node:test writes `file`.
+        file: relative(process.cwd(), attribute(attrs, 'file') || attribute(attrs, 'classname')),
         seconds: Number.isFinite(seconds) ? seconds : 0,
         failure,
       });

@@ -45,6 +45,34 @@ test('no tracked test-like file uses an extension the runner would skip', () => 
   assert.deepEqual(unrun, []);
 });
 
+test('component tests run once in Vitest, in the browser lane, with translated flags', () => {
+  const all = ['scripts/a.test.mjs', 'src/x/foo.test.ts', 'src/y/bar.browser.test.ts', 'src/ui/menu.component.test.ts'];
+  const plan = planRun(all, ['menu', '--test-name-pattern=Escape', '--test-shard=2/2', '--test-concurrency=1']);
+  assert.deepEqual(plan.tsx.files, []);
+  assert.deepEqual(plan.vitest, { files: ['src/ui/menu.component.test.ts'], flags: ['-t', 'Escape', '--shard=2/2', '--passWithNoTests'] });
+  assert.deepEqual(planRun(all, ['--lane=unit']).vitest.files, []);
+  assert.deepEqual(planRun(all, ['--lane=browser']).vitest.files, ['src/ui/menu.component.test.ts']);
+  assert.deepEqual(planRun(all, ['--lane=browser']).tsx.files, ['src/y/bar.browser.test.ts']);
+
+  const root = mkdtempSync(join(tmpdir(), 'run-tests-vitest-'));
+  try {
+    for (const file of ['a.browser.test.ts', 'b.component.test.ts']) writeFileSync(join(root, file), '');
+    const calls = [];
+    const reportDirectory = join(root, 'reports');
+    const spawn = (_command, args) => { calls.push(args); return { status: 0 }; };
+    assert.equal(main(['--lane=browser', `--report-dir=${reportDirectory}`], root, spawn), 0);
+    assert.equal(calls.length, 2, 'the tsx group runs first, then Vitest');
+    assert.ok(calls[1][0].endsWith('vitest.mjs'));
+    assert.deepEqual(calls[1].slice(1), ['run', '--config', 'vitest.config.ts', '--project', 'components',
+      '--reporter=default', '--reporter=junit', `--outputFile.junit=${join(reportDirectory, 'vitest.xml')}`, 'b.component.test.ts']);
+    calls.length = 0;
+    assert.equal(main([], root, (_command, args) => { calls.push(args); return { status: 3 }; }), 3);
+    assert.equal(calls.length, 1, 'a failed tsx group stops before Vitest');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('forwards arguments verbatim to the child process without a shell', () => {
   const root = mkdtempSync(join(tmpdir(), 'run-tests-'));
   try {
@@ -89,11 +117,12 @@ test('lanes partition discovery exactly once, including legacy browser filenames
   const classify = file => isBrowserTest(join(repoRoot, file));
   const files = lane => {
     const plan = planRun(discovered, [`--lane=${lane}`], classify);
-    return [...plan.node.files, ...plan.tsx.files];
+    return [...plan.node.files, ...plan.tsx.files, ...plan.vitest.files];
   };
   const unit = files('unit');
   const browser = files('browser');
   assert.ok(browser.includes('src/playlist-nav.test.ts'));
+  assert.ok(browser.includes('src/ui/surfaces.component.test.ts'));
   assert.ok(browser.includes('src/test-utils/test-browser.test.ts'));
   assert.ok(unit.includes('scripts/run-tests.test.mjs'));
   assert.deepEqual(unit.filter(file => browser.includes(file)), []);

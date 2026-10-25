@@ -24,13 +24,17 @@ export function discoverTests(root) {
   return found.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
+// Component tests run in Vitest browser mode (`components` project in vitest.config.ts), in the browser lane.
+const isComponentTest = file => file.endsWith('.component.test.ts');
+
 // Flags go to the runner. Other arguments select tests: an exact discovered path,
 // or a substring of one (`pnpm test sponsorblock`). `--` separators are ignored.
 export function isBrowserTest(file) {
-  return file.endsWith('.browser.test.ts') || /(?:from\s*|import\s*\()\s*['"]playwright['"]/.test(readFileSync(file, 'utf8'));
+  return file.endsWith('.browser.test.ts') || isComponentTest(file)
+    || /(?:from\s*|import\s*\()\s*['"]playwright['"]/.test(readFileSync(file, 'utf8'));
 }
 
-export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts')) {
+export function planRun(discovered, args, classify = file => file.endsWith('.browser.test.ts') || isComponentTest(file)) {
   const flags = [];
   const selectors = [];
   let lane = 'all';
@@ -46,10 +50,22 @@ export function planRun(discovered, args, classify = file => file.endsWith('.bro
     : laneFiles.filter(file => selectors.some(selector => file === selector || file.includes(selector)));
   if (selectors.length > 0 && files.length === 0) throw new Error(`No test file matches: ${selectors.join(' ')}`);
   return {
-    // Plain-JS tests need no TypeScript loader; everything else runs under tsx.
+    // Plain-JS tests need no TypeScript loader; component tests need Vitest; everything else runs under tsx.
     node: { files: files.filter(file => file.endsWith('.mjs')), flags },
-    tsx: { files: files.filter(file => !file.endsWith('.mjs')), flags },
+    tsx: { files: files.filter(file => !file.endsWith('.mjs') && !isComponentTest(file)), flags },
+    vitest: { files: files.filter(isComponentTest), flags: vitestFlags(flags) },
   };
+}
+
+// node:test flags with a Vitest equivalent are translated; the rest only concern node:test.
+export function vitestFlags(flags) {
+  return flags.flatMap(flag => {
+    const [, name, value] = /^(--[\w-]+)=(.*)$/s.exec(flag) ?? [];
+    if (name === '--test-name-pattern') return ['-t', value];
+    // A shard can hold no component file; that is not a failure.
+    if (name === '--test-shard') return [`--shard=${value}`, '--passWithNoTests'];
+    return [];
+  });
 }
 
 // Run tsx through its JS entry with the current node binary: forwarded arguments
@@ -58,6 +74,12 @@ function tsxEntry() {
   const manifest = createRequire(import.meta.url).resolve('tsx/package.json');
   const bin = JSON.parse(readFileSync(manifest, 'utf8')).bin;
   return join(dirname(manifest), typeof bin === 'string' ? bin : bin.tsx);
+}
+
+function vitestEntry() {
+  const manifest = createRequire(import.meta.url).resolve('vitest/package.json');
+  const bin = JSON.parse(readFileSync(manifest, 'utf8')).bin;
+  return join(dirname(manifest), typeof bin === 'string' ? bin : bin.vitest);
 }
 
 function run(spawn, args, label) {
@@ -82,6 +104,14 @@ function runTsxTests(spawn, plan, root, reportDirectory) {
     if (result.status !== 0) return result.status ?? 1;
   }
   return run(spawn, [tsxEntry(), '--test', '--test-concurrency=2', '--test-force-exit', ...reporterFlags('tsx', reportDirectory), ...plan.flags, ...plan.files], 'tsx');
+}
+
+function runVitestTests(spawn, plan, reportDirectory) {
+  const reporters = reportDirectory
+    ? ['--reporter=default', '--reporter=junit', `--outputFile.junit=${join(reportDirectory, 'vitest.xml')}`]
+    : [];
+  if (reportDirectory) mkdirSync(reportDirectory, { recursive: true });
+  return run(spawn, [vitestEntry(), 'run', '--config', 'vitest.config.ts', '--project', 'components', ...reporters, ...plan.flags, ...plan.files], 'Vitest');
 }
 
 function reporterFlags(label, directory) {
@@ -120,12 +150,16 @@ export function main(args, root = fileURLToPath(new URL('..', import.meta.url)),
     console.error(error.message);
     return 1;
   }
-  if (plan.node.files.length > 0) {
-    const status = run(spawn, ['--test', ...reporterFlags('node', reportDirectory), ...plan.node.flags, ...plan.node.files], 'Node');
+  // Groups run in order and stop at the first failure.
+  const groups = [
+    [plan.node, () => run(spawn, ['--test', ...reporterFlags('node', reportDirectory), ...plan.node.flags, ...plan.node.files], 'Node')],
+    [plan.tsx, () => runTsxTests(spawn, plan.tsx, root, reportDirectory)],
+    [plan.vitest, () => runVitestTests(spawn, plan.vitest, reportDirectory)],
+  ];
+  for (const [group, start] of groups) {
+    if (group.files.length === 0) continue;
+    const status = start();
     if (status !== 0) return status;
-  }
-  if (plan.tsx.files.length > 0) {
-    return runTsxTests(spawn, plan.tsx, root, reportDirectory);
   }
   return 0;
 }
