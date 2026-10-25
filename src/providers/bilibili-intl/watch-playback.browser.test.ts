@@ -1,20 +1,18 @@
-import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { buildSync } from 'esbuild';
+
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from '../../test-utils/test-browser';
 
-const bundle = buildSync({
-  stdin: { contents: "export { bilibiliIntlWatchPlayback as playback } from './watch-playback';", resolveDir: new URL('.', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'IntlTest'
-}).outputFiles[0].text;
+import { bundleModules } from '../../test-utils/player-boot';
+import { sharedTestBrowser } from '../../test-utils/test-browser';
+import { testEngines } from '../../test-utils/test-engines';
 
-for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
-  it(`Bilibili.tv ${engine.name()} rejects stale streams, ads and mini players and disposes observations`, { timeout: 60_000 }, async t => {
-    const browser = await engine.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+const bundle = bundleModules(["export { bilibiliIntlWatchPlayback as playback } from './providers/bilibili-intl/watch-playback';"], 'IntlTest');
+
+for (const engine of testEngines()) {
+  const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
+  it(`Bilibili.tv ${engine} rejects stale streams, ads and mini players and disposes observations`, { timeout: 60_000 }, async t => {
+    const page = await (await shared.newContext(t)).newPage();
     await page.route('https://www.bilibili.tv/**', route => route.fulfill({ contentType: 'text/html', body: `
       <div class="bstar-player"><div id="bilibiliPlayer" data-ui-mode="0">
       <div class="player-mobile-video-wrap"><video></video></div>
@@ -47,6 +45,5 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
       return out;
     })()`);
     assert.ok(Array.isArray(results) && results.every(value => value === true), JSON.stringify(results));
-    await browser.close();
   });
 }

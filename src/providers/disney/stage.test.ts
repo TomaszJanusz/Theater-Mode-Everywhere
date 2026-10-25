@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { readStylesheet } from '../../test-utils/styles';
 
-const require = createRequire(import.meta.url);
-const SRC = path.dirname(fileURLToPath(import.meta.url));
+import { chromium } from 'playwright';
+
+import { bundleModules } from '../../test-utils/player-boot';
+import { readStylesheet } from '../../test-utils/styles';
+import { sharedTestBrowser } from '../../test-utils/test-browser';
 
 describe('Disney theater captions', () => {
+  const shared = sharedTestBrowser(chromium);
+
   it('injects caption CSS when Disney creates the timed-text region after theater mounts', async t => {
-    const { chromium } = await import('playwright');
     let executable = '';
     try {
       executable = chromium.executablePath();
@@ -20,36 +20,10 @@ describe('Disney theater captions', () => {
       return;
     }
     if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
-    const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-      buildSync: (options: {
-        stdin: { contents: string; resolveDir: string; sourcefile: string; loader: 'ts' };
-        bundle: true;
-        write: false;
-        format: 'iife';
-        globalName: string;
-        platform: 'browser';
-        target: string;
-        logLevel: 'silent';
-      }) => { outputFiles: Array<{ text: string }> };
-    };
-    const compiled = esbuild.buildSync({
-      stdin: {
-        contents: "import { disneyTheaterStage, DISNEY_CAPTION_STYLE_ID } from './stage'; export { disneyTheaterStage, DISNEY_CAPTION_STYLE_ID };",
-        resolveDir: SRC,
-        sourcefile: 'disney-stage-browser-entry.ts',
-        loader: 'ts'
-      },
-      bundle: true,
-      write: false,
-      format: 'iife',
-      globalName: 'DisneyStage',
-      platform: 'browser',
-      target: 'es2022',
-      logLevel: 'silent'
-    }).outputFiles[0].text;
-    const browser = await chromium.launch({ headless: true });
+    const compiled = bundleModules(["export { disneyTheaterStage, DISNEY_CAPTION_STYLE_ID } from './providers/disney/stage';"], 'DisneyStage');
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.route('https://www.disneyplus.com/**', (route) => {
         if (route.request().resourceType() !== 'document') return route.abort();
         return route.fulfill({
@@ -139,7 +113,7 @@ describe('Disney theater captions', () => {
       assert.equal(report.raisedInset, 'max(132px, 48px)');
       assert.equal(report.afterUnmount, false);
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 });

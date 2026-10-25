@@ -1,45 +1,18 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { after, before, describe, it } from 'node:test';
-import { chromium, type Browser, type Page } from 'playwright';
+import { describe, it, type TestContext } from 'node:test';
 
-const require = createRequire(import.meta.url);
-const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { chromium, type Page } from 'playwright';
+
+import { bundleModules } from '../test-utils/player-boot';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+
 const PLAY = 'https://www.disneyplus.com/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
 const WATCH = 'https://www.crunchyroll.com/pl/watch/GPWUKZGZX/maomao';
 
-type Esbuild = {
-  buildSync: (options: {
-    entryPoints: string[];
-    bundle: boolean;
-    write: boolean;
-    format: 'iife';
-    globalName: string;
-    platform: 'browser';
-    target: string;
-    logLevel: 'silent';
-  }) => { outputFiles: Array<{ text: string }> };
-};
-
-function bundle(globalName: string, entry: string): string {
-  const esbuild = require('esbuild') as Esbuild;
-  return esbuild.buildSync({
-    entryPoints: [path.join(SRC, entry)],
-    bundle: true,
-    write: false,
-    format: 'iife',
-    globalName,
-    platform: 'browser',
-    target: 'es2022',
-    logLevel: 'silent'
-  }).outputFiles[0].text;
-}
-
-const disneyBundle = bundle('TeDisneyActions', 'providers/disney/service-actions.ts');
-const crunchyBundle = bundle('TeCrunchyActions', 'providers/crunchyroll/service-actions.ts');
+const disneyBundle = bundleModules(["export * from './providers/disney/service-actions';"], 'TeDisneyActions');
+const crunchyBundle = bundleModules(["export * from './providers/crunchyroll/service-actions';"], 'TeCrunchyActions');
+const shared = sharedTestBrowser(chromium);
 
 describe('disney and crunchyroll service actions', () => {
   it('reads Disney skip, up-next, and end-card controls from open shadow roots', async (t) => {
@@ -52,9 +25,9 @@ describe('disney and crunchyroll service actions', () => {
       return;
     }
     if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.setContent('<div id="root"></div>');
       await page.addScriptTag({ content: disneyBundle });
       const report = await page.evaluate(`(() => {
@@ -188,7 +161,7 @@ describe('disney and crunchyroll service actions', () => {
       assert.deepEqual(report.browse, []);
       assert.deepEqual(report.foreign, []);
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 
@@ -202,9 +175,9 @@ describe('disney and crunchyroll service actions', () => {
       return;
     }
     if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
-    const browser = await chromium.launch({ headless: true });
+    const context = await shared.newContext(t);
     try {
-      const page = await browser.newPage();
+      const page = await context.newPage();
       await page.setContent('<div id="root"></div>');
       await page.addScriptTag({ content: crunchyBundle });
       const report = await page.evaluate(`(() => {
@@ -352,30 +325,23 @@ describe('disney and crunchyroll service actions', () => {
       assert.deepEqual(report.flagged, []);
       assert.deepEqual(report.otherEpisode, []);
     } finally {
-      await browser.close();
+      await context.close();
     }
   });
 });
 
-const code = require('esbuild').buildSync({
-  stdin: {
-    contents: [
-      "export { createServiceActions } from './providers/service-actions';",
-      "export { createYouTubeServiceActions } from './providers/youtube/service-actions';",
-      "export { createBilibiliServiceActions } from './providers/bilibili/service-actions';",
-      "export { createBilibiliIntlServiceActions } from './providers/bilibili-intl/service-actions';",
-      "export { nativePlaybackSurface } from './playback-surface';",
-      "export { DisposableScope } from './core/disposable-scope';",
-      "export { mountServiceActionCta } from './ui/service-actions';"
-    ].join('\n'),
-    resolveDir: path.resolve('src'), loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'TeActions', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text as string;
+const code = bundleModules([
+  "export { createServiceActions } from './providers/service-actions';",
+  "export { createYouTubeServiceActions } from './providers/youtube/service-actions';",
+  "export { createBilibiliServiceActions } from './providers/bilibili/service-actions';",
+  "export { createBilibiliIntlServiceActions } from './providers/bilibili-intl/service-actions';",
+  "export { nativePlaybackSurface } from './playback-surface';",
+  "export { DisposableScope } from './core/disposable-scope';",
+  "export { mountServiceActionCta } from './ui/service-actions';"
+], 'TeActions');
 
-let browser: Browser;
-async function fixture(url: string, html: string): Promise<Page> {
-  const page = await browser.newPage();
+async function fixture(t: TestContext, url: string, html: string): Promise<Page> {
+  const page = await (await shared.newContext(t)).newPage();
   await page.route('**/*', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: html }));
   await page.goto(url);
   await page.addScriptTag({ content: code });
@@ -383,11 +349,8 @@ async function fixture(url: string, html: string): Promise<Page> {
 }
 
 describe('YouTube and Bilibili service action providers', { skip: !existsSync(chromium.executablePath()) }, () => {
-  before(async () => { browser = await chromium.launch({ headless: true }); });
-  after(async () => { await browser?.close(); });
-
-  it('proxies only available YouTube ad skips, including modern, legacy and embedded controls', async () => {
-    const page = await fixture('https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="html5-video-player ad-showing"><video></video></div>');
+  it('proxies only available YouTube ad skips, including modern, legacy and embedded controls', async t => {
+    const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="html5-video-player ad-showing"><video></video></div>');
     try {
       const result = await page.evaluate(`(() => {
         const root = document.querySelector('#movie_player');
@@ -426,8 +389,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('rejects stale YouTube actions after route, button, root, media and source changes', async () => {
-    const page = await fixture('https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="ad-showing"><video src="a.mp4"></video><button class="ytp-skip-ad-button">Skip</button></div>');
+  it('rejects stale YouTube actions after route, button, root, media and source changes', async t => {
+    const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="ad-showing"><video src="a.mp4"></video><button class="ytp-skip-ad-button">Skip</button></div>');
     try {
       const result = await page.evaluate(`(() => {
         const source = TeActions.createServiceActions();
@@ -450,8 +413,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('proxies live Bilibili toast confirmations without exposing toolbar navigation or closing toasts', async () => {
-    const page = await fixture('https://www.bilibili.com/bangumi/play/ep1?p=1', `<button class="bpx-player-toast-confirm">Outside</button><div class="bpx-player-container"><video></video>
+  it('proxies live Bilibili toast confirmations without exposing toolbar navigation or closing toasts', async t => {
+    const page = await fixture(t, 'https://www.bilibili.com/bangumi/play/ep1?p=1', `<button class="bpx-player-toast-confirm">Outside</button><div class="bpx-player-container"><video></video>
       <button class="bpx-player-ctrl-next">Next</button>
       <div class="bpx-player-toast-row"><span class="bpx-player-toast-confirm">Closing</span></div>
       <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-text">即将跳过片头</span><span class="bpx-player-toast-confirm">不跳过</span><span class="bpx-player-toast-cancel">×</span></div></div>`);
@@ -479,8 +442,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('keeps Bilibili confirmations actionable inside the real toast wrapper hidden by theater layout', async () => {
-    const page = await fixture('https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
+  it('keeps Bilibili confirmations actionable inside the real toast wrapper hidden by theater layout', async t => {
+    const page = await fixture(t, 'https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
       <div class="bpx-player-toast-wrap" style="display:none"><div class="bpx-player-toast-auto">
         <div class="bpx-player-toast-row bpx-player-toast-unfold"><div class="bpx-player-toast-item">
           <span class="bpx-player-toast-confirm">不跳过</span></div></div></div></div></div>`);
@@ -512,8 +475,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('excludes Bilibili login, purchases and unknown confirmations alongside a live skip action', async () => {
-    const page = await fixture('https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
+  it('excludes Bilibili login, purchases and unknown confirmations alongside a live skip action', async t => {
+    const page = await fixture(t, 'https://www.bilibili.com/bangumi/play/ep1', `<div class="bpx-player-container"><video></video>
       <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-confirm">立即登录</span></div>
       <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-confirm">成为大会员</span></div>
       <div class="bpx-player-toast-row bpx-player-toast-unfold"><span class="bpx-player-toast-text">跳过片头</span><span class="bpx-player-toast-confirm">立即开启</span></div>
@@ -542,8 +505,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('shows Bilibili.tv intro/outro only within current episode windows and next only near the end', async () => {
-    const page = await fixture('https://www.bilibili.tv/en/play/1053337/11371243', '<div class="bstar-player"><video src="episode1.mp4"></video><div class="player-mobile-control-btn-next-episode"><div class="ip-next-episode"></div><div class="ip-tooltip">Next episode</div></div></div>');
+  it('shows Bilibili.tv intro/outro only within current episode windows and next only near the end', async t => {
+    const page = await fixture(t, 'https://www.bilibili.tv/en/play/1053337/11371243', '<div class="bstar-player"><video src="episode1.mp4"></video><div class="player-mobile-control-btn-next-episode"><div class="ip-next-episode"></div><div class="ip-tooltip">Next episode</div></div></div>');
     try {
       const result = await page.evaluate(`(() => {
         const root=document.documentElement; root.setAttribute('data-te-bilibili-intl-episode','11371243'); root.setAttribute('data-te-bilibili-intl-kind','ogv');
@@ -578,8 +541,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('rejects Bilibili.tv upload, unready, seeking, invalid-window and replaced-surface actions', async () => {
-    const page = await fixture('https://www.bilibili.tv/en/play/1053337', '<div class="bstar-player"><video></video></div>');
+  it('rejects Bilibili.tv upload, unready, seeking, invalid-window and replaced-surface actions', async t => {
+    const page = await fixture(t, 'https://www.bilibili.tv/en/play/1053337', '<div class="bstar-player"><video></video></div>');
     try {
       const result = await page.evaluate(`(() => {
         document.documentElement.setAttribute('data-te-bilibili-intl-episode','11371243');
@@ -604,8 +567,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('accepts Bilibili.tv duration rounding slack and closes the window at the clamped end', async () => {
-    const page = await fixture('https://www.bilibili.tv/en/play/1053337/11371243', '<div class="bstar-player"><video></video></div>');
+  it('accepts Bilibili.tv duration rounding slack and closes the window at the clamped end', async t => {
+    const page = await fixture(t, 'https://www.bilibili.tv/en/play/1053337/11371243', '<div class="bstar-player"><video></video></div>');
     try {
       const result = await page.evaluate(`(() => {
         document.documentElement.setAttribute('data-te-bilibili-intl-episode','11371243');
@@ -628,8 +591,8 @@ describe('YouTube and Bilibili service action providers', { skip: !existsSync(ch
     } finally { await page.close(); }
   });
 
-  it('keeps a YouTube CTA mounted across idle chrome and disposes polling and nodes', async () => {
-    const page = await fixture('https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="ad-showing"><video></video><button class="ytp-skip-ad-button">Skip ad</button></div><div id="mount"></div>');
+  it('keeps a YouTube CTA mounted across idle chrome and disposes polling and nodes', async t => {
+    const page = await fixture(t, 'https://www.youtube.com/watch?v=video1', '<div id="movie_player" class="ad-showing"><video></video><button class="ytp-skip-ad-button">Skip ad</button></div><div id="mount"></div>');
     try {
       await page.evaluate(`(() => {
         window.scope=new TeActions.DisposableScope(); window.clicks=0;

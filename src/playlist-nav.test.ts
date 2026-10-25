@@ -1,65 +1,32 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
-import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
-import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
-import { youtubePreviousRestarts } from './providers/navigation/youtube';
+
+import { chromium } from 'playwright';
+
 import {
   neighborPreviews,
   playlistNavStateFromActions,
   sanitizePlaylistPreview
 } from './playlist-nav';
+import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
+import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
+import { youtubePreviousRestarts } from './providers/navigation/youtube';
+import { bundleModules } from './test-utils/player-boot';
+import { sharedTestBrowser } from './test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const SRC = path.dirname(fileURLToPath(import.meta.url));
+const shared = sharedTestBrowser(chromium);
 
-type Esbuild = {
-  buildSync: (options: {
-    stdin: { contents: string; resolveDir: string; sourcefile: string; loader: 'ts' };
-    bundle: true;
-    write: false;
-    format: 'iife';
-    globalName: string;
-    platform: 'browser';
-    target: string;
-    logLevel: 'silent';
-  }) => { outputFiles: Array<{ text: string }> };
-};
-
-let playlistBundle: string | null = null;
-
-function playlistBrowserBundle(): string {
-  if (playlistBundle) return playlistBundle;
-  const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as Esbuild;
-  playlistBundle = esbuild.buildSync({
-    stdin: {
-      contents: [
-        "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
-        "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
-        "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
-        "import { installDisneyPlayNext } from './providers/disney/play-next';",
-        'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
-        'export { findPlaylistActions, installDisneyPlayNext };',
-        'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
-        'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
-      ].join('\n'),
-      resolveDir: SRC,
-      sourcefile: 'playlist-nav-browser-entry.ts',
-      loader: 'ts'
-    },
-    bundle: true,
-    write: false,
-    format: 'iife',
-    globalName: 'PlaylistNav',
-    platform: 'browser',
-    target: 'es2022',
-    logLevel: 'silent'
-  }).outputFiles[0].text;
-  return playlistBundle;
-}
+const playlistBrowserBundle = (): string => bundleModules([
+  "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
+  "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
+  "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
+  "import { installDisneyPlayNext } from './providers/disney/play-next';",
+  'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
+  'export { findPlaylistActions, installDisneyPlayNext };',
+  'export function peerTubeNeighborPreviews(root, href) { return readPeerTubeNeighborPreviews(root, href, helpers); }',
+  'export function vimeoShowcasePreview(root, href) { return readVimeoShowcasePreview(root, href, helpers); }'
+], 'PlaylistNav');
 
 function control(overrides: Partial<ObservedPlaylistControl> & Pick<ObservedPlaylistControl, 'provider'>): ObservedPlaylistControl {
   return {
@@ -302,13 +269,12 @@ describe('playlist navigation DOM', () => {
   it('reads the host markup observed on YouTube, PeerTube, Dailymotion, and Vimeo', async t => {
     let executable = '';
     try {
-      const { chromium } = await import('playwright');
       executable = chromium.executablePath();
       if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
-      const browser = await chromium.launch({ headless: true });
+      const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
       try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const page = await context.newPage();
         const install = () => page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
         await page.setContent(`<!doctype html><body>
           <div id="movie_player">
@@ -463,7 +429,7 @@ describe('playlist navigation DOM', () => {
         });
         assert.equal(clicked, 1);
       } finally {
-        await browser.close();
+        await context.close();
       }
     } catch (error) {
       if (!executable) { t.skip('Chromium is unavailable'); return; }
@@ -474,13 +440,12 @@ describe('playlist navigation DOM', () => {
   it('uses the native Netflix toolbar Next control and refuses a stale click', async t => {
     let executable = '';
     try {
-      const { chromium } = await import('playwright');
       executable = chromium.executablePath();
       if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
-      const browser = await chromium.launch({ headless: true });
+      const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
       try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+        const page = await context.newPage();
         await page.route('https://www.netflix.com/**', (route) => {
           if (route.request().resourceType() !== 'document') return route.abort();
           return route.fulfill({
@@ -721,7 +686,7 @@ describe('playlist navigation DOM', () => {
         assert.equal(report.held.requests, 1);
         assert.deepEqual(report.held.other, []);
       } finally {
-        await browser.close();
+        await context.close();
       }
     } catch (error) {
       if (!executable) { t.skip('Chromium is unavailable'); return; }
@@ -732,13 +697,12 @@ describe('playlist navigation DOM', () => {
   it('uses the Disney control-bar next episode and leaves the end card alone', async t => {
     let executable = '';
     try {
-      const { chromium } = await import('playwright');
       executable = chromium.executablePath();
       if (!existsSync(executable)) { t.skip('Chromium is not installed'); return; }
       const compiled = playlistBrowserBundle();
-      const browser = await chromium.launch({ headless: true });
+      const context = await shared.newContext(t);
       try {
-        const page = await browser.newPage();
+        const page = await context.newPage();
         await page.route('https://www.disneyplus.com/**', (route) => {
           if (route.request().resourceType() !== 'document') return route.abort();
           return route.fulfill({
@@ -964,7 +928,7 @@ describe('playlist navigation DOM', () => {
         assert.equal(report.heldActivated, 1);
         assert.equal(report.staleClicks, 0);
       } finally {
-        await browser.close();
+        await context.close();
       }
     } catch (error) {
       if (!executable) { t.skip('Chromium is unavailable'); return; }

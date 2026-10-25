@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
+
 import { chromium, type BrowserContext, type Page } from 'playwright';
+
+import { sharedTestBrowser } from '../../test-utils/test-browser';
 
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname, '..');
 const EXTENSION = path.join(ROOT, 'dist', 'chrome-unpacked');
@@ -70,9 +73,10 @@ function delay(ms: number): Promise<void> {
 
 const FIXTURE_MEDIA_URL = 'https://www.bilibili.tv/fixture-media.mp4';
 let fixtureMediaPromise: Promise<Buffer> | null = null;
+const fixtureBrowser = sharedTestBrowser(chromium, { headless: true, args: ['--headless=new', '--no-sandbox'] });
 
-function fixtureMediaBytes(): Promise<Buffer> {
-  fixtureMediaPromise ??= buildFixtureMedia().catch((error: unknown) => {
+function fixtureMediaBytes(t: TestContext): Promise<Buffer> {
+  fixtureMediaPromise ??= buildFixtureMedia(t).catch((error: unknown) => {
     fixtureMediaPromise = null;
     throw error;
   });
@@ -80,10 +84,10 @@ function fixtureMediaBytes(): Promise<Buffer> {
 }
 
 /** Repeat one keyframe each second so the 1504s fixture can actually seek into skip windows. */
-async function buildFixtureMedia(): Promise<Buffer> {
-  const browser = await chromium.launch({ headless: true, args: ['--headless=new', '--no-sandbox'] });
+async function buildFixtureMedia(t: TestContext): Promise<Buffer> {
+  const context = await fixtureBrowser.newContext(t);
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     await page.route('https://fixture.local/**', (route) => route.fulfill({
       status: 200,
       contentType: 'text/html',
@@ -191,7 +195,7 @@ async function buildFixtureMedia(): Promise<Buffer> {
     })()`) as string;
     return Buffer.from(encoded, 'base64');
   } finally {
-    await browser.close();
+    await context.close();
   }
 }
 
@@ -354,7 +358,7 @@ function shotPayload(episode: string): string {
   });
 }
 
-async function installFixtures(context: BrowserContext, hits: Hit[]): Promise<void> {
+async function installFixtures(context: BrowserContext, hits: Hit[], t: TestContext): Promise<void> {
   const fulfill = async (
     route: { request: () => { url: () => string }; fulfill: (body: { status: number; contentType: string; body: string | Buffer }) => Promise<void> },
     status: number,
@@ -366,7 +370,7 @@ async function installFixtures(context: BrowserContext, hits: Hit[]): Promise<vo
   };
   await context.route('https://www.bilibili.tv/**', async (route) => {
     if (route.request().url().split('?')[0] === FIXTURE_MEDIA_URL) {
-      const media = await fixtureMediaBytes();
+      const media = await fixtureMediaBytes(t);
       const range = /^bytes=(\d+)-(\d*)$/.exec(route.request().headers().range || '');
       const start = range ? Number(range[1]) : 0;
       const end = range?.[2] ? Math.min(Number(range[2]), media.length - 1) : media.length - 1;
@@ -608,7 +612,7 @@ describe('bilibili.tv extension runtime', () => {
     const notes: string[] = [];
     const { context, userData } = await launchExtension();
     try {
-      await installFixtures(context, hits);
+      await installFixtures(context, hits, t);
       const page = context.pages()[0] || await context.newPage();
       page.setDefaultTimeout(15000);
       page.on('pageerror', (error) => notes.push(error.message));
@@ -797,7 +801,7 @@ describe('bilibili.tv extension runtime', () => {
     const notes: string[] = [];
     const { context, userData } = await launchExtension();
     try {
-      await installFixtures(context, hits);
+      await installFixtures(context, hits, t);
       const page = context.pages()[0] || await context.newPage();
       page.setDefaultTimeout(15000);
       page.on('pageerror', (error) => notes.push(error.message));

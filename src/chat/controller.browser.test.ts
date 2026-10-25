@@ -1,52 +1,14 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { after, before, describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
 
-import { chromium, firefox, type Browser, type Page } from 'playwright';
+import { chromium, firefox, type Page } from 'playwright';
 
+import { bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
-const require = createRequire(import.meta.url);
-
-function bundle(): string {
-  const esbuild = require('esbuild') as {
-    buildSync: (options: {
-      entryPoints: string[];
-      bundle: boolean;
-      write: boolean;
-      format: 'iife';
-      globalName: string;
-      platform: 'browser';
-      target: string;
-      logLevel: 'silent';
-    }) => { outputFiles: Array<{ text: string }> };
-  };
-  return esbuild.buildSync({
-    entryPoints: [new URL('./index.ts', import.meta.url).pathname],
-    bundle: true,
-    write: false,
-    format: 'iife',
-    globalName: 'NativeChat',
-    platform: 'browser',
-    target: 'es2022',
-    logLevel: 'silent'
-  }).outputFiles[0].text;
-}
-
-function bundleEntry(file: string, globalName: string): string {
-  return require('esbuild').buildSync({
-    entryPoints: [new URL(file, import.meta.url).pathname],
-    bundle: true,
-    write: false,
-    format: 'iife',
-    globalName,
-    platform: 'browser',
-    target: 'es2022',
-    logLevel: 'silent'
-  }).outputFiles[0].text;
-}
+const bundle = (): string => bundleModules(["export * from './chat/index';"], 'NativeChat');
 
 const TWITCH = `<div id="layout" style="width:1000px">
   <div class="persistent-player" id="player"></div>
@@ -74,23 +36,12 @@ const YOUTUBE = `<div id="columns">
 </div>`;
 
 describe('native chat controller', () => {
-  let browser: Browser | null = null;
-  let code = '';
+  const installed = existsSync(chromium.executablePath());
+  const code = installed ? bundle() : '';
+  const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
 
-  before(async () => {
-    const { chromium } = await import('playwright');
-    if (!existsSync(chromium.executablePath())) return;
-    code = bundle();
-    browser = await chromium.launch({ headless: true });
-  });
-
-  after(async () => {
-    await browser?.close();
-  });
-
-  async function pageWith(html: string, viewport = { width: 1280, height: 800 }): Promise<Page> {
-    if (!browser) throw new Error('browser unavailable');
-    const page = await browser.newPage({ viewport });
+  async function pageWith(t: TestContext, html: string, viewport = { width: 1280, height: 800 }): Promise<Page> {
+    const page = await (await browsers.chromium.newContext(t, { viewport })).newPage();
     await page.setContent(`<!doctype html><html><body>${html}<button id="toggle" type="button">chat</button></body></html>`, { waitUntil: 'domcontentloaded' });
     // Install before controller construction so debounce, discovery and theme
     // timers advance only when the fixture requests their documented horizon.
@@ -106,85 +57,79 @@ describe('native chat controller', () => {
   }
 
   it('seeds each content visit from native visibility, retaining saved fallback and session overrides in both browsers', { timeout: 60000 }, async t => {
-    const { ownTestBrowser } = await import('../test-utils/test-browser');
     for (const engine of testEngines()) {
-      const browserType = (await import('playwright'))[engine];
-      if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); continue; }
-      const testBrowser = await browserType.launch({ headless: true });
-      ownTestBrowser(t, testBrowser);
-      try {
-        for (const provider of ['youtube', 'twitch']) {
-          const page = await testBrowser.newPage();
-          await page.setContent('<!doctype html><html><body></body></html>');
-          await page.addScriptTag({ content: bundle() });
-          const report = await page.evaluate(`(() => {
-            const provider = ${JSON.stringify(provider)};
-            let href;
-            const mount = (key, mode) => {
-              href = provider === 'youtube' ? 'https://www.youtube.com/watch?v=' + key : 'https://www.twitch.tv/' + key;
-              document.body.innerHTML = provider === 'youtube'
-                ? '<ytd-watch-flexy video-id="' + key + '"><div style="width:500px"><div id="chat" style="width:340px"><iframe src="https://www.youtube.com/live_chat?v=' + key + '"></iframe></div></div></ytd-watch-flexy>'
-                : '<div style="width:500px"><div id="chat" class="right-column" style="width:340px"><section class="chat-room"></section></div></div>';
-              const root = document.querySelector('#chat');
-              if (mode === 'hidden') root.hidden = true;
-              if (mode === 'unreadable') {root.style.width='0';root.parentElement.style.width='0';}
-            };
-            let saved = {visible:false,width:420,theme:'dark'};
-            const options = () => ({document,href:()=>href,onChange(){},onLayoutChange(){},
-              initialPreferences:{[provider]:saved},persistPreference(_, value){saved=value;}});
-            mount('AbCdEfGhIjK','visible');
-            let c = new NativeChat.ChatController(options());
-            const visible = c.state.visible;
-            c.hide(); c.refresh();
-            const override = c.state.visible;
-            c.dispose();
-            c = new NativeChat.ChatController(options());
-            const reentry = c.state.visible;
-            c.hide();
-            document.head.insertAdjacentHTML('beforeend', '<style>html.theater-everywhere-html-active #chat:not([data-theater-chat]){visibility:hidden!important}</style>');
-            document.documentElement.classList.add('theater-everywhere-html-active');
-            mount('OtherVideo1','visible'); c.refresh();
-            const navigation = c.state.visible;
-            c.show();
-            mount('ThirdVideo1','hidden'); c.refresh();
-            const hiddenNavigation = c.state.visible;
-            c.dispose();
-            document.documentElement.classList.remove('theater-everywhere-html-active');
-            let stableRoute = true;
-            if (provider === 'youtube') {
-              mount('AbCdEfGhIjK','visible'); href='https://www.youtube.com/@example/live';
-              c=new NativeChat.ChatController(options()); c.hide();
-              mount('OtherVideo1','visible'); href='https://www.youtube.com/@example/live';
-              c.refresh(); stableRoute=c.state.visible; c.dispose();
-            }
-            const hidden = [];
-            const unreadable = [];
-            for (const stored of [false,true]) {
-              saved={visible:stored,width:420,theme:'dark'};
-              mount('AbCdEfGhIjK','hidden'); c=new NativeChat.ChatController(options());
-              hidden.push(c.state.visible); c.dispose();
-              mount('AbCdEfGhIjK','unreadable'); c=new NativeChat.ChatController(options());
-              unreadable.push(c.state.visible); c.dispose();
-            }
-            mount('AbCdEfGhIjK','visible');
-            document.body.innerHTML=''; c=new NativeChat.ChatController(options());
-            const absent=c.state.visible; c.dispose();
-            return {visible,override,reentry,navigation,hiddenNavigation,stableRoute,hidden,unreadable,absent};
-          })()`);
-          assert.deepEqual(report, {visible:true,override:false,reentry:true,navigation:true,hiddenNavigation:false,stableRoute:true,
-            hidden:[false,false],unreadable:[false,true],absent:false}, engine + ' ' + provider);
-          await page.close();
-        }
-      } finally { await testBrowser.close(); }
+      if (!existsSync({ chromium, firefox }[engine].executablePath())) { t.skip(`${engine} is not installed`); continue; }
+      const context = await browsers[engine].newContext(t);
+      for (const provider of ['youtube', 'twitch']) {
+        const page = await context.newPage();
+        await page.setContent('<!doctype html><html><body></body></html>');
+        await page.addScriptTag({ content: bundle() });
+        const report = await page.evaluate(`(() => {
+          const provider = ${JSON.stringify(provider)};
+          let href;
+          const mount = (key, mode) => {
+            href = provider === 'youtube' ? 'https://www.youtube.com/watch?v=' + key : 'https://www.twitch.tv/' + key;
+            document.body.innerHTML = provider === 'youtube'
+              ? '<ytd-watch-flexy video-id="' + key + '"><div style="width:500px"><div id="chat" style="width:340px"><iframe src="https://www.youtube.com/live_chat?v=' + key + '"></iframe></div></div></ytd-watch-flexy>'
+              : '<div style="width:500px"><div id="chat" class="right-column" style="width:340px"><section class="chat-room"></section></div></div>';
+            const root = document.querySelector('#chat');
+            if (mode === 'hidden') root.hidden = true;
+            if (mode === 'unreadable') {root.style.width='0';root.parentElement.style.width='0';}
+          };
+          let saved = {visible:false,width:420,theme:'dark'};
+          const options = () => ({document,href:()=>href,onChange(){},onLayoutChange(){},
+            initialPreferences:{[provider]:saved},persistPreference(_, value){saved=value;}});
+          mount('AbCdEfGhIjK','visible');
+          let c = new NativeChat.ChatController(options());
+          const visible = c.state.visible;
+          c.hide(); c.refresh();
+          const override = c.state.visible;
+          c.dispose();
+          c = new NativeChat.ChatController(options());
+          const reentry = c.state.visible;
+          c.hide();
+          document.head.insertAdjacentHTML('beforeend', '<style>html.theater-everywhere-html-active #chat:not([data-theater-chat]){visibility:hidden!important}</style>');
+          document.documentElement.classList.add('theater-everywhere-html-active');
+          mount('OtherVideo1','visible'); c.refresh();
+          const navigation = c.state.visible;
+          c.show();
+          mount('ThirdVideo1','hidden'); c.refresh();
+          const hiddenNavigation = c.state.visible;
+          c.dispose();
+          document.documentElement.classList.remove('theater-everywhere-html-active');
+          let stableRoute = true;
+          if (provider === 'youtube') {
+            mount('AbCdEfGhIjK','visible'); href='https://www.youtube.com/@example/live';
+            c=new NativeChat.ChatController(options()); c.hide();
+            mount('OtherVideo1','visible'); href='https://www.youtube.com/@example/live';
+            c.refresh(); stableRoute=c.state.visible; c.dispose();
+          }
+          const hidden = [];
+          const unreadable = [];
+          for (const stored of [false,true]) {
+            saved={visible:stored,width:420,theme:'dark'};
+            mount('AbCdEfGhIjK','hidden'); c=new NativeChat.ChatController(options());
+            hidden.push(c.state.visible); c.dispose();
+            mount('AbCdEfGhIjK','unreadable'); c=new NativeChat.ChatController(options());
+            unreadable.push(c.state.visible); c.dispose();
+          }
+          mount('AbCdEfGhIjK','visible');
+          document.body.innerHTML=''; c=new NativeChat.ChatController(options());
+          const absent=c.state.visible; c.dispose();
+          return {visible,override,reentry,navigation,hiddenNavigation,stableRoute,hidden,unreadable,absent};
+        })()`);
+        assert.deepEqual(report, {visible:true,override:false,reentry:true,navigation:true,hiddenNavigation:false,stableRoute:true,
+          hidden:[false,false],unreadable:[false,true],absent:false}, engine + ' ' + provider);
+        await page.close();
+      }
     }
   });
 
   for (const engine of testEngines()) {
     const browserType = { chromium, firefox }[engine];
-    const shared = sharedTestBrowser(browserType);
     it(`keeps an open native chat open when theater starts in a background tab (${engine})`, async t => {
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
-      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
+      const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
       try {
         await page.setContent(`<!doctype html><html><body><div style="width:900px"><div id="chat" class="right-column" style="width:340px"><section class="chat-room"></section></div></div></body></html>`, { waitUntil: 'domcontentloaded' });
         await page.addScriptTag({ content: code || bundle() });
@@ -212,8 +157,8 @@ describe('native chat controller', () => {
   }
 
   it('preserves Twitch VOD replay without replacing it with the live channel chat', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<div class="right-column" data-a-target="right-column-chat-bar">
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<div class="right-column" data-a-target="right-column-chat-bar">
       <div class="video-chat"><div class="video-chat__message-list-wrapper"></div></div>
     </div>`);
     try {
@@ -233,8 +178,8 @@ describe('native chat controller', () => {
   });
 
   it('rejects an empty YouTube replay frame when the native shell reports unavailability', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK">
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK">
       <ytd-live-chat-frame id="chat" collapsed hide-chat-frame>
         <iframe id="chatframe"></iframe>
         <ytd-message-renderer>Live chat replay is disabled for this video.</ytd-message-renderer>
@@ -245,8 +190,8 @@ describe('native chat controller', () => {
   });
 
   it('opens a Polish YouTube archive card before its replay frame mounts', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK">
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK">
       <yt-video-metadata-carousel-view-model aria-label="Ponowne odtwarzanie czatu na żywo">
         <button type="button" onclick="window.opened = (window.opened || 0) + 1">Otwórz panel</button>
       </yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
@@ -264,8 +209,8 @@ describe('native chat controller', () => {
   });
 
   it('detects the current Twitch or YouTube chat and ignores chat documents, mismatches, and new embeds', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `${TWITCH}${YOUTUBE}<iframe id="foreign" src="https://www.youtube.com/live_chat?v=ZZZZZZZZZZZ"></iframe>`);
     try {
       const report = await page.evaluate(`(() => {
         const api = window.NativeChat;
@@ -354,8 +299,8 @@ describe('native chat controller', () => {
   });
 
   it('opens a YouTube chat from its metadata card before an iframe exists, without repeated native clicks', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
     try {
       const report = await page.evaluate(`(async () => {
         const card = document.querySelector('yt-video-metadata-carousel-view-model');
@@ -389,12 +334,12 @@ describe('native chat controller', () => {
   });
 
   it('opens collapsed components only on an explicit toggle despite a saved open preference', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
+    if (!installed) { t.skip('Chromium is not installed'); return; }
     for (const provider of ['youtube', 'twitch']) {
       const html = provider === 'youtube'
         ? `<ytd-watch-flexy video-id="AbCdEfGhIjK"><ytd-live-chat-frame id="chat" collapsed><iframe id="chatframe" src="https://www.youtube.com/live_chat?v=AbCdEfGhIjK"></iframe><div id="show-hide-button"><button id="open">Pokaż czat</button></div></ytd-live-chat-frame></ytd-watch-flexy>`
         : `<div class="channel-root__right-column" style="width:0"><div class="chat-shell"><section id="chat" data-test-selector="chat-room-component-layout"><textarea id="draft">native draft</textarea></section></div></div><button id="open" data-a-target="right-column__toggle-collapse-btn" aria-label="Rozwiń czat">expand</button>`;
-      const page = await pageWith(html);
+      const page = await pageWith(t, html);
       try {
         const report = await page.evaluate(`(async () => {
           const provider = ${JSON.stringify(provider)};
@@ -429,8 +374,8 @@ describe('native chat controller', () => {
   });
 
   it('rejects disabled, unrelated and stale YouTube activation cards, detects late cards, and permits explicit retries', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Chapters"><button>Open panel</button></yt-video-metadata-carousel-view-model><yt-video-metadata-carousel-view-model id="card" role="button" aria-label="Live chat"><button disabled>Open panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Chapters"><button>Open panel</button></yt-video-metadata-carousel-view-model><yt-video-metadata-carousel-view-model id="card" role="button" aria-label="Live chat"><button disabled>Open panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>`);
     try {
       const report = await page.evaluate(`(async () => {
         let href = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
@@ -453,8 +398,8 @@ describe('native chat controller', () => {
   });
 
   it('shows and hides the original Twitch node without moving it, reloading it, or scanning each message', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(TWITCH);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, TWITCH);
     try {
       const report = await page.evaluate(`(async () => {
         const column = document.getElementById('column');
@@ -645,8 +590,8 @@ describe('native chat controller', () => {
   });
 
   it('keeps a collapsed native chat hidden despite a saved open preference and clamps its width', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<div id="layout" style="width:800px"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__expanded"></div></section></div></div>`);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<div id="layout" style="width:800px"><div class="right-column" data-a-target="right-column-chat-bar" id="column" style="width:0"><section data-test-selector="chat-room-component-layout"><div class="chat-shell chat-shell__expanded"></div></section></div></div>`);
     try {
       const collapsed = await page.evaluate(`(() => {
         const persisted = [];
@@ -680,8 +625,8 @@ describe('native chat controller', () => {
   // Twitch's zero-width column around a translated shell: twitch-recorded.browser.test.ts, on recordings of the live host.
 
   it('preserves a YouTube frame and reveals #secondary while messages inside #chat do not rescan', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(YOUTUBE);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, YOUTUBE);
     try {
       const report = await page.evaluate(`(async () => {
         const frame = document.getElementById('chatframe');
@@ -767,8 +712,8 @@ describe('native chat controller', () => {
   });
 
   it('docks to the bottom under 900px and finds a chat that mounts later', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith('<div id="layout" style="width:800px"></div>', { width: 899, height: 700 });
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, '<div id="layout" style="width:800px"></div>', { width: 899, height: 700 });
     try {
       const report = await page.evaluate(`(async () => {
         window.__href = 'https://www.twitch.tv/laterchannel';
@@ -821,8 +766,8 @@ describe('native chat controller', () => {
   });
 
   it('adopts YouTube programmatic chat frames and rejects stale watch identities', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(`<ytd-watch-flexy video-id="AbCdEfGhIjK"><div id="secondary">
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, `<ytd-watch-flexy video-id="AbCdEfGhIjK"><div id="secondary">
       <ytd-live-chat-frame id="chat"><iframe id="chatframe"></iframe></ytd-live-chat-frame>
     </div></ytd-watch-flexy>`);
     try {
@@ -855,8 +800,8 @@ describe('native chat controller', () => {
   });
 
   it('keeps native inert state and rebinds a Twitch component inside the same column', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(TWITCH);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, TWITCH);
     try {
       const report = await page.evaluate(`(async () => {
         const column = document.getElementById('column');
@@ -882,10 +827,10 @@ describe('native chat controller', () => {
   });
 
   it('treats native chat, service portals, and chat documents as chat events and ignores the rest of the page', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const watch = await browser.newPage();
-    const twitch = await browser.newPage();
-    const popout = await browser.newPage();
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const watch = await (await browsers.chromium.newContext(t)).newPage();
+    const twitch = await (await browsers.chromium.newContext(t)).newPage();
+    const popout = await (await browsers.chromium.newContext(t)).newPage();
     try {
       await watch.route('https://www.youtube.com/**', (route) => {
         if (route.request().resourceType() !== 'document') return route.abort();
@@ -989,9 +934,9 @@ describe('native chat controller', () => {
   });
 
   it('uses the complete Twitch palette and falls back safely on unrecognized YouTube CSS', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const twitch = await pageWith(TWITCH);
-    const youtube = await pageWith(YOUTUBE);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const twitch = await pageWith(t, TWITCH);
+    const youtube = await pageWith(t, YOUTUBE);
     try {
       const twitchReport = await twitch.evaluate(`(async () => {
         const column = document.getElementById('column');
@@ -1091,8 +1036,8 @@ describe('native chat controller', () => {
     }
   });
   it('qualifies both YouTube palettes, preserves the composer, and restores native appearance on CSS or document replacement', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith(YOUTUBE);
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, YOUTUBE);
     try {
       const css = readFileSync(new URL('../../test/fixtures/youtube-chat-theme.css', import.meta.url), 'utf8');
       const colors = JSON.parse(readFileSync(new URL('../../test/fixtures/youtube-chat-theme-colors.json', import.meta.url), 'utf8'));
@@ -1184,13 +1129,12 @@ describe('native chat controller', () => {
   });
 
   it('limits discovery and theme work to visible watch routes', async t => {
-    if (!browser || !code) { t.skip('Chromium is not installed'); return; }
+    if (!installed) { t.skip('Chromium is not installed'); return; }
     const engines = testEngines();
     for (const engine of engines) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
-      const engineBrowser: Browser = engine === 'chromium' ? browser : await browserType.launch({ headless: true });
-      const page: Page = await engineBrowser.newPage({ viewport: { width: 1280, height: 800 } });
+      const page: Page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
       try {
         await page.setContent('<!doctype html><html><body><div id="layout"></div></body></html>', { waitUntil: 'domcontentloaded' });
         const start = new Date('2026-01-01T00:00:00Z');
@@ -1373,14 +1317,13 @@ describe('native chat controller', () => {
         assert.deepEqual(embed, { available: true, key: 'AbCdEfGhIjK' }, engine);
       } finally {
         await page.close();
-        if (engine !== 'chromium') await engineBrowser.close();
       }
     }
   });
 
   it('keeps the stage size variables following the viewport on pages without chat', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const page = await pageWith('<div id="layout"></div>');
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const page = await pageWith(t, '<div id="layout"></div>');
     try {
       await page.evaluate(`(() => {
         window.__layouts = 0;
@@ -1403,15 +1346,14 @@ describe('native chat controller', () => {
   });
 
   it('releases detached Twitch portal records without dropping a same-batch reparent', async t => {
-    if (!browser) { t.skip('Chromium is not installed'); return; }
-    const ownedCode = bundleEntry('./owned-dom.ts', 'OwnedDomMod');
-    const twitchCode = bundleEntry('./adapters/twitch.ts', 'TwitchTheme');
+    if (!installed) { t.skip('Chromium is not installed'); return; }
+    const ownedCode = bundleModules(["export * from './chat/owned-dom';"], 'OwnedDomMod');
+    const twitchCode = bundleModules(["export * from './chat/adapters/twitch';"], 'TwitchTheme');
     const engines = testEngines();
     for (const engine of engines) {
       const browserType = (await import('playwright'))[engine];
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
-      const engineBrowser: Browser = engine === 'chromium' ? browser : await browserType.launch({ headless: true });
-      const page: Page = await engineBrowser.newPage();
+      const page: Page = await (await browsers[engine].newContext(t)).newPage();
       try {
         await page.setContent(`<!doctype html><html><head></head><body>
           <div class="right-column NativeDark tw-root--theme-dark" id="column">
@@ -1497,7 +1439,6 @@ describe('native chat controller', () => {
         assert.equal(report.restored, 0, engine);
       } finally {
         await page.close();
-        if (engine !== 'chromium') await engineBrowser.close();
       }
     }
   });

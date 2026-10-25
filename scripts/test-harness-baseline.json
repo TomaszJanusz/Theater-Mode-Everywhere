@@ -1,24 +1,4 @@
 {
-  "options/choice-grid.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
-  "options/combobox.browser.test.ts": {
-    "esbuild": 1
-  },
-  "options/localization.browser.test.ts": {
-    "esbuild": 1
-  },
-  "options/rte-settings.browser.test.ts": {
-    "esbuild": 1
-  },
-  "options/tabs.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
-  "popup/rte-settings.browser.test.ts": {
-    "esbuild": 1
-  },
   "scripts/build-mode.test.ts": {
     "esbuild": 1
   },
@@ -30,10 +10,6 @@
     "esbuild": 2,
     "chromeStub": 1
   },
-  "src/chat/controller.browser.test.ts": {
-    "launch": 4,
-    "esbuild": 2
-  },
   "src/entries/background.test.ts": {
     "esbuild": 1
   },
@@ -44,30 +20,11 @@
   "src/platform/page-fetch.browser.test.ts": {
     "esbuild": 1
   },
-  "src/playlist-nav.test.ts": {
-    "launch": 3,
-    "esbuild": 1
-  },
-  "src/providers/bilibili/watch-playback.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
-  "src/providers/bilibili-intl/runtime.browser.test.ts": {
-    "launch": 1
-  },
-  "src/providers/bilibili-intl/watch-playback.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
-  },
   "src/providers/capabilities.test.ts": {
     "esbuild": 1
   },
   "src/providers/disney/clock.browser.test.ts": {
     "launch": 3,
-    "esbuild": 1
-  },
-  "src/providers/disney/stage.test.ts": {
-    "launch": 1,
     "esbuild": 1
   },
   "src/providers/native/page-title.browser.test.ts": {
@@ -76,14 +33,6 @@
   },
   "src/providers/patreon/watch-playback.browser.test.ts": {
     "launch": 2,
-    "esbuild": 1
-  },
-  "src/providers/service-actions.browser.test.ts": {
-    "launch": 3,
-    "esbuild": 2
-  },
-  "src/providers/twitch/harvest.test.ts": {
-    "launch": 1,
     "esbuild": 1
   },
   "src/providers/ui-refresh.browser.test.ts": {
@@ -96,11 +45,6 @@
   "src/providers/youtube/queue.browser.test.ts": {
     "esbuild": 1
   },
-  "src/providers/youtube/sponsorblock.browser.test.ts": {
-    "launch": 7,
-    "esbuild": 1,
-    "chromeStub": 1
-  },
   "src/providers/youtube/timedtext-cache.browser.test.ts": {
     "launch": 2,
     "esbuild": 1
@@ -108,10 +52,6 @@
   "src/reduce-motion.browser.test.ts": {
     "launch": 2,
     "esbuild": 2
-  },
-  "src/safe-dom.browser.test.ts": {
-    "launch": 1,
-    "esbuild": 1
   },
   "src/ui/accessibility.browser.test.ts": {
     "esbuild": 1
@@ -209,10 +149,6 @@
     "launch": 1
   },
   "src/ui/video-selection.browser.test.ts": {
-    "esbuild": 1
-  },
-  "src/whatsNew-content.browser.test.ts": {
-    "launch": 2,
     "esbuild": 1
   },
   "tools/cpu-suite/browser.test.ts": {

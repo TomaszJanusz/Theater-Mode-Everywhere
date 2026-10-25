@@ -1,24 +1,20 @@
-import { selectTestEngines } from '../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
-import { build } from 'esbuild';
+
 import { chromium, firefox, type Page } from 'playwright';
-import { sharedTestBrowser } from '../src/test-utils/test-browser';
-import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
-import { readStylesheet } from '../src/test-utils/styles';
+
 import { LANGUAGES } from '../src/language';
+import { assertLocalized, readCatalog } from '../src/test-utils/language-audit';
+import { bundleQueryModules } from '../src/test-utils/query-bundle';
+import { readStylesheet } from '../src/test-utils/styles';
+import { sharedTestBrowser } from '../src/test-utils/test-browser';
+import { selectTestEngines } from '../src/test-utils/test-engines';
 import { WHATS_NEW_RELEASE } from '../src/whatsNew-release';
 
 const root = path.resolve(__dirname, '..');
-const bundles = Promise.all(['options/options.ts', 'popup/popup.ts'].map(entry => build({
-  entryPoints: [path.join(root, entry)], bundle: true, write: false, format: 'iife', target: 'es2022',
-  plugins: [{ name: 'raw', setup(builder) {
-    builder.onResolve({ filter: /\?raw$/ }, args => ({ path: path.resolve(args.resolveDir, args.path.slice(0, -4)), namespace: 'raw' }));
-    builder.onLoad({ filter: /.*/, namespace: 'raw' }, args => ({ contents: readFileSync(args.path, 'utf8'), loader: 'text' }));
-  } }]
-}).then(result => result.outputFiles![0].text)));
+const bundles = Promise.all(["import '../options/options';", "import '../popup/popup';"].map(entry => bundleQueryModules([entry])));
 
 async function open(page: Page, surface: 'options' | 'popup', blacklist: string[], url = 'chrome://extensions'): Promise<void> {
   const initialize = ({ catalogs, blacklist, url, release }: { catalogs: Record<string, ReturnType<typeof readCatalog>>; blacklist: string[]; url: string; release: string }) => {
