@@ -1,14 +1,16 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { userEvent } from 'vitest/browser';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { server, userEvent } from 'vitest/browser';
 
 import { activeElementDeep } from '../accessibility';
 import { controlButton, mountSurface, type MountedSurface, type SurfacePolicy, type SurfaceRegistration } from '../test-utils/component-surface';
 
+import { bindMenuPopover } from './menu-popover';
 import { createModal, type Modal } from './modal';
 
 // Conformance suite for top-layer surfaces (TME-125 contract). Each registration runs the shared
 // lifecycle cases of its policy: state and ARIA, Escape, outside press, focus containment, cleanup
-// and owner disposal. Cases assert hooks, roles, ARIA and focus, never copy or pixels.
+// and owner disposal. Cases assert hooks, roles, ARIA and focus, never copy or pixels. Hostile host
+// pages run once per policy, on its first registration.
 
 const registrations: SurfaceRegistration[] = [
   {
@@ -28,6 +30,23 @@ const registrations: SurfaceRegistration[] = [
       });
       return { trigger, surface: () => modal?.overlay ?? null, close: () => modal?.close() };
     }
+  },
+  {
+    name: 'settings menu',
+    policy: 'anchored-menu',
+    mount({ stage, owner }) {
+      const host = document.createElement('div');
+      host.className = 'theater-settings-container';
+      const trigger = controlButton('Settings');
+      trigger.className = 'theater-control-btn';
+      const panel = document.createElement('div');
+      panel.className = 'theater-settings-menu';
+      panel.append(controlButton('First row'), controlButton('Second row'));
+      host.append(trigger, panel);
+      stage.append(host);
+      const menu = bindMenuPopover({ host, trigger, panel, scope: owner });
+      return { trigger, surface: () => host, close: () => { menu.close(); } };
+    }
   }
 ];
 
@@ -40,6 +59,8 @@ interface Policy {
   outsidePress: 'reaches-control' | 'dismisses-to-trigger';
   /** Policy-specific roles and ARIA for the current state. */
   expectAria(mounted: MountedSurface, open: boolean): void;
+  /** The part of the open surface the user interacts with. */
+  content(mounted: MountedSurface): HTMLElement;
 }
 
 const policies: Record<SurfacePolicy, Policy> = {
@@ -60,7 +81,8 @@ const policies: Record<SurfacePolicy, Policy> = {
       const label = mounted.root.getElementById(dialog.getAttribute('aria-labelledby') ?? '');
       expect(label?.textContent).toBeTruthy();
       expect(mounted.trigger.closest('[inert]'), 'content outside the modal is inert').not.toBeNull();
-    }
+    },
+    content: mounted => mounted.surface()!.querySelector<HTMLElement>('[role="dialog"]')!
   },
   'anchored-menu': {
     pointerFocusesInside: false,
@@ -70,7 +92,14 @@ const policies: Record<SurfacePolicy, Policy> = {
       const panel = mounted.surface()!.querySelector<HTMLElement>(':scope > .theater-menu-panel')!;
       expect(mounted.trigger.getAttribute('aria-expanded')).toBe(String(open));
       expect(panel.inert).toBe(!open);
-    }
+      if (!open) return;
+      // Placement is CSS today; the open panel must stay inside the player UI host box.
+      const box = (mounted.root.host as HTMLElement).getBoundingClientRect();
+      const rect = panel.getBoundingClientRect();
+      expect(rect.width * rect.height).toBeGreaterThan(0);
+      expect([rect.left >= box.left, rect.top >= box.top, rect.right <= box.right, rect.bottom <= box.bottom]).toEqual([true, true, true, true]);
+    },
+    content: mounted => mounted.surface()!.querySelector<HTMLElement>(':scope > .theater-menu-panel')!
   }
 };
 
@@ -214,5 +243,145 @@ for (const registration of registrations) {
       expect(activeElementDeep()).toBe(active);
       policy.expectAria(current, true);
     });
+  });
+}
+
+/** Whether real pointer input at the element's centre reaches it, above everything the page shows. */
+function onTop(mounted: MountedSurface, element: HTMLElement): boolean {
+  const box = element.getBoundingClientRect();
+  const [x, y] = [box.left + box.width / 2, box.top + box.height / 2];
+  if (document.elementFromPoint(x, y) !== mounted.root.host) return false;
+  const hit = mounted.root.elementFromPoint(x, y);
+  return Boolean(hit && element.contains(hit));
+}
+
+function pageElement<K extends keyof HTMLElementTagNameMap>(tag: K, css: string): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tag);
+  element.style.cssText = css;
+  document.body.append(element);
+  return element;
+}
+
+const COVER = 'position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;margin:0;border:0;background:rgb(200, 0, 0);pointer-events:auto';
+
+interface HostilePage {
+  name: string;
+  /** Builds the hostile page: before the player UI exists, or once the surface is open (`afterOpen`). */
+  install(): void | Promise<void>;
+  afterOpen?: boolean;
+  fullscreen?: boolean;
+  /**
+   * Set when the page legitimately wins (a page modal dialog makes the rest of the document inert,
+   * whichever entered the top layer first; docs/top-layer.md). Undoes it, so recovery is asserted.
+   */
+  release?(): void;
+}
+
+let pageDialog: HTMLDialogElement | undefined;
+const modalDialog = () => {
+  pageDialog = pageElement('dialog', COVER);
+  pageDialog.append(Object.assign(document.createElement('button'), { textContent: 'Page dialog' }));
+  pageDialog.showModal();
+};
+const pagePopover = () => {
+  const popover = pageElement('div', COVER);
+  popover.popover = 'manual';
+  popover.showPopover();
+};
+
+const hostilePages: HostilePage[] = [
+  { name: 'a z-index maximum overlay', install: () => { pageElement('div', `${COVER};z-index:2147483647`); } },
+  {
+    name: 'transformed, contained and filtered ancestors',
+    install: () => {
+      for (const element of [document.documentElement, document.body]) {
+        element.style.cssText = 'transform:translateZ(0);filter:saturate(1);contain:layout paint;will-change:transform';
+      }
+      pageElement('div', `${COVER};z-index:2147483647`);
+    }
+  },
+  {
+    name: 'an aggressive global stylesheet',
+    install: () => {
+      pageElement('style', '').textContent = `* { all: revert !important; }
+        button, div, [popover], [role="dialog"] { display: none !important; visibility: hidden !important; }
+        html, body { overflow: hidden !important; pointer-events: none !important; }`;
+    }
+  },
+  { name: 'a page popover shown before the player UI', install: pagePopover },
+  { name: 'a page popover shown while the surface is open', install: pagePopover, afterOpen: true },
+  { name: 'a page modal dialog shown before the player UI', install: modalDialog, release: () => pageDialog?.close() },
+  { name: 'a page modal dialog shown while the surface is open', install: modalDialog, afterOpen: true, release: () => pageDialog?.close() },
+  {
+    // The document goes fullscreen, as in theater fullscreen. The Enter that opened the surface is the
+    // user activation it needs. (A fullscreen page element outside the host's ancestors is not covered.)
+    name: 'the page going fullscreen while the surface is open',
+    install: async () => {
+      const entered = new Promise(resolve => document.addEventListener('fullscreenchange', resolve, { once: true }));
+      await document.documentElement.requestFullscreen();
+      await entered;
+      expect(document.fullscreenElement).not.toBeNull();
+    },
+    afterOpen: true,
+    fullscreen: true
+  }
+];
+
+const representatives = [...new Map(registrations.map(registration => [registration.policy, registration])).values()];
+
+for (const registration of representatives) {
+  const policy = policies[registration.policy];
+
+  describe(`${registration.policy} on a hostile host page`, () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'requestAnimationFrame', 'cancelAnimationFrame'] });
+    });
+    afterEach(async () => {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      pageDialog = undefined;
+      document.documentElement.removeAttribute('style');
+      document.body.removeAttribute('style');
+    });
+
+    for (const page of hostilePages) {
+      test(page.name, async () => {
+        if (!page.afterOpen) await page.install();
+        const mounted = mountSurface(registration);
+        if (page.release && !page.afterOpen) {
+          expect(onTop(mounted, mounted.trigger), 'the page dialog wins while open').toBe(false);
+          page.release();
+        }
+        expect(onTop(mounted, mounted.trigger)).toBe(true);
+        await openWith(mounted, 'keyboard');
+        if (page.afterOpen) {
+          await page.install();
+          // The host re-enters the top layer on the next frame after a page popover or fullscreen.
+          await vi.advanceTimersByTimeAsync(50);
+          if (page.release) {
+            expect(onTop(mounted, policy.content(mounted)), 'the page dialog wins while open').toBe(false);
+            page.release();
+            // The dialog took focus; a surface that does not trap focus closed when it left.
+            if (!policy.trapsFocus) {
+              expect(state(mounted)).toBe('closed');
+              await openWith(mounted, 'keyboard');
+            }
+          }
+        }
+        expect(state(mounted)).toBe('open');
+        expect(onTop(mounted, policy.content(mounted))).toBe(true);
+        policy.expectAria(mounted, true);
+        policy.content(mounted).querySelector('button')!.focus();
+        await userEvent.keyboard('{Escape}');
+        if (page.fullscreen && server.browser === 'firefox') {
+          // Firefox spends the first Escape on leaving fullscreen; the page never sees it.
+          await expect.poll(() => document.fullscreenElement).toBeNull();
+          expect(state(mounted)).toBe('open');
+          await userEvent.keyboard('{Escape}');
+        }
+        expect(state(mounted)).toBe('closed');
+        expect(activeElementDeep()).toBe(mounted.trigger);
+        policy.expectAria(mounted, false);
+      });
+    }
   });
 }
