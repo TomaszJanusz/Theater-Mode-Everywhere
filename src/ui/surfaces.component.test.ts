@@ -2,53 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { server, userEvent } from 'vitest/browser';
 
 import { activeElementDeep } from '../accessibility';
-import { controlButton, mountSurface, type MountedSurface, type SurfacePolicy, type SurfaceRegistration } from '../test-utils/component-surface';
+import { mountSurface, type MountedSurface, type SurfacePolicy } from '../test-utils/component-surface';
+import { surfaceRegistrations as registrations } from '../test-utils/surface-registry';
 
-import { bindMenuPopover } from './menu-popover';
-import { createModal, type Modal } from './modal';
-
-// Conformance suite for top-layer surfaces (TME-125 contract). Each registration runs the shared
+// Conformance suite for top-layer surfaces (TME-125 contract). Registrations live in
+// test-utils/surface-registry.ts, shared with the accessibility matrix. Each registration runs the shared
 // lifecycle cases of its policy: state and ARIA, Escape, outside press, focus containment, cleanup
 // and owner disposal. Cases assert hooks, roles, ARIA and focus, never copy or pixels. Hostile host
 // pages run once per policy, on its first registration.
-
-const registrations: SurfaceRegistration[] = [
-  {
-    name: 'modal',
-    policy: 'modal',
-    mount({ root, stage, owner }) {
-      const trigger = controlButton('Open dialog');
-      stage.append(trigger);
-      let modal: Modal | undefined;
-      owner.listen(trigger, 'click', () => {
-        modal = createModal({
-          title: 'Surface', closeLabel: 'Close', content: 'Body',
-          actions: [{ label: 'Cancel', kind: 'secondary', value: false }, { label: 'Confirm', kind: 'primary', value: true }],
-          mount: overlay => root.append(overlay),
-          signal: owner.signal
-        });
-      });
-      return { trigger, surface: () => modal?.overlay ?? null, close: () => modal?.close() };
-    }
-  },
-  {
-    name: 'settings menu',
-    policy: 'anchored-menu',
-    mount({ stage, owner }) {
-      const host = document.createElement('div');
-      host.className = 'theater-settings-container';
-      const trigger = controlButton('Settings');
-      trigger.className = 'theater-control-btn';
-      const panel = document.createElement('div');
-      panel.className = 'theater-settings-menu';
-      panel.append(controlButton('First row'), controlButton('Second row'));
-      host.append(trigger, panel);
-      stage.append(host);
-      const menu = bindMenuPopover({ host, trigger, panel, scope: owner });
-      return { trigger, surface: () => host, close: () => { menu.close(); } };
-    }
-  }
-];
 
 interface Policy {
   /** Pointer opening moves focus inside too, not only keyboard opening. */
