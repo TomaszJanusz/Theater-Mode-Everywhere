@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Theater mode now fills the window on pages that list several posts with videos, such as a Telegram channel's post list (t.me/s/…). The video could instead appear shifted up and to the left, cut off at the top-left corner of the window, with the page showing around it.
+
 ## [2.0.6] - 2026-10-24
 
 ### Fixed
