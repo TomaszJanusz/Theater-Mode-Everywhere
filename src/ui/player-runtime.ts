@@ -2307,6 +2307,9 @@ function enterTheaterMode(element: HTMLElement, sessionId?: string, nonce?: stri
   }
 
   refreshTheaterAncestors(element);
+  // The ancestor overrides can remove a containing block the first pin measured against, such
+  // as a post bubble's drop-shadow filter on Telegram's post list.
+  pinProviderViewport(element, applyTheaterViewportPin);
 
   // Lock scrollbars on body/html
   document.body.classList.add('theater-everywhere-body-active');
