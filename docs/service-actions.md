@@ -101,7 +101,6 @@ source replacement, toast lifecycle, skip-window boundaries, episode mismatch,
 provider flags and CTA disposal. The installed Chromium extension fixture in
 `src/providers/bilibili-intl/runtime.browser.test.ts` exercises the imported
 intro window through the actual content-world CTA and checks pause preservation.
-Live page checks and before/after captures are recorded in
-[service-actions-live.md](service-actions-live.md). The live Bilibili.com check
-uses its native “do not skip” confirmation; a logged-in first-watch “still skip”
-confirmation remains covered by the fixture rather than a live session.
+On Bilibili.com only the native “do not skip” confirmation was checked on the live
+page; a logged-in first-watch “still skip” confirmation is covered by the fixture
+rather than a live session.

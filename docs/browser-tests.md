@@ -379,8 +379,13 @@ Rows are inclusive: do not add nested `assertBadgeWorld` to its parent highlight
 row. Repeated startup rows distinguish initial entry from entry after blacklist
 restoration. The existing `THEATER_SMOKE_*_ONLY` switches select the corresponding
 installed-storage scenario (shortcuts mode retains its existing skip-pin meaning).
-See [the scenario audit](smoke-coverage.md) for the retained capabilities and
-removed/moved coverage.
+Installed smoke (`scripts/smoke/`) keeps only what needs the real extension:
+startup and the exact/parent blacklists, the isolated-to-MAIN audio graph, RTE,
+shortcut, pin and layout storage written through Settings, AutoTheater defaults and
+live preference changes, the language catalog delivered by the background, feature
+highlights (with the isolated-world badge fallback), appearance modes across Settings,
+popup and player, and the iframe and embedded-fullscreen scenarios. Presentation,
+input and lifecycle checks for those features belong in fixture browser tests.
 
 ## Live E2E lane (TME-124)
 
