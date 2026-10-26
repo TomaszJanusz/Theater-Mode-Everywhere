@@ -1,29 +1,19 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { chromium, firefox, type Page } from 'playwright';
 
+import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { selectTestEngines } from '../../test-utils/test-engines';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const bundle = esbuild.buildSync({
-  stdin: {
-    contents: "export { findPlaylistActions } from './playlist-nav'; export { installYouTubeQueueNavigation } from './providers/youtube/queue-main';",
-    resolveDir: source, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'QueueTest', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+const bundle = bundleModules([
+  "export { findPlaylistActions } from './playlist-nav';",
+  "export { installYouTubeQueueNavigation } from './providers/youtube/queue-main';"
+], 'QueueTest');
 
 const html = `<!doctype html><body>
   <ytd-watch-flexy>

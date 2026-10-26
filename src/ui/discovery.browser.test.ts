@@ -1,29 +1,23 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
+
 import type { Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules } from '../test-utils/player-boot';
+import { testEngines } from '../test-utils/test-engines';
+
 import type { ChromeRefs } from './runtime-context';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    // Only discovery reads run here; the real refs preserve WeakRef semantics.
-    contents: `import { createDiscovery } from './ui/discovery';
-      import { createChromeRefs, type PlayerChromeContext } from './ui/runtime-context';
-      export function createProbe() {
-        const refs = createChromeRefs();
-        const discovery = createDiscovery({ refs } as PlayerChromeContext);
-        return { refs, findBestVideo: discovery.findBestVideo, findAllVideosDeep: discovery.findAllVideosDeep };
-      }`,
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'DiscoveryTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+// Only discovery reads run here; the real refs preserve WeakRef semantics.
+const BUNDLE = bundleModules([`import { createDiscovery } from './ui/discovery';
+  import { createChromeRefs, type PlayerChromeContext } from './ui/runtime-context';
+  export function createProbe() {
+    const refs = createChromeRefs();
+    const discovery = createDiscovery({ refs } as PlayerChromeContext);
+    return { refs, findBestVideo: discovery.findBestVideo, findAllVideosDeep: discovery.findAllVideosDeep };
+  }`], 'DiscoveryTest');
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 type Probe = {
@@ -83,13 +77,15 @@ async function rank(page: Page) {
   });
 }
 
+const browsers = sharedEngineBrowsers();
+
 for (const engine of testEngines()) {
   it(`${engine}: generic ranking reads each candidate once per sort`, { timeout: 60_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
+    const newPage = async (viewport?: { width: number; height: number }) =>
+      (await browsers[engine].newContext(t, viewport && { viewport })).newPage();
     for (const count of [1, 4, 12]) {
       await t.test(`${count} candidates preserve the geometric choice and bound rect reads`, async () => {
-        const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+        const page = await newPage({ width: 1440, height: 900 });
         await setup(page, Array.from({ length: count }, (_, i) => `<video id="v${i}" style="left:${(i * 173) % 900}px;top:${(i * 91) % 550}px;width:${100 + (i * 73) % 450}px;height:${100 + (i * 53) % 250}px"></video>`).join(''));
         const result = await rank(page);
         assert.equal(result.picked, count === 1 ? 'v0' : 'v3');
@@ -102,7 +98,7 @@ for (const engine of testEngines()) {
     }
 
     await t.test('previews and the miniplayer are never a fallback target', async () => {
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await newPage({ width: 1440, height: 900 });
       await setup(page, '<div id="inline-preview-player"><video id="preview" style="left:0;top:0;width:300px;height:170px"></video></div>'
         + '<ytd-miniplayer><video id="mini" style="left:600px;top:0;width:300px;height:170px"></video></ytd-miniplayer>'
         + '<ytd-shorts><video id="short" style="left:900px;top:0;width:300px;height:170px"></video></ytd-shorts>');
@@ -114,7 +110,7 @@ for (const engine of testEngines()) {
     });
 
     await t.test('offscreen fallback caches layout area and retains playing/pointer priority', async () => {
-      const page = await browser.newPage();
+      const page = await newPage();
       await setup(page, Array.from({ length: 12 }, (_, i) => `<video id="v${i}" style="left:2000px;top:0;width:${100 + i * 10}px;height:100px;transform:scale(${12 - i})"></video>`).join(''));
       const result = await rank(page);
       // Transformed rect area favors v0; the fallback must use offset dimensions.
@@ -130,7 +126,7 @@ for (const engine of testEngines()) {
     });
 
     await t.test('each ranking refreshes resize, scroll and playback metrics', async () => {
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await newPage({ width: 1440, height: 900 });
       await setup(page, '<video id="wide" style="left:560px;top:360px;width:320px;height:180px"></video><video id="small" style="left:0;top:0;width:320px;height:180px"></video><div style="height:3000px"></div>');
       const expectRank = async (picked: string) => {
         const result = await rank(page);
@@ -155,7 +151,7 @@ for (const engine of testEngines()) {
     });
 
     await t.test('shadow candidates, viewport priority and detached WeakRef remain valid', async () => {
-      const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      const page = await newPage({ width: 1440, height: 900 });
       await setup(page, '<video id="center" style="left:560px;top:360px;width:320px;height:180px"></video><video id="pointed" style="left:0;top:0;width:320px;height:180px"></video>');
       await page.evaluate(() => {
         const host = document.createElement('div');

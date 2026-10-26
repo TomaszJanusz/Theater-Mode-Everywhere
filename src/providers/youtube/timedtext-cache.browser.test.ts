@@ -1,11 +1,11 @@
-import { selectTestEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { describe, it } from 'node:test';
-import { chromium, firefox, type BrowserType, type Page } from 'playwright';
-import { ownTestBrowser } from '../../test-utils/test-browser';
+
+import type { Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
+import { bundleModules } from '../../test-utils/player-boot';
+import { testEngines } from '../../test-utils/test-engines';
 
 type CaptionApi = {
   installYoutubeMain(): void;
@@ -14,26 +14,11 @@ type CaptionApi = {
   readTimedtextCacheUsage(): { retainedStringLength: number; stringBudget: number; tracks: number };
 };
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const source = path.resolve(new URL('../..', import.meta.url).pathname);
-const bundle = esbuild.buildSync({
-  stdin: {
-    contents: "export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/main';",
-    resolveDir: source,
-    loader: 'ts'
-  },
-  bundle: true,
-  write: false,
-  format: 'iife',
-  globalName: 'CaptionTest',
-  platform: 'browser',
-  target: 'es2022'
-}).outputFiles[0].text;
-
-const engines: Array<[string, BrowserType]> = selectTestEngines<[string, BrowserType]>([['chromium', chromium], ['firefox', firefox]], ([name]) => name);
+const bundle = bundleModules(
+  ["export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/main';"],
+  'CaptionTest'
+);
+const browsers = sharedEngineBrowsers();
 
 async function install(page: Page): Promise<void> {
   await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
@@ -42,15 +27,9 @@ async function install(page: Page): Promise<void> {
 }
 
 describe('YouTube timedtext cache budget', () => {
-  for (const [name, engine] of engines) {
+  for (const name of testEngines()) {
     it(`serves the active track, refuses a stale identity, and stays inside the budget in ${name}`, async (t) => {
-      if (!existsSync(engine.executablePath())) {
-        t.skip('Browser not installed');
-        return;
-      }
-      const browser = await engine.launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await browsers[name].newContext(t)).newPage();
       await page.route('https://www.youtube.com/**', (route) => route.fulfill({
         status: 200,
         contentType: 'text/html',
@@ -129,13 +108,7 @@ describe('YouTube timedtext cache budget', () => {
     });
 
     it(`bounds the top-frame copy of an embedded timedtext body in ${name}`, async (t) => {
-      if (!existsSync(engine.executablePath())) {
-        t.skip('Browser not installed');
-        return;
-      }
-      const browser = await engine.launch({ headless: true });
-      ownTestBrowser(t, browser);
-      const page = await browser.newPage();
+      const page = await (await browsers[name].newContext(t)).newPage();
       await page.route('https://www.youtube.com/**', (route) => {
         const embed = route.request().url().includes('/embed/');
         return route.fulfill({

@@ -1,12 +1,14 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
-import type { Browser } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
+
+import type { Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules } from '../test-utils/player-boot';
 import { readStylesheet } from '../test-utils/styles';
+import { testEngines } from '../test-utils/test-engines';
 
 type TestApi = typeof import('./cc-menu') & typeof import('./menu-popover')
   & typeof import('../core/disposable-scope') & typeof import('../platform/main-world-runtime');
@@ -23,12 +25,14 @@ declare global {
   }
 }
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: { contents: "export { MediaFeaturesController } from './media-features/controller'; export { CcMenu } from './ui/cc-menu'; export { bindMenuPopover, closeMenuPopover } from './ui/menu-popover'; export { DisposableScope } from './core/disposable-scope'; export { installMainWorldRuntime } from './platform/main-world-runtime';", resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'CcMenu', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules([
+  "export { MediaFeaturesController } from './media-features/controller';",
+  "export { CcMenu } from './ui/cc-menu';",
+  "export { bindMenuPopover, closeMenuPopover } from './ui/menu-popover';",
+  "export { DisposableScope } from './core/disposable-scope';",
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';"
+], 'CcMenu');
+const browsers = sharedEngineBrowsers();
 const SRC = new URL('../', import.meta.url).pathname;
 const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css'));
 const LOCALES_DIR = path.join(SRC, '../_locales');
@@ -45,20 +49,16 @@ const TRACKS = [
   'Przykładowa_bardzo_długa_nazwa_ścieżki_napisów_bez_żadnych_spacji_aby_wymusić_obcięcie'
 ];
 
-async function withBrowser(test: import('node:test').TestContext, engine: 'chromium' | 'firefox', run: (browser: Browser) => Promise<void>): Promise<void> {
-  const browserType = (await import('playwright'))[engine];
-  assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-  const browser = await browserType.launch({ headless: true });
-  ownTestBrowser(test, browser);
-  try { await run(browser); } finally { await browser.close(); }
+async function withBrowser(test: import('node:test').TestContext, engine: 'chromium' | 'firefox', run: (open: (viewport: { width: number; height: number }) => Promise<Page>) => Promise<void>): Promise<void> {
+  await run(async viewport => (await browsers[engine].newContext(test, { viewport })).newPage());
 }
 
 describe('caption menu rows stay on one line', () => {
   for (const engine of testEngines()) {
     it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async t => {
-      await withBrowser(t, engine, async browser => {
+      await withBrowser(t, engine, async open => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
-          const page = await browser.newPage({ viewport });
+          const page = await open(viewport);
           await page.setContent('<body style="margin:0"></body>');
           await page.addStyleTag({ content: UI_CSS });
           for (const locale of LOCALES) {
@@ -126,8 +126,8 @@ describe('caption menu rows stay on one line', () => {
 
   for (const engine of testEngines()) {
     it(`truncates long host track names rendered by the controller in ${engine}`, { timeout: 120_000 }, async t => {
-      await withBrowser(t, engine, async browser => {
-        const page = await browser.newPage({ viewport: { width: 360, height: 640 } });
+      await withBrowser(t, engine, async open => {
+        const page = await open({ width: 360, height: 640 });
         await page.setContent('<body style="margin:0"></body>');
         await page.addStyleTag({ content: UI_CSS });
         await page.evaluate('window.__name = value => value');
@@ -175,8 +175,8 @@ describe('caption menu rows stay on one line', () => {
 
 for (const engine of testEngines()) {
   it(`searches and navigates stable subtitle choices in a shadow root and iframe in ${engine}`, { timeout: 120_000 }, async t => {
-    await withBrowser(t, engine, async browser => {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await withBrowser(t, engine, async open => {
+      const page = await open({ width: 1280, height: 800 });
       await page.setContent('<iframe style="width:100%;height:750px" srcdoc="<body></body>"></iframe>');
       const frame = page.frames()[1];
       await frame.evaluate('window.__name = value => value');

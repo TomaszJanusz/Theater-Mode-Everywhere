@@ -1,25 +1,21 @@
-import { testEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { it } from 'node:test';
+
 import type { Page } from 'playwright';
+
 import { defaultMediaProviderFlags } from '../../media-features/provider-flags';
-import { ownTestBrowser } from '../../test-utils/test-browser';
+import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
+import { bundleModules } from '../../test-utils/player-boot';
+import { testEngines } from '../../test-utils/test-engines';
 import type { AutoTheaterRuntime } from '../../ui/auto-theater-runtime';
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: object): { outputFiles: Array<{ text: string }> };
-};
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo } from './providers/watch-playback'; export { installPatreonNavigation } from './providers/patreon/navigation';",
-    resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'PatreonTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules([
+  "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime';",
+  "export { installWatchPlaybackQueries, confirmProviderWatchVideo } from './providers/watch-playback';",
+  "export { installPatreonNavigation } from './providers/patreon/navigation';"
+], 'PatreonTest');
+const browsers = sharedEngineBrowsers();
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {
@@ -75,132 +71,120 @@ const addPlayer = (page: Page, attributes: Record<string, string> = {}, source =
 
 for (const engine of testEngines()) {
   it(`Patreon posts in ${engine} confirm only the single native Mux video`, { timeout: 60_000 }, async t => {
-    const browserType = (await import('playwright'))[engine];
-    assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    try {
-      const page = await browser.newPage();
-      await open(page, '/posts/my-post-12345678?utm_source=feed');
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await open(page, '/posts/my-post-12345678?utm_source=feed');
 
-      // Nothing to confirm without a native player; an iframe-only post has no top-document video.
-      await page.evaluate(() => { document.getElementById('root')!.innerHTML = '<iframe src="about:blank" style="width:640px;height:360px"></iframe>'; });
-      assert.equal(await page.evaluate(() => document.querySelectorAll('mux-player').length), 0);
-      await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
+    // Nothing to confirm without a native player; an iframe-only post has no top-document video.
+    await page.evaluate(() => { document.getElementById('root')!.innerHTML = '<iframe src="about:blank" style="width:640px;height:360px"></iframe>'; });
+    assert.equal(await page.evaluate(() => document.querySelectorAll('mux-player').length), 0);
+    await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
 
-      await addPlayer(page);
-      assert.equal(await confirmed(page), true, 'one player with one video, found through two shadow roots');
+    await addPlayer(page);
+    assert.equal(await confirmed(page), true, 'one player with one video, found through two shadow roots');
 
-      // A playing unrelated video (ad-like) makes the page ambiguous.
-      await page.evaluate(media => {
-        const other = document.createElement('video');
-        other.muted = true; other.loop = true; other.src = media; other.id = 'ad';
-        document.body.append(other);
-        return other.play();
-      }, MEDIA);
-      assert.equal(await confirmed(page), false, 'another playing video');
-      await page.evaluate(() => document.getElementById('ad')!.remove());
-      assert.equal(await confirmed(page), true);
+    // A playing unrelated video (ad-like) makes the page ambiguous.
+    await page.evaluate(media => {
+      const other = document.createElement('video');
+      other.muted = true; other.loop = true; other.src = media; other.id = 'ad';
+      document.body.append(other);
+      return other.play();
+    }, MEDIA);
+    assert.equal(await confirmed(page), false, 'another playing video');
+    await page.evaluate(() => document.getElementById('ad')!.remove());
+    assert.equal(await confirmed(page), true);
 
-      // The post's own playback is not "another video".
-      await page.evaluate(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].play());
-      assert.equal(await confirmed(page), true, 'playing content video');
+    // The post's own playback is not "another video".
+    await page.evaluate(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].play());
+    assert.equal(await confirmed(page), true, 'playing content video');
 
-      // Gallery: two players.
-      await addPlayer(page);
-      assert.equal(await confirmed(page, 0), false, 'two players');
-      assert.equal(await confirmed(page, 1), false, 'two players');
-      await page.evaluate(() => document.querySelectorAll('mux-player')[1].remove());
-      assert.equal(await confirmed(page), true);
+    // Gallery: two players.
+    await addPlayer(page);
+    assert.equal(await confirmed(page, 0), false, 'two players');
+    assert.equal(await confirmed(page, 1), false, 'two players');
+    await page.evaluate(() => document.querySelectorAll('mux-player')[1].remove());
+    assert.equal(await confirmed(page), true);
 
-      // Live streams stay ineligible until qualified.
-      for (const type of ['live', 'll-live:dvr']) {
-        await page.evaluate(streamType => document.querySelector('mux-player')!.setAttribute('stream-type', streamType), type);
-        assert.equal(await confirmed(page), false, type);
-      }
-      await page.evaluate(() => document.querySelector('mux-player')!.setAttribute('stream-type', 'on-demand'));
-      assert.equal(await confirmed(page), true, 'on-demand');
+    // Live streams stay ineligible until qualified.
+    for (const type of ['live', 'll-live:dvr']) {
+      await page.evaluate(streamType => document.querySelector('mux-player')!.setAttribute('stream-type', streamType), type);
+      assert.equal(await confirmed(page), false, type);
+    }
+    await page.evaluate(() => document.querySelector('mux-player')!.setAttribute('stream-type', 'on-demand'));
+    assert.equal(await confirmed(page), true, 'on-demand');
 
-      // Patreon's own player is a bare <video> with no mux-player around it.
-      await page.evaluate(media => {
-        const root = document.getElementById('root')!;
-        root.innerHTML = '';
-        const video = document.createElement('video');
-        video.id = 'bare'; video.muted = true; video.src = media; video.style.cssText = 'width:640px;height:360px';
-        root.append(video);
-        return new Promise(resolve => video.addEventListener('loadeddata', resolve, { once: true }));
-      }, MEDIA);
-      const bareConfirmed = () => page.evaluate(() => window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement));
-      assert.equal(await bareConfirmed(), true, 'bare video without mux-player');
-      await page.evaluate(() => document.getElementById('root')!.append(document.createElement('video')));
-      assert.equal(await bareConfirmed(), false, 'bare video next to another video');
-      await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
-      assert.equal(await page.evaluate(() => { document.getElementById('root')!.innerHTML = '<mux-player></mux-player><video id="bare"></video>'; return window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement); }), false, 'a bare video beside an empty mux-player stays ambiguous');
+    // Patreon's own player is a bare <video> with no mux-player around it.
+    await page.evaluate(media => {
+      const root = document.getElementById('root')!;
+      root.innerHTML = '';
+      const video = document.createElement('video');
+      video.id = 'bare'; video.muted = true; video.src = media; video.style.cssText = 'width:640px;height:360px';
+      root.append(video);
+      return new Promise(resolve => video.addEventListener('loadeddata', resolve, { once: true }));
+    }, MEDIA);
+    const bareConfirmed = () => page.evaluate(() => window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement));
+    assert.equal(await bareConfirmed(), true, 'bare video without mux-player');
+    await page.evaluate(() => document.getElementById('root')!.append(document.createElement('video')));
+    assert.equal(await bareConfirmed(), false, 'bare video next to another video');
+    await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
+    assert.equal(await page.evaluate(() => { document.getElementById('root')!.innerHTML = '<mux-player></mux-player><video id="bare"></video>'; return window.PatreonTest.confirmProviderWatchVideo(document.getElementById('bare') as HTMLVideoElement); }), false, 'a bare video beside an empty mux-player stays ambiguous');
 
-      await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
-      await addPlayer(page);
+    await page.evaluate(() => { document.getElementById('root')!.innerHTML = ''; });
+    await addPlayer(page);
 
-      // Non-post routes never confirm, even with a perfect player.
-      await page.evaluate(() => history.pushState({}, '', '/creator'));
-      assert.equal(await confirmed(page), false, 'creator page');
-    } finally { await browser.close(); }
+    // Non-post routes never confirm, even with a perfect player.
+    await page.evaluate(() => history.pushState({}, '', '/creator'));
+    assert.equal(await confirmed(page), false, 'creator page');
   });
 
   it(`AutoTheater in ${engine} enters a Patreon post opened from the feed, and cancels when navigating away`, { timeout: 90_000 }, async t => {
-    const browserType = (await import('playwright'))[engine];
-    assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    try {
-      const page = await browser.newPage();
-      await open(page, '/home');
-      await addPlayer(page);
-      await page.clock.install();
-      await page.clock.pauseAt(new Date(Date.now() + 60_000));
-      await page.evaluate(flags => {
-        window.PatreonTest.installPatreonNavigation();
-        const probe: Window['patreonProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
-        window.patreonProbe = probe;
-        const create = () => window.PatreonTest.createAutoTheaterRuntime({
-          visit: { current: { identity: null, entered: false } },
-          enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
-          editableFocused: () => false, theaterActive: () => probe.active,
-          transitioning: () => false,
-          findBestVideo: () => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0] ?? null,
-          enter: () => { probe.entries++; probe.active = true; },
-          showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }, noticeDelayMs: 0
-        });
-        window.patreonRuntime = create();
-      }, defaultMediaProviderFlags());
-      const probe = () => page.evaluate(() => { const { entries, shown, hidden } = window.patreonProbe; return { entries, shown, hidden }; });
-      const navigate = (path: string) => page.evaluate(p => history.pushState({}, '', p), path);
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await open(page, '/home');
+    await addPlayer(page);
+    await page.clock.install();
+    await page.clock.pauseAt(new Date(Date.now() + 60_000));
+    await page.evaluate(flags => {
+      window.PatreonTest.installPatreonNavigation();
+      const probe: Window['patreonProbe'] = { entries: 0, active: false, shown: 0, hidden: 0 };
+      window.patreonProbe = probe;
+      const create = () => window.PatreonTest.createAutoTheaterRuntime({
+        visit: { current: { identity: null, entered: false } },
+        enabled: () => true, policyAllowed: () => true, providerFlags: () => flags,
+        editableFocused: () => false, theaterActive: () => probe.active,
+        transitioning: () => false,
+        findBestVideo: () => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0] ?? null,
+        enter: () => { probe.entries++; probe.active = true; },
+        showNotice: () => { probe.shown++; return () => { probe.hidden++; }; }, noticeDelayMs: 0
+      });
+      window.patreonRuntime = create();
+    }, defaultMediaProviderFlags());
+    const probe = () => page.evaluate(() => { const { entries, shown, hidden } = window.patreonProbe; return { entries, shown, hidden }; });
+    const navigate = (path: string) => page.evaluate(p => history.pushState({}, '', p), path);
 
-      // The feed is not a watch page: playing there announces nothing.
-      await page.evaluate(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].play());
-      await page.waitForFunction(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].readyState > 2);
-      assert.deepEqual(await probe(), { entries: 0, shown: 0, hidden: 0 });
+    // The feed is not a watch page: playing there announces nothing.
+    await page.evaluate(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].play());
+    await page.waitForFunction(() => (window as unknown as { deepVideos(): HTMLVideoElement[] }).deepVideos()[0].readyState > 2);
+    assert.deepEqual(await probe(), { entries: 0, shown: 0, hidden: 0 });
 
-      // pushState alone (no popstate) opens the post: the provider-owned event starts the countdown.
-      await navigate('/posts/my-post-12345678');
-      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 });
+    // pushState alone (no popstate) opens the post: the provider-owned event starts the countdown.
+    await navigate('/posts/my-post-12345678');
+    assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 0 });
 
-      // Leaving the post cancels it, and the elapsed time never enters.
-      await navigate('/creator');
-      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
-      await page.clock.runFor(6000);
-      assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
+    // Leaving the post cancels it, and the elapsed time never enters.
+    await navigate('/creator');
+    assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
+    await page.clock.runFor(6000);
+    assert.deepEqual(await probe(), { entries: 0, shown: 1, hidden: 1 });
 
-      // Back on a post, the full countdown elapses and theater is entered once.
-      await navigate('/posts/another-post-87654321');
-      assert.deepEqual(await probe(), { entries: 0, shown: 2, hidden: 1 });
-      await page.clock.runFor(6000);
-      assert.deepEqual(await probe(), { entries: 1, shown: 2, hidden: 2 });
+    // Back on a post, the full countdown elapses and theater is entered once.
+    await navigate('/posts/another-post-87654321');
+    assert.deepEqual(await probe(), { entries: 0, shown: 2, hidden: 1 });
+    await page.clock.runFor(6000);
+    assert.deepEqual(await probe(), { entries: 1, shown: 2, hidden: 2 });
 
-      // Disposal removes the history hook's consumer; later navigation does nothing.
-      await page.evaluate(() => window.patreonRuntime.dispose());
-      await navigate('/posts/third-post-1');
-      await page.clock.runFor(6000);
-      assert.deepEqual(await probe(), { entries: 1, shown: 2, hidden: 2 });
-    } finally { await browser.close(); }
+    // Disposal removes the history hook's consumer; later navigation does nothing.
+    await page.evaluate(() => window.patreonRuntime.dispose());
+    await navigate('/posts/third-post-1');
+    await page.clock.runFor(6000);
+    assert.deepEqual(await probe(), { entries: 1, shown: 2, hidden: 2 });
   });
 }

@@ -1,18 +1,13 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { runInNewContext } from 'node:vm';
 import { it } from 'node:test';
+import { runInNewContext } from 'node:vm';
+
 import { MAX_CAPTION_BYTES } from '../platform/media-url-policy';
+import { bundleModules } from '../test-utils/player-boot';
 import { CURRENT_VERSION, CURRENT_GENERATION, PREVIOUS_GENERATION } from '../test-utils/release';
 import { WHATS_NEW_RELEASE } from '../whatsNew-release';
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const bundle = esbuild.buildSync({ entryPoints: [path.resolve(new URL('./background.ts', import.meta.url).pathname)],
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022' }).outputFiles[0].text;
+const bundle = bundleModules(["import './entries/background';"], 'BackgroundTest');
 const url = 'https://captions.twitch.tv/123/en/caption.vtt';
 type Reply = { ok: boolean; body?: string; error?: string };
 

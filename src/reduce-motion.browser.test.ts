@@ -1,28 +1,25 @@
-import { selectTestEngines } from './test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
+
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from './test-utils/test-browser';
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as typeof import('esbuild');
-const bundle = esbuild.buildSync({ stdin: { contents: `
+
+import { bundleModules } from './test-utils/player-boot';
+import { readStylesheet } from './test-utils/styles';
+import { sharedTestBrowser } from './test-utils/test-browser';
+import { selectTestEngines } from './test-utils/test-engines';
+const bundle = bundleModules([`
   import { applyAppearanceModes, isMotionReduced } from './appearance-runtime';
   window.setMotion = motion => {
     for (const target of [document.documentElement, document.getElementById('host')]) applyAppearanceModes(target, { contrast: false, transparency: false, motion });
   };
   window.isMotionReduced = () => isMotionReduced(document);
-  window.applyModes = modes => applyAppearanceModes(document.documentElement, modes);`,
-  resolveDir: new URL('./', import.meta.url).pathname, loader: 'ts' }, bundle: true, write: false, format: 'iife', target: 'es2022'
-}).outputFiles[0].text;
-const stylesheet = (path: string) => esbuild.buildSync({ entryPoints: [path], bundle: true, write: false, loader: { '.svg': 'dataurl' } }).outputFiles[0].text;
-const optionsCss = stylesheet('options/options.css');
-const shadowCss = stylesheet('src/ui/shadow.css');
+  window.applyModes = modes => applyAppearanceModes(document.documentElement, modes);`]);
+const optionsCss = readStylesheet('options/options.css');
+const shadowCss = readStylesheet('src/ui/shadow.css');
+const browsers = { chromium: sharedTestBrowser(chromium), firefox: sharedTestBrowser(firefox) };
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`${engine.name()}: reduced motion collapses extension animation and stops the marquee`, { timeout: 30000 }, async t => {
-  const browser = await engine.launch({ headless: true });
-  ownTestBrowser(t, browser);
-  const page = await browser.newPage();
+  const page = await (await browsers[engine.name() as 'chromium' | 'firefox'].newContext(t)).newPage();
   await page.setContent('<button class="choice-combobox" id="combo">Auto</button><div id="host"></div>');
   await page.addStyleTag({ content: optionsCss });
   await page.addScriptTag({ content: bundle });
@@ -50,9 +47,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
 });
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`${engine.name()}: the service tile ring orbits unless motion is reduced; Reduce transparency keeps it`, { timeout: 30000 }, async t => {
-  const browser = await engine.launch({ headless: true });
-  ownTestBrowser(t, browser);
-  const page = await browser.newPage();
+  const page = await (await browsers[engine.name() as 'chromium' | 'firefox'].newContext(t)).newPage();
   await page.setContent('<div id="tile" class="rte-tile te-animated-border" style="--te-border-stops: red, blue, red; width: 200px; height: 80px"></div>');
   await page.addStyleTag({ content: optionsCss });
   await page.addScriptTag({ content: bundle });

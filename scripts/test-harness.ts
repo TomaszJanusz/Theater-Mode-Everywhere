@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+
 import { assertBaselineRatchet, assertNoGrowth, root, walkFiles } from './test-determinism';
 import type { BaselineFile } from './test-determinism';
 
@@ -18,6 +19,14 @@ type Kind = keyof typeof rules;
 export type Inventory = Record<string, Partial<Record<Kind, number>>>;
 export const baselinePath = 'scripts/test-harness-baseline.json';
 
+// Files that may keep a pattern because nothing in them is a browser test. Exact (file, kind) pairs
+// with the reason; a new direct launch or esbuild import anywhere else fails the ratchet.
+export const allowList: Record<string, Partial<Record<Kind, string>>> = {
+  'scripts/build-mode.test.ts': { esbuild: 'asserts the string "esbuild" returned by bundleMinify; imports nothing' },
+  'scripts/bundle-integrity.test.ts': { esbuild: "runs Vite's esbuild CLI to minify a snippet for the bundle-integrity checks; no page bundle" },
+  'src/providers/capabilities.test.ts': { esbuild: 'transformSync strips types and buildSync reads a metafile import graph in a node test; nothing is bundled for a page' },
+};
+
 export function countHarness(source: string): Partial<Record<Kind, number>> {
   return Object.fromEntries(Object.entries(rules).flatMap(([kind, pattern]) => {
     const count = [...source.matchAll(pattern)].length;
@@ -29,6 +38,7 @@ export function inventory(directory = root): Inventory {
   const result: Inventory = {};
   for (const file of walkFiles(directory, name => name.endsWith('.test.ts') && !name.startsWith('src/test-utils/'))) {
     const counts = countHarness(readFileSync(join(directory, file), 'utf8'));
+    for (const kind of Object.keys(allowList[file] ?? {}) as Kind[]) delete counts[kind];
     if (Object.keys(counts).length) result[file] = counts;
   }
   return result;

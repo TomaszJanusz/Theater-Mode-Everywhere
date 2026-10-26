@@ -3,8 +3,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { it } from 'node:test';
+
 import { assertBaselineRatchet, assertNoGrowth, root } from './test-determinism';
-import { baselineFile, baselinePath, budgetViolations, countHarness, helperBudget, inventory, readBaseline } from './test-harness';
+import { allowList, baselineFile, baselinePath, budgetViolations, countHarness, helperBudget, inventory, readBaseline } from './test-harness';
 import type { Inventory } from './test-harness';
 
 // Browser setup lives in src/test-utils (bootPlayer, sharedTestBrowser); legacy copies
@@ -71,4 +72,16 @@ it('keeps src/test-utils helpers within the line and option budget', () => {
   const options = (count: number) => `export interface BootOptions {\n${Array.from({ length: count }, (_, i) => `  /** doc */\n  o${i}?: boolean;`).join('\n')}\n}\n`;
   assert.deepEqual(budgetViolations('a.ts', options(4)), []);
   assert.match(budgetViolations('a.ts', options(5))[0], /5 options/);
+});
+
+it('allows only listed, still-needed exceptions and keeps the baseline empty of browser setup', () => {
+  for (const [file, kinds] of Object.entries(allowList)) {
+    const found = countHarness(readFileSync(join(root, file), 'utf8'));
+    for (const [kind, reason] of Object.entries(kinds)) {
+      assert.ok(reason.length > 20, `${file}: explain why ${kind} is allowed`);
+      assert.ok(found[kind as keyof typeof found], `${file}: ${kind} is no longer used; remove it from the allow-list`);
+    }
+  }
+  const remaining = Object.values(inventory()).flatMap(counts => Object.keys(counts));
+  assert.deepEqual(remaining.filter(kind => kind !== 'chromeStub'), [], 'tests launch browsers and bundle through src/test-utils');
 });

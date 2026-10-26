@@ -1,29 +1,26 @@
-import { selectTestEngines } from '../test-utils/test-engines';
-import { MAX_CAPTION_BYTES } from './media-url-policy';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { it } from 'node:test';
-import { chromium, firefox, type Page } from 'playwright';
-import { ownTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const bundle = esbuild.buildSync({
-  stdin: { contents: `export { installMainWorldRuntime } from './platform/main-world-runtime';
-    export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/main';
-    export { readDisneySnapshot } from './providers/disney/main';
-    export { readTencentSnapshot } from './providers/tencent/main';
-    export { readTwitchSnapshot } from './providers/twitch/main';
-    export { readCrunchyrollSnapshot } from './providers/crunchyroll/main';
-    export { fetchWithoutHarvest } from './platform/harvest-ownership';
-    export { createWorldMessage } from './protocol/world-messages';`,
-    resolveDir: path.resolve(new URL('..', import.meta.url).pathname), loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'HarvestTest', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+import { chromium, firefox, type Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules } from '../test-utils/player-boot';
+import { selectTestEngines } from '../test-utils/test-engines';
+
+import { MAX_CAPTION_BYTES } from './media-url-policy';
+
+const bundle = bundleModules([
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';",
+  "export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/main';",
+  "export { readDisneySnapshot } from './providers/disney/main';",
+  "export { readTencentSnapshot } from './providers/tencent/main';",
+  "export { readTwitchSnapshot } from './providers/twitch/main';",
+  "export { readCrunchyrollSnapshot } from './providers/crunchyroll/main';",
+  "export { fetchWithoutHarvest } from './platform/harvest-ownership';",
+  "export { createWorldMessage } from './protocol/world-messages';"
+], 'HarvestTest');
+const browsers = sharedEngineBrowsers();
 
 async function setup(page: Page, pageUrl: string): Promise<void> {
   await page.route('**/*', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Fixture</title>' }));
@@ -71,9 +68,7 @@ const reset = (page: Page): Promise<void> => page.evaluate('window.resetCounts()
 for (const browserType of selectTestEngines([chromium, firefox], engine => engine.name())) {
   it(`${browserType.name()}: rejects unrelated fetch/XHR/heatmap before materialization and preserves fetch semantics`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage();
     await setup(page, 'https://www.youtube.com/watch?v=abc');
     const unrelated = 'https://www.youtube.com/unrelated.json';
     const large = 'x'.repeat(4_194_304);
@@ -166,12 +161,10 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       return window.eval('window.forwarded').input === request && window.eval('window.forwarded').init === init
         && window.eval('window.forwarded').receiver === receiver && !request.bodyUsed && await response.text() === 'arguments';
     }), true);
-    await browser.close();
   });
 
   it(`${browserType.name()}: positive provider metadata works as fetch text and XHR JSON before theater; off rejects body work`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
     const samples = [
       { page: 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', endpoint: 'https://disney.api.edge.bamgrid.com/playback', body: { runtimeMillis: 1200000 }, reader: 'readDisneySnapshot', field: 'duration', value: 1200, provider: 'disney' },
       { page: 'https://wetv.vip/en/play/cover/h0045v8ky1m-EP1', endpoint: 'https://play.wetv.vip/getvinfo', body: { em: 0, vl: { vi: [{ vid: 'h0045v8ky1m', ti: 'Fixture title', td: '2564' }] } }, reader: 'readTencentSnapshot', field: 'title', value: 'Fixture title', provider: 'tencent' },
@@ -179,7 +172,7 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       { page: 'https://www.twitch.tv/videos/123', endpoint: 'https://gql.twitch.tv/gql', body: { data: { video: { id: '123', lengthSeconds: 1200, title: 'Fixture title', captions: 'https://captions.twitch.tv/123/en/caption.vtt' } } }, reader: 'readTwitchSnapshot', field: 'duration', value: 1200, provider: 'twitch' }
     ];
     for (const sample of samples) {
-      const page = await browser.newPage(); await setup(page, sample.page);
+      const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage(); await setup(page, sample.page);
       if (sample.provider === 'twitch') {
         assert.equal(await page.evaluate('window.fetch === window.originalFetch'), true);
         assert.equal(await page.evaluate(`(() => {
@@ -216,12 +209,10 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       assert.deepEqual(await counts(page), { clone: 0, consumed: 0, stringify: 0, decode: 0, includes: 0, parse: 0 }, `${sample.provider} off`);
       await page.close();
     }
-    await browser.close();
   });
   it(`${browserType.name()}: heatmap scans only qualified text and JSON; BIF stays binary`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
-    const page = await browser.newPage(); await setup(page, 'https://www.youtube.com/watch?v=abc');
+    const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage(); await setup(page, 'https://www.youtube.com/watch?v=abc');
     const heatmap = { videoDetails: { videoId: 'abc' }, markersList: { markerType: 'MARKER_TYPE_HEATMAP', markers: [
       { startMillis: 0, durationMillis: 1000, intensityScoreNormalized: 0.5 },
       { startMillis: 1000, durationMillis: 1000, intensityScoreNormalized: 1 }
@@ -264,7 +255,7 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
     for (let i = 0; i < count; i++) { bytes.writeUInt32LE(i, 64 + i * 8); bytes.writeUInt32LE(header + i * 2, 68 + i * 8); }
     bytes.writeUInt32LE(0xffffffff, 64 + count * 8); bytes.writeUInt32LE(bytes.length, 68 + count * 8);
     for (const provider of ['disney', 'crunchyroll']) {
-      const page = await browser.newPage();
+      const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage();
       const pageUrl = provider === 'disney' ? 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' : 'https://www.crunchyroll.com/watch/GR7592K3Y';
       const bif = provider === 'disney' ? 'https://cdn.dssott.com/thumbnails/movie.bif' : 'https://vod-fy-mod.crunchyrollcdn.com/static/e00177755a00269347jajp/1/clean/bif-1789659236.bif?t=fake-signature';
       const reader = provider === 'disney' ? 'readDisneySnapshot' : 'readCrunchyrollSnapshot';
@@ -295,12 +286,10 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       assert.equal((await counts(page)).decode, 0);
       await page.close();
     }
-    await browser.close();
   });
 
   it(`${browserType.name()}: qualified consumers stop their clone at the text/BIF cap while host playback bytes survive`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
     const samples = [
       { page: 'https://www.youtube.com/watch?v=abc', endpoint: 'https://www.youtube.com/api/timedtext?v=abc&lang=en', cap: MAX_CAPTION_BYTES },
       { page: 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', endpoint: 'https://disney.api.edge.bamgrid.com/playback', cap: MAX_CAPTION_BYTES },
@@ -308,7 +297,7 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       { page: 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', endpoint: 'https://cdn.dssott.com/thumbnails/movie.bif', cap: 16 * 1024 * 1024 }
     ];
     for (const sample of samples) {
-      const page = await browser.newPage(); await setup(page, sample.page);
+      const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage(); await setup(page, sample.page);
       await page.evaluate(({ endpoint, cap }) => window.eval(`(() => {
         window.cancelledClones = 0; window.cloneBytes = 0;
         const originalClone = Response.prototype.clone;
@@ -340,13 +329,11 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       assert.equal((await counts(page)).clone, 1);
       await page.close();
     }
-    await browser.close();
   });
 
   it(`${browserType.name()}: MAIN page fetch bounds owned bodies, preserves BIF budget, and rejects navigation before headers`, { timeout: 30_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
-    const browser = await browserType.launch({ headless: true }); ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage();
     await setup(page, 'https://www.disneyplus.com/play/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
     const results = await page.evaluate(`(async () => {
       let sequence = 0, cancelled = 0;
@@ -386,7 +373,6 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       stale: { ok: false, body: undefined }, cancelled: 2
     });
     assert.equal((await counts(page)).clone, 0, 'extension-owned reads do not reenter host harvest');
-    await browser.close();
   });
 
 }

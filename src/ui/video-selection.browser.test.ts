@@ -1,20 +1,14 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
-import { chromium, firefox, type Frame, type Page } from 'playwright';
-import { sharedTestBrowser } from '../test-utils/test-browser';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; export { confirmProviderWatchVideo, confirmWatchReplacement } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();",
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'VideoSelectionTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+import { chromium, firefox, type Frame, type Page } from 'playwright';
+
+import { bundleModules } from '../test-utils/player-boot';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
+
+const BUNDLE = bundleModules(["import { bootstrapPlayerRuntime } from './ui/player-runtime'; import { installWatchPlaybackQueries } from './providers/watch-playback'; export { isInactiveStandbyVideo } from './providers/video-candidates'; export { confirmProviderWatchVideo, confirmWatchReplacement } from './providers/watch-playback'; installWatchPlaybackQueries(); bootstrapPlayerRuntime();"], 'VideoSelectionTest');
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {
