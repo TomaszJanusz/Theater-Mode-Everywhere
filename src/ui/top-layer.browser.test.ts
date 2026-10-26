@@ -13,7 +13,8 @@ const FIXTURE = canvasVideoFixture({ title: 'Top layer' })
   + '<div id="cover" style="position:fixed;inset:0;z-index:2147483647;background:#f00"></div>'
   + '<div id="late" popover="manual" style="position:fixed;inset:0;margin:0;width:auto;height:auto;border:0;background:#0f0"></div>'
   + '<div id="tip" popover="manual" style="position:fixed;inset:auto;left:4px;top:4px;margin:0;width:60px;height:20px"></div>'
-  + '<dialog id="modal" style="position:fixed;inset:0;margin:0;width:auto;height:auto;max-width:none;max-height:none;border:0;background:#00f"></dialog>';
+  + '<dialog id="modal" style="position:fixed;inset:0;margin:0;width:auto;height:auto;max-width:none;max-height:none;border:0;background:#00f"></dialog>'
+  + '<div id="side" style="width:200px;height:100px;background:#246"></div>';
 
 const HOST = '#theater-everywhere-ui';
 const isOpen = (page: Page) => page.evaluate(h => document.querySelector(h)?.matches(':popover-open') ?? null, HOST);
@@ -23,6 +24,30 @@ const uiOnTop = (page: Page) => page.waitForFunction(h => {
   const r = host.shadowRoot!.querySelector('.theater-controls-wrapper')!.getBoundingClientRect();
   return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === host;
 }, HOST, { timeout: 2000 }).then(() => true, () => false);
+
+/** Whether a hit at the middle of the control bar reaches the host, read once (for states that are already settled). */
+const hostHit = (page: Page) => page.evaluate(h => {
+  const host = document.querySelector(h)!;
+  const r = host.shadowRoot!.querySelector('.theater-controls-wrapper')!.getBoundingClientRect();
+  return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === host;
+}, HOST);
+
+/** The page puts one of its elements in fullscreen from a trusted key press, as a site's own fullscreen button does. */
+async function pageFullscreen(page: Page, selector: string): Promise<void> {
+  await page.bringToFront();
+  await page.evaluate(sel => {
+    window.addEventListener('keydown', event => {
+      if (event.key === 'F9') void document.querySelector(sel)!.requestFullscreen();
+    }, { capture: true, once: true });
+  }, selector);
+  await page.keyboard.press('F9');
+  await page.waitForFunction(sel => document.fullscreenElement === document.querySelector(sel), selector);
+}
+
+async function exitFullscreen(page: Page): Promise<void> {
+  await page.evaluate(() => document.exitFullscreen());
+  await page.waitForFunction(() => !document.fullscreenElement);
+}
 
 const shared = Object.fromEntries(testEngines().map(engine => [engine, sharedTestBrowser(playwright[engine])]));
 
@@ -123,6 +148,57 @@ for (const engine of testEngines()) {
     assert.equal(await isOpen(page), true);
     assert.equal(await uiOnTop(page), true);
     assert.deepEqual(errors, []);
+  });
+
+  it(`${engine}: T in the page's own player fullscreen starts theater, with the host out of the top layer until fullscreen ends`, { timeout: 60_000 }, async t => {
+    const { page, errors } = await open(t, engine);
+    await bootPlayer(page);
+    await pageFullscreen(page, '#player');
+    // Pins today's toggle: it is not gated on fullscreen. Only the host's top-layer state follows it.
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    assert.equal(await page.evaluate(() => document.fullscreenElement?.id), 'player');
+    assert.equal(await isOpen(page), false);
+    assert.equal(await hostHit(page), false, 'the host is not hit-testable over the fullscreen element');
+    await exitFullscreen(page);
+    await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
+    assert.equal(await uiOnTop(page), true);
+    assert.deepEqual(errors, []);
+  });
+
+  it(`${engine}: a page element's fullscreen takes the host out of the top layer and its exit restores it, repeatedly`, { timeout: 60_000 }, async t => {
+    const { page, errors } = await open(t, engine);
+    await bootPlayer(page);
+    await enterTheater(page);
+    for (let i = 0; i < 3; i++) {
+      await pageFullscreen(page, '#side');
+      assert.equal(await isOpen(page), false, `cycle ${i + 1}`);
+      assert.equal(await hostHit(page), false, `cycle ${i + 1}: not hit-testable over the fullscreen element`);
+      await exitFullscreen(page);
+      await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
+      assert.equal(await uiOnTop(page), true, `cycle ${i + 1}: restored`);
+    }
+    // Document fullscreen contains the host, so it is ours and keeps the UI.
+    await pageFullscreen(page, 'html');
+    assert.equal(await isOpen(page), true);
+    assert.equal(await uiOnTop(page), true, 'above document fullscreen');
+    await exitFullscreen(page);
+    assert.equal(await isOpen(page), true);
+    assert.deepEqual(errors, []);
+  });
+
+  it(`${engine}: leaving native chat during a page element's fullscreen waits for the fullscreen to end`, { timeout: 60_000 }, async t => {
+    const { page } = await open(t, engine);
+    await bootPlayer(page);
+    await enterTheater(page);
+    await page.evaluate(() => document.documentElement.setAttribute('data-theater-chat-active', ''));
+    await page.waitForFunction(h => !document.querySelector(h)!.matches(':popover-open'), HOST);
+    await pageFullscreen(page, '#side');
+    await page.evaluate(() => document.documentElement.removeAttribute('data-theater-chat-active'));
+    // The attribute change is observed in a microtask; reading after an evaluate round trip sees its result.
+    assert.equal(await isOpen(page), false);
+    await exitFullscreen(page);
+    await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
   });
 
   it(`${engine}: hiding the host from outside shows it again`, { timeout: 60_000 }, async t => {

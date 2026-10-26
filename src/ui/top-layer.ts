@@ -10,6 +10,9 @@ import { DisposableScope } from '../core/disposable-scope';
  * - A page popover (or dialog, where the browser fires `toggle` for it) that opens later.
  * Native chat (`data-theater-chat-active`) keeps the host out of the top layer: service popups
  * there rely on z-index to sit above the chrome, and the top layer would cover them.
+ * A fullscreen element that does not contain the host (a page's own player, say) also keeps it
+ * out: pointer input goes to that element, so a host painted over it would look usable and not be.
+ * Out of the top layer the fullscreen element covers it until fullscreen ends.
  * Not detectable without observers: `dialog.showModal()` in browsers that fire no
  * `toggle` for dialogs, and a page re-attaching the host (`ensure` covers the next mount).
  * Elements shown before the host entered stay below it.
@@ -41,7 +44,11 @@ export function bindTopLayer(host: HTMLElement): TopLayerBinding {
   host.popover = 'manual';
 
   // Throws when disconnected or already open; both are expected here.
-  const wanted = () => !document.documentElement.hasAttribute(CHAT_ACTIVE);
+  const wanted = () => {
+    if (document.documentElement.hasAttribute(CHAT_ACTIVE)) return false;
+    const fullscreen = document.fullscreenElement;
+    return !fullscreen || fullscreen.contains(host);
+  };
   const show = () => {
     if (scope.isDisposed || !host.isConnected || isOpen(host) || !wanted()) return;
     host.showPopover();
@@ -65,7 +72,7 @@ export function bindTopLayer(host: HTMLElement): TopLayerBinding {
     });
   };
 
-  scope.listen(document, 'fullscreenchange', raise);
+  scope.listen(document, 'fullscreenchange', sync);
   // `toggle` does not bubble; the capture listener sees every page popover. The host's own
   // events are ignored so raising cannot retrigger itself.
   scope.listen(document, 'toggle', (event) => {
