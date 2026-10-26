@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, vi } from 'vitest';
+import { userEvent } from 'vitest/browser';
 
 import { destroyPlayerUi, setPlayerUiCss } from '../ui/root';
 import uiCss from '../ui/shadow.css?inline';
@@ -11,7 +12,11 @@ import { createChromeStub, type ChromeStub } from './page-chrome-stub';
 let stub: ChromeStub | undefined;
 setPlayerUiCss(uiCss);
 
-beforeEach(() => {
+beforeEach(async () => {
+  // The real mouse stays where the last test left it. Firefox then sends pointerenter/leave to whatever
+  // mounts under it a few frames later, which can reopen a menu that Escape just closed. Park it on the
+  // empty document first so only the test's own input moves it.
+  await userEvent.unhover(document.body);
   stub = createChromeStub();
   globalThis.chrome = stub.chrome;
 });
