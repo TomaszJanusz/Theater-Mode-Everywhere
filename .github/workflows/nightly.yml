@@ -87,7 +87,6 @@ jobs:
       - name: Smoke Firefox
         id: firefox
         if: ${{ !cancelled() }}
-        # The unsigned-extension fallback is diagnostic, not an installation pass.
         run: xvfb-run --auto-servernum pnpm smoke:firefox
 
       - name: Coverage summary
@@ -106,7 +105,6 @@ jobs:
             echo "Storybook components (Chromium / Firefox): $COMPONENTS_CHROMIUM / $COMPONENTS_FIREFOX"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
-            echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
             echo 'Failures fail this job; no test round runs on a merge.'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -172,7 +170,6 @@ jobs:
       - name: Smoke Firefox
         id: firefox
         if: ${{ !cancelled() }}
-        # The unsigned-extension fallback is diagnostic, not an installation pass.
         run: xvfb-run --auto-servernum pnpm smoke:firefox
 
       - name: Coverage summary
@@ -191,6 +188,5 @@ jobs:
             echo "Storybook components (Chromium / Firefox): $COMPONENTS_CHROMIUM / $COMPONENTS_FIREFOX"
             echo "Chromium smoke: $CHROMIUM_RESULT"
             echo "Firefox smoke: $FIREFOX_RESULT"
-            echo 'Firefox smoke may use diagnostic injection; see its log for installation coverage.'
             echo 'Failures fail this job; no test round runs on a merge.'
           } >> "$GITHUB_STEP_SUMMARY"
