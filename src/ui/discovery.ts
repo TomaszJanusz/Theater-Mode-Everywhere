@@ -245,6 +245,7 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     }
     markTheaterVideo(newVideo);
     ctx.actions.applyTheaterElementInlineStyles(newVideo);
+    ctx.actions.bindTheaterAncestors(newVideo);
 
     const originalControls = newVideo.hasAttribute('controls');
     newVideo.dataset.originalControls = originalControls ? 'true' : 'false';
@@ -263,27 +264,6 @@ export function createDiscovery(ctx: PlayerChromeContext) {
     });
 
     ctx.actions.createCustomControls(newVideo);
-
-    ctx.refs.ancestorsList.forEach(parent => {
-      if (parent && parent.classList) {
-        parent.classList.remove('theater-everywhere-parent-active');
-      }
-    });
-    ctx.refs.ancestorsList = [];
-
-    let parent: Node | null = newVideo.parentNode;
-    while (parent && parent !== document.documentElement) {
-      if (parent instanceof ShadowRoot) {
-        injectStylesIntoShadowRoot(parent);
-        parent = parent.host;
-      } else {
-        if (parent instanceof HTMLElement) {
-          parent.classList.add('theater-everywhere-parent-active');
-          ctx.refs.ancestorsList.push(parent);
-        }
-        parent = parent.parentNode;
-      }
-    }
 
     ctx.refs.activeVideo = newVideo;
   }

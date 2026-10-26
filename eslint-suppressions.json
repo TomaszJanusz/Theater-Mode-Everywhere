@@ -2265,7 +2265,7 @@
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 2
+      "count": 1
     }
   },
   "src/ui/fullscreen-activity.browser.test.ts": {

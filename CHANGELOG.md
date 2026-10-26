@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The volume and speed sliders no longer stay open after you adjust them with the mouse and move away: they close five seconds after the pointer leaves, unless you are still dragging or reached them with the keyboard.
 - On YouTube, AutoTheater now starts when you expand the miniplayer back to the video page, even if the page is slow to show the player.
 - Theater and fullscreen no longer end when a video site briefly hides its player while switching videos; they still end when the player stays gone.
+- Switch Video on Page (Shift+T or the player settings menu) now fills the window with the next video on pages that list several videos, such as a Telegram channel's post list (t.me/s/…). The next video could appear shifted up and to the left, partly or entirely off-screen, with the page showing around it.
 
 ## [2.0.6] - 2026-10-24
 
