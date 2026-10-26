@@ -1,38 +1,27 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, it } from 'node:test';
-import type { Browser } from 'playwright';
+import { describe, it, type TestContext } from 'node:test';
+
+import type { BrowserContextOptions, Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bundleModules } from '../test-utils/player-boot';
 import { readStylesheet } from '../test-utils/styles';
+import { testEngines } from '../test-utils/test-engines';
+
 import { NEW_BADGE_CSS } from './new-badge';
 
-const require = createRequire(import.meta.url);
 const SRC = new URL('../', import.meta.url).pathname;
 const UI_CSS = readStylesheet(path.join(SRC, 'ui/shadow.css')) + NEW_BADGE_CSS;
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: [
-      "export { createPlayerSettings } from './ui/player-settings';",
-      "export { createControls } from './ui/controls';",
-      "export { PlayerUiStore } from './ui/store';",
-      "export { createChromeRefs, createPlayerChromeContext } from './ui/runtime-context';",
-      "export { DisposableScope } from './core/disposable-scope';",
-      "export { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from './audio-settings';"
-    ].join('\n'),
-    resolveDir: SRC,
-    loader: 'ts'
-  },
-  bundle: true,
-  write: false,
-  format: 'iife',
-  globalName: 'SettingsRows',
-  platform: 'browser',
-  target: 'es2022',
-  logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules([
+  "export { createPlayerSettings } from './ui/player-settings';",
+  "export { createControls } from './ui/controls';",
+  "export { PlayerUiStore } from './ui/store';",
+  "export { createChromeRefs, createPlayerChromeContext } from './ui/runtime-context';",
+  "export { DisposableScope } from './core/disposable-scope';",
+  "export { AUDIO_LABEL_KEYS, AUDIO_SETTING_NAMES } from './audio-settings';"
+], 'SettingsRows');
 
 const LOCALES_DIR = path.join(SRC, '../_locales');
 const LOCALES = readdirSync(LOCALES_DIR).sort();
@@ -53,17 +42,18 @@ const ROWS = [
   { label: 'extensionSettingsLabel', values: [], shortcut: '', section: 'footer' }
 ];
 
-async function withBrowser(engine: 'chromium' | 'firefox', run: (browser: Browser) => Promise<void>): Promise<void> {
-  const browserType = (await import('playwright'))[engine];
-  assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-  const browser = await browserType.launch({ headless: true });
-  try { await run(browser); } finally { await browser.close(); }
+const browsers = sharedEngineBrowsers();
+
+async function withBrowser(
+  test: TestContext, engine: 'chromium' | 'firefox', run: (browser: { newPage(options: BrowserContextOptions): Promise<Page> }) => Promise<void>
+): Promise<void> {
+  await run({ newPage: async options => (await browsers[engine].newContext(test, options)).newPage() });
 }
 
 describe('settings menu rows stay on one line', () => {
   for (const engine of testEngines()) {
-    it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async () => {
-      await withBrowser(engine, async browser => {
+    it(`fits every locale on one line in ${engine}`, { timeout: 120_000 }, async t => {
+      await withBrowser(t, engine, async browser => {
         // 360px is the narrowest viewport the menu is designed for.
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
           const page = await browser.newPage({ viewport });
@@ -141,8 +131,8 @@ describe('settings menu rows stay on one line', () => {
   }
 
   for (const engine of testEngines()) {
-    it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 180_000 }, async () => {
-      await withBrowser(engine, async browser => {
+    it(`keeps the menu width when every toggle changes value in ${engine}`, { timeout: 180_000 }, async t => {
+      await withBrowser(t, engine, async browser => {
         for (const viewport of [{ width: 360, height: 640 }, { width: 1280, height: 800 }]) {
           const page = await browser.newPage({ viewport });
           const errors: string[] = [];
@@ -225,8 +215,8 @@ describe('settings menu rows stay on one line', () => {
 
 describe('Bass row sweep', () => {
   for (const engine of testEngines()) {
-    it(`sweeps once when the level rises into a red level in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async browser => {
+    it(`sweeps once when the level rises into a red level in ${engine}`, { timeout: 60_000 }, async t => {
+      await withBrowser(t, engine, async browser => {
         const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
         await page.setContent('<body style="margin:0"></body>');
         await page.addStyleTag({ content: UI_CSS });
@@ -273,8 +263,8 @@ describe('Bass row sweep', () => {
 describe('Settings row vertical alignment', () => {
   for (const engine of testEngines()) {
     for (const scale of [1, 2]) {
-      it(`centres icon, label, keycaps and value on one line at ${scale}x in ${engine}`, { timeout: 60_000 }, async () => {
-        await withBrowser(engine, async browser => {
+      it(`centres icon, label, keycaps and value on one line at ${scale}x in ${engine}`, { timeout: 60_000 }, async t => {
+        await withBrowser(t, engine, async browser => {
           const page = await browser.newPage({ viewport: { width: 420, height: 900 }, deviceScaleFactor: scale });
           await page.setContent('<body style="margin:0"></body>');
           await page.addStyleTag({ content: UI_CSS });

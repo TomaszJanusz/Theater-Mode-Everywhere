@@ -1,27 +1,18 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { describe, it } from 'node:test';
 
 import { chromium, type Page } from 'playwright';
 
+import { bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const source = path.resolve(new URL('../..', import.meta.url).pathname);
-const bundle = esbuild.buildSync({
-  stdin: {
-    contents: "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/main'; export { requestYoutubePlayerCaptions } from './media-features/probe';",
-    resolveDir: source, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'CaptionTest', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+const bundle = bundleModules([
+  "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/main';",
+  "export { requestYoutubePlayerCaptions } from './media-features/probe';"
+], 'CaptionTest');
 
 const WATCH_PLAYER = '<div id="movie_player"><video></video><button class="ytp-subtitles-button" aria-pressed="false">CC</button></div>';
 // Home with the player parked in the miniplayer: no ?v=, so the parked player's own id is the identity.

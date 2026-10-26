@@ -1,4 +1,9 @@
 {
+  "config/vite.config.ts": {
+    "import/order": {
+      "count": 3
+    }
+  },
   "options/appearance-choices.ts": {
     "import/order": {
       "count": 2
@@ -288,15 +293,7 @@
       "count": 1
     }
   },
-  "scripts/test-harness.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "scripts/test-harness.ts": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/super-linear-regex": {
       "count": 1
     }
@@ -357,14 +354,6 @@
   "src/appearance-runtime.ts": {
     "local/max-symbol-name-length": {
       "count": 1
-    }
-  },
-  "src/appearance.browser.test.ts": {
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
-    "import/order": {
-      "count": 7
     }
   },
   "src/audio-settings.test.ts": {
@@ -525,11 +514,6 @@
   "src/core/visible-refresh.test.ts": {
     "import/order": {
       "count": 1
-    }
-  },
-  "src/entries/background.test.ts": {
-    "import/order": {
-      "count": 2
     }
   },
   "src/entries/background.ts": {
@@ -1162,11 +1146,6 @@
       "count": 1
     }
   },
-  "src/platform/network-harvest.browser.test.ts": {
-    "import/order": {
-      "count": 7
-    }
-  },
   "src/platform/parent-origin.test.ts": {
     "import/order": {
       "count": 1
@@ -1426,9 +1405,6 @@
   "src/providers/disney/clock.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 4
-    },
-    "import/order": {
-      "count": 5
     }
   },
   "src/providers/disney/host-captions.ts": {
@@ -1515,9 +1491,6 @@
   "src/providers/native/page-title.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
-    },
-    "import/order": {
-      "count": 4
     }
   },
   "src/providers/native/page-title.ts": {
@@ -1725,9 +1698,6 @@
   "src/providers/patreon/watch-playback.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
-    },
-    "import/order": {
-      "count": 4
     }
   },
   "src/providers/patreon/watch-playback.ts": {
@@ -1897,9 +1867,6 @@
   "src/providers/ui-refresh.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 7
-    },
-    "import/order": {
-      "count": 4
     }
   },
   "src/providers/video-candidates.ts": {
@@ -1984,11 +1951,6 @@
       "count": 1
     }
   },
-  "src/providers/youtube/timedtext-cache.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/providers/youtube/timedtext-cache.test.ts": {
     "import/order": {
       "count": 3
@@ -2005,14 +1967,6 @@
   "src/providers/youtube/watch-playback.ts": {
     "import/order": {
       "count": 1
-    }
-  },
-  "src/reduce-motion.browser.test.ts": {
-    "@typescript-eslint/consistent-type-imports": {
-      "count": 1
-    },
-    "import/order": {
-      "count": 4
     }
   },
   "src/switchable-videos.test.ts": {
@@ -2109,11 +2063,6 @@
       "count": 4
     }
   },
-  "src/ui/audio-block.browser.test.ts": {
-    "import/order": {
-      "count": 4
-    }
-  },
   "src/ui/auto-theater-intent.test.ts": {
     "import/order": {
       "count": 1
@@ -2136,9 +2085,6 @@
     "@typescript-eslint/consistent-type-imports": {
       "count": 1
     },
-    "import/order": {
-      "count": 6
-    },
     "max-lines": {
       "count": 1
     }
@@ -2155,11 +2101,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    }
-  },
-  "src/ui/auto-theater-scrim.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/auto-theater-scrim.ts": {
@@ -2187,17 +2128,9 @@
       "count": 3
     }
   },
-  "src/ui/bass-icon.browser.test.ts": {
-    "import/order": {
-      "count": 4
-    }
-  },
   "src/ui/cc-menu-rows.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 8
-    },
-    "import/order": {
-      "count": 6
     }
   },
   "src/ui/cc-menu.ts": {
@@ -2249,11 +2182,6 @@
       "count": 1
     }
   },
-  "src/ui/discovery.browser.test.ts": {
-    "import/order": {
-      "count": 5
-    }
-  },
   "src/ui/discovery.ts": {
     "import/order": {
       "count": 3
@@ -2271,19 +2199,11 @@
   "src/ui/fullscreen-activity.browser.test.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 2
-    },
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/help.ts": {
     "sonarjs/no-nested-conditional": {
       "count": 1
-    }
-  },
-  "src/ui/hud-spacing.browser.test.ts": {
-    "import/order": {
-      "count": 7
     }
   },
   "src/ui/hud.ts": {
@@ -2347,11 +2267,6 @@
   "src/ui/picture-dismiss.ts": {
     "local/max-symbol-name-length": {
       "count": 1
-    }
-  },
-  "src/ui/pinned-controls-backing.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "src/ui/playback-chrome.browser.test.ts": {
@@ -2436,11 +2351,6 @@
       "count": 1
     }
   },
-  "src/ui/settings-rows.browser.test.ts": {
-    "import/order": {
-      "count": 6
-    }
-  },
   "src/ui/shortcut-updates.ts": {
     "local/max-symbol-name-length": {
       "count": 1
@@ -2490,11 +2400,6 @@
   "src/ui/time-readout.ts": {
     "sonarjs/no-nested-template-literals": {
       "count": 1
-    }
-  },
-  "src/ui/title-hud-reduced.browser.test.ts": {
-    "import/order": {
-      "count": 5
     }
   },
   "src/ui/title-truncation.test.ts": {
@@ -2554,11 +2459,6 @@
     },
     "sonarjs/no-unenclosed-multiline-block": {
       "count": 1
-    }
-  },
-  "src/ui/video-selection.browser.test.ts": {
-    "import/order": {
-      "count": 4
     }
   },
   "src/ui/volume-boost-settings.ts": {
@@ -2707,11 +2607,6 @@
       "count": 1
     }
   },
-  "tools/cpu-suite/resource.browser.test.ts": {
-    "import/order": {
-      "count": 8
-    }
-  },
   "tools/cpu-suite/resource.test.ts": {
     "import/order": {
       "count": 2
@@ -2767,11 +2662,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    }
-  },
-  "config/vite.config.ts": {
-    "import/order": {
-      "count": 3
     }
   }
 }

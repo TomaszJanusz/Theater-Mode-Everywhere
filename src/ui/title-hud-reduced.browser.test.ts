@@ -1,11 +1,13 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
+
 import type { Locator, Page } from 'playwright';
+
 import { emitStorageChange } from '../test-utils/chrome-stub';
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
-import { ownTestBrowser } from '../test-utils/test-browser';
 
 const TITLE = 'A Remarkably Long Documentary About Mountain Weather Systems, Part 12 - Summit Day';
 const FIXTURE = canvasVideoFixture({ title: TITLE });
@@ -27,11 +29,11 @@ async function boot(page: Page, dir: 'ltr' | 'rtl'): Promise<void> {
   await page.evaluate(d => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-title-hud')!.setAttribute('dir', d), dir);
 }
 
+const browsers = sharedEngineBrowsers();
+
 for (const engine of testEngines()) for (const dir of ['ltr', 'rtl'] as const) {
   it(`${engine}/${dir}: reduced-motion title keeps head and tail, reveals in full, and follows the setting live`, { timeout: 60_000 }, async t => {
-    const browser = await (await import('playwright'))[engine].launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage({ viewport: { width: 700, height: 600 } });
+    const page = await (await browsers[engine].newContext(t, { viewport: { width: 700, height: 600 } })).newPage();
     await boot(page, dir);
     const hud = page.locator('.theater-everywhere-title-hud');
 

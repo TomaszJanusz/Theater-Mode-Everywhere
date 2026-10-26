@@ -1,17 +1,13 @@
-import { testEngines } from '../../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { ownTestBrowser } from '../../test-utils/test-browser';
 
-const esbuild = createRequire(import.meta.url)('esbuild') as {
-  buildSync(options: object): { outputFiles: { text: string }[] };
-};
-const bundle = esbuild.buildSync({ stdin: { resolveDir: new URL('../../', import.meta.url).pathname, loader: 'ts',
-  contents: "export { GenericTitleSource } from './providers/native/page-title';" },
-bundle: true, write: false, format: 'iife', globalName: 'PageTitleTest',
-platform: 'browser', target: 'es2022', logLevel: 'silent' }).outputFiles[0].text;
+import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
+import { bundleModules } from '../../test-utils/player-boot';
+import { testEngines } from '../../test-utils/test-engines';
+
+const bundle = bundleModules(["export { GenericTitleSource } from './providers/native/page-title';"], 'PageTitleTest');
+const browsers = sharedEngineBrowsers();
 type Api = typeof import('./page-title');
 
 const FIXTURE = `<!doctype html><html><head>
@@ -29,9 +25,7 @@ for (const engine of testEngines()) describe(`${engine} generic title source`, (
   it('reads page fallbacks, waits for a client-side navigation to replace them and stops observing on cleanup', async (t) => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[engine].newContext(t)).newPage();
     await page.route('https://videos.example/**', (route) => route.fulfill({ contentType: 'text/html', body: FIXTURE }));
     await page.goto('https://videos.example/watch/a');
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
@@ -116,9 +110,7 @@ for (const engine of testEngines()) describe(`${engine} generic title source`, (
   it('uses a heading only when it is tied to one video', async (t) => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[engine].newContext(t)).newPage();
     await page.setContent('<body></body>');
     await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
     const report = await page.evaluate(() => {
@@ -149,9 +141,7 @@ for (const engine of testEngines()) describe(`${engine} generic title source`, (
   it('falls back from an embed to adjacent parent headings, tracks both URLs and releases parent observers', { timeout: 30_000 }, async (t) => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[engine].newContext(t)).newPage();
     await page.route('https://streamsite.example/**', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body:
       new URL(route.request().url()).pathname.startsWith('/embed')
         ? '<title>Streamsite</title><h1>Example Show (1975) — S52E1</h1><video id="player"></video>'
@@ -259,9 +249,7 @@ for (const engine of testEngines()) describe(`${engine} generic title source`, (
   it('skips a cross-origin parent without throwing or publishing its title', { timeout: 30_000 }, async (t) => {
     const browserType = (await import('playwright'))[engine];
     if (!existsSync(browserType.executablePath())) { t.skip(`${engine} not installed`); return; }
-    const browser = await browserType.launch({ headless: true });
-    ownTestBrowser(t, browser);
-    const page = await browser.newPage();
+    const page = await (await browsers[engine].newContext(t)).newPage();
     await page.route('https://parent.example/**', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body:
       '<title>Private parent title</title><h1>Private heading</h1><iframe src="https://streamsite.example/embed"></iframe>' }));
     await page.route('https://streamsite.example/**', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body:

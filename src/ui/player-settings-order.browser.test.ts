@@ -1,27 +1,18 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
 import { describe, it, type TestContext } from 'node:test';
 
-import type { Browser, Page } from 'playwright';
+import type { Page } from 'playwright';
 
-import { bootPlayer, bundlePlayer, enterTheater, playerStylesheets } from '../test-utils/player-boot';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bootPlayer, bundleModules, bundlePlayer, enterTheater, playerStylesheets } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
-const require = createRequire(import.meta.url);
-const SRC = new URL('../', import.meta.url).pathname;
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
 const BUNDLE = bundlePlayer([
   "export { createPlayerSettings } from './ui/player-settings';",
   "export { DisposableScope } from './core/disposable-scope';"
 ]);
 
-const BACKGROUND_BUNDLE = esbuild.buildSync({
-  entryPoints: [path.join(SRC, 'entries/background.ts')],
-  bundle: true, write: false, format: 'iife', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+const BACKGROUND_BUNDLE = bundleModules(["import './entries/background';"], 'Background');
 
 type MenuCase = {
   autoTheater: boolean;
@@ -120,20 +111,14 @@ async function assertTabFollowsDom(page: Page): Promise<void> {
   assert.equal(after, true, 'Tab from Keyboard Shortcuts must reach Extension settings');
 }
 
+const browsers = sharedEngineBrowsers();
+
 async function withBrowser(test: TestContext, engine: 'chromium' | 'firefox', run: (page: Page) => Promise<void>): Promise<void> {
-  const browserType = (await import('playwright'))[engine];
-  assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-  const browser: Browser = await browserType.launch({ headless: true });
-  ownTestBrowser(test, browser);
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const errors: string[] = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await run(page);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
+  const page = await (await browsers[engine].newContext(test, { viewport: { width: 1280, height: 800 } })).newPage();
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await run(page);
+  assert.deepEqual(errors, []);
 }
 
 describe('player settings action order', () => {

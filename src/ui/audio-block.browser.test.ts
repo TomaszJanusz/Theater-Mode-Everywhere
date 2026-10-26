@@ -1,10 +1,13 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { describe, it } from 'node:test';
-import type { Browser, Page } from 'playwright';
-import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { describe, it, type TestContext } from 'node:test';
 
+import type { Page } from 'playwright';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
+import { bootPlayer, enterTheater } from '../test-utils/player-boot';
+import { testEngines } from '../test-utils/test-engines';
+
+const browsers = sharedEngineBrowsers();
 const DRM_NOTE = 'Audio settings are unavailable: this video is DRM-protected.';
 
 function fixture(drm: boolean): string {
@@ -55,25 +58,18 @@ async function audioMenu(page: Page) {
   })()`) as Promise<{ note: string | null; rows: number; heading: boolean }>;
 }
 
-async function withBrowser(engine: 'chromium' | 'firefox', run: (page: Page) => Promise<void>): Promise<void> {
-  const browserType = (await import('playwright'))[engine];
-  assert.ok(existsSync(browserType.executablePath()), `${engine} must be installed`);
-  const browser: Browser = await browserType.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const errors: string[] = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await run(page);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-  }
+async function withBrowser(test: TestContext, engine: 'chromium' | 'firefox', run: (page: Page) => Promise<void>): Promise<void> {
+  const page = await (await browsers[engine].newContext(test, { viewport: { width: 1280, height: 800 } })).newPage();
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await run(page);
+  assert.deepEqual(errors, []);
 }
 
 describe('audio settings on protected media', () => {
   for (const engine of testEngines()) {
-    it(`replaces the audio rows with one explanation for DRM video in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async page => {
+    it(`replaces the audio rows with one explanation for DRM video in ${engine}`, { timeout: 60_000 }, async t => {
+      await withBrowser(t, engine, async page => {
         await boot(page, true);
         assert.deepEqual(await audioMenu(page), { note: DRM_NOTE, rows: 0, heading: true });
         await page.keyboard.press('v');
@@ -82,8 +78,8 @@ describe('audio settings on protected media', () => {
       });
     });
 
-    it(`restores the audio rows for ordinary video and reacts when DRM appears in ${engine}`, { timeout: 60_000 }, async () => {
-      await withBrowser(engine, async page => {
+    it(`restores the audio rows for ordinary video and reacts when DRM appears in ${engine}`, { timeout: 60_000 }, async t => {
+      await withBrowser(t, engine, async page => {
         await boot(page, false);
         assert.deepEqual(await audioMenu(page), { note: null, rows: 4, heading: true });
         await page.evaluate('window.markDrm()');

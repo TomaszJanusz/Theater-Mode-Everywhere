@@ -1,20 +1,14 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
+
 import { chromium, firefox, type Page } from 'playwright';
+
+import { bundleModules } from '../test-utils/player-boot';
 import { readStylesheet } from '../test-utils/styles';
 import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
 
-const require = createRequire(import.meta.url);
-const esbuild = require('esbuild') as { buildSync(options: object): { outputFiles: Array<{ text: string }> } };
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "export { showAutoTheaterNotice } from './ui/auto-theater-notice'; export { setAutoTheaterScrimEnabledForTests } from './ui/auto-theater-scrim'; export { setPlayerUiCss } from './ui/root';",
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'ScrimTest', platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+const BUNDLE = bundleModules(["export { showAutoTheaterNotice } from './ui/auto-theater-notice'; export { setAutoTheaterScrimEnabledForTests } from './ui/auto-theater-scrim'; export { setPlayerUiCss } from './ui/root';"], 'ScrimTest');
 const CSS = readStylesheet(new URL('./shadow.css', import.meta.url));
 
 declare global {

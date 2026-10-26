@@ -1,13 +1,16 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import type * as HudApi from './hud';
-import type { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
-import type { PlayerChromeContext } from './runtime-context';
+
+import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
-import { ownTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
+
+import type { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
+import type * as HudApi from './hud';
+import type { PlayerChromeContext } from './runtime-context';
+
 
 const CSS = playerStylesheets().ui;
 const BUNDLE = bundleModules(["export * from './ui/hud'; export { CONTROLS_VISIBILITY_ICON } from './ui/controls-visibility';"], 'Hud');
@@ -15,12 +18,12 @@ const BUNDLE = bundleModules(["export * from './ui/hud'; export { CONTROLS_VISIB
 const cases = ['less', 'original', 'more', 'moar', 'moaaarr', 'volume', 'quiet', 'muted', 'play', 'pause', 'voice', 'leveling', 'boost', 'layout', 'fit', 'switch', 'pin'] as const;
 
 describe('confirmation HUD optical spacing', () => {
+  const browsers = sharedEngineBrowsers();
   for (const engine of testEngines()) {
     for (const scale of [1, 2]) for (const direction of ['ltr', 'rtl'] as const) {
       it(`balances painted icons at ${scale}x ${direction} in ${engine}`, { timeout: 60_000 }, async t => {
-        const browser = await (await import('playwright'))[engine].launch({ headless: true });
-        ownTestBrowser(t, browser);
-        const page = await browser.newPage({ viewport: { width: 800, height: 300 }, deviceScaleFactor: scale });
+        const context = await browsers[engine].newContext(t, { viewport: { width: 800, height: 300 }, deviceScaleFactor: scale });
+        const page = await context.newPage();
         await page.setContent('<body style="margin:0;background:#171717"></body>');
         await page.evaluate('window.__name = value => value');
         await page.addScriptTag({ content: BUNDLE });

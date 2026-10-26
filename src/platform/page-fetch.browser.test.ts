@@ -1,31 +1,25 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { it } from 'node:test';
 
 import { chromium, firefox } from 'playwright';
 
+import { bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { selectTestEngines } from '../test-utils/test-engines';
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: Record<string, unknown>): { outputFiles: Array<{ text: string }> };
-};
-const bundle = esbuild.buildSync({
-  stdin: { contents: `export { installMainWorldRuntime } from './platform/main-world-runtime';
-    export { requestPageFetch } from './media-features/probe';
-    export { fetchPageMedia } from './platform/page-fetch';
-    export { createWorldMessage } from './protocol/world-messages';
-    export { readCachedTimedtextBody } from './providers/youtube/main';
-    export { readBoundedBytes } from './platform/bounded-body';
-    export { readPageResponseBytes } from './platform/page-body';`,
-    resolveDir: path.resolve(new URL('..', import.meta.url).pathname), loader: 'ts' },
-  bundle: true, write: false, format: 'iife', globalName: 'BridgeTest', platform: 'browser', target: 'es2022'
-}).outputFiles[0].text;
+const bundle = bundleModules([
+  "export { installMainWorldRuntime } from './platform/main-world-runtime';",
+  "export { requestPageFetch } from './media-features/probe';",
+  "export { fetchPageMedia } from './platform/page-fetch';",
+  "export { createWorldMessage } from './protocol/world-messages';",
+  "export { readCachedTimedtextBody } from './providers/youtube/main';",
+  "export { readBoundedBytes } from './platform/bounded-body';",
+  "export { readPageResponseBytes } from './platform/page-body';"
+], 'BridgeTest');
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   const shared = sharedTestBrowser(engine);

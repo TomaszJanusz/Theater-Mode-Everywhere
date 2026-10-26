@@ -1,26 +1,18 @@
-import { testEngines } from '../test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { it } from 'node:test';
-import { chromium, firefox } from 'playwright';
-import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
-import { sharedTestBrowser } from '../test-utils/test-browser';
-import { AUTO_ENTER_NOTICE_DELAY_MS as DELAY_MS, type AutoTheaterRuntime } from './auto-theater-runtime';
-import { AUTO_ENTER_CANCEL_GRACE_MS as GRACE_MS } from './auto-theater-intent';
 
-const require = createRequire(import.meta.url);
-const esbuild = require(createRequire(require.resolve('vite')).resolve('esbuild')) as {
-  buildSync(options: object): { outputFiles: Array<{ text: string }> };
-};
-const BUNDLE = esbuild.buildSync({
-  stdin: {
-    contents: "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo, confirmProviderPreparingVideo } from './providers/watch-playback';",
-    resolveDir: new URL('../', import.meta.url).pathname, loader: 'ts'
-  },
-  bundle: true, write: false, format: 'iife', globalName: 'AutoTheaterTest',
-  platform: 'browser', target: 'es2022', logLevel: 'silent'
-}).outputFiles[0].text;
+import { chromium, firefox } from 'playwright';
+
+import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
+import { bundleModules } from '../test-utils/player-boot';
+import { sharedTestBrowser } from '../test-utils/test-browser';
+import { testEngines } from '../test-utils/test-engines';
+
+import { AUTO_ENTER_CANCEL_GRACE_MS as GRACE_MS } from './auto-theater-intent';
+import { AUTO_ENTER_NOTICE_DELAY_MS as DELAY_MS, type AutoTheaterRuntime } from './auto-theater-runtime';
+
+const BUNDLE = bundleModules(["export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo, confirmProviderPreparingVideo } from './providers/watch-playback';"], 'AutoTheaterTest');
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {

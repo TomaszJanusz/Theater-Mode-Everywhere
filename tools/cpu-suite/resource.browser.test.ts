@@ -1,19 +1,24 @@
-import { selectTestEngines } from '../../src/test-utils/test-engines';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { it } from 'node:test';
+
 import { chromium, firefox } from 'playwright';
-import { ownTestBrowser } from '../../src/test-utils/test-browser';
+
+import { sharedTestBrowser } from '../../src/test-utils/test-browser';
+import { selectTestEngines } from '../../src/test-utils/test-engines';
+
+import { fixtureServer, runFixture } from './resource-browser';
+import { FIXTURES } from './resource-model';
 import { RESOURCE_PROBE, validateCounters } from './resource-probe';
 import { identifyBuild } from './storage';
-import { FIXTURES } from './resource-model';
-import { fixtureServer, runFixture } from './resource-browser';
+const shared = new Map(selectTestEngines([chromium, firefox], engine => engine.name()).map(engine => [engine, sharedTestBrowser(engine)] as const));
 const directory = process.env.RESOURCE_AUDIT_BUILD ?? path.resolve(import.meta.dirname, '../../dist/chrome-unpacked');
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`resource fixture smoke: ${engine.name()} executes every scenario on built bundles`, {
   timeout: 180000, skip: (!process.env.RESOURCE_AUDIT_BUILD && !existsSync(path.join(directory, 'content.js'))) || !existsSync(engine.executablePath())
 }, async t => {
-  const browser = await engine.launch({ headless: true }); ownTestBrowser(t, browser);
+  // runFixture opens its own contexts, so it takes the shared Browser behind the test's context.
+  const context = await shared.get(engine)!.newContext(t); const browser = context.browser()!;
   const server = await fixtureServer(); t.after(() => server.close());
   const build = identifyBuild('smoke', directory);
   for (const fixture of FIXTURES) {
@@ -37,8 +42,7 @@ for (const engine of selectTestEngines([chromium, firefox], engine => engine.nam
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) it(`resource instrumentation ${engine.name()}: idempotent observers, scheduler cancellation and body accounting`, {
   timeout: 15000, skip: !existsSync(engine.executablePath())
 }, async t => {
-  const browser = await engine.launch({headless:true}); ownTestBrowser(t, browser);
-  const page = await browser.newPage();
+  const page = await (await shared.get(engine)!.newContext(t)).newPage();
   const start = new Date('2026-01-01T00:00:00Z');
   await page.clock.install({time:start}); await page.clock.pauseAt(new Date(start.getTime() + 60000));
   await page.evaluate(RESOURCE_PROBE);
