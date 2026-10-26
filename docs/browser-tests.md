@@ -8,7 +8,8 @@ pnpm exec playwright install chromium firefox
 ```
 
 Browser tests (`*.browser.test.ts`) run through `pnpm test` or individually with
-`pnpm exec tsx --test <test-file>`. `pnpm test` discovers test files by name
+`pnpm exec tsx --test <test-file>`; component tests (`*.component.test.ts`) run only
+through `pnpm test` (see Component tests). `pnpm test` discovers test files by name
 (`scripts/run-tests.mjs`); `pnpm test <path-or-substring> [--test-name-pattern=…]`
 runs a subset. Build before running `pnpm smoke:firefox`
 or `pnpm smoke:chromium`.
@@ -50,12 +51,12 @@ baseline at the merge base with the PR base (`origin/$GITHUB_BASE_REF` in CI, el
 locally a missing ref logs a skipped history comparison while inventory checks still run.
 After removing calls, run `pnpm exec tsx scripts/test-determinism.ts --update`;
 it only accepts reductions. Omit `--update` to print counts. Do not hide waits in
-other helpers or raise allowances; remaining legacy waits are tracked in TME-116.
+other helpers or raise allowances. The baseline lists the remaining legacy waits and only shrinks.
 
 ## Timeouts and browser ownership
 
 Browser files create one lazy browser per engine with `sharedTestBrowser(engine)`
-and give every test a fresh context (`shared.newContext(t, options)`); a context
+(direct `.launch(` calls are the legacy form, ratcheted below) and give every test a fresh context (`shared.newContext(t, options)`); a context
 is the isolation boundary, so storage, routes, clocks and init scripts never
 leak between tests. A launch that needs its own browser flags registers it with
 `ownTestBrowser(t, browser)`. Both live in
@@ -147,10 +148,21 @@ single packages took 60-150 s there, ending the setup step at its limit). They p
 To reproduce a lane locally with Docker: `docker run --rm -it -v "$PWD":/work -w /work -e HOME=/root
 mcr.microsoft.com/playwright:v<version>-noble bash`, then install PulseAudio inside it for Firefox audio.
 
-The registered suite limits test-file concurrency to two. PR CI runs two
-Chromium browser shards (each capped at 10 minutes) and one Firefox browser
-lane (capped at 15 minutes when selected), alongside unit and static jobs.
-It cancels superseded runs for the same PR. Timeouts fail stalled checks.
+The registered suite limits test-file concurrency to two. PR CI is one workflow of parallel
+jobs ([`ci.yml`](../.github/workflows/ci.yml)); the `check` job aggregates them and is the
+status to require. It cancels superseded runs for the same PR, and every step has a timeout
+there, so a stalled check fails instead of hanging.
+
+| Job | Runs |
+| --- | --- |
+| `changes` | Classifies changed files (`ci-changes.mjs`) and selects affected tests (`test-impact.mjs`). |
+| `image` | Resolves, and if missing builds, the browser image above. |
+| `build`, `static` | One production build; `pnpm lint`, `pnpm typecheck` and `pnpm verify:bundles` against it. |
+| `boundaries`, `css-and-unused` | `pnpm check:boundaries`, `pnpm lint:css`; Knip is reported only (`pnpm check:unused`). |
+| `unit` | `pnpm test --lane=unit` on the selection. |
+| `browser-chromium` | Two shards of `pnpm test --lane=browser` on Chromium; shard 1 also runs `pnpm storybook:test`. |
+| `browser-firefox` | The same on Firefox, only when `ci-changes.mjs` selects it; also runs `pnpm storybook:test` for Firefox. |
+| `smoke` | Chromium smoke when shipped inputs are affected; Firefox smoke with the installed extension when Firefox is selected. |
 
 ## Booting the player in a test
 
@@ -198,12 +210,20 @@ trusted) and `vi.useFakeTimers()` installed before mount for time. Engine-only c
 modal and anchored-menu surfaces. Their owners write `data-te-surface` (family),
 `data-te-owner` (opaque per mount) and `data-te-state` (`open`/`closed`); tests read state
 through these hooks, roles, ARIA and focus, never copy. A new surface with an existing
-policy needs only an entry in `registrations`: `mount({ root, stage, owner })` builds its
+policy needs only an entry in `surfaceRegistrations`
+([`surface-registry.ts`](../src/test-utils/surface-registry.ts)): `mount({ root, stage, owner })` builds its
 trigger in `stage` and returns `{ trigger, surface(), close() }`; disposing `owner` must
 close the surface and release what it holds. New interaction semantics need a policy or
 targeted tests. Hostile host pages (maximum z-index overlay, transformed/contained/filtered
 ancestors, an aggressive global stylesheet, page popovers and modal dialogs before and
 after opening, document fullscreen) run once per policy, on its first registration.
+
+**Accessibility matrix.** `src/ui/accessibility.component.test.ts` scans every registered
+surface, closed and open, with axe-core (`src/test-utils/axe.ts`) under each appearance mode
+in `APPEARANCE_MODES` (default, high contrast, reduced transparency, RTL, reduced motion);
+serious and critical violations fail. Registering a surface adds it to both suites. Fix a
+violation in the component; `AXE_ALLOW_LIST` takes only a documented false positive (rule,
+selector and reason), never a whole rule.
 
 ## Firefox on macOS 27
 
@@ -254,22 +274,19 @@ and `firefox` are accepted; empty, duplicate or unknown values fail. Existing
 cases explicitly tied to Chromium still use Chromium in either browser lane;
 the switch does not claim to port those cases to Firefox.
 
-PRs classify changes, then run typecheck, one build with bundle verification,
-affected unit and Chromium browser tests, and Chromium smoke when shipped inputs
-are affected (see below). The build artifact is shared with verification and
-smoke. Each test lane publishes its 15 slowest tests and failures in the job
-summary.
+PRs run the jobs above on the affected tests (see below). The build artifact is shared
+with verification and smoke. Each test lane publishes its 15 slowest tests and failures
+in the job summary.
 `scripts/ci-changes.mjs` additionally enables Firefox browser coverage and Firefox smoke when any changed path is:
 
 - `manifest.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, or `tsconfig.json`;
 - under `src/platform/`, `src/protocol/`, `src/test-utils/`, or `test/`;
-- under `scripts/` (including build, packaging and smoke scripts), `.github/actions/`, or `.github/workflows/`.
+- under `scripts/` (including build, packaging and smoke scripts), `.github/actions/`, `.github/ci-image/`, or `.github/workflows/`.
 
 Both sides of renames count. Missing or invalid change metadata enables Firefox.
 This deliberately broad infrastructure rule avoids a per-test exception list;
 UI/provider-only changes use Chromium on PRs. Reviewed prose-only changes retain
-the existing inexpensive CI pass. The aggregate `check` status remains available
-for consumers of the former serial job name.
+the existing inexpensive CI pass.
 
 PR and release Firefox smoke remain non-blocking (`continue-on-error`) but never
 pass silently: a failure adds a warning annotation and a job-summary line, and a
@@ -281,19 +298,12 @@ on PRs, the full suite nightly, and the full suite on release. Nightly runs on `
 and on the 2.1 integration branch `dev` (two independent jobs with literal refs, so one
 ref's failure does not hide the other) at 02:23 UTC and can also be dispatched manually: unrestricted `pnpm test`
 (unit tests and both browser engines, without lane or engine overrides), followed
-by both smokes. Full history preserves the suite's baseline/history guards. The
+by Storybook components on both engines (`pnpm storybook:test`) and both smokes. Full history preserves the suite's baseline/history guards. The
 suite has a 25-minute limit inside the existing 30-minute job. Failures fail the
-job and appear in its summary; both smokes still run after a test failure unless
+job and appear in its summary; the Storybook and smoke steps still run after a test failure unless
 the run is cancelled. Firefox smoke failures are not suppressed. Regressions outside a
 PR's selected paths can first surface in the full nightly run rather than block
 that PR. Release also retains unrestricted `pnpm test`.
-
-The shared-browser pilot in `test-browser.ts` launches lazily once per engine
-per file/suite. Each test owns a fresh context, with a cleanup hook registered
-before page setup; cookies, storage, routes, clocks and pages do not cross test
-boundaries. File/suite cleanup closes the browser. The pilot covers
-`video-activator`, `auto-theater-storage`, and options `rte-settings`; other files
-retain their current browser ownership.
 
 ## Affected tests on pull requests
 
