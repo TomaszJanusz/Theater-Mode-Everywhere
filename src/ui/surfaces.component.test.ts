@@ -233,9 +233,14 @@ interface HostilePage {
   fullscreen?: boolean;
   /**
    * Set when the page legitimately wins (a page modal dialog makes the rest of the document inert,
-   * whichever entered the top layer first; docs/top-layer.md). Undoes it, so recovery is asserted.
+   * whichever entered the top layer first; a page element in fullscreen takes pointer input, so the
+   * host leaves the top layer; docs/top-layer.md). Undoes it, so recovery is asserted.
    */
-  release?(): void;
+  release?(): void | Promise<void>;
+  /** The page took focus while it won, so a surface that does not trap focus closed. */
+  takesFocus?: boolean;
+  /** The host leaves the top layer while the page wins instead of painting a UI pointer input cannot reach. */
+  hidesHost?: boolean;
 }
 
 let pageDialog: HTMLDialogElement | undefined;
@@ -271,11 +276,11 @@ const hostilePages: HostilePage[] = [
   },
   { name: 'a page popover shown before the player UI', install: pagePopover },
   { name: 'a page popover shown while the surface is open', install: pagePopover, afterOpen: true },
-  { name: 'a page modal dialog shown before the player UI', install: modalDialog, release: () => pageDialog?.close() },
-  { name: 'a page modal dialog shown while the surface is open', install: modalDialog, afterOpen: true, release: () => pageDialog?.close() },
+  { name: 'a page modal dialog shown before the player UI', install: modalDialog, release: () => pageDialog?.close(), takesFocus: true },
+  { name: 'a page modal dialog shown while the surface is open', install: modalDialog, afterOpen: true, release: () => pageDialog?.close(), takesFocus: true },
   {
     // The document goes fullscreen, as in theater fullscreen. The Enter that opened the surface is the
-    // user activation it needs. (A fullscreen page element outside the host's ancestors is not covered.)
+    // user activation it needs.
     name: 'the page going fullscreen while the surface is open',
     install: async () => {
       const entered = new Promise(resolve => document.addEventListener('fullscreenchange', resolve, { once: true }));
@@ -285,6 +290,23 @@ const hostilePages: HostilePage[] = [
     },
     afterOpen: true,
     fullscreen: true
+  },
+  {
+    // A page element outside the host's ancestors goes fullscreen, as a site's own player does.
+    name: 'a page element going fullscreen while the surface is open',
+    install: async () => {
+      const entered = new Promise(resolve => document.addEventListener('fullscreenchange', resolve, { once: true }));
+      await pageElement('div', COVER).requestFullscreen();
+      await entered;
+      expect(document.fullscreenElement).not.toBeNull();
+    },
+    afterOpen: true,
+    hidesHost: true,
+    release: async () => {
+      const left = new Promise(resolve => document.addEventListener('fullscreenchange', resolve, { once: true }));
+      await document.exitFullscreen();
+      await left;
+    }
   }
 ];
 
@@ -310,7 +332,7 @@ for (const registration of representatives) {
         const mounted = mountSurface(registration);
         if (page.release && !page.afterOpen) {
           expect(onTop(mounted, mounted.trigger), 'the page dialog wins while open').toBe(false);
-          page.release();
+          await page.release();
         }
         expect(onTop(mounted, mounted.trigger)).toBe(true);
         await openWith(mounted, 'keyboard');
@@ -319,10 +341,11 @@ for (const registration of representatives) {
           // The host re-enters the top layer on the next frame after a page popover or fullscreen.
           await vi.advanceTimersByTimeAsync(50);
           if (page.release) {
-            expect(onTop(mounted, policy.content(mounted)), 'the page dialog wins while open').toBe(false);
-            page.release();
+            expect(onTop(mounted, policy.content(mounted)), 'the page wins while it holds the top layer').toBe(false);
+            expect(mounted.root.host.matches(':popover-open'), 'host in the top layer').toBe(!page.hidesHost);
+            await page.release();
             // The dialog took focus; a surface that does not trap focus closed when it left.
-            if (!policy.trapsFocus) {
+            if (page.takesFocus && !policy.trapsFocus) {
               expect(state(mounted)).toBe('closed');
               await openWith(mounted, 'keyboard');
             }
