@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Traccia audio"
+  },
+  "audioTrackBack": {
+    "message": "Indietro"
+  },
+  "searchAudioTracks": {
+    "message": "Cerca tracce audio…"
+  },
+  "noAudioTracks": {
+    "message": "Nessuna traccia audio"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodescrizione)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (commento)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Predefinita del servizio"
+  },
   "switchVideoTooltip": {
     "message": "Cambia video nella pagina $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Tracce audio"
+  },
   "rteEmpty": {
     "message": "Nessun servizio offre tutte le funzioni selezionate."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Dipende dal video; salto degli annunci e navigazione nella coda se disponibili."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Nei video con più tracce audio, come le versioni doppiate; non durante gli annunci."
   },
   "rteNoteVimeo": {
     "message": "Capitoli e anteprime se disponibili; video successivo nelle raccolte."

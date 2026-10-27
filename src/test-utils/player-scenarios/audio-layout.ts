@@ -41,7 +41,8 @@ export async function assertAudioSettings(page: Page): Promise<void> {
   const audioHeading = await section.locator('.theater-settings-heading').evaluate(heading =>
     Array.from(heading.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
   if (audioHeading !== 'Audio') fail(`Audio section heading is missing: ${JSON.stringify(audioHeading)}`);
-  const details = await section.locator('.theater-settings-detail, .theater-stepper-value').allInnerTexts();
+  // Processing rows only: the Audio track row shares the section but is not an audio setting.
+  const details = await section.locator('[data-settings-group="processing"]').locator('.theater-settings-detail, .theater-stepper-value').allInnerTexts();
   if (details.join('|') !== 'Off|Off|Off|Original') fail(`Audio settings should start neutral: ${details.join('|')}`);
   if (await page.locator('.audio-voice-btn').getAttribute('aria-keyshortcuts') !== 'V') fail('Voice boost row does not advertise its shortcut.');
   const slider = page.locator('.theater-volume-slider');

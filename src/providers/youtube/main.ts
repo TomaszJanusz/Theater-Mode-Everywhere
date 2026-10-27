@@ -27,6 +27,7 @@ import { publishHiddenJson } from '../../platform/hidden-json';
 import { parseYoutubeCaptions } from '../../protocol/page-requests';
 import { isYouTubeHost } from '../hosts';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
+import { installYouTubeAudio } from './audio-main';
 import { installYouTubeQueueNavigation } from './queue-main';
 import {
   createTimedtextBodyCache,
@@ -754,6 +755,7 @@ export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | 
 
 export function installYoutubeMain(): void {
   installYouTubeQueueNavigation();
+  installYouTubeAudio();
   timedtextCache.notePageVideo(expectedYoutubeVideo().id);
   window.addEventListener('message', (event: MessageEvent) => {
     if (window !== window.top) return;

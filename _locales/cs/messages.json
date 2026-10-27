@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Zvuková stopa"
+  },
+  "audioTrackBack": {
+    "message": "Zpět"
+  },
+  "searchAudioTracks": {
+    "message": "Hledat zvukové stopy…"
+  },
+  "noAudioTracks": {
+    "message": "Žádné zvukové stopy"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiopopis)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (komentář)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Výchozí nastavení služby"
+  },
   "switchVideoTooltip": {
     "message": "Přepnout video na stránce $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Zvukové stopy"
+  },
   "rteEmpty": {
     "message": "Žádná služba nemá všechny vybrané funkce."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Závisí na videu; přeskočení reklam a navigace ve frontě, pokud jsou dostupné."
+  },
+  "rteNoteAudioTracks": {
+    "message": "U videí s více zvukovými stopami, například dabingem; ne během reklam."
   },
   "rteNoteVimeo": {
     "message": "Kapitoly a náhledy, pokud jsou k dispozici; další video v kolekcích Showcase."

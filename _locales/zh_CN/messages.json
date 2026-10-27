@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "音轨"
+  },
+  "audioTrackBack": {
+    "message": "返回"
+  },
+  "searchAudioTracks": {
+    "message": "搜索音轨…"
+  },
+  "noAudioTracks": {
+    "message": "无音轨"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$（音频描述）",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$（解说）",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "服务默认"
+  },
   "switchVideoTooltip": {
     "message": "切换页面中的视频 $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "音轨"
+  },
   "rteEmpty": {
     "message": "没有服务具备所有选定功能。"
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "取决于视频；可用时支持跳过广告和队列导航。"
+  },
+  "rteNoteAudioTracks": {
+    "message": "适用于有多个音轨（例如配音版本）的视频；广告期间不可用。"
   },
   "rteNoteVimeo": {
     "message": "可用时提供章节和预览；支持合集中的下一个视频。"

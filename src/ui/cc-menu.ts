@@ -5,16 +5,34 @@ import { closeMenuPopover, MENU_CLOSE_EVENT } from './menu-popover';
 // Eight tracks exceed about one screenful of airy rows; translated lists often have 50+.
 const SEARCH_TRACK_THRESHOLD = 8;
 
-type Choice = { id: string | null; label: string; language?: string; active: boolean };
+export type Choice = { id: string | null; label: string; language?: string; active: boolean };
 type Translate = (key: string, substitutions?: string | string[]) => string;
+
+export type ChoiceMenuConfig = {
+  title: string;
+  /** A header action after the title, such as subtitle options. */
+  action?: { label: string; run: () => void; className?: string };
+  /** A header button before the title that leaves a nested list; Escape on an empty search takes it too. */
+  back?: { label: string; run: () => void };
+  listId: string;
+  searchLabel: string;
+  emptyLabel: string;
+  noMatchesLabel: string;
+  /** Receives the popover's close event; defaults to the panel itself. */
+  closeEvents?: HTMLElement;
+};
 
 /** NFD handles accents; Polish ł does not decompose. Cache each choice per refresh. */
 function searchText(text: string): string {
   return text.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/ł/g, 'l');
 }
 
-/** Owns the stable shell and input; provider refreshes replace only the choices. */
-export class CcMenu {
+/**
+ * A searchable single-choice list: the subtitle menu and nested player-settings lists share its
+ * rows, keyboard and pointer handling. Owns the stable shell and input; refreshes replace only
+ * the choices.
+ */
+export class ChoiceMenu {
   private readonly scope = new DisposableScope();
   private readonly input = document.createElement('input');
   private readonly list = document.createElement('div');
@@ -22,34 +40,46 @@ export class CcMenu {
   private choices: Array<Choice & { text: string }> = [];
   private composing = false;
   private query = '';
+  private action: HTMLButtonElement | null = null;
 
   constructor(
     private readonly panel: HTMLElement,
     private readonly trigger: HTMLButtonElement,
-    private readonly t: Translate,
-    private readonly select: (id: string | null) => void,
-    options: () => void
+    private readonly config: ChoiceMenuConfig,
+    private readonly select: (id: string | null) => void
   ) {
     const header = document.createElement('div');
     header.className = 'theater-cc-menu-header';
     const title = document.createElement('span');
     title.className = 'theater-cc-menu-title';
-    title.textContent = t('subtitlesMenuTitle');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'theater-cc-menu-options';
-    button.textContent = t('subtitleOptions');
-    this.scope.listen(button, 'click', (event: MouseEvent) => { event.stopPropagation(); options(); });
-    header.append(title, button);
+    title.textContent = config.title;
+    const headerButton = (className: string, label: string, run: () => void) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.textContent = label;
+      this.scope.listen(button, 'click', (event: MouseEvent) => { event.stopPropagation(); run(); });
+      return button;
+    };
+    if (config.back) {
+      const back = headerButton('theater-cc-menu-back', '', config.back.run);
+      back.setAttribute('aria-label', config.back.label);
+      header.append(back);
+    }
+    header.append(title);
+    if (config.action) {
+      this.action = headerButton(config.action.className ?? 'theater-cc-menu-options', config.action.label, config.action.run);
+      header.append(this.action);
+    }
     this.list.className = 'theater-cc-menu-list';
-    this.list.id = 'theater-cc-menu-list';
+    this.list.id = config.listId;
     this.list.setAttribute('role', 'group');
-    this.list.setAttribute('aria-label', t('subtitlesMenuTitle'));
+    this.list.setAttribute('aria-label', config.title);
     this.search.className = 'theater-cc-search';
     this.input.className = 'theater-cc-search-input';
     this.input.type = 'text'; // Avoid browser-specific search decorations and clear buttons.
-    this.input.placeholder = t('searchSubtitles');
-    this.input.setAttribute('aria-label', t('searchSubtitles'));
+    this.input.placeholder = config.searchLabel;
+    this.input.setAttribute('aria-label', config.searchLabel);
     this.input.setAttribute('aria-controls', this.list.id);
     this.input.autocomplete = 'off';
     this.input.spellcheck = false;
@@ -77,10 +107,10 @@ export class CcMenu {
     });
     this.scope.listen(this.list, 'keydown', (event: KeyboardEvent) => {
       if (event.isComposing) return;
-      if (event.key === 'Escape' && this.input.value) {
+      if (event.key === 'Escape' && (this.input.value || config.back)) {
         event.preventDefault();
         event.stopPropagation();
-        this.input.focus({ preventScroll: true });
+        if (this.input.value) this.input.focus({ preventScroll: true });
         this.key('Escape');
         return;
       }
@@ -100,13 +130,28 @@ export class CcMenu {
       if (!choice) return;
       this.select(choice.id);
     });
-    this.scope.listen(panel, MENU_CLOSE_EVENT, () => {
+    this.scope.listen(config.closeEvents ?? panel, MENU_CLOSE_EVENT, () => {
       const active = (panel.getRootNode() as Document | ShadowRoot).activeElement;
       if (active && panel.contains(active)) trigger.focus({ preventScroll: true });
-      this.composing = false;
-      this.input.value = '';
-      this.query = '';
+      this.clearSearch();
     });
+  }
+
+  /** Shows the header action only while it applies, such as a reset with something to reset. */
+  setActionHidden(hidden: boolean): void {
+    if (!this.action || this.action.hidden === hidden) return;
+    if (hidden && (this.panel.getRootNode() as Document | ShadowRoot).activeElement === this.action) this.firstFocus()?.focus({ preventScroll: true });
+    this.action.hidden = hidden;
+  }
+
+  /** Forgets a typed query, for example when a nested list is left. */
+  clearSearch(): void {
+    this.composing = false;
+    this.input.value = '';
+    if (this.query) {
+      this.query = '';
+      this.render();
+    }
   }
 
   update(choices: Choice[]): void {
@@ -130,6 +175,7 @@ export class CcMenu {
     if (key === 'Escape') {
       // Clearing first preserves a useful way back to the complete language list.
       if (this.input.value) { this.input.value = ''; this.filter(); }
+      else if (this.config.back) this.config.back.run();
       else closeMenuPopover(this.panel.parentElement, true);
       return true;
     }
@@ -179,7 +225,7 @@ export class CcMenu {
       empty.className = 'theater-settings-row theater-cc-menu-item';
       empty.setAttribute('aria-disabled', 'true');
       empty.setAttribute('role', 'status');
-      empty.textContent = this.t(this.query ? 'subtitleNoMatches' : 'noSubtitles');
+      empty.textContent = this.query ? this.config.noMatchesLabel : this.config.emptyLabel;
       fragment.append(empty);
     }
     const scroll = this.list.scrollTop;
@@ -194,4 +240,18 @@ export class CcMenu {
   }
 
   dispose(): void { this.scope.dispose(); }
+}
+
+/** The subtitle menu: languages and Off, with the caption options action. */
+export class CcMenu extends ChoiceMenu {
+  constructor(panel: HTMLElement, trigger: HTMLButtonElement, t: Translate, select: (id: string | null) => void, options: () => void) {
+    super(panel, trigger, {
+      title: t('subtitlesMenuTitle'),
+      action: { label: t('subtitleOptions'), run: options },
+      listId: 'theater-cc-menu-list',
+      searchLabel: t('searchSubtitles'),
+      emptyLabel: t('noSubtitles'),
+      noMatchesLabel: t('subtitleNoMatches')
+    }, select);
+  }
 }

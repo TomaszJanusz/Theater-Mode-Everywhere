@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Аудиодорожка"
+  },
+  "audioTrackBack": {
+    "message": "Назад"
+  },
+  "searchAudioTracks": {
+    "message": "Поиск аудиодорожек…"
+  },
+  "noAudioTracks": {
+    "message": "Нет аудиодорожек"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (аудиоописание)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (комментарии)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "По умолчанию в сервисе"
+  },
   "switchVideoTooltip": {
     "message": "Переключить видео на странице $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Аудиодорожки"
+  },
   "rteEmpty": {
     "message": "Ни один сервис не поддерживает все выбранные функции."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Зависит от видео; пропуск рекламы и очередь, если доступны."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Для видео с несколькими аудиодорожками, например с дубляжом; не во время рекламы."
   },
   "rteNoteVimeo": {
     "message": "Главы и превью, если доступны; следующее видео в подборках."

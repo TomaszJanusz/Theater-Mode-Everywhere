@@ -1259,8 +1259,9 @@ button.theater-time-end:hover {
   mask-image: none !important;
 }
 
-/* Rows scroll. The shell stays on the menu, so the notch does not travel with them. */
-.theater-settings-body {
+/* Rows scroll. The shell stays on the menu, so the notch does not travel with them. A nested list takes their place. */
+.theater-settings-body,
+.theater-settings-subview {
   position: relative !important;
   z-index: 1 !important;
   box-sizing: border-box !important;
@@ -1456,8 +1457,50 @@ button.theater-time-end:focus-visible,
 
 .theater-settings-note[hidden],
 .theater-settings-section[hidden],
-.theater-settings-separator[hidden] {
+.theater-settings-separator[hidden],
+.theater-settings-row[hidden],
+.theater-settings-subview[hidden],
+.theater-settings-body[hidden] {
   display: none !important;
+}
+
+/* A nested list (Audio track) in place of the rows: the subtitle menu's header, search and list. */
+.theater-settings-subview {
+  display: flex;
+  flex-direction: column;
+}
+
+.theater-cc-menu-back {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-inline-start: -6px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--appearance-ink, #f8fafc);
+  cursor: pointer;
+}
+
+.theater-cc-menu-back::before {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: auto;
+  border-inline-start: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateX(2px) rotate(45deg);
+}
+
+.theater-controls-wrapper[dir="rtl"] .theater-cc-menu-back::before {
+  transform: translateX(-2px) rotate(-45deg);
+}
+
+.theater-cc-menu-back:hover,
+.theater-cc-menu-back:focus-visible {
+  background-color: var(--appearance-hover, rgba(255, 255, 255, 0.1));
 }
 
 .theater-settings-separator {
@@ -1660,7 +1703,8 @@ button.theater-time-end:focus-visible,
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-.theater-cc-menu-options {
+.theater-cc-menu-options,
+.theater-audio-track-reset {
   flex: 0 0 auto !important;
   white-space: nowrap !important;
   background: none !important;
@@ -1674,7 +1718,8 @@ button.theater-time-end:focus-visible,
   border-radius: 6px !important;
 }
 
-.theater-cc-menu-options:hover {
+.theater-cc-menu-options:hover,
+.theater-audio-track-reset:hover {
   background-color: var(--appearance-hover, rgba(255, 255, 255, 0.1)) !important;
 }
 

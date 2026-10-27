@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Ścieżka dźwiękowa"
+  },
+  "audioTrackBack": {
+    "message": "Wstecz"
+  },
+  "searchAudioTracks": {
+    "message": "Szukaj ścieżek dźwiękowych…"
+  },
+  "noAudioTracks": {
+    "message": "Brak ścieżek dźwiękowych"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodeskrypcja)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (komentarz)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Domyślne ustawienie serwisu"
+  },
   "switchVideoTooltip": {
     "message": "Przełącz wideo na stronie $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Ścieżki dźwiękowe"
+  },
   "rteEmpty": {
     "message": "Żaden serwis nie oferuje wszystkich wybranych funkcji."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Zależnie od filmu; pomijanie reklam i kolejka, gdy dostępne."
+  },
+  "rteNoteAudioTracks": {
+    "message": "W filmach z kilkoma ścieżkami dźwiękowymi, np. z dubbingiem; nie podczas reklam."
   },
   "rteNoteVimeo": {
     "message": "Rozdziały i podglądy, gdy dostępne; następny film w kolekcjach."

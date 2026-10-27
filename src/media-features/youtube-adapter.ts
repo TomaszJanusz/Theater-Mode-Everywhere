@@ -17,8 +17,16 @@ import {
   type YoutubePlayerSnapshot
 } from './probe';
 import { sanitizeContentTitle } from './content-title';
+import {
+  queryYouTubeAudioTracks,
+  requestYouTubeAudioTrack,
+  YOUTUBE_AUDIO_CHANGE,
+  YOUTUBE_AUDIO_PLAYER_ID,
+  youtubeAudioTrack
+} from './youtube-audio-tracks';
 import { firstMatchingYoutubeSnapshot, readPublishedYoutubeCaptionAuthUrls, readPublishedYoutubeSnapshot } from './youtube-snapshot';
 import type {
+  AudioTrackList,
   CaptionActivationResult,
   CaptionCue,
   CaptionTrack,
@@ -418,6 +426,50 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     if (!this.storyboards || (!this.loadedParked && !this.snapshotMatchesPage())) return null;
     const targetWidth = Math.round(PREVIEW_DISPLAY_WIDTH * (window.devicePixelRatio || 1));
     return getStoryboardFrame(this.storyboards, time, targetWidth);
+  }
+
+  /** The audio player is the one that plays the bound video: watch, miniplayer or embed, never Shorts or previews. */
+  private audioPlayer(): Element | null {
+    const player = this.video?.closest('.html5-video-player');
+    return player?.id === YOUTUBE_AUDIO_PLAYER_ID ? player : null;
+  }
+
+  /** Live MAIN read on every call: the player switches tracks itself, so a cached list would go stale. */
+  listAudioTracks(): AudioTrackList | null {
+    const player = this.audioPlayer();
+    const snapshot = player ? queryYouTubeAudioTracks(player.ownerDocument) : null;
+    if (!snapshot || !youtubeSnapshotMatchesPage(snapshot.videoId, this.expected())) return null;
+    return { mediaId: snapshot.videoId, tracks: snapshot.tracks.map(youtubeAudioTrack), blocked: snapshot.ad };
+  }
+
+  async selectAudioTrack(id: string, mediaId: string | null): Promise<boolean> {
+    const player = this.audioPlayer();
+    if (!player || !mediaId || !youtubeSnapshotMatchesPage(mediaId, this.expected())) return false;
+    return requestYouTubeAudioTrack(player.ownerDocument, mediaId, id);
+  }
+
+  observeAudioTracks(onChange: () => void): () => void {
+    const player = this.audioPlayer();
+    if (!player) return () => {};
+    const view = player.ownerDocument.defaultView;
+    // MAIN pings on player events; an ad can end with only a class flip, so watch that flip alone,
+    // not the classes the player toggles on every pointer move.
+    const showingAd = () => player.matches('.ad-showing, .ad-interrupting');
+    let adShown = showingAd();
+    const observer = new MutationObserver(() => {
+      if (showingAd() === adShown) return;
+      adShown = !adShown;
+      onChange();
+    });
+    observer.observe(player, { attributes: true, attributeFilter: ['class'] });
+    view?.addEventListener(YOUTUBE_AUDIO_CHANGE, onChange);
+    let active = true;
+    return () => {
+      if (!active) return;
+      active = false;
+      observer.disconnect();
+      view?.removeEventListener(YOUTUBE_AUDIO_CHANGE, onChange);
+    };
   }
 
   dispose(): void {

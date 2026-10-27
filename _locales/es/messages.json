@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Pista de audio"
+  },
+  "audioTrackBack": {
+    "message": "Atrás"
+  },
+  "searchAudioTracks": {
+    "message": "Buscar pistas de audio…"
+  },
+  "noAudioTracks": {
+    "message": "Sin pistas de audio"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodescripción)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (comentarios)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Predeterminado del servicio"
+  },
   "switchVideoTooltip": {
     "message": "Cambiar vídeo de la página $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Pistas de audio"
+  },
   "rteEmpty": {
     "message": "Ningún servicio tiene todas las funciones seleccionadas."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Según el vídeo; omitir anuncios y navegar por la cola cuando estén disponibles."
+  },
+  "rteNoteAudioTracks": {
+    "message": "En vídeos con varias pistas de audio, como versiones dobladas; no durante anuncios."
   },
   "rteNoteVimeo": {
     "message": "Capítulos y vistas previas cuando estén disponibles; siguiente en colecciones."

@@ -2,9 +2,10 @@ import { abandonBody, readBoundedBytes } from '../platform/bounded-body';
 import { sanitizeContentTitle } from './content-title';
 import { GenericTitleSource } from '../providers/native/page-title';
 import { MAX_CAPTION_BYTES } from './fetch-allowlist';
+import { observeNativeAudioTracks, readNativeAudioTracks, selectNativeAudioTrack } from './native-audio-tracks';
 import { parseCaptionPayload, parseSrt, parseWebVtt } from './parsers/captions';
 import { sanitizeCaptionCueText, sanitizeCaptionText } from './sanitize';
-import type { CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from './types';
+import type { AudioTrackList, CaptionActivationResult, CaptionCue, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from './types';
 
 const TRACK_NONE = 0;
 const TRACK_LOADING = 1;
@@ -169,6 +170,18 @@ export class NativeTextTrackAdapter implements MediaFeaturesAdapter {
 
   observeTitle(onChange: () => void): () => void {
     return this.titleSource.observe(onChange);
+  }
+
+  listAudioTracks(): AudioTrackList | null {
+    return readNativeAudioTracks(this.video);
+  }
+
+  async selectAudioTrack(id: string, mediaId: string | null): Promise<boolean> {
+    return selectNativeAudioTrack(this.video, id, mediaId);
+  }
+
+  observeAudioTracks(onChange: () => void): () => void {
+    return observeNativeAudioTracks(this.video, onChange);
   }
 
   async probe(): Promise<MediaCapabilities> {

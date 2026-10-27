@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "المسار الصوتي"
+  },
+  "audioTrackBack": {
+    "message": "رجوع"
+  },
+  "searchAudioTracks": {
+    "message": "البحث عن مسارات صوتية…"
+  },
+  "noAudioTracks": {
+    "message": "لا توجد مسارات صوتية"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (وصف صوتي)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (تعليق)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "الإعداد الافتراضي للخدمة"
+  },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "مسارات صوتية"
+  },
   "rteEmpty": {
     "message": "لا توجد خدمة توفر كل الميزات المحددة."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "حسب الفيديو؛ تخطي الإعلانات والتنقل في قائمة الانتظار عند توفرهما."
+  },
+  "rteNoteAudioTracks": {
+    "message": "في الفيديوهات التي تحتوي على عدة مسارات صوتية، مثل النسخ المدبلجة؛ وليس أثناء الإعلانات."
   },
   "rteNoteVimeo": {
     "message": "الفصول والمعاينات عند توفرها؛ الفيديو التالي في المجموعات."

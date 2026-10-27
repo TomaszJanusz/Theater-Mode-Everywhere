@@ -6,7 +6,7 @@ Theater Mode Everywhere is developed by Tomasz Janusz. The extension sends no in
 
 ## What the extension accesses
 
-To enlarge players and provide playback controls, the extension reads video elements, subtitle tracks and player information on the pages you open, including embedded frames. Optional Rich Theater Experience integrations use titles, chapters, subtitles, timeline previews and other playback information from YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll. This information is processed in memory, not saved as a viewing history or uploaded elsewhere.
+To enlarge players and provide playback controls, the extension reads video elements, subtitle and audio tracks and player information on the pages you open, including embedded frames. Optional Rich Theater Experience integrations use titles, chapters, subtitles, timeline previews and other playback information from YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll. This information is processed in memory, not saved as a viewing history or uploaded elsewhere.
 
 Tab addresses are read to apply website exclusions and show per-site status in the popup and toolbar icon. The extension does not record a list of pages you visit, video titles or viewing timestamps. SponsorBlock markers are read from the installed SponsorBlock extension's page elements; Theater Mode Everywhere does not call the SponsorBlock API.
 
@@ -24,11 +24,12 @@ The extension saves preferences with the browser's extension storage:
 
 - Keyboard shortcuts and excluded website host names you add.
 - Subtitle appearance and per-site subtitle preferences: on/off, language or track label, and whether the track is automatically generated. These preferences are keyed by site host name.
+- Per-site audio language: the language or "original" of the audio track you last chose on that site, keyed by site host name the same way.
 - Audio enhancement and volume-boost choices; video fit, picture alignment, subtitle-dependent layout, automatic theater entry and control visibility.
 - Native chat visibility, width and theme by service; Rich Theater Experience and SponsorBlock-marker switches.
 - Interface language, accent color, accessibility choices (contrast, transparency and motion), and whether to highlight new features.
 
-These use `storage.sync`. If browser sync is enabled, settings — including excluded host names and per-site subtitle preferences — can sync through your Google, Mozilla or Microsoft browser account. They are not accessible to the developer. They are settings, not a browsing-history log.
+These use `storage.sync`. If browser sync is enabled, settings — including excluded host names and per-site subtitle and audio language preferences — can sync through your Google, Mozilla or Microsoft browser account. They are not accessible to the developer. They are settings, not a browsing-history log.
 
 `storage.local` holds release-notice acknowledgements, automatic-opening and new-feature flags, plus a one-time settings-migration flag. The development preview uses local browser storage for release acknowledgements when extension storage is unavailable. The extension persistently stores only settings and these housekeeping flags, not captions, images, page content or playback history. You can change settings in the extension and remove its stored data through your browser's extension-data controls; browser sync is controlled by your browser.
 
