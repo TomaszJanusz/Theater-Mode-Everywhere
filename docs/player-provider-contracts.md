@@ -113,7 +113,7 @@ this preference clears a pending notice without consuming the visit. Automatic e
 top-level document, active playback, no fullscreen and no focused editable field.
 
 YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>`,
-Disney+ `/play/<uuid>` (with an optional locale prefix), Bilibili `/video/BV…`
+Disney+ `/play/<uuid>` (with an optional locale prefix), iQIYI `/play/<slug>-<id>` on www.iq.com, Bilibili `/video/BV…`
 (with `p` identifying each part), Bilibili.tv `/<locale>/video/<id>` and
 `/<locale>/play/<series>/<episode>`, and Patreon posts
 (`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
@@ -149,7 +149,7 @@ do not create new visits. Mini-player modes and visible/loading in-stream ad
 surfaces fail closed; their mode/style changes refresh eligibility. Missing DASH
 state, iframe players and season-only URLs remain manual. Both Bilibili providers
 reuse the history publication and shared countdown runtime.
-Vimeo showcases, live events and OTT pages are also excluded.
+iQIYI confirms the single `iqp-player`'s own direct child video (ad videos sit in its ad container), requires the host's highlighted episode to match the URL, and refreshes on a MAIN-world `pushState` publication. Vimeo showcases, live events and OTT pages are also excluded.
 
 A theater session that starts on a declared watch route ends through the
 normal exit path when navigation leaves that route, independent of media state or

@@ -92,7 +92,7 @@ describe('provider capability declarations', () => {
       for (const [key, names] of Object.entries(adapterMethods)) {
         const capability = key as keyof typeof adapterMethods;
         // These interface compatibility methods intentionally have no feature data.
-        const stub = (['vimeo', 'iqiyi'].includes(provider.id) && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
+        const stub = (provider.id === 'vimeo' && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
         const actual = names.every(name => implemented.has(name)) && !stub;
         assert.equal(actual, provider.capabilities[capability].status !== 'no', `${provider.id}.${key}`);
         if (stub) assert.equal(provider.capabilities[capability].status, 'no');

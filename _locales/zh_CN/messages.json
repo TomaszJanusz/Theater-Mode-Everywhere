@@ -952,7 +952,7 @@
     "message": "iQIYI 集成"
   },
   "iqiyiIntegrationDescription": {
-    "message": "显示剧集标题和集数标签，并可通过播放器切换到下一集。字幕仍由 iQIYI 播放器管理。"
+    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕仍由 iQIYI 绘制），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。"
   },
   "aboutTitle": {
     "message": "关于"
@@ -1172,7 +1172,7 @@
     "message": "仅片头和片尾字幕标记；无法关闭硬字幕。"
   },
   "rteNoteIqiyi": {
-    "message": "仅支持标题和下一集；字幕仍由 iQIYI 播放器管理。"
+    "message": "在该集提供时支持字幕、片头/片尾标记和上一集/下一集；没有时间轴预览。"
   },
   "rteSaveError": {
     "message": "无法保存服务设置，请重试。"

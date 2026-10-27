@@ -36,7 +36,8 @@ export type CaptionTrackSource =
   | 'bilibili'
   | 'bilibiliIntl'
   | 'tencent'
-  | 'crunchyroll';
+  | 'crunchyroll'
+  | 'iqiyi';
 
 export type CaptionTrack = {
   id: string;

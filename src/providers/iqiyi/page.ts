@@ -1,4 +1,5 @@
 import { contentTitle, type ContentTitle } from '../../media-features/content-title';
+import { selectedIqiyiEpisode } from '../iqiyi-dom';
 
 /**
  * iq.com watch URLs are `/play/<slug>-<id>`; the id is the part after the last hyphen. The host
@@ -11,7 +12,6 @@ export function iqiyiPlayId(pathname: string): string | null {
 /** The title heading: the series link, then the episode label as a bare text node. */
 const HEADING = 'h1.intl-play-title';
 const SERIES = 'a.intl-album-title .intl-album-title-word-wrap > span:first-child';
-const SELECTED_EPISODE = 'ul.intl-episodes-list li.selected a[href]';
 
 function ownText(heading: Element): string {
   return [...heading.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join(' ');
@@ -29,7 +29,7 @@ export function readIqiyiTitle(doc: Document, pathname: string): ContentTitle | 
   const heading = doc.querySelector(HEADING);
   const id = iqiyiPlayId(pathname);
   if (!heading || !id) return null;
-  const selected = doc.querySelector(SELECTED_EPISODE)?.getAttribute('href');
+  const selected = selectedIqiyiEpisode(doc)?.querySelector('a[href]')?.getAttribute('href');
   if (selected && iqiyiPlayId(new URL(selected, doc.baseURI).pathname) !== id) return null;
   const series = heading.querySelector(SERIES)?.textContent;
   return series ? contentTitle(series, ownText(heading)) : contentTitle(ownText(heading));

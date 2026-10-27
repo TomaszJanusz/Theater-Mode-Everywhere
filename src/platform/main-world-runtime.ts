@@ -21,7 +21,8 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
+import { installIqiyiNavigation, readIqiyiSnapshot } from '../providers/iqiyi-main';
 import {
   installNetflixMain,
   handleNetflixMediaSeek,
@@ -249,7 +250,9 @@ export function installMainWorldRuntime(): void {
     });
   }
 
-  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installWatchPlaybackQueries();
+  // iQIYI is DOM- and global-based: it needs the watch queries and history hook but no response harvesting.
+  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname)) installWatchPlaybackQueries();
+  installIqiyiNavigation();
   if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
 
   if (harvestHost) {
@@ -492,7 +495,7 @@ export function installMainWorldRuntime(): void {
     }
     publishYoutubeProbeSnapshot(youtube);
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot() }
+      detail: { requestId, youtube, vimeo, patreon, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.

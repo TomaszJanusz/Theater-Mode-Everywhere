@@ -952,7 +952,7 @@
     "message": "Integrace iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Zobrazuje název seriálu a označení epizody a nabízí další epizodu přes přehrávač. Titulky zůstávají v přehrávači iQIYI."
+    "message": "Zobrazuje název seriálu a označení epizody, nabízí a vybírá jazyky titulků epizody (kreslí je dál iQIYI), označuje úvod a závěr a přechází na předchozí nebo další epizodu. Na stránkách epizod funguje AutoTheater."
   },
   "aboutTitle": {
     "message": "O rozšíření"
@@ -1172,7 +1172,7 @@
     "message": "Jen značky úvodu/závěrečných titulků; titulky vložené do obrazu nelze vypnout."
   },
   "rteNoteIqiyi": {
-    "message": "Pouze název a další epizoda; titulky zůstávají v přehrávači iQIYI."
+    "message": "Titulky, značky úvodu a závěru a předchozí/další, když je epizoda nabízí; bez náhledů na časové ose."
   },
   "rteSaveError": {
     "message": "Nastavení služby se nepodařilo uložit. Zkuste to znovu."

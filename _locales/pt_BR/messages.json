@@ -952,7 +952,7 @@
     "message": "Integração com o iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Mostra o título da série e o rótulo do episódio, além do próximo episódio pelo player. As legendas continuam no player do iQIYI."
+    "message": "Mostra o título da série e o rótulo do episódio, lista e seleciona os idiomas de legenda do episódio (o iQIYI continua desenhando as legendas), marca a abertura e o encerramento e vai para o episódio anterior ou seguinte. O AutoTheater funciona nas páginas de episódio."
   },
   "aboutTitle": {
     "message": "Sobre"
@@ -1172,7 +1172,7 @@
     "message": "Apenas marcadores de abertura/créditos; legendas embutidas não podem ser desativadas."
   },
   "rteNoteIqiyi": {
-    "message": "Apenas título e próximo episódio; as legendas continuam no player do iQIYI."
+    "message": "Legendas, marcadores de abertura/encerramento e anterior/seguinte quando o episódio os oferece; sem miniaturas na linha do tempo."
   },
   "rteSaveError": {
     "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."

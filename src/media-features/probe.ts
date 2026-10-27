@@ -1,12 +1,14 @@
-import { sanitizeContentTitle } from './content-title';
-import { readYoutubePlayerMetadata, youtubeRecord } from './parsers/youtube-player-response';
-import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
 import { encodeProbeRequest, encodeYoutubeCaptions, type YoutubeCaptionsRequest } from '../protocol/page-requests';
 import { createWorldMessage, readWorldEnvelope } from '../protocol/world-messages';
-import type { BilibiliSnapshot } from './parsers/bilibili';
 import type { BilibiliIntlSnapshot } from '../providers/bilibili-intl/main';
-import type { TencentSnapshot } from '../providers/tencent/main';
 import type { CrunchyrollSnapshot } from '../providers/crunchyroll/main';
+import type { TencentSnapshot } from '../providers/tencent/main';
+
+import { sanitizeContentTitle } from './content-title';
+import type { BilibiliSnapshot } from './parsers/bilibili';
+import type { IqiyiSnapshot } from './parsers/iqiyi';
+import { findYoutubeChapterMarkers } from './parsers/youtube-chapters';
+import { readYoutubePlayerMetadata, youtubeRecord } from './parsers/youtube-player-response';
 
 export const MEDIA_PROBE_EVENT = 'theater-everywhere-media-probe';
 export const MEDIA_PROBE_RESULT_EVENT = 'theater-everywhere-media-probe-result';
@@ -145,6 +147,7 @@ export type MediaProbeSnapshot = {
   bilibiliIntl?: BilibiliIntlSnapshot | null;
   tencent?: TencentSnapshot | null;
   crunchyroll?: CrunchyrollSnapshot | null;
+  iqiyi?: IqiyiSnapshot | null;
 };
 
 type ProbeRequest = {
@@ -182,7 +185,8 @@ export function requestMediaProbe(timeoutMs = 800, provider?: 'bilibili' | 'bili
         bilibili: snapshot.bilibili ?? null,
         bilibiliIntl: snapshot.bilibiliIntl ?? null,
         tencent: snapshot.tencent ?? null,
-        crunchyroll: snapshot.crunchyroll ?? null
+        crunchyroll: snapshot.crunchyroll ?? null,
+        iqiyi: snapshot.iqiyi ?? null
       });
     };
 

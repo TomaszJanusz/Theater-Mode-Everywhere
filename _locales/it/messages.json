@@ -952,7 +952,7 @@
     "message": "Integrazione iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, più l’episodio successivo tramite il lettore. I sottotitoli restano gestiti dal lettore iQIYI."
+    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (iQIYI continua a disegnarli), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi."
   },
   "aboutTitle": {
     "message": "Informazioni"
@@ -1172,7 +1172,7 @@
     "message": "Solo marcatori di intro/titoli di coda; i sottotitoli impressi non si possono disattivare."
   },
   "rteNoteIqiyi": {
-    "message": "Solo titolo ed episodio successivo; i sottotitoli restano gestiti dal lettore iQIYI."
+    "message": "Sottotitoli, indicatori di intro/outro e precedente/successivo quando l’episodio li offre; nessuna anteprima sulla timeline."
   },
   "rteSaveError": {
     "message": "Impossibile salvare le impostazioni dei servizi. Riprova."

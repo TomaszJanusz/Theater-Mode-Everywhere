@@ -43,8 +43,8 @@ export function shouldAttachNetflixAdapter(flags: MediaProviderFlags, hostname?:
 }
 
 /** Adapters that providers supply through their registry definition. */
-function registeredAdapters(flags: MediaProviderFlags): MediaFeaturesAdapter[] {
-  return PROVIDER_DEFINITIONS.flatMap(({ id, createAdapter }) => id !== 'native' && createAdapter && shouldAttachProvider(id, flags) ? [createAdapter()] : []);
+function registeredAdapters(flags: MediaProviderFlags, video: HTMLVideoElement | null): MediaFeaturesAdapter[] {
+  return PROVIDER_DEFINITIONS.flatMap(({ id, createAdapter }) => id !== 'native' && createAdapter && shouldAttachProvider(id, flags) ? [createAdapter(video)] : []);
 }
 
 export function createMediaFeaturesAdapter(
@@ -63,7 +63,7 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
-  adapters.push(...registeredAdapters(flags));
+  adapters.push(...registeredAdapters(flags, surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (surface.nativeMedia instanceof HTMLVideoElement) {
     // Native stays first so a service title outranks it; page metadata is only a fallback without one.
     adapters.unshift(new NativeTextTrackAdapter(surface.nativeMedia, adapters.length === 0));

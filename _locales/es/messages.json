@@ -952,7 +952,7 @@
     "message": "Integración con iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Muestra el título de la serie y la etiqueta del episodio, además del siguiente episodio a través del reproductor. Los subtítulos siguen en el reproductor de iQIYI."
+    "message": "Muestra el título de la serie y la etiqueta del episodio, lista y selecciona los idiomas de subtítulos del episodio (iQIYI sigue dibujándolos), marca la intro y los créditos y pasa al episodio anterior o siguiente. AutoTheater funciona en las páginas de episodios."
   },
   "aboutTitle": {
     "message": "Acerca de"
@@ -1172,7 +1172,7 @@
     "message": "Solo marcas de intro y créditos; no se pueden desactivar los subtítulos incrustados."
   },
   "rteNoteIqiyi": {
-    "message": "Solo título y siguiente episodio; los subtítulos siguen en el reproductor de iQIYI."
+    "message": "Subtítulos, marcas de intro/final y anterior/siguiente cuando el episodio los ofrece; sin vistas previas en la línea de tiempo."
   },
   "rteSaveError": {
     "message": "No se pudieron guardar los ajustes. Inténtalo de nuevo."

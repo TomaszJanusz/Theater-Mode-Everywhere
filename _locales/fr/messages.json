@@ -952,7 +952,7 @@
     "message": "Intégration iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Affiche le titre de la série et l’intitulé de l’épisode, avec l’épisode suivant via le lecteur. Les sous-titres restent gérés par le lecteur iQIYI."
+    "message": "Affiche le titre de la série et l’intitulé de l’épisode, liste et sélectionne les langues de sous-titres de l’épisode (iQIYI continue de les afficher), repère l’intro et le générique de fin et passe à l’épisode précédent ou suivant. AutoTheater fonctionne sur les pages d’épisode."
   },
   "aboutTitle": {
     "message": "À propos"
@@ -1172,7 +1172,7 @@
     "message": "Repères de générique uniquement ; les sous-titres incrustés ne peuvent pas être désactivés."
   },
   "rteNoteIqiyi": {
-    "message": "Titre et épisode suivant uniquement ; les sous-titres restent gérés par le lecteur iQIYI."
+    "message": "Sous-titres, repères d’intro/de fin et précédent/suivant quand l’épisode les propose ; pas d’aperçus sur la chronologie."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

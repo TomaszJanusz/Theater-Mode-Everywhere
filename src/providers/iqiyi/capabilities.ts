@@ -7,13 +7,13 @@ export const iqiyiCapabilities = {
   noteKey: 'rteNoteIqiyi',
   capabilities: {
     title: { status: 'yes' },
-    subtitles: { status: 'no' },
-    chapters: { status: 'no' },
+    subtitles: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
+    chapters: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'no' },
     playlists: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
     launcher: { status: 'no' },
     quickActions: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
-    autoTheater: { status: 'no' }
+    autoTheater: { status: 'yes' }
   }
 } as const satisfies ProviderCapabilities;

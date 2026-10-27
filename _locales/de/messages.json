@@ -952,7 +952,7 @@
     "message": "iQIYI-Integration"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Zeigt Serientitel und Folgenbezeichnung sowie die nächste Folge über den Player. Untertitel bleiben beim iQIYI-Player."
+    "message": "Zeigt Serientitel und Folgenbezeichnung, listet und wählt die Untertitelsprachen der Folge (iQIYI zeichnet sie weiter selbst), markiert Intro und Outro und wechselt zur vorherigen oder nächsten Folge. AutoTheater funktioniert auf Folgenseiten."
   },
   "aboutTitle": {
     "message": "Über"
@@ -1172,7 +1172,7 @@
     "message": "Nur Intro-/Abspannmarken; eingebrannte Untertitel lassen sich nicht ausschalten."
   },
   "rteNoteIqiyi": {
-    "message": "Nur Titel und nächste Folge; Untertitel bleiben beim iQIYI-Player."
+    "message": "Untertitel, Intro-/Outro-Markierungen und Zurück/Weiter, wenn die Folge sie bietet; keine Zeitleisten-Vorschau."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

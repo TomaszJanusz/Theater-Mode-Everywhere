@@ -6,6 +6,7 @@ import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { disneyWatchPlayback } from './disney/watch-playback';
 import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
+import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
@@ -27,7 +28,7 @@ export type ProviderDefinition = {
   watchPlayback?: WatchPlayback;
   launcherPlacement?: LauncherPlacementFactory;
   /** The service adapter, composed by `createMediaFeaturesAdapter` when the provider is attached. */
-  createAdapter?: () => MediaFeaturesAdapter;
+  createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
 };
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
@@ -42,7 +43,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname), watchPlayback: bilibiliIntlWatchPlayback },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
-  { id: 'iqiyi', matchesHost: (hostname) => isIqiyiHost(hostname), createAdapter: () => new IqiyiAdapter() }
+  { id: 'iqiyi', matchesHost: (hostname) => isIqiyiHost(hostname), createAdapter: (video) => new IqiyiAdapter(video), watchPlayback: iqiyiWatchPlayback }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {

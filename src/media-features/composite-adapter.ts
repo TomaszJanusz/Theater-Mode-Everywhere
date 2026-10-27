@@ -1,4 +1,5 @@
 import { allSettledResults, fulfilledValues } from '../core/result';
+
 import type {
   AudioTrackList,
   CaptionActivationResult,
@@ -23,7 +24,7 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
     seen.add(key);
     merged.push(track);
   }
-  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili' || track.source === 'bilibiliIntl' || track.source === 'crunchyroll')) {
+  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili' || track.source === 'bilibiliIntl' || track.source === 'crunchyroll' || track.source === 'iqiyi')) {
     return merged.filter((track) => track.source !== 'native-text-track');
   }
   return merged;
