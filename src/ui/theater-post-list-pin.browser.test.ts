@@ -55,6 +55,29 @@ const viewport = (page: Page) => page.evaluate(() => ({ width: innerWidth, heigh
 for (const engine of testEngines()) {
   const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
 
+  // The transform and the paint containment are containing blocks of a fixed video just as the
+  // shadowed bubble's filter is; entry lands on the post under the pointer, away from the first one.
+  for (const id of ['transformed', 'contained']) {
+    it(`${engine}: theater entry pins a ${id} post's video to the viewport and exit restores the post`, { timeout: 60_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      await openPostList(page);
+      await page.locator(`#${id}`).evaluate(video => video.scrollIntoView({ block: 'center' }));
+      await page.locator(`#${id}`).dispatchEvent('mousemove', { bubbles: true });
+      await page.keyboard.press('t');
+      await page.waitForFunction(() => document.documentElement.classList.contains('theater-everywhere-html-active'));
+      assert.equal(await activeVideo(page), id);
+      const size = await viewport(page);
+      assert.deepEqual(await activeBox(page), { left: 0, top: 0, width: size.width, height: size.height });
+
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+      assert.deepEqual(await page.evaluate(() => ({
+        styled: document.querySelectorAll('video[style]').length,
+        overridden: document.querySelectorAll('.theater-everywhere-parent-active').length
+      })), { styled: 0, overridden: 0 });
+    });
+  }
+
   it(`${engine}: entry and Switch Video pin each post's video to the viewport and exit restores every post`, { timeout: 60_000 }, async t => {
     const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
     await openPostList(page);
