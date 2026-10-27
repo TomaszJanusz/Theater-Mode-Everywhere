@@ -1,5 +1,7 @@
+import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
+
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
@@ -703,6 +705,7 @@ function bindChromeActions(): void {
     isVideoSilent,
     toggleVideoMute,
     persistCaptionPreference,
+    persistAudioPreference,
     persistCaptionStyle,
     persistVideoFitMode,
     applyTheaterVideoFit,
@@ -951,6 +954,17 @@ function persistCaptionPreference(pref: CaptionLanguagePreference): void {
       chrome.storage.sync.set({ [CAPTION_PREF_STORAGE_KEY]: refs.captionPreferenceMap });
     }
   } catch (_) {}
+}
+
+function persistAudioPreference(preference: string | null): void {
+  const host = captionPreferenceHost(window.location.hostname);
+  if (!host) return;
+  refs.audioPreferenceMap = upsertAudioPreference(refs.audioPreferenceMap, host, preference);
+  // The next item reads the in-memory map; a failed write only loses the choice for later visits.
+  if (typeof chrome === 'undefined' || !chrome.storage?.sync) return;
+  chrome.storage.sync.set({ [AUDIO_PREF_STORAGE_KEY]: refs.audioPreferenceMap }).catch((error: unknown) => {
+    console.warn('[Theater Everywhere] Could not save the audio language:', error);
+  });
 }
 
 function persistCaptionStyle(style: CaptionStyle): void {
@@ -1290,7 +1304,8 @@ async function checkBlacklistAndInit(): Promise<void> {
       ...Object.values(AUDIO_STORAGE_KEYS),
       RAISE_ONLY_WITH_SUBTITLES_STORAGE_KEY,
       CAPTION_STYLE_STORAGE_KEY,
-      CAPTION_PREF_STORAGE_KEY
+      CAPTION_PREF_STORAGE_KEY,
+      AUDIO_PREF_STORAGE_KEY
     ]);
     if (epoch !== settingsLoadEpoch) return;
     await languageRuntime.set(data[LANGUAGE_STORAGE_KEY], languageRevision);
@@ -1324,6 +1339,7 @@ async function checkBlacklistAndInit(): Promise<void> {
     applyTheaterVideoFit(ui().videoFit);
     applyCaptionStyleToTheater(ui().captionStyle);
     refs.captionPreferenceMap = resolveCaptionPreferenceMap(data[CAPTION_PREF_STORAGE_KEY]);
+    refs.audioPreferenceMap = resolveAudioPreferences(data[AUDIO_PREF_STORAGE_KEY]);
     
     const isBlacklisted = resolveDomainPolicy(currentHostname, blacklist).effective;
     autoTheaterPolicyAllowed = !isBlacklisted;
@@ -2729,6 +2745,9 @@ export function bootstrapPlayerRuntime(): void {
       }
       if (changes[CAPTION_PREF_STORAGE_KEY]) {
         refs.captionPreferenceMap = resolveCaptionPreferenceMap(changes[CAPTION_PREF_STORAGE_KEY].newValue);
+      }
+      if (changes[AUDIO_PREF_STORAGE_KEY]) {
+        refs.audioPreferenceMap = resolveAudioPreferences(changes[AUDIO_PREF_STORAGE_KEY].newValue);
       }
       if (providerFlagsChanged) {
         const merged: Record<string, unknown> = {

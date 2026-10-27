@@ -1,6 +1,6 @@
 import type { MediaProviderId } from '../media-features/provider-flags';
 
-export const MEDIA_CAPABILITIES = ['title', 'subtitles', 'chapters', 'heatmap', 'thumbnails', 'playlists', 'quickActions', 'launcher', 'autoTheater'] as const;
+export const MEDIA_CAPABILITIES = ['title', 'subtitles', 'audio', 'chapters', 'heatmap', 'thumbnails', 'playlists', 'quickActions', 'launcher', 'autoTheater'] as const;
 export type MediaCapability = (typeof MEDIA_CAPABILITIES)[number];
 export type CapabilitySupport = { status: 'yes' | 'no' } | { status: 'conditional'; noteKey: string };
 

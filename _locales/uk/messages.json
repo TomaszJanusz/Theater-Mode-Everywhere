@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Аудіодоріжка"
+  },
+  "audioTrackBack": {
+    "message": "Назад"
+  },
+  "searchAudioTracks": {
+    "message": "Пошук аудіодоріжок…"
+  },
+  "noAudioTracks": {
+    "message": "Немає аудіодоріжок"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (аудіоопис)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (коментарі)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "За замовчуванням сервісу"
+  },
   "switchVideoTooltip": {
     "message": "Перемкнути відео на сторінці $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Аудіодоріжки"
+  },
   "rteEmpty": {
     "message": "Жоден сервіс не підтримує всі вибрані функції."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Залежить від відео; пропуск реклами й черга, якщо доступні."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Для відео з кількома аудіодоріжками, як-от дубляж; не під час реклами."
   },
   "rteNoteVimeo": {
     "message": "Розділи та попередній перегляд за наявності; наступне відео в добірках."

@@ -8,6 +8,7 @@ export const youtubeCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteYoutube' },
+    audio: { status: 'conditional', noteKey: 'rteNoteAudioTracks' },
     chapters: { status: 'conditional', noteKey: 'rteNoteYoutube' },
     heatmap: { status: 'conditional', noteKey: 'rteNoteYoutube' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteYoutube' },

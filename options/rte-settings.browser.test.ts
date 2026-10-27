@@ -15,6 +15,9 @@ import { selectTestEngines } from '../src/test-utils/test-engines';
 import { brightestStop, hexRgb, luminance, over } from './rte-colors';
 
 
+// Counts follow the declarations, so adding a provider or capability never edits these tests.
+const supporting = (...keys: Array<keyof (typeof PROVIDER_CAPABILITIES)[number]['capabilities']>) =>
+  PROVIDER_CAPABILITIES.filter(provider => keys.every(key => provider.capabilities[key].status !== 'no'));
 const html = readFileSync(new URL('./options.html', import.meta.url), 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
 const css = readStylesheet(new URL('./options.css', import.meta.url));
 const catalogs = Object.fromEntries(LANGUAGES.map(({ locale }) => [locale, JSON.parse(readFileSync(new URL(`../_locales/${locale}/messages.json`, import.meta.url), 'utf8'))]));
@@ -84,14 +87,14 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
     try {
       const page = await context.newPage();
       await open(page);
-      assert.equal(await page.locator('.rte-tile').count(), 10);
+      assert.equal(await page.locator('.rte-tile').count(), PROVIDER_CAPABILITIES.length);
       await page.locator('[data-provider="netflix"] .rte-control').click();
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), [{ netflixIntegrationEnabled: false }]);
       assert.equal(await page.locator('#rte-all').evaluate((el: HTMLInputElement) => el.indeterminate), true);
 
       await page.locator('#rte-all').press('Space');
       assert.equal(await page.locator('#rte-all').isChecked(), true);
-      assert.equal(Object.keys(await page.evaluate(() => (window as unknown as Harness).writes.at(-1)!)).length, 10);
+      assert.equal(Object.keys(await page.evaluate(() => (window as unknown as Harness).writes.at(-1)!)).length, PROVIDER_CAPABILITIES.length);
       await page.locator('#rte-all').press('Space');
 
       await page.locator('#rte-youtube').focus();
@@ -169,19 +172,20 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       const page = await context.newPage();
       await open(page);
       await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
-      assert.equal(await page.locator('.rte-tile:visible').count(), 7);
+      assert.equal(await page.locator('.rte-tile:visible').count(), supporting('chapters').length);
       await page.locator('#rte-filter-buttons [data-capability="quickActions"]').press('Space');
-      assert.equal(await page.locator('.rte-tile:visible').count(), 5);
-      assert.equal(await page.locator('#rte-shown').textContent(), '5 of 10 services shown');
+      const both = supporting('chapters', 'quickActions');
+      assert.equal(await page.locator('.rte-tile:visible').count(), both.length);
+      assert.equal(await page.locator('#rte-shown').textContent(), `${both.length} of ${PROVIDER_CAPABILITIES.length} services shown`);
       assert.equal(await page.locator('#rte-filter-buttons [aria-pressed="true"]').count(), 2);
-      assert.equal(await page.locator('.rte-tile:visible .is-matching').count(), 10);
+      assert.equal(await page.locator('.rte-tile:visible .is-matching').count(), both.length * 2);
       assert.equal(await page.locator('#rte-all-label').textContent(), 'All shown services');
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), []);
       await page.locator('#rte-all').click();
       const update = await page.evaluate(() => (window as unknown as Harness).writes.at(-1));
-      assert.deepEqual(Object.keys(update!).sort(), ['youtube', 'vimeo', 'bilibili', 'bilibiliIntl', 'crunchyroll'].map(id => MEDIA_PROVIDER_FLAG_KEYS[id as keyof typeof MEDIA_PROVIDER_FLAG_KEYS]).sort());
+      assert.deepEqual(Object.keys(update!).sort(), both.map(provider => MEDIA_PROVIDER_FLAG_KEYS[provider.id]).sort());
       await page.locator('#rte-clear').click();
-      assert.equal(await page.locator('.rte-tile:visible').count(), 10);
+      assert.equal(await page.locator('.rte-tile:visible').count(), PROVIDER_CAPABILITIES.length);
       assert.equal(await page.locator('#rte-all').evaluate((el: HTMLInputElement) => el.indeterminate), true);
       assert.equal(await page.locator('#rte-clear').isVisible(), false);
       assert.equal(await page.locator('#rte-shown').getAttribute('role'), 'status');
@@ -194,21 +198,21 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
     try {
       const page = await context.newPage();
       await open(page);
-      const supported = ['bilibili', 'bilibiliIntl', 'disney', 'netflix', 'tencent', 'vimeo', 'youtube'];
+      const supported = supporting('playlists').map(provider => provider.id).sort();
       assert.deepEqual((await page.locator('.rte-tile:has(.rte-badge[data-capability="playlists"])').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
       const filter = page.locator('#rte-filter-buttons [data-capability="playlists"]');
       await filter.click();
       // Live switching across every bundled language is proven by the next test; locale key parity by scripts/locales.test.ts.
       for (const locale of ['pl', 'ar'] as const) {
         await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
-        assert.equal(await filter.textContent(), `${catalogs[locale].rteCapabilityPlaylists.message} · 7`);
+        assert.equal(await filter.textContent(), `${catalogs[locale].rteCapabilityPlaylists.message} · ${supported.length}`);
         assert.deepEqual((await page.locator('.rte-tile:visible').evaluateAll(tiles => tiles.map(tile => tile.getAttribute('data-provider')))).sort(), supported);
         assert.ok((await page.locator('.rte-badge[data-capability="playlists"]').allTextContents()).every(text => text === catalogs[locale].rteCapabilityPlaylists.message));
       }
       await page.locator('#rte-filter-buttons [data-capability="chapters"]').click();
-      assert.equal(await page.locator('.rte-tile:visible').count(), 4);
+      assert.equal(await page.locator('.rte-tile:visible').count(), supporting('playlists', 'chapters').length);
       await page.locator('#rte-clear').click();
-      assert.equal(await page.locator('.rte-tile:visible').count(), 10);
+      assert.equal(await page.locator('.rte-tile:visible').count(), PROVIDER_CAPABILITIES.length);
       assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), []);
     } finally { await context.close(); }
   });

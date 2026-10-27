@@ -8,6 +8,7 @@ export const twitchCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteTwitch' },
+    audio: { status: 'no' },
     chapters: { status: 'conditional', noteKey: 'rteNoteTwitch' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteTwitch' },

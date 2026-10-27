@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Piste audio"
+  },
+  "audioTrackBack": {
+    "message": "Retour"
+  },
+  "searchAudioTracks": {
+    "message": "Rechercher des pistes audio…"
+  },
+  "noAudioTracks": {
+    "message": "Aucune piste audio"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodescription)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (commentaires)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Par défaut du service"
+  },
   "switchVideoTooltip": {
     "message": "Changer de vidéo sur la page $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Pistes audio"
+  },
   "rteEmpty": {
     "message": "Aucun service ne propose toutes les fonctions sélectionnées."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Selon la vidéo ; saut des publicités et navigation dans la file de lecture si disponibles."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Sur les vidéos avec plusieurs pistes audio, comme les versions doublées ; pas pendant les publicités."
   },
   "rteNoteVimeo": {
     "message": "Chapitres et aperçus si disponibles ; vidéo suivante dans les collections."

@@ -8,6 +8,7 @@ export const patreonCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNotePatreon' },
+    audio: { status: 'no' },
     chapters: { status: 'conditional', noteKey: 'rteNotePatreon' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNotePatreon' },

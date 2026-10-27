@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "오디오 트랙"
+  },
+  "audioTrackBack": {
+    "message": "뒤로"
+  },
+  "searchAudioTracks": {
+    "message": "오디오 트랙 검색…"
+  },
+  "noAudioTracks": {
+    "message": "오디오 트랙 없음"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (화면 해설)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (코멘터리)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "서비스 기본값"
+  },
   "switchVideoTooltip": {
     "message": "페이지의 동영상 전환 $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "오디오 트랙"
+  },
   "rteEmpty": {
     "message": "선택한 모든 기능을 제공하는 서비스가 없습니다."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "동영상에 따라 다르며, 제공되는 경우 광고 건너뛰기와 대기열 이동을 지원합니다."
+  },
+  "rteNoteAudioTracks": {
+    "message": "더빙 버전 등 여러 오디오 트랙이 있는 동영상에서 지원하며, 광고 중에는 지원하지 않습니다."
   },
   "rteNoteVimeo": {
     "message": "제공되는 경우 챕터와 미리보기, 쇼케이스의 다음 동영상을 지원합니다."

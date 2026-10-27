@@ -86,7 +86,7 @@ describe('provider capability declarations', () => {
       const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
       const implemented = methods(source);
       const adapterMethods = {
-        title: ['getTitle'], subtitles: ['listCaptionTracks', 'activateCaptionTrack'],
+        title: ['getTitle'], subtitles: ['listCaptionTracks', 'activateCaptionTrack'], audio: ['listAudioTracks', 'selectAudioTrack'],
         chapters: ['getChapters'], heatmap: ['getHeatmap'], thumbnails: ['getPreviewSource', 'getPreviewFrame']
       } as const;
       for (const [key, names] of Object.entries(adapterMethods)) {

@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Tonspur"
+  },
+  "audioTrackBack": {
+    "message": "Zurück"
+  },
+  "searchAudioTracks": {
+    "message": "Tonspuren suchen…"
+  },
+  "noAudioTracks": {
+    "message": "Keine Tonspuren"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (Audiodeskription)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (Kommentar)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Standard des Dienstes"
+  },
   "switchVideoTooltip": {
     "message": "Video auf der Seite wechseln $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Tonspuren"
+  },
   "rteEmpty": {
     "message": "Kein Dienst bietet alle ausgewählten Funktionen."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Je nach Video; Werbung überspringen und Warteschlange, wenn verfügbar."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Bei Videos mit mehreren Tonspuren, etwa Synchronfassungen; nicht während Werbung."
   },
   "rteNoteVimeo": {
     "message": "Kapitel und Vorschauen, wenn verfügbar; nächstes Video in Showcases."

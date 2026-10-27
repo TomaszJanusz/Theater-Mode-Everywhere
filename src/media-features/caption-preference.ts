@@ -74,9 +74,14 @@ export function upsertCaptionPreference(
   host: string,
   pref: CaptionLanguagePreference
 ): Record<string, CaptionLanguagePreference> {
+  return upsertHostPreference(map, host, pref);
+}
+
+/** Per-service preference maps share the service key and size cap; the entry for `host` always survives. */
+export function upsertHostPreference<T>(map: Record<string, T>, host: string, value: T): Record<string, T> {
   const key = captionPreferenceHost(host);
   if (!key) return map;
-  const next: Record<string, CaptionLanguagePreference> = { ...map, [key]: pref };
+  const next: Record<string, T> = { ...map, [key]: value };
   const keys = Object.keys(next);
   if (keys.length <= MAX_HOSTS) return next;
   for (const extra of keys) {

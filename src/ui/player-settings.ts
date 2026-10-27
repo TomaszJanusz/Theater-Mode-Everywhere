@@ -2,7 +2,7 @@ import type { DisposableScope } from '../core/disposable-scope';
 import { isNewFeature, type FeatureHighlights, type NewFeatureId } from '../feature-highlights';
 
 import { renderShortcutCaps } from './kbd-text';
-import { closeMenuPopover, bindMenuPopover } from './menu-popover';
+import { closeMenuPopover, bindMenuPopover, MENU_CLOSE_EVENT } from './menu-popover';
 import { createNewBadge } from './new-badge';
 import type { PlayerChromeContext } from './runtime-context';
 import { shortcutAriaKeyshortcuts, shortcutKeyHint } from './shortcut-display';
@@ -67,13 +67,16 @@ export function createPlayerSettings(
   const audioHeading = document.createElement('div');
   audioHeading.className = 'theater-settings-heading';
   audioHeading.textContent = ctx.t('settingsSectionAudio');
+  // Track choice comes from the provider, not Web Audio, so a blocked audio graph does not hide it.
+  const audioTrackBody = document.createElement('div');
+  audioTrackBody.className = 'theater-settings-section-body';
   const audioBody = document.createElement('div');
   audioBody.className = 'theater-settings-section-body';
   // Replaces the audio rows when the video's audio cannot be processed, so the reason is stated once.
   const audioNote = document.createElement('p');
   audioNote.className = 'theater-settings-note';
   audioNote.hidden = true;
-  audioSection.append(audioHeading, audioBody, audioNote);
+  audioSection.append(audioHeading, audioTrackBody, audioBody, audioNote);
   const audioSeparator = createSeparator();
   const playerHeading = document.createElement('div');
   playerHeading.className = 'theater-settings-heading';
@@ -82,13 +85,19 @@ export function createPlayerSettings(
   let footerStart: HTMLElement | null = null;
   // Later player actions insert above this row, so shortcuts stay last.
   let shortcutsAnchor: HTMLElement | null = null;
-  panel.append(body);
+  // A nested list replaces the rows until Back, Escape or closing returns to them.
+  const subview = document.createElement('div');
+  subview.className = 'theater-settings-subview';
+  subview.hidden = true;
+  let subviewReturn: HTMLElement | null = null;
+  panel.append(body, subview);
   ctx.paintOverlay(panel);
 
   const container = document.createElement('div');
   container.className = 'theater-settings-container';
   container.append(button, panel);
 
+  const firstRow = () => [...panel.querySelectorAll('button:not(:disabled):not([aria-disabled="true"])')].find(row => !row.closest('[hidden]')) as HTMLElement | undefined;
   const popover = bindMenuPopover({
     host: container,
     trigger: button,
@@ -96,11 +105,35 @@ export function createPlayerSettings(
     scope,
     onBeforeOpen: () => options?.onBeforeOpen?.(),
     // A blocked audio section hides its rows, which cannot take focus.
-    firstFocus: () => [...panel.querySelectorAll('button:not(:disabled):not([aria-disabled="true"])')].find(row => !row.closest('[hidden]')) as HTMLElement | undefined,
+    firstFocus: firstRow,
     onKeyboardOpen: () => ctx.actions.showToolbar(),
     onChange: () => ctx.actions.updateCaptionDock()
   });
   const close = popover.close;
+
+  function openSubview(returnTo: HTMLElement, focus: () => HTMLElement | undefined) {
+    subviewReturn = returnTo;
+    body.hidden = true;
+    subview.hidden = false;
+    (focus() ?? subview.querySelector('button'))?.focus({ preventScroll: true });
+    ctx.actions.updateCaptionDock();
+  }
+  function closeSubview(restoreFocus: boolean) {
+    if (subview.hidden) return;
+    const returnTo = subviewReturn;
+    const hadFocus = subview.contains((subview.getRootNode() as Document | ShadowRoot).activeElement);
+    subviewReturn = null;
+    subview.hidden = true;
+    body.hidden = false;
+    if (restoreFocus || hadFocus) (returnTo && !returnTo.closest('[hidden]') ? returnTo : firstRow())?.focus({ preventScroll: true });
+    ctx.actions.updateCaptionDock();
+  }
+  // Every close returns the next opening to the rows; the popover itself decides where focus goes.
+  scope.listen(panel, MENU_CLOSE_EVENT, () => {
+    subviewReturn = null;
+    subview.hidden = true;
+    body.hidden = false;
+  });
 
   const newItems = new Map<HTMLElement, { id: NewFeatureId; target: HTMLElement; label: string; visible: boolean; dot: boolean }>();
   let lastHighlights: FeatureHighlights | undefined;
@@ -132,7 +165,7 @@ export function createPlayerSettings(
   }
 
   /** Audio rows precede player actions. Shortcuts stay the last action; footer rows close the panel. */
-  type RowSection = 'player' | 'audio' | 'footer' | 'shortcuts';
+  type RowSection = 'player' | 'audioTracks' | 'audio' | 'footer' | 'shortcuts';
   function addRow(row: HTMLButtonElement, label: string, section: RowSection = 'player', newItem?: NewFeatureId) {
     row.type = 'button';
     return mountRow(row, label, section, { newItem });
@@ -176,10 +209,9 @@ export function createPlayerSettings(
     });
     if (stepper) row.classList.add('theater-settings-stepper-row');
     row.append(main, stepper?.element ?? detail);
-    if (section === 'audio') {
-      audioBody.append(row);
-      audioSection.hidden = false;
-      audioSeparator.hidden = false;
+    if (section === 'audio' || section === 'audioTracks') {
+      (section === 'audio' ? audioBody : audioTrackBody).append(row);
+      syncAudioSection();
       if (!newItems.has(audioHeading)) highlight(audioHeading, audioHeading, ctx.t('settingsSectionAudio'), 'playerAudio');
     } else if (section === 'footer') {
       body.append(row);
@@ -228,6 +260,16 @@ export function createPlayerSettings(
       }
     };
   }
+  /** The audio section shows while any of its rows can: a track row hides with fewer than two tracks. */
+  function syncAudioSection() {
+    const shown = [...audioTrackBody.children, ...audioBody.children].some(row => !(row as HTMLElement).hidden);
+    if (audioSection.hidden !== !shown) {
+      audioSection.hidden = !shown;
+      audioSeparator.hidden = !shown;
+      if (newItems.size) refreshHighlights(true);
+    }
+  }
+
   let lastAudioNote: string | null | undefined;
   /** Show why audio rows are unavailable, or restore them when `reason` is null. */
   function setAudioNote(reason: string | null) {
@@ -238,5 +280,13 @@ export function createPlayerSettings(
     audioNote.textContent = reason;
     if (newItems.size) refreshHighlights(true);
   }
-  return { button, panel, container, close, addRow, addStepperRow, setAudioNote };
+  /** Shows or hides a row; the audio section follows its rows. */
+  function setRowHidden(row: HTMLElement, hidden: boolean) {
+    if (row.hidden === hidden) return;
+    row.hidden = hidden;
+    // A list whose row disappears (an ad started, the item changed) has nothing left to choose from.
+    if (hidden && subviewReturn && row.contains(subviewReturn)) closeSubview(false);
+    syncAudioSection();
+  }
+  return { button, panel, container, close, addRow, addStepperRow, setAudioNote, setRowHidden, subview, openSubview, closeSubview };
 }

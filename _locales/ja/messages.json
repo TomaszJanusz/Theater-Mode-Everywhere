@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "音声トラック"
+  },
+  "audioTrackBack": {
+    "message": "戻る"
+  },
+  "searchAudioTracks": {
+    "message": "音声トラックを検索…"
+  },
+  "noAudioTracks": {
+    "message": "音声トラックなし"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (音声解説)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (コメンタリー)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "サービスのデフォルト"
+  },
   "switchVideoTooltip": {
     "message": "ページ内の動画を切り替え $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "音声トラック"
+  },
   "rteEmpty": {
     "message": "選択した機能をすべて備えたサービスはありません。"
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "動画により異なります。広告スキップとキュー移動は利用可能な場合のみ。"
+  },
+  "rteNoteAudioTracks": {
+    "message": "吹き替え版など複数の音声トラックがある動画のみ。広告中は対象外。"
   },
   "rteNoteVimeo": {
     "message": "提供される場合にチャプターとプレビュー、ショーケースの次の動画に対応。"

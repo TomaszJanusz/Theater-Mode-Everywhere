@@ -668,6 +668,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Audio track"
+  },
+  "audioTrackBack": {
+    "message": "Back"
+  },
+  "searchAudioTracks": {
+    "message": "Search audio tracks…"
+  },
+  "noAudioTracks": {
+    "message": "No audio tracks"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audio description)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (commentary)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Service default"
+  },
   "switchVideoTooltip": {
     "message": "Switch Video on Page $KEY$",
     "placeholders": {
@@ -1081,6 +1112,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Audio tracks"
+  },
   "rteEmpty": {
     "message": "No service has all the selected capabilities."
   },
@@ -1100,6 +1134,9 @@
   },
   "rteNoteYoutube": {
     "message": "Depends on the video; ad skip and queue navigation when available."
+  },
+  "rteNoteAudioTracks": {
+    "message": "On videos with several audio tracks, such as dubbed versions; not during ads."
   },
   "rteNoteVimeo": {
     "message": "Chapters and previews when provided; next in showcases."
