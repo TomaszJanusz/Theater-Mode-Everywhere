@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "服务默认"
+    "message": "默认"
   },
   "switchVideoTooltip": {
     "message": "切换页面中的视频 $KEY$",

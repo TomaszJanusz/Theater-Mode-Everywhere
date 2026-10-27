@@ -111,7 +111,7 @@ describe('audio track menu and per-service preference', () => {
 
       await openAudioMenu(page);
       const reset = page.locator('.theater-audio-track-reset');
-      assert.equal(await reset.textContent(), 'Service default');
+      assert.equal(await reset.textContent(), 'Default');
       await reset.click();
       await page.waitForFunction(async () => !(await chrome.storage.sync.get('audioPreferenceByHost')).audioPreferenceByHost?.['player-boot.test']);
       assert.equal(await reset.isHidden(), true);

@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "По умолчанию в сервисе"
+    "message": "По умолчанию"
   },
   "switchVideoTooltip": {
     "message": "Переключить видео на странице $KEY$",

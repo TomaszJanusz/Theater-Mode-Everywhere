@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "За замовчуванням сервісу"
+    "message": "За замовчуванням"
   },
   "switchVideoTooltip": {
     "message": "Перемкнути відео на сторінці $KEY$",

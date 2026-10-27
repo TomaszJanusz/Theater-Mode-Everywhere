@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "Predeterminado del servicio"
+    "message": "Predeterminado"
   },
   "switchVideoTooltip": {
     "message": "Cambiar vídeo de la página $KEY$",
