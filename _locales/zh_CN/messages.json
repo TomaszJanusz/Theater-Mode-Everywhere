@@ -952,13 +952,13 @@
     "message": "iQIYI 集成"
   },
   "iqiyiIntegrationDescription": {
-    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕仍由 iQIYI 绘制），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。"
+    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕仍由 iQIYI 绘制），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。还可以选择该集的音轨。"
   },
   "soopIntegrationTitle": {
     "message": "SOOP 集成"
   },
   "soopIntegrationDescription": {
-    "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 可进入直播和录像。"
+    "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 可进入直播和录像。可在视频旁显示 SOOP 自带的聊天。"
   },
   "aboutTitle": {
     "message": "关于"

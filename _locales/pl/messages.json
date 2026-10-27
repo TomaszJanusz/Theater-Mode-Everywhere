@@ -952,13 +952,13 @@
     "message": "Integracja z iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (rysuje je nadal iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków."
+    "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (rysuje je nadal iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków. Można też wybierać ścieżki dźwiękowe odcinka."
   },
   "soopIntegrationTitle": {
     "message": "Integracja z SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania."
+    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania. Własny czat SOOP można pokazać obok wideo."
   },
   "aboutTitle": {
     "message": "O rozszerzeniu"

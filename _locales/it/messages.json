@@ -952,13 +952,13 @@
     "message": "Integrazione iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (iQIYI continua a disegnarli), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi."
+    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (iQIYI continua a disegnarli), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi. Si possono scegliere anche le tracce audio dell’episodio."
   },
   "soopIntegrationTitle": {
     "message": "Integrazione SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Mostra il titolo della diretta o della registrazione e lo streamer, segna i capitoli dalla cronologia dei titoli di una registrazione, offre la registrazione precedente/successiva del lettore e il suo conto alla rovescia del video successivo, e AutoTheater può attivarsi su dirette e registrazioni."
+    "message": "Mostra il titolo della diretta o della registrazione e lo streamer, segna i capitoli dalla cronologia dei titoli di una registrazione, offre la registrazione precedente/successiva del lettore e il suo conto alla rovescia del video successivo, e AutoTheater può attivarsi su dirette e registrazioni. La chat di SOOP può essere mostrata accanto al video."
   },
   "aboutTitle": {
     "message": "Informazioni"

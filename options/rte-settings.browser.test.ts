@@ -267,8 +267,8 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       const page = await context.newPage();
       await open(page);
       const slider = (selector: string) => page.locator(`${selector} .toggle-slider`).evaluate(el => getComputedStyle(el).backgroundColor);
-      assert.equal(await page.locator('.rte-tile .toggle-switch').count(), 10);
-      assert.equal(await page.locator('.rte-tile .toggle-switch input:checked + .toggle-slider').count(), 10);
+      assert.equal(await page.locator('.rte-tile .toggle-switch').count(), PROVIDER_CAPABILITIES.length);
+      assert.equal(await page.locator('.rte-tile .toggle-switch input:checked + .toggle-slider').count(), PROVIDER_CAPABILITIES.length);
       const standard = await page.locator('.toggle-switch:not(.rte-tile *)').first().evaluate(el => { const input = el.querySelector('input')!; const checked = input.checked; input.checked = true; const color = getComputedStyle(el.querySelector('.toggle-slider')!).backgroundColor; input.checked = checked; return color; });
       for (const { id } of PROVIDER_CAPABILITIES) {
         assert.equal(await slider(`[data-provider="${id}"]`), standard, `${id}: switch uses the standard accent, not a brand color`);

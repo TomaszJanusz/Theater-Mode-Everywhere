@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { isChatDocument, isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
 describe('chat document urls', () => {
@@ -86,5 +87,29 @@ describe('live chat frame urls', () => {
     assert.equal(readLiveChatSource('https://www.youtube.com/live_chat/extra?v=AbCdEfGhIjK'), null);
     assert.equal(readLiveChatSource('https://evil.com/live_chat?v=AbCdEfGhIjK'), null);
     assert.equal(readLiveChatSource(''), null);
+  });
+});
+
+describe('SOOP watch pages', () => {
+  it('names a live broadcast and a recording, and ignores every other SOOP page', () => {
+    const live = parseChatLocation('https://play.sooplive.com/BattleLand/297994793?x=1');
+    assert.deepEqual([live?.role, live?.provider, live && 'kind' in live ? live.kind : null], ['watch', 'soop', 'live']);
+    assert.equal(live?.contentKey.split('/').join(' '), 'battleland 297994793');
+    assert.deepEqual(parseChatLocation('https://vod.sooplive.com/player/211006561'), {
+      role: 'watch', provider: 'soop', contentKey: '211006561', kind: 'replay'
+    });
+    assert.equal(watchIdentity('https://play.sooplive.com/battleland/297994793'), 'soop:battleland/297994793');
+    for (const href of ['https://play.sooplive.com/battleland', 'https://vod.sooplive.com/player/catch', 'https://www.sooplive.com/station/battleland',
+      'http://play.sooplive.com/battleland/297994793', 'https://play.sooplive.com.evil.test/battleland/297994793']) {
+      assert.equal(parseChatLocation(href), null, href);
+    }
+    assert.equal(isChatDocument('https://play.sooplive.com/battleland/297994793'), false);
+  });
+
+  it('treats only the player hosts as chat hosts', () => {
+    assert.equal(isNativeChatHost('https://play.sooplive.com/battleland/297994793'), true);
+    assert.equal(isNativeChatHost('https://vod.sooplive.com/player/211006561'), true);
+    assert.equal(isNativeChatHost('https://www.sooplive.com/'), false);
+    assert.equal(isNativeChatHost('https://sooplive.com.evil.test/'), false);
   });
 });

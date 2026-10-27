@@ -113,7 +113,7 @@ this preference clears a pending notice without consuming the visit. Automatic e
 top-level document, active playback, no fullscreen and no focused editable field.
 
 YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>`,
-Disney+ `/play/<uuid>` (with an optional locale prefix), iQIYI `/play/<slug>-<id>` on www.iq.com, Bilibili `/video/BV…`
+Disney+ `/play/<uuid>` (with an optional locale prefix), iQIYI `/play/<slug>-<id>` on www.iq.com, SOOP `play.sooplive.com/<bj>/<number>` (live) and `vod.sooplive.com/player/<number>` (recording), Bilibili `/video/BV…`
 (with `p` identifying each part), Bilibili.tv `/<locale>/video/<id>` and
 `/<locale>/play/<series>/<episode>`, and Patreon posts
 (`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
@@ -149,7 +149,7 @@ do not create new visits. Mini-player modes and visible/loading in-stream ad
 surfaces fail closed; their mode/style changes refresh eligibility. Missing DASH
 state, iframe players and season-only URLs remain manual. Both Bilibili providers
 reuse the history publication and shared countdown runtime.
-iQIYI confirms the single `iqp-player`'s own direct child video (ad videos sit in its ad container), requires the host's highlighted episode to match the URL, and refreshes on a MAIN-world `pushState` publication. Vimeo showcases, live events and OTT pages are also excluded.
+iQIYI confirms the single `iqp-player`'s own direct child video (ad videos sit in its ad container), requires the host's highlighted episode to match the URL, and refreshes on a MAIN-world `pushState` publication. SOOP confirms the one streamed `blob:` video of its `#webplayer #player` (`video#livePlayer`, infinite duration, on live; `video#video`, finite, on recordings), so the placeholder shown before the player terms are accepted and the separate ad element never qualify. Vimeo showcases, live events and OTT pages are also excluded.
 
 A theater session that starts on a declared watch route ends through the
 normal exit path when navigation leaves that route, independent of media state or
@@ -239,7 +239,7 @@ There is no additional polling.
 
 On entry and each new watch identity, native visibility from the service adapter takes precedence over saved visibility. A collapsed native activation starts hidden; unavailable measurement falls back to the saved choice. In-theater toggles override that seed for the current content and remain saved for this fallback. Width and theme still persist independently; saved data is retained. Visibility discovery is synchronous and uses the same content identity checks as surface discovery.
 
-`ChatThemeSession` owns palette readiness, document identity and restoration. `ChatThemeAdapter` supplies `apply` and `restore`; Twitch discovers the complete native palette class, while YouTube maps known compiled aliases to existing native palette tokens in the original chat document. An unavailable palette restores service appearance and keeps the requested preference. Chat layout and theme changes preserve the native container and iframe. Native menus, portals, keyboard events and chat-only documents retain service ownership. [Usage and qualification](research/native-chat-validation.md) distinguish the implemented behavior from replay/account/browser coverage still needed before release.
+SOOP's chat is in the same document as its player (`#chatting_area`, with the panel `.chatbox` inside, shown while `#webplayer` has `chat_open`); it has no palette adapter, so a non-native theme choice stays unavailable and the service keeps its appearance. The player's own chat button opens a panel closed before theater, and the controller re-reads state after that click because the host raises no structural mutation for it. `ChatThemeSession` owns palette readiness, document identity and restoration. `ChatThemeAdapter` supplies `apply` and `restore`; Twitch discovers the complete native palette class, while YouTube maps known compiled aliases to existing native palette tokens in the original chat document. An unavailable palette restores service appearance and keeps the requested preference. Chat layout and theme changes preserve the native container and iframe. Native menus, portals, keyboard events and chat-only documents retain service ownership. [Usage and qualification](research/native-chat-validation.md) distinguish the implemented behavior from replay/account/browser coverage still needed before release.
 
 ## Adding a feature or provider
 

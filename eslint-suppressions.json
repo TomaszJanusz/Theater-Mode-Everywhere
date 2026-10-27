@@ -410,9 +410,6 @@
     }
   },
   "src/chat/controller.ts": {
-    "import/order": {
-      "count": 3
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
@@ -421,15 +418,7 @@
     }
   },
   "src/chat/detect.ts": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/chat/events.ts": {
-    "import/order": {
       "count": 1
     }
   },
@@ -451,20 +440,7 @@
       "count": 6
     }
   },
-  "src/chat/theme.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/chat/url.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/chat/url.ts": {
-    "import/order": {
-      "count": 2
-    },
     "sonarjs/concise-regex": {
       "count": 2
     },

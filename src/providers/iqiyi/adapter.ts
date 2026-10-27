@@ -1,8 +1,9 @@
 import { iqiyiChapters, type IqiyiSnapshot } from '../../media-features/parsers/iqiyi';
 import { requestMediaProbe } from '../../media-features/probe';
-import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
+import type { AudioTrackList, CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
 
+import { observeIqiyiAudioTracks, readIqiyiAudioTracks, selectIqiyiAudioTrack } from './audio';
 import { iqiyiCaptionOffItem, readIqiyiCaptionItems } from './captions';
 import { iqiyiPlayId, readIqiyiTitle } from './page';
 
@@ -65,6 +66,18 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
     if (!item?.element.isConnected) return FAILED;
     item.element.click();
     return { status: 'active', delivery: 'host', cues: [] };
+  }
+
+  listAudioTracks(): AudioTrackList | null {
+    return readIqiyiAudioTracks(document, window.location.pathname);
+  }
+
+  async selectAudioTrack(id: string, mediaId: string | null): Promise<boolean> {
+    return selectIqiyiAudioTrack(document, window.location.pathname, id, mediaId);
+  }
+
+  observeAudioTracks(onChange: () => void): () => void {
+    return observeIqiyiAudioTracks(document, onChange);
   }
 
   async getChapters(): Promise<Chapter[]> {

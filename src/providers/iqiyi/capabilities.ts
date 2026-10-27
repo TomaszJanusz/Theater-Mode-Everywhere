@@ -8,6 +8,7 @@ export const iqiyiCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
+    audio: { status: 'conditional', noteKey: 'rteNoteAudioTracks' },
     chapters: { status: 'conditional', noteKey: 'rteNoteIqiyi' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'no' },

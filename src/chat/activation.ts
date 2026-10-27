@@ -1,5 +1,7 @@
+import { SOOP_CHAT_TOGGLE } from './selectors';
 import type { ChatActivation, ChatSurface } from './types';
 import { parseChatLocation } from './url';
+
 
 export const TWITCH_CHAT_TOGGLE_SELECTOR = '[data-a-target="right-column__toggle-collapse-btn"]';
 export const YOUTUBE_CHAT_CARD_SELECTOR = 'yt-video-metadata-carousel-view-model';
@@ -35,6 +37,14 @@ export function detectChatActivation(document: Document, href: string, surface: 
       || (!document.querySelector('[data-a-target="right-column-chat-bar"]')
         && document.querySelector('.channel-root__right-column')?.getBoundingClientRect().width === 0);
     return collapsed ? { provider: page.provider, contentKey: page.contentKey, control } : null;
+  }
+
+  if (page.provider === 'soop') {
+    // The closed panel stays in the DOM but its columns collapse; only the player's own button reopens it.
+    const control = document.querySelector(SOOP_CHAT_TOGGLE);
+    const player = document.getElementById('webplayer');
+    return enabled(control) && player && !player.classList.contains('chat_open')
+      ? { provider: page.provider, contentKey: page.contentKey, control } : null;
   }
 
   const watch = document.querySelector('ytd-watch-flexy[video-id]');

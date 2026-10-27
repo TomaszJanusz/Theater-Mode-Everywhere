@@ -1,6 +1,7 @@
 import { DisposableScope } from '../core/disposable-scope';
-import { detectChatSurface } from './detect';
+
 import { detectChatActivation, TWITCH_CHAT_TOGGLE_SELECTOR, YOUTUBE_CHAT_CARD_SELECTOR } from './activation';
+import { detectChatSurface } from './detect';
 import {
   CHAT_GEOMETRY_PROPERTIES,
   type ChatLayout,
@@ -9,8 +10,9 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
-import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
+import { SOOP_CHAT_ROOT_SELECTOR, SOOP_CHAT_TOGGLE } from './selectors';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
+import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
 import { isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
 /** Cheap route check. DOM discovery does not run on every tick. */
@@ -25,9 +27,9 @@ const LATE_MOUNT_MS = 2000;
 /** Coalesce structural mutations. Message appends never reach this timer. */
 const STRUCTURE_REFRESH_MS = 80;
 
-const ACTIVATION_SELECTOR = `${TWITCH_CHAT_TOGGLE_SELECTOR}, ${YOUTUBE_CHAT_CARD_SELECTOR}, #show-hide-button`;
+const ACTIVATION_SELECTOR = `${TWITCH_CHAT_TOGGLE_SELECTOR}, ${YOUTUBE_CHAT_CARD_SELECTOR}, #show-hide-button, ${SOOP_CHAT_TOGGLE}`;
 
-const SHELL_SELECTOR = '[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame';
+const SHELL_SELECTOR = `[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame, ${SOOP_CHAT_ROOT_SELECTOR}`;
 
 export interface ChatControllerOptions {
   document: Document;
@@ -621,6 +623,8 @@ export class ChatController {
     if (previous?.contentKey === activation.contentKey && previous.provider === activation.provider) return;
     this.attemptedActivation = { ...activation, at: Date.now() };
     activation.control.click();
+    // A host that opens its chat by flipping a class raises no structural mutation to notice it.
+    this.scheduleStructureRefresh();
   }
 
   private persist(provider: ChatProvider): void {

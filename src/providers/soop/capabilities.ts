@@ -8,6 +8,7 @@ export const soopCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'no' },
+    audio: { status: 'no' },
     chapters: { status: 'conditional', noteKey: 'rteNoteSoop' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'no' },

@@ -952,13 +952,13 @@
     "message": "Integrácia iQIYI"
   },
   "iqiyiIntegrationDescription": {
-    "message": "Zobrazuje názov seriálu a označenie epizódy, ponúka a vyberá jazyky titulkov epizódy (kreslí ich naďalej iQIYI), označuje úvod a záver a prechádza na predchádzajúcu alebo ďalšiu epizódu. Na stránkach epizód funguje AutoTheater."
+    "message": "Zobrazuje názov seriálu a označenie epizódy, ponúka a vyberá jazyky titulkov epizódy (kreslí ich naďalej iQIYI), označuje úvod a záver a prechádza na predchádzajúcu alebo ďalšiu epizódu. Na stránkach epizód funguje AutoTheater. Dá sa vybrať aj zvuková stopa epizódy."
   },
   "soopIntegrationTitle": {
     "message": "Integrácia SOOP"
   },
   "soopIntegrationDescription": {
-    "message": "Zobrazuje názov vysielania alebo záznamu a streamera, označuje kapitoly podľa histórie názvov záznamu, ponúka predchádzajúci/ďalší záznam prehrávača a jeho odpočet ďalšieho videa a AutoTheater vie vstúpiť do živých vysielaní aj záznamov."
+    "message": "Zobrazuje názov vysielania alebo záznamu a streamera, označuje kapitoly podľa histórie názvov záznamu, ponúka predchádzajúci/ďalší záznam prehrávača a jeho odpočet ďalšieho videa a AutoTheater vie vstúpiť do živých vysielaní aj záznamov. Vlastný chat SOOP možno zobraziť vedľa videa."
   },
   "aboutTitle": {
     "message": "O rozšírení"

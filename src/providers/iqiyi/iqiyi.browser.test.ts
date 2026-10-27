@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import type { AudioTrackController } from '../../media-features/audio-tracks';
 import type { findPlaylistActions } from '../../playlist-nav';
 import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
 import { bundleModules } from '../../test-utils/player-boot';
@@ -15,7 +16,8 @@ const bundle = bundleModules([
   "export { IqiyiAdapter } from './providers/iqiyi/adapter';",
   "export { readIqiyiCaptionLayout } from './providers/iqiyi/captions';",
   "export { iqiyiWatchPlayback } from './providers/iqiyi/watch-playback';",
-  "export { findPlaylistActions } from './playlist-nav';"
+  "export { findPlaylistActions } from './playlist-nav';",
+  "export { AudioTrackController } from './media-features/audio-tracks';"
 ], 'IqiyiTest');
 const browsers = sharedEngineBrowsers();
 type Api = {
@@ -23,7 +25,9 @@ type Api = {
   readIqiyiCaptionLayout: typeof readIqiyiCaptionLayout;
   iqiyiWatchPlayback: typeof iqiyiWatchPlayback;
   findPlaylistActions: typeof findPlaylistActions;
+  AudioTrackController: typeof AudioTrackController;
 };
+declare global { interface Window { IqiyiTest: Api } }
 
 const EPISODE_1 = 'https://www.iq.com/play/spring-of-the-blade-episode-1-198yzaqjce8?lang=en_us';
 const EPISODE_2 = '/play/spring-of-the-blade-episode-2-1w9dte7osf8?lang=en_us';
@@ -36,7 +40,7 @@ const PAGE = `<!doctype html><html><head>
 <title>Watch the latest Spring of The Blade Episode 1 online – iQIYI | iQ.com</title></head><body>
 <h1 class="intl-play-title"><a class="intl-album-title" href="//www.iq.com/album/spring-of-the-blade-2026-1nby7voujqx?lang=en_us"><span class="intl-album-title-word-wrap"><span>Spring of The Blade </span><span class="tips-wrap "><span class="tips-word">more info</span></span></span></a>Episode 1</h1>
 <div class="intl-play-area"><div id="flashbox"><iqpdiv class="iqp-player-g iqp-player iqp-player-pc"><video></video>
-<iqpdiv class="iqp-google-adcontainer"><video></video></iqpdiv>
+<iqpdiv class="iqp-google-adcontainer"><video style="width:0;height:0"></video></iqpdiv>
 <iqpdiv class="iqp-btn iqp-btn-next" data-player-hook="nextcontrol"></iqpdiv>
 <iqpdiv class="iqp-pop-wrap iqp-pop-subtitle-lang"><iqpdiv data-player-hook="defaultBar" style="display: none;"><iqp class="iqp-txt-subtitle selected iqp-pop-txt" data-player-hook="cap_default">Default</iqp></iqpdiv>
 <iqpdiv data-player-hook="captionBar"><iqpdiv class="iqp-pop-langSelect">
@@ -45,6 +49,9 @@ const PAGE = `<!doctype html><html><head>
 <iqp class="iqp-langlist-pop-txt " datalid="5" datakey="4"><iqp><iqp>Japanese</iqp><iqp class="iqp-langlist-source">(AI translation)</iqp></iqp></iqp>
 </iqpdiv></iqpdiv></iqpdiv>
 <iqpdiv class="iqp-pop-wrap iqp-pop-audio"><iqp class="iqp-langlist-pop-txt " datalid="3" datakey="0"><iqp><iqp>Mandarin (Original)</iqp></iqp></iqp></iqpdiv>
+<iqpdiv class="iqp-pop-wrap iqp-pop-multitrack"><iqpdiv data-player-hook="menulist"><iqp class="iqp-langlist-pop-txt selected " data-player-hook="1">Mandarin (Original)</iqp><iqp class="iqp-langlist-pop-txt " data-player-hook="143">Portuguese</iqp><iqp class="iqp-langlist-pop-txt " data-player-hook="999">Klingon</iqp></iqpdiv></iqpdiv>
+<iqpdiv class="iqp-pop-wrap iqp-pop-speed"><iqpdiv data-player-hook="menulist"><iqp class="iqp-langlist-pop-txt" data-player-hook="5">Decoy speed menu</iqp></iqpdiv></iqpdiv>
+<iqpdiv class="ad-bar" style="display:block;height:0"></iqpdiv>
 </iqpdiv></div></div>
 <ul class="intl-episodes-list drama">
 <li class="v-li drama selected"><a class="drama-item" rseat="1" href="//www.iq.com/play/spring-of-the-blade-episode-1-198yzaqjce8?lang=en_us">1</a></li>
@@ -275,5 +282,130 @@ for (const engine of testEngines()) describe(`${engine} iQIYI provider`, () => {
     assert.notEqual(page_.position, 'fixed');
     assert.notEqual(page_.cueZ, '2147483647');
     assert.deepEqual(theater, { position: 'fixed', size: [800, 600], cueZ: '2147483647' });
+  });
+
+  it('lists the player audio menu as tracks, never the subtitle or the legacy audio lists', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(() => {
+      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      const list = adapter.listAudioTracks();
+      document.querySelector('.iqp-pop-multitrack')!.remove();
+      return { list, none: adapter.listAudioTracks() };
+    });
+    assert.deepEqual(report.list, {
+      mediaId: '198yzaqjce8', blocked: false,
+      tracks: [
+        { id: '1', languageTag: 'zh', label: 'Mandarin (Original)', kind: 'original', selected: true },
+        { id: '143', languageTag: 'pt', label: 'Portuguese', kind: 'unknown', selected: false },
+        { id: '999', languageTag: '', label: 'Klingon', kind: 'unknown', selected: false }
+      ]
+    });
+    assert.equal(report.none, null);
+  });
+
+  it('selects through the host item only for this episode, outside an ad, while the track is offered', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(async episode2 => {
+      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      const clicks: string[] = [];
+      for (const item of document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')) {
+        item.addEventListener('click', () => clicks.push(item.getAttribute('data-player-hook')!));
+      }
+      const id = '198yzaqjce8';
+      const accepted = await adapter.selectAudioTrack('143', id);
+      const unknown = await adapter.selectAudioTrack('7', id);
+      const noEpisode = await adapter.selectAudioTrack('143', null);
+      const otherEpisode = await adapter.selectAudioTrack('143', '1w9dte7osf8');
+      // An advertisement paints its bar, or its own video, in the same player.
+      const bar = document.querySelector<HTMLElement>('.ad-bar')!;
+      bar.style.height = '30px';
+      const duringBar = [adapter.listAudioTracks()?.blocked, await adapter.selectAudioTrack('143', id)];
+      bar.style.height = '0';
+      const adVideo = document.createElement('video');
+      adVideo.style.cssText = 'display:block;height:90px';
+      document.querySelector('.iqp-google-adcontainer')!.append(adVideo);
+      const duringVideo = [adapter.listAudioTracks()?.blocked, await adapter.selectAudioTrack('143', id)];
+      adVideo.remove();
+      // The viewer moves to the next episode while the old list is still held.
+      history.pushState(null, '', episode2);
+      const stale = await adapter.selectAudioTrack('143', id);
+      const detachedItem = document.querySelector('[data-player-hook="143"]')!;
+      history.pushState(null, '', '/play/spring-of-the-blade-episode-1-198yzaqjce8');
+      detachedItem.remove();
+      const detached = await adapter.selectAudioTrack('143', id);
+      return { accepted, unknown, noEpisode, otherEpisode, duringBar, duringVideo, stale, detached, clicks };
+    }, EPISODE_2);
+    assert.deepEqual(report, {
+      accepted: true, unknown: false, noEpisode: false, otherEpisode: false, duringBar: [true, false], duringVideo: [true, false],
+      stale: false, detached: false, clicks: ['143']
+    });
+  });
+
+  it('notifies when the host moves its selection, and stops after cleanup', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(async () => {
+      const adapter = new window.IqiyiTest.IqiyiAdapter();
+      let notify = () => {};
+      let calls = 0;
+      const stop = adapter.observeAudioTracks(() => { calls++; notify(); });
+      const flip = async (language: string) => {
+        const items = [...document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')];
+        for (const item of items) item.classList.toggle('selected', item.getAttribute('data-player-hook') === language);
+        while (adapter.listAudioTracks()?.tracks.find(track => track.selected)?.id !== language) await new Promise<void>(resolve => { notify = resolve; });
+        return adapter.listAudioTracks()!.tracks.find(track => track.selected)!.id;
+      };
+      const seen = await flip('143');
+      stop();
+      stop();
+      const after = calls;
+      // A second live observer settling means the host's change has been delivered to every
+      // observer that was still subscribed; the stopped one must not have counted it.
+      let second = 0;
+      const stopSecond = new window.IqiyiTest.IqiyiAdapter().observeAudioTracks(() => { second++; notify(); });
+      document.querySelector('.iqp-pop-multitrack [data-player-hook="1"]')!.classList.add('selected');
+      while (second === 0) await new Promise<void>(resolve => { notify = resolve; });
+      stopSecond();
+      return { seen, quiet: calls === after };
+    });
+    assert.deepEqual(report, { seen: '143', quiet: true });
+  });
+
+  it('applies the saved service language once through the shared controller, and leaves the host alone afterwards', async t => {
+    const page = await (await browsers[engine].newContext(t)).newPage();
+    await page.route('https://www.iq.com/**', route => route.fulfill({ contentType: 'text/html', body: PAGE }));
+    await page.goto(EPISODE_1);
+    await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+    const report = await page.evaluate(async () => {
+      const { AudioTrackController, IqiyiAdapter } = window.IqiyiTest;
+      const clicks: string[] = [];
+      for (const item of document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')) {
+        item.addEventListener('click', () => clicks.push(item.getAttribute('data-player-hook')!));
+      }
+      let changed = () => {};
+      const controller = new AudioTrackController({ preference: () => 'pt', locales: () => ['en'], onChange: () => changed() });
+      const adapter = new IqiyiAdapter();
+      // Automatic selection presses the host item as soon as the list is read.
+      controller.bind(adapter);
+      const afterAuto = [...clicks];
+      // The host finishes switching and then, on its own, restores another track: no tug of war.
+      for (const item of document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')) item.classList.toggle('selected', item.getAttribute('data-player-hook') === '143');
+      controller.refresh();
+      for (const item of document.querySelectorAll('.iqp-pop-multitrack .iqp-langlist-pop-txt')) item.classList.toggle('selected', item.getAttribute('data-player-hook') === '1');
+      controller.refresh();
+      const picked = await controller.select('999');
+      controller.dispose();
+      adapter.dispose();
+      return { afterAuto, final: [...clicks], picked, tracks: controller.tracks().length };
+    });
+    assert.deepEqual(report, { afterAuto: ['143'], final: ['143', '999'], picked: true, tracks: 0 });
   });
 });
