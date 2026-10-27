@@ -86,4 +86,3 @@ export class IqiyiAdapter implements MediaFeaturesAdapter {
     this.invalidate();
   }
 }
-
