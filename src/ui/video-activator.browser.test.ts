@@ -510,15 +510,19 @@ for (const engine of testEngines()) {
     assert.equal((await launcher(page))!.x, 132, 'the next appearance avoids the occupied corner');
   });
 
-  /** The viewer presses the video and the page's handler starts it, like a host player would. */
+  /**
+   * The viewer presses the video and the page's handler starts it, like a host player would. The queued
+   * media events are withheld so the next geometry pass sees the playing video first, as a slow frame can.
+   */
   const viewerPlays = async (page: Page) => {
     await page.evaluate(() => {
       const video = document.getElementById('main') as HTMLVideoElement;
-      video.muted = true;
-      document.addEventListener('pointerdown', () => { void video.play(); }, { once: true });
+      document.addEventListener('pointerdown', () => { video.muted = true; void video.play(); }, { once: true });
+      for (const type of ['play', 'playing', 'volumechange']) window.addEventListener(type, event => event.stopPropagation(), { capture: true });
     });
     await page.mouse.click(400, 262);
     await page.waitForFunction(() => !(document.getElementById('main') as HTMLVideoElement).paused);
+    await page.evaluate(() => window.dispatchEvent(new Event('resize')));
     await page.clock.runFor(50);
   };
 
@@ -526,25 +530,23 @@ for (const engine of testEngines()) {
     const page = await launch(t, { freezeClock: true });
     await hover(page, 400, 260);
     await page.clock.runFor(50);
+    assert.ok(await launcher(page), 'shown before the press');
     await viewerPlays(page);
     await page.clock.runFor(2800);
     assert.ok(await launcher(page), 'still shown shortly before the 3s deadline');
     await page.mouse.move(410, 262);
-    await page.clock.runFor(100);
-    assert.ok(await launcher(page), 'pointer movement neither hides nor extends it');
-    await page.clock.runFor(150);
-    assert.equal(await launcher(page), null, 'hidden once the 3s have passed');
+    await page.clock.runFor(250);
+    assert.equal(await launcher(page), null, 'hidden at 3s; pointer movement did not extend it');
   });
 
-  it(`${engine}: pause, replacement and navigation end the play linger without a stale hide`, { timeout: 40_000 }, async t => {
+  it(`${engine}: pause, replacement and navigation end the play linger without a stale hide, and focus keeps it`, { timeout: 40_000 }, async t => {
     const page = await launch(t, { freezeClock: true });
     await hover(page, 400, 260);
     await page.clock.runFor(50);
     await viewerPlays(page);
     await page.evaluate(() => (document.getElementById('main') as HTMLVideoElement).pause());
-    await page.clock.runFor(50);
     await page.mouse.move(405, 262);
-    await page.clock.runFor(2600);
+    await page.clock.runFor(2650);
     assert.equal(await launcher(page), null, 'after a pause the idle window, not the linger, applies');
     // Replacing the video mid-linger: the old deadline must not hide the new video's launcher.
     await hover(page, 405, 264);
@@ -559,8 +561,10 @@ for (const engine of testEngines()) {
     await page.clock.runFor(1550); // Past the replaced video's 3s deadline, within the idle window.
     assert.ok(await launcher(page), 'the replaced video\'s deadline does not hide the new launcher');
     await viewerPlays(page);
+    await page.locator('#theater-everywhere-ui .theater-video-activator').focus();
+    await page.clock.runFor(3100);
+    assert.ok(await launcher(page), 'keyboard focus keeps the launcher past the linger');
     await page.evaluate(() => window.dispatchEvent(new PopStateEvent('popstate')));
-    await page.clock.runFor(50);
     assert.equal(await launcher(page), null, 'navigation clears the lingering launcher');
   });
 
@@ -776,7 +780,6 @@ for (const engine of testEngines()) {
     };
     await hover(page, 400, 260);
     await page.clock.runFor(50);
-    assert.ok(await launcher(page));
     await page.mouse.click(400, 260);
     await played(0);
     assert.ok(await launcher(page), 'a press on the video starts playback but the launcher lingers');

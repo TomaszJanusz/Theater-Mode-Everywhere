@@ -161,6 +161,8 @@ export function createVideoActivator(options: {
   let visitStartedAt = 0;
   /** Videos currently playing because the page started them; the viewer's own play still hides the launcher. */
   const selfStarted = new WeakSet<HTMLVideoElement>();
+  /** Videos whose current playing run has been classified (and, for the viewer's play, lingered). */
+  const runNoted = new WeakSet<HTMLVideoElement>();
   /** The latest press, kept only to tell the viewer's play from the page's. `target` is its innermost node. */
   let lastPress: { at: number; x: number; y: number; target: Node | null; pointer: boolean } | null = null;
   let shownBox: string | null = null;
@@ -194,6 +196,18 @@ export function createVideoActivator(options: {
   function classifyPlayback(video: HTMLVideoElement): void {
     if (!video.paused && (playGraceRemaining() > 0 || !pressedToPlay(video))) selfStarted.add(video);
     else selfStarted.delete(video);
+  }
+
+  /**
+   * `paused` flips inside `play()` but the `play` event is a queued task, so a geometry pass can land in
+   * between and would drop the viewer's launcher before it could linger. Whoever sees the run first notes it.
+   */
+  function noteRun(video: HTMLVideoElement): void {
+    if (video.paused) { runNoted.delete(video); return; }
+    if (runNoted.has(video)) return;
+    runNoted.add(video);
+    classifyPlayback(video);
+    if (hovered === video && !selfStarted.has(video)) lingerAfterPlay(video);
   }
 
   /** Whether the video could host a launcher at all, whether or not it is paused. */
@@ -501,6 +515,7 @@ export function createVideoActivator(options: {
           videos.delete(video);
           continue;
         }
+        noteRun(video);
         const rect = video.getBoundingClientRect();
         // A persistent slot lives in the native toolbar; the overlay never competes for that video.
         if (providerPlacements.get(video)?.read()?.persistent) continue;
@@ -538,12 +553,11 @@ export function createVideoActivator(options: {
           providerPlacements.set(node, providerPlacement);
           videoScope.add(() => { providerPlacement.dispose(); providerPlacements.delete(node); });
         }
-        classifyPlayback(node);
+        noteRun(node);
         for (const event of ['play', 'playing', 'pause', 'loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
           videoScope.listen(node, event, () => {
-            if (event === 'play') classifyPlayback(node);
+            noteRun(node);
             if (event === 'pause' && lingering?.video === node) { lingering = null; if (button?.isConnected) armIdle(); }
-            if (!node.paused && hovered === node && !selfStarted.has(node)) lingerAfterPlay(node);
             schedule();
           });
         }
