@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Affiche le titre de la série et l’intitulé de l’épisode, liste et sélectionne les langues de sous-titres de l’épisode (iQIYI continue de les afficher), repère l’intro et le générique de fin et passe à l’épisode précédent ou suivant. AutoTheater fonctionne sur les pages d’épisode."
   },
+  "soopIntegrationTitle": {
+    "message": "Intégration SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Affiche le titre de la diffusion ou de l’enregistrement et le streamer, repère des chapitres d’après l’historique des titres d’un enregistrement, propose l’enregistrement précédent/suivant du lecteur et son compte à rebours de la vidéo suivante, et AutoTheater peut s’activer sur les directs et les enregistrements."
+  },
   "aboutTitle": {
     "message": "À propos"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Sous-titres, repères d’intro/de fin et précédent/suivant quand l’épisode les propose ; pas d’aperçus sur la chronologie."
+  },
+  "rteNoteSoop": {
+    "message": "Chapitres, précédent/suivant et compte à rebours de la vidéo suivante sur les enregistrements uniquement ; pas de sous-titres ni d’aperçus sur la chronologie."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

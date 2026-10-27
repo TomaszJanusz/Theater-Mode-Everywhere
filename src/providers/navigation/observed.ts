@@ -1,6 +1,6 @@
 import type { PlaylistDirection, PlaylistPreview } from '../../playlist-nav';
 
-export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'iqiyi';
+export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'iqiyi' | 'soop';
 
 /**
  * Host-control snapshot. The fields are the signals observed on live players:

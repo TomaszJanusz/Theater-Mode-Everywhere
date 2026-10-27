@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Shows the series title and episode label, lists and selects the episode's subtitle languages (iQIYI keeps drawing them), marks intro and outro, and moves to the previous or next episode. AutoTheater is supported on episode pages."
   },
+  "soopIntegrationTitle": {
+    "message": "SOOP integration"
+  },
+  "soopIntegrationDescription": {
+    "message": "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater can enter live broadcasts and recordings."
+  },
   "aboutTitle": {
     "message": "About"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Subtitles, intro/outro markers and previous/next when the episode offers them; no timeline previews."
+  },
+  "rteNoteSoop": {
+    "message": "Chapters, previous/next and the next-video countdown on recordings only; no subtitles or timeline previews."
   },
   "rteSaveError": {
     "message": "Could not save service settings. Please try again."

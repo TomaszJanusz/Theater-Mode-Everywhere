@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Zeigt Serientitel und Folgenbezeichnung, listet und wählt die Untertitelsprachen der Folge (iQIYI zeichnet sie weiter selbst), markiert Intro und Outro und wechselt zur vorherigen oder nächsten Folge. AutoTheater funktioniert auf Folgenseiten."
   },
+  "soopIntegrationTitle": {
+    "message": "SOOP-Integration"
+  },
+  "soopIntegrationDescription": {
+    "message": "Zeigt Sendungs- oder Aufzeichnungstitel und Streamer, markiert Kapitel aus dem Titelverlauf einer Aufzeichnung, bietet die Zurück-/Weiter-Funktion des Players mit dem Countdown zum nächsten Video, und AutoTheater kann Live-Sendungen und Aufzeichnungen betreten."
+  },
   "aboutTitle": {
     "message": "Über"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Untertitel, Intro-/Outro-Markierungen und Zurück/Weiter, wenn die Folge sie bietet; keine Zeitleisten-Vorschau."
+  },
+  "rteNoteSoop": {
+    "message": "Kapitel, Zurück/Weiter und der Countdown zum nächsten Video nur bei Aufzeichnungen; keine Untertitel und keine Zeitleisten-Vorschau."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

@@ -61,6 +61,12 @@ export function isIqiyiHost(hostname = currentHost()): boolean {
   return host === 'iq.com' || host.endsWith('.iq.com');
 }
 
+/** SOOP (formerly AfreecaTV) international: www., play. and vod. under sooplive.com. */
+export function isSoopHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'sooplive.com' || host.endsWith('.sooplive.com');
+}
+
 /** crunchyroll.com and its real subdomains, including the static player host. */
 export function isCrunchyrollHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);

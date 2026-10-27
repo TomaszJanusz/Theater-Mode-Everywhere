@@ -173,6 +173,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   crunchyrollIntegrationDescription: "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode.",
   iqiyiIntegrationTitle: 'iQIYI integration',
   iqiyiIntegrationDescription: "Shows the series title and episode label, lists and selects the episode's subtitle languages (iQIYI keeps drawing them), marks intro and outro, and moves to the previous or next episode. AutoTheater is supported on episode pages.",
+  soopIntegrationTitle: 'SOOP integration',
+  soopIntegrationDescription: "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater can enter live broadcasts and recordings.",
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',
@@ -325,6 +327,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteNoteTencent: "Subtitles and previews when provided; next via the player.",
   rteNoteCrunchyroll: "Intro/credits markers only; burned-in subtitles cannot be turned off.",
   rteNoteIqiyi: "Subtitles, intro/outro markers and previous/next when the episode offers them; no timeline previews.",
+  rteNoteSoop: "Chapters, previous/next and the next-video countdown on recordings only; no subtitles or timeline previews.",
   rteSaveError: "Could not save service settings. Please try again.",
 };
 

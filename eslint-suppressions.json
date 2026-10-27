@@ -676,9 +676,6 @@
     }
   },
   "src/media-features/fetch-allowlist.ts": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
@@ -1500,9 +1497,6 @@
     }
   },
   "src/providers/navigation/factory.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1707,11 +1701,6 @@
   "src/providers/registry.test.ts": {
     "import/order": {
       "count": 3
-    }
-  },
-  "src/providers/service-actions.ts": {
-    "import/order": {
-      "count": 10
     }
   },
   "src/providers/stage.ts": {

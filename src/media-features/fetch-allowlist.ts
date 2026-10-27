@@ -1,11 +1,11 @@
-import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
+import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll';
-  kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop';
+  kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json' | 'chapters';
   url: string;
 };
 
@@ -49,6 +49,15 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
 
   if (request.provider === 'crunchyroll' && request.kind === 'caption-track') {
     return isCrunchyrollCaptionFileUrl(request.url);
+  }
+
+  if (request.provider === 'soop' && request.kind === 'chapters') {
+    return !parsed.username && !parsed.password && !parsed.port
+      && parsed.hostname === 'stbbs.sooplive.com'
+      && parsed.pathname === '/api/chapter/Controllers/ChapterListController.php'
+      && [...parsed.searchParams.keys()].sort().join() === 'nTitleNo,szFileType'
+      && /^\d{1,12}$/.test(parsed.searchParams.get('nTitleNo') ?? '')
+      && /^[A-Z_]{3,12}$/.test(parsed.searchParams.get('szFileType') ?? '');
   }
 
   if (request.provider === 'tencent' && request.kind === 'caption-track') {
@@ -133,10 +142,10 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll'];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'soop'];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
-const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json'];
+const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];
 
 export function classifyMediaFetchUrl(url: string, base?: string): MediaFetchRequest | null {
   for (const provider of CLASSIFY_PROVIDERS) {

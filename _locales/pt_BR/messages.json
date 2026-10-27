@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Mostra o título da série e o rótulo do episódio, lista e seleciona os idiomas de legenda do episódio (o iQIYI continua desenhando as legendas), marca a abertura e o encerramento e vai para o episódio anterior ou seguinte. O AutoTheater funciona nas páginas de episódio."
   },
+  "soopIntegrationTitle": {
+    "message": "Integração com o SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Mostra o título da transmissão ou gravação e o streamer, marca capítulos a partir do histórico de títulos de uma gravação, oferece a gravação anterior/seguinte do player e a contagem regressiva do próximo vídeo, e o AutoTheater pode entrar em transmissões ao vivo e gravações."
+  },
   "aboutTitle": {
     "message": "Sobre"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Legendas, marcadores de abertura/encerramento e anterior/seguinte quando o episódio os oferece; sem miniaturas na linha do tempo."
+  },
+  "rteNoteSoop": {
+    "message": "Capítulos, anterior/seguinte e a contagem regressiva do próximo vídeo só em gravações; sem legendas nem miniaturas na linha do tempo."
   },
   "rteSaveError": {
     "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."

@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (rysuje je nadal iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków."
   },
+  "soopIntegrationTitle": {
+    "message": "Integracja z SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania."
+  },
   "aboutTitle": {
     "message": "O rozszerzeniu"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Napisy, znaczniki intra/outra oraz poprzedni/następny, gdy odcinek je oferuje; bez podglądu na osi czasu."
+  },
+  "rteNoteSoop": {
+    "message": "Rozdziały, poprzednie/następne i odliczanie do następnego wideo tylko w nagraniach; bez napisów i podglądu na osi czasu."
   },
   "rteSaveError": {
     "message": "Nie udało się zapisać ustawień serwisów. Spróbuj ponownie."

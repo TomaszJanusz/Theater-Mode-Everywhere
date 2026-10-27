@@ -954,6 +954,12 @@
   "iqiyiIntegrationDescription": {
     "message": "Mostra il titolo della serie e l’etichetta dell’episodio, elenca e seleziona le lingue dei sottotitoli dell’episodio (iQIYI continua a disegnarli), segna intro e outro e passa all’episodio precedente o successivo. AutoTheater funziona nelle pagine degli episodi."
   },
+  "soopIntegrationTitle": {
+    "message": "Integrazione SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Mostra il titolo della diretta o della registrazione e lo streamer, segna i capitoli dalla cronologia dei titoli di una registrazione, offre la registrazione precedente/successiva del lettore e il suo conto alla rovescia del video successivo, e AutoTheater può attivarsi su dirette e registrazioni."
+  },
   "aboutTitle": {
     "message": "Informazioni"
   },
@@ -1173,6 +1179,9 @@
   },
   "rteNoteIqiyi": {
     "message": "Sottotitoli, indicatori di intro/outro e precedente/successivo quando l’episodio li offre; nessuna anteprima sulla timeline."
+  },
+  "rteNoteSoop": {
+    "message": "Capitoli, precedente/successivo e conto alla rovescia del video successivo solo nelle registrazioni; nessun sottotitolo né anteprima sulla timeline."
   },
   "rteSaveError": {
     "message": "Impossibile salvare le impostazioni dei servizi. Riprova."

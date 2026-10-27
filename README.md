@@ -17,7 +17,7 @@ Theater Mode Everywhere is a Chromium and Firefox extension that expands HTML5 p
 - Custom control bar with volume and speed panels, subtitle selection and styling, audio track selection with a remembered language per service, Video Fit (Fit, Fill, Stretch), frame stepping and configurable keyboard shortcuts.
 - Audio settings: Volume boost, Voice boost, Reduce loud sounds and Bass, where the media allows audio processing.
 - Centered or Raised picture layout (Raised, with subtitles only, by default), always-visible controls, and double-click for fullscreen inside theater mode.
-- Rich Theater Experience integrations for YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and iQIYI (iq.com). Depending on the service: titles, subtitles, audio tracks (YouTube), chapters, timeline previews, previous/next navigation, skip buttons, native chat (Twitch, YouTube) and SponsorBlock markers on YouTube. Each service can be switched off in Settings → Features.
+- Rich Theater Experience integrations for YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll, iQIYI (iq.com) and SOOP. Depending on the service: titles, subtitles, audio tracks (YouTube), chapters, timeline previews, previous/next navigation, skip buttons, native chat (Twitch, YouTube) and SponsorBlock markers on YouTube. Each service can be switched off in Settings → Features.
 - Website exclusions, AutoTheater, 13 interface languages, and High contrast, Reduce transparency and Reduce motion options.
 
 See the [changelog](CHANGELOG.md) for details.

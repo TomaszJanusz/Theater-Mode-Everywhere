@@ -21,7 +21,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isSoopHost, isTwitchHost } from '../providers/hosts';
 import { installIqiyiNavigation, readIqiyiSnapshot } from '../providers/iqiyi-main';
 import {
   installNetflixMain,
@@ -34,6 +34,7 @@ import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/pat
 import { installPatreonNavigation } from '../providers/patreon/navigation';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
+import { installSoopNavigation, soopIntegrationEnabled } from '../providers/soop-main';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
 import { isTencentWasmPlayerElement } from '../providers/tencent/wasm-player';
 import {
@@ -251,8 +252,9 @@ export function installMainWorldRuntime(): void {
   }
 
   // iQIYI is DOM- and global-based: it needs the watch queries and history hook but no response harvesting.
-  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname)) installWatchPlaybackQueries();
+  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname) || isSoopHost(window.location.hostname)) installWatchPlaybackQueries();
   installIqiyiNavigation();
+  installSoopNavigation();
   if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
 
   if (harvestHost) {
@@ -527,6 +529,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'bilibiliIntl') return bilibiliIntlIntegrationEnabled();
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
+    if (classified.provider === 'soop') return soopIntegrationEnabled();
     return false;
   }
 
