@@ -1023,6 +1023,11 @@ button.theater-time-end:hover {
   transition: none !important;
 }
 
+/* A centred HUD (hud.ts) shares the spinner's centre and layer, so it wins and the spinner returns after it. */
+:host([data-centered-hud]) .theater-loading-indicator.visible {
+  opacity: 0;
+}
+
 .theater-loading-spinner {
   flex: none !important;
   width: 48px !important;

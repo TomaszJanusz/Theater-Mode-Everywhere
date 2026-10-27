@@ -21,6 +21,8 @@ export const CAPTION_LOADING_HUD_DELAY_MS = 400;
 const CAPTION_WIDTH_MORPH_MS = 225;
 /** The seek pulse in shadow.css (`theaterSeekPulse`) runs 0.65s; the node goes with it. */
 export const SEEK_HUD_MS = 650;
+/** Set on the player-UI host while a centred confirmation is on screen; shadow.css hides the loading spinner for it. */
+export const CENTERED_HUD_ATTRIBUTE = 'data-centered-hud';
 export const HUD_PLATE_CLASS = 'theater-hud-plate';
 
 export const STATUS_HUD_SWITCH_ICON = `
@@ -148,6 +150,9 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
   let centeredHideTimer: number | null = null;
   let centeredRemoveTimer: number | null = null;
   let centeredIdentity: object | null = null;
+  // The player-UI host carries CENTERED_HUD_ATTRIBUTE while a centred HUD shows, so the loading spinner
+  // (same centre, same layer) can yield through CSS alone. Only restart/remove below touch it.
+  let centeredHost: Element | null = null;
 
   function clearCenteredTimers(): void {
     if (centeredHideTimer !== null) clock.clearTimeout(centeredHideTimer);
@@ -158,12 +163,17 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
 
   function removeCenteredHud(): void {
     clearCenteredTimers();
+    centeredHost?.removeAttribute(CENTERED_HUD_ATTRIBUTE);
+    centeredHost = null;
     ctx.queryPlayerUi('.theater-everywhere-volume-overlay')?.remove();
   }
 
   function restartCenteredHud(overlay: HTMLElement): void {
     clearCenteredTimers();
     overlay.classList.remove('fade-out');
+    const root = overlay.getRootNode();
+    centeredHost = root instanceof ShadowRoot ? root.host : null;
+    centeredHost?.setAttribute(CENTERED_HUD_ATTRIBUTE, '');
     const identity = {};
     centeredIdentity = identity;
     const element = ctx.session.element;
