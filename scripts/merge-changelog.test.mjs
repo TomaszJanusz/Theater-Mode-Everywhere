@@ -66,6 +66,11 @@ test('a side that left the changelog alone takes the other side\'s file', () => 
   const changed = changelog(['### Added\n\n- New.'], RELEASE_1);
   assert.deepEqual(mergeChangelog(base, changed, base, CONFLICTED), { text: changed });
   assert.deepEqual(mergeChangelog(base, base, changed, CONFLICTED), { text: changed });
+
+  // Neither shortcut lets a malformed changelog through to dev.
+  const malformed = '# Changelog\n\n' + RELEASE_1 + '\n\n## [Unreleased]\n';
+  assert.match(mergeChangelog(base, malformed, base).reason, /single ## \[Unreleased\]/);
+  assert.match(mergeChangelog(base, base, malformed).reason, /single ## \[Unreleased\]/);
 });
 
 test('entries dev reworded or moved stay in dev\'s Unreleased after main releases them', () => {

@@ -94,11 +94,13 @@ function removeEntries(section, entries) {
  * @returns {{ text: string } | { reason: string }}
  */
 export function mergeChangelog(base, ours, theirs, merged) {
-  if (theirs === base) return { text: ours };
-  if (ours === base) return { text: theirs };
+  const malformed = { reason: `a version does not start its sections with a single ${UNRELEASED}` };
+  // A side that left the file alone takes the other side's, which still has to parse.
+  if (theirs === base) return parseChangelog(ours) ? { text: ours } : malformed;
+  if (ours === base) return parseChangelog(theirs) ? { text: theirs } : malformed;
 
   const [b, o, t] = [base, ours, theirs].map(parseChangelog);
-  if (!b || !o || !t) return { reason: `a version does not start its sections with a single ${UNRELEASED}` };
+  if (!b || !o || !t) return malformed;
 
   if (o.preamble !== b.preamble && t.preamble !== b.preamble && o.preamble !== t.preamble) {
     return { reason: 'both branches changed the text above [Unreleased]' };
