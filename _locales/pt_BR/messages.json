@@ -948,6 +948,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, marcadores de abertura/créditos, Miniaturas. Ações rápidas: pular abertura/créditos e próximo episódio."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integração com o iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Mostra o título da série e o rótulo do episódio, lista e seleciona os idiomas de legenda do episódio (o iQIYI continua desenhando as legendas), marca a abertura e o encerramento e vai para o episódio anterior ou seguinte. O AutoTheater funciona nas páginas de episódio. Também é possível escolher as faixas de áudio do episódio."
+  },
+  "soopIntegrationTitle": {
+    "message": "Integração com o SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Mostra o título da transmissão ou gravação e o streamer, marca capítulos a partir do histórico de títulos de uma gravação, oferece a gravação anterior/seguinte do player e a contagem regressiva do próximo vídeo, e o AutoTheater pode entrar em transmissões ao vivo e gravações. O chat do próprio SOOP pode ser exibido ao lado do vídeo."
+  },
   "aboutTitle": {
     "message": "Sobre"
   },
@@ -1164,6 +1176,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Apenas marcadores de abertura/créditos; legendas embutidas não podem ser desativadas."
+  },
+  "rteNoteIqiyi": {
+    "message": "Legendas, marcadores de abertura/encerramento e anterior/seguinte quando o episódio os oferece; sem miniaturas na linha do tempo."
+  },
+  "rteNoteSoop": {
+    "message": "Capítulos, anterior/seguinte e a contagem regressiva do próximo vídeo só em gravações; sem legendas nem miniaturas na linha do tempo."
   },
   "rteSaveError": {
     "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."

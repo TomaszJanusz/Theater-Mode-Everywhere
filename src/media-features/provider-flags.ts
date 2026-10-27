@@ -1,4 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -12,7 +12,9 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   bilibili: 'bilibiliIntegrationEnabled',
   bilibiliIntl: 'bilibiliIntlIntegrationEnabled',
   tencent: 'tencentIntegrationEnabled',
-  crunchyroll: 'crunchyrollIntegrationEnabled'
+  crunchyroll: 'crunchyrollIntegrationEnabled',
+  iqiyi: 'iqiyiIntegrationEnabled',
+  soop: 'soopIntegrationEnabled'
 };
 
 export type MediaProviderFlags = Record<MediaProviderId, boolean>;
@@ -34,7 +36,9 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   bilibili: 'data-te-bilibili-integration-off',
   bilibiliIntl: 'data-te-bilibili-intl-integration-off',
   tencent: 'data-te-tencent-integration-off',
-  crunchyroll: 'data-te-crunchyroll-integration-off'
+  crunchyroll: 'data-te-crunchyroll-integration-off',
+  iqiyi: 'data-te-iqiyi-integration-off',
+  soop: 'data-te-soop-integration-off'
 };
 
 export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {

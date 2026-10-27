@@ -56,7 +56,7 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
   const shared = sharedTestBrowser(engine);
   it(`popup resolves services, isolates writes and follows live settings (${name})`, { timeout: 45000 }, async t => {
     const page = await (await shared.newContext(t, { viewport: { width: 360, height: 480 } })).newPage();
-    const hosts = ['www.youtube.com', 'player.vimeo.com', 'www.patreon.com', 'player.twitch.tv', 'www.disneyplus.com', 'www.netflix.com', 'www.bilibili.com', 'www.bilibili.tv', 'wetv.vip', 'static.crunchyroll.com'];
+    const hosts = ['www.youtube.com', 'player.vimeo.com', 'www.patreon.com', 'player.twitch.tv', 'www.disneyplus.com', 'www.netflix.com', 'www.bilibili.com', 'www.bilibili.tv', 'wetv.vip', 'static.crunchyroll.com', 'www.iq.com', 'play.sooplive.com'];
     for (const [index, id] of MEDIA_PROVIDER_IDS.entries()) {
       assert.equal(providerDefinition(id).matchesHost(hosts[index]), true);
       await open(page, hosts[index], { youtubeIntegrationEnabled: false, [MEDIA_PROVIDER_FLAG_KEYS[id]]: true });

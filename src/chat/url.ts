@@ -1,5 +1,7 @@
-import { isTwitchHost, isYouTubeHost } from '../providers/hosts';
 import { normalizeHost } from '../platform/domain-policy';
+import { isTwitchHost, isYouTubeHost } from '../providers/hosts';
+import { soopRoute } from '../providers/soop-dom';
+
 import type { ChatKind, ChatProvider } from './types';
 
 const TWITCH_RESERVED = new Set([
@@ -64,7 +66,7 @@ export function isChatDocument(href: string): boolean {
 export function parseChatLocation(href: string): ParsedChatLocation | null {
   const url = parseUrl(href);
   if (!url) return null;
-  return parseYouTubeLocation(url) ?? parseTwitchLocation(url);
+  return parseYouTubeLocation(url) ?? parseTwitchLocation(url) ?? parseSoopLocation(url);
 }
 
 /** Official live_chat / live_chat_replay frame URL, or null when the path is not one of those. */
@@ -95,7 +97,7 @@ export function watchIdentity(href: string): string {
 export function isNativeChatHost(href: string): boolean {
   const url = parseUrl(href);
   if (!url) return false;
-  return isTwitchWatchHost(url.hostname) || isYouTubeWatchHost(url.hostname);
+  return isTwitchWatchHost(url.hostname) || isYouTubeWatchHost(url.hostname) || isSoopPlayerHost(url.hostname);
 }
 
 function parseYouTubeLocation(url: URL): ParsedChatLocation | null {
@@ -136,6 +138,19 @@ function parseTwitchLocation(url: URL): ParsedChatLocation | null {
     return { role: 'watch', provider: 'twitch', contentKey: parts[0].toLowerCase(), kind: 'live' };
   }
   return null;
+}
+
+/** SOOP shows chat beside the live player and beside a recording; other subdomains are not watch pages. */
+function isSoopPlayerHost(hostname: string): boolean {
+  return hostname === 'play.sooplive.com' || hostname === 'vod.sooplive.com';
+}
+
+function parseSoopLocation(url: URL): ParsedChatLocation | null {
+  const route = soopRoute(url);
+  if (!route) return null;
+  return route.kind === 'live'
+    ? { role: 'watch', provider: 'soop', contentKey: `${route.bj}/${route.id}`, kind: 'live' }
+    : { role: 'watch', provider: 'soop', contentKey: route.id, kind: 'replay' };
 }
 
 function isTwitchWatchHost(hostname: string): boolean {

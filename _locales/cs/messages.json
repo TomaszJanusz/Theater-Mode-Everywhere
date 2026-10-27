@@ -948,6 +948,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Pokud je video nebo přehrávač poskytuje: název, titulky, značky úvodu/závěrečných titulků, miniatury. Rychlé akce: přeskočení úvodu/závěrečných titulků a další díl."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integrace iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Zobrazuje název seriálu a označení epizody, nabízí a vybírá jazyky titulků epizody (kreslí je dál iQIYI), označuje úvod a závěr a přechází na předchozí nebo další epizodu. Na stránkách epizod funguje AutoTheater. Lze také vybírat zvukové stopy epizody."
+  },
+  "soopIntegrationTitle": {
+    "message": "Integrace SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Zobrazuje název vysílání nebo záznamu a streamera, označuje kapitoly podle historie názvů záznamu, nabízí předchozí/další záznam přehrávače a jeho odpočet dalšího videa a AutoTheater umí vstoupit do živých vysílání i záznamů. Vlastní chat SOOP lze zobrazit vedle videa."
+  },
   "aboutTitle": {
     "message": "O rozšíření"
   },
@@ -1164,6 +1176,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Jen značky úvodu/závěrečných titulků; titulky vložené do obrazu nelze vypnout."
+  },
+  "rteNoteIqiyi": {
+    "message": "Titulky, značky úvodu a závěru a předchozí/další, když je epizoda nabízí; bez náhledů na časové ose."
+  },
+  "rteNoteSoop": {
+    "message": "Kapitoly, předchozí/další a odpočet dalšího videa jen u záznamů; bez titulků a náhledů na časové ose."
   },
   "rteSaveError": {
     "message": "Nastavení služby se nepodařilo uložit. Zkuste to znovu."

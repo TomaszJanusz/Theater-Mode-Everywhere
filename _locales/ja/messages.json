@@ -948,6 +948,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・クレジットのマーカー, サムネイル。 クイック操作：イントロ・クレジットのスキップと次のエピソード。"
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI 連携"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "シリーズタイトルとエピソード名を表示し、エピソードの字幕言語を一覧して選択でき（字幕の描画は引き続き iQIYI が行います）、イントロとアウトロを示し、前後のエピソードに移動できます。エピソードページでは AutoTheater に対応します。エピソードの音声トラックも選べます。"
+  },
+  "soopIntegrationTitle": {
+    "message": "SOOP 連携"
+  },
+  "soopIntegrationDescription": {
+    "message": "配信または録画のタイトルと配信者を表示し、録画のタイトル履歴からチャプターを示し、プレーヤーの前/次の録画と次の動画へのカウントダウンを利用でき、AutoTheater はライブ配信と録画の両方で自動的にシアターモードに入れます。SOOP のチャットを動画の横に表示できます。"
+  },
   "aboutTitle": {
     "message": "このツールについて"
   },
@@ -1164,6 +1176,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "イントロ・クレジットのマーカーのみ。焼き付け字幕はオフにできません。"
+  },
+  "rteNoteIqiyi": {
+    "message": "字幕、イントロ/アウトロのマーカー、前へ/次へは、エピソードが提供する場合のみ。タイムラインのプレビューはありません。"
+  },
+  "rteNoteSoop": {
+    "message": "チャプター、前へ/次へ、次の動画のカウントダウンは録画のみ。字幕とタイムラインのプレビューはありません。"
   },
   "rteSaveError": {
     "message": "サービス設定を保存できませんでした。もう一度お試しください。"

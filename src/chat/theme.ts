@@ -1,6 +1,6 @@
 import { TwitchChatThemeAdapter } from './adapters/twitch';
-import { YouTubeChatThemeAdapter } from './adapters/youtube';
 import type { ChatThemeAdapter } from './adapters/types';
+import { YouTubeChatThemeAdapter } from './adapters/youtube';
 import { OwnedDom } from './owned-dom';
 import { TWITCH_CHAT_PORTAL_SELECTOR } from './selectors';
 import type { ChatSurface, ChatTheme, ChatThemeStatus } from './types';
@@ -75,6 +75,11 @@ export class ChatThemeSession {
       this.adapter = null;
     }
     this.doc = doc;
+    // SOOP has no palette to map: its chat keeps the service's own appearance.
+    if (surface.provider === 'soop') {
+      this.status = 'unavailable';
+      return;
+    }
     if (!this.adapter && doc) {
       this.adapter = surface.provider === 'twitch'
         ? new TwitchChatThemeAdapter(surface) : new YouTubeChatThemeAdapter(doc);

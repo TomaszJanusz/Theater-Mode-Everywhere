@@ -948,6 +948,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头/片尾字幕和下一集。"
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI 集成"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "显示剧集标题和集数标签，列出并选择该集的字幕语言（字幕仍由 iQIYI 绘制），标出片头和片尾，并可切换到上一集或下一集。在剧集页面支持 AutoTheater。还可以选择该集的音轨。"
+  },
+  "soopIntegrationTitle": {
+    "message": "SOOP 集成"
+  },
+  "soopIntegrationDescription": {
+    "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 可进入直播和录像。可在视频旁显示 SOOP 自带的聊天。"
+  },
   "aboutTitle": {
     "message": "关于"
   },
@@ -1164,6 +1176,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "仅片头和片尾字幕标记；无法关闭硬字幕。"
+  },
+  "rteNoteIqiyi": {
+    "message": "在该集提供时支持字幕、片头/片尾标记和上一集/下一集；没有时间轴预览。"
+  },
+  "rteNoteSoop": {
+    "message": "章节、上一个/下一个和下一个视频倒计时仅适用于录像；没有字幕和时间轴预览。"
   },
   "rteSaveError": {
     "message": "无法保存服务设置，请重试。"
