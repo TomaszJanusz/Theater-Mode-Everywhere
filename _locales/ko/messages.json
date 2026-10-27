@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "서비스 기본값"
+    "message": "기본값"
   },
   "switchVideoTooltip": {
     "message": "페이지의 동영상 전환 $KEY$",

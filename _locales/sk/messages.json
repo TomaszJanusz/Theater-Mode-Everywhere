@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "Predvolené nastavenie služby"
+    "message": "Predvolené"
   },
   "switchVideoTooltip": {
     "message": "Prepnúť video na stránke $KEY$",

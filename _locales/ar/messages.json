@@ -697,7 +697,7 @@
     }
   },
   "audioTrackServiceDefault": {
-    "message": "الإعداد الافتراضي للخدمة"
+    "message": "افتراضي"
   },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",
