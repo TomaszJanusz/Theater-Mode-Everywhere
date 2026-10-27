@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+
 import { mergeChangelog } from './merge-changelog.mjs';
 
 // Real CHANGELOG.md versions from past `main` → `dev` syncs: merge base, dev (ours)

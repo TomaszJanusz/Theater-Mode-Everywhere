@@ -86,35 +86,26 @@ function removeEntries(section, entries) {
   return result.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
 }
 
-/**
- * @param {string} base CHANGELOG.md at the merge base
- * @param {string} ours dev's CHANGELOG.md
- * @param {string} theirs main's CHANGELOG.md
- * @param {string} [merged] git's merge result, if it had no conflict markers
- * @returns {{ text: string } | { reason: string }}
- */
-export function mergeChangelog(base, ours, theirs, merged) {
-  const malformed = { reason: `a version does not start its sections with a single ${UNRELEASED}` };
-  // A side that left the file alone takes the other side's, which still has to parse.
-  if (theirs === base) return parseChangelog(ours) ? { text: ours } : malformed;
-  if (ours === base) return parseChangelog(theirs) ? { text: theirs } : malformed;
-
-  const [b, o, t] = [base, ours, theirs].map(parseChangelog);
-  if (!b || !o || !t) return malformed;
-
+// The text above [Unreleased]: a side's own edit wins over an unchanged side.
+function mergePreamble(b, o, t) {
   if (o.preamble !== b.preamble && t.preamble !== b.preamble && o.preamble !== t.preamble) {
     return { reason: 'both branches changed the text above [Unreleased]' };
   }
-  const preamble = t.preamble === b.preamble ? o.preamble : t.preamble;
+  return { preamble: t.preamble === b.preamble ? o.preamble : t.preamble };
+}
 
+// Main's new release sections go on top of dev's.
+function mergeReleased(b, o, t) {
   const added = t.released.slice(0, t.released.length - b.released.length);
   if (!sameSections(t.released.slice(added.length), b.released)) {
     return { reason: 'main changed or removed an existing release section' };
   }
   const duplicate = added.find(section => o.released.some(existing => existing.heading === section.heading));
   if (duplicate) return { reason: `dev already has ${duplicate.heading}` };
-  const released = [...added, ...o.released];
+  return { released: [...added, ...o.released] };
+}
 
+function mergeUnreleased([b, o, t], { preamble, released }, merged) {
   const baseKeys = new Set(unreleasedEntries(b.unreleased).map(entry => entry.key));
   const theirKeys = new Set(unreleasedEntries(t.unreleased).map(entry => entry.key));
   const ourEntries = unreleasedEntries(o.unreleased);
@@ -133,12 +124,36 @@ export function mergeChangelog(base, ours, theirs, merged) {
   return valid ? { text: merged } : { reason: `${where}: git's automatic merge misplaced them` };
 }
 
+/**
+ * @param {string} base CHANGELOG.md at the merge base
+ * @param {string} ours dev's CHANGELOG.md
+ * @param {string} theirs main's CHANGELOG.md
+ * @param {string} [merged] git's merge result, if it had no conflict markers
+ * @returns {{ text: string } | { reason: string }}
+ */
+export function mergeChangelog(base, ours, theirs, merged) {
+  const malformed = { reason: `a version does not start its sections with a single ${UNRELEASED}` };
+  // A side that left the file alone takes the other side's, which still has to parse.
+  if (theirs === base) return parseChangelog(ours) ? { text: ours } : malformed;
+  if (ours === base) return parseChangelog(theirs) ? { text: theirs } : malformed;
+
+  const [b, o, t] = [base, ours, theirs].map(parseChangelog);
+  if (!b || !o || !t) return malformed;
+
+  const mergedPreamble = mergePreamble(b, o, t);
+  if ('reason' in mergedPreamble) return mergedPreamble;
+  const mergedReleased = mergeReleased(b, o, t);
+  if ('reason' in mergedReleased) return mergedReleased;
+  return mergeUnreleased([b, o, t], { ...mergedPreamble, ...mergedReleased }, merged);
+}
+
 // CLI, run from a checkout in the middle of merging main into dev (the sync
 // workflow, or a person resolving its issue): merges CHANGELOG.md from the merge
 // base, HEAD and MERGE_HEAD, replacing git's result, and stages it. Exits 1 with
-// the reason and leaves the file as git left it when it cannot.
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+// the reason and leaves the file as git left it when it cannot. `run` is the
+// process runner, injected like in ci-changes.mjs.
+function mergeChangelogInGit(run = execFileSync) {
+  const git = (...args) => run('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   const show = rev => git('show', `${rev}:CHANGELOG.md`);
   const path = join(git('rev-parse', '--show-toplevel').trim(), 'CHANGELOG.md');
   const outcome = mergeChangelog(
@@ -154,3 +169,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(path, outcome.text);
   git('add', '--', path);
 }
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) mergeChangelogInGit();
