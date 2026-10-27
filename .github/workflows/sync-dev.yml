@@ -65,14 +65,30 @@ jobs:
             echo '## dev already contains main; nothing to sync.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          if git merge --no-ff --no-edit origin/main; then
+          git merge --no-ff --no-commit origin/main || true
+          git rev-parse -q --verify MERGE_HEAD > /dev/null || { echo '::error::git merge did not start'; exit 1; }
+
+          # A release heading cannot be merged line by line: git conflicts, or files
+          # dev's Unreleased entries under it. Merge CHANGELOG.md by its sections,
+          # conflicted or not, with main's resolver (never code from dev).
+          changelog_merged=false
+          if git show "$GITHUB_SHA:scripts/merge-changelog.mjs" > "$RUNNER_TEMP/merge-changelog.mjs" \
+            && node "$RUNNER_TEMP/merge-changelog.mjs" 2> changelog-error.txt; then
+            changelog_merged=true
+          fi
+
+          git diff --name-only --diff-filter=U > conflicts.txt
+          if [ "$changelog_merged" = true ] && [ ! -s conflicts.txt ]; then
+            git commit --no-edit --cleanup=strip
             git push origin dev
             echo 'pushed=true' >> "$GITHUB_OUTPUT"
             echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             echo "## Merged main into dev ($(git rev-parse --short HEAD))" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          git diff --name-only --diff-filter=U > conflicts.txt
+          if [ "$changelog_merged" = false ] && ! grep -qx CHANGELOG.md conflicts.txt; then
+            echo CHANGELOG.md >> conflicts.txt
+          fi
           git merge --abort
           echo 'conflicted=true' >> "$GITHUB_OUTPUT"
           {
@@ -81,12 +97,20 @@ jobs:
             echo 'Conflicting files:'
             sed 's/^/- `/; s/$/`/' conflicts.txt
             echo
+            if [ -s changelog-error.txt ]; then
+              cat changelog-error.txt
+              echo
+            elif [ "$changelog_merged" = false ]; then
+              echo '`scripts/merge-changelog.mjs` could not run; see the job log.'
+              echo
+            fi
             echo 'Resolve locally with a merge commit (never squash or rebase):'
             echo
             echo '```sh'
             echo 'git fetch origin'
-            echo 'git switch dev && git merge origin/main'
-            echo '# resolve conflicts, then:'
+            echo 'git switch dev && git merge --no-ff --no-commit origin/main'
+            echo 'node scripts/merge-changelog.mjs  # merges CHANGELOG.md when it can'
+            echo '# resolve the remaining conflicts, then:'
             echo 'git commit && git push origin dev'
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY" > issue-body.md
