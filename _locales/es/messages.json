@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, marcas de intro/créditos, Miniaturas. Acciones rápidas: saltar intro/créditos y siguiente episodio."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integración con iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Muestra el título de la serie y la etiqueta del episodio, además del siguiente episodio a través del reproductor. Los subtítulos siguen en el reproductor de iQIYI."
+  },
   "aboutTitle": {
     "message": "Acerca de"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Solo marcas de intro y créditos; no se pueden desactivar los subtítulos incrustados."
+  },
+  "rteNoteIqiyi": {
+    "message": "Solo título y siguiente episodio; los subtítulos siguen en el reproductor de iQIYI."
   },
   "rteSaveError": {
     "message": "No se pudieron guardar los ajustes. Inténtalo de nuevo."

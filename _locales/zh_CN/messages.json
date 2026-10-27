@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头/片尾字幕和下一集。"
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI 集成"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "显示剧集标题和集数标签，并可通过播放器切换到下一集。字幕仍由 iQIYI 播放器管理。"
+  },
   "aboutTitle": {
     "message": "关于"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "仅片头和片尾字幕标记；无法关闭硬字幕。"
+  },
+  "rteNoteIqiyi": {
+    "message": "仅支持标题和下一集；字幕仍由 iQIYI 播放器管理。"
   },
   "rteSaveError": {
     "message": "无法保存服务设置，请重试。"

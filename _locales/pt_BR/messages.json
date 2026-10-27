@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponíveis quando fornecidos pelo vídeo ou player: Título, Legendas, marcadores de abertura/créditos, Miniaturas. Ações rápidas: pular abertura/créditos e próximo episódio."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integração com o iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Mostra o título da série e o rótulo do episódio, além do próximo episódio pelo player. As legendas continuam no player do iQIYI."
+  },
   "aboutTitle": {
     "message": "Sobre"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Apenas marcadores de abertura/créditos; legendas embutidas não podem ser desativadas."
+  },
+  "rteNoteIqiyi": {
+    "message": "Apenas título e próximo episódio; as legendas continuam no player do iQIYI."
   },
   "rteSaveError": {
     "message": "Não foi possível salvar as configurações dos serviços. Tente novamente."

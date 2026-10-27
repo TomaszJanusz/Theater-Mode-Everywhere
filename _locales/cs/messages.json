@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Pokud je video nebo přehrávač poskytuje: název, titulky, značky úvodu/závěrečných titulků, miniatury. Rychlé akce: přeskočení úvodu/závěrečných titulků a další díl."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integrace iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Zobrazuje název seriálu a označení epizody a nabízí další epizodu přes přehrávač. Titulky zůstávají v přehrávači iQIYI."
+  },
   "aboutTitle": {
     "message": "O rozšíření"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Jen značky úvodu/závěrečných titulků; titulky vložené do obrazu nelze vypnout."
+  },
+  "rteNoteIqiyi": {
+    "message": "Pouze název a další epizoda; titulky zůstávají v přehrávači iQIYI."
   },
   "rteSaveError": {
     "message": "Nastavení služby se nepodařilo uložit. Zkuste to znovu."

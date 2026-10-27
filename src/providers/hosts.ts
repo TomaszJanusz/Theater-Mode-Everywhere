@@ -55,6 +55,12 @@ export function isTencentHost(hostname = currentHost()): boolean {
     || host === 'wetv.vip' || host.endsWith('.wetv.vip');
 }
 
+/** International iQIYI (iq.com). The domestic iqiyi.com is a different site and is not matched. */
+export function isIqiyiHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'iq.com' || host.endsWith('.iq.com');
+}
+
 /** crunchyroll.com and its real subdomains, including the static player host. */
 export function isCrunchyrollHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);

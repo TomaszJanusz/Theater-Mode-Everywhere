@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "動画やプレーヤーが提供する場合に利用可能：タイトル, 字幕, イントロ・クレジットのマーカー, サムネイル。 クイック操作：イントロ・クレジットのスキップと次のエピソード。"
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI 連携"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "シリーズタイトルとエピソード名を表示し、プレーヤー経由で次のエピソードに進めます。字幕は iQIYI のプレーヤーが管理します。"
+  },
   "aboutTitle": {
     "message": "このツールについて"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "イントロ・クレジットのマーカーのみ。焼き付け字幕はオフにできません。"
+  },
+  "rteNoteIqiyi": {
+    "message": "タイトルと次のエピソードのみ。字幕は iQIYI のプレーヤーが管理します。"
   },
   "rteSaveError": {
     "message": "サービス設定を保存できませんでした。もう一度お試しください。"

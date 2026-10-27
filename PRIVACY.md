@@ -6,7 +6,7 @@ Theater Mode Everywhere is developed by Tomasz Janusz. The extension sends no in
 
 ## What the extension accesses
 
-To enlarge players and provide playback controls, the extension reads video elements, subtitle and audio tracks and player information on the pages you open, including embedded frames. Optional Rich Theater Experience integrations use titles, chapters, subtitles, timeline previews and other playback information from YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV and Crunchyroll. This information is processed in memory, not saved as a viewing history or uploaded elsewhere.
+To enlarge players and provide playback controls, the extension reads video elements, subtitle and audio tracks and player information on the pages you open, including embedded frames. Optional Rich Theater Experience integrations use titles, chapters, subtitles, timeline previews and other playback information from YouTube, Vimeo, Patreon, Twitch, Disney+, Netflix, Bilibili, Bilibili.tv, Tencent Video / WeTV, Crunchyroll and iQIYI. This information is processed in memory, not saved as a viewing history or uploaded elsewhere.
 
 Tab addresses are read to apply website exclusions and show per-site status in the popup and toolbar icon. The extension does not record a list of pages you visit, video titles or viewing timestamps. SponsorBlock markers are read from the installed SponsorBlock extension's page elements; Theater Mode Everywhere does not call the SponsorBlock API.
 

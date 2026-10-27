@@ -171,6 +171,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   tencentIntegrationDescription: "Available when provided by the video or player: Title, Subtitles, Thumbnails. Quick actions: next episode through the player.",
   crunchyrollIntegrationTitle: 'Crunchyroll integration',
   crunchyrollIntegrationDescription: "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode.",
+  iqiyiIntegrationTitle: 'iQIYI integration',
+  iqiyiIntegrationDescription: "Shows the series title and episode label, plus next episode through the player. Subtitles stay with the iQIYI player.",
   websiteExclusionsTitle: 'Website Exclusions',
   websiteExclusionsDescription: 'Exclude websites where you do not want theater mode to activate automatically.',
   domainInputPlaceholder: 'e.g., youtube.com or paste a URL',
@@ -322,6 +324,7 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   rteNoteBilibiliIntl: "Intro/outro markers only; skip/next on episodes, not uploads.",
   rteNoteTencent: "Subtitles and previews when provided; next via the player.",
   rteNoteCrunchyroll: "Intro/credits markers only; burned-in subtitles cannot be turned off.",
+  rteNoteIqiyi: "Title and next episode only; subtitles stay with the iQIYI player.",
   rteSaveError: "Could not save service settings. Please try again.",
 };
 

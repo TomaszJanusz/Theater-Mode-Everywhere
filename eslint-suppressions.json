@@ -985,9 +985,6 @@
     }
   },
   "src/media-features/resolve-adapter.ts": {
-    "import/order": {
-      "count": 17
-    },
     "local/max-symbol-name-length": {
       "count": 6
     }
@@ -1302,11 +1299,6 @@
   "src/providers/capabilities.test.ts": {
     "import/order": {
       "count": 7
-    }
-  },
-  "src/providers/capabilities.ts": {
-    "import/order": {
-      "count": 8
     }
   },
   "src/providers/crunchyroll/adapter.ts": {
@@ -1724,11 +1716,6 @@
   "src/providers/registry.test.ts": {
     "import/order": {
       "count": 3
-    }
-  },
-  "src/providers/registry.ts": {
-    "import/order": {
-      "count": 11
     }
   },
   "src/providers/service-actions.ts": {

@@ -949,6 +949,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI integration"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Shows the series title and episode label, plus next episode through the player. Subtitles stay with the iQIYI player."
+  },
   "aboutTitle": {
     "message": "About"
   },
@@ -1165,6 +1171,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Intro/credits markers only; burned-in subtitles cannot be turned off."
+  },
+  "rteNoteIqiyi": {
+    "message": "Title and next episode only; subtitles stay with the iQIYI player."
   },
   "rteSaveError": {
     "message": "Could not save service settings. Please try again."

@@ -13,7 +13,7 @@ import { brightestStop, hexRgb, luminance, over } from '../../options/rte-colors
 
 const read = (path: string) => readFileSync(resolve(__dirname, path), 'utf8');
 const folders: Record<string, string> = { bilibiliIntl: 'bilibili-intl' };
-const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll']);
+const localAdapters = new Set(['bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi']);
 
 /** Static method/source checks deliberately complement the existing behavioral
  * adapter and service-action suites without reproducing their host fixtures.
@@ -92,7 +92,7 @@ describe('provider capability declarations', () => {
       for (const [key, names] of Object.entries(adapterMethods)) {
         const capability = key as keyof typeof adapterMethods;
         // These interface compatibility methods intentionally have no feature data.
-        const stub = (provider.id === 'vimeo' && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
+        const stub = (['vimeo', 'iqiyi'].includes(provider.id) && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
         const actual = names.every(name => implemented.has(name)) && !stub;
         assert.equal(actual, provider.capabilities[capability].status !== 'no', `${provider.id}.${key}`);
         if (stub) assert.equal(provider.capabilities[capability].status, 'no');
@@ -126,6 +126,7 @@ describe('provider capability declarations', () => {
       bilibili: ['#06AEEC', '#FFFFFF'],
       bilibiliIntl: ['#06AEEC', '#FFFFFF'],
       crunchyroll: ['#FF640C', '#272727'],
+      iqiyi: ['#00CC36', '#000000'],
       disney: ['#091C2A', '#2EB3BF', '#186A7C'],
       netflix: ['#E50914', '#B20710', '#141414', '#1F1F1F'],
       patreon: ['#F06352', '#F7F7F7', '#012B47'],

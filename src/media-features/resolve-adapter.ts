@@ -1,20 +1,22 @@
-import { CompositeMediaAdapter } from './composite-adapter';
-import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
+import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
+import { BilibiliAdapter } from '../providers/bilibili/adapter';
+import { BilibiliIntlAdapter } from '../providers/bilibili-intl/adapter';
+import { CrunchyrollAdapter } from '../providers/crunchyroll/adapter';
 import { DisneyAdapter } from '../providers/disney/adapter';
+import { createHostCaptionLayoutSource } from '../providers/host-captions';
 import { NativeTextTrackAdapter } from '../providers/native/adapter';
 import { NetflixAdapter } from '../providers/netflix/adapter';
 import { PatreonAdapter } from '../providers/patreon/adapter';
+import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registry';
+import { TencentAdapter } from '../providers/tencent/adapter';
 import { TwitchAdapter } from '../providers/twitch/adapter';
 import { VimeoAdapter } from '../providers/vimeo/adapter';
 import { YouTubeAdapter } from '../providers/youtube/adapter';
-import { shouldAttachProvider } from '../providers/registry';
+
+import { CompositeMediaAdapter } from './composite-adapter';
+import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
 import type { MediaFeaturesAdapter } from './types';
-import { BilibiliAdapter } from '../providers/bilibili/adapter';
-import { BilibiliIntlAdapter } from '../providers/bilibili-intl/adapter';
-import { TencentAdapter } from '../providers/tencent/adapter';
-import { CrunchyrollAdapter } from '../providers/crunchyroll/adapter';
-import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
-import { createHostCaptionLayoutSource } from '../providers/host-captions';
+
 
 export function shouldAttachYouTubeAdapter(flags: MediaProviderFlags, hostname?: string): boolean {
   return shouldAttachProvider('youtube', flags, hostname);
@@ -40,6 +42,11 @@ export function shouldAttachNetflixAdapter(flags: MediaProviderFlags, hostname?:
   return shouldAttachProvider('netflix', flags, hostname);
 }
 
+/** Adapters that providers supply through their registry definition. */
+function registeredAdapters(flags: MediaProviderFlags): MediaFeaturesAdapter[] {
+  return PROVIDER_DEFINITIONS.flatMap(({ id, createAdapter }) => id !== 'native' && createAdapter && shouldAttachProvider(id, flags) ? [createAdapter()] : []);
+}
+
 export function createMediaFeaturesAdapter(
   media: HTMLVideoElement | PlaybackSurface,
   flags: MediaProviderFlags = defaultMediaProviderFlags()
@@ -56,6 +63,7 @@ export function createMediaFeaturesAdapter(
   if (shouldAttachProvider('bilibiliIntl', flags)) adapters.push(new BilibiliIntlAdapter());
   if (shouldAttachProvider('tencent', flags)) adapters.push(new TencentAdapter());
   if (shouldAttachProvider('crunchyroll', flags)) adapters.push(new CrunchyrollAdapter());
+  adapters.push(...registeredAdapters(flags));
   if (surface.nativeMedia instanceof HTMLVideoElement) {
     // Native stays first so a service title outranks it; page metadata is only a fallback without one.
     adapters.unshift(new NativeTextTrackAdapter(surface.nativeMedia, adapters.length === 0));

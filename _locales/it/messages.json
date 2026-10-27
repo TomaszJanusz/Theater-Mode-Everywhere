@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponibili se forniti dal video o dal lettore: Titolo, Sottotitoli, marcatori di intro/titoli di coda, Miniature. Azioni rapide: salta intro/titoli di coda ed episodio successivo."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integrazione iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Mostra il titolo della serie e l’etichetta dell’episodio, più l’episodio successivo tramite il lettore. I sottotitoli restano gestiti dal lettore iQIYI."
+  },
   "aboutTitle": {
     "message": "Informazioni"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Solo marcatori di intro/titoli di coda; i sottotitoli impressi non si possono disattivare."
+  },
+  "rteNoteIqiyi": {
+    "message": "Solo titolo ed episodio successivo; i sottotitoli restano gestiti dal lettore iQIYI."
   },
   "rteSaveError": {
     "message": "Impossibile salvare le impostazioni dei servizi. Riprova."

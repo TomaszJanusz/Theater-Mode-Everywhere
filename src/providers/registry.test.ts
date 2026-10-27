@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
 
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
@@ -66,6 +66,19 @@ describe('provider registry', () => {
     assert.equal(shouldPatchMainWorld('crunchyroll.com.evil.test'), false);
     assert.equal(shouldAttachProvider('crunchyroll', { ...defaultMediaProviderFlags(), crunchyroll: false }, 'www.crunchyroll.com'), false);
     assert.equal(shouldAttachProvider('crunchyroll', defaultMediaProviderFlags(), 'static.crunchyroll.com'), true);
+  });
+
+  it('limits iQIYI to iq.com, which needs no MAIN-world patch', () => {
+    assert.equal(isIqiyiHost('www.iq.com'), true);
+    assert.equal(isIqiyiHost('iq.com.'), true);
+    assert.equal(isIqiyiHost('iq.com.evil.test'), false);
+    assert.equal(isIqiyiHost('notiq.com'), false);
+    assert.equal(isIqiyiHost('www.iqiyi.com'), false);
+    assert.deepEqual(matchingProviders('www.iq.com'), ['native', 'iqiyi']);
+    assert.equal(shouldPatchMainWorld('www.iq.com'), false);
+    assert.equal(shouldAttachProvider('iqiyi', { ...defaultMediaProviderFlags(), iqiyi: false }, 'www.iq.com'), false);
+    assert.equal(shouldAttachProvider('iqiyi', defaultMediaProviderFlags(), 'www.iq.com'), true);
+    assert.equal(shouldAttachProvider('iqiyi', defaultMediaProviderFlags(), 'www.crunchyroll.com'), false);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

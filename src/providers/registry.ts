@@ -1,16 +1,20 @@
-import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
+import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
+import type { MediaFeaturesAdapter } from '../media-features/types';
+
 import { bilibiliWatchPlayback } from './bilibili/watch-playback';
-import { youtubeLauncherPlacement } from './youtube/launcher-placement';
+import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
+import { disneyWatchPlayback } from './disney/watch-playback';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { IqiyiAdapter } from './iqiyi/adapter';
 import type { LauncherPlacementFactory } from './launcher-placement';
-import { youtubeWatchPlayback } from './youtube/watch-playback';
-import { vimeoWatchPlayback } from './vimeo/watch-playback';
+import { netflixWatchPlayback } from './netflix/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { twitchWatchPlayback } from './twitch/watch-playback';
-import { disneyWatchPlayback } from './disney/watch-playback';
-import { netflixWatchPlayback } from './netflix/watch-playback';
+import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import type { WatchPlayback } from './watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
-import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
+import { youtubeLauncherPlacement } from './youtube/launcher-placement';
+import { youtubeWatchPlayback } from './youtube/watch-playback';
+
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
 export const MAIN_FETCH_PATCH_KEY = Symbol.for('theater-everywhere.fetch-patched');
@@ -22,6 +26,8 @@ export type ProviderDefinition = {
   matchesHost: (hostname: string) => boolean;
   watchPlayback?: WatchPlayback;
   launcherPlacement?: LauncherPlacementFactory;
+  /** The service adapter, composed by `createMediaFeaturesAdapter` when the provider is attached. */
+  createAdapter?: () => MediaFeaturesAdapter;
 };
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
@@ -35,7 +41,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'bilibili', matchesHost: (hostname) => isBilibiliHost(hostname), watchPlayback: bilibiliWatchPlayback },
   { id: 'bilibiliIntl', matchesHost: (hostname) => isBilibiliIntlHost(hostname), watchPlayback: bilibiliIntlWatchPlayback },
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
-  { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) }
+  { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
+  { id: 'iqiyi', matchesHost: (hostname) => isIqiyiHost(hostname), createAdapter: () => new IqiyiAdapter() }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {
@@ -49,8 +56,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 }
 
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl');
+  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI reads only the page DOM.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi');
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Abspannmarken, Vorschaubilder. Schnellaktionen: Intro/Abspann überspringen und nächste Folge."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI-Integration"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Zeigt Serientitel und Folgenbezeichnung sowie die nächste Folge über den Player. Untertitel bleiben beim iQIYI-Player."
+  },
   "aboutTitle": {
     "message": "Über"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Nur Intro-/Abspannmarken; eingebrannte Untertitel lassen sich nicht ausschalten."
+  },
+  "rteNoteIqiyi": {
+    "message": "Nur Titel und nächste Folge; Untertitel bleiben beim iQIYI-Player."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

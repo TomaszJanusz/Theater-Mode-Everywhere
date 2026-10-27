@@ -948,6 +948,12 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères d’introduction/générique, Miniatures. Actions rapides : passer l’introduction/le générique et épisode suivant."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Intégration iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Affiche le titre de la série et l’intitulé de l’épisode, avec l’épisode suivant via le lecteur. Les sous-titres restent gérés par le lecteur iQIYI."
+  },
   "aboutTitle": {
     "message": "À propos"
   },
@@ -1164,6 +1170,9 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Repères de générique uniquement ; les sous-titres incrustés ne peuvent pas être désactivés."
+  },
+  "rteNoteIqiyi": {
+    "message": "Titre et épisode suivant uniquement ; les sous-titres restent gérés par le lecteur iQIYI."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

@@ -3,6 +3,7 @@ import { BILIBILI_PLAYER_SELECTOR, readBilibiliControls } from './bilibili';
 import { BILIBILI_INTL_PLAYER_SELECTOR, readBilibiliIntlControls } from './bilibili-intl';
 import { DAILYMOTION_PLAYER_SELECTOR, readDailymotionControls } from './dailymotion';
 import { findDisneyPlaylistActions } from './disney';
+import { IQIYI_PLAYER_SELECTOR, readIqiyiControls } from './iqiyi';
 import { findNetflixPlaylistActions } from './netflix';
 import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
@@ -16,7 +17,8 @@ export const HOST_PLAYER_SCOPE = [
   DAILYMOTION_PLAYER_SELECTOR,
   BILIBILI_PLAYER_SELECTOR,
   BILIBILI_INTL_PLAYER_SELECTOR,
-  TENCENT_PLAYER_SELECTOR
+  TENCENT_PLAYER_SELECTOR,
+  IQIYI_PLAYER_SELECTOR
 ].join(', ');
 
 export function findProviderPlaylistActions(
@@ -69,6 +71,7 @@ function readHostControls(root: ParentNode) {
     ...readBilibiliControls(root),
     ...readBilibiliIntlControls(root),
     ...readTencentControls(root),
+    ...readIqiyiControls(root),
     ...readVimeoShowcaseControls(root)
   ];
 }
