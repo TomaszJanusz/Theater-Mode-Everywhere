@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switch Video on Page (Shift+T or the player settings menu) now fills the window with the next video on pages that list several videos, such as a Telegram channel's post list (t.me/s/…). The next video could appear shifted up and to the left, partly or entirely off-screen, with the page showing around it.
 - Theater mode now fills the window on pages that list several posts with videos, such as a Telegram channel's post list (t.me/s/…). The video could instead appear shifted up and to the left, cut off at the top-left corner of the window, with the page showing around it.
 
+## [2.0.7] - 2026-10-26
+
+### Fixed
+
+- Theater mode now fills the window on pages that list several posts with videos, such as a Telegram channel's post list (t.me/s/…). The video could instead appear shifted up and to the left, cut off at the top-left corner of the window, with the page showing around it.
+
 ## [2.0.6] - 2026-10-24
 
 ### Fixed
