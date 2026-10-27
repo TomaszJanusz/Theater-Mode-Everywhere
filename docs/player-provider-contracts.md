@@ -213,13 +213,16 @@ placement algorithm remains independent of that runtime flag. Provider slots
 still take precedence. Generic overlay slots remain frozen for each
 appearance despite page chrome mutations. A changed video rectangle or viewport
 removes and remounts the button rather than moving the mounted control. Playback
-hides the overlay launcher only when the viewer started it: a pointer press on the video, or a
+ends the overlay launcher only when the viewer started it: a pointer press on the video, or a
 key press inside its container, within `ACTIVATOR_PRESS_WINDOW_MS` before `play`. Any other
 start is autoplay and leaves the launcher available, however long after the load (a press
 elsewhere, such as accepting a consent banner, does not count; nor does `userActivation`, which
 that click would also satisfy), as does any start within `ACTIVATOR_PLAY_GRACE_MS` of the page load
 (or of an SPA visit's start, when the navigation click still lands on the page). The classification
-is latched per video at `play` and discovery; no timer ends it. Pausing makes it eligible again through the same proximity selection.
+is latched per video at `play` and discovery. When the viewer starts playback while the launcher is
+shown, it stays for `PLAY_LINGER_MS` (3 s) and then hides like the idle fade; pointer movement does
+not extend that, keyboard focus on the launcher keeps it, and pause, removal, navigation and entering
+theater cancel it (persistent provider slots have no such timing). Pausing makes it eligible again through the same proximity selection.
 There is no additional polling.
 
 ## Native chat

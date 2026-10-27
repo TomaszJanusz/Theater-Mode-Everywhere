@@ -33,6 +33,8 @@ const EXTENSION_UI_HOST_ID = 'theater-everywhere-ui';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Like the host's own controls, the button gets out of the way once the pointer rests. */
 const IDLE_HIDE_MS = 2500;
+/** After the viewer presses play the launcher stays this long, so the press is not met by a vanishing button. */
+const PLAY_LINGER_MS = 3000;
 
 /** Page UI the activator must not cover: anything a viewer could press, read or type into. */
 const INTERACTIVE_SELECTOR = [
@@ -164,6 +166,8 @@ export function createVideoActivator(options: {
   let shownBox: string | null = null;
   let lastActivity = 0;
   let idleHidden = false;
+  /** The shown launcher's video that the viewer just started; it hides at `until`, whatever the pointer does. */
+  let lingering: { video: HTMLVideoElement; until: number } | null = null;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingPoint: [number, number] | null = null;
   let pointFrame = 0;
@@ -210,7 +214,7 @@ export function createVideoActivator(options: {
 
   /** Overlay eligibility: paused, or playing on its own (autoplay) rather than because the viewer pressed play. */
   function eligible(video: HTMLVideoElement, box: Box): boolean {
-    return (video.paused || selfStarted.has(video)) && launchable(video, box);
+    return (video.paused || selfStarted.has(video) || lingering?.video === video) && launchable(video, box);
   }
 
   function isFree(video: HTMLVideoElement, box: Box, x: number, y: number): boolean {
@@ -239,23 +243,43 @@ export function createVideoActivator(options: {
   }
 
   function leave(): void {
+    lingering = null;
     hideButton();
     button = null;
     hovered = null;
     idleHidden = false;
   }
 
-  function armIdle(ms = IDLE_HIDE_MS): void {
+  /** Time left before the launcher hides: the play linger when one runs, else the idle window. */
+  const hideRemaining = () => lingering ? lingering.until - performance.now()
+    : IDLE_HIDE_MS - (performance.now() - lastActivity);
+
+  function armIdle(): void {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       idleTimer = undefined;
       // Pointermove only stamps the time; one timer re-arms for the remainder.
-      const rest = IDLE_HIDE_MS - (performance.now() - lastActivity);
-      if (rest > 0) { armIdle(rest); return; }
+      if (hideRemaining() > 0) { armIdle(); return; }
       if (document.activeElement === button || peekPlayerUiRoot()?.activeElement === button) return; // keyboard focus keeps it
+      const ended = lingering;
+      if (ended) {
+        // The video is playing on the viewer's say-so, so it is no longer a candidate for a launcher.
+        lingering = null;
+        candidates.delete(ended.video);
+        leave();
+        return;
+      }
       idleHidden = true;
       hideButton();
-    }, ms);
+    }, Math.max(0, hideRemaining()));
+  }
+
+  /** The viewer started `video` while its launcher is shown: keep it for a moment, then fade as usual. */
+  function lingerAfterPlay(video: HTMLVideoElement): void {
+    if (lingering?.video === video) return;
+    if (!button?.isConnected) { leave(); return; }
+    lingering = { video, until: performance.now() + PLAY_LINGER_MS };
+    armIdle();
   }
 
   const currentTitle = () => activatorTitle(options.label(), options.shortcut(), shortcutDisplayEnv());
@@ -361,7 +385,7 @@ export function createVideoActivator(options: {
       shownBox = key;
       idleHidden = false;
       if (focused) nativeButton.focus();
-      armIdle(Math.max(0, IDLE_HIDE_MS - (performance.now() - lastActivity)));
+      armIdle();
       return;
     }
     const spot = place(video, box);
@@ -380,7 +404,7 @@ export function createVideoActivator(options: {
     shownBox = key;
     if (focused) element.focus();
     idleHidden = false;
-    armIdle(Math.max(0, IDLE_HIDE_MS - (performance.now() - lastActivity)));
+    armIdle();
   }
 
   function consider(video: HTMLVideoElement | null, activity = false): void {
@@ -518,7 +542,8 @@ export function createVideoActivator(options: {
         for (const event of ['play', 'playing', 'pause', 'loadedmetadata', 'emptied', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
           videoScope.listen(node, event, () => {
             if (event === 'play') classifyPlayback(node);
-            if (!node.paused && hovered === node && !selfStarted.has(node)) leave();
+            if (event === 'pause' && lingering?.video === node) { lingering = null; if (button?.isConnected) armIdle(); }
+            if (!node.paused && hovered === node && !selfStarted.has(node)) lingerAfterPlay(node);
             schedule();
           });
         }
