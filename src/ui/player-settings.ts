@@ -70,8 +70,11 @@ export function createPlayerSettings(
   // Track choice comes from the provider, not Web Audio, so a blocked audio graph does not hide it.
   const audioTrackBody = document.createElement('div');
   audioTrackBody.className = 'theater-settings-section-body';
+  // Named groups: track choice and audio processing are different kinds of rows in one section.
+  audioTrackBody.dataset.settingsGroup = 'tracks';
   const audioBody = document.createElement('div');
   audioBody.className = 'theater-settings-section-body';
+  audioBody.dataset.settingsGroup = 'processing';
   // Replaces the audio rows when the video's audio cannot be processed, so the reason is stated once.
   const audioNote = document.createElement('p');
   audioNote.className = 'theater-settings-note';
