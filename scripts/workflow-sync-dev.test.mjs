@@ -56,7 +56,8 @@ test('sync-dev report only files issues for a failed verify and checks out nothi
 });
 
 test('sync-dev merges main with a real merge commit and pushes only dev', () => {
-  assert.match(source, /git merge --no-ff --no-edit origin\/main/);
+  assert.match(source, /git merge --no-ff --no-commit origin\/main/);
+  assert.match(source, /git commit --no-edit --cleanup=strip\n\s+git push origin dev\n/);
   assert.doesNotMatch(source, /--squash|git rebase|--force|\+dev/);
   const pushes = source.match(/^\s*git push .*/gm)?.map(line => line.trim()) ?? [];
   assert.deepEqual(pushes, ['git push origin dev']);
@@ -64,11 +65,23 @@ test('sync-dev merges main with a real merge commit and pushes only dev', () => 
 
 test('sync-dev conflicts abort the merge, open or update one issue and fail the job', () => {
   assert.match(source, /git merge --abort/);
-  assert.match(source, /git switch dev && git merge origin\/main/);
+  assert.match(source, /git switch dev && git merge --no-ff --no-commit origin\/main/);
   assert.match(source, /gh issue list --state open/);
   assert.match(source, /gh issue create --title "\$ISSUE_TITLE"/);
   assert.match(source, /ISSUE_TITLE: dev ← main sync has conflicts/);
   const report = job('merge').split('- name: Report conflicts\n')[1];
   assert.match(report, /if: steps\.merge\.outputs\.conflicted == 'true'/);
   assert.match(report, /exit 1\s*$/);
+});
+
+test('sync-dev merges CHANGELOG.md with main\'s resolver and pushes only a fully merged tree', () => {
+  const merge = job('merge');
+  // The resolver comes from the workflow's own commit, never from the dev checkout.
+  assert.match(merge, /git show "\$GITHUB_SHA:scripts\/merge-changelog\.mjs" > "\$RUNNER_TEMP\/merge-changelog\.mjs"/);
+  assert.match(merge, /node "\$RUNNER_TEMP\/merge-changelog\.mjs"/);
+  assert.deepEqual(merge.match(/^\s*(?:&& )?node .*/gm)?.map(line => line.trim()), ['&& node "$RUNNER_TEMP/merge-changelog.mjs" 2> changelog-error.txt; then']);
+  // It runs whether git conflicted or not, and gates the push.
+  assert.match(merge, /--no-commit origin\/main \|\| true\n[\s\S]*merge-changelog[\s\S]*if \[ "\$changelog_merged" = true \] && \[ ! -s conflicts\.txt \]; then\n\s+git commit/);
+  assert.match(merge, /if \[ "\$changelog_merged" = false \] && ! grep -qx CHANGELOG\.md conflicts\.txt; then\n\s+echo CHANGELOG\.md >> conflicts\.txt/);
+  assert.match(merge, /node scripts\/merge-changelog\.mjs {2}# merges CHANGELOG\.md when it can/);
 });
