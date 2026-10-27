@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "前进一帧（0.04 秒）"
   },
+  "decreasePlaybackSpeed": {
+    "message": "降低播放速度"
+  },
+  "increasePlaybackSpeed": {
+    "message": "提高播放速度"
+  },
   "toggleFullscreen": {
     "message": "切换全屏"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "后退 / 前进一帧"
+  },
+  "helpPlaybackSpeed": {
+    "message": "播放速度 减慢 / 加快"
   },
   "helpVolume": {
     "message": "降低 / 提高音量（5%）"

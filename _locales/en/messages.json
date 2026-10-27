@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Frame Step Forward (0.04s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Decrease Playback Speed"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Increase Playback Speed"
+  },
   "toggleFullscreen": {
     "message": "Toggle Fullscreen"
   },
@@ -1183,6 +1189,9 @@
   },
   "helpFrameStep": {
     "message": "Frame step back / forward"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Playback speed slower / faster"
   },
   "helpVolume": {
     "message": "Volume down / up (5%)"

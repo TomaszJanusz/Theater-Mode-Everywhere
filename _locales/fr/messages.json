@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Avancer d'une image (0,04 s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Ralentir la lecture"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Accélérer la lecture"
+  },
   "toggleFullscreen": {
     "message": "Activer/Désactiver le plein écran"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "Image précédente / suivante"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Vitesse de lecture plus lente / plus rapide"
   },
   "helpVolume": {
     "message": "Baisser / augmenter le volume (5 %)"

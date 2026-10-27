@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Кадр вперед (0,04 с)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Зменшити швидкість відтворення"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Збільшити швидкість відтворення"
+  },
   "toggleFullscreen": {
     "message": "Повноекранний режим"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "Попередній / наступний кадр"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Швидкість відтворення повільніше / швидше"
   },
   "helpVolume": {
     "message": "Тихіше / гучніше (5%)"

@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Шаг вперед на кадр (0,04 сек)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Уменьшить скорость воспроизведения"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Увеличить скорость воспроизведения"
+  },
   "toggleFullscreen": {
     "message": "Полноэкранный режим"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "Кадр назад / вперёд"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Скорость воспроизведения медленнее / быстрее"
   },
   "helpVolume": {
     "message": "Тише / громче (5%)"

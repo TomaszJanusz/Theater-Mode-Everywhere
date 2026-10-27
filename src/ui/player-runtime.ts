@@ -1,7 +1,10 @@
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
+import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
+import { formatRate, stepPlaybackRate } from './speed-control';
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
+import { systemClock } from './ui-clock';
 import { HIGHLIGHT_NEW_FEATURES_STORAGE_KEY, resolveHighlightNewFeatures, withFeatureHighlightsLocal, FEATURE_HIGHLIGHTS_LOCAL_KEYS } from '../feature-highlights';
 import { readFeatureHighlightsLocal } from '../feature-highlights-storage';
 import { LANGUAGE_STORAGE_KEY } from '../language';
@@ -138,6 +141,7 @@ import {
   TITLE_HUD_CLASS,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_LAYOUT_ICON,
+  STATUS_HUD_SPEED_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
   audioHudIcon,
@@ -555,6 +559,13 @@ function executeCommand(command: PlayerCommand): void {
       if (seekBy(surface, command.delta) && Math.abs(command.delta) >= 5) {
         triggerSeekIndicator(command.delta < 0 ? 'left' : 'right');
       }
+      break;
+    }
+    case 'STEP_PLAYBACK_RATE': {
+      const surface = sessionSurface();
+      if (!surface) break;
+      surface.playbackRate = stepPlaybackRate(surface.playbackRate, command.direction);
+      triggerStatusIndicator(formatRate(surface.playbackRate), STATUS_HUD_SPEED_ICON);
       break;
     }
     case 'TOGGLE_CAPTIONS':
@@ -1381,6 +1392,29 @@ function theaterDialogOpen(): boolean {
   return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
+// The surface a seek-forward hold sped up, and the rate to give back on release.
+let heldPlaybackRate: { surface: PlaybackSurface; restore: number } | null = null;
+
+const seekForwardHold = createSeekHold({
+  clock: systemClock,
+  tap: () => executeCommand({ type: 'SEEK_BY', delta: 5 }),
+  startHold: () => {
+    const surface = session.element ? sessionSurface() : null;
+    if (!surface) return;
+    heldPlaybackRate = { surface, restore: surface.playbackRate };
+    surface.playbackRate = SEEK_HOLD_RATE;
+    triggerStatusIndicator(formatRate(SEEK_HOLD_RATE), STATUS_HUD_SPEED_ICON);
+  },
+  endHold: () => {
+    const held = heldPlaybackRate;
+    heldPlaybackRate = null;
+    // A rate chosen during the hold (the speed keys or menu) is the user's newer choice; keep it.
+    if (!held || held.surface.playbackRate !== SEEK_HOLD_RATE) return;
+    held.surface.playbackRate = held.restore;
+    triggerStatusIndicator(formatRate(held.restore), STATUS_HUD_SPEED_ICON);
+  }
+});
+
 function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
@@ -1411,7 +1445,8 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    executeCommand({ type: 'SEEK_BY', delta: 5 });
+    // A tap seeks when the key comes up; holding it plays faster instead. Auto-repeats belong to the hold.
+    if (!e.repeat) seekForwardHold.press(e.code || e.key);
   } else if (matchesShortcut(e, shortcuts.frameBack)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1422,6 +1457,11 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.stopPropagation();
     e.stopImmediatePropagation();
     executeCommand({ type: 'SEEK_BY', delta: 0.04 });
+  } else if (matchesShortcut(e, shortcuts.decreaseSpeed) || matchesShortcut(e, shortcuts.increaseSpeed)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    executeCommand({ type: 'STEP_PLAYBACK_RATE', direction: matchesShortcut(e, shortcuts.increaseSpeed) ? 1 : -1 });
   } else if (matchesShortcut(e, shortcuts.volumeUp)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1473,6 +1513,7 @@ function initialize(): void {
   // Position keys (the Navigation group) are named for what this keyboard prints on them; display only.
   void loadKeyboardLayout();
   session.runtimeScope.add(() => {
+    seekForwardHold.cancel();
     navigation.end();
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
@@ -1502,6 +1543,20 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   const claimedKeyReleases = new Set<string>();
+  // A seek-forward press sent to the theater iframe, whose release must follow it there.
+  let forwardedSeekPress: { iframe: HTMLIFrameElement; key: string } | null = null;
+  const forwardSeekRelease = (release: 'keyup' | 'blur') => {
+    const pressed = forwardedSeekPress;
+    forwardedSeekPress = null;
+    if (!pressed?.iframe.contentWindow) return;
+    frames.postToChildIframe(pressed.iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), { key: pressed.key, release });
+  };
+  // keypress shares the keyup listener; only a keyup releases the key.
+  const releaseSeekForward = (event: KeyboardEvent, key: string) => {
+    if (event.type !== 'keyup') return;
+    seekForwardHold.release(key);
+    if (forwardedSeekPress?.key === key) forwardSeekRelease('keyup');
+  };
   const handleKeydown = (event: KeyboardEvent): boolean => {
     if (event.isComposing || isChatDocument(window.location.href) || isNativeChatEvent(event)) return false;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
@@ -1710,10 +1765,16 @@ function initialize(): void {
             matchesShortcut(event, shortcuts.seekForward) ||
             matchesShortcut(event, shortcuts.frameBack) ||
             matchesShortcut(event, shortcuts.frameForward) ||
+            matchesShortcut(event, shortcuts.decreaseSpeed) ||
+            matchesShortcut(event, shortcuts.increaseSpeed) ||
             matchesShortcut(event, shortcuts.toggleMute) ||
             matchesShortcut(event, shortcuts.increaseCaptionSize) ||
             matchesShortcut(event, shortcuts.decreaseCaptionSize);
           if ((previous || next) && !claimed) return false;
+          if (!event.repeat && matchesShortcut(event, shortcuts.seekForward)) {
+            forwardSeekRelease('keyup');
+            forwardedSeekPress = { iframe, key: event.code || event.key };
+          }
           frames.postToChildIframe(iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), {
             key: event.key,
             code: event.code,
@@ -1739,7 +1800,13 @@ function initialize(): void {
     if (handleKeydown(event)) claimedKeyReleases.add(event.code || event.key);
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
-  session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
+  session.runtimeScope.listen(window, 'blur', () => {
+    claimedKeyReleases.clear();
+    // Without focus the release never arrives, so a hold ends here and a pending tap is dropped.
+    seekForwardHold.cancel();
+    forwardSeekRelease('blur');
+  });
+  session.runtimeScope.add(() => forwardSeekRelease('blur'));
   session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
     if (isChatDocument(window.location.href)) return;
     if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
@@ -1765,6 +1832,7 @@ function initialize(): void {
   listeners.keyup = (event: KeyboardEvent) => {
     if (event.isComposing || isChatDocument(window.location.href) || isNativeChatEvent(event)) return;
     const key = event.code || event.key;
+    releaseSeekForward(event, key);
     if (claimedKeyReleases.has(key)) {
       if (event.type === 'keyup') claimedKeyReleases.delete(key);
       // Tencent handles playback on release. Suppress only gestures claimed on
@@ -1892,7 +1960,11 @@ function initialize(): void {
     } else if (envelope.type === 'FRAME_EXITED') {
       return;
     } else if (envelope.type === 'PLAYBACK_COMMAND') {
-      if (session.element && session.element.tagName === 'VIDEO') {
+      const release = envelope.payload.release;
+      if (release === 'keyup' || release === 'blur') {
+        if (release === 'blur') seekForwardHold.cancel();
+        else if (typeof envelope.payload.key === 'string') seekForwardHold.release(envelope.payload.key);
+      } else if (session.element && session.element.tagName === 'VIDEO') {
         const video = session.element as HTMLVideoElement;
         handleVideoKey({
           key: envelope.payload.key,
@@ -2506,6 +2578,7 @@ function exitTheaterMode(
 ): void {
   if (!session.dispatch({ type: 'EXIT', origin, sessionId, from })) return;
   const closedSessionId = session.id;
+  seekForwardHold.cancel();
   cancelAudioReload?.();
   cancelAudioReload = null;
   try {

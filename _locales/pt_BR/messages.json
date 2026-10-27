@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Avançar um Quadro (0,04s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Diminuir Velocidade de Reprodução"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Aumentar Velocidade de Reprodução"
+  },
   "toggleFullscreen": {
     "message": "Alternar Tela Cheia"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "Quadro anterior / próximo"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Velocidade de reprodução mais lenta / mais rápida"
   },
   "helpVolume": {
     "message": "Diminuir / aumentar volume (5%)"

@@ -35,7 +35,17 @@ function closestSpeedIndex(rate: number): number {
   return closest;
 }
 
-const formatRate = (rate: number) => `${rate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
+export const formatRate = (rate: number) => `${rate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
+
+/**
+ * The next level of the speed menu past `rate` in `direction`. A rate the host set between or beyond the
+ * levels moves to the nearest level on that side, and one already past the last level stays where it is.
+ */
+export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
+  const next = direction > 0 ? SPEED_LEVELS.find(level => level > rate + 1e-6)
+    : SPEED_LEVELS.findLast(level => level < rate - 1e-6);
+  return next ?? rate;
+}
 
 export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   const { video, scope, label } = options;

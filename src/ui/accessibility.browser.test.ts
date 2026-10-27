@@ -315,7 +315,9 @@ for (const [engine, browserType] of selectTestEngines(Object.entries({ chromium,
             resolve(seen);
           });
           observer.observe(status, { childList: true, subtree: true, characterData: true });
+          // Seek forward runs on release, so the second press is a whole tap.
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }));
+          document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true, composed: true }));
         }));
         assert.equal(sequence[0], '', 'the region is cleared before the repeated message');
         assert.equal(sequence.at(-1), first, 'the latest message is restored afterwards');

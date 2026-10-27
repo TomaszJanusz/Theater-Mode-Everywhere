@@ -518,6 +518,12 @@
   "frameStepForward004": {
     "message": "Fotogramma successivo (0,04s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Riduci velocità di riproduzione"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Aumenta velocità di riproduzione"
+  },
   "toggleFullscreen": {
     "message": "Attiva/Disattiva schermo intero"
   },
@@ -1182,6 +1188,9 @@
   },
   "helpFrameStep": {
     "message": "Fotogramma precedente / successivo"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Velocità di riproduzione più lenta / più veloce"
   },
   "helpVolume": {
     "message": "Abbassa / alza volume (5%)"
