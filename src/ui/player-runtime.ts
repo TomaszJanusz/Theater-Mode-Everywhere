@@ -247,7 +247,12 @@ const {
 const { createCustomControls, destroyCustomControls } = controls;
 const destroyNavigatedControls = (): void => { navigation.end(); destroyCustomControls(); };
 
-let pendingVideoPointer: { path: WeakRef<Node>[]; href: string } | null = null;
+/**
+ * The last pointer path, kept by reference: a WeakRef per node cost an allocation burst on every
+ * mousemove. Each event replaces it, and consumption, navigation and exit clear it, so nodes are
+ * retained only until the next pointer move.
+ */
+let pendingVideoPointer: { path: readonly EventTarget[]; href: string } | null = null;
 
 function refreshPointerVideo(): void {
   const pointer = pendingVideoPointer;
@@ -255,10 +260,9 @@ function refreshPointerVideo(): void {
   // Reject the whole path if its origin disappeared; surviving body/html
   // ancestors must not turn an old overlay into a new player selection.
   if (!pointer || pointer.href !== window.location.href) return;
-  const origin = pointer.path[0]?.deref();
-  if (!origin?.isConnected || origin.ownerDocument !== document) return;
-  for (const ref of pointer.path) {
-    const target = ref.deref();
+  const origin = pointer.path[0];
+  if (!(origin instanceof Node) || !origin.isConnected || origin.ownerDocument !== document) return;
+  for (const target of pointer.path) {
     if (!(target instanceof HTMLElement) || !target.isConnected) continue;
     const video = target instanceof HTMLVideoElement ? target
       : target.shadowRoot?.querySelector('video') || target.querySelector('video');
@@ -1866,11 +1870,7 @@ function initialize(): void {
 
   // 2. Remember the composed path without scanning DOM or retaining the event.
   listeners.mousemove = (event: MouseEvent) => {
-    pendingVideoPointer = {
-      path: event.composedPath().filter((target): target is Node => target instanceof Node)
-        .map(target => new WeakRef(target)),
-      href: window.location.href
-    };
+    pendingVideoPointer = { path: event.composedPath(), href: window.location.href };
   };
   session.runtimeScope.listen(document, 'mousemove', listeners.mousemove!, { passive: true });
 
