@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "Ein Bild vor (0,04 s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Wiedergabe verlangsamen"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Wiedergabe beschleunigen"
+  },
   "toggleFullscreen": {
     "message": "Vollbild umschalten"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "Ein Bild zurück / vor"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Wiedergabegeschwindigkeit langsamer / schneller"
   },
   "helpVolume": {
     "message": "Leiser / lauter (5%)"

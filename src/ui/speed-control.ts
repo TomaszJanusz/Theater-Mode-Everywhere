@@ -35,7 +35,17 @@ function closestSpeedIndex(rate: number): number {
   return closest;
 }
 
-const formatRate = (rate: number) => `${rate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
+export const formatRate = (rate: number) => `${rate.toFixed(2).replace(/\.00$|\.0$/, '')}x`;
+
+/**
+ * The next level of the speed menu past `rate` in `direction`. A rate the host set between or beyond the
+ * levels moves to the nearest level on that side, and one already past the last level stays where it is.
+ */
+export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
+  const next = direction > 0 ? SPEED_LEVELS.find(level => level > rate + 1e-6)
+    : SPEED_LEVELS.findLast(level => level < rate - 1e-6);
+  return next ?? rate;
+}
 
 export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   const { video, scope, label } = options;
@@ -69,6 +79,8 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
 
   let lastNonNormalSpeed = 1.5;
   const paint = () => {
+    // Follows every rate change (shortcuts, host), so the button toggles back to the latest speed.
+    if (video.playbackRate !== 1.0) lastNonNormalSpeed = video.playbackRate;
     const text = formatRate(video.playbackRate);
     buttonLabel.textContent = text;
     render({ value: closestSpeedIndex(video.playbackRate), text });
@@ -78,7 +90,6 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
 
   button.addEventListener('click', (event) => {
     if (video.playbackRate !== 1.0) {
-      lastNonNormalSpeed = video.playbackRate;
       video.playbackRate = 1.0;
     } else {
       video.playbackRate = lastNonNormalSpeed;
@@ -88,7 +99,6 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   slider.addEventListener('input', () => {
     const rate = SPEED_LEVELS[parseInt(slider.value, 10)];
     video.playbackRate = rate;
-    if (rate !== 1.0) lastNonNormalSpeed = rate;
     paint();
   });
   return { container, button, slider, sync: paint };

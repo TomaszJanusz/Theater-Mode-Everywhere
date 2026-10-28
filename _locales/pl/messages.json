@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "Przejdź o klatkę do przodu (0,04 s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Zmniejsz prędkość odtwarzania"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Zwiększ prędkość odtwarzania"
+  },
   "toggleFullscreen": {
     "message": "Przełącz pełny ekran"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "Poprzednia / następna klatka"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Wolniej / szybciej"
   },
   "helpVolume": {
     "message": "Ciszej / głośniej (5%)"

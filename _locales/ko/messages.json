@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "프레임 앞으로 (0.04초)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "재생 속도 낮추기"
+  },
+  "increasePlaybackSpeed": {
+    "message": "재생 속도 높이기"
+  },
   "toggleFullscreen": {
     "message": "전체 화면 전환"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "이전 / 다음 프레임"
+  },
+  "helpPlaybackSpeed": {
+    "message": "재생 속도 느리게 / 빠르게"
   },
   "helpVolume": {
     "message": "음량 낮추기 / 높이기 (5%)"

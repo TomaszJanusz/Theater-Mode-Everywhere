@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "Další snímek (0,04 s)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "Snížit rychlost přehrávání"
+  },
+  "increasePlaybackSpeed": {
+    "message": "Zvýšit rychlost přehrávání"
+  },
   "toggleFullscreen": {
     "message": "Přepnout celou obrazovku"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "Předchozí / další snímek"
+  },
+  "helpPlaybackSpeed": {
+    "message": "Rychlost přehrávání pomaleji / rychleji"
   },
   "helpVolume": {
     "message": "Snížit / zvýšit hlasitost (5 %)"

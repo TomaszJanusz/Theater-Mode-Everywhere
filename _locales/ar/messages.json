@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "إطار للأمام (0.04 ثانية)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "خفض سرعة التشغيل"
+  },
+  "increasePlaybackSpeed": {
+    "message": "زيادة سرعة التشغيل"
+  },
   "toggleFullscreen": {
     "message": "تبديل ملء الشاشة"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "إطار للخلف / للأمام"
+  },
+  "helpPlaybackSpeed": {
+    "message": "سرعة التشغيل أبطأ / أسرع"
   },
   "helpVolume": {
     "message": "خفض / رفع الصوت (5%)"

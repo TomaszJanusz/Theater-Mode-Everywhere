@@ -227,6 +227,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   frameStepForward: 'Frame Step Forward',
   frameStepBackward004: 'Frame Step Backward (0.04s)',
   frameStepForward004: 'Frame Step Forward (0.04s)',
+  decreasePlaybackSpeed: 'Decrease Playback Speed',
+  increasePlaybackSpeed: 'Increase Playback Speed',
   toggleFullscreen: 'Toggle Fullscreen',
   togglePictureInPicture: 'Toggle Picture-in-Picture',
   pressKeysPlaceholder: 'Press keys...',

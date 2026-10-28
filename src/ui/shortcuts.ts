@@ -13,6 +13,8 @@ export interface Shortcuts {
   nextVideo: string;
   frameBack: string;
   frameForward: string;
+  decreaseSpeed: string;
+  increaseSpeed: string;
   toggleFullscreen: string;
   volumeUp: string;
   volumeDown: string;
@@ -64,8 +66,11 @@ export const defaultShortcuts: Shortcuts = {
   playPause: 'Space',
   previousVideo: 'Shift+P',
   nextVideo: 'Shift+N',
-  frameBack: '<',
-  frameForward: '>',
+  // As on YouTube: , and . step frames, < and > (Shift+, and Shift+.) change the speed.
+  frameBack: ',',
+  frameForward: '.',
+  decreaseSpeed: '<',
+  increaseSpeed: '>',
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',
@@ -90,7 +95,7 @@ export const defaultShortcuts: Shortcuts = {
 };
 
 // Defaults added after release must not steal keys from existing custom actions.
-const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', ...NAVIGATION_SHORTCUTS];
+const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', ...NAVIGATION_SHORTCUTS];
 
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
   const next = { ...defaultShortcuts };

@@ -18,6 +18,7 @@ export type PlayerCommand =
   | { type: 'EXIT'; origin?: ExitOrigin; sessionId?: string; from?: ExitFrom }
   | { type: 'PLAY_PAUSE' }
   | { type: 'SEEK_BY'; delta: number }
+  | { type: 'STEP_PLAYBACK_RATE'; direction: 1 | -1 }
   | { type: 'TOGGLE_CAPTIONS' }
   | { type: 'TOGGLE_CHAT' }
   | { type: 'STEP_CAPTION_SIZE'; direction: 1 | -1 }

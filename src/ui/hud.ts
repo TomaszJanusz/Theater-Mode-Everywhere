@@ -28,6 +28,12 @@ export const STATUS_HUD_SWITCH_ICON = `
   </svg>
 `;
 
+export const STATUS_HUD_SPEED_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 6l7 6-7 6zM13 6l7 6-7 6z"></path>
+  </svg>
+`;
+
 export const STATUS_HUD_FIT_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>

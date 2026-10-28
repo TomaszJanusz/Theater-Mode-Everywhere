@@ -118,6 +118,16 @@ describe('shortcut ownership', () => {
     const defaults = Object.values(defaultShortcuts).filter(Boolean);
     assert.equal(defaults.every((left, index) => defaults.every((right, other) => other === index || !shortcutsConflict(left, right))), true);
   });
+  it('introduces speed shortcuts on the shifted frame-step keys, never taking a custom binding', () => {
+    const migrated = withShortcutDefaults({ toggleMute: '>' });
+    assert.equal(migrated.decreaseSpeed, '<');
+    assert.equal(migrated.increaseSpeed, '');
+    assert.equal(shortcutsConflict(defaultShortcuts.decreaseSpeed, defaultShortcuts.frameBack), false);
+    assert.equal(shortcutsConflict(defaultShortcuts.increaseSpeed, defaultShortcuts.frameForward), false);
+    assert.equal(matchesShortcut(key({ key: '<', code: 'Comma', shiftKey: true }), defaultShortcuts.decreaseSpeed), true);
+    assert.equal(matchesShortcut(key({ key: ',', code: 'Comma' }), defaultShortcuts.decreaseSpeed), false);
+    assert.equal(matchesShortcut(key({ key: ',', code: 'Comma' }), defaultShortcuts.frameBack), true);
+  });
   it('detects runtime aliases and implicit Shift without merging distinct modifiers', () => {
     for (const [a, b] of [['f', 'F'], ['F', 'KeyF'], ['+', '='], ['+', 'Shift+='], ['Ctrl++', 'Ctrl+Equal'], ['<', 'Shift+Comma'], ['Space', 'Spacebar']]) {
       assert.equal(shortcutsConflict(a, b), true, `${a} / ${b}`);

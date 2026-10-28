@@ -506,6 +506,12 @@
   "frameStepForward004": {
     "message": "1フレーム進む (0.04秒)"
   },
+  "decreasePlaybackSpeed": {
+    "message": "再生速度を下げる"
+  },
+  "increasePlaybackSpeed": {
+    "message": "再生速度を上げる"
+  },
   "toggleFullscreen": {
     "message": "全画面表示切り替え"
   },
@@ -1265,6 +1271,9 @@
   },
   "helpFrameStep": {
     "message": "1フレーム戻る / 進む"
+  },
+  "helpPlaybackSpeed": {
+    "message": "再生速度 遅く / 速く"
   },
   "helpVolume": {
     "message": "音量ダウン / アップ (5%)"

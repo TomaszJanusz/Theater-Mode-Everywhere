@@ -1,6 +1,7 @@
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
+import { formatRate, stepPlaybackRate } from './speed-control';
 
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
@@ -140,6 +141,7 @@ import {
   TITLE_HUD_CLASS,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_LAYOUT_ICON,
+  STATUS_HUD_SPEED_ICON,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
   audioHudIcon,
@@ -559,6 +561,14 @@ function executeCommand(command: PlayerCommand): void {
       if (seekBy(surface, command.delta) && Math.abs(command.delta) >= 5) {
         triggerSeekIndicator(command.delta < 0 ? 'left' : 'right');
       }
+      break;
+    }
+    case 'STEP_PLAYBACK_RATE': {
+      const surface = sessionSurface();
+      // The speed button hides for live playback; the shortcuts follow the button.
+      if (!surface || (queryPlayerUi('.theater-speed-container') as HTMLElement | null)?.hidden) break;
+      surface.playbackRate = stepPlaybackRate(surface.playbackRate, command.direction);
+      triggerStatusIndicator(formatRate(surface.playbackRate), STATUS_HUD_SPEED_ICON);
       break;
     }
     case 'TOGGLE_CAPTIONS':
@@ -1448,6 +1458,11 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.stopPropagation();
     e.stopImmediatePropagation();
     executeCommand({ type: 'SEEK_BY', delta: 0.04 });
+  } else if (matchesShortcut(e, shortcuts.decreaseSpeed) || matchesShortcut(e, shortcuts.increaseSpeed)) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    executeCommand({ type: 'STEP_PLAYBACK_RATE', direction: matchesShortcut(e, shortcuts.increaseSpeed) ? 1 : -1 });
   } else if (matchesShortcut(e, shortcuts.volumeUp)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1746,6 +1761,8 @@ function initialize(): void {
             matchesShortcut(event, shortcuts.seekForward) ||
             matchesShortcut(event, shortcuts.frameBack) ||
             matchesShortcut(event, shortcuts.frameForward) ||
+            matchesShortcut(event, shortcuts.decreaseSpeed) ||
+            matchesShortcut(event, shortcuts.increaseSpeed) ||
             matchesShortcut(event, shortcuts.toggleMute) ||
             matchesShortcut(event, shortcuts.increaseCaptionSize) ||
             matchesShortcut(event, shortcuts.decreaseCaptionSize);
