@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "기본값"
   },
+  "audioTrackFailedHud": {
+    "message": "오디오 트랙을 전환하지 못했습니다"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (기본값)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "페이지의 동영상 전환 $KEY$",
     "placeholders": {

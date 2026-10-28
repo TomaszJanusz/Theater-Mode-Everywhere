@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "Standard"
   },
+  "audioTrackFailedHud": {
+    "message": "Tonspur konnte nicht gewechselt werden"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Standard)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "Video auf der Seite wechseln $KEY$",
     "placeholders": {

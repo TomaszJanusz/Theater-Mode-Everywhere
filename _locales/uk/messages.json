@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "За замовчуванням"
   },
+  "audioTrackFailedHud": {
+    "message": "Не вдалося перемкнути звукову доріжку"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (За замовчуванням)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "Перемкнути відео на сторінці $KEY$",
     "placeholders": {

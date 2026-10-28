@@ -54,6 +54,16 @@ export type ChromeRefs = {
   embedderLinked: boolean;
 };
 
+/** What the language notice says about audio, with tracks named as the Audio track menu names them. */
+export type AudioTrackHudReport = {
+  /** The track playing now, or null when the host marks none. */
+  playing: string | null;
+  /** Set after a refused pick: the track asked for, or null when it was no longer offered. */
+  refused?: string | null;
+  /** The viewer chose Default: the service decides again and the current track stays. */
+  isDefault?: boolean;
+};
+
 export type PlayerChromeActions = {
   applyTheaterElementInlineStyles(element: HTMLElement): void;
   restoreTheaterElementInlineStyles(element: HTMLElement): void;
@@ -86,6 +96,7 @@ export type PlayerChromeActions = {
   applyTheaterVideoFit(mode?: VideoFitMode): void;
   applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
+  showAudioTrackHud(report: AudioTrackHudReport): void;
   syncContentTitle(title: ContentTitle | null): void;
   createPlayerHeader(): HTMLElement;
   executeCommand(command: PlayerCommand): void;

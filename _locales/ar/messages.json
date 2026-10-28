@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "افتراضي"
   },
+  "audioTrackFailedHud": {
+    "message": "تعذّر تبديل المسار الصوتي"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (افتراضي)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",
     "placeholders": {

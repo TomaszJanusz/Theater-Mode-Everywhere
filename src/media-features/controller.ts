@@ -57,6 +57,7 @@ export type MediaFeaturesBindings = {
   audioLocales?: AudioTrackOptions['locales'];
   onAudioPreferenceChange?: AudioTrackOptions['onPreferenceChange'];
   onAudioTracksChange?: () => void;
+  onAudioTrackResult?: AudioTrackOptions['onResult'];
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -146,7 +147,8 @@ export class MediaFeaturesController {
       preference: bindings.audioPreference ?? (() => null),
       locales: bindings.audioLocales ?? (() => []),
       onPreferenceChange: bindings.onAudioPreferenceChange,
-      onChange: () => bindings.onAudioTracksChange?.()
+      onChange: () => bindings.onAudioTracksChange?.(),
+      onResult: (result) => bindings.onAudioTrackResult?.(result)
     });
     const pref = bindings.captionPreference;
     if (pref && (pref.language || pref.label)) {

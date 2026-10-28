@@ -168,7 +168,8 @@ import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
   createChromeRefs,
-  createPlayerChromeContext
+  createPlayerChromeContext,
+  type AudioTrackHudReport
 } from './runtime-context';
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
@@ -220,6 +221,7 @@ const {
   triggerPlaybackIndicator,
   dismissPlaybackIndicator,
   triggerCaptionHud,
+  updateLanguageHud,
   syncContentTitle
 } = hud;
 const {
@@ -711,6 +713,7 @@ function bindChromeActions(): void {
     applyTheaterVideoFit,
     applySubtitleLayout,
     showCaptionHud,
+    showAudioTrackHud,
     createPlayerHeader: hud.createPlayerHeader,
     syncContentTitle,
     executeCommand,
@@ -1066,15 +1069,28 @@ function showCaptionHud(payload: CaptionHudPayload): void {
     return;
   }
   if (payload.result === 'on') {
-    triggerCaptionHud({
-      kind: 'status',
-      title: t('subtitlesOnHud'),
-      ...(payload.label ? { detail: payload.label } : {}),
-      duration: 4_000
-    });
+    triggerCaptionHud({ kind: 'status', title: t('subtitlesOnHud'), ...(payload.label ? { detail: payload.label } : {}) });
     return;
   }
   triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud') });
+}
+
+/** The audio lines of the language notice; the subtitles line stays as it is. */
+function showAudioTrackHud(report: AudioTrackHudReport): void {
+  const playing = report.playing === null ? null : {
+    kind: 'status' as const,
+    title: t('audioTrackLabel'),
+    detail: report.isDefault ? t('audioTrackDefaultHud', report.playing) : report.playing
+  };
+  if (report.refused === undefined) {
+    updateLanguageHud({ audio: playing, audioRefused: null });
+    return;
+  }
+  updateLanguageHud({
+    // A refusal keeps naming what still plays; with nothing to name, an earlier audio line stays.
+    ...(playing ? { audio: playing } : {}),
+    audioRefused: { kind: 'status', title: t('audioTrackFailedHud'), ...(report.refused ? { detail: report.refused } : {}) }
+  });
 }
 
 async function toggleTheaterCaptions(): Promise<void> {

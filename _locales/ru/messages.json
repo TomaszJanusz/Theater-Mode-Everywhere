@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "По умолчанию"
   },
+  "audioTrackFailedHud": {
+    "message": "Не удалось переключить звуковую дорожку"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (По умолчанию)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "Переключить видео на странице $KEY$",
     "placeholders": {

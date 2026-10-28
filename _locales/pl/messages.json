@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "Domyślne"
   },
+  "audioTrackFailedHud": {
+    "message": "Nie udało się przełączyć ścieżki audio"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Domyślne)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "Przełącz wideo na stronie $KEY$",
     "placeholders": {

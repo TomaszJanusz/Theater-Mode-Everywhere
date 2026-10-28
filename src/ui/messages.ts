@@ -176,6 +176,8 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   audioTrackDescription: "$1 (audio description)",
   audioTrackCommentary: "$1 (commentary)",
   audioTrackServiceDefault: "Default",
+  audioTrackFailedHud: "Couldn't switch audio track",
+  audioTrackDefaultHud: "$1 (Default)",
   subtitlesMenuTitle: 'Subtitles',
   subtitleOptions: 'Options',
   subtitleOptionsTitle: 'Subtitle options',

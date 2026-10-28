@@ -1,8 +1,10 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import type { AudioTrackResult, IndexedAudioTrack } from '../media-features/audio-tracks';
 import type { AudioTrack } from '../media-features/types';
 
 import { ChoiceMenu } from './cc-menu';
 import type { createPlayerSettings } from './player-settings';
+import type { AudioTrackHudReport } from './runtime-context';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
 type PlayerSettings = ReturnType<typeof createPlayerSettings>;
@@ -25,6 +27,16 @@ export function audioTrackDisplayLabel(track: AudioTrack, index: number, t: Tran
   if (track.kind === 'description') return t('audioTrackDescription', name);
   if (track.kind === 'commentary') return t('audioTrackCommentary', name);
   return name;
+}
+
+/** The language notice's audio lines for a result, naming tracks as the menu does. */
+export function audioTrackHudReport(result: AudioTrackResult, t: Translate, locale: string, isDefault = false): AudioTrackHudReport {
+  const label = ({ track, index }: IndexedAudioTrack) => audioTrackDisplayLabel(track, index, t, locale);
+  return {
+    playing: result.playing && label(result.playing),
+    ...(result.refused === undefined ? {} : { refused: result.refused && label(result.refused) }),
+    ...(isDefault ? { isDefault } : {})
+  };
 }
 
 /**

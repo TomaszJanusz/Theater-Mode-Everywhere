@@ -1,8 +1,9 @@
 import { expect, test } from 'vitest';
 
 
-import { CAPTION_LOADING_HUD_DELAY_MS, HUD_FADE_OUT_MS, type CaptionHudView } from '../../src/ui/hud';
-import { t } from '../../src/ui/messages';
+import { HUD_FADE_OUT_MS } from '../../src/ui/hud';
+import type { CaptionHudView } from '../../src/ui/language-hud';
+import { LANGUAGE_AFTER_UPDATE_MS, LANGUAGE_MIN_VISIBLE_MS, LANGUAGE_LOAD_DELAY_MS } from '../../src/ui/language-notice';
 import { queryPlayerUi } from '../../src/ui/root';
 import { hudCase as hudStory, runHudCase, type HudCase } from '../fixture-test';
 import { activeAnimationCount, uiNodeCount } from '../hud-stage';
@@ -17,17 +18,16 @@ type Story = HudCase;
 const MAX_PLATE_ANIMATIONS = 8;
 
 const LOADING: CaptionHudView = { kind: 'loading', title: 'Loading' };
-const status = (title: string, detail?: string, duration?: number): CaptionHudView =>
-  ({ kind: 'status', title, ...(detail ? { detail } : {}), ...(duration ? { duration } : {}) });
+const status = (title: string, detail?: string): CaptionHudView => ({ kind: 'status', title, ...(detail ? { detail } : {}) });
 const notice = () => queryPlayerUi<HTMLElement>(CAPTION_HUD);
 
 /** A download that finishes inside the delay never shows anything and leaves no timer. */
 const FastLoadNeverFlashes: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS - 1);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS - 1);
     await expect(notice()).toBeNull();
     hud().triggerCaptionHud({ kind: 'dismiss' });
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
     await expect(notice()).toBeNull();
     await expect(stage().clock.pending).toBe(0);
   }
@@ -36,7 +36,7 @@ test('FastLoadNeverFlashes', () => runHudCase(FastLoadNeverFlashes));
 
 const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
     const shown = notice()!;
     stage().advance(60_000);
     await expect(notice()).toBe(shown);
@@ -47,10 +47,10 @@ const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LOADING),
 });
 test('LoadingStaysUntilDone', () => runHudCase(LoadingStaysUntilDone));
 
-const StatusHidesAfterDuration: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const StatusHidesAfterMinimum: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
   play: async () => {
     const shown = notice()!;
-    stage().advance(799);
+    stage().advance(LANGUAGE_MIN_VISIBLE_MS - 1);
     await expect(shown.classList.contains('fade-out')).toBe(false);
     stage().advance(1);
     await expect(shown.classList.contains('fade-out')).toBe(true);
@@ -59,40 +59,30 @@ const StatusHidesAfterDuration: Story = hudStory(h => h.triggerCaptionHud(status
     await expect(stage().clock.pending).toBe(0);
   }
 });
-test('StatusHidesAfterDuration', () => runHudCase(StatusHidesAfterDuration));
+test('StatusHidesAfterMinimum', () => runHudCase(StatusHidesAfterMinimum));
 
-const StatusDurationIsHonoured: Story = hudStory(h => h.triggerCaptionHud(status(t('subtitlesOnHud'), 'English', 4000)), {
-  play: async () => {
-    stage().advance(3999);
-    await expect(notice()?.classList.contains('fade-out')).toBe(false);
-    stage().advance(1);
-    await expect(notice()?.classList.contains('fade-out')).toBe(true);
-  }
-});
-test('StatusDurationIsHonoured', () => runHudCase(StatusDurationIsHonoured));
-
-/** A second status while one shows rewrites the same plate and restarts its timer. */
-const RetriggerResetsTimer: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+/** A second status late in the hold rewrites the same plate and keeps it for the time after an update. */
+const LateRetriggerExtends: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
   play: async () => {
     const shown = notice()!;
-    stage().advance(700);
+    stage().advance(3500);
     hud().triggerCaptionHud(status('Captions on', 'English'));
     await expect(notice()).toBe(shown);
     await expect(shown.querySelector('.volume-hud-text')?.textContent).toBe('Captions on');
     await expect(stage().clock.pending).toBe(1);
-    stage().advance(799);
+    stage().advance(LANGUAGE_AFTER_UPDATE_MS - 1);
     await expect(shown.classList.contains('fade-out')).toBe(false);
     stage().advance(1);
     await expect(shown.classList.contains('fade-out')).toBe(true);
   }
 });
-test('RetriggerResetsTimer', () => runHudCase(RetriggerResetsTimer));
+test('LateRetriggerExtends', () => runHudCase(LateRetriggerExtends));
 
 /** Work for an earlier media or session must not show, hide or remove anything for a later one. */
 const StaleLoadingNeverShows: Story = hudStory(h => h.triggerCaptionHud(LOADING), {
   play: async () => {
     stage().session.currentEpoch += 1;
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
     await expect(notice()).toBeNull();
   }
 });
@@ -116,7 +106,7 @@ const NoSessionNoNotice: Story = hudStory((h, s) => {
   h.triggerCaptionHud(LOADING);
 }, {
   play: async () => {
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
     await expect(notice()).toBeNull();
     await expect(stage().clock.pending).toBe(0);
   }
@@ -125,8 +115,8 @@ test('NoSessionNoNotice', () => runHudCase(NoSessionNoNotice));
 
 const CleanupLeavesNothing: Story = hudStory((h, s) => {
   h.triggerCaptionHud(LOADING);
-  s.advance(CAPTION_LOADING_HUD_DELAY_MS);
-  h.triggerCaptionHud(status('Captions on', 'English', 4000));
+  s.advance(LANGUAGE_LOAD_DELAY_MS);
+  h.triggerCaptionHud(status('Captions on', 'English'));
 }, {
   play: async () => {
     hud().removeCaptionHud();
@@ -141,7 +131,7 @@ test('CleanupLeavesNothing', () => runHudCase(CleanupLeavesNothing));
 const RapidResults: Story = hudStory(() => {}, {
   play: async () => {
     const run = (index: number) => hud().triggerCaptionHud(index % 2
-      ? status('Captions on', `Language ${index}`, 4000) : status('Captions off'));
+      ? status('Captions on', `Language ${index}`) : status('Captions off'));
     run(0);
     run(1);
     const one = measure();
@@ -160,7 +150,7 @@ test('Status before loading delay cancels the pending spinner', () => runHudCase
   play: async () => {
     stage().advance(100);
     hud().triggerCaptionHud(status('Failed'));
-    stage().advance(CAPTION_LOADING_HUD_DELAY_MS);
+    stage().advance(LANGUAGE_LOAD_DELAY_MS);
     await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
     await expect(notice()?.textContent).toBe('Failed');
   }

@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "Výchozí"
   },
+  "audioTrackFailedHud": {
+    "message": "Zvukovou stopu se nepodařilo přepnout"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Výchozí)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "Přepnout video na stránce $KEY$",
     "placeholders": {

@@ -699,6 +699,17 @@
   "audioTrackServiceDefault": {
     "message": "默认"
   },
+  "audioTrackFailedHud": {
+    "message": "无法切换音轨"
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$（默认）",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
   "switchVideoTooltip": {
     "message": "切换页面中的视频 $KEY$",
     "placeholders": {
