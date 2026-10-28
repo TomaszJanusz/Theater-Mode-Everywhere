@@ -1449,10 +1449,16 @@ button.theater-time-end:focus-visible,
 
 .theater-settings-note {
   margin: 0 !important;
-  padding: 4px 8px 8px !important;
-  color: var(--appearance-ink, #cbd5e1) !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
+  padding: 6px 12px 10px !important;
+  /* A quiet status line, not a control: muted like the section headings, a step below the 12px rows. */
+  color: var(--appearance-muted, #94a3b8) !important;
+  font-size: 10.5px !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .theater-settings-note[hidden],

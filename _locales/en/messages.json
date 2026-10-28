@@ -113,10 +113,10 @@
     "message": "Strong"
   },
   "audioProtected": {
-    "message": "Audio settings are unavailable: this video is DRM-protected."
+    "message": "Audio effects are unavailable: this video is DRM-protected."
   },
   "audioRefused": {
-    "message": "Audio settings are unavailable: the video’s server doesn’t allow it."
+    "message": "Audio effects are unavailable: the video’s server doesn’t allow it."
   },
   "audioUnavailableHud": {
     "message": "Audio settings are unavailable for this video"

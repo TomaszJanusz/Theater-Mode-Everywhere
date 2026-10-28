@@ -113,10 +113,10 @@
     "message": "Mocne"
   },
   "audioProtected": {
-    "message": "Ustawienia dźwięku niedostępne: ten film jest chroniony przez DRM."
+    "message": "Efekty dźwięku niedostępne: ten film jest chroniony przez DRM."
   },
   "audioRefused": {
-    "message": "Ustawienia dźwięku niedostępne: serwer wideo na to nie pozwala."
+    "message": "Efekty dźwięku niedostępne: serwer wideo na to nie pozwala."
   },
   "audioUnavailableHud": {
     "message": "Ustawienia dźwięku są niedostępne dla tego wideo"
