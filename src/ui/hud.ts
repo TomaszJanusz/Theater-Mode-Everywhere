@@ -1,5 +1,6 @@
+import { HUD_FADE_OUT_MS, HUD_PLATE_CLASS } from './hud-plate';
+import { createLanguageHud } from './language-hud';
 import { createSvgIcon } from './svg-icon';
-import { animateReveal, exitSpinner, isElementMotionReduced } from './spinner-exit';
 import { isMotionReduced } from '../appearance-runtime';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
@@ -15,15 +16,11 @@ export const TITLE_HUD_CLASS = 'theater-everywhere-title-hud';
 export const HEADER_HUD_CLASS = 'theater-everywhere-header-hud';
 // Keep centred confirmations readable for two extra seconds; loading and corner notices own their timing.
 export const CENTERED_HUD_VISIBLE_MS = 800 + 2000;
-/** How long the leaving fade runs before the node is removed; shadow.css transitions opacity over the same 0.2s. */
-export const HUD_FADE_OUT_MS = 200;
-export const CAPTION_LOADING_HUD_DELAY_MS = 400;
-const CAPTION_WIDTH_MORPH_MS = 225;
 /** The seek pulse in shadow.css (`theaterSeekPulse`) runs 0.65s; the node goes with it. */
 export const SEEK_HUD_MS = 650;
 /** Set on the player-UI host while a centred confirmation is on screen; shadow.css hides the loading spinner for it. */
 export const CENTERED_HUD_ATTRIBUTE = 'data-centered-hud';
-export const HUD_PLATE_CLASS = 'theater-hud-plate';
+export { HUD_FADE_OUT_MS, HUD_PLATE_CLASS };
 
 export const STATUS_HUD_SWITCH_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -94,11 +91,6 @@ export const VOLUME_BOOST_ICONS = {
   menu: strokeIcon(VOLUME_BOOST_SHAPE, 16),
   hud: strokeIcon(VOLUME_BOOST_SHAPE, 28)
 };
-
-export type CaptionHudView =
-  | { kind: 'dismiss' }
-  | { kind: 'loading'; title: string }
-  | { kind: 'status'; title: string; detail?: string; duration?: number };
 
 export const STATUS_HUD_MUTE_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -359,158 +351,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     if (ctx.queryPlayerUi('.theater-everywhere-volume-overlay[data-playback-action]')) removeCenteredHud();
   }
 
-  let stopCaptionExit: (() => void) | null = null;
-  let captionWidthMorph: Animation | null = null;
-  let captionReveal: Animation | null = null;
-  let captionIdentity: { element: Element; epoch: number } | null = null;
-  let captionHudHideTimer: number | null = null;
-  let captionHudRemoveTimer: number | null = null;
-  let captionHudShowTimer: number | null = null;
-
-  function clearCaptionHudTimers(): void {
-    if (captionHudShowTimer !== null) {
-      clock.clearTimeout(captionHudShowTimer);
-      captionHudShowTimer = null;
-    }
-    if (captionHudHideTimer) {
-      clock.clearTimeout(captionHudHideTimer);
-      captionHudHideTimer = null;
-    }
-    if (captionHudRemoveTimer) {
-      clock.clearTimeout(captionHudRemoveTimer);
-      captionHudRemoveTimer = null;
-    }
-  }
-
-  /** Stops every animation the current notice owns; safe to repeat. */
-  function cancelCaptionMotion(): void {
-    stopCaptionExit?.();
-    stopCaptionExit = null;
-    captionWidthMorph?.cancel();
-    captionWidthMorph = null;
-    captionReveal?.cancel();
-    captionReveal = null;
-  }
-
-  function removeCaptionHud(): void {
-    clearCaptionHudTimers();
-    cancelCaptionMotion();
-    captionIdentity = null;
-    ctx.queryPlayerUi('.theater-everywhere-caption-hud')?.remove();
-  }
-
-  function triggerCaptionHud(view: CaptionHudView): void {
-    const existing = ctx.queryPlayerUi<HTMLElement>('.theater-everywhere-caption-hud:not(.theater-auto-notice):not(.fade-out)');
-    if (view.kind === 'status' && existing && captionIdentity?.element === ctx.session.element
-      && captionIdentity.epoch === ctx.session.currentEpoch) {
-      clearCaptionHudTimers();
-      renderCaptionHud(view, existing);
-      return;
-    }
-    removeCaptionHud();
-    if (view.kind === 'dismiss') {
-      return;
-    }
-
-    if (!ctx.session.element) return;
-
-    if (view.kind === 'loading') {
-      // Fast background downloads should not interrupt watching with a flash.
-      const epoch = ctx.session.currentEpoch;
-      const element = ctx.session.element;
-      captionHudShowTimer = clock.setTimeout(() => {
-        captionHudShowTimer = null;
-        if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element) return;
-        renderCaptionHud(view);
-      }, CAPTION_LOADING_HUD_DELAY_MS);
-      return;
-    }
-    renderCaptionHud(view);
-  }
-
-  function renderCaptionHud(view: Exclude<CaptionHudView, { kind: 'dismiss' }>, existing?: HTMLElement): void {
-    const element = ctx.session.element;
-    if (!element) return;
-    announcePlayerStatus(view.kind === 'status' && view.detail ? `${view.title}: ${view.detail}` : view.title);
-    const overlay = existing ?? document.createElement('div');
-    // One read per update: the text swap below would otherwise snap the right-anchored width.
-    cancelCaptionMotion();
-    const widthBefore = existing?.getBoundingClientRect().width ?? 0;
-    const identity = { element, epoch: ctx.session.currentEpoch };
-    captionIdentity = identity;
-    overlay.className = `theater-everywhere-caption-hud ${HUD_PLATE_CLASS} status-hud` + (view.kind === 'loading' ? ' loading' : '');
-    ctx.paintOverlay(overlay);
-    overlay.setAttribute('aria-hidden', 'true');
-
-    const content = existing?.querySelector<HTMLElement>('.volume-hud-content') ?? document.createElement('div');
-    content.className = view.kind === 'status'
-      ? 'volume-hud-content caption-hud-content'
-      : 'volume-hud-content';
-
-    let iconEl: HTMLDivElement | null = null;
-    if (view.kind === 'loading') {
-      iconEl = document.createElement('div');
-      iconEl.className = 'volume-hud-icon caption-hud-spinner-slot';
-      const spinner = document.createElement('div');
-      spinner.className = 'caption-hud-spinner';
-      spinner.setAttribute('aria-hidden', 'true');
-      iconEl.appendChild(spinner);
-    }
-
-    const copy = existing?.querySelector<HTMLElement>('.volume-hud-copy') ?? document.createElement('div');
-    copy.className = 'volume-hud-copy';
-    const textEl = copy.querySelector<HTMLElement>('.volume-hud-text') ?? document.createElement('span');
-    textEl.className = 'volume-hud-text';
-    textEl.textContent = view.title;
-    if (!textEl.parentNode) copy.appendChild(textEl);
-    let detail: HTMLElement | undefined;
-    copy.querySelector('.volume-hud-detail')?.remove();
-    if (view.kind === 'status' && view.detail) {
-      const detailEl = document.createElement('span');
-      detailEl.className = 'volume-hud-detail';
-      detailEl.textContent = view.detail;
-      copy.appendChild(detailEl);
-      detail = detailEl;
-    }
-
-    if (!existing) {
-      if (iconEl) content.appendChild(iconEl);
-      content.appendChild(copy);
-      overlay.appendChild(content);
-      ctx.mountPlayerUi(overlay);
-    }
-    const spinner = existing?.querySelector<HTMLElement>('.caption-hud-spinner');
-    if (spinner) {
-      stopCaptionExit = exitSpinner(spinner, {
-        mode: 'passive', reveal: detail, clock,
-        isCurrent: () => captionIdentity === identity && ctx.session.element === identity.element
-          && ctx.session.currentEpoch === identity.epoch
-      });
-    } else if (detail && !isElementMotionReduced(overlay)) captionReveal = animateReveal(detail);
-
-    if (existing && !isElementMotionReduced(overlay)) {
-      const widthAfter = overlay.getBoundingClientRect().width;
-      if (Math.abs(widthAfter - widthBefore) > 0.5) {
-        // The overlay clips its overflow, so the content keeps its place while the box eases to the new width.
-        captionWidthMorph = overlay.animate(
-          [{ width: `${widthBefore}px` }, { width: `${widthAfter}px` }],
-          { duration: CAPTION_WIDTH_MORPH_MS, easing: 'ease' }
-        );
-      }
-    }
-
-    if (view.kind === 'loading') return;
-
-    const displayDuration = view.kind === 'status' ? (view.duration ?? 800) : 800;
-    captionHudHideTimer = clock.setTimeout(() => {
-      if (captionIdentity !== identity || ctx.session.element !== identity.element
-        || ctx.session.currentEpoch !== identity.epoch) return;
-      overlay.classList.add('fade-out');
-      captionHudRemoveTimer = clock.setTimeout(() => {
-        if (captionIdentity === identity) removeCaptionHud();
-      }, HUD_FADE_OUT_MS);
-    }, displayDuration);
-  }
+  const languageHud = createLanguageHud(ctx, clock);
 
   function createPlayerHeader(): HTMLElement {
     let header = ctx.queryPlayerUi(`.${HEADER_HUD_CLASS}`) as HTMLElement | null;
@@ -704,8 +545,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     triggerStatusIndicator,
     triggerPlaybackIndicator,
     dismissPlaybackIndicator,
-    triggerCaptionHud,
-    removeCaptionHud,
+    ...languageHud,
     removeCenteredHud,
     createPlayerHeader,
     syncContentTitle

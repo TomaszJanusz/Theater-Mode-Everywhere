@@ -9,7 +9,19 @@ export type AudioTrackOptions = {
   /** Locales whose language names may appear in untagged host labels. */
   locales: () => readonly string[];
   onChange: () => void;
+  /** What the viewer should hear about after the player acted on audio; never called for results that went stale. */
+  onResult?: (result: AudioTrackResult) => void;
 };
+
+/** A track with its place in the list, which names it when the host gives no label or language. */
+export type IndexedAudioTrack = { track: AudioTrack; index: number };
+
+/**
+ * After a pick (the viewer's, or the saved preference, including one that was already playing): the
+ * track playing now and, when the host refused, the track that was asked for (null when it was no
+ * longer offered).
+ */
+export type AudioTrackResult = { playing: IndexedAudioTrack | null; refused?: IndexedAudioTrack | null };
 
 /**
  * Owns the audio track list of the bound adapter and the one automatic selection allowed per
@@ -80,10 +92,20 @@ export class AudioTrackController {
 
   /** A viewer's choice: it ends automatic selection for this item and, once accepted, becomes the service's preference. */
   async select(id: string): Promise<boolean> {
-    const track = this.tracks().find(candidate => candidate.id === id);
-    if (!track) return false;
+    const index = this.tracks().findIndex(candidate => candidate.id === id);
+    const track = this.tracks()[index];
+    if (!track) {
+      this.report(this.playingId(), null);
+      return false;
+    }
     this.evaluated = true;
-    if (!await this.apply(id)) return false;
+    const outcome = await this.apply(id);
+    if (outcome === 'stale') return false;
+    if (outcome === 'refused') {
+      this.report(this.playingId(), { track, index });
+      return false;
+    }
+    this.report(id);
     const preference = audioPreferenceForTrack(track);
     if (preference !== null) this.options.onPreferenceChange?.(preference);
     return true;
@@ -98,21 +120,47 @@ export class AudioTrackController {
     if (this.evaluated || !list || list.blocked || list.tracks.length < 2) return;
     this.evaluated = true;
     const target = pickPreferredAudioTrack(list.tracks, this.options.preference(), this.options.locales());
-    if (target && !target.selected) void this.apply(target.id);
+    if (!target) return;
+    // The saved choice already playing is still reported: the viewer learns it applies to this item too.
+    if (target.selected) {
+      this.report(target.id);
+      return;
+    }
+    const requested = { track: target, index: list.tracks.indexOf(target) };
+    void this.apply(target.id).then(outcome => {
+      if (outcome === 'accepted') this.report(target.id);
+      else if (outcome === 'refused') this.report(this.playingId(), requested);
+    });
   }
 
-  private async apply(id: string): Promise<boolean> {
+  private playingId(): string | null {
+    return this.tracks().find(track => track.selected)?.id ?? null;
+  }
+
+  /** Names tracks as the refreshed list shows them, since the host may relabel after a switch. */
+  private report(playingId: string | null, refused?: IndexedAudioTrack | null): void {
+    const tracks = this.tracks();
+    const index = tracks.findIndex(track => track.id === playingId);
+    this.options.onResult?.({
+      playing: index >= 0 ? { track: tracks[index], index } : null,
+      ...(refused === undefined ? {} : { refused })
+    });
+  }
+
+  /** `stale` means the binding, item or controller changed meanwhile, so nobody should hear about it. */
+  private async apply(id: string): Promise<'accepted' | 'refused' | 'stale'> {
     const adapter = this.adapter;
     const list = this.list;
-    if (this.disposed || !adapter?.selectAudioTrack || !list || !this.offers(id)) return false;
+    if (this.disposed) return 'stale';
+    if (!adapter?.selectAudioTrack || !list || !this.offers(id)) return 'refused';
     const generation = this.generation;
     const key = this.itemKey;
     let ok = false;
     try { ok = await adapter.selectAudioTrack(id, list.mediaId); } catch { ok = false; }
     // A late answer for an earlier item or adapter must not repaint the current one.
-    if (this.disposed || generation !== this.generation || adapter !== this.adapter || key !== this.itemKey) return false;
+    if (this.disposed || generation !== this.generation || adapter !== this.adapter || key !== this.itemKey) return 'stale';
     this.refresh();
-    return ok;
+    return ok ? 'accepted' : 'refused';
   }
 
   dispose(): void {

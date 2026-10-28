@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 
-import { AudioTrackController } from './audio-tracks';
+import { AudioTrackController, type AudioTrackResult } from './audio-tracks';
 import type { AudioTrack, AudioTrackList, MediaFeaturesAdapter } from './types';
 
 /** A host whose list, selection and ad state the test drives, with selections settled by hand. */
@@ -66,15 +66,20 @@ function setup(saved: string | null = 'fr') {
   let changes = 0;
   const preference = { saved };
   const savedPicks: string[] = [];
+  const results: AudioTrackResult[] = [];
   const controller = new AudioTrackController({
     preference: () => preference.saved,
     onPreferenceChange: (value) => { savedPicks.push(value); },
     locales: () => ['en'],
-    onChange: () => { changes += 1; }
+    onChange: () => { changes += 1; },
+    onResult: (result) => { results.push(result); }
   });
   controller.bind(host.adapter());
-  return { host, controller, preference, savedPicks, changes: () => changes };
+  return { host, controller, preference, savedPicks, results, changes: () => changes };
 }
+
+/** A result as ids: the track playing, and the refused one when there is a refusal. */
+const ids = (result: AudioTrackResult) => [result.playing?.track.id ?? null, ...(result.refused === undefined ? [] : [result.refused?.track.id ?? null])];
 
 const dubbed: Array<[string, string, AudioTrack['kind']]> = [['en', 'en-US', 'original'], ['fr', 'fr', 'dub'], ['de', 'de', 'dub']];
 
@@ -199,5 +204,94 @@ describe('audio track auto-apply', () => {
     replacement.offer(...dubbed);
     await flush();
     assert.equal(replacement.selections.length, 0);
+  });
+
+  describe('results for the viewer', () => {
+    it('reports an accepted manual pick, named as the refreshed list shows it, including the track already playing', async () => {
+      const { host, controller, results } = setup(null);
+      host.offer(...dubbed);
+      assert.equal(await controller.select('de'), true);
+      assert.deepEqual(results, [{ playing: { track: { id: 'de', languageTag: 'de', label: 'de', kind: 'dub', selected: true }, index: 2 } }]);
+      assert.equal(await controller.select('de'), true);
+      assert.deepEqual(results.map(ids), [['de'], ['de']], 'picking what already plays is still answered');
+    });
+
+    it('reports the saved preference once per item, also when it was already playing, and nothing without a match', async () => {
+      const { host, results } = setup('fr');
+      host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(results.map(ids), [['fr']]);
+      host.choose('de');
+      await flush();
+      assert.equal(results.length, 1, 'a host change after the decision stays silent');
+
+      const playing = setup('original');
+      playing.host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(playing.results.map(ids), [['en']], 'the original was already playing and is still named');
+      assert.equal(playing.host.selections.length, 0, 'without switching anything');
+      const unmatched = setup('ja');
+      unmatched.host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(unmatched.results, [], 'no match: the preference says nothing about this item');
+      const none = setup(null);
+      none.host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(none.results, [], 'no preference: the player did not act');
+    });
+
+    it('reports a refused pick, manual or automatic, with the track that still plays', async () => {
+      const { host, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      host.tracks = host.tracks.filter(track => track.id !== 'fr');
+      host.settle();
+      await flush();
+      assert.deepEqual(results.map(ids), [['en', 'fr']], 'the saved language could not be applied');
+
+      const manual = setup(null);
+      manual.host.offer(...dubbed);
+      manual.host.autoSettle = false;
+      const pick = manual.controller.select('de');
+      // The host drops the track before answering, so it answers no for this same item.
+      manual.host.tracks = manual.host.tracks.filter(track => track.id !== 'de');
+      manual.host.settle();
+      assert.equal(await pick, false);
+      assert.deepEqual(manual.results.map(ids), [['en', 'de']], 'a refused pick names what was asked for and what still plays');
+
+      manual.results.length = 0;
+      manual.host.autoSettle = true;
+      manual.host.blocked = true;
+      manual.host.notify();
+      assert.equal(await manual.controller.select('en'), false);
+      assert.deepEqual(manual.results.map(ids), [[null, null]], 'a pick during an ad is refused and said so');
+    });
+
+    it('says nothing when the answer is for an earlier item, a reset list or a disposed controller', async () => {
+      const { host, controller, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      const manual = controller.select('de');
+      host.mediaId = 'video-b';
+      host.offer(...dubbed);
+      host.settle();
+      await manual;
+      await flush();
+      assert.equal(results.length, 1, 'only the later item\'s own automatic switch is reported');
+      assert.deepEqual(results.map(ids), [['fr']]);
+
+      results.length = 0;
+      host.mediaId = 'video-c';
+      host.offer(...dubbed);
+      controller.reset();
+      host.settle();
+      await flush();
+      assert.deepEqual(results, [], 'reset retires the pending automatic answer');
+      const disposing = controller.select('en');
+      controller.dispose();
+      host.settle();
+      await disposing;
+      assert.deepEqual(results, [], 'dispose retires the pending answer');
+    });
   });
 });

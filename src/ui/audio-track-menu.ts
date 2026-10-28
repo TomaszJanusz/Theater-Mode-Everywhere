@@ -1,8 +1,10 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import type { AudioTrackResult, IndexedAudioTrack } from '../media-features/audio-tracks';
 import type { AudioTrack } from '../media-features/types';
 
 import { ChoiceMenu } from './cc-menu';
 import type { createPlayerSettings } from './player-settings';
+import type { AudioTrackHudReport } from './runtime-context';
 
 type Translate = (key: string, substitutions?: string | string[]) => string;
 type PlayerSettings = ReturnType<typeof createPlayerSettings>;
@@ -27,6 +29,16 @@ export function audioTrackDisplayLabel(track: AudioTrack, index: number, t: Tran
   return name;
 }
 
+/** The language notice's audio lines for a result, naming tracks as the menu does. */
+export function audioTrackHudReport(result: AudioTrackResult, t: Translate, locale: string, isDefault = false): AudioTrackHudReport {
+  const label = ({ track, index }: IndexedAudioTrack) => audioTrackDisplayLabel(track, index, t, locale);
+  return {
+    playing: result.playing && label(result.playing),
+    ...(result.refused === undefined ? {} : { refused: result.refused && label(result.refused) }),
+    ...(isDefault ? { isDefault } : {})
+  };
+}
+
 /**
  * The Audio track row and its nested list. Both read only the shared track contract; the row
  * shows with two or more tracks, and choosing one closes the menu like a subtitle choice.
@@ -49,7 +61,7 @@ export function mountAudioTrackMenu(options: {
   button.className = 'theater-control-btn audio-track-btn';
   button.setAttribute('aria-haspopup', 'true');
   options.setIcon(button, AUDIO_TRACK_ICON);
-  const row = settings.addRow(button, t('audioTrackLabel'), 'audioTracks');
+  const row = settings.addRow(button, t('audioTrackLabel'), 'audioTracks', 'playerAudioTrack');
   settings.setRowHidden(button, true);
   const menu = new ChoiceMenu(settings.subview, settings.button, {
     title: t('audioTrackLabel'),

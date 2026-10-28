@@ -290,6 +290,8 @@ export function createPlayerSettings(
     // A list whose row disappears (an ad started, the item changed) has nothing left to choose from.
     if (hidden && subviewReturn && row.contains(subviewReturn)) closeSubview(false);
     syncAudioSection();
+    // A hidden row does not count towards the gear dot, so its visibility is part of that state.
+    if (newItems.has(row)) refreshHighlights(true);
   }
   return { button, panel, container, close, addRow, addStepperRow, setAudioNote, setRowHidden, subview, openSubview, closeSubview };
 }

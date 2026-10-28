@@ -113,10 +113,10 @@
     "message": "قوي"
   },
   "audioProtected": {
-    "message": "إعدادات الصوت غير متاحة: هذا الفيديو محمي بتقنية DRM."
+    "message": "المؤثرات الصوتية غير متاحة: هذا الفيديو محمي بتقنية DRM."
   },
   "audioRefused": {
-    "message": "إعدادات الصوت غير متاحة: خادم الفيديو لا يسمح بذلك."
+    "message": "المؤثرات الصوتية غير متاحة: خادم الفيديو لا يسمح بذلك."
   },
   "audioUnavailableHud": {
     "message": "إعدادات الصوت غير متاحة لهذا الفيديو"
@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "الترجمة مفعلة"
-  },
   "subtitlesOnNamedHud": {
     "message": "الترجمة مفعلة: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "الترجمة متوقفة"
-  },
-  "subtitlesLoadingHud": {
-    "message": "جارٍ تحميل الترجمة..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "تعذر تحميل الترجمة"
   },
   "onlyOneVideoHud": {
     "message": "الميزة غير متاحة. يمكن تبديل الفيديو فقط عندما يكون هناك أكثر من مشغّل في الصفحة."
@@ -599,6 +587,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "تشغيل"
+  },
+  "subtitlesHudNone": {
+    "message": "غير متوفرة"
+  },
+  "subtitlesHudFailed": {
+    "message": "تعذّر التحميل"
+  },
   "noSubtitlesAvailable": {
     "message": "لا تتوفر ترجمات مصاحبة"
   },
@@ -704,6 +701,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "افتراضي"
+  },
+  "audioTrackFailedHud": {
+    "message": "تعذّر تبديل المسار الصوتي"
+  },
+  "audioHudLabel": {
+    "message": "الصوت"
+  },
+  "audioTrackRefusedHud": {
+    "message": "تعذّر التبديل إلى $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (افتراضي)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",

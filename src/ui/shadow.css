@@ -1449,10 +1449,16 @@ button.theater-time-end:focus-visible,
 
 .theater-settings-note {
   margin: 0 !important;
-  padding: 4px 8px 8px !important;
-  color: var(--appearance-ink, #cbd5e1) !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
+  padding: 6px 12px 10px !important;
+  /* A quiet status line, not a control: muted like the section headings, a step below the 12px rows. */
+  color: var(--appearance-muted, #94a3b8) !important;
+  font-size: 10.5px !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .theater-settings-note[hidden],
@@ -2108,10 +2114,14 @@ button.theater-time-end:focus-visible,
   outline-offset: 1px !important;
   border-radius: 12px !important;
   padding: 10px 18px !important;
+  /* The language notice stacks one line per source (subtitles, then audio). The box is anchored to the
+     corner and its size morphs, so each line hugs the inline end its text aligns to (at the start edge
+     it would sit at the opposite side mid-morph and jump when it settles), and the lines start at the
+     top, which stays put while the plate grows or shrinks below it. */
   display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 10px !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
   color: var(--appearance-ink, var(--theater-caption-color, #ffffff)) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 15px !important;
@@ -2455,12 +2465,6 @@ button.theater-time-end:focus-visible,
   text-align: right !important;
 }
 
-/* The box is anchored to the corner and its width morphs, so the content hugs the same inline end its
-   text aligns to. Left at flex-start it would sit at the opposite edge mid-morph and jump when it settles. */
-.theater-everywhere-caption-hud.status-hud:not(.theater-auto-notice) {
-  justify-content: flex-end !important;
-}
-
 .caption-hud-content {
   display: inline-flex !important;
   width: fit-content !important;
@@ -2676,6 +2680,67 @@ button.theater-time-end:focus-visible,
   font-weight: 700 !important;
   color: var(--appearance-ink, var(--text-primary, #f8fafc)) !important;
   pointer-events: none !important;
+}
+
+/* The language notice: one row per source, a label and a value in two shared columns. The label
+   column has a fixed minimum, so values keep their place when a row with another label joins; a longer
+   label widens it for every row. 5.5em holds the widest shipped label (French "Sous-titres", 78px at 15px). Values wrap by words, never clipped. A row has no box of its own
+   (`display: contents`), so both cells sit in the columns. */
+.language-hud-rows {
+  display: grid;
+  grid-template-columns: minmax(var(--language-hud-label-min), max-content) minmax(0, max-content);
+  column-gap: 14px;
+  row-gap: 6px;
+  /* Label and value share one line height, so their first lines align from the top. */
+  align-items: start;
+  --language-hud-label-min: 5.5em;
+}
+
+.language-hud-row {
+  display: contents;
+}
+
+.language-hud-label {
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.language-hud-value {
+  /* A flex row of one line height, whether it holds the spinner or the value, so the row never changes height. */
+  display: flex;
+  align-items: center;
+  min-height: 1.4em;
+  position: relative;
+  max-width: 22rem;
+  color: var(--appearance-muted, rgba(255, 255, 255, 0.82));
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* The spinner sits in the value slot; on resolve it leaves the flow so the value takes its width at once. */
+.language-hud-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.language-hud-loading.leaving {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+
+.language-hud-spinner {
+  box-sizing: border-box;
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  border: 2px solid var(--appearance-border, rgba(150, 150, 150, 0.6));
+  border-top-color: var(--accent-color, #6366f1);
+  border-radius: 50%;
+  animation: theater-spin 0.8s linear infinite;
 }
 
 .caption-hud-spinner {
@@ -3193,13 +3258,6 @@ button.theater-time-end:focus-visible,
   --new-badge-inset-block-start: -4px;
   --new-badge-inset-inline-end: -5px;
   --new-badge-surrounding-color: var(--bg-color, #09090b);
-}
-
-/* Preserve the loading slot during caption confirmation so the copy never jumps. */
-.caption-hud-spinner-slot {
-  width: 28px !important;
-  min-width: 28px !important;
-  height: 28px !important;
 }
 
 /* Audio rows: a non-default level (or boost on) takes the accent, as the CC menu's active item does. */

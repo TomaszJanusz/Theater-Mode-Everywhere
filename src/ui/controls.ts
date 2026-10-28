@@ -1,7 +1,7 @@
 import { requestOptionsPage } from '../protocol/options-page';
 
 import { VIDEO_FIT_LABEL_KEYS, VIDEO_FIT_MODES } from './appearance';
-import { mountAudioTrackMenu } from './audio-track-menu';
+import { audioTrackHudReport, mountAudioTrackMenu } from './audio-track-menu';
 import { shortcutAriaKeyshortcuts, shortcutMarkup } from './shortcut-display';
 import { exitSpinner } from './spinner-exit';
 import { languageRuntime } from '../i18n-runtime';
@@ -608,6 +608,7 @@ export function createControls(
     ccHost.append(ccBtn, ccMenu);
 
     let audioTrackMenu: { update: () => void } | null = null;
+    const interfaceLocale = t('@@ui_locale').replace('_', '-');
     // Read live, like the subtitle preference, so another tab's choice applies to the next item.
     const audioPreference = () => refs.audioPreferenceMap[captionPreferenceHost(window.location.hostname)] ?? null;
     const mediaFeatures = new MediaFeaturesController({
@@ -632,21 +633,28 @@ export function createControls(
       },
       onTitle: syncContentTitle,
       audioPreference,
-      audioLocales: () => [t('@@ui_locale').replace('_', '-'), ...navigator.languages],
+      audioLocales: () => [interfaceLocale, ...navigator.languages],
       onAudioPreferenceChange: (preference) => ctx.actions.persistAudioPreference(preference),
-      onAudioTracksChange: () => audioTrackMenu?.update()
+      onAudioTracksChange: () => audioTrackMenu?.update(),
+      onAudioTrackResult: (result) => ctx.actions.showAudioTrackHud(audioTrackHudReport(result, t, interfaceLocale))
     });
     wrapper._mediaFeatures = mediaFeatures;
     audioTrackMenu = mountAudioTrackMenu({
       settings,
       scope: controlsScope,
       t,
-      locale: t('@@ui_locale').replace('_', '-'),
+      locale: interfaceLocale,
       setIcon,
       tracks: () => mediaFeatures.audioTracks(),
       select: (id) => mediaFeatures.selectAudioTrack(id),
       preference: audioPreference,
-      resetPreference: () => ctx.actions.persistAudioPreference(null)
+      resetPreference: () => {
+        ctx.actions.persistAudioPreference(null);
+        // Default keeps the current track; say which one plays now that the service decides again.
+        const tracks = mediaFeatures.audioTracks();
+        const index = tracks.findIndex(track => track.selected);
+        ctx.actions.showAudioTrackHud(audioTrackHudReport({ playing: index >= 0 ? { track: tracks[index], index } : null }, t, interfaceLocale, true));
+      }
     });
     mediaFeatures.setCaptionStyle(ui().captionStyle);
     updateCaptionDock();

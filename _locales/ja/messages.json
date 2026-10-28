@@ -113,10 +113,10 @@
     "message": "強"
   },
   "audioProtected": {
-    "message": "オーディオ設定は使用できません。この動画は DRM で保護されています。"
+    "message": "オーディオエフェクトは使用できません。この動画は DRM で保護されています。"
   },
   "audioRefused": {
-    "message": "オーディオ設定は使用できません。動画のサーバーが許可していません。"
+    "message": "オーディオエフェクトは使用できません。動画のサーバーが許可していません。"
   },
   "audioUnavailableHud": {
     "message": "この動画ではオーディオ設定を使用できません"
@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "字幕オン"
-  },
   "subtitlesOnNamedHud": {
     "message": "字幕オン: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "字幕オフ"
-  },
-  "subtitlesLoadingHud": {
-    "message": "字幕を読み込み中..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "字幕を読み込めませんでした"
   },
   "onlyOneVideoHud": {
     "message": "機能を利用できません。動画の切り替えは、ページに複数のプレーヤーがある場合のみ可能です。"
@@ -599,6 +587,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "オン"
+  },
+  "subtitlesHudNone": {
+    "message": "利用できません"
+  },
+  "subtitlesHudFailed": {
+    "message": "読み込めませんでした"
+  },
   "noSubtitlesAvailable": {
     "message": "字幕はありません"
   },
@@ -704,6 +701,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "デフォルト"
+  },
+  "audioTrackFailedHud": {
+    "message": "音声トラックを切り替えられませんでした"
+  },
+  "audioHudLabel": {
+    "message": "音声"
+  },
+  "audioTrackRefusedHud": {
+    "message": "$NAME$ に切り替えられませんでした",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (デフォルト)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "ページ内の動画を切り替え $KEY$",

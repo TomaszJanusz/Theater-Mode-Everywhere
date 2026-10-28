@@ -170,7 +170,8 @@ import { mediaAudioAccess } from '../platform/media-audio-access';
 import {
   bindRootHelpers,
   createChromeRefs,
-  createPlayerChromeContext
+  createPlayerChromeContext,
+  type AudioTrackHudReport
 } from './runtime-context';
 import { createToolbar } from './toolbar';
 import { CONTROLS_VISIBILITY_ICON, KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolveKeepControlsVisible } from './controls-visibility';
@@ -222,6 +223,7 @@ const {
   triggerPlaybackIndicator,
   dismissPlaybackIndicator,
   triggerCaptionHud,
+  updateLanguageHud,
   syncContentTitle
 } = hud;
 const {
@@ -721,6 +723,7 @@ function bindChromeActions(): void {
     applyTheaterVideoFit,
     applySubtitleLayout,
     showCaptionHud,
+    showAudioTrackHud,
     createPlayerHeader: hud.createPlayerHeader,
     syncContentTitle,
     executeCommand,
@@ -1058,33 +1061,40 @@ function stepVideoFit(direction: 1 | -1): void {
   changeVideoFit(current => stepVideoFitMode(current, direction));
 }
 
+/** Values of the subtitles row; the label names the source. */
+const SUBTITLE_HUD_VALUES = { on: 'subtitlesHudOn', off: 'subtitlesOff', none: 'subtitlesHudNone', failed: 'subtitlesHudFailed' } as const;
+
 function showCaptionHud(payload: CaptionHudPayload): void {
-  if (payload.result === 'loading') {
-    triggerCaptionHud({ kind: 'loading', title: t('subtitlesLoadingHud') });
-    return;
-  }
   if (payload.result === 'dismiss') {
     triggerCaptionHud({ kind: 'dismiss' });
     return;
   }
-  if (payload.result === 'none') {
-    triggerCaptionHud({ kind: 'status', title: t('noSubtitlesAvailable') });
+  const title = t('subtitlesMenuTitle');
+  if (payload.result === 'loading') {
+    triggerCaptionHud({ kind: 'loading', title, detail: t('loadingLabel') });
     return;
   }
-  if (payload.result === 'failed') {
-    triggerCaptionHud({ kind: 'status', title: t('subtitlesLoadFailedHud') });
+  const detail = payload.result === 'on' && payload.label ? payload.label : t(SUBTITLE_HUD_VALUES[payload.result]);
+  triggerCaptionHud({ kind: 'status', title, detail });
+}
+
+/** The audio rows of the language notice; the subtitles row stays as it is. */
+function showAudioTrackHud(report: AudioTrackHudReport): void {
+  const title = t('audioHudLabel');
+  const playing = report.playing === null ? null : {
+    kind: 'status' as const,
+    title,
+    detail: report.isDefault ? t('audioTrackDefaultHud', report.playing) : report.playing
+  };
+  if (report.refused === undefined) {
+    updateLanguageHud({ audio: playing, audioRefused: null });
     return;
   }
-  if (payload.result === 'on') {
-    triggerCaptionHud({
-      kind: 'status',
-      title: t('subtitlesOnHud'),
-      ...(payload.label ? { detail: payload.label } : {}),
-      duration: 4_000
-    });
-    return;
-  }
-  triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud') });
+  updateLanguageHud({
+    // A refusal keeps naming what still plays; with nothing to name, an earlier audio row stays.
+    ...(playing ? { audio: playing } : {}),
+    audioRefused: { kind: 'status', title, detail: report.refused ? t('audioTrackRefusedHud', report.refused) : t('audioTrackFailedHud') }
+  });
 }
 
 async function toggleTheaterCaptions(): Promise<void> {

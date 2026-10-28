@@ -34,12 +34,20 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   'components-hud--seek': locale => ({ direction: locale === 'ar' ? 'left' : 'right' }),
   'components-hud--text-only': () => ({ preset: 'onlyVideo' }),
   'components-caption-notice--status': locale => ({ detail: locale === 'ar' ? 'العربية' : 'Portugiesisch (Brasilien, automatisch erstellt)' }),
+  'components-language-notice--merged': () => ({}),
   'components-title-hud--overflow': (locale): Profile['args'] => locale === 'ar'
     ? { title: 'الفيلم الوثائقي الطويل عن السينما والضوء وتاريخ جهاز العرض في العالم', subtitle: 'الحلقة ٣' } : {},
   'components-auto-theater-notice--counting': () => ({})
 };
 
-const REDUCED = new Set(['components-hud--bass', 'components-title-hud--overflow', 'components-caption-notice--loading-to-result', 'components-auto-theater-notice--counting']);
+/** Language notice stories whose last step morphs the plate: shot at several fractions of the morph. */
+const LANGUAGE_MORPH = new Set(['merged', 'audio-then-subtitles', 'spinner-with-audio', 'spinner-resolves-with-audio', 'row-leaves']
+  .map(name => `components-language-notice--${name}`));
+const LANGUAGE_STILL = new Set(['audio-only', 'audio-default', 'refused'].map(name => `components-language-notice--${name}`));
+const MORPH_FRAMES = [0, 0.25, 0.5, 0.75, 1] as const;
+
+const REDUCED = new Set(['components-hud--bass', 'components-title-hud--overflow', 'components-caption-notice--loading-to-result', 'components-auto-theater-notice--counting',
+  'components-language-notice--spinner-resolves-with-audio']);
 export const NARROW_ANCHORS = ['components-control-button-tooltip--above', 'components-hud--text-only', 'components-caption-notice--status', 'components-title-hud--overflow'];
 
 /** Real timer states plus animation fractions; persistent titles/loading use only frame sweeps. */
@@ -51,7 +59,8 @@ function momentsFor(id: string): readonly Moment[] | undefined {
     { timeline: 'enter', frame: 0 }, { timeline: 'hold', frame: 0.25 }, { timeline: 'leave', frame: 0.5 }
   ];
   if (id.startsWith('components-hud--') || id.startsWith('components-auto-theater-notice--')
-    || id === 'components-caption-notice--status' || id === 'components-caption-notice--loading-to-result') return [
+    || id === 'components-caption-notice--status' || id === 'components-caption-notice--loading-to-result'
+    || LANGUAGE_STILL.has(id)) return [
     { timeline: 'enter', frame: 0.5 }, { timeline: 'hold', frame: 1 }, { timeline: 'leave', frame: 0.5 }
   ];
   return undefined;
@@ -94,6 +103,7 @@ export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromi
     } else if (id === 'components-title-hud--overflow' || id === 'components-caption-notice--loading') {
       profile.frames = [0, 0.5];
     } else if (id === 'components-auto-theater-notice--no-ring') profile.frames = [1];
+    else if (LANGUAGE_MORPH.has(id)) profile.frames = MORPH_FRAMES;
     else {
       const moments = momentsFor(id);
       // Playback and text without an icon have no distinct entry animation. Keep the held

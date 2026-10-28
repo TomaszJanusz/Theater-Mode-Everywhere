@@ -151,7 +151,8 @@ function setSlotChar(slot: HTMLElement, next: string, { animate, roll, clock }: 
   };
   const owner = clock ?? (view ? {
     setTimeout: (handler: () => void, delay: number) => view.setTimeout(handler, delay),
-    clearTimeout: (id: number | undefined) => view.clearTimeout(id)
+    clearTimeout: (id: number | undefined) => view.clearTimeout(id),
+    now: () => view.performance.now()
   } : undefined);
   const timer = owner?.setTimeout(settle, delayMs + TIME_DIGIT_TRANSITION_MS + 80);
   if (owner && timer !== undefined) settleTimers.set(slot, { id: timer, clock: owner });

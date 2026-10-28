@@ -56,7 +56,7 @@ for (const engine of testEngines()) {
     assert.equal(await page.locator('.theater-everywhere-seek-overlay').count(), 2);
 
     const caption = environment();
-    caption.args = { duration: 1200, detail: 'Custom fixture detail' };
+    caption.args = { detail: 'Custom fixture detail' };
     await openStory(page, server.url, 'components-caption-notice--status', caption);
     await selectTimeline(page, 'leave');
     assert.equal(await page.locator('.theater-everywhere-caption-hud').evaluate(node => node.classList.contains('fade-out')), true);

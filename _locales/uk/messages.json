@@ -113,10 +113,10 @@
     "message": "Сильне"
   },
   "audioProtected": {
-    "message": "Налаштування звуку недоступні: це відео захищене DRM."
+    "message": "Звукові ефекти недоступні: відео захищене DRM."
   },
   "audioRefused": {
-    "message": "Налаштування звуку недоступні: сервер відео цього не дозволяє."
+    "message": "Звукові ефекти недоступні: сервер відео цього не дозволяє."
   },
   "audioUnavailableHud": {
     "message": "Налаштування звуку недоступні для цього відео"
@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Субтитри ввімкнено"
-  },
   "subtitlesOnNamedHud": {
     "message": "Субтитри ввімкнено: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Субтитри вимкнено"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Завантаження субтитрів..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Не вдалося завантажити субтитри"
   },
   "onlyOneVideoHud": {
     "message": "Функція недоступна. Перемикання відео можливе лише тоді, коли на сторінці більше ніж один програвач."
@@ -599,6 +587,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Увімк."
+  },
+  "subtitlesHudNone": {
+    "message": "Недоступні"
+  },
+  "subtitlesHudFailed": {
+    "message": "Не вдалося завантажити"
+  },
   "noSubtitlesAvailable": {
     "message": "Субтитри недоступні"
   },
@@ -704,6 +701,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "За замовчуванням"
+  },
+  "audioTrackFailedHud": {
+    "message": "Не вдалося перемкнути звукову доріжку"
+  },
+  "audioHudLabel": {
+    "message": "Звук"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Не вдалося перемкнутися на $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (За замовчуванням)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Перемкнути відео на сторінці $KEY$",

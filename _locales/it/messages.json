@@ -113,10 +113,10 @@
     "message": "Forte"
   },
   "audioProtected": {
-    "message": "Impostazioni audio non disponibili: questo video è protetto da DRM."
+    "message": "Effetti audio non disponibili: questo video è protetto da DRM."
   },
   "audioRefused": {
-    "message": "Impostazioni audio non disponibili: il server del video non lo consente."
+    "message": "Effetti audio non disponibili: il server del video non lo consente."
   },
   "audioUnavailableHud": {
     "message": "Le impostazioni audio non sono disponibili per questo video"
@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Sottotitoli attivi"
-  },
   "subtitlesOnNamedHud": {
     "message": "Sottotitoli attivi: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Sottotitoli disattivati"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Caricamento dei sottotitoli..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Impossibile caricare i sottotitoli"
   },
   "onlyOneVideoHud": {
     "message": "Funzione non disponibile. Il cambio video è possibile solo quando nella pagina ci sono più lettori."
@@ -599,6 +587,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Attivati"
+  },
+  "subtitlesHudNone": {
+    "message": "Non disponibili"
+  },
+  "subtitlesHudFailed": {
+    "message": "Caricamento non riuscito"
+  },
   "noSubtitlesAvailable": {
     "message": "Nessun sottotitolo disponibile"
   },
@@ -704,6 +701,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "Predefinito"
+  },
+  "audioTrackFailedHud": {
+    "message": "Impossibile cambiare traccia audio"
+  },
+  "audioHudLabel": {
+    "message": "Audio"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Impossibile passare a $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Predefinito)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Cambia video nella pagina $KEY$",

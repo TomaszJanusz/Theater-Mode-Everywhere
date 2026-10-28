@@ -4,6 +4,7 @@ import { it } from 'node:test';
 
 import { chromium, firefox, type Page } from 'playwright';
 
+import { NEW_FEATURE_ITEMS } from '../feature-highlights';
 import { bundleModules } from '../test-utils/player-boot';
 import { CURRENT_GENERATION, CURRENT_VERSION, PREVIOUS_GENERATION } from '../test-utils/release';
 import { readStylesheet } from '../test-utils/styles';
@@ -33,7 +34,8 @@ async function installMock(page: Page, version = CURRENT_VERSION) {
   await page.evaluate(({ version, polish }) => {
     const listeners = new Set<(changes: object, area: string) => void>();
     const sync: Record<string, unknown> = { keepControlsVisible: true };
-    const local: Record<string, unknown> = {};
+    // An upgrade from before the first item generation, so every registered item counts as new.
+    const local: Record<string, unknown> = { newFeaturesSeenThrough: '1.5' };
     function area(name: string, values: Record<string, unknown>) {
       return {
         async get() { return { ...values }; },
@@ -92,7 +94,7 @@ for (const engine of testEngines()) {
     await page.evaluate(async (since: string) => {
       const local = await chrome.storage.local.get('newFeaturesSeenItems');
       await chrome.storage.local.set({ newFeaturesSeenItems: local.newFeaturesSeenItems.filter((key: string) => key !== `settingsLanguage@${since}`) });
-    }, CURRENT_GENERATION);
+    }, NEW_FEATURE_ITEMS.find(item => item.id === 'settingsLanguage')!.since);
     await page.locator('[data-new-feature=settingsLanguage] .te-new-badge').waitFor({ state: 'attached' });
     assert.equal(await page.locator('[data-new-feature=settingsHighContrast] .te-new-badge').count(), 0);
     await page.locator('#whats-new-btn.has-unseen').waitFor();
@@ -114,7 +116,7 @@ for (const engine of testEngines()) {
     assert.equal(await page.locator('#whats-new-btn.has-unseen').count(), 0);
     assert.equal(await page.evaluate(`BadgeTest.hasUnseenWhatsNew()`), false);
     const saved = await page.evaluate(() => chrome.storage.local.get(null));
-    assert.equal(saved.newFeaturesSeenThrough, undefined, 'viewing Settings and expiry never acknowledge');
+    assert.equal(saved.newFeaturesSeenThrough, '1.5', 'viewing Settings and expiry never acknowledge');
     assert.equal(saved.whatsNewAcknowledgedId, undefined);
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: true }));
@@ -316,9 +318,9 @@ for (const engine of testEngines()) {
     const dot = await page.locator('.player-settings-btn .te-new-badge').boundingBox();
     assert.ok(gear && dot && Math.abs(dot.y - gear.y) < 8 && Math.abs(dot.x - gear.x) < 22,
       'the dot stays beside the gear icon when the menu expands its trigger');
-    assert.equal(await page.locator('[data-settings-section=audio] .te-new-badge').count(), 1);
+    assert.equal(await page.locator('[data-settings-section=audio] .te-new-badge:visible').count(), 1, 'the hidden Audio track row adds no visible marker');
     assert.equal(await page.locator('[data-settings-section=audio] .theater-settings-heading .te-new-badge').count(), 1);
-    assert.equal(await page.locator('[data-settings-section=audio] button .te-new-badge').count(), 0);
+    assert.equal(await page.locator('[data-settings-section=audio] button .te-new-badge:visible').count(), 0);
     assert.doesNotMatch(await page.locator('.audio-voice-btn').getAttribute('aria-label') ?? '', /New/);
     assert.equal(await page.locator('.volume-boost-btn .te-new-badge').count(), 0, 'volume boost shipped before the current generation');
     await page.evaluate(() => chrome.storage.sync.set({ highlightNewFeatures: false }));

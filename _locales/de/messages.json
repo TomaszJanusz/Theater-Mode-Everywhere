@@ -113,10 +113,10 @@
     "message": "Stark"
   },
   "audioProtected": {
-    "message": "Audioeinstellungen nicht verfügbar: Dieses Video ist DRM-geschützt."
+    "message": "Audioeffekte nicht verfügbar: Dieses Video ist DRM-geschützt."
   },
   "audioRefused": {
-    "message": "Audioeinstellungen nicht verfügbar: Der Server des Videos erlaubt das nicht."
+    "message": "Audioeffekte nicht verfügbar: Der Server des Videos erlaubt das nicht."
   },
   "audioUnavailableHud": {
     "message": "Audioeinstellungen sind für dieses Video nicht verfügbar"
@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Untertitel ein"
-  },
   "subtitlesOnNamedHud": {
     "message": "Untertitel ein: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Untertitel aus"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Untertitel werden geladen..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Untertitel konnten nicht geladen werden"
   },
   "onlyOneVideoHud": {
     "message": "Funktion nicht verfügbar. Videos können nur gewechselt werden, wenn mehrere Player auf der Seite vorhanden sind."
@@ -599,6 +587,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "An"
+  },
+  "subtitlesHudNone": {
+    "message": "Nicht verfügbar"
+  },
+  "subtitlesHudFailed": {
+    "message": "Laden fehlgeschlagen"
+  },
   "noSubtitlesAvailable": {
     "message": "Keine Untertitel verfügbar"
   },
@@ -704,6 +701,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "Standard"
+  },
+  "audioTrackFailedHud": {
+    "message": "Tonspur konnte nicht gewechselt werden"
+  },
+  "audioHudLabel": {
+    "message": "Audio"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Wechsel zu $NAME$ nicht möglich",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Standard)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Video auf der Seite wechseln $KEY$",
