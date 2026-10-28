@@ -1609,7 +1609,8 @@ describe('provider integration flags', () => {
       tencent: true,
       crunchyroll: true,
       iqiyi: true,
-      soop: true
+      soop: true,
+      viki: true
     });
     assert.deepEqual(resolveMediaProviderFlags({}), allOn);
   });
@@ -1664,7 +1665,8 @@ describe('provider integration flags', () => {
       tencent: false,
       crunchyroll: false,
       iqiyi: false,
-      soop: false
+      soop: false,
+      viki: false
     });
     assert.deepEqual(mediaProviderFlagStorageUpdate(mediaProviderFlagsForRichTheaterExperience(true)), {
       youtubeIntegrationEnabled: true,
@@ -1678,7 +1680,8 @@ describe('provider integration flags', () => {
       tencentIntegrationEnabled: true,
       crunchyrollIntegrationEnabled: true,
       iqiyiIntegrationEnabled: true,
-      soopIntegrationEnabled: true
+      soopIntegrationEnabled: true,
+      vikiIntegrationEnabled: true
     });
   });
 

@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isVikiHost, isYouTubeHost } from './hosts';
 
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
@@ -97,5 +97,16 @@ describe('provider registry', () => {
     assert.equal(markMainWorldBooted(target), false);
     assert.equal(markFetchPatched(target), true);
     assert.equal(markFetchPatched(target), false);
+  });
+
+  it('limits the Viki provider to viki.com and keeps the MAIN world unpatched', () => {
+    assert.equal(isVikiHost('www.viki.com'), true);
+    assert.equal(isVikiHost('www.viki.com.'), true);
+    assert.equal(isVikiHost('viki.com.evil.test'), false);
+    assert.equal(isVikiHost('notviki.com'), false);
+    assert.deepEqual(matchingProviders('www.viki.com'), ['native', 'viki']);
+    assert.equal(shouldPatchMainWorld('www.viki.com'), false);
+    assert.equal(shouldAttachProvider('viki', defaultMediaProviderFlags(), 'www.viki.com'), true);
+    assert.equal(shouldAttachProvider('viki', { ...defaultMediaProviderFlags(), viki: false }, 'www.viki.com'), false);
   });
 });

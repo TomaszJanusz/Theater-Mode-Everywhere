@@ -1,10 +1,11 @@
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
+import { isVikiCaptionUrl, isVikiPreviewUrl } from './parsers/viki';
 
 const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json' | 'chapters';
   url: string;
 };
@@ -60,11 +61,16 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
       && /^[A-Z_]{3,12}$/.test(parsed.searchParams.get('szFileType') ?? '');
   }
 
-  if (request.provider === 'tencent' && request.kind === 'caption-track') {
-    return !parsed.username && !parsed.password && !parsed.port
-      && ['cffaws.wetvinfo.com', 'subtitle.wetvinfo.com', 'subtitle.tc.qq.com', 'subtitlebk.apdcdn.tc.qq.com'].includes(parsed.hostname)
-      && /\.(vtt|srt)$/i.test(parsed.pathname);
+  if (request.provider === 'viki') {
+    if (request.kind === 'caption-track') return isVikiCaptionUrl(request.url);
+    return request.kind === 'storyboard-vtt' && isVikiPreviewUrl(request.url);
   }
+
+  if (request.provider === 'tencent' && request.kind === 'caption-track') {
+  return !parsed.username && !parsed.password && !parsed.port
+    && ['cffaws.wetvinfo.com', 'subtitle.wetvinfo.com', 'subtitle.tc.qq.com', 'subtitlebk.apdcdn.tc.qq.com'].includes(parsed.hostname)
+    && /\.(vtt|srt)$/i.test(parsed.pathname);
+}
 
   if (request.provider === 'bilibiliIntl' && request.kind === 'caption-track') {
     return bilibiliIntlSubtitleUrl(request.url) !== null;
@@ -142,7 +148,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'soop'];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'patreon', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'soop', 'viki'];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];

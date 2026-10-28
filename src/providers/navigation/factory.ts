@@ -10,6 +10,7 @@ import { usableControlIndexes, type PlaylistNavigationHelpers } from './observed
 import { readSoopControls, SOOP_PLAYER_SELECTOR } from './soop';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
+import { readVikiControls } from './viki';
 import { readVimeoShowcaseControls } from './vimeo-showcase';
 import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './youtube';
 
@@ -76,6 +77,7 @@ function readHostControls(root: ParentNode) {
     ...readTencentControls(root),
     ...readIqiyiControls(root),
     ...readSoopControls(root),
+    ...readVikiControls(root),
     ...readVimeoShowcaseControls(root)
   ];
 }

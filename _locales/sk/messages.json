@@ -960,6 +960,12 @@
   "soopIntegrationDescription": {
     "message": "Zobrazuje názov vysielania alebo záznamu a streamera, označuje kapitoly podľa histórie názvov záznamu, ponúka predchádzajúci/ďalší záznam prehrávača a jeho odpočet ďalšieho videa a AutoTheater vie vstúpiť do živých vysielaní aj záznamov. Vlastný chat SOOP možno zobraziť vedľa videa."
   },
+  "vikiIntegrationTitle": {
+    "message": "Integrácia Rakuten Viki"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Ak ich video alebo prehrávač poskytuje: názov, titulky, značky úvodu/záverečných titulkov, miniatúry. Rýchle akcie: preskočenie úvodu a ďalší diel."
+  },
   "aboutTitle": {
     "message": "O rozšírení"
   },
@@ -1182,6 +1188,9 @@
   },
   "rteNoteSoop": {
     "message": "Kapitoly, predchádzajúci/ďalší a odpočet ďalšieho videa len pri záznamoch; bez titulkov a náhľadov na časovej osi."
+  },
+  "rteNoteViki": {
+    "message": "Titulky a náhľady, ak sú k dispozícii; ďalší diel cez prehrávač."
   },
   "rteSaveError": {
     "message": "Nastavenia služby sa nepodarilo uložiť. Skúste to znova."

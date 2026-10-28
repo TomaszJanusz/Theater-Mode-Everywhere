@@ -1,0 +1,24 @@
+/* Theater pins the video and leaves `#vmplayer_id` at height 0. Video.js
+ * anchors its cue display to that box, so cues land above the viewport.
+ * The display is lifted to the full viewport instead and inset by the dock
+ * the control bar already publishes. Dropping the stage class restores
+ * Viki's own placement. */
+html.theater-everywhere-viki-stage .vjs-text-track-display {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: var(--theater-caption-bottom, 48px) !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  transition: bottom 0.18s ease !important;
+}
+
+html[data-theater-everywhere-motion="reduced"].theater-everywhere-viki-stage .vjs-text-track-display {
+  transition: none !important;
+}
+
+/* While the extension draws a chosen track, Viki's own cues would double it. */
+html.theater-everywhere-html-active[data-te-viki-captions-hidden] .vjs-text-track-display {
+  display: none !important;
+}

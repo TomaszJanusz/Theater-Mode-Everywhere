@@ -960,6 +960,12 @@
   "soopIntegrationDescription": {
     "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania. Własny czat SOOP można pokazać obok wideo."
   },
+  "vikiIntegrationTitle": {
+    "message": "Integracja z Rakuten Viki"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, znaczniki intra/napisów końcowych, Miniatury. Szybkie akcje: pomijanie intra i następny odcinek."
+  },
   "aboutTitle": {
     "message": "O rozszerzeniu"
   },
@@ -1182,6 +1188,9 @@
   },
   "rteNoteSoop": {
     "message": "Rozdziały, poprzednie/następne i odliczanie do następnego wideo tylko w nagraniach; bez napisów i podglądu na osi czasu."
+  },
+  "rteNoteViki": {
+    "message": "Napisy i podglądy, gdy dostępne; następny odcinek przez odtwarzacz."
   },
   "rteSaveError": {
     "message": "Nie udało się zapisać ustawień serwisów. Spróbuj ponownie."

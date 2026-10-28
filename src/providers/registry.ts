@@ -1,10 +1,12 @@
+
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
+import { VikiAdapter } from '../media-features/viki-adapter';
 
 import { bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isPatreonHost, isTencentHost, isTwitchHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost, isYouTubeHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
@@ -13,11 +15,11 @@ import { patreonWatchPlayback } from './patreon/watch-playback';
 import { SoopAdapter } from './soop/adapter';
 import { soopWatchPlayback } from './soop/watch-playback';
 import { twitchWatchPlayback } from './twitch/watch-playback';
+import { vikiWatchPlayback } from './viki/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import type { WatchPlayback } from './watch-playback';
 import { youtubeLauncherPlacement } from './youtube/launcher-placement';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
-
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
 export const MAIN_FETCH_PATCH_KEY = Symbol.for('theater-everywhere.fetch-patched');
@@ -31,6 +33,8 @@ export type ProviderDefinition = {
   launcherPlacement?: LauncherPlacementFactory;
   /** The service adapter, composed by `createMediaFeaturesAdapter` when the provider is attached. */
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
+  /** The adapter names no title and leaves it to the page's own metadata, as the native adapter reads it. */
+  titleFromPage?: boolean;
 };
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
@@ -46,7 +50,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'tencent', matchesHost: (hostname) => isTencentHost(hostname) },
   { id: 'crunchyroll', matchesHost: (hostname) => isCrunchyrollHost(hostname) },
   { id: 'iqiyi', matchesHost: (hostname) => isIqiyiHost(hostname), createAdapter: (video) => new IqiyiAdapter(video), watchPlayback: iqiyiWatchPlayback },
-  { id: 'soop', matchesHost: (hostname) => isSoopHost(hostname), createAdapter: (video) => new SoopAdapter(video), watchPlayback: soopWatchPlayback }
+  { id: 'soop', matchesHost: (hostname) => isSoopHost(hostname), createAdapter: (video) => new SoopAdapter(video), watchPlayback: soopWatchPlayback },
+  { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(), titleFromPage: true, watchPlayback: vikiWatchPlayback }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {
@@ -60,8 +65,8 @@ export function matchingProviders(hostname: string): ProviderId[] {
 }
 
 export function shouldPatchMainWorld(hostname: string): boolean {
-  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI and SOOP read only the page.
-  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi' && id !== 'soop');
+  // Bilibili requests scoped metadata directly. Tencent harvests getvinfo. iQIYI, SOOP and Viki read only the page and its own responses.
+  return matchingProviders(hostname).some((id) => id !== 'native' && id !== 'bilibili' && id !== 'bilibiliIntl' && id !== 'iqiyi' && id !== 'soop' && id !== 'viki');
 }
 
 export function shouldAttachProvider(id: MediaProviderId, flags: MediaProviderFlags, hostname?: string): boolean {

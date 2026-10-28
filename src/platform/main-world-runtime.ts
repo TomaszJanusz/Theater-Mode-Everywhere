@@ -1,5 +1,6 @@
 import { isChatDocument, isNativeChatEvent } from '../chat';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
+import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
 import { MEDIA_SEEK_EVENT, parseMediaSeekDetail } from '../protocol/media-seek';
 import { MODAL_KEY_EVENT } from '../protocol/modal';
@@ -21,7 +22,7 @@ import {
   MAX_BIF_BYTES,
   readDisneySnapshot
 } from '../providers/disney/main';
-import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isSoopHost, isTwitchHost } from '../providers/hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isIqiyiHost, isPatreonHost, isSoopHost, isTwitchHost, isVikiHost } from '../providers/hosts';
 import { installIqiyiNavigation, readIqiyiSnapshot } from '../providers/iqiyi-main';
 import {
   installNetflixMain,
@@ -252,7 +253,7 @@ export function installMainWorldRuntime(): void {
   }
 
   // iQIYI is DOM- and global-based: it needs the watch queries and history hook but no response harvesting.
-  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname) || isSoopHost(window.location.hostname)) installWatchPlaybackQueries();
+  if (harvestHost || isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname) || isIqiyiHost(window.location.hostname) || isSoopHost(window.location.hostname) || isVikiHost(window.location.hostname)) installWatchPlaybackQueries();
   installIqiyiNavigation();
   installSoopNavigation();
   if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
@@ -530,6 +531,7 @@ export function installMainWorldRuntime(): void {
     if (classified.provider === 'tencent') return tencentIntegrationEnabled();
     if (classified.provider === 'crunchyroll') return crunchyrollAllowsCaptionFetch(url);
     if (classified.provider === 'soop') return soopIntegrationEnabled();
+    if (classified.provider === 'viki') return mediaProviderIntegrationEnabled('viki');
     return false;
   }
 

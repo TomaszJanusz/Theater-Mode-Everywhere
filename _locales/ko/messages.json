@@ -960,6 +960,12 @@
   "soopIntegrationDescription": {
     "message": "방송 또는 다시보기 제목과 스트리머를 표시하고, 다시보기의 제목 기록으로 챕터를 표시하며, 플레이어의 이전/다음 다시보기와 다음 영상 카운트다운을 사용할 수 있고, AutoTheater가 라이브 방송과 다시보기에서 자동으로 극장 모드에 들어갑니다. SOOP의 채팅을 영상 옆에 표시할 수 있습니다."
   },
+  "vikiIntegrationTitle": {
+    "message": "Rakuten Viki 연동"
+  },
+  "vikiIntegrationDescription": {
+    "message": "동영상이나 플레이어가 제공하는 경우 사용 가능: 제목, 자막, 인트로/크레딧 표시, 미리보기 이미지. 빠른 동작: 인트로 건너뛰기 및 다음 에피소드."
+  },
   "aboutTitle": {
     "message": "소개"
   },
@@ -1182,6 +1188,9 @@
   },
   "rteNoteSoop": {
     "message": "챕터, 이전/다음, 다음 영상 카운트다운은 다시보기에서만 지원하며 자막과 타임라인 미리보기는 없습니다."
+  },
+  "rteNoteViki": {
+    "message": "제공되는 경우 자막과 미리보기를 지원하며 다음 에피소드는 플레이어를 이용합니다."
   },
   "rteSaveError": {
     "message": "서비스 설정을 저장하지 못했습니다. 다시 시도하세요."
