@@ -86,6 +86,8 @@ export type PlayerChromeActions = {
   applyTheaterVideoFit(mode?: VideoFitMode): void;
   applySubtitleLayout(on: boolean): void;
   showCaptionHud(payload: CaptionHudPayload): void;
+  /** Status notice for an audio track change: the track's label, or null when the switch failed. */
+  showAudioTrackHud(label: string | null): void;
   syncContentTitle(title: ContentTitle | null): void;
   createPlayerHeader(): HTMLElement;
   executeCommand(command: PlayerCommand): void;

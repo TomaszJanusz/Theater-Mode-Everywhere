@@ -711,6 +711,7 @@ function bindChromeActions(): void {
     applyTheaterVideoFit,
     applySubtitleLayout,
     showCaptionHud,
+    showAudioTrackHud,
     createPlayerHeader: hud.createPlayerHeader,
     syncContentTitle,
     executeCommand,
@@ -1075,6 +1076,13 @@ function showCaptionHud(payload: CaptionHudPayload): void {
     return;
   }
   triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud') });
+}
+
+/** Shares the caption notice slot, so a track change replaces a subtitle notice instead of stacking. */
+function showAudioTrackHud(label: string | null): void {
+  triggerCaptionHud(label === null
+    ? { kind: 'status', title: t('audioTrackFailedHud') }
+    : { kind: 'status', title: t('audioTrackLabel'), detail: label, duration: 4_000 });
 }
 
 async function toggleTheaterCaptions(): Promise<void> {

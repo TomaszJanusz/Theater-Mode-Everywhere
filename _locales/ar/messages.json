@@ -699,6 +699,9 @@
   "audioTrackServiceDefault": {
     "message": "افتراضي"
   },
+  "audioTrackFailedHud": {
+    "message": "تعذّر تبديل المسار الصوتي"
+  },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",
     "placeholders": {

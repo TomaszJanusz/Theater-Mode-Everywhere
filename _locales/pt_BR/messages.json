@@ -699,6 +699,9 @@
   "audioTrackServiceDefault": {
     "message": "Padrão"
   },
+  "audioTrackFailedHud": {
+    "message": "Não foi possível trocar a faixa de áudio"
+  },
   "switchVideoTooltip": {
     "message": "Alternar vídeo na página $KEY$",
     "placeholders": {

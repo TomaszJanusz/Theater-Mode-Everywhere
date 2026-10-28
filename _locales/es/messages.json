@@ -699,6 +699,9 @@
   "audioTrackServiceDefault": {
     "message": "Predeterminado"
   },
+  "audioTrackFailedHud": {
+    "message": "No se pudo cambiar la pista de audio"
+  },
   "switchVideoTooltip": {
     "message": "Cambiar vídeo de la página $KEY$",
     "placeholders": {

@@ -699,6 +699,9 @@
   "audioTrackServiceDefault": {
     "message": "デフォルト"
   },
+  "audioTrackFailedHud": {
+    "message": "音声トラックを切り替えられませんでした"
+  },
   "switchVideoTooltip": {
     "message": "ページ内の動画を切り替え $KEY$",
     "placeholders": {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 
-import { AudioTrackController } from './audio-tracks';
+import { AudioTrackController, type AudioTrackResult } from './audio-tracks';
 import type { AudioTrack, AudioTrackList, MediaFeaturesAdapter } from './types';
 
 /** A host whose list, selection and ad state the test drives, with selections settled by hand. */
@@ -66,14 +66,16 @@ function setup(saved: string | null = 'fr') {
   let changes = 0;
   const preference = { saved };
   const savedPicks: string[] = [];
+  const results: AudioTrackResult[] = [];
   const controller = new AudioTrackController({
     preference: () => preference.saved,
     onPreferenceChange: (value) => { savedPicks.push(value); },
     locales: () => ['en'],
-    onChange: () => { changes += 1; }
+    onChange: () => { changes += 1; },
+    onResult: (result) => { results.push(result); }
   });
   controller.bind(host.adapter());
-  return { host, controller, preference, savedPicks, changes: () => changes };
+  return { host, controller, preference, savedPicks, results, changes: () => changes };
 }
 
 const dubbed: Array<[string, string, AudioTrack['kind']]> = [['en', 'en-US', 'original'], ['fr', 'fr', 'dub'], ['de', 'de', 'dub']];
@@ -199,5 +201,75 @@ describe('audio track auto-apply', () => {
     replacement.offer(...dubbed);
     await flush();
     assert.equal(replacement.selections.length, 0);
+  });
+
+  describe('results for the viewer', () => {
+    it('reports an accepted manual pick with the track as the refreshed list shows it', async () => {
+      const { host, controller, results } = setup(null);
+      host.offer(...dubbed);
+      assert.equal(await controller.select('de'), true);
+      assert.deepEqual(results, [{ result: 'selected', source: 'manual', track: { id: 'de', languageTag: 'de', label: 'de', kind: 'dub', selected: true }, index: 2 }]);
+    });
+
+    it('reports the saved preference once per item, and nothing when nothing changes', async () => {
+      const { host, results } = setup('fr');
+      host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(results.map(item => item.result === 'selected' && [item.source, item.track.id, item.index]), [['preference', 'fr', 1]]);
+      host.choose('de');
+      await flush();
+      assert.equal(results.length, 1, 'a host change after the decision stays silent');
+
+      const quiet = setup('en');
+      quiet.host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(quiet.results, [], 'the preferred track was already playing');
+      const unmatched = setup('ja');
+      unmatched.host.offer(...dubbed);
+      await flush();
+      assert.deepEqual(unmatched.results, [], 'no match, the host keeps its choice');
+    });
+
+    it('reports a refused manual pick, but keeps a refused automatic one silent', async () => {
+      const { host, controller, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      host.tracks = host.tracks.filter(track => track.id !== 'fr');
+      host.settle();
+      await flush();
+      assert.deepEqual(results, [], 'the viewer did not ask for the automatic switch');
+
+      host.autoSettle = true;
+      host.blocked = true;
+      host.notify();
+      assert.equal(await controller.select('de'), false);
+      assert.deepEqual(results, [{ result: 'failed', source: 'manual' }], 'a pick during an ad is refused and said so');
+    });
+
+    it('says nothing when the answer is for an earlier item, a reset list or a disposed controller', async () => {
+      const { host, controller, results } = setup('fr');
+      host.autoSettle = false;
+      host.offer(...dubbed);
+      const manual = controller.select('de');
+      host.mediaId = 'video-b';
+      host.offer(...dubbed);
+      host.settle();
+      await manual;
+      await flush();
+      assert.deepEqual(results.filter(item => item.source === 'manual'), [], 'the manual answer is stale');
+      assert.equal(results.filter(item => item.source === 'preference').length, 1, 'only the later item\'s own automatic switch is reported');
+
+      results.length = 0;
+      host.mediaId = 'video-c';
+      host.offer(...dubbed);
+      controller.reset();
+      host.settle();
+      await flush();
+      const disposing = controller.select('en');
+      controller.dispose();
+      host.settle();
+      await disposing;
+      assert.deepEqual(results, [], 'reset and dispose retire the pending answers');
+    });
   });
 });

@@ -56,6 +56,36 @@ async function open(test: TestContext, engine: 'chromium' | 'firefox', settings:
   return page;
 }
 
+const hud = (page: Page) => page.locator('.theater-everywhere-caption-hud');
+const hudText = (page: Page) => hud(page).evaluateAll(items => items.map(item => [item.querySelector('.volume-hud-text')?.textContent, item.querySelector('.volume-hud-detail')?.textContent]));
+
+/** A round trip to the page ends only after its pending microtasks, which is where a pick's answer continues. */
+const settled = (page: Page) => page.evaluate(() => undefined);
+
+/**
+ * Enabling Français moves the item to another source in the same task, before the host's answer
+ * reaches the player: the answer is for an item the viewer has already left.
+ */
+const leaveItemOnFrench = () => {
+  const video = document.querySelector('video')!;
+  const original = video.currentSrc;
+  let source = original;
+  Object.defineProperty(video, 'currentSrc', { get: () => source });
+  const list = (video as unknown as { audioTracks: unknown }).audioTracks as EventTarget & Record<number, object>;
+  const french = list[1];
+  const descriptor = Object.getOwnPropertyDescriptor(french, 'enabled')!;
+  Object.defineProperty(french, 'enabled', {
+    get: descriptor.get,
+    set(value: boolean) {
+      descriptor.set!.call(french, value);
+      if (value) {
+        source = `${original}#next`;
+        list.dispatchEvent(new Event('change'));
+      }
+    }
+  });
+};
+
 const enabled = (page: Page) => page.evaluate(() => (window as unknown as { __enabled(): boolean[] }).__enabled());
 const changes = (page: Page) => page.evaluate(() => (window as unknown as { __audioChanges: string[] }).__audioChanges);
 const saved = (page: Page) => page.evaluate(async () => (await chrome.storage.sync.get('audioPreferenceByHost')).audioPreferenceByHost);
@@ -124,6 +154,35 @@ describe('audio track menu and per-service preference', () => {
       await page.locator('.theater-settings-menu .help-btn').waitFor();
       assert.equal(await row(page).isHidden(), true);
       assert.deepEqual(await changes(page), []);
+    });
+
+    it(`tells the viewer which track a pick or the saved language switched to, replacing the last notice in ${engine}`, async t => {
+      const page = await open(t, engine, {});
+      assert.equal(await hud(page).count(), 0, 'nothing is announced before anything changes');
+      await openAudioMenu(page);
+      await rows(page).nth(1).click();
+      await page.locator('.theater-everywhere-caption-hud .volume-hud-detail', { hasText: 'Français' }).waitFor();
+      assert.deepEqual(await hudText(page), [['Audio track', 'Français']]);
+
+      await openAudioMenu(page);
+      await rows(page).nth(3).click();
+      await page.locator('.theater-everywhere-caption-hud .volume-hud-detail', { hasText: 'English AD' }).waitFor();
+      assert.deepEqual(await hudText(page), [['Audio track', 'English AD']], 'one notice at a time');
+
+      const auto = await open(t, engine, { audioPreferenceByHost: { [HOST]: 'de' } });
+      await auto.locator('.theater-everywhere-caption-hud .volume-hud-detail', { hasText: 'Deutsch' }).waitFor();
+      assert.deepEqual(await hudText(auto), [['Audio track', 'Deutsch']]);
+    });
+
+    it(`stays silent when the host answers for an item the viewer has left, in ${engine}`, async t => {
+      const page = await open(t, engine, {});
+      await page.evaluate(leaveItemOnFrench);
+      await openAudioMenu(page);
+      await rows(page).nth(1).click();
+      await page.waitForFunction(() => (window as unknown as { __audioChanges: string[] }).__audioChanges.includes('fr'));
+      await settled(page);
+      assert.equal(await hud(page).count(), 0, 'the stale answer paints nothing');
+      assert.deepEqual(await saved(page) ?? {}, {}, 'and saves nothing');
     });
   }
 });

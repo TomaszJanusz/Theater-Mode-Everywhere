@@ -699,6 +699,9 @@
   "audioTrackServiceDefault": {
     "message": "Predvolené"
   },
+  "audioTrackFailedHud": {
+    "message": "Zvukovú stopu sa nepodarilo prepnúť"
+  },
   "switchVideoTooltip": {
     "message": "Prepnúť video na stránke $KEY$",
     "placeholders": {
