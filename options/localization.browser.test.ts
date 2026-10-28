@@ -31,8 +31,10 @@ async function open(page: Page, surface: 'options' | 'popup', blacklist: string[
     };
     Object.defineProperty(window, 'chrome', { configurable: true, value: {
       runtime: { getURL: (file: string) => file, sendMessage: async (request: { locale: keyof typeof catalogs; action: string }) =>
-        request.action === 'get-language-catalog' ? catalogs[request.locale] : { status: 'conflict', owners: ['cycle'] } },
-      storage: { sync: storage, onChanged: { addListener: listeners.add.bind(listeners), removeListener: listeners.delete.bind(listeners) } },
+        request.action === 'get-language-catalog' ? catalogs[request.locale]
+          // An upgrade from before the first item generation, so every registered item counts as new.
+          : request.action === 'feature-highlights' ? { newFeaturesSeenThrough: '1.5' } : { status: 'conflict', owners: ['cycle'] } },
+      storage: { sync: storage, local: {}, onChanged: { addListener: listeners.add.bind(listeners), removeListener: listeners.delete.bind(listeners) } },
       tabs: { query: async () => url ? [{ id: 1, url }] : [] }
     } });
   };

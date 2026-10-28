@@ -85,7 +85,7 @@ describe('audio track menu and per-service preference', () => {
       const page = await open(t, engine, {});
       await page.locator('.player-settings-btn').click();
       await assert.doesNotReject(row(page).waitFor());
-      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English');
+      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English, New', 'the row carries the 2.1 marker');
       await row(page).click();
       assert.deepEqual(await rows(page).evaluateAll(items => items.map(item => [item.textContent?.replace('✓', ''), item.getAttribute('aria-pressed')])),
         [['English', 'true'], ['Français', 'false'], ['Deutsch', 'false'], ['English AD', 'false']]);

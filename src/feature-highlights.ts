@@ -44,9 +44,14 @@ export const NEW_FEATURE_ITEMS = [
   { id: 'rteTencent', since: '2.0' },
   { id: 'rteCrunchyroll', since: '2.0' },
   { id: 'rteNetflix', since: '2.0' },
+  { id: 'rteViki', since: '2.1' },
+  { id: 'rteIqiyi', since: '2.1' },
+  { id: 'rteSoop', since: '2.1' },
   { id: 'playerPictureLayout', since: '2.0' },
   { id: 'playerAlwaysShowControls', since: '2.0' },
-  { id: 'playerAudio', since: '2.0' }
+  { id: 'playerAudio', since: '2.0' },
+  // The row also owns the per-service preference: its Default action forgets the saved language.
+  { id: 'playerAudioTrack', since: '2.1' }
 ] as const satisfies readonly { id: string; since: Generation }[];
 export type NewFeatureId = typeof NEW_FEATURE_ITEMS[number]['id'];
 
