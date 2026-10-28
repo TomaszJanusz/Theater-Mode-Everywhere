@@ -1547,7 +1547,17 @@ function initialize(): void {
     // Ignore key presses in inputs/textareas/editable elements (including inside Shadow DOM)
     const activeEl = getActiveElementDeep() as HTMLElement | null;
     const isEditable = editableFieldFocused(activeEl);
-    if (isEditable) return false;
+    if (isEditable) {
+      // A select in our own menu, reached by W/S, keeps taking navigation keys; everything else stays the field's.
+      if (activeEl instanceof HTMLSelectElement && activeEl.closest('.theater-settings-menu') && session.element && !ui().helpOpen
+          && navigation.isActive() && navigation.handleKeydown(event, ui().shortcuts || defaultShortcuts)) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return true;
+      }
+      return false;
+    }
     if (activeEl?.matches('.theater-cc-menu-item') && ['ArrowUp', 'ArrowDown', 'Escape'].includes(event.key)) return false;
     if (activeEl?.matches('input[type=range]')
         && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return false;
