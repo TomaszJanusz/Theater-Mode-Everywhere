@@ -1,4 +1,6 @@
 import { DisposableScope } from '../core/disposable-scope';
+import { SOOP_NAVIGATE_EVENT } from '../providers/soop-main';
+import { TWITCH_NAVIGATE_EVENT } from '../providers/twitch/navigation';
 
 import { detectChatActivation, TWITCH_CHAT_TOGGLE_SELECTOR, YOUTUBE_CHAT_CARD_SELECTOR } from './activation';
 import { detectChatSurface } from './detect';
@@ -15,14 +17,16 @@ import { ChatThemeSession, normalizeChatTheme } from './theme';
 import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
 import { isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
 
-/** Cheap route check. DOM discovery does not run on every tick. */
-const DISCOVERY_POLL_MS = 500;
-
 /**
- * Late shells usually arrive as mutations. This only covers a mount or model
- * change that does not touch the DOM, and it never runs while the document is hidden.
+ * Waiting for a service-owned control we clicked (or can click) to open its chat. Hosts such as
+ * SOOP flip a class that no observer watches, so this re-reads while an activation is pending.
+ * A page without chat has no pending activation and schedules nothing; it never runs while hidden.
  */
-const LATE_MOUNT_MS = 2000;
+const PENDING_ACTIVATION_MS = 2000;
+
+/** Route changes the SPA publishes without `popstate`: YouTube's own events, and the Twitch/SOOP history hooks. */
+const YOUTUBE_NAV_EVENTS = ['yt-navigate-finish', 'yt-page-data-updated'] as const;
+const PAGE_NAV_EVENTS = [TWITCH_NAVIGATE_EVENT, SOOP_NAVIGATE_EVENT] as const;
 
 /** Coalesce structural mutations. Message appends never reach this timer. */
 const STRUCTURE_REFRESH_MS = 80;
@@ -84,9 +88,9 @@ export class ChatController {
   private viewportFrame = 0;
   private shellObserver: MutationObserver | null = null;
   private shellArmed = false;
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private pendingActivationTimer: ReturnType<typeof setInterval> | null = null;
   private listenersBound = false;
-  private lastLateRefresh = 0;
+  private navigationBound = false;
   private activation: ChatActivation | null = null;
   private attemptedActivation: (ChatActivation & { at: number }) | null = null;
 
@@ -130,7 +134,6 @@ export class ChatController {
     const routeChanged = identity !== this.lastIdentity;
     if (routeChanged) this.resetVisibilitySeed();
     this.lastIdentity = identity;
-    this.lastLateRefresh = Date.now();
     let surface = detectChatSurface(this.options.document, href);
     const previous = this.current.surface;
     // A stable live route may mount a new content identity without changing its URL.
@@ -151,6 +154,7 @@ export class ChatController {
     }
     this.apply(surface);
     this.openNativeChat();
+    this.syncPendingActivation();
   }
 
   private resetVisibilitySeed(): void {
@@ -209,7 +213,7 @@ export class ChatController {
     this.disposed = true;
     this.scope.dispose();
     this.disarmShell();
-    this.clearPoll();
+    this.clearPendingActivationTimer();
     this.clearStructureTimer();
     this.clearViewportFrame();
     this.themeSession.dispose();
@@ -224,7 +228,7 @@ export class ChatController {
 
   /**
    * Generic pages and non-watch hosts get no observer and no timer.
-   * A chat host on a non-watch route only compares the URL until a watch route appears.
+   * A chat host on a non-watch route waits for a navigation event until a watch route appears.
    */
   private syncActivity(): void {
     if (this.disposed) return;
@@ -236,15 +240,15 @@ export class ChatController {
     const host = isNativeChatHost(href);
     if (!host) {
       this.disarmShell();
-      this.clearPoll();
+      this.clearPendingActivationTimer();
       return;
     }
     if (doc.hidden) {
       this.disarmShell();
-      this.clearPoll();
+      this.clearPendingActivationTimer();
       return;
     }
-    this.ensurePoll();
+    this.bindNavigation();
     if (parseChatLocation(href)?.role === 'watch') this.armShell();
     else this.disarmShell();
   }
@@ -261,11 +265,23 @@ export class ChatController {
     if (view.visualViewport) this.scope.listen(view.visualViewport, 'resize', () => this.onViewport());
   }
 
+  /** Bound once, on the first visible chat host: the events never fire elsewhere. */
+  private bindNavigation(): void {
+    if (this.navigationBound) return;
+    this.navigationBound = true;
+    const doc = this.options.document;
+    const view = doc.defaultView;
+    // Several events can publish one navigation; the structure timer coalesces them.
+    const onNavigation = () => { if (isNativeChatHost(this.safeHref())) this.scheduleStructureRefresh(); };
+    for (const name of YOUTUBE_NAV_EVENTS) this.scope.listen(doc, name, onNavigation);
+    if (view) for (const name of PAGE_NAV_EVENTS) this.scope.listen(view, name, onNavigation);
+  }
+
   private onVisibility(): void {
     if (this.disposed) return;
     if (this.options.document.hidden) {
       this.disarmShell();
-      this.clearPoll();
+      this.clearPendingActivationTimer();
       this.clearStructureTimer();
       return;
     }
@@ -278,20 +294,22 @@ export class ChatController {
     this.scheduleViewport();
   }
 
-  private ensurePoll(): void {
-    if (this.pollTimer !== null) return;
-    const poll = setInterval(() => this.poll(), DISCOVERY_POLL_MS);
-    this.pollTimer = poll;
-    this.scope.add(() => {
-      clearInterval(poll);
-      if (this.pollTimer === poll) this.pollTimer = null;
-    });
+  /** Re-reads only while a native control is waiting to open the chat; nothing else needs a timer. */
+  private syncPendingActivation(): void {
+    const wanted = !this.disposed && !this.options.document.hidden && this.activation !== null
+      && isNativeChatHost(this.safeHref());
+    if (!wanted) {
+      this.clearPendingActivationTimer();
+      return;
+    }
+    if (this.pendingActivationTimer !== null) return;
+    this.pendingActivationTimer = setInterval(() => this.refresh(), PENDING_ACTIVATION_MS);
   }
 
-  private clearPoll(): void {
-    if (this.pollTimer === null) return;
-    clearInterval(this.pollTimer);
-    this.pollTimer = null;
+  private clearPendingActivationTimer(): void {
+    if (this.pendingActivationTimer === null) return;
+    clearInterval(this.pendingActivationTimer);
+    this.pendingActivationTimer = null;
   }
 
   private armShell(): void {
@@ -322,36 +340,6 @@ export class ChatController {
     if (!this.shellArmed) return;
     this.shellObserver?.disconnect();
     this.shellArmed = false;
-  }
-
-  private poll(): void {
-    if (this.disposed || this.options.document.hidden) return;
-    const href = this.safeHref();
-    if (!isNativeChatHost(href)) {
-      this.disarmShell();
-      this.clearPoll();
-      return;
-    }
-    const identity = watchIdentity(href);
-    if (identity) this.armShell();
-    else this.disarmShell();
-    if (identity !== this.lastIdentity) {
-      this.refresh();
-      return;
-    }
-    if (!identity) return;
-    const surface = this.current.surface;
-    const frameDetached = Boolean(surface?.iframe && !surface.iframe.isConnected);
-    const frameRetargeted = Boolean(surface?.iframe) && (surface?.iframe?.getAttribute('src') || '') !== this.boundFrameSrc;
-    const rootDetached = Boolean(surface && !surface.root.isConnected);
-    const componentDetached = Boolean(surface?.contentRoot && !surface.contentRoot.isConnected);
-    if (frameDetached || frameRetargeted || rootDetached || componentDetached) {
-      this.refresh();
-      return;
-    }
-    if (surface && !this.activation) return;
-    if (Date.now() - this.lastLateRefresh < LATE_MOUNT_MS) return;
-    this.refresh();
   }
 
   /**

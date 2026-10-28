@@ -1271,9 +1271,24 @@ describe('native chat controller', () => {
           window.__zero();
         })()`);
         await page.clock.runFor(10_000);
-        const lateMount = await page.evaluate('window.__counts()') as { refreshes: number; documentQueries: number };
-        assert.ok(lateMount.refreshes >= 1 && lateMount.refreshes <= 6, `${engine} late refresh ${lateMount.refreshes}`);
-        assert.ok(lateMount.documentQueries > 0 && lateMount.documentQueries < 80, `${engine} late queries ${lateMount.documentQueries}`);
+        // A watch page without chat has nothing pending, so no timer wakes it.
+        assert.deepEqual(await page.evaluate('window.__counts()'), { refreshes: 0, documentQueries: 0, elementQueries: 0, allQueries: 0 }, engine);
+        await page.evaluate(`(() => {
+          window.__controller.dispose();
+          document.body.innerHTML = '<ytd-watch-flexy video-id="AbCdEfGhIjK"><yt-video-metadata-carousel-view-model role="button" aria-label="Czat na żywo"><button>Otwórz panel</button></yt-video-metadata-carousel-view-model></ytd-watch-flexy>';
+          window.__href = 'https://www.youtube.com/watch?v=AbCdEfGhIjK';
+          window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+          window.__zero();
+        })()`);
+        // A native control waiting to open the chat is the one reason left to re-read on a timer.
+        await page.clock.runFor(6_000);
+        const pending = (await page.evaluate('window.__counts()') as { refreshes: number }).refreshes;
+        assert.ok(pending >= 2 && pending <= 4, `${engine} pending activation refreshed ${pending} times`);
+        await page.evaluate(`document.querySelector('yt-video-metadata-carousel-view-model').remove()`);
+        await page.clock.runFor(2_000);
+        await page.evaluate('window.__zero()');
+        await page.clock.runFor(10_000);
+        assert.equal((await page.evaluate('window.__counts()') as { refreshes: number }).refreshes, 0, `${engine} timer outlived the activation`);
 
         const routes = await page.evaluate(`(() => {
           window.__controller.dispose();
@@ -1308,7 +1323,11 @@ describe('native chat controller', () => {
         assert.deepEqual(routes.mobileState, { available: true, kind: 'replay' }, engine);
         assert.deepEqual(routes.playerState, { available: false, queries: 0 }, engine);
         assert.deepEqual(routes.homeState, { available: false, queries: 0 }, engine);
-        await page.clock.runFor(500);
+        // A route change is noticed through the host's navigation event, not by polling the URL.
+        await page.clock.runFor(5_000);
+        assert.equal(await page.evaluate('window.__controller.state.available'), false, engine);
+        await page.evaluate(`document.dispatchEvent(new Event('yt-navigate-finish'))`);
+        await page.clock.runFor(100);
         const embed = await page.evaluate(`(() => {
           const state = window.__controller.state;
           window.__controller.dispose();
