@@ -4,6 +4,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { chromium, type BrowserContext, type CDPSession, type Page, type Worker } from 'playwright';
 import { BASS_LEVELS, DEFAULT_AUDIO_SETTINGS, LEVELING_LEVELS, VOICE_LEVELS, isNeutralAudio } from '../../src/audio-settings';
+import { AUTO_THEATER_STORAGE_KEY } from '../../src/ui/auto-theater';
 import { checkPlayer, checkState } from './validation';
 import { activeAudio, type Build, type Environment, type PlayerSnapshot, type Scenario, type State, type VideoSpec } from './model';
 import { Resources, waitFor } from './processes';
@@ -264,7 +265,7 @@ async function setSettings(session: Session, state: State): Promise<void> {
     await chrome.storage.sync.clear();
     await chrome.storage.sync.set(value);
   }, { voiceBoost: state.audio.voice, volumeLeveling: state.audio.leveling, bassLevel: state.audio.bass,
-    volumeBoostEnabled: state.boost > 1, youtubeIntegrationEnabled: state.rte, autoTheaterEnabled: false });
+    volumeBoostEnabled: state.boost > 1, youtubeIntegrationEnabled: state.rte, [AUTO_THEATER_STORAGE_KEY]: false });
   await session.page.waitForFunction(rte => document.documentElement.hasAttribute('data-te-youtube-integration-off') !== rte, state.rte);
 }
 export async function toggleTheater(page: Page, want: boolean): Promise<void> {
