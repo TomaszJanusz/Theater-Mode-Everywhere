@@ -67,7 +67,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'soop']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'soop', 'viki']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -78,6 +78,19 @@ describe('positive provider watch declarations', () => {
     }
     for (const path of ['/browse', '/title/70178217', '/watch', '/watch/', '/watch/abc', '/watch/70248299/extra', '/browse/watch/70248299']) {
       assert.equal(read(`https://www.netflix.com${path}`), null, path);
+    }
+  });
+
+  it('qualifies Viki episode routes with an optional slug, excluding catalog pages and spoofed hosts', () => {
+    const expected = { provider: 'viki', identity: '1263131v' };
+    for (const href of ['https://www.viki.com/videos/1263131v', 'https://www.viki.com/videos/1263131v-legend-of-the-female-general-episode-1',
+      'https://viki.com/videos/1263131v/?utm_source=x#t', 'https://www.viki.com/videos/1263131v-slug/']) {
+      assert.deepEqual(read(href), expected, href);
+    }
+    for (const href of ['https://www.viki.com/', 'https://www.viki.com/tv/41125c-legend-of-the-female-general', 'https://www.viki.com/videos/', 'https://www.viki.com/videos/abc',
+      'https://www.viki.com/videos/1263131', 'https://www.viki.com/videos/1263131v/extra', 'https://www.viki.com/en/videos/1263131v', 'https://www.viki.com/player/1263131v',
+      'https://viki.com.evil.test/videos/1263131v', 'https://www.viki.com:8443/videos/1263131v']) {
+      assert.equal(read(href), null, href);
     }
   });
 
@@ -107,6 +120,8 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.patreon.com', { ...flags, patreon: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.viki.com', flags, true), 'available');
+    assert.equal(autoTheaterAvailability('www.viki.com', { ...flags, viki: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', { ...flags, twitch: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');

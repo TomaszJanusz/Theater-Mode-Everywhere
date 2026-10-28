@@ -9,6 +9,7 @@ import { patreonCapabilities } from './patreon/capabilities';
 import { soopCapabilities } from './soop/capabilities';
 import { tencentCapabilities } from './tencent/capabilities';
 import { twitchCapabilities } from './twitch/capabilities';
+import { vikiCapabilities } from './viki/capabilities';
 import { vimeoCapabilities } from './vimeo/capabilities';
 import { youtubeCapabilities } from './youtube/capabilities';
 
@@ -27,4 +28,5 @@ export const PROVIDER_CAPABILITIES: readonly ProviderCapabilities[] = [
   crunchyrollCapabilities,
   iqiyiCapabilities,
   soopCapabilities,
+  vikiCapabilities,
 ];

@@ -960,6 +960,12 @@
   "soopIntegrationDescription": {
     "message": "Affiche le titre de la diffusion ou de l’enregistrement et le streamer, repère des chapitres d’après l’historique des titres d’un enregistrement, propose l’enregistrement précédent/suivant du lecteur et son compte à rebours de la vidéo suivante, et AutoTheater peut s’activer sur les directs et les enregistrements. Le chat de SOOP peut s’afficher à côté de la vidéo."
   },
+  "vikiIntegrationTitle": {
+    "message": "Intégration Rakuten Viki"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères d’introduction/générique, Miniatures. Actions rapides : passer l’introduction et épisode suivant."
+  },
   "aboutTitle": {
     "message": "À propos"
   },
@@ -1182,6 +1188,9 @@
   },
   "rteNoteSoop": {
     "message": "Chapitres, précédent/suivant et compte à rebours de la vidéo suivante sur les enregistrements uniquement ; pas de sous-titres ni d’aperçus sur la chronologie."
+  },
+  "rteNoteViki": {
+    "message": "Sous-titres et aperçus si disponibles ; suivant via le lecteur."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

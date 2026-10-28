@@ -30,7 +30,7 @@ Adapters that can list and switch audio implement `listAudioTracks()`, `selectAu
 
 `media-features/audio-tracks.ts` owns the list for the current adapter epoch. An item is evaluated once, when it first lists two or more tracks outside a block: the saved preference is applied at most once, a viewer's choice ends evaluation for that item, and later host changes (including the host restoring its own remembered choice) are left alone. Results for an earlier item, adapter or binding are dropped. The preference is per service, stored like the subtitle preference (`audioPreferenceByHost`, keyed by `captionPreferenceHost`, see `media-features/audio-preference.ts`): `original` or a language tag, saved when the viewer picks a track and removed by the Default button. Automatic selection never chooses description or commentary tracks.
 
-The UI shows the Audio track row and its list only with two or more tracks and reads nothing but this contract. The generic adapter reads `HTMLMediaElement.audioTracks` where the browser exposes it; YouTube reads its watch, miniplayer and embed player through the MAIN-world bridge in `media-features/youtube-audio-tracks.ts`. Providers without either declare the `audio` capability `no`.
+The UI shows the Audio track row and its list only with two or more tracks and reads nothing but this contract. The generic adapter reads `HTMLMediaElement.audioTracks` where the browser exposes it; YouTube reads its watch, miniplayer and embed player through the MAIN-world bridge in `media-features/youtube-audio-tracks.ts`. Rakuten Viki lists the tracks from its own Video.js audio menu (`.vmp-audio-tracks-menu li`, present in the DOM while the menu is closed) and selects by clicking the host's row, so the player, the ad state and the track are revalidated first and the pick counts only once the host moves its check mark. The rows carry a label in the viewer's interface language and no tag, so the tag comes from the episode's `audio_languages` and the original from its recorded language; rows that cannot be matched stay untagged. Viki lists the viewer's current choice first, so a row's id is its label, not its position. Providers without any of these declare the `audio` capability `no`.
 
 ## Titles
 
@@ -150,6 +150,12 @@ surfaces fail closed; their mode/style changes refresh eligibility. Missing DASH
 state, iframe players and season-only URLs remain manual. Both Bilibili providers
 reuse the history publication and shared countdown runtime.
 iQIYI confirms the single `iqp-player`'s own direct child video (ad videos sit in its ad container), requires the host's highlighted episode to match the URL, and refreshes on a MAIN-world `pushState` publication. SOOP confirms the one streamed `blob:` video of its `#webplayer #player` (`video#livePlayer`, infinite duration, on live; `video#video`, finite, on recordings), so the placeholder shown before the player terms are accepted and the separate ad element never qualify. Vimeo showcases, live events and OTT pages are also excluded.
+Rakuten Viki declares `/videos/<id>v` (with an optional slug) on viki.com. Its player is the page's only
+Video.js `video.vjs-tech`, and the player is rebuilt on every episode change without any id on the element, so
+identity is the episode whose DASH manifest the page requested last (read from the resource timeline, which
+fails closed when its buffer is full); another episode's video is rejected during SPA navigation. Ads share the
+element and stay part of the visit. Route changes need no history hook: the rebuilt video's playback events
+refresh entry.
 
 A theater session that starts on a declared watch route ends through the
 normal exit path when navigation leaves that route, independent of media state or

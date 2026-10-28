@@ -960,6 +960,12 @@
   "soopIntegrationDescription": {
     "message": "显示直播或录像的标题和主播，根据录像的标题历史标出章节，提供播放器的上一个/下一个录像及下一个视频倒计时，AutoTheater 可进入直播和录像。可在视频旁显示 SOOP 自带的聊天。"
   },
+  "vikiIntegrationTitle": {
+    "message": "Rakuten Viki 集成"
+  },
+  "vikiIntegrationDescription": {
+    "message": "视频或播放器提供时可用：标题, 字幕, 片头/片尾字幕标记, 缩略图。 快捷操作：跳过片头和下一集。"
+  },
   "aboutTitle": {
     "message": "关于"
   },
@@ -1182,6 +1188,9 @@
   },
   "rteNoteSoop": {
     "message": "章节、上一个/下一个和下一个视频倒计时仅适用于录像；没有字幕和时间轴预览。"
+  },
+  "rteNoteViki": {
+    "message": "可用时提供字幕和预览；通过播放器切换下一集。"
   },
   "rteSaveError": {
     "message": "无法保存服务设置，请重试。"

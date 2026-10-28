@@ -39,5 +39,32 @@ describe('settings menu under the pointer', () => {
       await page.mouse.click(640, 200);
       assert.equal(await menuOpen(), false, 'a press outside still closes it');
     });
+
+    it(`keeps a menu that hover opened once the pointer presses inside it, even if the panel then leaves the pointer, in ${engine}`, { timeout: 40_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      await serveFixture(page, FIXTURE);
+      await bootPlayer(page, { settings: { keepControlsVisible: true } });
+      await page.waitForFunction(() => Boolean(document.querySelector('video')?.readyState && document.querySelector('video')!.readyState >= 2));
+      await enterTheater(page);
+      const state = () => page.evaluate(() => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        return { open: root.querySelector('.theater-settings-container')!.classList.contains('is-open'),
+          pinned: root.querySelector('.theater-settings-menu')!.classList.contains('visible') };
+      });
+
+      await page.locator('.player-settings-btn').hover();
+      assert.deepEqual(await state(), { open: true, pinned: false }, 'hover opens without pinning');
+      await page.locator('.video-fit-btn .theater-settings-label').hover();
+      await page.mouse.move(640, 200);
+      assert.equal((await state()).open, false, 'a hover menu left without a press still closes');
+
+      await page.locator('.player-settings-btn').hover();
+      await page.locator('.video-fit-btn .theater-settings-label').click();
+      // A row opening its list resizes the panel, which can leave the pointer outside it.
+      await page.mouse.move(640, 200);
+      assert.deepEqual(await state(), { open: true, pinned: true }, 'a press inside pins the menu');
+      await page.mouse.click(640, 200);
+      assert.equal((await state()).open, false, 'a press outside still closes it');
+    });
   }
 });
