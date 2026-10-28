@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Live YouTube streams opened after using YouTube's miniplayer or queue now show as live in theater mode. The progress bar ran to a made-up end time, the remaining time counted down as if the stream were a finished video, and the live button could seek to a stale point. Reloading the page hid the problem.
+- Theater mode no longer slows a page down after being entered and exited many times. Each exit left part of the previous session running, so pages such as YouTube grew slower to navigate the more often theater was used, until the page was reloaded.
 
 ## [2.0.7] - 2026-10-26
 

@@ -93,6 +93,7 @@ import {
   queryPlayerUiAll,
   PLAYER_NATIVE_ACTIVATION_SELECTOR
 } from './root';
+import type { DisposableScope } from '../core/disposable-scope';
 import { FrameCoordinator } from '../core/frame-coordinator';
 import { PlayerSession, type PlayerCommand } from '../core/player-session';
 import { resolveDomainPolicy } from '../platform/domain-policy';
@@ -2037,8 +2038,18 @@ function toggleTheaterMode(): void {
   }
 }
 
+/** Owns the bound theater video's listeners and observers; replacement and exit release it. */
+let videoBindingScope: DisposableScope | null = null;
+
+function releaseTheaterVideoBinding(): void {
+  videoBindingScope?.dispose();
+  videoBindingScope = null;
+}
+
 function keepTheaterVideoBound(video: HTMLVideoElement): void {
+  releaseTheaterVideoBinding();
   const bindingScope = session.runtimeScope.child();
+  videoBindingScope = bindingScope;
   const needsWatchIdentity = (): boolean => theaterEnteredOnWatchPage
     && readProviderWatchPage(new URL(window.location.href)) !== null;
   const acceptsReplacement = (candidate: HTMLVideoElement): boolean =>
@@ -2341,6 +2352,7 @@ function exitTheaterMode(
   cancelAudioReload?.();
   cancelAudioReload = null;
   try {
+  releaseTheaterVideoBinding();
   hideHelpOverlay(false);
   stopNativeChatSession();
 
