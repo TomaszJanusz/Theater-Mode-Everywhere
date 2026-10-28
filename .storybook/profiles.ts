@@ -40,6 +40,12 @@ export const LOCALE_ANCHORS: Record<string, (locale: Language) => Profile['args'
   'components-auto-theater-notice--counting': () => ({})
 };
 
+/** Language notice stories whose last step morphs the plate: shot at several fractions of the morph. */
+const LANGUAGE_MORPH = new Set(['merged', 'audio-then-subtitles', 'spinner-with-audio', 'spinner-resolves-with-audio', 'row-leaves']
+  .map(name => `components-language-notice--${name}`));
+const LANGUAGE_STILL = new Set(['audio-only', 'audio-default', 'refused'].map(name => `components-language-notice--${name}`));
+const MORPH_FRAMES = [0, 0.25, 0.5, 0.75, 1] as const;
+
 const REDUCED = new Set(['components-hud--bass', 'components-title-hud--overflow', 'components-caption-notice--loading-to-result', 'components-auto-theater-notice--counting',
   'components-language-notice--spinner-resolves-with-audio']);
 export const NARROW_ANCHORS = ['components-control-button-tooltip--above', 'components-hud--text-only', 'components-caption-notice--status', 'components-title-hud--overflow'];
@@ -54,8 +60,7 @@ function momentsFor(id: string): readonly Moment[] | undefined {
   ];
   if (id.startsWith('components-hud--') || id.startsWith('components-auto-theater-notice--')
     || id === 'components-caption-notice--status' || id === 'components-caption-notice--loading-to-result'
-    // A line joining the plate: held mid-join (the plate grows, lines slide), settled, and fading out.
-    || (id.startsWith('components-language-notice--') && id !== 'components-language-notice--spinner-with-audio')) return [
+    || LANGUAGE_STILL.has(id)) return [
     { timeline: 'enter', frame: 0.5 }, { timeline: 'hold', frame: 1 }, { timeline: 'leave', frame: 0.5 }
   ];
   return undefined;
@@ -97,7 +102,8 @@ export function profilesFor(id: string, engine: 'chromium' | 'firefox' = 'chromi
       profile.frames = engine === 'firefox' ? [0, 0.5] : [1];
     } else if (id === 'components-title-hud--overflow' || id === 'components-caption-notice--loading') {
       profile.frames = [0, 0.5];
-    } else if (id === 'components-auto-theater-notice--no-ring' || id === 'components-language-notice--spinner-with-audio') profile.frames = [1];
+    } else if (id === 'components-auto-theater-notice--no-ring') profile.frames = [1];
+    else if (LANGUAGE_MORPH.has(id)) profile.frames = MORPH_FRAMES;
     else {
       const moments = momentsFor(id);
       // Playback and text without an icon have no distinct entry animation. Keep the held

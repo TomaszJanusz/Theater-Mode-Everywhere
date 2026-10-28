@@ -71,7 +71,7 @@ const noticeLines = (page: Page) => page.evaluate(() => {
   return {
     plates: root.querySelectorAll('.theater-everywhere-caption-hud').length,
     lines: [...root.querySelectorAll<HTMLElement>('.theater-everywhere-caption-hud [data-language-line]')]
-      .map(line => [line.dataset.languageLine, line.querySelector('.volume-hud-text')?.textContent, line.querySelector('.volume-hud-detail')?.textContent ?? null])
+      .map(line => [line.dataset.languageLine, line.querySelector('.language-hud-label')?.textContent, line.querySelector('.language-hud-value')?.textContent])
   };
 });
 const announced = (page: Page) => page.evaluate(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent);
@@ -202,29 +202,29 @@ describe('audio track menu and per-service preference', () => {
       const subtitles = new Promise<void>(resolve => { release = resolve; });
       try {
         const page = await open(t, engine, { ...SAVED_ENGLISH_SUBTITLES, audioPreferenceByHost: { [HOST]: 'fr' } }, DUBBED, subtitles);
-        await page.locator('.caption-hud-spinner').waitFor();
+        await page.locator('.language-hud-spinner').waitFor();
         await page.locator('[data-language-line="audio"]').waitFor();
         assert.deepEqual(await noticeLines(page), { plates: 1, lines: [
-          ['subtitles', 'Loading subtitles...', null], ['audio', 'Audio track', 'Français']
+          ['subtitles', 'Subtitles', 'Loading...'], ['audio', 'Audio', 'Français']
         ] });
         release();
-        await page.locator('.caption-hud-spinner').waitFor({ state: 'detached' });
+        await page.locator('.language-hud-spinner').waitFor({ state: 'detached' });
         assert.deepEqual(await noticeLines(page), { plates: 1, lines: [
-          ['subtitles', 'Subtitles on', 'English'], ['audio', 'Audio track', 'Français']
+          ['subtitles', 'Subtitles', 'English'], ['audio', 'Audio', 'Français']
         ] }, 'the spinner resolved into the language and the audio line stayed');
         await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent
-          === 'Subtitles on: English. Audio track: Français');
+          === 'Subtitles: English. Audio: Français');
       } finally { release(); }
     });
 
     it(`adds a manual audio pick to the subtitles notice, and names the track when Default is chosen, in ${engine}`, async t => {
       const page = await open(t, engine, SAVED_ENGLISH_SUBTITLES, DUBBED, Promise.resolve());
-      await page.locator('.theater-everywhere-caption-hud .volume-hud-detail', { hasText: 'English' }).waitFor();
+      await page.locator('.theater-everywhere-caption-hud .language-hud-value', { hasText: 'English' }).waitFor();
       await openAudioMenu(page);
       await rows(page).nth(2).click();
       await page.locator('[data-language-line="audio"]', { hasText: 'Deutsch' }).waitFor();
       assert.deepEqual(await noticeLines(page), { plates: 1, lines: [
-        ['subtitles', 'Subtitles on', 'English'], ['audio', 'Audio track', 'Deutsch']
+        ['subtitles', 'Subtitles', 'English'], ['audio', 'Audio', 'Deutsch']
       ] }, 'the audio pick joins the subtitles notice and replaces nothing');
 
       await openAudioMenu(page);
@@ -241,11 +241,11 @@ describe('audio track menu and per-service preference', () => {
       await rows(page).nth(4).click();
       await page.locator('[data-language-line="audioRefused"]').waitFor();
       assert.deepEqual(await noticeLines(page), { plates: 1, lines: [
-        ['audio', 'Audio track', 'English'], ['audioRefused', "Couldn't switch audio track", 'Italiano']
+        ['audio', 'Audio', 'English'], ['audioRefused', 'Audio', "Couldn't switch to Italiano"]
       ] });
       await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!.getElementById('theater-announcements')!.textContent
-        === "Audio track: English. Couldn't switch audio track: Italiano");
-      assert.equal(await announced(page), "Audio track: English. Couldn't switch audio track: Italiano");
+        === "Audio: English. Audio: Couldn't switch to Italiano");
+      assert.equal(await announced(page), "Audio: English. Audio: Couldn't switch to Italiano");
       assert.deepEqual(await saved(page), { [HOST]: 'original' }, 'a refused pick saves nothing');
     });
 

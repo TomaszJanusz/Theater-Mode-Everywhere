@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Subtítulos activados"
-  },
   "subtitlesOnNamedHud": {
     "message": "Subtítulos activados: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Subtítulos desactivados"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Cargando subtítulos..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "No se pudieron cargar los subtítulos"
   },
   "onlyOneVideoHud": {
     "message": "Función no disponible. Solo se puede cambiar de vídeo cuando hay más reproductores en la página."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Activado"
+  },
+  "subtitlesHudNone": {
+    "message": "No disponibles"
+  },
+  "subtitlesHudFailed": {
+    "message": "No se pudieron cargar"
+  },
   "noSubtitlesAvailable": {
     "message": "No hay subtítulos disponibles"
   },
@@ -701,6 +698,17 @@
   },
   "audioTrackFailedHud": {
     "message": "No se pudo cambiar la pista de audio"
+  },
+  "audioHudLabel": {
+    "message": "Audio"
+  },
+  "audioTrackRefusedHud": {
+    "message": "No se pudo cambiar a $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "audioTrackDefaultHud": {
     "message": "$NAME$ (Predeterminado)",

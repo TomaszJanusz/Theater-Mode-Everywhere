@@ -83,7 +83,7 @@ for (const engine of testEngines()) {
     assert.equal(indexResponse.status(), 200);
     const index = await indexResponse.json() as { entries: Record<string, { type: string; title: string }> };
     const stories = Object.keys(index.entries).filter(id => index.entries[id].type === 'story');
-    assert.equal(stories.length, 41, '40 component stories plus Extension/Player UI');
+    assert.equal(stories.length, 42, '41 component stories plus Extension/Player UI');
     assert.ok(stories.includes(PLAYER_STORY));
     assert.deepEqual([...new Set(stories.map(id => index.entries[id].title))].sort(), [
       'Extension/Player UI',
@@ -152,10 +152,10 @@ for (const engine of testEngines()) {
     // Test output precedes coverage reporting. Only the completed manager state proves the run succeeded.
     await manager.getByRole('button', { name: 'Start test run', exact: true }).waitFor();
     await manager.getByRole('button', { name: 'Component tests passed', exact: true }).waitFor();
-    assert.match(await manager.locator('body').innerText(), /Test run finished\. 41 components passed\./);
+    assert.match(await manager.locator('body').innerText(), /Test run finished\. 42 components passed\./);
     assert.equal(await manager.getByText('View full error', { exact: true }).count(), 0);
     // The panel above is the completion contract. Vitest's terminal summary inserts ANSI
-    // escapes around "41 passed" in CI, so waiting for its uncolored text never finishes.
+    // escapes around "42 passed" in CI, so waiting for its uncolored text never finishes.
     assert.doesNotMatch(stripVTControlCharacters(output), /No projects matched|Failed to (?:start (?:Vitest|test runner)|run tests)|Custom report|Coverage enabled|outside of Vite serving allow list/);
   });
 }

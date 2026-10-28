@@ -17,8 +17,8 @@ type Story = HudCase;
 // the burst can leave (at most both seek overlays: three arrows and the pulse each), not a count.
 const MAX_PLATE_ANIMATIONS = 8;
 
-const LOADING: CaptionHudView = { kind: 'loading', title: 'Loading' };
-const status = (title: string, detail?: string): CaptionHudView => ({ kind: 'status', title, ...(detail ? { detail } : {}) });
+const LOADING: CaptionHudView = { kind: 'loading', title: 'Captions', detail: 'Loading' };
+const status = (detail: string): CaptionHudView => ({ kind: 'status', title: 'Captions', detail });
 const notice = () => queryPlayerUi<HTMLElement>(CAPTION_HUD);
 
 /** A download that finishes inside the delay never shows anything and leaves no timer. */
@@ -47,7 +47,7 @@ const LoadingStaysUntilDone: Story = hudStory(h => h.triggerCaptionHud(LOADING),
 });
 test('LoadingStaysUntilDone', () => runHudCase(LoadingStaysUntilDone));
 
-const StatusHidesAfterMinimum: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const StatusHidesAfterMinimum: Story = hudStory(h => h.triggerCaptionHud(status('Off')), {
   play: async () => {
     const shown = notice()!;
     stage().advance(LANGUAGE_MIN_VISIBLE_MS - 1);
@@ -62,13 +62,13 @@ const StatusHidesAfterMinimum: Story = hudStory(h => h.triggerCaptionHud(status(
 test('StatusHidesAfterMinimum', () => runHudCase(StatusHidesAfterMinimum));
 
 /** A second status late in the hold rewrites the same plate and keeps it for the time after an update. */
-const LateRetriggerExtends: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const LateRetriggerExtends: Story = hudStory(h => h.triggerCaptionHud(status('Off')), {
   play: async () => {
     const shown = notice()!;
     stage().advance(3500);
-    hud().triggerCaptionHud(status('Captions on', 'English'));
+    hud().triggerCaptionHud(status('English'));
     await expect(notice()).toBe(shown);
-    await expect(shown.querySelector('.volume-hud-text')?.textContent).toBe('Captions on');
+    await expect(shown.querySelector('.language-hud-value')?.textContent).toBe('English');
     await expect(stage().clock.pending).toBe(1);
     stage().advance(LANGUAGE_AFTER_UPDATE_MS - 1);
     await expect(shown.classList.contains('fade-out')).toBe(false);
@@ -88,7 +88,7 @@ const StaleLoadingNeverShows: Story = hudStory(h => h.triggerCaptionHud(LOADING)
 });
 test('StaleLoadingNeverShows', () => runHudCase(StaleLoadingNeverShows));
 
-const StaleStatusDoesNotFade: Story = hudStory(h => h.triggerCaptionHud(status('Captions off')), {
+const StaleStatusDoesNotFade: Story = hudStory(h => h.triggerCaptionHud(status('Off')), {
   play: async () => {
     const shown = notice()!;
     stage().session.element = document.createElement('video');
@@ -102,7 +102,7 @@ test('StaleStatusDoesNotFade', () => runHudCase(StaleStatusDoesNotFade));
 
 const NoSessionNoNotice: Story = hudStory((h, s) => {
   s.session.element = null;
-  h.triggerCaptionHud(status('Captions off'));
+  h.triggerCaptionHud(status('Off'));
   h.triggerCaptionHud(LOADING);
 }, {
   play: async () => {
@@ -116,7 +116,7 @@ test('NoSessionNoNotice', () => runHudCase(NoSessionNoNotice));
 const CleanupLeavesNothing: Story = hudStory((h, s) => {
   h.triggerCaptionHud(LOADING);
   s.advance(LANGUAGE_LOAD_DELAY_MS);
-  h.triggerCaptionHud(status('Captions on', 'English'));
+  h.triggerCaptionHud(status('English'));
 }, {
   play: async () => {
     hud().removeCaptionHud();
@@ -131,7 +131,7 @@ test('CleanupLeavesNothing', () => runHudCase(CleanupLeavesNothing));
 const RapidResults: Story = hudStory(() => {}, {
   play: async () => {
     const run = (index: number) => hud().triggerCaptionHud(index % 2
-      ? status('Captions on', `Language ${index}`) : status('Captions off'));
+      ? status(`Language ${index}`) : status('Off'));
     run(0);
     run(1);
     const one = measure();
@@ -151,7 +151,7 @@ test('Status before loading delay cancels the pending spinner', () => runHudCase
     stage().advance(100);
     hud().triggerCaptionHud(status('Failed'));
     stage().advance(LANGUAGE_LOAD_DELAY_MS);
-    await expect(notice()?.querySelector('.caption-hud-spinner')).toBeNull();
-    await expect(notice()?.textContent).toBe('Failed');
+    await expect(notice()?.querySelector('.language-hud-spinner')).toBeNull();
+    await expect(notice()?.querySelector('.language-hud-value')?.textContent).toBe('Failed');
   }
 })));

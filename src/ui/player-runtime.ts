@@ -1051,35 +1051,29 @@ function stepVideoFit(direction: 1 | -1): void {
   changeVideoFit(current => stepVideoFitMode(current, direction));
 }
 
+/** Values of the subtitles row; the label names the source. */
+const SUBTITLE_HUD_VALUES = { on: 'subtitlesHudOn', off: 'subtitlesOff', none: 'subtitlesHudNone', failed: 'subtitlesHudFailed' } as const;
+
 function showCaptionHud(payload: CaptionHudPayload): void {
-  if (payload.result === 'loading') {
-    triggerCaptionHud({ kind: 'loading', title: t('subtitlesLoadingHud') });
-    return;
-  }
   if (payload.result === 'dismiss') {
     triggerCaptionHud({ kind: 'dismiss' });
     return;
   }
-  if (payload.result === 'none') {
-    triggerCaptionHud({ kind: 'status', title: t('noSubtitlesAvailable') });
+  const title = t('subtitlesMenuTitle');
+  if (payload.result === 'loading') {
+    triggerCaptionHud({ kind: 'loading', title, detail: t('loadingLabel') });
     return;
   }
-  if (payload.result === 'failed') {
-    triggerCaptionHud({ kind: 'status', title: t('subtitlesLoadFailedHud') });
-    return;
-  }
-  if (payload.result === 'on') {
-    triggerCaptionHud({ kind: 'status', title: t('subtitlesOnHud'), ...(payload.label ? { detail: payload.label } : {}) });
-    return;
-  }
-  triggerCaptionHud({ kind: 'status', title: t('subtitlesOffHud') });
+  const detail = payload.result === 'on' && payload.label ? payload.label : t(SUBTITLE_HUD_VALUES[payload.result]);
+  triggerCaptionHud({ kind: 'status', title, detail });
 }
 
-/** The audio lines of the language notice; the subtitles line stays as it is. */
+/** The audio rows of the language notice; the subtitles row stays as it is. */
 function showAudioTrackHud(report: AudioTrackHudReport): void {
+  const title = t('audioHudLabel');
   const playing = report.playing === null ? null : {
     kind: 'status' as const,
-    title: t('audioTrackLabel'),
+    title,
     detail: report.isDefault ? t('audioTrackDefaultHud', report.playing) : report.playing
   };
   if (report.refused === undefined) {
@@ -1087,9 +1081,9 @@ function showAudioTrackHud(report: AudioTrackHudReport): void {
     return;
   }
   updateLanguageHud({
-    // A refusal keeps naming what still plays; with nothing to name, an earlier audio line stays.
+    // A refusal keeps naming what still plays; with nothing to name, an earlier audio row stays.
     ...(playing ? { audio: playing } : {}),
-    audioRefused: { kind: 'status', title: t('audioTrackFailedHud'), ...(report.refused ? { detail: report.refused } : {}) }
+    audioRefused: { kind: 'status', title, detail: report.refused ? t('audioTrackRefusedHud', report.refused) : t('audioTrackFailedHud') }
   });
 }
 

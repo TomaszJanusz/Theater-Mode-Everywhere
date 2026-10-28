@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "자막 켜짐"
-  },
   "subtitlesOnNamedHud": {
     "message": "자막 켜짐: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "자막 꺼짐"
-  },
-  "subtitlesLoadingHud": {
-    "message": "자막을 불러오는 중..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "자막을 불러오지 못했습니다"
   },
   "onlyOneVideoHud": {
     "message": "기능을 사용할 수 없습니다. 동영상 전환은 페이지에 플레이어가 두 개 이상 있을 때만 가능합니다."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "켬"
+  },
+  "subtitlesHudNone": {
+    "message": "사용할 수 없음"
+  },
+  "subtitlesHudFailed": {
+    "message": "불러오지 못함"
+  },
   "noSubtitlesAvailable": {
     "message": "자막 없음"
   },
@@ -701,6 +698,17 @@
   },
   "audioTrackFailedHud": {
     "message": "오디오 트랙을 전환하지 못했습니다"
+  },
+  "audioHudLabel": {
+    "message": "오디오"
+  },
+  "audioTrackRefusedHud": {
+    "message": "$NAME$(으)로 전환하지 못했습니다",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "audioTrackDefaultHud": {
     "message": "$NAME$ (기본값)",

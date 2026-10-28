@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Titulky zapnuty"
-  },
   "subtitlesOnNamedHud": {
     "message": "Titulky zapnuty: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Titulky vypnuty"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Načítání titulků..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Titulky se nepodařilo načíst"
   },
   "onlyOneVideoHud": {
     "message": "Funkce není dostupná. Video lze přepnout jen tehdy, když je na stránce více přehrávačů."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Zapnuto"
+  },
+  "subtitlesHudNone": {
+    "message": "Nejsou k dispozici"
+  },
+  "subtitlesHudFailed": {
+    "message": "Nepodařilo se načíst"
+  },
   "noSubtitlesAvailable": {
     "message": "Žádné dostupné titulky"
   },
@@ -701,6 +698,17 @@
   },
   "audioTrackFailedHud": {
     "message": "Zvukovou stopu se nepodařilo přepnout"
+  },
+  "audioHudLabel": {
+    "message": "Zvuk"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Nepodařilo se přepnout na $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "audioTrackDefaultHud": {
     "message": "$NAME$ (Výchozí)",

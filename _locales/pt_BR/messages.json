@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Legendas ativadas"
-  },
   "subtitlesOnNamedHud": {
     "message": "Legendas ativadas: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Legendas desativadas"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Carregando legendas..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Não foi possível carregar as legendas"
   },
   "onlyOneVideoHud": {
     "message": "Recurso indisponível. A troca de vídeo só é possível quando há mais players na página."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Ativadas"
+  },
+  "subtitlesHudNone": {
+    "message": "Indisponíveis"
+  },
+  "subtitlesHudFailed": {
+    "message": "Não foi possível carregar"
+  },
   "noSubtitlesAvailable": {
     "message": "Nenhuma legenda disponível"
   },
@@ -701,6 +698,17 @@
   },
   "audioTrackFailedHud": {
     "message": "Não foi possível trocar a faixa de áudio"
+  },
+  "audioHudLabel": {
+    "message": "Áudio"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Não foi possível mudar para $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "audioTrackDefaultHud": {
     "message": "$NAME$ (Padrão)",

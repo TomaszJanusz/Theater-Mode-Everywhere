@@ -7,8 +7,9 @@ import type { UiClock } from './ui-clock';
 export const LANGUAGE_SOURCES = ['subtitles', 'audio', 'audioRefused'] as const;
 export type LanguageSource = typeof LANGUAGE_SOURCES[number];
 
+/** `title` names the source (the row's label); `detail` is what it reports (the row's value). */
 export type LanguageLine =
-  | { kind: 'loading'; title: string }
+  | { kind: 'loading'; title: string; detail?: string }
   | { kind: 'status'; title: string; detail?: string };
 export type LanguageLines = ReadonlyArray<readonly [LanguageSource, LanguageLine]>;
 /** Lines to set; `null` withdraws a source's line, an absent source keeps its line. */
@@ -34,7 +35,7 @@ export interface LanguageNoticeView {
 
 /** The merged text, read once per update. */
 export function languageNoticeText(lines: LanguageLines): string {
-  return lines.map(([, line]) => line.kind === 'status' && line.detail ? `${line.title}: ${line.detail}` : line.title).join('. ');
+  return lines.map(([, line]) => line.detail ? `${line.title}: ${line.detail}` : line.title).join('. ');
 }
 
 /**

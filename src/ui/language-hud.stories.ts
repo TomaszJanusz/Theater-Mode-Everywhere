@@ -11,11 +11,13 @@ import { getPlayerUiRoot, queryPlayerUi } from './root';
 
 // The lines the runtime sets (`showCaptionHud` and `showAudioTrackHud` in player-runtime.ts), built when
 // the story renders, after the locale global has loaded its catalog. Track names are fixture data.
-const subtitlesOn = (): LanguageChanges => ({ subtitles: { kind: 'status', title: t('subtitlesOnHud'), detail: 'English' } });
-const subtitlesLoading = (): LanguageChanges => ({ subtitles: { kind: 'loading', title: t('subtitlesLoadingHud') } });
-const audio = (detail = 'Français'): LanguageChanges => ({ audio: { kind: 'status', title: t('audioTrackLabel'), detail } });
-const refused = (): LanguageChanges => ({ audioRefused: { kind: 'status', title: t('audioTrackFailedHud'), detail: 'Deutsch' } });
-/** Where a later line joins: a second into the notice, well inside its minimum time. */
+const subtitlesOn = (): LanguageChanges => ({ subtitles: { kind: 'status', title: t('subtitlesMenuTitle'), detail: 'English' } });
+const subtitlesLoading = (): LanguageChanges => ({ subtitles: { kind: 'loading', title: t('subtitlesMenuTitle'), detail: t('loadingLabel') } });
+const audio = (detail = 'Français'): LanguageChanges => ({ audio: { kind: 'status', title: t('audioHudLabel'), detail }, audioRefused: null });
+const refused = (): LanguageChanges => ({ audioRefused: { kind: 'status', title: t('audioHudLabel'), detail: t('audioTrackRefusedHud', 'Deutsch') } });
+const SUBTITLES_ON = () => ['subtitles', t('subtitlesMenuTitle'), 'English'];
+const AUDIO_ROW = (detail = 'Français') => ['audio', t('audioHudLabel'), detail];
+/** Where a later row joins: a second into the notice, well inside its minimum time. */
 const JOIN_AFTER_MS = 1000;
 
 const meta: Meta<HudArgs> = {
@@ -25,9 +27,10 @@ const meta: Meta<HudArgs> = {
 };
 export default meta;
 
-/** Source, title and detail of every line, top to bottom. */
+/** Source, label and value of every row, top to bottom; a held frame may still show a spinner on its way out. */
 const lines = () => [...queryPlayerUi<HTMLElement>(CAPTION_HUD)?.querySelectorAll<HTMLElement>('[data-language-line]') ?? []]
-  .map(node => [node.dataset.languageLine, node.querySelector('.volume-hud-text')?.textContent, node.querySelector('.volume-hud-detail')?.textContent ?? null]);
+  .map(node => [node.dataset.languageLine, node.querySelector('.language-hud-label')?.textContent,
+    (node.querySelector('.language-hud-text') ?? node.querySelector('.language-hud-loading-text'))?.textContent]);
 const plates = () => getPlayerUiRoot().querySelectorAll(CAPTION_HUD).length;
 
 /**
@@ -57,36 +60,37 @@ function language(steps: (stage: HudStage) => Array<LanguageChanges | number>, e
 }
 
 /** The track a pick or the saved language switched to, or that was already playing. */
-export const AudioOnly = language(() => [audio()], () => [['audio', t('audioTrackLabel'), 'Français']], LANGUAGE_MIN_VISIBLE_MS);
+export const AudioOnly = language(() => [audio()], () => [AUDIO_ROW()], LANGUAGE_MIN_VISIBLE_MS);
 
-/** Default keeps the track playing and says so. */
+/** Default keeps the track playing and says so, in the value. */
 export const AudioDefault = language(() => [audio(t('audioTrackDefaultHud', 'English'))],
-  () => [['audio', t('audioTrackLabel'), t('audioTrackDefaultHud', 'English')]], LANGUAGE_MIN_VISIBLE_MS);
+  () => [AUDIO_ROW(t('audioTrackDefaultHud', 'English'))], LANGUAGE_MIN_VISIBLE_MS);
 
-/** The audio line joins the subtitles notice: one plate grows to two lines and the subtitles stay. */
-export const Merged = language(() => [subtitlesOn(), JOIN_AFTER_MS, audio()],
-  () => [['subtitles', t('subtitlesOnHud'), 'English'], ['audio', t('audioTrackLabel'), 'Français']],
+/** The audio row joins the subtitles notice: the plate grows to two rows and the new row fades in. */
+export const Merged = language(() => [subtitlesOn(), JOIN_AFTER_MS, audio()], () => [SUBTITLES_ON(), AUDIO_ROW()],
   LANGUAGE_MIN_VISIBLE_MS - JOIN_AFTER_MS);
 
-/** Subtitles that arrive second take their place above the audio line. */
-export const AudioThenSubtitles = language(() => [audio(), JOIN_AFTER_MS, subtitlesOn()],
-  () => [['subtitles', t('subtitlesOnHud'), 'English'], ['audio', t('audioTrackLabel'), 'Français']],
+/** Subtitles that arrive second take their place above the audio row, which slides down. */
+export const AudioThenSubtitles = language(() => [audio(), JOIN_AFTER_MS, subtitlesOn()], () => [SUBTITLES_ON(), AUDIO_ROW()],
   LANGUAGE_MIN_VISIBLE_MS - JOIN_AFTER_MS);
 
-/** While subtitles load, the audio line joins the plate with the spinner and the spinner keeps turning. */
+/** While subtitles load, the audio row joins the plate and the spinner in the subtitles row keeps turning. */
 export const SpinnerWithAudio = {
   ...language(() => [subtitlesLoading(), LANGUAGE_LOAD_DELAY_MS, audio()],
-    () => [['subtitles', t('subtitlesLoadingHud'), null], ['audio', t('audioTrackLabel'), 'Français']]),
+    () => [['subtitles', t('subtitlesMenuTitle'), t('loadingLabel')], AUDIO_ROW()]),
   parameters: { timeline: undefined }
 };
 
-/** Then the subtitles resolve: the spinner zooms out into the language and the audio line stays as it was. */
+/** Then the subtitles resolve: the spinner zooms out into the language, in the same row, and the audio row stays. */
 export const SpinnerResolvesWithAudio = language(
   () => [subtitlesLoading(), LANGUAGE_LOAD_DELAY_MS, audio(), JOIN_AFTER_MS, subtitlesOn()],
-  () => [['subtitles', t('subtitlesOnHud'), 'English'], ['audio', t('audioTrackLabel'), 'Français']],
+  () => [SUBTITLES_ON(), AUDIO_ROW()], LANGUAGE_MIN_VISIBLE_MS);
+
+/** A refused pick is its own row, under the track that still plays. */
+export const Refused = language(() => [{ ...audio('English'), ...refused() }],
+  () => [AUDIO_ROW('English'), ['audioRefused', t('audioHudLabel'), t('audioTrackRefusedHud', 'Deutsch')]],
   LANGUAGE_MIN_VISIBLE_MS);
 
-/** A refused pick is its own line, under the track that still plays. */
-export const Refused = language(() => [{ ...audio('English'), ...refused() }],
-  () => [['audio', t('audioTrackLabel'), 'English'], ['audioRefused', t('audioTrackFailedHud'), 'Deutsch']],
-  LANGUAGE_MIN_VISIBLE_MS);
+/** A successful pick after a refusal: the refusal row fades out in place while the plate closes over it. */
+export const RowLeaves = language(() => [{ ...audio('English'), ...refused() }, JOIN_AFTER_MS, audio('Deutsch')],
+  () => [AUDIO_ROW('Deutsch')], LANGUAGE_MIN_VISIBLE_MS - JOIN_AFTER_MS);
