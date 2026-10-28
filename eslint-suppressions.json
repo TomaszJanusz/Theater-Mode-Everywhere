@@ -2151,15 +2151,9 @@
   },
   "src/ui/hud.ts": {
     "import/order": {
-      "count": 14
-    },
-    "local/max-symbol-name-length": {
-      "count": 1
+      "count": 13
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
       "count": 1
     },
     "sonarjs/no-nested-conditional": {

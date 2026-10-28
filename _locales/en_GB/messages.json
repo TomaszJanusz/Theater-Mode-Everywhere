@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Subtitles on"
-  },
   "subtitlesOnNamedHud": {
     "message": "Subtitles on: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Subtitles off"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Loading subtitles..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Couldn't load subtitles"
   },
   "onlyOneVideoHud": {
     "message": "Feature unavailable. Video switching is only possible when there are more players on the page."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "On"
+  },
+  "subtitlesHudNone": {
+    "message": "Not available"
+  },
+  "subtitlesHudFailed": {
+    "message": "Couldn't load"
+  },
   "noSubtitlesAvailable": {
     "message": "No subtitles available"
   },
@@ -698,6 +695,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "Default"
+  },
+  "audioTrackFailedHud": {
+    "message": "Couldn't switch audio track"
+  },
+  "audioHudLabel": {
+    "message": "Audio"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Couldn't switch to $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Default)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Switch Video on Page $KEY$",

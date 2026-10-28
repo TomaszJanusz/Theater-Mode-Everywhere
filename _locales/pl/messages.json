@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Napisy włączone"
-  },
   "subtitlesOnNamedHud": {
     "message": "Napisy włączone: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Napisy wyłączone"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Ładowanie napisów..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Nie udało się wczytać napisów"
   },
   "onlyOneVideoHud": {
     "message": "Funkcja niedostępna. Przełączanie wideo jest możliwe wyłącznie, gdy jest więcej odtwarzaczy na stronie."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Włączone"
+  },
+  "subtitlesHudNone": {
+    "message": "Niedostępne"
+  },
+  "subtitlesHudFailed": {
+    "message": "Nie udało się wczytać"
+  },
   "noSubtitlesAvailable": {
     "message": "Brak dostępnych napisów"
   },
@@ -698,6 +695,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "Domyślne"
+  },
+  "audioTrackFailedHud": {
+    "message": "Nie udało się przełączyć ścieżki audio"
+  },
+  "audioHudLabel": {
+    "message": "Dźwięk"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Nie udało się przełączyć na $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (Domyślne)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Przełącz wideo na stronie $KEY$",

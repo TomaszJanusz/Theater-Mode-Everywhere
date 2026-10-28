@@ -100,10 +100,11 @@ describe('caption loading browser regressions', () => {
       await page.goto('http://captions.test/');
       await boot(page, 'captions.test');
       const button = page.locator('.cc-btn');
-      const hud = page.locator('.theater-everywhere-caption-hud');
-      await page.locator('.caption-hud-spinner').waitFor();
+      const row = page.locator('.theater-everywhere-caption-hud [data-language-line="subtitles"]');
+      const rowText = () => row.evaluate(node => [node.querySelector('.language-hud-label')!.textContent, node.querySelector('.language-hud-value')!.textContent]);
+      await page.locator('.theater-everywhere-caption-hud [data-language-line="subtitles"] .language-hud-spinner').waitFor();
       assert.equal(await button.getAttribute('aria-busy'), 'true');
-      assert.equal(await hud.innerText(), 'Loading subtitles...');
+      assert.deepEqual(await rowText(), ['Subtitles', 'Loading...']);
       const colors = await button.locator('svg').evaluate(async svg => {
         const animation = svg.getAnimations()[0];
         if (!animation) throw new Error('CC loading animation is missing');
@@ -125,13 +126,14 @@ describe('caption loading browser regressions', () => {
       await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.getAttribute('data-motion') === 'normal');
       loading.release();
       await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.cc-btn')!.getAttribute('aria-busy') === 'false');
-      assert.match(await hud.innerText(), /Subtitles on\s+English/);
       assert.equal(await page.locator('.cc-btn.active').count(), 1);
-      await page.locator('.caption-hud-spinner').waitFor({ state: 'detached' });
+      await page.locator('.language-hud-spinner').waitFor({ state: 'detached' });
+      assert.deepEqual(await rowText(), ['Subtitles', 'English']);
       await screenshot(page, 'restore-complete.png');
       await button.click();
       await page.getByRole('button', { name: 'Polish', exact: true }).click();
-      await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-caption-hud')?.textContent === "Couldn't load subtitles");
+      await page.waitForFunction(() => document.querySelector('#theater-everywhere-ui')!.shadowRoot!.querySelector('.theater-everywhere-caption-hud .language-hud-value')?.textContent === "Couldn't load");
+      assert.deepEqual(await rowText(), ['Subtitles', "Couldn't load"]);
       assert.equal(await button.getAttribute('aria-busy'), 'false');
       assert.equal(await page.locator('.cc-btn.active, .cc-btn.loading').count(), 0);
       await screenshot(page, 'load-failed.png');

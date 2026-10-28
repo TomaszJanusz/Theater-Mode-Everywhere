@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "字幕已开启"
-  },
   "subtitlesOnNamedHud": {
     "message": "字幕已开启：$1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "字幕已关闭"
-  },
-  "subtitlesLoadingHud": {
-    "message": "正在加载字幕..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "无法加载字幕"
   },
   "onlyOneVideoHud": {
     "message": "功能不可用。仅当页面上有多个播放器时才能切换视频。"
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "开启"
+  },
+  "subtitlesHudNone": {
+    "message": "不可用"
+  },
+  "subtitlesHudFailed": {
+    "message": "无法加载"
+  },
   "noSubtitlesAvailable": {
     "message": "没有可用字幕"
   },
@@ -698,6 +695,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "默认"
+  },
+  "audioTrackFailedHud": {
+    "message": "无法切换音轨"
+  },
+  "audioHudLabel": {
+    "message": "音频"
+  },
+  "audioTrackRefusedHud": {
+    "message": "无法切换到 $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$（默认）",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "切换页面中的视频 $KEY$",

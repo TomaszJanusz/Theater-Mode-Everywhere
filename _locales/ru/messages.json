@@ -406,9 +406,6 @@
       }
     }
   },
-  "subtitlesOnHud": {
-    "message": "Субтитры включены"
-  },
   "subtitlesOnNamedHud": {
     "message": "Субтитры включены: $1",
     "placeholders": {
@@ -416,15 +413,6 @@
         "content": "$1"
       }
     }
-  },
-  "subtitlesOffHud": {
-    "message": "Субтитры выключены"
-  },
-  "subtitlesLoadingHud": {
-    "message": "Загрузка субтитров..."
-  },
-  "subtitlesLoadFailedHud": {
-    "message": "Не удалось загрузить субтитры"
   },
   "onlyOneVideoHud": {
     "message": "Функция недоступна. Переключение видео возможно только если на странице больше одного проигрывателя."
@@ -593,6 +581,15 @@
       }
     }
   },
+  "subtitlesHudOn": {
+    "message": "Вкл."
+  },
+  "subtitlesHudNone": {
+    "message": "Недоступны"
+  },
+  "subtitlesHudFailed": {
+    "message": "Не удалось загрузить"
+  },
   "noSubtitlesAvailable": {
     "message": "Субтитры недоступны"
   },
@@ -698,6 +695,28 @@
   },
   "audioTrackServiceDefault": {
     "message": "По умолчанию"
+  },
+  "audioTrackFailedHud": {
+    "message": "Не удалось переключить звуковую дорожку"
+  },
+  "audioHudLabel": {
+    "message": "Звук"
+  },
+  "audioTrackRefusedHud": {
+    "message": "Не удалось переключиться на $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackDefaultHud": {
+    "message": "$NAME$ (По умолчанию)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "switchVideoTooltip": {
     "message": "Переключить видео на странице $KEY$",
