@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { NEW_FEATURE_ITEMS, compareGenerations, installedGeneration } from './feature-highlights';
 import { WHATS_NEW_CONTENT } from './whatsNew-content';
-import { CURRENT_GENERATION, CURRENT_VERSION } from './test-utils/release';
+import { MANIFEST_GENERATION, MANIFEST_VERSION } from './test-utils/release';
 import {
   WHATS_NEW_RELEASE,
   shouldAutoOpenWhatsNewOnUpdate,
@@ -20,12 +20,14 @@ const autoOpenRelease: WhatsNewRelease = {
 describe('Update highlights release configuration', () => {
   it('agrees with the manifest, package and feature generations, so a half-done version bump fails', () => {
     const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf8'));
-    assert.equal(pkg.version, CURRENT_VERSION, 'package.json and manifest.json versions differ');
-    assert.equal(WHATS_NEW_RELEASE.id, CURRENT_GENERATION, 'WHATS_NEW_RELEASE.id is not the manifest generation');
-    assert.equal(installedGeneration(CURRENT_VERSION), CURRENT_GENERATION);
-    assert.ok(WHATS_NEW_CONTENT.heading.includes(CURRENT_GENERATION), 'What\'s New heading names another generation');
+    assert.equal(pkg.version, MANIFEST_VERSION, 'package.json and manifest.json versions differ');
+    assert.equal(WHATS_NEW_RELEASE.id, MANIFEST_GENERATION, 'WHATS_NEW_RELEASE.id is not the manifest generation');
+    assert.equal(installedGeneration(MANIFEST_VERSION), MANIFEST_GENERATION);
+    assert.ok(WHATS_NEW_CONTENT.heading.includes(MANIFEST_GENERATION), 'What\'s New heading names another generation');
+    // Items of the next generation may land on dev before the release is prepared (see runningGeneration).
+    const [major, minor] = MANIFEST_GENERATION.split('.').map(Number);
     for (const item of NEW_FEATURE_ITEMS) {
-      assert.ok(compareGenerations(item.since, CURRENT_GENERATION) <= 0, `${item.id} is newer than the manifest generation`);
+      assert.ok(compareGenerations(item.since, `${major}.${minor + 1}`) <= 0, `${item.id} is more than one generation ahead of the manifest`);
     }
   });
 

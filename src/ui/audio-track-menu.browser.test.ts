@@ -85,7 +85,7 @@ describe('audio track menu and per-service preference', () => {
       const page = await open(t, engine, {});
       await page.locator('.player-settings-btn').click();
       await assert.doesNotReject(row(page).waitFor());
-      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English');
+      assert.equal(await row(page).getAttribute('aria-label'), 'Audio track: English, New', 'the row carries the 2.1 marker');
       await row(page).click();
       assert.deepEqual(await rows(page).evaluateAll(items => items.map(item => [item.textContent?.replace('✓', ''), item.getAttribute('aria-pressed')])),
         [['English', 'true'], ['Français', 'false'], ['Deutsch', 'false'], ['English AD', 'false']]);
@@ -116,6 +116,28 @@ describe('audio track menu and per-service preference', () => {
       await page.waitForFunction(async () => !(await chrome.storage.sync.get('audioPreferenceByHost')).audioPreferenceByHost?.['player-boot.test']);
       assert.equal(await reset.isHidden(), true);
       assert.deepEqual(await enabled(page), [false, false, false, true], 'resetting keeps the current track');
+    });
+
+    it(`shows the settings button's New dot only while the hidden Audio track row is available in ${engine}`, async t => {
+      const page = await open(t, engine, {}, DUBBED.slice(0, 1));
+      const dot = page.locator('.player-settings-btn .te-new-badge');
+      // Replaces the fixture's track list contents the way an adapter does when a video offers other tracks.
+      const offer = (count: number) => page.evaluate(count => {
+        const list = (document.querySelector('video') as unknown as { audioTracks: EventTarget & Record<number, unknown> & { length: number } }).audioTracks;
+        for (let index = 0; index < 4; index++) {
+          if (index < count) list[index] ??= { id: `t${index}`, language: 'en', label: `Track ${index}`, kind: index ? 'translation' : 'main', enabled: index === 0 };
+          else delete list[index];
+        }
+        list.length = count;
+        list.dispatchEvent(new Event(count > 1 ? 'addtrack' : 'removetrack'));
+      }, count);
+      await page.locator('.player-settings-btn').waitFor();
+      assert.equal(await dot.count(), 0, 'a hidden row marks nothing');
+      await offer(3);
+      await dot.waitFor();
+      assert.equal(await page.locator('.audio-track-btn .te-new-badge').count(), 1);
+      await offer(1);
+      await dot.waitFor({ state: 'detached' });
     });
 
     it(`hides the row with fewer than two tracks in ${engine}`, async t => {
