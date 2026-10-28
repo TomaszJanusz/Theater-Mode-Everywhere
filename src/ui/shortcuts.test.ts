@@ -128,6 +128,50 @@ describe('shortcut ownership', () => {
     assert.equal(matchesShortcut(key({ key: ',', code: 'Comma' }), defaultShortcuts.decreaseSpeed), false);
     assert.equal(matchesShortcut(key({ key: ',', code: 'Comma' }), defaultShortcuts.frameBack), true);
   });
+  describe('moving frame step off the speed keys', () => {
+    // Every save writes the whole map, so a map from before the speed shortcuts holds the old frame-step defaults.
+    const before = Object.fromEntries(Object.entries({ ...defaultShortcuts, frameBack: '<', frameForward: '>' })
+      .filter(([action]) => action !== 'decreaseSpeed' && action !== 'increaseSpeed'));
+    const layout = (shortcuts: typeof defaultShortcuts) =>
+      ({ frameBack: shortcuts.frameBack, frameForward: shortcuts.frameForward, decreaseSpeed: shortcuts.decreaseSpeed, increaseSpeed: shortcuts.increaseSpeed });
+
+    it('moves the old defaults to the new layout', () => {
+      assert.deepEqual(withShortcutDefaults(before), defaultShortcuts);
+    });
+    it('keeps frame-step keys the user chose', () => {
+      assert.deepEqual(layout(withShortcutDefaults({ ...before, frameBack: 'J', frameForward: 'Shift+K' })),
+        { frameBack: 'J', frameForward: 'Shift+K', decreaseSpeed: '<', increaseSpeed: '>' });
+      assert.deepEqual(layout(withShortcutDefaults({ ...before, frameBack: '', frameForward: '' })),
+        { frameBack: '', frameForward: '', decreaseSpeed: '<', increaseSpeed: '>' });
+    });
+    it('moves each key on its own when only one is still the old default or saved at all', () => {
+      assert.deepEqual(layout(withShortcutDefaults({ ...before, frameForward: 'L' })),
+        { frameBack: ',', frameForward: 'L', decreaseSpeed: '<', increaseSpeed: '>' });
+      assert.deepEqual(layout(withShortcutDefaults({ frameBack: '<' })),
+        { frameBack: ',', frameForward: '.', decreaseSpeed: '<', increaseSpeed: '>' });
+      assert.deepEqual(layout(withShortcutDefaults({ toggle: 'T', exit: 'Escape' })),
+        { frameBack: ',', frameForward: '.', decreaseSpeed: '<', increaseSpeed: '>' });
+    });
+    it('changes nothing once saved again, even a < chosen for frame step after the speed keys existed', () => {
+      const migrated = withShortcutDefaults(before);
+      assert.deepEqual(withShortcutDefaults({ ...migrated }), migrated);
+      const chosen = assignShortcut(migrated, 'frameBack', '<');
+      assert.deepEqual(layout(withShortcutDefaults({ ...chosen })),
+        { frameBack: '<', frameForward: '.', decreaseSpeed: '', increaseSpeed: '>' });
+    });
+    it('never takes a key another action has', () => {
+      // , and . belong to other actions: frame step keeps < and >, so the speed keys start unassigned.
+      assert.deepEqual(layout(withShortcutDefaults({ ...before, toggleMute: ',', cycleFit: '.' })),
+        { frameBack: '<', frameForward: '>', decreaseSpeed: '', increaseSpeed: '' });
+      const kept = withShortcutDefaults({ ...before, toggleMute: '.' });
+      assert.deepEqual(layout(kept), { frameBack: ',', frameForward: '>', decreaseSpeed: '<', increaseSpeed: '' });
+      assert.equal(kept.toggleMute, '.');
+      // Giving < and > to other actions cleared frame step: those actions keep them, and the speed keys yield.
+      const taken = withShortcutDefaults({ ...before, frameBack: '', frameForward: '', toggleMute: '<', cycleFit: '>' });
+      assert.deepEqual(layout(taken), { frameBack: '', frameForward: '', decreaseSpeed: '', increaseSpeed: '' });
+      assert.deepEqual([taken.toggleMute, taken.cycleFit], ['<', '>']);
+    });
+  });
   it('detects runtime aliases and implicit Shift without merging distinct modifiers', () => {
     for (const [a, b] of [['f', 'F'], ['F', 'KeyF'], ['+', '='], ['+', 'Shift+='], ['Ctrl++', 'Ctrl+Equal'], ['<', 'Shift+Comma'], ['Space', 'Spacebar']]) {
       assert.equal(shortcutsConflict(a, b), true, `${a} / ${b}`);
@@ -346,6 +390,42 @@ describe('shortcut editor paint', () => {
     for (const event of [new Event('keydown'), { key: 'a' }, { code: 'KeyA' }, {}]) {
       assert.equal(matchesShortcut(event as KeyboardEvent, 'Ctrl+A'), false);
     }
+  });
+});
+
+describe('frame step and speed keys across layouts', () => {
+  // What each layout reports for the keys that print , . < > and for Shift with the keys that print , and .
+  // (AZERTY prints . with Shift already).
+  const layouts = {
+    QWERTY: { ',': { key: ',', code: 'Comma' }, '.': { key: '.', code: 'Period' }, '<': { key: '<', code: 'Comma', shiftKey: true },
+      '>': { key: '>', code: 'Period', shiftKey: true }, 'Shift+,': { key: '<', code: 'Comma', shiftKey: true }, 'Shift+.': { key: '>', code: 'Period', shiftKey: true } },
+    QWERTZ: { ',': { key: ',', code: 'Comma' }, '.': { key: '.', code: 'Period' }, '<': { key: '<', code: 'IntlBackslash' },
+      '>': { key: '>', code: 'IntlBackslash', shiftKey: true }, 'Shift+,': { key: ';', code: 'Comma', shiftKey: true }, 'Shift+.': { key: ':', code: 'Period', shiftKey: true } },
+    AZERTY: { ',': { key: ',', code: 'KeyM' }, '.': { key: '.', code: 'Comma', shiftKey: true }, '<': { key: '<', code: 'IntlBackslash' },
+      '>': { key: '>', code: 'IntlBackslash', shiftKey: true }, 'Shift+,': { key: '?', code: 'KeyM', shiftKey: true } },
+    Dvorak: { ',': { key: ',', code: 'KeyW' }, '.': { key: '.', code: 'KeyE' }, '<': { key: '<', code: 'KeyW', shiftKey: true },
+      '>': { key: '>', code: 'KeyE', shiftKey: true }, 'Shift+,': { key: '<', code: 'KeyW', shiftKey: true }, 'Shift+.': { key: '>', code: 'KeyE', shiftKey: true } }
+  };
+  const owners = (event: Parameters<typeof key>[0] | undefined) => !event ? [] : (Object.keys(defaultShortcuts) as Array<keyof typeof defaultShortcuts>)
+    .filter(action => matchesShortcut(key(event), defaultShortcuts[action]));
+
+  for (const [name, events] of Object.entries(layouts) as Array<[string, Record<string, Parameters<typeof key>[0] | undefined>]>) {
+    it(`gives each key one action on ${name}`, () => {
+      // On Dvorak , prints on the W position, which Navigate up claims by position (and handles first).
+      assert.deepEqual(owners(events[',']), name === 'Dvorak' ? ['frameBack', 'navigateUp'] : ['frameBack']);
+      assert.deepEqual(owners(events['.']), ['frameForward']);
+      assert.deepEqual(owners(events['<']), ['decreaseSpeed']);
+      assert.deepEqual(owners(events['>']), ['increaseSpeed']);
+      // Shift with those keys prints something else, so it never steps a frame.
+      assert.equal(owners(events['Shift+,']).includes('frameBack'), false);
+      assert.equal(owners(events['Shift+.']).includes('frameForward'), false);
+    });
+  }
+  it('records punctuation without the Shift the layout needed for it', () => {
+    assert.equal(shortcutFromEvent(key(layouts.AZERTY['.'])), '.');
+    assert.equal(shortcutFromEvent(key(layouts.QWERTZ['>'])), '>');
+    assert.equal(shortcutFromEvent(key({ key: 'K', code: 'KeyK', shiftKey: true })), 'Shift+K');
+    assert.equal(shortcutFromEvent(key({ key: '1', code: 'Numpad1', shiftKey: true })), 'Shift+1');
   });
 });
 

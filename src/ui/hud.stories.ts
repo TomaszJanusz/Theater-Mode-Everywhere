@@ -7,11 +7,12 @@ import { BASS_LEVELS, type AudioSettings } from '../audio-settings';
 import { videoFitLabel } from './appearance';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import {
-  STATUS_HUD_FIT_ICON, STATUS_HUD_LAYOUT_ICON, STATUS_HUD_MUTE_ICON, STATUS_HUD_SWITCH_ICON,
+  STATUS_HUD_FIT_ICON, STATUS_HUD_LAYOUT_ICON, STATUS_HUD_MUTE_ICON, STATUS_HUD_SPEED_ICONS, STATUS_HUD_SWITCH_ICON,
   STATUS_HUD_UNMUTE_ICON, SEEK_HUD_MS, VOLUME_BOOST_ICONS
 } from './hud';
 import { t } from './messages';
 import { getPlayerUiRoot, queryPlayerUi } from './root';
+import { formatRate } from './speed-control';
 
 const meta: Meta<HudArgs> = {
   title: 'Components/HUD', parameters: { timeline: true }, tags: ['frames'], args: { phase: 'steady', live: false },
@@ -78,7 +79,9 @@ const STATUS = {
   switch: () => [t('cycleIframeHud'), STATUS_HUD_SWITCH_ICON],
   pinned: () => [t('controlsPinnedHud'), CONTROLS_VISIBILITY_ICON],
   unavailable: () => [t('nativeChatFullscreenUnavailable'), ''],
-  onlyVideo: () => [t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON]
+  onlyVideo: () => [t('onlyOneVideoHud'), STATUS_HUD_SWITCH_ICON],
+  slower: () => [formatRate(0.75), STATUS_HUD_SPEED_ICONS.slower],
+  faster: () => [formatRate(1.25), STATUS_HUD_SPEED_ICONS.faster]
 };
 function status(preset: keyof typeof STATUS) {
   return hudStory<HudArgs & { preset: keyof typeof STATUS }>((h, _s, args) => {
@@ -110,4 +113,6 @@ export const Seek = seek('right');
 export const SeekBoth = seek('both');
 export const Status = status('mute');
 export const TextOnly = status('unavailable');
+export const SpeedSlower = status('slower');
+export const SpeedFaster = status('faster');
 export const Bass = bass('moaaarr');

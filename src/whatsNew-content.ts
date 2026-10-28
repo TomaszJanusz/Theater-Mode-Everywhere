@@ -1,9 +1,9 @@
-type InlineText = string | { readonly strong: string };
+type InlineText = string | { readonly strong: string } | { readonly link: string; readonly href: string };
 type AnnouncementContent = {
   readonly heading: string;
   readonly paragraph: readonly InlineText[];
   readonly items: readonly (readonly InlineText[])[];
-  readonly thanks: string;
+  readonly thanks: readonly InlineText[];
 };
 
 // Release copy is deliberately English-only, independent of the interface language.
@@ -33,16 +33,42 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     ['You can change the language, and the translations have been improved; spotted a mistake? Use Report a translation issue next to Language in Settings.'],
     ['And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.']
   ],
-  thanks: 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.'
+  thanks: [
+    'Big thanks to ', { link: '@liango2', href: 'https://github.com/liango2' },
+    ' for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to ',
+    { link: '@wesleyel', href: 'https://github.com/wesleyel' }, ' for the playback speed shortcuts.'
+  ]
 };
+
+/** Only an absolute https: address becomes a link; anything else keeps its text and loses the link. */
+function httpsHref(href: string): string | null {
+  try {
+    const url = new URL(href);
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 
 function appendInline(parent: HTMLElement, segments: readonly InlineText[]): void {
   for (const segment of segments) {
     if (typeof segment === 'string') parent.append(document.createTextNode(segment));
-    else {
+    else if ('strong' in segment) {
       const strong = document.createElement('strong');
       strong.textContent = segment.strong;
       parent.append(strong);
+    } else {
+      const href = httpsHref(segment.href);
+      if (!href) {
+        parent.append(document.createTextNode(segment.link));
+        continue;
+      }
+      const link = document.createElement('a');
+      link.href = href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = segment.link;
+      parent.append(link);
     }
   }
 }
@@ -75,7 +101,7 @@ export function buildWhatsNewContent(): HTMLElement {
   thanks.lang = 'en';
   thanks.dir = 'ltr';
   const emphasis = document.createElement('em');
-  emphasis.textContent = WHATS_NEW_CONTENT.thanks;
+  appendInline(emphasis, WHATS_NEW_CONTENT.thanks);
   thanks.append(emphasis);
   root.append(heading, paragraph, list);
   announcement.append(root, thanks);
