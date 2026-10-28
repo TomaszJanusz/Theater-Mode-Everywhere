@@ -674,6 +674,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Ścieżka dźwiękowa"
+  },
+  "audioTrackBack": {
+    "message": "Wstecz"
+  },
+  "searchAudioTracks": {
+    "message": "Szukaj ścieżek dźwiękowych…"
+  },
+  "noAudioTracks": {
+    "message": "Brak ścieżek dźwiękowych"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodeskrypcja)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (komentarz)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Domyślne"
+  },
   "switchVideoTooltip": {
     "message": "Przełącz wideo na stronie $KEY$",
     "placeholders": {
@@ -923,6 +954,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Funkcje dostępne, gdy udostępnia je film lub odtwarzacz: Tytuł, Napisy, znaczniki intra/napisów końcowych, Miniatury. Szybkie akcje: pomijanie intra/napisów końcowych i następny odcinek."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Integracja z iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Pokazuje tytuł serialu i oznaczenie odcinka, wyświetla i wybiera języki napisów odcinka (rysuje je nadal iQIYI), oznacza intro i outro oraz przechodzi do poprzedniego lub następnego odcinka. AutoTheater działa na stronach odcinków. Można też wybierać ścieżki dźwiękowe odcinka."
+  },
+  "soopIntegrationTitle": {
+    "message": "Integracja z SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Pokazuje tytuł transmisji lub nagrania i streamera, oznacza rozdziały na podstawie historii tytułów nagrania, oferuje poprzednie/następne nagranie odtwarzacza i jego odliczanie do następnego wideo, a AutoTheater potrafi wejść w transmisje na żywo i nagrania. Własny czat SOOP można pokazać obok wideo."
+  },
   "aboutTitle": {
     "message": "O rozszerzeniu"
   },
@@ -1087,6 +1130,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Ścieżki dźwiękowe"
+  },
   "rteEmpty": {
     "message": "Żaden serwis nie oferuje wszystkich wybranych funkcji."
   },
@@ -1106,6 +1152,9 @@
   },
   "rteNoteYoutube": {
     "message": "Zależnie od filmu; pomijanie reklam i kolejka, gdy dostępne."
+  },
+  "rteNoteAudioTracks": {
+    "message": "W filmach z kilkoma ścieżkami dźwiękowymi, np. z dubbingiem; nie podczas reklam."
   },
   "rteNoteVimeo": {
     "message": "Rozdziały i podglądy, gdy dostępne; następny film w kolekcjach."
@@ -1133,6 +1182,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Tylko znaczniki intra i napisów końcowych; wtopionych napisów nie można wyłączyć."
+  },
+  "rteNoteIqiyi": {
+    "message": "Napisy, znaczniki intra/outra oraz poprzedni/następny, gdy odcinek je oferuje; bez podglądu na osi czasu."
+  },
+  "rteNoteSoop": {
+    "message": "Rozdziały, poprzednie/następne i odliczanie do następnego wideo tylko w nagraniach; bez napisów i podglądu na osi czasu."
   },
   "rteSaveError": {
     "message": "Nie udało się zapisać ustawień serwisów. Spróbuj ponownie."

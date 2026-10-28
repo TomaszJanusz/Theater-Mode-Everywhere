@@ -1,3 +1,4 @@
+import { AudioTrackController, type AudioTrackOptions } from './audio-tracks';
 import { timelineTickPositions } from './timeline-ticks';
 import { createTimelineMarkerSource } from '../providers/timeline/markers';
 import { normalizeCaptionLabel, normalizeLanguageCode, pickCaptionTrack, type CaptionLanguageChoice, type CaptionLanguagePreference } from './caption-preference';
@@ -14,7 +15,7 @@ import { createMediaFeaturesAdapter } from './resolve-adapter';
 import { displayMediaTime } from '../playback-window';
 import { coercePlaybackSurface, type PlaybackSurface } from '../playback-surface';
 import { heatmapRidgePath } from './heatmap-path';
-import type { CaptionActivationResult, CaptionCueRefresh, CaptionTrack, Chapter, HostCaptionLayout, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap, TimelineMarker } from './types';
+import type { AudioTrack, CaptionActivationResult, CaptionCueRefresh, CaptionTrack, Chapter, HostCaptionLayout, MediaFeaturesAdapter, PreviewFrame, TimelineHeatmap, TimelineMarker } from './types';
 import type { MediaSnapshot } from '../core/media-snapshot';
 import { providerError } from '../core/errors';
 
@@ -51,6 +52,11 @@ export type MediaFeaturesBindings = {
   renderer?: CaptionOverlayRenderer;
   onSnapshot?: (snapshot: MediaSnapshot) => void;
   onTitle?: (title: ContentTitle | null) => void;
+  /** Read when an item's tracks first appear, so a changed setting applies to the next item. */
+  audioPreference?: AudioTrackOptions['preference'];
+  audioLocales?: AudioTrackOptions['locales'];
+  onAudioPreferenceChange?: AudioTrackOptions['onPreferenceChange'];
+  onAudioTracksChange?: () => void;
 };
 
 function setOverlayCaptionsClass(on: boolean): void {
@@ -113,6 +119,7 @@ export class MediaFeaturesController {
   private captionDiagnostics: Array<Record<string, unknown>> = [];
   private dialogAbort = new AbortController();
   private stopObservingAdapter = () => {};
+  private readonly audio: AudioTrackController;
 
   /**
    * Binds the provider, renderer and caption UI, retaining the saved language
@@ -135,6 +142,12 @@ export class MediaFeaturesController {
     this.decorateCaptionDialog = bindings.decorateCaptionDialog;
     this.onSnapshot = bindings.onSnapshot;
     this.onTitle = bindings.onTitle;
+    this.audio = new AudioTrackController({
+      preference: bindings.audioPreference ?? (() => null),
+      locales: bindings.audioLocales ?? (() => []),
+      onPreferenceChange: bindings.onAudioPreferenceChange,
+      onChange: () => bindings.onAudioTracksChange?.()
+    });
     const pref = bindings.captionPreference;
     if (pref && (pref.language || pref.label)) {
       this.lastLanguagePref = {
@@ -207,6 +220,7 @@ export class MediaFeaturesController {
   /** Subscribes to the current adapter's host captions and title sources. */
   private observeAdapter(): void {
     const adapter = this.adapter;
+    this.audio.bind(adapter);
     const cleanups: Array<() => void> = [];
     try {
       const cleanup = adapter.observeHostCaptionLayout?.(() => {
@@ -268,6 +282,7 @@ export class MediaFeaturesController {
     this.bumpEpoch();
     this.captionRestorePending = Boolean(this.captionPreference);
     this.adapter.invalidate?.();
+    this.audio.reset();
     void this.adapter.activateCaptionTrack(null);
     this.tracks = [];
     this.chapters = [];
@@ -445,6 +460,8 @@ export class MediaFeaturesController {
     } finally {
       if (this.isCurrent(epoch, adapter)) {
         this.publishTitle(epoch, adapter);
+        // Metadata refreshes follow media and route changes the audio source may not report itself.
+        this.audio.refresh();
         this.onSnapshot?.({
           capabilities: {
             captions: this.tracks.length > 0,
@@ -948,8 +965,19 @@ export class MediaFeaturesController {
    * Retires pending caption work and releases observers, provider resources,
    * renderer output and timeline layers when the player UI is removed.
    */
+  /** Tracks of the current item, for the player menu; empty while unavailable or during an ad. */
+  audioTracks(): readonly AudioTrack[] {
+    return this.disposed ? [] : this.audio.tracks();
+  }
+
+  /** A viewer's choice from the menu; it ends automatic selection for the current item. */
+  selectAudioTrack(id: string): Promise<boolean> {
+    return this.disposed ? Promise.resolve(false) : this.audio.select(id);
+  }
+
   dispose(): void {
     this.disposed = true;
+    this.audio.dispose();
     this.captionMenu?.dispose();
     this.stopMarkers();
     this.stopObservingAdapter();

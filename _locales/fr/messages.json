@@ -674,6 +674,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Piste audio"
+  },
+  "audioTrackBack": {
+    "message": "Retour"
+  },
+  "searchAudioTracks": {
+    "message": "Rechercher des pistes audio…"
+  },
+  "noAudioTracks": {
+    "message": "Aucune piste audio"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audiodescription)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (commentaires)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Par défaut"
+  },
   "switchVideoTooltip": {
     "message": "Changer de vidéo sur la page $KEY$",
     "placeholders": {
@@ -923,6 +954,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Disponibles si la vidéo ou le lecteur les fournit : Titre, Sous-titres, repères d’introduction/générique, Miniatures. Actions rapides : passer l’introduction/le générique et épisode suivant."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "Intégration iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Affiche le titre de la série et l’intitulé de l’épisode, liste et sélectionne les langues de sous-titres de l’épisode (iQIYI continue de les afficher), repère l’intro et le générique de fin et passe à l’épisode précédent ou suivant. AutoTheater fonctionne sur les pages d’épisode. Les pistes audio d’un épisode peuvent aussi être choisies."
+  },
+  "soopIntegrationTitle": {
+    "message": "Intégration SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "Affiche le titre de la diffusion ou de l’enregistrement et le streamer, repère des chapitres d’après l’historique des titres d’un enregistrement, propose l’enregistrement précédent/suivant du lecteur et son compte à rebours de la vidéo suivante, et AutoTheater peut s’activer sur les directs et les enregistrements. Le chat de SOOP peut s’afficher à côté de la vidéo."
+  },
   "aboutTitle": {
     "message": "À propos"
   },
@@ -1087,6 +1130,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Pistes audio"
+  },
   "rteEmpty": {
     "message": "Aucun service ne propose toutes les fonctions sélectionnées."
   },
@@ -1106,6 +1152,9 @@
   },
   "rteNoteYoutube": {
     "message": "Selon la vidéo ; saut des publicités et navigation dans la file de lecture si disponibles."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Sur les vidéos avec plusieurs pistes audio, comme les versions doublées ; pas pendant les publicités."
   },
   "rteNoteVimeo": {
     "message": "Chapitres et aperçus si disponibles ; vidéo suivante dans les collections."
@@ -1133,6 +1182,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Repères de générique uniquement ; les sous-titres incrustés ne peuvent pas être désactivés."
+  },
+  "rteNoteIqiyi": {
+    "message": "Sous-titres, repères d’intro/de fin et précédent/suivant quand l’épisode les propose ; pas d’aperçus sur la chronologie."
+  },
+  "rteNoteSoop": {
+    "message": "Chapitres, précédent/suivant et compte à rebours de la vidéo suivante sur les enregistrements uniquement ; pas de sous-titres ni d’aperçus sur la chronologie."
   },
   "rteSaveError": {
     "message": "Impossible d’enregistrer les réglages des services. Réessayez."

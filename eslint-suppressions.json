@@ -410,9 +410,6 @@
     }
   },
   "src/chat/controller.ts": {
-    "import/order": {
-      "count": 3
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
@@ -421,15 +418,7 @@
     }
   },
   "src/chat/detect.ts": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/chat/events.ts": {
-    "import/order": {
       "count": 1
     }
   },
@@ -451,20 +440,7 @@
       "count": 6
     }
   },
-  "src/chat/theme.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
-  "src/chat/url.test.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/chat/url.ts": {
-    "import/order": {
-      "count": 2
-    },
     "sonarjs/concise-regex": {
       "count": 2
     },
@@ -628,9 +604,6 @@
     }
   },
   "src/media-features/composite-adapter.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -679,9 +652,6 @@
     }
   },
   "src/media-features/fetch-allowlist.ts": {
-    "import/order": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     },
@@ -969,9 +939,6 @@
     }
   },
   "src/media-features/probe.ts": {
-    "import/order": {
-      "count": 8
-    },
     "local/max-symbol-name-length": {
       "count": 4
     },
@@ -985,9 +952,6 @@
     }
   },
   "src/media-features/resolve-adapter.ts": {
-    "import/order": {
-      "count": 17
-    },
     "local/max-symbol-name-length": {
       "count": 6
     }
@@ -1304,11 +1268,6 @@
       "count": 7
     }
   },
-  "src/providers/capabilities.ts": {
-    "import/order": {
-      "count": 8
-    }
-  },
   "src/providers/crunchyroll/adapter.ts": {
     "import/order": {
       "count": 1
@@ -1457,9 +1416,6 @@
     }
   },
   "src/providers/host-captions.ts": {
-    "import/order": {
-      "count": 3
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -1517,9 +1473,6 @@
     }
   },
   "src/providers/navigation/factory.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     },
@@ -1724,16 +1677,6 @@
   "src/providers/registry.test.ts": {
     "import/order": {
       "count": 3
-    }
-  },
-  "src/providers/registry.ts": {
-    "import/order": {
-      "count": 11
-    }
-  },
-  "src/providers/service-actions.ts": {
-    "import/order": {
-      "count": 10
     }
   },
   "src/providers/stage.ts": {

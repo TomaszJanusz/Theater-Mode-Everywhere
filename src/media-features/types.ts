@@ -36,7 +36,8 @@ export type CaptionTrackSource =
   | 'bilibili'
   | 'bilibiliIntl'
   | 'tencent'
-  | 'crunchyroll';
+  | 'crunchyroll'
+  | 'iqiyi';
 
 export type CaptionTrack = {
   id: string;
@@ -105,6 +106,29 @@ export type TimelineHeatmap = {
   svgPath?: string;
 };
 
+export type AudioTrackKind = 'original' | 'dub' | 'description' | 'commentary' | 'unknown';
+
+export type AudioTrack = {
+  /** Opaque, stable for the media item; selection passes it back to the provider. */
+  id: string;
+  /** BCP-47 tag, or '' when the host gives none. */
+  languageTag: string;
+  label: string;
+  kind: AudioTrackKind;
+  selected: boolean;
+};
+
+/**
+ * The audio tracks of one media item. `mediaId` names the item they describe (null when the
+ * host has no identity for it), and `blocked` is true while the host plays something else in
+ * the same player, such as an ad, during which a selection would not reach the content.
+ */
+export type AudioTrackList = {
+  mediaId: string | null;
+  tracks: readonly AudioTrack[];
+  blocked: boolean;
+};
+
 export interface MediaFeaturesAdapter {
   readHostCaptionLayout?(): HostCaptionLayout | null;
   observeHostCaptionLayout?(onChange: () => void): () => void;
@@ -128,6 +152,15 @@ export interface MediaFeaturesAdapter {
   getTitle?(): string | null;
   /** Reports title source changes; returns idempotent cleanup. */
   observeTitle?(onChange: () => void): () => void;
+  /** Current tracks without side effects; null when this adapter offers none. Cheap enough to read on every change. */
+  listAudioTracks?(): AudioTrackList | null;
+  /**
+   * Selects a track only if `mediaId` still names the current item and the track is still offered.
+   * @returns Whether the host accepted the selection.
+   */
+  selectAudioTrack?(id: string, mediaId: string | null): Promise<boolean>;
+  /** Reports track list, selection and blocking changes; returns idempotent cleanup. */
+  observeAudioTracks?(onChange: () => void): () => void;
   /** Label shown beside this adapter's title, such as the episode. */
   getSubtitle?(): string | null;
   reload?(): Promise<void>;

@@ -674,6 +674,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Audio track"
+  },
+  "audioTrackBack": {
+    "message": "Back"
+  },
+  "searchAudioTracks": {
+    "message": "Search audio tracks…"
+  },
+  "noAudioTracks": {
+    "message": "No audio tracks"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (audio description)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (commentary)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Default"
+  },
   "switchVideoTooltip": {
     "message": "Switch Video on Page $KEY$",
     "placeholders": {
@@ -924,6 +955,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Available when provided by the video or player: Title, Subtitles, intro/credits markers, Thumbnails. Quick actions: skip intro/credits and next episode."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI integration"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Shows the series title and episode label, lists and selects the episode's subtitle languages (iQIYI keeps drawing them), marks intro and outro, and moves to the previous or next episode. AutoTheater is supported on episode pages. Audio tracks of an episode can be chosen too."
+  },
+  "soopIntegrationTitle": {
+    "message": "SOOP integration"
+  },
+  "soopIntegrationDescription": {
+    "message": "Shows the broadcast or recording title and the streamer, marks chapters from a recording's title history, offers the player's previous/next recording and its next-video countdown, and AutoTheater can enter live broadcasts and recordings. SOOP's own chat can be shown beside the video."
+  },
   "aboutTitle": {
     "message": "About"
   },
@@ -1088,6 +1131,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Audio tracks"
+  },
   "rteEmpty": {
     "message": "No service has all the selected capabilities."
   },
@@ -1107,6 +1153,9 @@
   },
   "rteNoteYoutube": {
     "message": "Depends on the video; ad skip and queue navigation when available."
+  },
+  "rteNoteAudioTracks": {
+    "message": "On videos with several audio tracks, such as dubbed versions; not during ads."
   },
   "rteNoteVimeo": {
     "message": "Chapters and previews when provided; next in showcases."
@@ -1134,6 +1183,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Intro/credits markers only; burned-in subtitles cannot be turned off."
+  },
+  "rteNoteIqiyi": {
+    "message": "Subtitles, intro/outro markers and previous/next when the episode offers them; no timeline previews."
+  },
+  "rteNoteSoop": {
+    "message": "Chapters, previous/next and the next-video countdown on recordings only; no subtitles or timeline previews."
   },
   "rteSaveError": {
     "message": "Could not save service settings. Please try again."

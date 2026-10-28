@@ -1,0 +1,17 @@
+/* In theater the video is fixed to the viewport and leaves `iqp-player` with no height. iQIYI sizes
+ * its own subtitles from that box (inline `font-size: 0px; width: 0px`), so they vanish. Giving the
+ * player the viewport box back lets the host size and place them as it does elsewhere. Its controls
+ * are hidden by theater already; the shared bar replaces them. */
+html.theater-everywhere-html-active iqpdiv.iqp-player {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+}
+
+/* The fixed theater video sits at the top of the player's stacking order and would cover the
+ * cues; the subtitle layer follows it in the DOM, so an equal z-index puts the cues on top. */
+html.theater-everywhere-html-active iqpdiv.iqp-player .iqp-subtitle {
+  z-index: 2147483647 !important;
+}

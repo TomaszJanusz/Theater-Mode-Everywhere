@@ -24,6 +24,14 @@ Providers that load captions in windows implement `prepareCaptionCueRefresh(id, 
 
 Netflix native cue measurement lives in `providers/netflix/host-captions.ts`, and Crunchyroll native caption measurement lives in `providers/crunchyroll/host-surface.ts`. Native presentation remains available when a provider's data integration is disabled; the integration flag still controls its data adapter and host interactions.
 
+## Audio tracks
+
+Adapters that can list and switch audio implement `listAudioTracks()`, `selectAudioTrack(id, mediaId)` and `observeAudioTracks(onChange)` from `media-features/types.ts`. A list names the media item it describes (`mediaId`) and reports `blocked` while the host plays something else in the same player, such as an ad; each track carries an opaque `id`, a BCP-47 `languageTag` (empty when the host gives none), the host `label`, a `kind` (`original`, `dub`, `description`, `commentary`, `unknown`) and `selected`. Listing has no side effects and is cheap enough for every notification. Selection revalidates the item, the track and the blocking state against the live host before acting, and resolves to whether the host accepted it. The composite prefers a service adapter's tracks over the element's own and routes selection to the adapter that listed them.
+
+`media-features/audio-tracks.ts` owns the list for the current adapter epoch. An item is evaluated once, when it first lists two or more tracks outside a block: the saved preference is applied at most once, a viewer's choice ends evaluation for that item, and later host changes (including the host restoring its own remembered choice) are left alone. Results for an earlier item, adapter or binding are dropped. The preference is per service, stored like the subtitle preference (`audioPreferenceByHost`, keyed by `captionPreferenceHost`, see `media-features/audio-preference.ts`): `original` or a language tag, saved when the viewer picks a track and removed by the Default button. Automatic selection never chooses description or commentary tracks.
+
+The UI shows the Audio track row and its list only with two or more tracks and reads nothing but this contract. The generic adapter reads `HTMLMediaElement.audioTracks` where the browser exposes it; YouTube reads its watch, miniplayer and embed player through the MAIN-world bridge in `media-features/youtube-audio-tracks.ts`. Providers without either declare the `audio` capability `no`.
+
 ## Titles
 
 Adapters supply `getTitle()` and optional `observeTitle(onChange)`; `MediaFeaturesController` publishes the title chip for the current epoch and adapter, and drops notifications from a replaced adapter. A service adapter's title outranks the native adapter's. Without a service integration, the native adapter also falls back to page metadata: selection lives in `media-features/page-title.ts`, DOM reading and observation in `providers/native/page-title.ts`. A VideoObject must match the playing media, and a heading must be tied to it. A client-side navigation can change the URL before `<title>`, meta tags or the heading, so page values left over from the previous URL are rejected; scoped observers on those elements report the replacement during theater mode only.
@@ -105,7 +113,7 @@ this preference clears a pending notice without consuming the visit. Automatic e
 top-level document, active playback, no fullscreen and no focused editable field.
 
 YouTube `/watch?v=…`, ordinary Vimeo clip pages, Netflix `/watch/<numeric-id>`,
-Disney+ `/play/<uuid>` (with an optional locale prefix), Bilibili `/video/BV…`
+Disney+ `/play/<uuid>` (with an optional locale prefix), iQIYI `/play/<slug>-<id>` on www.iq.com, SOOP `play.sooplive.com/<bj>/<number>` (live) and `vod.sooplive.com/player/<number>` (recording), Bilibili `/video/BV…`
 (with `p` identifying each part), Bilibili.tv `/<locale>/video/<id>` and
 `/<locale>/play/<series>/<episode>`, and Patreon posts
 (`/posts/<slug>-<id>`, `/<creator>/posts/<slug>-<id>`) declare this capability.
@@ -141,7 +149,7 @@ do not create new visits. Mini-player modes and visible/loading in-stream ad
 surfaces fail closed; their mode/style changes refresh eligibility. Missing DASH
 state, iframe players and season-only URLs remain manual. Both Bilibili providers
 reuse the history publication and shared countdown runtime.
-Vimeo showcases, live events and OTT pages are also excluded.
+iQIYI confirms the single `iqp-player`'s own direct child video (ad videos sit in its ad container), requires the host's highlighted episode to match the URL, and refreshes on a MAIN-world `pushState` publication. SOOP confirms the one streamed `blob:` video of its `#webplayer #player` (`video#livePlayer`, infinite duration, on live; `video#video`, finite, on recordings), so the placeholder shown before the player terms are accepted and the separate ad element never qualify. Vimeo showcases, live events and OTT pages are also excluded.
 
 A theater session that starts on a declared watch route ends through the
 normal exit path when navigation leaves that route, independent of media state or
@@ -213,13 +221,16 @@ placement algorithm remains independent of that runtime flag. Provider slots
 still take precedence. Generic overlay slots remain frozen for each
 appearance despite page chrome mutations. A changed video rectangle or viewport
 removes and remounts the button rather than moving the mounted control. Playback
-hides the overlay launcher only when the viewer started it: a pointer press on the video, or a
+ends the overlay launcher only when the viewer started it: a pointer press on the video, or a
 key press inside its container, within `ACTIVATOR_PRESS_WINDOW_MS` before `play`. Any other
 start is autoplay and leaves the launcher available, however long after the load (a press
 elsewhere, such as accepting a consent banner, does not count; nor does `userActivation`, which
 that click would also satisfy), as does any start within `ACTIVATOR_PLAY_GRACE_MS` of the page load
 (or of an SPA visit's start, when the navigation click still lands on the page). The classification
-is latched per video at `play` and discovery; no timer ends it. Pausing makes it eligible again through the same proximity selection.
+is latched per video at `play` and discovery. When the viewer starts playback while the launcher is
+shown, it stays for `PLAY_LINGER_MS` (3 s) and then hides like the idle fade; pointer movement does
+not extend that, keyboard focus on the launcher keeps it, and pause, removal, navigation and entering
+theater cancel it (persistent provider slots have no such timing). Pausing makes it eligible again through the same proximity selection.
 There is no additional polling.
 
 ## Native chat
@@ -228,7 +239,7 @@ There is no additional polling.
 
 On entry and each new watch identity, native visibility from the service adapter takes precedence over saved visibility. A collapsed native activation starts hidden; unavailable measurement falls back to the saved choice. In-theater toggles override that seed for the current content and remain saved for this fallback. Width and theme still persist independently; saved data is retained. Visibility discovery is synchronous and uses the same content identity checks as surface discovery.
 
-`ChatThemeSession` owns palette readiness, document identity and restoration. `ChatThemeAdapter` supplies `apply` and `restore`; Twitch discovers the complete native palette class, while YouTube maps known compiled aliases to existing native palette tokens in the original chat document. An unavailable palette restores service appearance and keeps the requested preference. Chat layout and theme changes preserve the native container and iframe. Native menus, portals, keyboard events and chat-only documents retain service ownership. [Usage and qualification](research/native-chat-validation.md) distinguish the implemented behavior from replay/account/browser coverage still needed before release.
+SOOP's chat is in the same document as its player (`#chatting_area`, with the panel `.chatbox` inside, shown while `#webplayer` has `chat_open`); it has no palette adapter, so a non-native theme choice stays unavailable and the service keeps its appearance. The player's own chat button opens a panel closed before theater, and the controller re-reads state after that click because the host raises no structural mutation for it. `ChatThemeSession` owns palette readiness, document identity and restoration. `ChatThemeAdapter` supplies `apply` and `restore`; Twitch discovers the complete native palette class, while YouTube maps known compiled aliases to existing native palette tokens in the original chat document. An unavailable palette restores service appearance and keeps the requested preference. Chat layout and theme changes preserve the native container and iframe. Native menus, portals, keyboard events and chat-only documents retain service ownership. [Usage and qualification](research/native-chat-validation.md) distinguish the implemented behavior from replay/account/browser coverage still needed before release.
 
 ## Adding a feature or provider
 

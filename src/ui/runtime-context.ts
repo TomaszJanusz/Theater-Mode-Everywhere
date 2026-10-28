@@ -43,6 +43,7 @@ export type ChromeRefs = {
   currentToggleFullscreen: (() => void) | null;
   onVolumeAdjustedCallback: (() => void) | null;
   captionPreferenceMap: Record<string, CaptionLanguagePreference>;
+  audioPreferenceMap: Record<string, string>;
   subtitlesOn: boolean;
   playbackDecisionRevision: number;
   providerFlags: MediaProviderFlags;
@@ -78,6 +79,8 @@ export type PlayerChromeActions = {
   isVideoSilent(video: PlaybackSurface): boolean;
   toggleVideoMute(video: PlaybackSurface): void;
   persistCaptionPreference(pref: CaptionLanguagePreference): void;
+  /** Saves this service's audio language; null returns it to the service default. */
+  persistAudioPreference(preference: string | null): void;
   persistCaptionStyle(style: CaptionStyle): void;
   persistVideoFitMode(mode: VideoFitMode): void;
   applyTheaterVideoFit(mode?: VideoFitMode): void;
@@ -161,6 +164,7 @@ export function createChromeRefs(): ChromeRefs {
     currentToggleFullscreen: null,
     onVolumeAdjustedCallback: null,
     captionPreferenceMap: {},
+    audioPreferenceMap: {},
     subtitlesOn: false,
     playbackDecisionRevision: 0,
     providerFlags: defaultMediaProviderFlags(),

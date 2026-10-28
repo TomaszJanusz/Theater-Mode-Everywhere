@@ -674,6 +674,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "المسار الصوتي"
+  },
+  "audioTrackBack": {
+    "message": "رجوع"
+  },
+  "searchAudioTracks": {
+    "message": "البحث عن مسارات صوتية…"
+  },
+  "noAudioTracks": {
+    "message": "لا توجد مسارات صوتية"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (وصف صوتي)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (تعليق)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "افتراضي"
+  },
   "switchVideoTooltip": {
     "message": "تبديل الفيديو في الصفحة $KEY$",
     "placeholders": {
@@ -923,6 +954,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "متاحة عندما يوفرها الفيديو أو المشغل: العنوان, الترجمة, علامات المقدمة/شارة النهاية, الصور المصغرة. إجراءات سريعة: تخطي المقدمة/شارة النهاية والحلقة التالية."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "تكامل iQIYI"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "يعرض عنوان المسلسل وتسمية الحلقة، ويعرض لغات الترجمة المتاحة للحلقة ويحدّدها (يواصل iQIYI عرضها)، ويضع علامات على المقدمة والخاتمة، وينتقل إلى الحلقة السابقة أو التالية. يدعم الدخول التلقائي إلى وضع المسرح في صفحات الحلقات. يمكن أيضًا اختيار مسارات الصوت للحلقة."
+  },
+  "soopIntegrationTitle": {
+    "message": "تكامل SOOP"
+  },
+  "soopIntegrationDescription": {
+    "message": "يعرض عنوان البث أو التسجيل واسم البثّ، ويضع علامات فصول من سجل عناوين التسجيل، ويتيح التسجيل السابق/التالي في المشغّل وعدّه التنازلي للفيديو التالي، ويمكن لـ AutoTheater دخول البث المباشر والتسجيلات. يمكن عرض دردشة SOOP نفسها بجانب الفيديو."
+  },
   "aboutTitle": {
     "message": "حول"
   },
@@ -1087,6 +1130,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "مسارات صوتية"
+  },
   "rteEmpty": {
     "message": "لا توجد خدمة توفر كل الميزات المحددة."
   },
@@ -1106,6 +1152,9 @@
   },
   "rteNoteYoutube": {
     "message": "حسب الفيديو؛ تخطي الإعلانات والتنقل في قائمة الانتظار عند توفرهما."
+  },
+  "rteNoteAudioTracks": {
+    "message": "في الفيديوهات التي تحتوي على عدة مسارات صوتية، مثل النسخ المدبلجة؛ وليس أثناء الإعلانات."
   },
   "rteNoteVimeo": {
     "message": "الفصول والمعاينات عند توفرها؛ الفيديو التالي في المجموعات."
@@ -1133,6 +1182,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "علامات المقدمة وشارة النهاية فقط؛ لا يمكن إيقاف الترجمة المدمجة في الفيديو."
+  },
+  "rteNoteIqiyi": {
+    "message": "الترجمة وعلامات المقدمة والخاتمة والسابق/التالي عند توفرها للحلقة؛ لا توجد معاينات للخط الزمني."
+  },
+  "rteNoteSoop": {
+    "message": "الفصول والسابق/التالي والعدّ التنازلي للفيديو التالي في التسجيلات فقط؛ لا ترجمة ولا معاينات للخط الزمني."
   },
   "rteSaveError": {
     "message": "تعذر حفظ إعدادات الخدمات. حاول مرة أخرى."

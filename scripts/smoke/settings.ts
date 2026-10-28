@@ -27,7 +27,8 @@ export async function assertRteSettings(context: BrowserContext): Promise<void> 
       await worker.evaluate(update => chrome.storage.sync.set(update), { ...mediaProviderFlagStorageUpdate(defaultMediaProviderFlags()), language: 'en' });
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.goto(new URL('options/options.html#features', worker.url()).href);
-      await page.waitForFunction(() => document.querySelectorAll('.rte-tile').length === 10 && [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => input.checked));
+      // One tile per provider flag, so a new provider never edits this count.
+      await page.waitForFunction(count => document.querySelectorAll('.rte-tile').length === count && [...document.querySelectorAll<HTMLInputElement>('.rte-tile input')].every(input => input.checked), mediaProviderFlagStorageKeys().length);
       await capture('tme60-section.png');
       // Only what needs the installed extension stays here: real chrome.storage defaults, writes and live updates
       // across contexts. Hover, filters, master scoping, details, narrow and sticky layouts, and RTL are covered by

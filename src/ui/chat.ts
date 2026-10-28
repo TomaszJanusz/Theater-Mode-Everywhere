@@ -61,7 +61,7 @@ export function hydrateChatPreferences(value: unknown): void {
   if (!value || typeof value !== 'object') return;
   const candidate = value as Record<string, unknown>;
   const next: ChatPreferences = {};
-  for (const provider of ['twitch', 'youtube'] as const) {
+  for (const provider of ['twitch', 'youtube', 'soop'] as const) {
     const entry = candidate[provider];
     if (!entry || typeof entry !== 'object') continue;
     const pref = entry as Partial<ChatPreference>;

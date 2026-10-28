@@ -1,4 +1,4 @@
-export type ChatProvider = 'twitch' | 'youtube';
+export type ChatProvider = 'twitch' | 'youtube' | 'soop';
 
 export type ChatKind = 'live' | 'replay';
 

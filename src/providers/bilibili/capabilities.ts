@@ -8,6 +8,7 @@ export const bilibiliCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteBilibili' },
+    audio: { status: 'no' },
     chapters: { status: 'conditional', noteKey: 'rteNoteBilibili' },
     heatmap: { status: 'conditional', noteKey: 'rteNoteBilibili' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteBilibili' },

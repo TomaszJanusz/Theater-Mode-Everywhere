@@ -8,7 +8,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isTencentHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
 
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {
@@ -66,6 +66,29 @@ describe('provider registry', () => {
     assert.equal(shouldPatchMainWorld('crunchyroll.com.evil.test'), false);
     assert.equal(shouldAttachProvider('crunchyroll', { ...defaultMediaProviderFlags(), crunchyroll: false }, 'www.crunchyroll.com'), false);
     assert.equal(shouldAttachProvider('crunchyroll', defaultMediaProviderFlags(), 'static.crunchyroll.com'), true);
+  });
+
+  it('limits iQIYI to iq.com, which needs no MAIN-world patch', () => {
+    assert.equal(isIqiyiHost('www.iq.com'), true);
+    assert.equal(isIqiyiHost('iq.com.'), true);
+    assert.equal(isIqiyiHost('iq.com.evil.test'), false);
+    assert.equal(isIqiyiHost('notiq.com'), false);
+    assert.equal(isIqiyiHost('www.iqiyi.com'), false);
+    assert.deepEqual(matchingProviders('www.iq.com'), ['native', 'iqiyi']);
+    assert.equal(shouldPatchMainWorld('www.iq.com'), false);
+    assert.equal(shouldAttachProvider('iqiyi', { ...defaultMediaProviderFlags(), iqiyi: false }, 'www.iq.com'), false);
+    assert.equal(shouldAttachProvider('iqiyi', defaultMediaProviderFlags(), 'www.iq.com'), true);
+    assert.equal(shouldAttachProvider('iqiyi', defaultMediaProviderFlags(), 'www.crunchyroll.com'), false);
+  });
+
+  it('limits SOOP to sooplive.com, which needs no MAIN-world response harvesting', () => {
+    for (const host of ['www.sooplive.com', 'play.sooplive.com', 'vod.sooplive.com', 'sooplive.com.']) assert.equal(isSoopHost(host), true, host);
+    for (const host of ['sooplive.com.evil.test', 'notsooplive.com', 'sooplive.co.kr', 'afreecatv.com']) assert.equal(isSoopHost(host), false, host);
+    assert.deepEqual(matchingProviders('play.sooplive.com'), ['native', 'soop']);
+    assert.equal(shouldPatchMainWorld('play.sooplive.com'), false);
+    assert.equal(shouldAttachProvider('soop', { ...defaultMediaProviderFlags(), soop: false }, 'vod.sooplive.com'), false);
+    assert.equal(shouldAttachProvider('soop', defaultMediaProviderFlags(), 'vod.sooplive.com'), true);
+    assert.equal(shouldAttachProvider('soop', defaultMediaProviderFlags(), 'www.iq.com'), false);
   });
 
   it('marks MAIN boot and fetch patches as idempotent', () => {

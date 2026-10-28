@@ -1,5 +1,7 @@
 import { allSettledResults, fulfilledValues } from '../core/result';
+
 import type {
+  AudioTrackList,
   CaptionActivationResult,
   CaptionCueRefresh,
   CaptionTrack,
@@ -22,7 +24,7 @@ export function preferProviderCaptionTracks(tracks: CaptionTrack[]): CaptionTrac
     seen.add(key);
     merged.push(track);
   }
-  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili' || track.source === 'bilibiliIntl' || track.source === 'crunchyroll')) {
+  if (merged.some((track) => track.source === 'patreon' || track.source === 'twitch' || track.source === 'disney' || track.source === 'netflix' || track.source === 'bilibili' || track.source === 'bilibiliIntl' || track.source === 'crunchyroll' || track.source === 'iqiyi')) {
     return merged.filter((track) => track.source !== 'native-text-track');
   }
   return merged;
@@ -61,6 +63,37 @@ export class CompositeMediaAdapter implements MediaFeaturesAdapter {
 
   observeTitle(onChange: () => void): () => void {
     return this.subscribeAll([], (adapter) => adapter.observeTitle?.(onChange));
+  }
+
+  /**
+   * A service adapter's tracks outrank the element's own: hosts that switch audio inside their
+   * player can leave a single native track behind. The adapter that listed them owns selection.
+   */
+  listAudioTracks(): AudioTrackList | null {
+    return this.audioSource()?.list ?? null;
+  }
+
+  /** Re-resolves the owner, so a track listed by a replaced source cannot be sent to another. */
+  async selectAudioTrack(id: string, mediaId: string | null): Promise<boolean> {
+    const source = this.audioSource();
+    if (!source?.list.tracks.some(track => track.id === id)) return false;
+    return source.adapter.selectAudioTrack?.(id, mediaId) ?? false;
+  }
+
+  private audioSource(): { adapter: MediaFeaturesAdapter; list: AudioTrackList } | null {
+    let fallback: { adapter: MediaFeaturesAdapter; list: AudioTrackList } | null = null;
+    for (const adapter of [...this.adapters].reverse()) {
+      let list: AudioTrackList | null = null;
+      try { list = adapter.listAudioTracks?.() ?? null; } catch { continue; }
+      if (!list) continue;
+      if (list.tracks.length > 0) return { adapter, list };
+      fallback ??= { adapter, list };
+    }
+    return fallback;
+  }
+
+  observeAudioTracks(onChange: () => void): () => void {
+    return this.subscribeAll([], (adapter) => adapter.observeAudioTracks?.(onChange));
   }
 
   /** Subscribes every adapter, isolating failures, and returns one idempotent cleanup. */

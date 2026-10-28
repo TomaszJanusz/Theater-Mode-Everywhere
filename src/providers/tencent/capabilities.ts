@@ -8,6 +8,7 @@ export const tencentCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'conditional', noteKey: 'rteNoteTencent' },
+    audio: { status: 'no' },
     chapters: { status: 'no' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteTencent' },

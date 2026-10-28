@@ -674,6 +674,37 @@
       }
     }
   },
+  "audioTrackLabel": {
+    "message": "Tonspur"
+  },
+  "audioTrackBack": {
+    "message": "Zurück"
+  },
+  "searchAudioTracks": {
+    "message": "Tonspuren suchen…"
+  },
+  "noAudioTracks": {
+    "message": "Keine Tonspuren"
+  },
+  "audioTrackDescription": {
+    "message": "$NAME$ (Audiodeskription)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackCommentary": {
+    "message": "$NAME$ (Kommentar)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "audioTrackServiceDefault": {
+    "message": "Standard"
+  },
   "switchVideoTooltip": {
     "message": "Video auf der Seite wechseln $KEY$",
     "placeholders": {
@@ -923,6 +954,18 @@
   "crunchyrollIntegrationDescription": {
     "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Abspannmarken, Vorschaubilder. Schnellaktionen: Intro/Abspann überspringen und nächste Folge."
   },
+  "iqiyiIntegrationTitle": {
+    "message": "iQIYI-Integration"
+  },
+  "iqiyiIntegrationDescription": {
+    "message": "Zeigt Serientitel und Folgenbezeichnung, listet und wählt die Untertitelsprachen der Folge (iQIYI zeichnet sie weiter selbst), markiert Intro und Outro und wechselt zur vorherigen oder nächsten Folge. AutoTheater funktioniert auf Folgenseiten. Auch die Tonspuren einer Folge lassen sich wählen."
+  },
+  "soopIntegrationTitle": {
+    "message": "SOOP-Integration"
+  },
+  "soopIntegrationDescription": {
+    "message": "Zeigt Sendungs- oder Aufzeichnungstitel und Streamer, markiert Kapitel aus dem Titelverlauf einer Aufzeichnung, bietet die Zurück-/Weiter-Funktion des Players mit dem Countdown zum nächsten Video, und AutoTheater kann Live-Sendungen und Aufzeichnungen betreten. Der eigene Chat von SOOP lässt sich neben dem Video anzeigen."
+  },
   "aboutTitle": {
     "message": "Über"
   },
@@ -1087,6 +1130,9 @@
   "rteCapabilityAutoTheater": {
     "message": "AutoTheater"
   },
+  "rteCapabilityAudio": {
+    "message": "Tonspuren"
+  },
   "rteEmpty": {
     "message": "Kein Dienst bietet alle ausgewählten Funktionen."
   },
@@ -1106,6 +1152,9 @@
   },
   "rteNoteYoutube": {
     "message": "Je nach Video; Werbung überspringen und Warteschlange, wenn verfügbar."
+  },
+  "rteNoteAudioTracks": {
+    "message": "Bei Videos mit mehreren Tonspuren, etwa Synchronfassungen; nicht während Werbung."
   },
   "rteNoteVimeo": {
     "message": "Kapitel und Vorschauen, wenn verfügbar; nächstes Video in Showcases."
@@ -1133,6 +1182,12 @@
   },
   "rteNoteCrunchyroll": {
     "message": "Nur Intro-/Abspannmarken; eingebrannte Untertitel lassen sich nicht ausschalten."
+  },
+  "rteNoteIqiyi": {
+    "message": "Untertitel, Intro-/Outro-Markierungen und Zurück/Weiter, wenn die Folge sie bietet; keine Zeitleisten-Vorschau."
+  },
+  "rteNoteSoop": {
+    "message": "Kapitel, Zurück/Weiter und der Countdown zum nächsten Video nur bei Aufzeichnungen; keine Untertitel und keine Zeitleisten-Vorschau."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

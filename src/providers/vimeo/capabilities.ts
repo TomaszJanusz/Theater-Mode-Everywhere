@@ -8,6 +8,7 @@ export const vimeoCapabilities = {
   capabilities: {
     title: { status: 'yes' },
     subtitles: { status: 'no' },
+    audio: { status: 'no' },
     chapters: { status: 'conditional', noteKey: 'rteNoteVimeo' },
     heatmap: { status: 'no' },
     thumbnails: { status: 'conditional', noteKey: 'rteNoteVimeo' },

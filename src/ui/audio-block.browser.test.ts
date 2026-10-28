@@ -51,7 +51,7 @@ async function audioMenu(page: Page) {
     const note = root.querySelector('.theater-settings-note');
     return {
       note: visible(note) ? note.textContent : null,
-      rows: [...root.querySelectorAll('.theater-settings-menu .volume-boost-btn, .theater-settings-menu [class*="audio-"]')]
+      rows: [...root.querySelectorAll('.theater-settings-menu [data-settings-group="processing"] .theater-settings-row')]
         .filter(visible).length,
       heading: visible(root.querySelector('[data-settings-section="audio"] .theater-settings-heading'))
     };

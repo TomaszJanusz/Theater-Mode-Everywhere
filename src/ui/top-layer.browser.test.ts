@@ -18,6 +18,8 @@ const FIXTURE = canvasVideoFixture({ title: 'Top layer' })
 
 const HOST = '#theater-everywhere-ui';
 const isOpen = (page: Page) => page.evaluate(h => document.querySelector(h)?.matches(':popover-open') ?? null, HOST);
+/** Waits for the host to leave the top layer: `fullscreenElement` is set before `fullscreenchange` runs the hide. */
+const hostLeavesTopLayer = (page: Page) => page.waitForFunction(h => !document.querySelector(h)!.matches(':popover-open'), HOST);
 /** True when the player UI, not the page, receives a hit at the middle of the control bar. */
 const uiOnTop = (page: Page) => page.waitForFunction(h => {
   const host = document.querySelector(h)!;
@@ -172,7 +174,7 @@ for (const engine of testEngines()) {
     await enterTheater(page);
     for (let i = 0; i < 3; i++) {
       await pageFullscreen(page, '#side');
-      assert.equal(await isOpen(page), false, `cycle ${i + 1}`);
+      await hostLeavesTopLayer(page);
       assert.equal(await hostHit(page), false, `cycle ${i + 1}: not hit-testable over the fullscreen element`);
       await exitFullscreen(page);
       await page.waitForFunction(h => document.querySelector(h)!.matches(':popover-open'), HOST);
