@@ -210,6 +210,28 @@ for (const browserType of selectTestEngines([chromium, firefox], engine => engin
       await page.close();
     }
   });
+  it(`${browserType.name()}: snapshot publishes walk the page data for a heatmap once per object`, { timeout: 60_000 }, async t => {
+    if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
+    const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage(); await setup(page, 'https://www.youtube.com/watch?v=abc');
+    const walks = async () => await page.evaluate('window.walks') as number;
+    await page.evaluate(`(() => {
+      window.walks = 0;
+      window.ytInitialData = { contents: { get probe() { window.walks++; return {}; } } };
+    })()`);
+    const trace: number[] = [];
+    for (let i = 0; i < 4; i++) { await page.evaluate('HarvestTest.readYoutubeSnapshot()'); trace.push(await walks()); }
+    assert.deepEqual(trace, [1, 1, 1, 1], 'one walk for repeated publishes');
+    await page.evaluate(`void (window.ytInitialData = { contents: { get probe() { window.walks++; return {}; } } })`);
+    await page.evaluate('HarvestTest.readYoutubeSnapshot()');
+    assert.equal(await walks(), 2, 'a replaced object is read again');
+    await page.evaluate(`void (window.ytInitialData = { videoDetails: { videoId: 'abc' }, markersList: { markerType: 'MARKER_TYPE_HEATMAP', markers: [
+      { startMillis: 0, durationMillis: 1000, intensityScoreNormalized: 0.5 },
+      { startMillis: 1000, durationMillis: 1000, intensityScoreNormalized: 1 }
+    ] } })`);
+    assert.equal(await page.evaluate('HarvestTest.readYoutubeSnapshot()?.heatmap?.segments?.length'), 2);
+    assert.equal(await page.evaluate('HarvestTest.readYoutubeSnapshot()?.heatmap?.segments?.length'), 2, 'a found heatmap stays available');
+    await page.close();
+  });
   it(`${browserType.name()}: heatmap scans only qualified text and JSON; BIF stays binary`, { timeout: 60_000 }, async t => {
     if (!existsSync(browserType.executablePath())) { t.skip('Browser not installed'); return; }
     const page = await (await browsers[browserType.name() as 'chromium' | 'firefox'].newContext(t)).newPage(); await setup(page, 'https://www.youtube.com/watch?v=abc');
