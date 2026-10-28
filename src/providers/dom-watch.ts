@@ -14,6 +14,11 @@ export function observeProviderDom(options: {
   ignore?: (record: MutationRecord) => boolean;
   events?: readonly string[];
   pollWhenEmpty?: boolean;
+  /**
+   * The 1 Hz fallback only covers changes the observers cannot see. A provider that knows when
+   * that can happen returns false otherwise, and the timer is not armed; defaults to always.
+   */
+  needsFallback?: () => boolean;
   structureChanged?: () => void;
 }): () => void {
   const doc = options.root instanceof Document ? options.root : options.root.ownerDocument;
@@ -86,7 +91,7 @@ export function observeProviderDom(options: {
     if (!enabled() && roots.size) dirty = true;
     discover();
     options.changed();
-  }, { active: () => enabled() && (roots.size > 0 || options.pollWhenEmpty === true),
+  }, { active: () => enabled() && (roots.size > 0 || options.pollWhenEmpty === true) && options.needsFallback?.() !== false,
     events: [...EVENTS, ...options.events ?? []] });
   const containsRoot = (node: Node) => node instanceof Element && (node.matches(options.selector)
     || Boolean(node.querySelector(options.selector)));
