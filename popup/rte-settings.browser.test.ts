@@ -56,10 +56,15 @@ for (const [name, engine] of selectTestEngines(Object.entries({ chromium, firefo
   const shared = sharedTestBrowser(engine);
   it(`popup resolves services, isolates writes and follows live settings (${name})`, { timeout: 45000 }, async t => {
     const page = await (await shared.newContext(t, { viewport: { width: 360, height: 480 } })).newPage();
-    const hosts = ['www.youtube.com', 'player.vimeo.com', 'www.patreon.com', 'player.twitch.tv', 'www.disneyplus.com', 'www.netflix.com', 'www.bilibili.com', 'www.bilibili.tv', 'wetv.vip', 'static.crunchyroll.com', 'www.iq.com', 'play.sooplive.com'];
-    for (const [index, id] of MEDIA_PROVIDER_IDS.entries()) {
-      assert.equal(providerDefinition(id).matchesHost(hosts[index]), true);
-      await open(page, hosts[index], { youtubeIntegrationEnabled: false, [MEDIA_PROVIDER_FLAG_KEYS[id]]: true });
+    // One real host per provider, keyed by id, so a new provider fails here until it names its host.
+    const hostOf: Record<(typeof MEDIA_PROVIDER_IDS)[number], string> = {
+      youtube: 'www.youtube.com', vimeo: 'player.vimeo.com', patreon: 'www.patreon.com', twitch: 'player.twitch.tv', disney: 'www.disneyplus.com',
+      netflix: 'www.netflix.com', bilibili: 'www.bilibili.com', bilibiliIntl: 'www.bilibili.tv', tencent: 'wetv.vip', crunchyroll: 'static.crunchyroll.com',
+      iqiyi: 'www.iq.com', soop: 'play.sooplive.com', viki: 'www.viki.com'
+    };
+    for (const id of MEDIA_PROVIDER_IDS) {
+      assert.equal(providerDefinition(id).matchesHost(hostOf[id]), true);
+      await open(page, hostOf[id], { youtubeIntegrationEnabled: false, [MEDIA_PROVIDER_FLAG_KEYS[id]]: true });
       await page.waitForFunction(selector => !(document.querySelector(selector) as HTMLInputElement).disabled, toggle);
       assert.equal(await page.locator(toggle).isChecked(), true, 'service state wins over mixed All services state');
       await page.locator('#rich-theater-experience-card .switch').click();

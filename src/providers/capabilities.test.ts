@@ -93,7 +93,9 @@ describe('provider capability declarations', () => {
         const capability = key as keyof typeof adapterMethods;
         // These interface compatibility methods intentionally have no feature data.
         const stub = (['vimeo', 'soop'].includes(provider.id) && key === 'subtitles') || (provider.id === 'netflix' && key === 'chapters');
-        const actual = names.every(name => implemented.has(name)) && !stub;
+        // A provider that leaves its title to the page's metadata implements no title method.
+        const pageTitle = providerDefinition(provider.id).titleFromPage === true && key === 'title';
+        const actual = (names.every(name => implemented.has(name)) && !stub) || pageTitle;
         assert.equal(actual, provider.capabilities[capability].status !== 'no', `${provider.id}.${key}`);
         if (stub) assert.equal(provider.capabilities[capability].status, 'no');
       }
@@ -135,6 +137,7 @@ describe('provider capability declarations', () => {
       twitch: ['#A441F7', '#000000', '#F7F7F7'],
       youtube: ['#F70000', '#EAEAEA'],
       vimeo: ['#15D5FF', '#141A20'],
+      viki: ['#0C9BFF', '#1A1A1A'],
     };
     assert.deepEqual(Object.fromEntries(PROVIDER_CAPABILITIES.map(provider => [provider.id, [...provider.brandColors]])), palettes);
   });

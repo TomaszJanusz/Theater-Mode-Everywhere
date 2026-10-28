@@ -966,6 +966,12 @@
   "soopIntegrationDescription": {
     "message": "Zeigt Sendungs- oder Aufzeichnungstitel und Streamer, markiert Kapitel aus dem Titelverlauf einer Aufzeichnung, bietet die Zurück-/Weiter-Funktion des Players mit dem Countdown zum nächsten Video, und AutoTheater kann Live-Sendungen und Aufzeichnungen betreten. Der eigene Chat von SOOP lässt sich neben dem Video anzeigen."
   },
+  "vikiIntegrationTitle": {
+    "message": "Rakuten-Viki-Integration"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Verfügbar, wenn Video oder Player sie bereitstellen: Titel, Untertitel, Intro-/Abspannmarken, Vorschaubilder. Schnellaktionen: Intro überspringen und nächste Folge."
+  },
   "aboutTitle": {
     "message": "Über"
   },
@@ -1188,6 +1194,9 @@
   },
   "rteNoteSoop": {
     "message": "Kapitel, Zurück/Weiter und der Countdown zum nächsten Video nur bei Aufzeichnungen; keine Untertitel und keine Zeitleisten-Vorschau."
+  },
+  "rteNoteViki": {
+    "message": "Untertitel und Vorschauen, wenn verfügbar; Weiter über den Player."
   },
   "rteSaveError": {
     "message": "Diensteinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."

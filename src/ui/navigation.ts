@@ -91,6 +91,20 @@ function revealInMenu(element: HTMLElement): void {
 }
 
 /**
+ * A and D in a menu. On a stepper row they press its arrow (a blocked end is still a press: the stepper
+ * answers with its nudge rather than staying silent) and focus stays. On a row with several controls,
+ * such as a list's Back beside its header action, they return the control on that side.
+ */
+function sidewaysInMenu(panel: HTMLElement, element: HTMLElement, direction: 'left' | 'right'): HTMLElement | null {
+  const arrow = stepperArrow(element, direction);
+  if (arrow) {
+    arrow.click();
+    return null;
+  }
+  return toTarget(element, focusable(panel), direction);
+}
+
+/**
  * Keyboard navigation of the controls bar and its menus (W/A/S/D by default). `W` always starts it by
  * focusing the settings button; the mode lasts while focus stays inside the bar, so Escape, the bar
  * hiding, leaving theater and a rebuilt bar all end it with no timer of their own. It does not replace
@@ -187,12 +201,8 @@ export function createNavigation(ctx: PlayerChromeContext) {
 
   function moveInMenu(panel: HTMLElement, element: HTMLElement, direction: NavigationDirection): void {
     const host = panel.closest<HTMLElement>('.theater-menu');
-    if (direction === 'left' || direction === 'right') {
-      // A blocked end is still a press: the stepper answers with its nudge rather than staying silent.
-      stepperArrow(element, direction)?.click();
-      return;
-    }
-    const target = toTarget(element, focusable(panel), direction);
+    const sideways = direction === 'left' || direction === 'right';
+    const target = sideways ? sidewaysInMenu(panel, element, direction) : toTarget(element, focusable(panel), direction);
     if (target) focusElement(target, direction);
     // Past the bottom row is back toward the bar: close the menu onto its trigger. The top row is a dead end.
     else if (direction === 'down' && host && closeMenuPopover(host, true)) ctx.actions.updateCaptionDock();

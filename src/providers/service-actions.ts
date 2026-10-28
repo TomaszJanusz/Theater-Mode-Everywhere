@@ -1,3 +1,4 @@
+
 import type { ServiceActionSource } from '../core/service-actions';
 import { mediaProviderIntegrationEnabled, type MediaProviderId } from '../media-features/provider-flags';
 
@@ -6,9 +7,10 @@ import { createBilibiliIntlServiceActions, type BilibiliIntlServiceActionHooks }
 import { createCrunchyrollServiceActions } from './crunchyroll/service-actions';
 import { createDisneyServiceActions } from './disney/service-actions';
 import { observeProviderDom } from './dom-watch';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isVikiHost, isYouTubeHost } from './hosts';
 import { createNetflixServiceActions } from './netflix/service-actions';
 import { createSoopServiceActions } from './soop/service-actions';
+import { createVikiServiceActions } from './viki/service-actions';
 import { createYouTubeServiceActions } from './youtube/service-actions';
 
 /** Provider composition belongs here; the shared CTA only consumes actions. */
@@ -20,6 +22,7 @@ export function createServiceActions(options: BilibiliIntlServiceActionHooks = {
   if (isDisneyHost()) return createDisneyServiceActions();
   if (isCrunchyrollHost()) return observed(createCrunchyrollServiceActions(), 'crunchyroll', '#player-container');
   if (isSoopHost()) return observed(createSoopServiceActions(), 'soop', '#webplayer #player');
+  if (isVikiHost()) return observed(createVikiServiceActions(), 'viki', '#vmplayer_id');
   return null;
 
   function observed(source: ServiceActionSource, provider: MediaProviderId, selector: string): ServiceActionSource {

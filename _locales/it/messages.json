@@ -966,6 +966,12 @@
   "soopIntegrationDescription": {
     "message": "Mostra il titolo della diretta o della registrazione e lo streamer, segna i capitoli dalla cronologia dei titoli di una registrazione, offre la registrazione precedente/successiva del lettore e il suo conto alla rovescia del video successivo, e AutoTheater può attivarsi su dirette e registrazioni. La chat di SOOP può essere mostrata accanto al video."
   },
+  "vikiIntegrationTitle": {
+    "message": "Integrazione Rakuten Viki"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Disponibili se forniti dal video o dal lettore: Titolo, Sottotitoli, marcatori di intro/titoli di coda, Miniature. Azioni rapide: salta intro ed episodio successivo."
+  },
   "aboutTitle": {
     "message": "Informazioni"
   },
@@ -1188,6 +1194,9 @@
   },
   "rteNoteSoop": {
     "message": "Capitoli, precedente/successivo e conto alla rovescia del video successivo solo nelle registrazioni; nessun sottotitolo né anteprima sulla timeline."
+  },
+  "rteNoteViki": {
+    "message": "Sottotitoli e anteprime se disponibili; successivo tramite il lettore."
   },
   "rteSaveError": {
     "message": "Impossibile salvare le impostazioni dei servizi. Riprova."

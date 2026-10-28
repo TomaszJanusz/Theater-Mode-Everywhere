@@ -966,6 +966,12 @@
   "soopIntegrationDescription": {
     "message": "Muestra el título de la emisión o grabación y el streamer, marca capítulos a partir del historial de títulos de una grabación, ofrece la grabación anterior/siguiente del reproductor y su cuenta atrás del siguiente vídeo, y AutoTheater puede entrar en emisiones en directo y grabaciones. El chat propio de SOOP se puede mostrar junto al vídeo."
   },
+  "vikiIntegrationTitle": {
+    "message": "Integración con Rakuten Viki"
+  },
+  "vikiIntegrationDescription": {
+    "message": "Disponibles cuando los ofrece el vídeo o el reproductor: Título, Subtítulos, marcas de intro/créditos, Miniaturas. Acciones rápidas: saltar intro y siguiente episodio."
+  },
   "aboutTitle": {
     "message": "Acerca de"
   },
@@ -1188,6 +1194,9 @@
   },
   "rteNoteSoop": {
     "message": "Capítulos, anterior/siguiente y la cuenta atrás del siguiente vídeo solo en grabaciones; sin subtítulos ni vistas previas en la línea de tiempo."
+  },
+  "rteNoteViki": {
+    "message": "Subtítulos y vistas previas si están disponibles; siguiente mediante el reproductor."
   },
   "rteSaveError": {
     "message": "No se pudieron guardar los ajustes. Inténtalo de nuevo."

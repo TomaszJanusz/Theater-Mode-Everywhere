@@ -137,6 +137,25 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
     } finally { await context.close(); }
   });
 
+  it('writes, mirrors and describes the Rakuten Viki switch like any other service', { timeout: 45000 }, async t => {
+    const context = await shared.newContext(t);
+    try {
+      const page = await context.newPage();
+      await open(page);
+      const viki = page.locator('[data-provider="viki"]');
+      assert.equal(await page.locator('#rte-viki').isChecked(), true);
+      assert.deepEqual(await viki.locator('.rte-badge').evaluateAll(badges => badges.map(badge => badge.getAttribute('data-capability'))).then(list => list.sort()), ['audio', 'autoTheater', 'chapters', 'playlists', 'quickActions', 'subtitles', 'thumbnails', 'title']);
+      await page.locator('[data-provider="viki"] .rte-control').click();
+      assert.deepEqual(await page.evaluate(() => (window as unknown as Harness).writes), [{ vikiIntegrationEnabled: false }]);
+      assert.equal(await page.locator('#rte-viki').isChecked(), false);
+      await page.evaluate(() => (window as unknown as Harness).external({ vikiIntegrationEnabled: true }));
+      assert.equal(await page.locator('#rte-viki').isChecked(), true);
+      assert.equal(await page.locator('#rte-note-viki').textContent(), catalogs.en.rteNoteViki.message);
+      await page.evaluate(() => (window as unknown as Harness).setLanguage('pl'));
+      assert.equal(await page.locator('#rte-note-viki').textContent(), catalogs.pl.rteNoteViki.message);
+    } finally { await context.close(); }
+  });
+
   it('filters AutoTheater services, combines with another chip and clears', { timeout: 45000 }, async t => {
     const context = await shared.newContext(t);
     try {
@@ -226,10 +245,10 @@ for (const [kind, engine] of selectTestEngines(Object.entries({ chromium, firefo
       for (const { locale } of LANGUAGES) {
         await page.evaluate(locale => (window as unknown as Harness).setLanguage(locale), locale);
         assert.equal(await page.locator('#rte-all-label').textContent(), catalogs[locale].rteAllShown.message);
-        assert.equal(await page.locator('#rte-filter-buttons [data-capability="heatmap"]').textContent(), `${catalogs[locale].rteCapabilityHeatmap.message} · 2`);
+        assert.equal(await page.locator('#rte-filter-buttons [data-capability="heatmap"]').textContent(), `${catalogs[locale].rteCapabilityHeatmap.message} · ${supporting('heatmap').length}`);
         const names = await page.locator('.rte-name').allTextContents();
         assert.deepEqual(names, PROVIDER_CAPABILITIES.map(p => p.name).sort(new Intl.Collator(locale.replace('_', '-')).compare));
-        assert.equal(await page.locator('.rte-tile:visible').count(), 2);
+        assert.equal(await page.locator('.rte-tile:visible').count(), supporting('heatmap').length);
         assert.equal(await page.locator('#rte-filter-buttons [data-capability="heatmap"]').evaluate(el => el === document.activeElement), true);
         assert.equal(await page.locator('#rte-note-netflix').textContent(), catalogs[locale].rteNoteNetflix.message);
       }

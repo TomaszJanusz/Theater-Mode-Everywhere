@@ -10,6 +10,7 @@ import {
 } from './netflix/stage';
 import { tencentTheaterStage } from './tencent/stage';
 import { twitchTheaterStage } from './twitch/stage';
+import { vikiTheaterStage } from './viki/stage';
 
 const netflixTheaterStage: ProviderStage = {
   mount(hostname: string) {
@@ -33,7 +34,8 @@ const providerStages: ProviderStage[] = [
   disneyTheaterStage,
   twitchTheaterStage,
   netflixTheaterStage,
-  tencentTheaterStage
+  tencentTheaterStage,
+  vikiTheaterStage
 ];
 
 let stopObservingProviderStages: (() => void) | null = null;

@@ -66,6 +66,11 @@ export function isSoopHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);
   return host === 'sooplive.com' || host.endsWith('.sooplive.com');
 }
+/** viki.com and its real subdomains. */
+export function isVikiHost(hostname = currentHost()): boolean {
+  const host = normalizeHost(hostname);
+  return host === 'viki.com' || host.endsWith('.viki.com');
+}
 
 /** crunchyroll.com and its real subdomains, including the static player host. */
 export function isCrunchyrollHost(hostname = currentHost()): boolean {

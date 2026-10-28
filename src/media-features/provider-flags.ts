@@ -1,4 +1,4 @@
-export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop'] as const;
+export const MEDIA_PROVIDER_IDS = ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'iqiyi', 'soop', 'viki'] as const;
 
 export type MediaProviderId = (typeof MEDIA_PROVIDER_IDS)[number];
 
@@ -14,7 +14,8 @@ export const MEDIA_PROVIDER_FLAG_KEYS: Record<MediaProviderId, string> = {
   tencent: 'tencentIntegrationEnabled',
   crunchyroll: 'crunchyrollIntegrationEnabled',
   iqiyi: 'iqiyiIntegrationEnabled',
-  soop: 'soopIntegrationEnabled'
+  soop: 'soopIntegrationEnabled',
+  viki: 'vikiIntegrationEnabled'
 };
 
 export type MediaProviderFlags = Record<MediaProviderId, boolean>;
@@ -38,7 +39,8 @@ const MEDIA_PROVIDER_OFF_ATTRS: Record<MediaProviderId, string> = {
   tencent: 'data-te-tencent-integration-off',
   crunchyroll: 'data-te-crunchyroll-integration-off',
   iqiyi: 'data-te-iqiyi-integration-off',
-  soop: 'data-te-soop-integration-off'
+  soop: 'data-te-soop-integration-off',
+  viki: 'data-te-viki-integration-off'
 };
 
 export function mediaProviderIntegrationEnabled(id: MediaProviderId): boolean {

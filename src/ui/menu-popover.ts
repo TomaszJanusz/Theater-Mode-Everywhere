@@ -75,9 +75,9 @@ function centerActiveRow(list: HTMLElement | null): void {
 }
 
 /**
- * One menu shell for the player bar. Hover reveals it. A click pins it open
- * after the pointer leaves, and a second click closes it. Keyboard activation
- * pins it and moves focus inside.
+ * One menu shell for the player bar. Hover reveals it. A click on its button or
+ * a press inside it pins it open after the pointer leaves, and a second click on
+ * the button closes it. Keyboard activation pins it and moves focus inside.
  */
 export function bindMenuPopover(options: {
   host: HTMLElement;
@@ -174,6 +174,15 @@ export function bindMenuPopover(options: {
       return;
     }
     show(false, false);
+  });
+  // A press inside a menu that hover opened pins it, as a click on its button does. The press can
+  // change the panel (a row opening its list resizes it), which must not close the menu when the
+  // panel moves from under the pointer. A hover left without a press still closes.
+  scope.listen(panel, 'pointerdown', (event: PointerEvent) => {
+    if (event.button !== 0 || panel.classList.contains(PINNED_CLASS) || !host.classList.contains(OPEN_CLASS)) return;
+    panel.classList.add(PINNED_CLASS);
+    syncExpanded();
+    options.onChange?.();
   });
   scope.listen(host, 'pointerleave', (event: PointerEvent) => {
     // The following picture click only closes this menu.
