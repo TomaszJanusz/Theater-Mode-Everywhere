@@ -684,6 +684,61 @@ describe('native chat browser session', () => {
       assert.deepEqual(pageErrors(page), []);
     });
 
+    it(`reaches and adjusts the Theme and Width rows with W/A/S/D in ${engine}`, { timeout: 120_000 }, async t => {
+      const browser = pagesOf(browsers[engine], t);
+      const { page, read } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+      const press = (key: string, code: string) => page.evaluate(init => {
+        const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
+        const target = root.activeElement ?? document.body;
+        const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, composed: true, ...init });
+        target.dispatchEvent(event);
+        return event.defaultPrevented;
+      }, { key, code });
+      const W = () => press('w', 'KeyW'), A = () => press('a', 'KeyA'), S = () => press('s', 'KeyS'), D = () => press('d', 'KeyD');
+      const focusedControl = () => page.evaluate(() => {
+        const active = document.getElementById('theater-everywhere-ui')!.shadowRoot!.activeElement;
+        return active ? (active.className || active.tagName) : null;
+      });
+      const climbTo = async (className: string) => {
+        for (let step = 0; step < 30 && !(await focusedControl())?.includes(className); step++) await W();
+        assert.ok((await focusedControl())?.includes(className), `W reaches ${className}; stopped on ${await focusedControl()}`);
+      };
+
+      // W starts the mode on the gear, then opens its menu on the bottom row and climbs.
+      await W();
+      await W();
+      await climbTo('theater-chat-theme-select');
+      assert.equal((await readThemeControl(page)).value, 'native');
+      assert.equal(await D(), true, 'D on the theme select is consumed');
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.theme === 'dark');
+      assert.equal((await readThemeControl(page)).value, 'dark');
+      await D();
+      assert.equal((await readThemeControl(page)).value, 'dark', 'D at the last option changes nothing');
+      await A();
+      await A();
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.theme === 'light');
+      assert.equal(await focusedControl(), 'theater-chat-theme-select', 'focus stays on the select while it steps');
+      await waitForSaved(read, 'twitch', preference => preference.theme === 'light');
+
+      // The Width row sits above Theme: W reaches the slider, D/A step it through the same input handler.
+      await climbTo('theater-chat-width-slider');
+      const before = (await layoutOf(page)).state!.width;
+      await D();
+      await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width + 10, before);
+      await waitForSaved(read, 'twitch', preference => preference.width === before + 10);
+      await A();
+      await A();
+      await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width - 10, before);
+      assert.equal(Number(await page.locator('.theater-chat-width-slider').inputValue()), before - 10);
+
+      // S returns down through the Theme row, whose select does not trap focus.
+      await S();
+      assert.equal(await focusedControl(), 'theater-chat-theme-select');
+      assert.deepEqual(pageErrors(page), []);
+    });
+
     it(`provides the missing light palette on a dark Twitch startup in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       // Only the dark declaration is emitted on a native dark startup.

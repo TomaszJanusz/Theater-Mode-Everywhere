@@ -61,7 +61,7 @@ const SETTLE_PX = 4;
 const SETTLE_EASE = 'cubic-bezier(0.25, 1, 0.5, 1)';
 const SETTLE_OFFSETS: Record<NavigationDirection, [number, number]> = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] };
 
-const FOCUSABLE = 'button, input, [tabindex]';
+const FOCUSABLE = 'button, input, select, [tabindex]';
 const MENU_PANEL = '.theater-settings-menu, .theater-cc-menu';
 const SLIDER_PANEL = '.theater-volume-panel, .theater-speed-panel';
 /** Bar controls the keys pass over: panels are entered through their trigger, and the time readouts and the
@@ -75,8 +75,8 @@ function rectOf(element: Element): FocusRect {
 
 function focusable(root: ParentNode, exclude?: string): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(element => {
-    if (element.tabIndex < 0 && !element.matches('button, input')) return false;
-    if (element instanceof HTMLButtonElement || element instanceof HTMLInputElement) {
+    if (element.tabIndex < 0 && !element.matches('button, input, select')) return false;
+    if (element instanceof HTMLButtonElement || element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
       if (element.disabled || element.type === 'hidden') return false;
     }
     if (element.closest('[hidden], [inert]') || element.getClientRects().length === 0) return false;
@@ -90,12 +90,37 @@ function revealInMenu(element: HTMLElement): void {
   if (element.closest('.theater-settings-body, .theater-cc-menu-list')) element.scrollIntoView({ block: 'nearest' });
 }
 
+/** Steps a range one notch and announces it as the pointer does, so one handler serves both. */
+function stepSlider(slider: HTMLInputElement, direction: 'left' | 'right'): void {
+  if (direction === 'left') slider.stepDown();
+  else slider.stepUp();
+  slider.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/** Moves a select one option (holding at either end, like a stepper) and fires the events a pick would. */
+function stepSelect(select: HTMLSelectElement, direction: 'left' | 'right'): void {
+  const next = select.selectedIndex + (direction === 'left' ? -1 : 1);
+  if (next < 0 || next >= select.options.length) return;
+  select.selectedIndex = next;
+  select.dispatchEvent(new Event('input', { bubbles: true }));
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 /**
  * A and D in a menu. On a stepper row they press its arrow (a blocked end is still a press: the stepper
- * answers with its nudge rather than staying silent) and focus stays. On a row with several controls,
- * such as a list's Back beside its header action, they return the control on that side.
+ * answers with its nudge rather than staying silent) and focus stays; a focused slider or select takes the
+ * step itself. On a row with several controls, such as a list's Back beside its header action, they return
+ * the control on that side.
  */
 function sidewaysInMenu(panel: HTMLElement, element: HTMLElement, direction: 'left' | 'right'): HTMLElement | null {
+  if (element instanceof HTMLInputElement && element.type === 'range') {
+    stepSlider(element, direction);
+    return null;
+  }
+  if (element instanceof HTMLSelectElement) {
+    stepSelect(element, direction);
+    return null;
+  }
   const arrow = stepperArrow(element, direction);
   if (arrow) {
     arrow.click();
@@ -213,9 +238,7 @@ export function createNavigation(ctx: PlayerChromeContext) {
       const trigger = slider.closest('.theater-volume-container, .theater-speed-container')?.querySelector<HTMLElement>('button');
       if (trigger) focusElement(trigger, 'down');
     } else if (direction !== 'up') {
-      if (direction === 'left') slider.stepDown();
-      else slider.stepUp();
-      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      stepSlider(slider, direction);
     }
   }
 
