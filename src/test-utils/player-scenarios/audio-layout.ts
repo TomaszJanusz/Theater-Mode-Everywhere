@@ -208,7 +208,7 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   await page.keyboard.press('Shift+L');
   if (await page.locator('video#player').evaluate(video => getComputedStyle(video).objectPosition) !== '50% 50%') fail('Layout shortcut fired behind keyboard help.');
   const wide = await inspect();
-  if (wide.columns !== 2 || wide.actions !== 31 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
+  if (wide.columns !== 2 || wide.actions !== 33 || !wide.closeVisible) fail(`Wide keyboard help lost layout or actions: ${JSON.stringify(wide)}`);
   // Keys read as printed on the keycap: one cap per key, arrows as symbols, never browser names or capitals.
   const keys = await help.evaluate(overlay => [...overlay.querySelectorAll<HTMLElement>('.theater-help-binding')].map(wrapper => ({
     text: wrapper.innerText.replace(/\s+/g, '').replace(/^\//, ''),
@@ -230,7 +230,7 @@ export async function assertFullscreenAndHelp(page: Page): Promise<void> {
   await page.waitForFunction(() => document.getElementById('theater-everywhere-ui')!.shadowRoot!
     .querySelector('.theater-help-overlay .te-dialog')!.getBoundingClientRect().right <= innerWidth);
   const narrow = await inspect();
-  if (narrow.columns !== 1 || narrow.actions !== 31 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
+  if (narrow.columns !== 1 || narrow.actions !== 33 || !narrow.closeVisible) fail(`Narrow help is inaccessible: ${JSON.stringify(narrow)}`);
   await page.locator('.theater-help-overlay .te-dialog-close').press('Enter');
   await help.waitFor({ state: 'detached' });
   // Control-bar tooltips use the same caps: one per key, as printed.
