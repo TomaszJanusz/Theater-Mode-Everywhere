@@ -66,11 +66,11 @@ export const defaultShortcuts: Shortcuts = {
   playPause: 'Space',
   previousVideo: 'Shift+P',
   nextVideo: 'Shift+N',
-  frameBack: '<',
-  frameForward: '>',
-  // Shift+, and Shift+. type < and >, the frame-step keys, so speed takes the unshifted pair.
-  decreaseSpeed: ',',
-  increaseSpeed: '.',
+  // As on YouTube: , and . step frames, < and > (Shift+, and Shift+.) change the speed.
+  frameBack: ',',
+  frameForward: '.',
+  decreaseSpeed: '<',
+  increaseSpeed: '>',
   toggleFullscreen: 'F',
   volumeUp: 'ArrowUp',
   volumeDown: 'ArrowDown',

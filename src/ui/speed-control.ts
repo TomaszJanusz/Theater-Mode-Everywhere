@@ -79,6 +79,8 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
 
   let lastNonNormalSpeed = 1.5;
   const paint = () => {
+    // Follows every rate change (shortcuts, host), so the button toggles back to the latest speed.
+    if (video.playbackRate !== 1.0) lastNonNormalSpeed = video.playbackRate;
     const text = formatRate(video.playbackRate);
     buttonLabel.textContent = text;
     render({ value: closestSpeedIndex(video.playbackRate), text });
@@ -88,7 +90,6 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
 
   button.addEventListener('click', (event) => {
     if (video.playbackRate !== 1.0) {
-      lastNonNormalSpeed = video.playbackRate;
       video.playbackRate = 1.0;
     } else {
       video.playbackRate = lastNonNormalSpeed;
@@ -98,7 +99,6 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   slider.addEventListener('input', () => {
     const rate = SPEED_LEVELS[parseInt(slider.value, 10)];
     video.playbackRate = rate;
-    if (rate !== 1.0) lastNonNormalSpeed = rate;
     paint();
   });
   return { container, button, slider, sync: paint };
