@@ -113,10 +113,10 @@
     "message": "Silné"
   },
   "audioProtected": {
-    "message": "Nastavení zvuku není dostupné: toto video je chráněno DRM."
+    "message": "Zvukové efekty nejsou dostupné: toto video je chráněno DRM."
   },
   "audioRefused": {
-    "message": "Nastavení zvuku není dostupné: server videa to neumožňuje."
+    "message": "Zvukové efekty nejsou dostupné: server videa to neumožňuje."
   },
   "audioUnavailableHud": {
     "message": "Nastavení zvuku není pro toto video dostupné"

@@ -8,7 +8,7 @@ import { bootPlayer, enterTheater } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
 const browsers = sharedEngineBrowsers();
-const DRM_NOTE = 'Audio settings are unavailable: this video is DRM-protected.';
+const DRM_NOTE = 'Audio effects are unavailable: this video is DRM-protected.';
 
 function fixture(drm: boolean): string {
   return `<!doctype html><html><head><title>Audio block</title>
@@ -72,6 +72,12 @@ describe('audio settings on protected media', () => {
       await withBrowser(t, engine, async page => {
         await boot(page, true);
         assert.deepEqual(await audioMenu(page), { note: DRM_NOTE, rows: 0, heading: true });
+        // A quiet, centred status line rather than a body paragraph among the controls.
+        const style = await page.locator('.theater-settings-note').evaluate(note => {
+          const { textAlign, textTransform, fontSize } = getComputedStyle(note);
+          return { textAlign, textTransform, smaller: parseFloat(fontSize) < parseFloat(getComputedStyle(note.closest('.theater-settings-menu')!.querySelector('.theater-settings-row, .theater-settings-heading')!).fontSize) };
+        });
+        assert.deepEqual(style, { textAlign: 'center', textTransform: 'uppercase', smaller: true });
         await page.keyboard.press('v');
         await page.locator('.status-hud').waitFor();
         assert.equal(await page.locator('.status-hud').textContent(), DRM_NOTE);

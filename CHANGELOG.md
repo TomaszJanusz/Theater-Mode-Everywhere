@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The notice that replaces the audio effects on DRM-protected video, or when the video's server blocks them, now says "Audio effects are unavailable" instead of "Audio settings", so it no longer reads as if the Audio track row above it were affected, and appears as a quiet, centred, muted line instead of a body paragraph.
 - A player menu that opened when you pointed at its button stays open once you click inside it, as when you click the button itself, so a row that opens a list (such as Audio track) no longer closes the menu. Pointing away without clicking still closes it, and a click outside or Escape closes it as before.
 - The video launcher no longer vanishes the instant you press play on a video: it stays for three seconds and then fades as before. Pausing, switching videos, navigating or entering theater ends the wait early, and a video the page starts on its own keeps its launcher as before.
 - The Korean store listing now highlights Crunchyroll alongside YouTube, Netflix and Disney+.

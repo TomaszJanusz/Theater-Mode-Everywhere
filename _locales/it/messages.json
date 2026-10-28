@@ -113,10 +113,10 @@
     "message": "Forte"
   },
   "audioProtected": {
-    "message": "Impostazioni audio non disponibili: questo video è protetto da DRM."
+    "message": "Effetti audio non disponibili: questo video è protetto da DRM."
   },
   "audioRefused": {
-    "message": "Impostazioni audio non disponibili: il server del video non lo consente."
+    "message": "Effetti audio non disponibili: il server del video non lo consente."
   },
   "audioUnavailableHud": {
     "message": "Le impostazioni audio non sono disponibili per questo video"
