@@ -28,12 +28,6 @@ export const STATUS_HUD_SWITCH_ICON = `
   </svg>
 `;
 
-export const STATUS_HUD_SPEED_ICON = `
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 6l7 6-7 6zM13 6l7 6-7 6z"></path>
-  </svg>
-`;
-
 export const STATUS_HUD_FIT_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
@@ -52,6 +46,14 @@ function strokeIcon(shapes: string, size: number): string {
 const PICTURE_LAYOUT_SHAPES = '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="6" width="12" height="7" rx="1"/><path d="M8 17h8"/>';
 export const PICTURE_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 16);
 export const STATUS_HUD_LAYOUT_ICON = strokeIcon(PICTURE_LAYOUT_SHAPES, 28);
+
+/**
+ * A speed gauge whose needle leans to the slow or the fast side. Gauges read clockwise in every script,
+ * so it is not mirrored for right-to-left interfaces, and it never suggests rewinding as a left-pointing arrow would.
+ */
+const speedGauge = (needle: string) =>
+  strokeIcon(`<path d="M4.2 18.5a9 9 0 1 1 15.6 0"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/><path d="M12 14${needle}"/>`, 28);
+export const STATUS_HUD_SPEED_ICONS = { slower: speedGauge('L7.8 9.8'), faster: speedGauge('l4.2-4.2') } as const;
 
 /**
  * A subwoofer seen front-on: an outlined square cabinet (its width equals its height) on two feet, centred in the 24 box like the sibling icons, and a filled membrane ring with the dust

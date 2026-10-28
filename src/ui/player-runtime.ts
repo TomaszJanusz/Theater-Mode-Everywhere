@@ -141,7 +141,7 @@ import {
   TITLE_HUD_CLASS,
   STATUS_HUD_FIT_ICON,
   STATUS_HUD_LAYOUT_ICON,
-  STATUS_HUD_SPEED_ICON,
+  STATUS_HUD_SPEED_ICONS,
   STATUS_HUD_MUTE_ICON,
   STATUS_HUD_UNMUTE_ICON,
   audioHudIcon,
@@ -568,7 +568,7 @@ function executeCommand(command: PlayerCommand): void {
       // The speed button hides for live playback; the shortcuts follow the button.
       if (!surface || (queryPlayerUi('.theater-speed-container') as HTMLElement | null)?.hidden) break;
       surface.playbackRate = stepPlaybackRate(surface.playbackRate, command.direction);
-      triggerStatusIndicator(formatRate(surface.playbackRate), STATUS_HUD_SPEED_ICON);
+      triggerStatusIndicator(formatRate(surface.playbackRate), STATUS_HUD_SPEED_ICONS[command.direction > 0 ? 'faster' : 'slower']);
       break;
     }
     case 'TOGGLE_CAPTIONS':

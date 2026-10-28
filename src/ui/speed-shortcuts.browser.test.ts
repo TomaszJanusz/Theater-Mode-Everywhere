@@ -39,6 +39,17 @@ const playback = (page: Page) => page.evaluate(() => ({
   rate: document.querySelector('video')!.playbackRate
 }));
 
+type LayoutKey = { key: string; code: string; shiftKey?: boolean };
+
+/** Playwright types with a US layout, so other layouts' keys are dispatched as the events those layouts produce. */
+const pressAs = (page: Page, init: LayoutKey) => page.evaluate(init => {
+  const target = document.activeElement ?? document.body;
+  target.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true, cancelable: true, composed: true }));
+  target.dispatchEvent(new KeyboardEvent('keyup', { ...init, bubbles: true, cancelable: true, composed: true }));
+}, init);
+
+const hudIcon = (page: Page) => page.locator('.status-hud .volume-hud-icon svg').evaluate(svg => svg.outerHTML);
+
 describe('playback speed shortcuts', () => {
   for (const engine of testEngines()) {
     const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
@@ -51,9 +62,12 @@ describe('playback speed shortcuts', () => {
       await page.keyboard.press('Shift+Period');
       assert.deepEqual(await playback(page), { seeks: 0, rate: 1.25 });
       await speedLabel.filter({ hasText: '1.25x' }).waitFor();
+      const fasterIcon = await hudIcon(page);
       await page.keyboard.press('Shift+Comma');
       await page.keyboard.press('Shift+Comma');
       assert.equal((await playback(page)).rate, 0.75);
+      await page.locator('.status-hud .volume-hud-text').filter({ hasText: '0.75x' }).waitFor();
+      assert.notEqual(await hudIcon(page), fasterIcon, 'slower and faster show different icons');
 
       await page.keyboard.press('Comma');
       await page.keyboard.press('Period');
@@ -64,6 +78,33 @@ describe('playback speed shortcuts', () => {
       assert.equal((await playback(page)).rate, 1);
       await page.locator('.speed-btn').click();
       assert.equal((await playback(page)).rate, 0.75);
+    });
+
+    it(`reaches the four keys where QWERTZ, AZERTY and Dvorak print them in ${engine}`, { timeout: 30_000 }, async t => {
+      const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
+      await boot(page);
+      const layouts: Record<string, Record<'<' | '>' | '.', LayoutKey> & { ','?: LayoutKey }> = {
+        QWERTZ: { '<': { key: '<', code: 'IntlBackslash' }, '>': { key: '>', code: 'IntlBackslash', shiftKey: true },
+          ',': { key: ',', code: 'Comma' }, '.': { key: '.', code: 'Period' } },
+        AZERTY: { '<': { key: '<', code: 'IntlBackslash' }, '>': { key: '>', code: 'IntlBackslash', shiftKey: true },
+          ',': { key: ',', code: 'KeyM' }, '.': { key: '.', code: 'Comma', shiftKey: true } },
+        // Dvorak prints , on the W position, which Navigate up claims first (see shortcuts.test.ts).
+        Dvorak: { '<': { key: '<', code: 'KeyW', shiftKey: true }, '>': { key: '>', code: 'KeyE', shiftKey: true },
+          '.': { key: '.', code: 'KeyE' } }
+      };
+      let seeks = 0;
+      for (const [name, keys] of Object.entries(layouts)) {
+        await pressAs(page, keys['>']);
+        assert.equal((await playback(page)).rate, 1.25, `${name} >`);
+        await pressAs(page, keys['<']);
+        assert.equal((await playback(page)).rate, 1, `${name} <`);
+        for (const frameKey of [keys[','], keys['.']]) {
+          if (!frameKey) continue;
+          await pressAs(page, frameKey);
+          seeks += 1;
+        }
+        assert.deepEqual(await playback(page), { seeks, rate: 1 }, `${name} , and .`);
+      }
     });
 
     it(`ignores the speed shortcuts on live playback, like the speed button in ${engine}`, { timeout: 30_000 }, async t => {

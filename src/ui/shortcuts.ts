@@ -97,6 +97,15 @@ export const defaultShortcuts: Shortcuts = {
 // Defaults added after release must not steal keys from existing custom actions.
 const INTRODUCED_SHORTCUTS: Array<keyof Shortcuts> = ['cycleLayout', 'toggleChat', 'toggleVolumeBoost', 'cycleVoice', 'cycleLeveling', 'cycleBass', 'decreaseSpeed', 'increaseSpeed', ...NAVIGATION_SHORTCUTS];
 
+/**
+ * Defaults that moved when a shortcut took their key: frame step had < and > until the speed shortcuts did.
+ * A map saved before then has no value for the newcomer, and its old default follows the new layout.
+ */
+const MOVED_DEFAULTS = [
+  { action: 'frameBack', previous: '<', successor: 'decreaseSpeed' },
+  { action: 'frameForward', previous: '>', successor: 'increaseSpeed' }
+] as const satisfies ReadonlyArray<{ action: keyof Shortcuts; previous: string; successor: keyof Shortcuts }>;
+
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
   const next = { ...defaultShortcuts };
   if (!saved) return next;
@@ -105,13 +114,25 @@ export function withShortcutDefaults(saved: Record<string, unknown> | undefined)
     // An explicit empty value disables a shortcut; absent values still migrate to defaults.
     if (typeof value === 'string') next[key] = value;
   });
+  // Normalized on every read rather than migrated once, so every context agrees without a write to race.
+  // The next save stores the successor, which ends it. A < chosen on purpose for frame step back before the
+  // speed shortcuts is indistinguishable from the old default and moves too; one chosen since never does.
+  for (const { action, previous, successor } of MOVED_DEFAULTS) {
+    if (typeof saved[successor] === 'string' || (saved[action] ?? previous) !== previous) continue;
+    // The new key may already be another action's; then the old one stays, and the successor yields below.
+    next[action] = shortcutConflicts(next, action, defaultShortcuts[action]).length ? previous : defaultShortcuts[action];
+  }
   for (const key of INTRODUCED_SHORTCUTS) {
     if (typeof saved[key] !== 'string' && shortcutConflicts(next, key, next[key]).length) next[key] = '';
   }
   return next;
 }
 
-const shiftedKeys = '<>?:"{}|_+~!@#$%^&*()';
+// Printed punctuation already tells whether the layout needed Shift for it: `<` is Shift+, on QWERTY but its own key
+// on QWERTZ, and `.` is Shift+; on AZERTY. So Shift is never part of its identity; letters and digits keep it exact.
+function shiftInKey(key: string): boolean {
+  return [...key].length === 1 && !/[\p{L}\p{N}]/u.test(key);
+}
 
 // macOS Option changes key (Option+R is ®, Option+1 is ¡). Use the physical
 // letter or digit for Alt bindings, while leaving ordinary typing and
@@ -142,7 +163,7 @@ export function shortcutFromEvent(event: KeyboardEvent, physical = false): strin
   const key = (physical && /^(?:Key[A-Z]|Digit\d)$/.test(event.code) ? event.code : null) ?? nonLatinLetterPosition(event) ?? altLetter(event) ?? (event.key === ' ' || event.key === 'Spacebar' ? 'Space'
     : event.key.length === 1 ? event.key.toUpperCase() : event.key);
   return [event.ctrlKey ? 'Ctrl' : '', event.altKey ? 'Alt' : '',
-    event.shiftKey && !shiftedKeys.includes(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
+    event.shiftKey && !shiftInKey(key) ? 'Shift' : '', event.metaKey ? 'Meta' : '', key]
     .filter(Boolean).join('+');
 }
 
@@ -244,8 +265,7 @@ export function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean 
   if (e.altKey !== hasAlt) return false;
   if (e.metaKey !== hasMeta) return false;
 
-  const isShiftedChar = ['<', '>', '?', ':', '"', '{', '}', '|', '_', '+', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')'].includes(mainKey);
-  if (!isShiftedChar && e.shiftKey !== hasShift) return false;
+  if (!shiftInKey(mainKey) && e.shiftKey !== hasShift) return false;
 
   return true;
 }

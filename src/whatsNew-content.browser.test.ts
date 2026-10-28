@@ -62,12 +62,24 @@ it('renders static English semantic content safely and refreshes localized dialo
     'And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.'
   ]);
   assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'New feature badges:']);
-  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to liango2 for the idea of the always-visible interface and to Denis for the idea of automatically entering theater mode.');
+  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @liango2 for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to @wesleyel for the playback speed shortcuts.');
+  const profiles = page.locator('.whats-new-thanks a');
+  assert.deepEqual(await profiles.evaluateAll(links => links.map(link => ({
+    text: link.textContent, href: link.getAttribute('href'), target: link.getAttribute('target'), rel: link.getAttribute('rel')
+  }))), [
+    { text: '@liango2', href: 'https://github.com/liango2', target: '_blank', rel: 'noopener noreferrer' },
+    { text: '@wesleyel', href: 'https://github.com/wesleyel', target: '_blank', rel: 'noopener noreferrer' }
+  ]);
+  assert.equal(await page.getByRole('link', { name: '@wesleyel' }).count(), 1);
   await page.locator('.te-dialog-btn-primary').focus();
   await page.keyboard.press('Tab');
   assert.equal(await page.locator('.te-dialog-close').evaluate(el => el === document.activeElement), true, 'close button is in the focus loop');
   await page.keyboard.press('Tab');
   assert.equal(await page.locator('.te-dialog-body').evaluate(el => el === document.activeElement), true, 'shared scroll area is in the focus loop');
+  for (const name of ['@liango2', '@wesleyel']) {
+    await page.keyboard.press('Tab');
+    assert.equal(await page.getByRole('link', { name }).evaluate(el => el === document.activeElement), true, `${name} is in the focus loop`);
+  }
   const englishBody = await root.textContent();
   for (const locale of ['pl', 'ar', 'en']) {
     await page.evaluate(`Announcement.languageRuntime.set('${locale}')`);
@@ -89,6 +101,17 @@ it('renders static English semantic content safely and refreshes localized dialo
     return { heading: content.querySelector('h3')?.textContent, injected: content.querySelectorAll('script, img').length };
   }, payload);
   assert.deepEqual(safe, { heading: payload, injected: 0 });
+  // A link is only ever an absolute https: address; any other keeps its text without becoming a link.
+  const links = await page.evaluate(() => {
+    const api = (window as unknown as { Announcement: {
+      WHATS_NEW_CONTENT: { thanks: unknown[] }; buildWhatsNewContent(): HTMLElement;
+    } }).Announcement;
+    api.WHATS_NEW_CONTENT.thanks = ['Thanks to ', ...['javascript:alert(1)', 'http://github.com/wesleyel', '//github.com/wesleyel', 'data:text/html,x', 'https://github.com/wesleyel']
+      .map((href, index) => ({ link: `link${index}`, href }))];
+    const thanks = api.buildWhatsNewContent().querySelector('.whats-new-thanks')!;
+    return { text: thanks.textContent, hrefs: [...thanks.querySelectorAll('a')].map(link => link.getAttribute('href')) };
+  });
+  assert.deepEqual(links, { text: 'Thanks to link0link1link2link3link4', hrefs: ['https://github.com/wesleyel'] });
   await page.locator('.te-dialog-btn-primary').click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   assert.equal(await page.locator('#opener').evaluate(el => el === document.activeElement), true);
@@ -127,6 +150,14 @@ for (const engine of testEngines()) {
       }
       assert.ok(await scroll.evaluate(el => el.clientHeight > 0 && el.scrollWidth <= el.clientWidth));
     }
+    // A profile link opens in a new tab and leaves the highlights open.
+    await page.context().route('https://github.com/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Profile</title>' }));
+    const [profile] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: '@wesleyel' }).click()]);
+    await profile.waitForLoadState();
+    assert.equal(profile.url(), 'https://github.com/wesleyel');
+    assert.equal(await profile.evaluate(() => window.opener), null);
+    await profile.close();
+    await dialog.waitFor();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await dialog.waitFor({ state: 'detached' });
     assert.ok(await page.locator('#opener').evaluate(el => el === document.activeElement));

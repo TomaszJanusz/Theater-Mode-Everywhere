@@ -1286,11 +1286,13 @@ section h2 {
   text-underline-offset: 2px;
 }
 
-.options-inline-link:hover {
+.options-inline-link:hover,
+.whats-new-thanks a:hover {
   color: var(--accent-color);
 }
 
-.options-inline-link:focus-visible {
+.options-inline-link:focus-visible,
+.whats-new-thanks a:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
   border-radius: 2px;
@@ -1583,6 +1585,12 @@ html { scrollbar-gutter: stable; }
   font-size: 13px;
   font-style: italic;
   line-height: 1.45;
+}
+
+/* The accent is too dim for 13px text on the dialog: the underline marks the link, which takes the accent on hover. */
+.whats-new-thanks a {
+  color: inherit;
+  text-underline-offset: 2px;
 }
 
 .privacy-policy {
