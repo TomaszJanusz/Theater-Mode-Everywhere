@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Live YouTube streams opened after using YouTube's miniplayer or queue now show as live in theater mode. The progress bar ran to a made-up end time, the remaining time counted down as if the stream were a finished video, and the live button could seek to a stale point. Reloading the page hid the problem.
+
 ## [2.0.7] - 2026-10-26
 
 ### Fixed
