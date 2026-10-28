@@ -73,7 +73,7 @@ test('Audio joins a turning spinner, which keeps turning and then resolves with 
     await finishMorph(plate);
     await expect(lines()).toEqual([['subtitles', 'SubtitlesEnglish'], ['audio', 'AudioDeutsch']]);
     await expect(line('audio')).toBe(audioLine);
-    // The spinner gave way to the value in the same row: two rows, the same height as with the spinner.
+    // Back to one row: the value took the spinner's place without changing the row's height.
     hud().updateLanguageHud({ audio: null });
     await finishMorph(plate);
     await expect(plateHeight()).toBe(loadingHeight);
