@@ -15,3 +15,10 @@ html.theater-everywhere-html-active iqpdiv.iqp-player {
 html.theater-everywhere-html-active iqpdiv.iqp-player .iqp-subtitle {
   z-index: 2147483647 !important;
 }
+
+/* While the menu lists the episode's languages it owns what is on screen: iQIYI starts on its own
+ * default language, which would show under Off. iQIYI's player state is untouched, and leaving
+ * theater or switching the integration off removes the attribute. */
+html.theater-everywhere-html-active[data-te-iqiyi-captions-hidden] iqpdiv.iqp-player [data-player-hook="subtitleelem"] {
+  display: none !important;
+}
