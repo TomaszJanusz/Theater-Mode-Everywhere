@@ -62,7 +62,7 @@ import {
   publishYoutubeProbeSnapshot,
   readYoutubeSnapshot,
   youtubeIntegrationEnabled
-} from '../providers/youtube/main';
+} from '../providers/youtube/player-main';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { matchesShortcut } from '../ui/shortcuts';

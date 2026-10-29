@@ -7,6 +7,7 @@ import { bilibiliVideoIdentity } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
 import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from './watch-playback';
+import { youtubeWatchPlayback } from './youtube/watch-playback';
 
 function read(href: string) {
   const page = readProviderWatchPage(new URL(href));
@@ -15,22 +16,25 @@ function read(href: string) {
 
 describe('positive provider watch declarations', () => {
   it('declares YouTube watch videos and keeps identity stable across incidental navigation', () => {
-    const expected = { provider: 'youtube', identity: 'abcdefghijk' };
-    assert.deepEqual(read('https://www.youtube.com/watch?v=abcdefghijk'), expected);
-    assert.deepEqual(read('https://www.youtube.com/watch?v=abcdefghijk&list=playlist&t=120'), expected);
+    const identity = (path: string) => youtubeWatchPlayback.pageIdentity(new URL(`https://www.youtube.com${path}`));
+    assert.equal(identity('/watch?v=abcdefghijk'), 'abcdefghijk');
+    assert.equal(identity('/watch?v=abcdefghijk&list=playlist&t=120'), 'abcdefghijk');
     for (const path of ['/', '/feed/subscriptions', '/shorts/abcdefghijk', '/embed/abcdefghijk', '/watch', '/watch?v=x', '/watch?v=abcdefghijk/']) {
-      assert.equal(read(`https://www.youtube.com${path}`), null, path);
+      assert.equal(identity(path), null, path);
     }
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    assert.equal(providerDefinition('soop').watchPlayback, undefined);
-    assert.equal(read('https://vod.sooplive.com/player/211006561'), null);
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
+      assert.equal(providerDefinition(id).watchPlayback, undefined);
+      assert.equal(read(href), null);
+    }
   });
 
   it('limits the countdown-only preparing confirmation to providers that declare it', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['youtube', 'patreon', 'twitch', 'bilibili', 'bilibiliIntl', 'iqiyi']);
-    assert.ok(providerDefinition('youtube').watchPlayback?.refreshEvents?.includes('yt-navigate-start'));
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.preparingVideo), ['patreon', 'twitch', 'bilibili', 'bilibiliIntl', 'iqiyi']);
+    assert.ok(youtubeWatchPlayback.preparingVideo);
+    assert.ok(youtubeWatchPlayback.refreshEvents?.includes('yt-navigate-start'));
   });
 
   it('declares individual Vimeo clips, excluding feeds, showcases and OTT/live pages', () => {
@@ -72,7 +76,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['youtube', 'vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['vimeo', 'patreon', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -114,7 +118,6 @@ describe('positive provider watch declarations', () => {
 describe('AutoTheater availability', () => {
   const flags = defaultMediaProviderFlags();
   it('is available only on hosts whose provider declares watch playback and has its integration on', () => {
-    assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.bilibili.tv', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.bilibili.tv', { ...flags, bilibiliIntl: false }, true), 'integrationOff');
@@ -128,24 +131,25 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.viki.com', flags, true), 'available');
     assert.equal(autoTheaterAvailability('www.viki.com', { ...flags, viki: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', { ...flags, twitch: false }, true), 'integrationOff');
-    assert.equal(autoTheaterAvailability('www.youtube.com', flags, false), 'unsupported');
-    assert.equal(autoTheaterAvailability('www.youtube.com', { ...flags, youtube: false }, true), 'integrationOff');
-    assert.equal(autoTheaterAvailability('example.com', { ...flags, youtube: false }, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.twitch.tv', flags, false), 'unsupported');
+    assert.equal(autoTheaterAvailability('example.com', { ...flags, twitch: false }, true), 'unsupported');
+    // Extracted providers are available once their host script registers (covered by the browser runtime tests).
+    assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'unsupported');
   });
 });
 
 describe('navigation off a watch page', () => {
   it('ends only a session that began on a provider watch page and landed elsewhere', () => {
-    const watch = 'https://www.youtube.com/watch?v=abcdefghijk';
-    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/results?search_query=x'), true);
-    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/'), true);
-    assert.equal(leftProviderWatchPage(true, 'https://www.youtube.com/watch?v=zyxwvutsrqp'), false);
+    const watch = 'https://www.twitch.tv/videos/123456';
+    assert.equal(leftProviderWatchPage(true, 'https://www.twitch.tv/search?term=x'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.twitch.tv/'), true);
+    assert.equal(leftProviderWatchPage(true, 'https://www.twitch.tv/videos/654321'), false);
     assert.equal(leftProviderWatchPage(true, watch), false);
-    assert.equal(leftProviderWatchPage(false, 'https://www.youtube.com/'), false);
+    assert.equal(leftProviderWatchPage(false, 'https://www.twitch.tv/'), false);
     assert.equal(leftProviderWatchPage(true, 'https://example.com/page'), true);
     assert.equal(leftProviderWatchPage(false, 'https://example.com/page'), false);
     assert.equal(leftProviderWatchPage(false, watch), false);
-    assert.equal(leftProviderWatchPage(true, `${watch}&list=playlist&index=2`), false);
+    assert.equal(leftProviderWatchPage(true, `${watch}?t=1h2m3s`), false);
     assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/browse'), true);
     assert.equal(leftProviderWatchPage(true, 'https://www.netflix.com/watch/12345'), false);
     // Manual season playback remains eligible without relaxing automatic content identity.
@@ -183,7 +187,7 @@ it('Bilibili.tv identities distinguish uploads and episodes, ignoring locale and
 });
 
 describe('YouTube miniplayer identity', () => {
-  const miniplayerVideo = providerDefinition('youtube').watchPlayback!.miniplayerVideo!;
+  const miniplayerVideo = youtubeWatchPlayback.miniplayerVideo!;
   const video = {} as HTMLVideoElement;
   function parked(init: { videoData?: unknown; response?: unknown; ad?: boolean; videos?: HTMLVideoElement[]; selector?: string[] } = {}): Document {
     const player = {
@@ -211,6 +215,7 @@ describe('YouTube miniplayer identity', () => {
   });
 
   it('is declared by YouTube only', () => {
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.miniplayerVideo), ['youtube']);
+    // YouTube's comes from its registered hooks; no statically defined provider declares one.
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback?.miniplayerVideo), []);
   });
 });

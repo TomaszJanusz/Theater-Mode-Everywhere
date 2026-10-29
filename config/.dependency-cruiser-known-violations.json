@@ -631,20 +631,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/youtube/adapter.ts",
-    "unresolvedTo": "../providers/youtube/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/bilibili-intl/main.ts",
     "unresolvedTo": "../providers/bilibili-intl/main",
@@ -828,8 +814,8 @@
   {
     "type": "dependency",
     "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/youtube/main.ts",
-    "unresolvedTo": "../providers/youtube/main",
+    "to": "src/providers/youtube/player-main.ts",
+    "unresolvedTo": "../providers/youtube/player-main",
     "dependencyTypes": [
       "local",
       "import"

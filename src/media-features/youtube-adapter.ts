@@ -76,7 +76,7 @@ function youtubePageVideoId(href: string): string | null {
   }
 }
 
-/** The MAIN world's `ExpectedVideo` rule (providers/youtube/main.ts), for the adapter's bound video. */
+/** The MAIN world's `ExpectedVideo` rule (providers/youtube/player-main.ts), for the adapter's bound video. */
 type ExpectedVideo = { id: string | null; strict: boolean };
 
 function youtubeSnapshotMatchesPage(snapshotVideoId: string | undefined, expected: ExpectedVideo): boolean {

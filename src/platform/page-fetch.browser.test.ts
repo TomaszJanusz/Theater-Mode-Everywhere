@@ -16,7 +16,7 @@ const bundle = bundleModules([
   "export { requestPageFetch } from './media-features/probe';",
   "export { fetchPageMedia } from './platform/page-fetch';",
   "export { createWorldMessage } from './protocol/world-messages';",
-  "export { readCachedTimedtextBody } from './providers/youtube/main';",
+  "export { readCachedTimedtextBody } from './providers/youtube/player-main';",
   "export { readBoundedBytes } from './platform/bounded-body';",
   "export { readPageResponseBytes } from './platform/page-body';"
 ], 'BridgeTest');

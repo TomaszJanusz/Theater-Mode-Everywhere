@@ -6,7 +6,7 @@ import { build } from 'vite';
 
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 import { assertSelfContainedBundles } from './bundle-integrity';
-import { assertProviderSources, classicEntries, discoverDescriptors } from './provider-descriptors';
+import { assertProviderSources, classicEntries, discoverDescriptors, packagedDescriptors } from './provider-descriptors';
 
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
@@ -79,7 +79,7 @@ async function buildClassicScript(
     root,
     publicDir: false,
     plugins: [{ name: 'provider-boundaries', generateBundle(_options, bundle) {
-      const migrated = discoverDescriptors(root).map(item => `/src/providers/${item.id}/`);
+      const migrated = packagedDescriptors(discoverDescriptors(root)).map(item => `/src/providers/${item.id}/`);
       const chunks = Object.values(bundle).filter(chunk => chunk.type === 'chunk');
       for (const chunk of chunks) {
         for (const [id, module] of Object.entries(chunk.modules)) {

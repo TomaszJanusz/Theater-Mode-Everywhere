@@ -84,9 +84,9 @@ describe('provider capability declarations', () => {
 
   for (const provider of PROVIDER_CAPABILITIES) {
     it(`${provider.id}: adapter methods and registered actions match the declaration`, () => {
-      assert.equal(Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no');
       const extracted = PROVIDER_CATALOG.some(item => item.id === provider.id);
       const entry = extracted ? read(`./${provider.id}/isolated.ts`) : '';
+      assert.equal(extracted ? /launcherPlacement:/.test(entry) : Boolean(providerDefinition(provider.id).launcherPlacement), provider.capabilities.launcher.status !== 'no', `${provider.id}.launcher`);
       assert.equal(extracted ? /watchPlayback:/.test(entry) : Boolean(providerDefinition(provider.id).watchPlayback), provider.capabilities.autoTheater.status !== 'no', `${provider.id}.autoTheater`);
       const folder = folders[provider.id] ?? provider.id;
       const source = read(localAdapters.has(provider.id) ? `./${folder}/adapter.ts` : `../media-features/${provider.id}-adapter.ts`);
@@ -110,15 +110,17 @@ describe('provider capability declarations', () => {
       // Follow imports that are actually called, so adding a registered source
       // to a previously unsupported provider also trips the declaration guard.
       const navFile = provider.id === 'vimeo' ? 'vimeo-showcase' : folder;
-      const hasActions = extracted ? registeredFrom(entry, './service-actions') : registeredFrom(actions, `./${folder}/service-actions`);
-      const hasNavigation = extracted ? /readControls:/.test(entry) : registeredFrom(navigation, `./${navFile}`);
+      // A provider migrating hook by hook may still register a feature through the shared factory.
+      const entryNavigation = extracted && /readControls:/.test(entry);
+      const hasActions = (extracted && registeredFrom(entry, './service-actions')) || registeredFrom(actions, `./${folder}/service-actions`);
+      const hasNavigation = entryNavigation || registeredFrom(navigation, `./${navFile}`);
       // Playlists use the registered PlaylistAction contract, not caption HLS
       // playlists or contextual skip/up-next actions (such as Crunchyroll's).
       assert.equal(hasNavigation, provider.capabilities.playlists.status !== 'no', `${provider.id}.playlists`);
       if (hasNavigation) assert.equal(provider.capabilities.playlists.status, 'conditional');
       assert.equal(hasActions || hasNavigation, provider.capabilities.quickActions.status !== 'no');
       if (hasActions) assert.match(read(`./${folder}/service-actions.ts`), /activate|nativeServiceActionSource/);
-      if (hasNavigation) assert.match(read(extracted ? `./${folder}/navigation.ts` : `./navigation/${navFile}.ts`), /next|collectElement/i);
+      if (hasNavigation) assert.match(read(entryNavigation ? `./${folder}/navigation.ts` : `./navigation/${navFile}.ts`), /next|collectElement/i);
     });
   }
 

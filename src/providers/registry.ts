@@ -8,7 +8,7 @@ import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
 import { PROVIDER_CATALOG } from './catalog';
 import { descriptorMatchesHost } from './descriptor-hosts';
 import { disneyWatchPlayback } from './disney/watch-playback';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isPatreonHost, isTencentHost, isTwitchHost, isVikiHost, isVimeoHost } from './hosts';
 import { IqiyiAdapter } from './iqiyi/adapter';
 import { iqiyiWatchPlayback } from './iqiyi/watch-playback';
 import type { LauncherPlacementFactory } from './launcher-placement';
@@ -19,8 +19,6 @@ import { twitchWatchPlayback } from './twitch/watch-playback';
 import { vikiWatchPlayback } from './viki/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import type { WatchPlayback } from './watch-playback';
-import { youtubeLauncherPlacement } from './youtube/launcher-placement';
-import { youtubeWatchPlayback } from './youtube/watch-playback';
 
 export const MAIN_WORLD_BOOT_KEY = Symbol.for('theater-everywhere.main-world');
 export const MAIN_FETCH_PATCH_KEY = Symbol.for('theater-everywhere.fetch-patched');
@@ -40,7 +38,6 @@ export type ProviderDefinition = {
 
 export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   { id: 'native', matchesHost: () => true },
-  { id: 'youtube', matchesHost: (hostname) => isYouTubeHost(hostname), watchPlayback: youtubeWatchPlayback, launcherPlacement: youtubeLauncherPlacement },
   { id: 'vimeo', matchesHost: (hostname) => isVimeoHost(hostname), watchPlayback: vimeoWatchPlayback },
   { id: 'patreon', matchesHost: (hostname) => isPatreonHost(hostname), watchPlayback: patreonWatchPlayback },
   { id: 'twitch', matchesHost: (hostname) => isTwitchHost(hostname), watchPlayback: twitchWatchPlayback },
@@ -54,7 +51,8 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
   ...PROVIDER_CATALOG.map(descriptor => ({
     id: descriptor.id, matchesHost: (hostname: string) => descriptorMatchesHost(descriptor.hosts, hostname),
     get createAdapter() { return providerRegistry.get(descriptor.id)?.createAdapter; },
-    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; }
+    get watchPlayback() { return providerRegistry.get(descriptor.id)?.watchPlayback; },
+    get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement; }
   })),
   { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(), titleFromPage: true, watchPlayback: vikiWatchPlayback }
 ];

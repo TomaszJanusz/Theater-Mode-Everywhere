@@ -31,9 +31,16 @@ export function bundleModules(exports: readonly string[], globalName = 'TheaterT
   return text;
 }
 
+/**
+ * First lines of a runtime bundle: providers still packaged with the shared scripts register their isolated
+ * hooks before any runtime code runs, as in `entries/content.ts`. Both worlds share one registry in a fixture.
+ */
+export const BUNDLED_PROVIDERS = ["import './test-utils/isolated-fixture-runtime';", "import './entries/bundled-providers-isolated';"] as const;
+
 /** The player runtime and MAIN-world runtime as global `TheaterTest`, plus extra export lines a test inspects. */
 export function bundlePlayer(extraExports: readonly string[] = []): string {
   return bundleModules([
+    ...BUNDLED_PROVIDERS,
     "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
     "export { setPlayerUiCss } from './ui/root';",
     "export { installMainWorldRuntime } from './platform/main-world-runtime';",

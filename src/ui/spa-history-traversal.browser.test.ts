@@ -5,11 +5,12 @@ import { it } from 'node:test';
 import type { Page } from 'playwright';
 import { chromium, firefox } from 'playwright';
 
-import { bootPlayer, bundleModules } from '../test-utils/player-boot';
+import { BUNDLED_PROVIDERS, bootPlayer, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
 const BUNDLE = bundleModules([
+  ...BUNDLED_PROVIDERS,
   "import { installWatchPlaybackQueries } from './providers/watch-playback';",
   'installWatchPlaybackQueries();',
   "export { bootstrapPlayerRuntime } from './ui/player-runtime';",
