@@ -54,7 +54,8 @@ describe('immediate provider titles', () => {
           previousId: '00000000-0000-4000-8000-000000000002'
         },
         {
-          adapter: new YouTubeAdapter(),
+          // Titles read only published data, never the MAIN bridges.
+          adapter: new YouTubeAdapter(null, { requestMediaProbe: async () => ({}), requestPageFetch: async () => null }),
           url: 'https://www.youtube.com/watch?v=D7V0Oda3DAA',
           scriptId: '#theater-everywhere-youtube-snapshot',
           idKey: 'videoId',

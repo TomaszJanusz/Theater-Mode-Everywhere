@@ -16,7 +16,7 @@ const services = api?.services;
 if (services) api?.register({
   id: 'youtube', contractVersion: 1,
   watchPlayback: youtubeWatchPlayback,
-  createAdapter: video => new YouTubeAdapter(video),
+  createAdapter: video => new YouTubeAdapter(video, services),
   launcherPlacement: youtubeLauncherPlacement,
   timeline: youtubeTimeline,
   timelineMarkers: youtubeSponsorBlockSource,

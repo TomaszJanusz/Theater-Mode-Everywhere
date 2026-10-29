@@ -12,7 +12,7 @@ const chromiumBrowser = sharedTestBrowser(chromium);
 const bundle = bundleModules([
   "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/player-main';",
   "export { fetchPageMedia } from './platform/page-fetch';",
-  "export { requestYoutubePlayerCaptions } from './media-features/probe';"
+  "export { requestYoutubePlayerCaptions } from './media-features/youtube-player-captions';"
 ], 'CaptionTest');
 
 const WATCH_PLAYER = '<div id="movie_player"><video></video><button class="ytp-subtitles-button" aria-pressed="false">CC</button></div>';

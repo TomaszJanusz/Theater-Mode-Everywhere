@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { normalizeYoutubePlayerResponse } from './probe';
+import { normalizeYoutubePlayerResponse } from './youtube-snapshot';
 
 const response = (captionTracks: unknown): unknown => ({
   videoDetails: { videoId: 'video-a', title: ' A video ', lengthSeconds: '120' },

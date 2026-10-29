@@ -904,9 +904,6 @@
     }
   },
   "src/media-features/probe.ts": {
-    "local/max-symbol-name-length": {
-      "count": 4
-    },
     "sonarjs/no-nested-conditional": {
       "count": 1
     }
@@ -974,6 +971,11 @@
       "count": 5
     }
   },
+  "src/media-features/youtube-player-captions.ts": {
+    "local/max-symbol-name-length": {
+      "count": 2
+    }
+  },
   "src/media-features/youtube-player-response.test.ts": {
     "local/max-symbol-name-length": {
       "count": 1
@@ -981,7 +983,7 @@
   },
   "src/media-features/youtube-snapshot.ts": {
     "local/max-symbol-name-length": {
-      "count": 4
+      "count": 6
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
@@ -1773,7 +1775,7 @@
       "count": 9
     },
     "local/max-symbol-name-length": {
-      "count": 14
+      "count": 13
     },
     "max-lines": {
       "count": 1

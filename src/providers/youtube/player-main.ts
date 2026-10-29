@@ -786,8 +786,16 @@ export function handleYoutubeMediaSeek(detail: { live?: boolean; time?: number }
   return false;
 }
 
-export function publishYoutubeProbeSnapshot(snapshot: Record<string, unknown> | null): void {
+/** The probe hook: the current snapshot, also republished for the isolated world's synchronous reads. */
+export function probeYoutube(): Record<string, unknown> | null {
+  let snapshot: Record<string, unknown> | null = null;
+  try {
+    snapshot = youtubeIntegrationEnabled() ? readYoutubeSnapshot() : null;
+  } catch {
+    snapshot = null;
+  }
   publishYoutubeSnapshot(snapshot);
+  return snapshot;
 }
 
 export function installYoutubeMain(pageMedia: NonNullable<typeof fetchPageMedia>): void {
