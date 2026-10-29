@@ -36,7 +36,7 @@ export async function assertVikiProvider(page: Page, context: BrowserContext): P
   const handler = async (route: Route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
-    else if (url.hostname.endsWith('viki.io')) await route.fulfill({ contentType: 'text/vtt', headers: { 'access-control-allow-origin': '*' }, body: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nFixture cue\n' });
+    else if (url.hostname.endsWith('.viki.io')) await route.fulfill({ contentType: 'text/vtt', headers: { 'access-control-allow-origin': '*' }, body: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nFixture cue\n' });
     else await route.fulfill({ contentType: 'text/html; charset=utf-8', body: fixture });
   };
   // Viki confirms identity from a completed resource entry, not merely fetch response headers.
