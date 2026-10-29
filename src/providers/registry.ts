@@ -1,7 +1,7 @@
-
+import { parseCaptionPayload } from '../media-features/parsers/captions';
+import { requestPageFetch } from '../media-features/probe';
 import type { MediaProviderFlags, MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
-import { VikiAdapter } from '../media-features/viki-adapter';
 
 import { bilibiliWatchPlayback } from './bilibili/watch-playback';
 import { bilibiliIntlWatchPlayback } from './bilibili-intl/watch-playback';
@@ -15,6 +15,7 @@ import type { LauncherPlacementFactory } from './launcher-placement';
 import { netflixWatchPlayback } from './netflix/watch-playback';
 import { providerRegistry } from './runtime-registration';
 import { twitchWatchPlayback } from './twitch/watch-playback';
+import { VikiAdapter } from './viki/adapter';
 import { vikiWatchPlayback } from './viki/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import type { WatchPlayback } from './watch-playback';
@@ -53,7 +54,7 @@ export const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
     get titleFromPage() { return providerRegistry.get(descriptor.id)?.titleFromPage; },
     get launcherPlacement() { return providerRegistry.get(descriptor.id)?.launcherPlacement; }
   })),
-  { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(), titleFromPage: true, watchPlayback: vikiWatchPlayback }
+  { id: 'viki', matchesHost: (hostname) => isVikiHost(hostname), createAdapter: () => new VikiAdapter(requestPageFetch, parseCaptionPayload), titleFromPage: true, watchPlayback: vikiWatchPlayback }
 ];
 
 export function providerDefinition(id: ProviderId): ProviderDefinition {

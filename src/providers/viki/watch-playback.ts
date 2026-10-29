@@ -1,5 +1,6 @@
-import { vikiLoadedVideoId, vikiVideoId } from '../../media-features/parsers/viki';
 import type { WatchPlayback } from '../watch-playback';
+
+import { vikiLoadedVideoId, vikiVideoId } from './playback-data';
 
 /**
  * The episode's only Video.js video. Viki rebuilds the player on every episode change and the

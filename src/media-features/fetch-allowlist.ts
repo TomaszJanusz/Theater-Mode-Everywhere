@@ -6,7 +6,7 @@ import { providerRegistry } from '../providers/runtime-registration';
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isMuxCaptionUrl, isMuxStoryboardUrl } from './parsers/mux-storyboard';
-import { isVikiCaptionUrl, isVikiPreviewUrl } from './parsers/viki';
+import { isVikiCaptionUrl, isVikiPreviewUrl } from './viki-fetch-url';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
 
 export type MediaFetchRequest = {

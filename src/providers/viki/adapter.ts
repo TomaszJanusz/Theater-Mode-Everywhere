@@ -1,17 +1,4 @@
-import { parseCaptionPayload } from './parsers/captions';
-import { getMuxPreviewFrame, parseMuxStoryboard, type MuxStoryboardSet } from './parsers/mux-storyboard';
-import {
-  isVikiCaptionUrl,
-  isVikiPreviewImageUrl,
-  isVikiPreviewUrl,
-  parseVikiPlayback,
-  vikiChapters,
-  vikiAudioTracks,
-  vikiNextDataUrl,
-  vikiVideoId,
-  type VikiPlayback
-} from './parsers/viki';
-import { requestPageFetch } from './probe';
+import { getMuxPreviewFrame, parseMuxStoryboard, type MuxStoryboardSet } from '../../media-features/parsers/mux-storyboard';
 import type {
   AudioTrack,
   AudioTrackList,
@@ -23,7 +10,21 @@ import type {
   MediaFeaturesAdapter,
   PreviewFrame,
   PreviewSource
-} from './types';
+} from '../../media-features/types';
+import type { ProviderServices } from '../provider-api';
+
+import {
+  isVikiCaptionUrl,
+  isVikiPreviewImageUrl,
+  isVikiPreviewUrl,
+  parseVikiPlayback,
+  vikiChapters,
+  vikiAudioTracks,
+  vikiNextDataUrl,
+  vikiVideoId,
+  type VikiPlayback
+} from './playback-data';
+
 
 /** Set while a Viki track is drawn by the player; providers/viki/presentation.css hides the host's own cues on it. */
 const HIDDEN_ATTRIBUTE = 'data-te-viki-captions-hidden';
@@ -82,6 +83,11 @@ export class VikiAdapter implements MediaFeaturesAdapter {
   private readonly cues = new Map<string, CaptionCue[]>();
   private readonly audioListeners = new Set<() => void>();
 
+  constructor(
+    private readonly requestPageFetch: ProviderServices['isolated']['requestPageFetch'],
+    private readonly parseCaptionPayload: ProviderServices['isolated']['parseCaptionPayload']
+  ) {}
+
   /** Resolves once per episode; a result for an episode the page has left is dropped. */
   private load(): Promise<void> {
     const videoId = currentVideoId();
@@ -98,7 +104,7 @@ export class VikiAdapter implements MediaFeaturesAdapter {
       if (generation !== this.generation || currentVideoId() !== videoId || !playback) return;
       this.playback = playback;
       const previewUrl = playback.previewUrl;
-      const body = previewUrl && isVikiPreviewUrl(previewUrl, videoId) ? await requestPageFetch(previewUrl, 15000) : null;
+      const body = previewUrl && isVikiPreviewUrl(previewUrl, videoId) ? await this.requestPageFetch(previewUrl, 15000) : null;
       if (generation !== this.generation || this.playback !== playback) return;
       this.storyboard = body ? parseMuxStoryboard(body, isVikiPreviewImageUrl) : null;
     }).then(() => { for (const notify of this.audioListeners) notify(); }).finally(() => { if (this.pending === pending) { this.pending = null; this.pendingFor = null; } });
@@ -141,8 +147,8 @@ export class VikiAdapter implements MediaFeaturesAdapter {
     if (!playback || !track || !isVikiCaptionUrl(track.url, playback.videoId)) return failed();
     let cues = this.cues.get(track.url);
     if (!cues) {
-      const body = await requestPageFetch(track.url, 15000);
-      cues = body ? parseCaptionPayload(body) : [];
+      const body = await this.requestPageFetch(track.url, 15000);
+      cues = body ? this.parseCaptionPayload(body) : [];
       // The episode or adapter may have changed while the file downloaded.
       if (generation !== this.generation || this.current() !== playback) return failed();
       if (cues.length) this.cues.set(track.url, cues);

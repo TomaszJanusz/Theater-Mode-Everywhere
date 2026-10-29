@@ -1,7 +1,8 @@
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
-import { vikiVideoId } from '../../media-features/parsers/viki';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isVikiHost } from '../hosts';
+
+import { vikiVideoId } from './playback-data';
 
 const SKIP_INTRO = '[data-what="skip_intro_button"]';
 const NEXT_EPISODE = '[data-what="next_episode_button"]';

@@ -16,7 +16,9 @@ const PREVIEW = 'https://manifest-viki.viki.io/v1/streams/1263131v/preview.vtt?r
 const SHEET = 'https://vikiplatform.akamaized.net/1263131v/dash/preview/sheet_1.jpg';
 
 const MODULES = [
-  "export { VikiAdapter } from './media-features/viki-adapter';",
+  "export { requestPageFetch } from './media-features/probe';",
+  "export { parseCaptionPayload } from './media-features/parsers/captions';",
+  "export { VikiAdapter } from './providers/viki/adapter';",
   "export { createVikiServiceActions } from './providers/viki/service-actions';",
   "export { vikiWatchPlayback } from './providers/viki/watch-playback';"
 ];
@@ -86,7 +88,7 @@ describe('Rakuten Viki playback data', () => {
     it(`lists the page's subtitle files, draws a chosen one and hands the host's cues back when off in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
       const result = await run<{ tracks: string[]; active: { status: string; text: string }; hidden: boolean; off: string; restored: boolean }>(page, `
-        const adapter = new T.VikiAdapter();
+        const adapter = new T.VikiAdapter(T.requestPageFetch, T.parseCaptionPayload);
         const tracks = (await adapter.listCaptionTracks()).map(track => track.id + ':' + track.label + ':' + track.source);
         const active = await adapter.activateCaptionTrack('viki:pl');
         const hidden = document.documentElement.hasAttribute('data-te-viki-captions-hidden');
@@ -106,7 +108,7 @@ describe('Rakuten Viki playback data', () => {
     it(`marks the intro and credits and serves timeline previews from the page's own lists in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
       const result = await run<{ chapters: unknown; source: string; frame: { x: number; y: number; sheetWidth: number } | null; id: string | null }>(page, `
-        const adapter = new T.VikiAdapter();
+        const adapter = new T.VikiAdapter(T.requestPageFetch, T.parseCaptionPayload);
         const chapters = await adapter.getChapters();
         const source = (await adapter.getPreviewSource()).kind;
         const frame = adapter.getPreviewFrame(12);
@@ -123,7 +125,7 @@ describe('Rakuten Viki playback data', () => {
     it(`drops everything once the page has moved to another episode in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
       const result = await run<{ before: number; after: number; id: string | null; frame: boolean; chapters: number }>(page, `
-        const adapter = new T.VikiAdapter();
+        const adapter = new T.VikiAdapter(T.requestPageFetch, T.parseCaptionPayload);
         const before = (await adapter.listCaptionTracks()).length;
         history.pushState(null, '', '/videos/1263132v');
         const after = (await adapter.listCaptionTracks()).length;
@@ -155,7 +157,7 @@ describe('Rakuten Viki playback data', () => {
 
     it(`lists the menu's tracks and switches by clicking Viki's own row, after revalidating, in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
-      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(); window.vikiAdapter.probe();`);
+      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(window.TheaterTest.requestPageFetch, window.TheaterTest.parseCaptionPayload); window.vikiAdapter.probe();`);
       await page.waitForFunction(() => (window as unknown as { vikiAdapter: { listAudioTracks(): unknown } }).vikiAdapter.listAudioTracks() !== null);
       const listed = await run<{ tracks: Array<[string, string, boolean]>; media: string | null; blocked: boolean }>(page, `
         const list = window.vikiAdapter.listAudioTracks();
@@ -172,7 +174,7 @@ describe('Rakuten Viki playback data', () => {
 
     it(`refuses to click when the episode moved on, an ad plays, the row is gone or the host declines in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
-      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(); window.vikiAdapter.probe();`);
+      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(window.TheaterTest.requestPageFetch, window.TheaterTest.parseCaptionPayload); window.vikiAdapter.probe();`);
       await page.waitForFunction(() => (window as unknown as { vikiAdapter: { listAudioTracks(): unknown } }).vikiAdapter.listAudioTracks() !== null);
       const result = await run<Record<string, unknown>>(page, `
         const adapter = window.vikiAdapter;
@@ -197,7 +199,7 @@ describe('Rakuten Viki playback data', () => {
     it(`reports false when Viki does not move the selection, and true without a click for the current track in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
       await page.clock.install();
-      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(); window.vikiAdapter.probe(); window.refuseAudio = true;`);
+      await page.evaluate(`window.vikiAdapter = new window.TheaterTest.VikiAdapter(window.TheaterTest.requestPageFetch, window.TheaterTest.parseCaptionPayload); window.vikiAdapter.probe(); window.refuseAudio = true;`);
       await page.waitForFunction(() => (window as unknown as { vikiAdapter: { listAudioTracks(): unknown } }).vikiAdapter.listAudioTracks() !== null);
       await page.evaluate(`(() => { const list = window.vikiAdapter.listAudioTracks(); window.pick = window.vikiAdapter.selectAudioTrack(list.tracks[1].id, list.mediaId); })()`);
       await page.clock.runFor(2100);
@@ -213,7 +215,7 @@ describe('Rakuten Viki playback data', () => {
     it(`notifies only when the list, the selection or the ad state changes, and stops when released in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
       await page.clock.install();
-      await page.evaluate(`(async () => { window.notified = 0; window.vikiAdapter = new window.TheaterTest.VikiAdapter(); await window.vikiAdapter.probe();
+      await page.evaluate(`(async () => { window.notified = 0; window.vikiAdapter = new window.TheaterTest.VikiAdapter(window.TheaterTest.requestPageFetch, window.TheaterTest.parseCaptionPayload); await window.vikiAdapter.probe();
         window.stop = window.vikiAdapter.observeAudioTracks(() => { window.notified++; }); })()`);
       // The observer coalesces on animation frames, which the fake clock runs on demand.
       const settle = () => page.clock.runFor(100);
@@ -237,7 +239,7 @@ describe('Rakuten Viki playback data', () => {
 
     it(`reports the list once the episode's data has arrived after the menu in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
-      await page.evaluate(`window.notified = 0; window.vikiAdapter = new window.TheaterTest.VikiAdapter(); window.vikiAdapter.observeAudioTracks(() => { window.notified++; }); window.vikiAdapter.probe();`);
+      await page.evaluate(`window.notified = 0; window.vikiAdapter = new window.TheaterTest.VikiAdapter(window.TheaterTest.requestPageFetch, window.TheaterTest.parseCaptionPayload); window.vikiAdapter.observeAudioTracks(() => { window.notified++; }); window.vikiAdapter.probe();`);
       await page.waitForFunction('window.notified === 1');
       assert.equal(await page.evaluate('window.vikiAdapter.listAudioTracks().tracks.length'), 4);
     });
