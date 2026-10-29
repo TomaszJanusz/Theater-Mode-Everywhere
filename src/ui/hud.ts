@@ -2,6 +2,7 @@ import { HUD_FADE_OUT_MS, HUD_PLATE_CLASS } from './hud-plate';
 import { createLanguageHud } from './language-hud';
 import { createSvgIcon } from './svg-icon';
 import { isMotionReduced } from '../appearance-runtime';
+import { measureNextFrame } from '../core/frame-batch';
 import { splitTitleForTruncation, type TitleSegment } from './title-truncation';
 import { announcePlayerStatus } from './root';
 import { contentTitle, type ContentTitle } from '../media-features/content-title';
@@ -429,8 +430,10 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     if (text && (text.firstChild?.textContent !== cleaned.title || (subtitle?.textContent ?? null) !== cleaned.subtitle)) {
       renderTitleText(text, cleaned);
       renderSmartTitle(overlay.querySelector('.theater-title-hud-smart')!, cleaned);
-      // Relayout restarts the marquee, so an unchanged title must not trigger it.
-      layoutTitleMarquee(overlay);
+      // Relayout restarts the marquee, so an unchanged title must not trigger it. The new title is
+      // measured without the marquee in the frame's read phase, before that frame paints.
+      resetTitleMarquee(overlay);
+      requestTitleLayout(overlay);
     }
   }
 
@@ -484,41 +487,68 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
    */
   function watchTitleLayout(overlay: HTMLElement, header: HTMLElement): void {
     stopTitleWatch?.();
-    let frame = 0;
-    const relayout = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        if (overlay.isConnected) layoutTitleMarquee(overlay);
-        else stopTitleWatch?.();
-      });
-    };
+    const relayout = () => requestTitleLayout(overlay);
     const size = typeof ResizeObserver === 'function' ? new ResizeObserver(relayout) : null;
     size?.observe(header);
     const host = (header.getRootNode() as ShadowRoot).host;
     const motion = host && typeof MutationObserver === 'function' ? new MutationObserver(relayout) : null;
     motion?.observe(host, { attributes: true, attributeFilter: ['data-motion'] });
     stopTitleWatch = () => {
-      cancelAnimationFrame(frame);
+      cancelTitleLayout?.();
+      cancelTitleLayout = null;
       size?.disconnect();
       motion?.disconnect();
       stopTitleWatch = null;
     };
   }
 
-  function layoutTitleMarquee(overlay: HTMLElement): void {
+  let cancelTitleLayout: (() => void) | null = null;
+  /** Lays the title out in the frame's read phase, once per frame. */
+  function requestTitleLayout(overlay: HTMLElement): void {
+    if (cancelTitleLayout) return;
+    cancelTitleLayout = measureNextFrame(window, () => {
+      cancelTitleLayout = null;
+      if (!overlay.isConnected) {
+        stopTitleWatch?.();
+        return;
+      }
+      // A running marquee changes the widths it depends on; it is reset and measured again.
+      if (overlay.classList.contains('marquee')) return () => layoutTitleMarquee(overlay);
+      const widths = measureTitleMarquee(overlay);
+      return widths ? () => applyTitleMarquee(overlay, widths) : undefined;
+    });
+  }
+
+  type TitleParts = { track: HTMLElement; text: HTMLElement; viewport: HTMLElement };
+  function titleParts(overlay: HTMLElement): TitleParts | null {
     const track = overlay.querySelector('.theater-title-hud-track') as HTMLElement | null;
     const text = track?.querySelector('.theater-title-hud-text:not(.theater-title-hud-text-clone)') as HTMLElement | null;
     const viewport = overlay.querySelector('.theater-title-hud-viewport') as HTMLElement | null;
-    if (!track || !text || !viewport) return;
+    return track && text && viewport ? { track, text, viewport } : null;
+  }
 
+  function resetTitleMarquee(overlay: HTMLElement): void {
     overlay.classList.remove('marquee');
-    track.querySelector('.theater-title-hud-text-clone')?.remove();
+    overlay.querySelector('.theater-title-hud-text-clone')?.remove();
     overlay.style.removeProperty('--theater-title-duration');
-
     overlay.removeAttribute('title');
-    const viewWidth = viewport.clientWidth;
-    const textWidth = text.scrollWidth;
+  }
+
+  /** The title's width and the room for it, read while no marquee runs. */
+  function measureTitleMarquee(overlay: HTMLElement): { viewWidth: number; textWidth: number } | null {
+    const parts = titleParts(overlay);
+    return parts ? { viewWidth: parts.viewport.clientWidth, textWidth: parts.text.scrollWidth } : null;
+  }
+
+  function layoutTitleMarquee(overlay: HTMLElement): void {
+    resetTitleMarquee(overlay);
+    const widths = measureTitleMarquee(overlay);
+    if (widths) applyTitleMarquee(overlay, widths);
+  }
+
+  function applyTitleMarquee(overlay: HTMLElement, { viewWidth, textWidth }: { viewWidth: number; textWidth: number }): void {
+    const parts = titleParts(overlay);
+    if (!parts) return;
     // Only a reduced-motion overflowing title is focusable. Changing the attribute only when it
     // differs keeps focus on the title across a relayout.
     const focusable = viewWidth > 0 && textWidth > viewWidth + 1 && isMotionReduced();
@@ -529,13 +559,13 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     // Reduced motion shows a static head…tail and reveals the full title on hover/focus
     // (see shadow.css). Assistive technology reads the whole text either way.
     overlay.classList.add('marquee');
-    if (!isMotionReduced()) overlay.title = text.textContent ?? '';
-    const clone = text.cloneNode(true) as HTMLElement;
+    if (!isMotionReduced()) overlay.title = parts.text.textContent ?? '';
+    const clone = parts.text.cloneNode(true) as HTMLElement;
     clone.classList.add('theater-title-hud-text-clone');
     clone.setAttribute('aria-hidden', 'true');
-    track.appendChild(clone);
+    parts.track.appendChild(clone);
 
-    const travel = text.offsetWidth;
+    const travel = parts.text.offsetWidth;
     const scrollSeconds = travel / 80;
     const duration = Math.min(16, Math.max(6, scrollSeconds / 0.84));
     overlay.style.setProperty('--theater-title-duration', `${duration.toFixed(2)}s`);

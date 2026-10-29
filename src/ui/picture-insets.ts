@@ -1,3 +1,4 @@
+import { measureNextFrame, type FrameMeasure } from '../core/frame-batch';
 import { pictureEdgeInsets, resolveVideoFitMode } from './appearance';
 
 /**
@@ -24,14 +25,14 @@ export function viewportPictureInsets(element: HTMLElement): { end: number; bott
 }
 
 /**
- * Calls `notify` once per frame when the box, the media size or the layout's custom
- * properties may have moved the picture. Returns its cleanup.
+ * Calls `notify` once per frame, in the frame's read phase (writes it returns follow), when the box, the media size or the
+ * layout's custom properties may have moved the picture. Returns its cleanup.
  */
-export function observePicture(element: HTMLElement, notify: () => void): () => void {
-  let frame = 0;
+export function observePicture(element: HTMLElement, notify: FrameMeasure): () => void {
+  let cancelFrame: (() => void) | null = null;
   const schedule = () => {
-    if (frame) return;
-    frame = window.requestAnimationFrame(() => { frame = 0; notify(); });
+    if (cancelFrame) return;
+    cancelFrame = measureNextFrame(window, () => { cancelFrame = null; return notify(); });
   };
   const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
   resize?.observe(element);
@@ -48,8 +49,8 @@ export function observePicture(element: HTMLElement, notify: () => void): () => 
   element.addEventListener('loadedmetadata', schedule);
   element.addEventListener('resize', schedule);
   return () => {
-    window.cancelAnimationFrame(frame);
-    frame = 0;
+    cancelFrame?.();
+    cancelFrame = null;
     resize?.disconnect();
     style.disconnect();
     element.removeEventListener('loadedmetadata', schedule);

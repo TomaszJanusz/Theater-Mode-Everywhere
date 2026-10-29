@@ -19,8 +19,11 @@ export type ServiceActionCtaOptions = {
    * CTA sits in the picture's corner rather than the screen's. Absent means the viewport.
    */
   pictureInsets?: () => { end: number; bottom: number } | null;
-  /** The picture moved or resized (layout, fit, chat, media size); the CTA re-reads `pictureInsets`. */
-  subscribePicture?: (listener: () => void) => () => void;
+  /**
+   * The picture moved or resized (layout, fit, chat, media size); the CTA re-reads `pictureInsets`.
+   * The listener reads, and the write it returns moves the CTA.
+   */
+  subscribePicture?: (listener: () => () => void) => () => void;
   pollMs?: number;
   /** Caption dock. Called when the host appears, changes buttons, or goes away. */
   onLayout?: () => void;
@@ -101,7 +104,7 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
   };
   const place = () => { measurePlace()(); };
 
-  const placePicture = () => {
+  const measurePicture = (): (() => void) => {
     let end = 0;
     let bottom = 0;
     try {
@@ -113,8 +116,10 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     } catch {
       // The viewport corner is a valid fallback.
     }
-    if (host.style.getPropertyValue(PICTURE_END_VAR) !== `${end}px`) host.style.setProperty(PICTURE_END_VAR, `${end}px`);
-    if (host.style.getPropertyValue(PICTURE_BOTTOM_VAR) !== `${bottom}px`) host.style.setProperty(PICTURE_BOTTOM_VAR, `${bottom}px`);
+    return () => {
+      if (host.style.getPropertyValue(PICTURE_END_VAR) !== `${end}px`) host.style.setProperty(PICTURE_END_VAR, `${end}px`);
+      if (host.style.getPropertyValue(PICTURE_BOTTOM_VAR) !== `${bottom}px`) host.style.setProperty(PICTURE_BOTTOM_VAR, `${bottom}px`);
+    };
   };
 
   const toolbarOpen = (): boolean => {
@@ -250,9 +255,9 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     if (occupied) notifyLayout([]);
   });
   options.paint?.(host);
-  placePicture();
+  measurePicture()();
   options.mount(host);
-  if (options.subscribePicture) scope.add(options.subscribePicture(placePicture));
+  if (options.subscribePicture) scope.add(options.subscribePicture(measurePicture));
   scope.add(options.subscribeToolbar(() => {
     options.paint?.(host);
     place();
