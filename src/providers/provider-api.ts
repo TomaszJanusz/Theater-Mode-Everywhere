@@ -4,9 +4,11 @@ import type { ServiceActionSource } from '../core/service-actions';
 import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
+import type { PlaylistAction, PlaylistDirection } from '../playlist-nav';
 
 import type { LauncherPlacementFactory } from './launcher-placement';
-import type { CollectedControl } from './playlist-controls';
+import type { NativeServiceActionHooks } from './native-service-actions';
+import type { CollectedControl, PlaylistHelpers } from './playlist-controls';
 import type { WatchPlayback } from './watch-playback';
 
 export type ProviderWorld = 'isolated' | 'main';
@@ -33,8 +35,14 @@ export type ProviderHooks = {
   allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
   launcherPlacement?: LauncherPlacementFactory;
-  serviceActions?: () => ServiceActionSource;
-  navigation?: { playerSelector: string; readControls(root: ParentNode): CollectedControl[] };
+  /** `options` binds the source to the theater session's document and surface. */
+  serviceActions?: (options: NativeServiceActionHooks) => ServiceActionSource;
+  navigation?: {
+    playerSelector: string;
+    readControls(root: ParentNode): CollectedControl[];
+    /** Host queue actions; each claimed direction (including a confirmed end) hides host controls for it. */
+    queue?(root: ParentNode, video: HTMLVideoElement | null | undefined, helpers: PlaylistHelpers): { actions: PlaylistAction[]; claimed: Set<PlaylistDirection> };
+  };
   chat?: ProviderChat;
   install?: () => void;
 };

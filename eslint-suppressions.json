@@ -1488,11 +1488,6 @@
       "count": 1
     }
   },
-  "src/providers/navigation/youtube.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
   "src/providers/netflix/action-bridge.ts": {
     "local/max-symbol-name-length": {
       "count": 3
@@ -1788,6 +1783,11 @@
       "count": 4
     }
   },
+  "src/providers/youtube/navigation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
+    }
+  },
   "src/providers/youtube/player-main.ts": {
     "import/order": {
       "count": 11
@@ -1868,11 +1868,6 @@
     },
     "local/max-symbol-name-length": {
       "count": 2
-    }
-  },
-  "src/providers/youtube/watch-playback.ts": {
-    "import/order": {
-      "count": 1
     }
   },
   "src/switchable-videos.test.ts": {

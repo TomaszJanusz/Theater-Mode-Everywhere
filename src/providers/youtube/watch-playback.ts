@@ -1,7 +1,8 @@
-import { YOUTUBE_PLAYER_SELECTOR } from '../navigation/youtube';
 import { youtubeWatchPageId } from '../navigation/watch-page';
 import { MINIPLAYER_SURFACE } from '../video-candidates';
 import type { WatchPlayback } from '../watch-playback';
+
+import { YOUTUBE_PLAYER_SELECTOR } from './navigation';
 
 type WatchPlayer = HTMLElement & {
   getVideoData?: () => { video_id?: unknown };

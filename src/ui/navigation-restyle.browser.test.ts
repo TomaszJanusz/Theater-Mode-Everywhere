@@ -80,7 +80,7 @@ function observePlayerUi(page: Page): Promise<void> {
 async function hostChange(page: Page, shown: boolean): Promise<string[]> {
   await page.evaluate(next => {
     Object.assign((window as unknown as Restyle).__restyle, { armed: true, forced: [] });
-    document.querySelector<HTMLElement>('.ytp-next-button')!.style.display = next ? '' : 'none';
+    document.querySelector<HTMLElement>('.vjs-next-video')!.style.display = next ? '' : 'none';
     document.title = next ? 'Next video' : 'Navigation restyle';
     window.dispatchEvent(new Event('resize'));
   }, shown);
@@ -104,7 +104,8 @@ for (const engine of testEngines()) {
     const page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
     await serveFixture(page, FIXTURE, 'http://navigation-restyle.test/');
     await page.evaluate(() => {
-      for (const name of ['ytp-prev-button', 'ytp-next-button']) {
+      // Video.js controls are read on any host; YouTube's own are read only in YouTube documents.
+      for (const name of ['vjs-previous-video', 'vjs-next-video']) {
         const button = document.createElement('button');
         button.className = name;
         button.textContent = name;

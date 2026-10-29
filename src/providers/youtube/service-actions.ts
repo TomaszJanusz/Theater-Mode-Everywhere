@@ -1,4 +1,6 @@
+import type { ServiceActionSource } from '../../core/service-actions';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
+import { observeProviderDom } from '../dom-watch';
 import { isYouTubeHost } from '../hosts';
 import {
   nativeServiceActionId, nativeServiceActionSource, serviceActionRoute, serviceControlLabel, servicePlayer,
@@ -15,12 +17,14 @@ export function youtubeAdShowing(doc: Document, element?: HTMLElement): boolean 
   return servicePlayer(doc, YOUTUBE_PLAYER_SELECTOR, element)?.classList.contains('ad-showing') === true;
 }
 
-export function createYouTubeServiceActions(hooks: NativeServiceActionHooks = {}) {
+export type YouTubeActionHooks = NativeServiceActionHooks & { elementToken?: (element: Element) => number };
+
+export function createYouTubeServiceActions(hooks: YouTubeActionHooks = {}): ServiceActionSource {
   const doc = hooks.document ?? document;
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('youtube'));
   const host = hooks.host ?? (() => isYouTubeHost());
   const href = hooks.href ?? (() => window.location.href);
-  return nativeServiceActionSource(() => {
+  const source = nativeServiceActionSource(() => {
     if (!enabled() || !host()) return [];
     const root = servicePlayer(doc, YOUTUBE_PLAYER_SELECTOR, hooks.element);
     if (!root?.classList.contains('ad-showing')) return [];
@@ -29,8 +33,22 @@ export function createYouTubeServiceActions(hooks: NativeServiceActionHooks = {}
       if (!usableServiceControl(element)) continue;
       const label = serviceControlLabel(element);
       if (!label) continue;
-      return [{ id: nativeServiceActionId('youtube:skip-ad', route, root, element, hooks.element), label, element }];
+      return [{ id: nativeServiceActionId('youtube:skip-ad', route, root, element, hooks.element, hooks.elementToken), label, element }];
     }
     return [];
   });
+  const scope = hooks.element?.getRootNode();
+  return { ...source, subscribe: changed => observeProviderDom({
+    root: scope instanceof ShadowRoot ? scope : doc, selector: YOUTUBE_PLAYER_SELECTOR, changed,
+    enabled: () => mediaProviderIntegrationEnabled('youtube'),
+    // The skip button's slot can toggle without any mutation the observer treats as relevant, so
+    // the fallback runs while an ad shows; outside ads the player's class change re-arms it.
+    needsFallback: () => youtubeAdShowing(doc, hooks.element),
+    relevant: record => {
+      const element = record.target instanceof Element ? record.target : record.target.parentElement;
+      return Boolean(element?.closest(SKIP_AD) || (record.type === 'attributes' && element?.matches(YOUTUBE_PLAYER_SELECTOR))
+        || (record.type === 'childList' && [...record.addedNodes, ...record.removedNodes].some(node =>
+          node instanceof Element && (node.matches(SKIP_AD) || node.querySelector(SKIP_AD)))));
+    }
+  }) };
 }

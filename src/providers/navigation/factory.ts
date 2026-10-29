@@ -12,10 +12,8 @@ import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 import { readVikiControls } from './viki';
 import { readVimeoShowcaseControls } from './vimeo-showcase';
-import { findYouTubeQueueNavigation, readYouTubeControls, YOUTUBE_PLAYER_SELECTOR } from './youtube';
 
 export const HOST_PLAYER_SCOPE = [
-  YOUTUBE_PLAYER_SELECTOR,
   VIDEOJS_PLAYER_SELECTOR,
   DAILYMOTION_PLAYER_SELECTOR,
   BILIBILI_PLAYER_SELECTOR,
@@ -29,8 +27,9 @@ export function findProviderPlaylistActions(
   video: HTMLVideoElement | null | undefined,
   helpers: PlaylistHelpers
 ): PlaylistAction[] {
-  const queue = findYouTubeQueueNavigation(root, video, helpers);
-  const host = queue.actions.concat(hostActions(root, video, helpers).filter(action => !queue.claimed.has(action.direction)));
+  const queues = providerRegistry.all().flatMap(hooks => hooks.navigation?.queue?.(root, video, helpers) ?? []);
+  const queued = new Set(queues.flatMap(queue => [...queue.claimed]));
+  const host = queues.flatMap(queue => queue.actions).concat(hostActions(root, video, helpers).filter(action => !queued.has(action.direction)));
   const href = () => pageHref(root);
   const dedicated = [
     ...findNetflixPlaylistActions(root, video, href),
@@ -68,7 +67,6 @@ function hostActions(
 
 function readHostControls(root: ParentNode) {
   return [
-    ...readYouTubeControls(root),
     ...readVideoJsControls(root),
     ...readDailymotionControls(root),
     ...readBilibiliControls(root),
