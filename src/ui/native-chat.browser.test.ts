@@ -699,7 +699,7 @@ describe('native chat browser session', () => {
       await page.mouse.down();
       for (const travel of [-120, 60, -400]) {
         await page.mouse.move(start.x + travel, start.y, { steps: 8 });
-        const expected = Math.min(600, Math.max(280, initial - travel));
+        const expected = Math.min(600, Math.max(300, initial - travel));
         await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width, expected);
         // The drag overlay covers the chat until release, so only the geometry is checked here.
         const moving = await layoutOf(page);
@@ -738,7 +738,7 @@ describe('native chat browser session', () => {
         min: element.getAttribute('aria-valuemin'),
         max: element.getAttribute('aria-valuemax'),
         tabIndex: (element as HTMLElement).tabIndex
-      })), { role: 'separator', orientation: 'vertical', label: 'Resize chat', min: '280', max: '600', tabIndex: 0 });
+      })), { role: 'separator', orientation: 'vertical', label: 'Resize chat', min: '300', max: '600', tabIndex: 0 });
       await revealChatSettings(page);
       assert.equal(await page.locator('.theater-chat-width-row').count(), 0, 'the Width row is gone from the menu');
       await closeChatSettings(page);
@@ -768,7 +768,7 @@ describe('native chat browser session', () => {
       await page.mouse.move(start.x, start.y);
       await page.mouse.down();
       await page.mouse.move(start.x + 260, start.y, { steps: 10 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 280);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 300);
       // Past the narrowest width the pointer is well inside the frame while the drag goes on.
       layout = await layoutOf(page);
       assert.ok(layout.chat && start.x + 260 > layout.chat.left + 80, `the pointer is over the chat frame ${JSON.stringify(layout.chat)}`);
@@ -793,7 +793,7 @@ describe('native chat browser session', () => {
       await page.keyboard.press('Tab');
       await page.keyboard.press('Shift+Tab');
       assert.equal(await separator.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === element), true, 'Tab reaches the separator');
-      const steps: Array<[string, number]> = [['ArrowLeft', 330], ['Shift+ArrowLeft', 380], ['ArrowRight', 370], ['Home', 280], ['End', 600]];
+      const steps: Array<[string, number]> = [['ArrowLeft', 330], ['Shift+ArrowLeft', 380], ['ArrowRight', 370], ['Home', 300], ['End', 600]];
       for (const [key, width] of steps) {
         await page.keyboard.press(key);
         await page.waitForFunction(next => window.NativeChatTest.nativeChatState()?.width === next, width);
