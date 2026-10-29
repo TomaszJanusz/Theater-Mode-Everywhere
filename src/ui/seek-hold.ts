@@ -1,7 +1,7 @@
 import { systemClock, type UiClock } from './ui-clock';
 
 /** How long the seek-forward key must stay down before a press also counts as a hold. */
-export const SEEK_HOLD_DELAY_MS = 120;
+export const SEEK_HOLD_DELAY_MS = 180;
 /** The playback rate while the seek-forward key is held. */
 export const SEEK_HOLD_RATE = 2;
 
