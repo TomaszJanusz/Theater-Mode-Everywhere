@@ -23,8 +23,7 @@ export async function assertControlsPin(page: Page): Promise<void> {
   await page.evaluate(() => (document.getElementById('theater-everywhere-ui')?.shadowRoot?.activeElement as HTMLElement | null)?.blur());
   await page.locator('.player-settings-btn').hover();
   await page.clock.runFor(2800);
-  const cursorHiddenOverControls = await page.evaluate(() =>
-    document.documentElement.classList.contains('theater-everywhere-cursor-hidden'));
+  const cursorHiddenOverControls = await page.locator('video#player').evaluate((video) => getComputedStyle(video).cursor === 'none');
   if (cursorHiddenOverControls || await page.locator('.player-settings-btn').evaluate((el) => getComputedStyle(el).cursor) === 'none') {
     fail('Cursor is hidden over a pinned control.');
   }
@@ -174,7 +173,8 @@ export async function assertControlsPin(page: Page): Promise<void> {
   await waitForChrome(false, false, false);
   await page.keyboard.press('Escape');
   await controls.waitFor({ state: 'detached' });
-  if (await page.evaluate(() => document.documentElement.classList.contains('theater-everywhere-cursor-hidden'))) {
+  if (await page.evaluate(() => document.querySelector('.theater-everywhere-cursor-hidden') !== null
+    || getComputedStyle(document.querySelector('video#player')!).cursor === 'none')) {
     fail('Exiting theater mode left the cursor hidden.');
   }
 }

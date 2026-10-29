@@ -271,20 +271,33 @@ export function requestYoutubePlayerCaptions(options: YoutubeCaptionsOptions, ti
   });
 }
 
+// The boot script never changes after parsing, but SPA navigations and title updates read it
+// again and again. Parse each script once; a length change means the parser was still
+// appending its text.
+const domSnapshots = new WeakMap<HTMLScriptElement, { length: number; snapshot: YoutubePlayerSnapshot | null }>();
+
 export function readYoutubeSnapshotFromDom(): YoutubePlayerSnapshot | null {
-  const scripts = Array.from(document.querySelectorAll('script'));
-  for (const script of scripts) {
+  for (const script of document.querySelectorAll('script')) {
     const text = script.textContent || '';
-    if (!text.includes('ytInitialPlayerResponse')) continue;
-    const match = text.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
-    if (!match) continue;
-    try {
-      return normalizeYoutubePlayerResponse(JSON.parse(match[1]));
-    } catch {
-      continue;
+    let parsed = domSnapshots.get(script);
+    if (parsed?.length !== text.length) {
+      parsed = { length: text.length, snapshot: parseYoutubeBootScript(text) };
+      domSnapshots.set(script, parsed);
     }
+    if (parsed.snapshot) return parsed.snapshot;
   }
   return null;
+}
+
+function parseYoutubeBootScript(text: string): YoutubePlayerSnapshot | null {
+  if (!text.includes('ytInitialPlayerResponse')) return null;
+  const match = text.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]*?\});/);
+  if (!match) return null;
+  try {
+    return normalizeYoutubePlayerResponse(JSON.parse(match[1]));
+  } catch {
+    return null;
+  }
 }
 
 function normalizeYoutubeHeatmap(raw: unknown): YoutubePlayerSnapshot['heatmap'] | undefined {

@@ -33,7 +33,6 @@ import {
   clearPendingMediaSeek
 } from '../playback-window';
 import { selectSwitchableVideos } from '../switchable-videos';
-import { CURSOR_HIDDEN_CLASS } from './toolbar';
 import { observePicture, viewportPictureInsets } from './picture-insets';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import { AUDIO_SETTING_ICONS, HUD_PLATE_CLASS, PICTURE_LAYOUT_ICON, VOLUME_BOOST_ICONS } from './hud';
@@ -1563,10 +1562,10 @@ export function createControls(
         mount: mountPlayerUi,
         paint: paintOverlay,
         toolbarVisible: () => {
+          if (ui().toolbarVisible) return true;
           const bar = queryPlayerUi<HTMLElement>('.theater-controls-wrapper');
           // Keep clear of the bar until its fade has actually finished.
-          return ui().toolbarVisible || Boolean(bar && (bar.classList.contains('visible')
-            || Number.parseFloat(getComputedStyle(bar).opacity) > 0.01));
+          return Boolean(bar && ctx.actions.controlsBarShowing(bar));
         },
         subscribeToolbar: (listener) => ctx.uiStore.subscribe(listener),
         subscribeVisibility: listener => observeChromeVisibility(wrapper.getRootNode() as Document | ShadowRoot, listener),
@@ -1613,7 +1612,6 @@ export function createControls(
     }
     refs.toolbarKeyboardInteractionActive = false;
     refs.toolbarActivityBlockedUntil = 0;
-    document.documentElement.classList.remove(CURSOR_HIDDEN_CLASS);
     destroyPlayerUi();
     refs.currentToggleFullscreen = null;
   }

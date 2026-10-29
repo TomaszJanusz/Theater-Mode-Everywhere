@@ -418,7 +418,7 @@ export async function preparePinAndMenus(page: Page) {
   await page.waitForFunction(before => {
     const root = document.getElementById('theater-everywhere-ui')!.shadowRoot!;
     return document.querySelector<HTMLVideoElement>('video#player')!.currentTime > before
-      && document.documentElement.classList.contains('theater-everywhere-cursor-hidden')
+      && getComputedStyle(document.querySelector('video#player')!).cursor === 'none'
       && getComputedStyle(root.querySelector('.theater-everywhere-header-hud')!).opacity === '0';
   }, timeBefore);
   await waitForChrome(true, true, false);
@@ -447,7 +447,7 @@ export async function preparePinAndMenus(page: Page) {
     const header = root?.querySelector('.theater-everywhere-header-hud');
     const home = root?.querySelector('.theater-home-pill');
     return {
-      cursorHidden: document.documentElement.classList.contains('theater-everywhere-cursor-hidden'),
+      cursorHidden: getComputedStyle(document.querySelector('video#player')!).cursor === 'none',
       headerOpacity: header ? getComputedStyle(header).opacity : null,
       homePointerEvents: home ? getComputedStyle(home).pointerEvents : null,
       captionsLifted: document.querySelector('video#player')?.classList.contains('controls-visible'),

@@ -105,6 +105,8 @@ html[data-theater-everywhere-motion="reduced"] video::-webkit-media-text-track-d
   contain: none !important;
 }
 
+/* Set on the theater picture (ui/toolbar.ts), never on <html>: a page-wide cursor
+ * change restyles every element of the host page. */
 .theater-everywhere-cursor-hidden,
 .theater-everywhere-cursor-hidden *:not([data-theater-chat], [data-theater-chat] *, .ReactModalPortal, .ReactModalPortal *, .tw-dialog-layer, .tw-dialog-layer *, ytd-popup-container, ytd-popup-container *) {
   cursor: none !important;

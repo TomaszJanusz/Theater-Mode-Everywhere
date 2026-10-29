@@ -77,6 +77,8 @@ export type PlayerChromeActions = {
   hideToolbar(): void;
   scheduleToolbarHide(): void;
   updateCaptionDock(immediate?: boolean): void;
+  /** The bar is visible or still fading out. */
+  controlsBarShowing(bar: HTMLElement): boolean;
   closeTheaterPopovers(): void;
   blurMouseToggle(event: MouseEvent, button: HTMLElement): void;
   hideHelpOverlay(restoreFocus?: boolean): void;
