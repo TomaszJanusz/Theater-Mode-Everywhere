@@ -87,11 +87,15 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Set up dependencies
         uses: $/.github/actions/setup
         timeout-minutes: 4
       - name: Check module boundaries
         run: pnpm check:boundaries
+        timeout-minutes: 3
+      - name: Check host knowledge in shared code
+        run: pnpm check:shared-hosts
         timeout-minutes: 3
 
   css-and-unused:

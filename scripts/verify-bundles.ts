@@ -5,6 +5,7 @@ import * as path from 'path';
 import { FIXTURE_FORMAT } from '../tools/host-fixtures/format';
 
 import { assertBackgroundScriptLoading, assertSelfContainedBundles } from './bundle-integrity';
+import { assertBundleSizes } from './bundle-size-ratchet';
 
 const roots = process.argv.slice(2);
 const dirs = roots.length > 0
@@ -32,5 +33,8 @@ for (const dir of dirs) {
     assert.equal(settings.gecko_android, undefined, 'Firefox for Android is unsupported and must not be declared');
   }
 }
+
+// The shared bundles may only shrink; this needs the production build, so it lives here, not in `pnpm check`.
+assertBundleSizes(dirs);
 
 console.log('Bundle integrity check passed.');

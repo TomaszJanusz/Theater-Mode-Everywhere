@@ -1,0 +1,340 @@
+{
+  "bilibili": {
+    "src/media-features": {
+      "serviceId": 16,
+      "domain": 7,
+      "identifier": 43,
+      "file": 1
+    },
+    "src/platform": {
+      "hostCheck": 3,
+      "serviceId": 1,
+      "identifier": 9
+    },
+    "src/providers": {
+      "hostCheck": 5,
+      "serviceId": 4,
+      "domain": 2,
+      "identifier": 6
+    },
+    "src/providers/navigation": {
+      "serviceId": 2,
+      "identifier": 6,
+      "file": 1
+    }
+  },
+  "bilibiliIntl": {
+    "src/media-features": {
+      "serviceId": 11,
+      "domain": 4,
+      "identifier": 79,
+      "file": 1
+    },
+    "src/platform": {
+      "hostCheck": 3,
+      "serviceId": 1,
+      "identifier": 7
+    },
+    "src/providers": {
+      "hostCheck": 7,
+      "serviceId": 5,
+      "domain": 2,
+      "identifier": 8
+    },
+    "src/providers/navigation": {
+      "serviceId": 1,
+      "identifier": 6,
+      "file": 1
+    }
+  },
+  "crunchyroll": {
+    "src/media-features": {
+      "serviceId": 8,
+      "domain": 4,
+      "identifier": 116,
+      "file": 2
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "serviceId": 3,
+      "domain": 1,
+      "identifier": 21
+    },
+    "src/providers": {
+      "hostCheck": 9,
+      "serviceId": 5,
+      "domain": 2,
+      "identifier": 15
+    }
+  },
+  "disney": {
+    "src/media-features": {
+      "hostCheck": 9,
+      "serviceId": 12,
+      "domain": 15,
+      "identifier": 179,
+      "file": 2
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "serviceId": 4,
+      "domain": 1,
+      "identifier": 25
+    },
+    "src/providers": {
+      "hostCheck": 10,
+      "serviceId": 4,
+      "domain": 8,
+      "identifier": 17
+    },
+    "src/providers/navigation": {
+      "hostCheck": 2,
+      "serviceId": 1,
+      "domain": 1,
+      "identifier": 20,
+      "file": 1
+    },
+    "src/providers/timeline": {
+      "hostCheck": 2,
+      "identifier": 31,
+      "file": 1
+    }
+  },
+  "iqiyi": {
+    "src/media-features": {
+      "serviceId": 4,
+      "identifier": 12,
+      "file": 1
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "identifier": 5
+    },
+    "src/providers": {
+      "hostCheck": 7,
+      "serviceId": 4,
+      "domain": 2,
+      "identifier": 24,
+      "file": 2
+    },
+    "src/providers/navigation": {
+      "serviceId": 2,
+      "identifier": 9,
+      "file": 1
+    }
+  },
+  "netflix": {
+    "src/media-features": {
+      "serviceId": 6,
+      "identifier": 113,
+      "file": 3
+    },
+    "src/platform": {
+      "identifier": 12
+    },
+    "src/providers": {
+      "hostCheck": 7,
+      "serviceId": 1,
+      "domain": 2,
+      "identifier": 22
+    },
+    "src/providers/navigation": {
+      "hostCheck": 2,
+      "serviceId": 1,
+      "domain": 1,
+      "identifier": 17,
+      "file": 1
+    },
+    "src/providers/timeline": {
+      "hostCheck": 2,
+      "serviceId": 1,
+      "identifier": 9,
+      "file": 1
+    }
+  },
+  "patreon": {
+    "src/media-features": {
+      "hostCheck": 1,
+      "serviceId": 14,
+      "identifier": 65,
+      "file": 2
+    },
+    "src/platform": {
+      "hostCheck": 4,
+      "serviceId": 1,
+      "domain": 1,
+      "identifier": 11
+    },
+    "src/providers": {
+      "hostCheck": 3,
+      "serviceId": 1,
+      "domain": 2,
+      "identifier": 4
+    },
+    "src/providers/navigation": {
+      "domain": 2,
+      "identifier": 1
+    }
+  },
+  "soop": {
+    "src/chat": {
+      "serviceId": 1
+    },
+    "src/media-features": {
+      "serviceId": 2,
+      "identifier": 2
+    },
+    "src/providers": {
+      "hostCheck": 1,
+      "serviceId": 3,
+      "domain": 1,
+      "identifier": 2
+    },
+    "src/ui": {
+      "serviceId": 1
+    }
+  },
+  "tencent": {
+    "src/media-features": {
+      "serviceId": 7,
+      "domain": 5,
+      "identifier": 38,
+      "file": 1
+    },
+    "src/platform": {
+      "serviceId": 4,
+      "identifier": 17
+    },
+    "src/providers": {
+      "hostCheck": 8,
+      "serviceId": 5,
+      "domain": 7,
+      "identifier": 23
+    },
+    "src/providers/navigation": {
+      "serviceId": 1,
+      "identifier": 6,
+      "file": 1
+    }
+  },
+  "twitch": {
+    "src/chat": {
+      "hostCheck": 7,
+      "serviceId": 11,
+      "domain": 2,
+      "identifier": 52,
+      "file": 2
+    },
+    "src/media-features": {
+      "hostCheck": 8,
+      "serviceId": 14,
+      "domain": 25,
+      "identifier": 164,
+      "file": 3
+    },
+    "src/platform": {
+      "hostCheck": 5,
+      "serviceId": 3,
+      "domain": 1,
+      "identifier": 22
+    },
+    "src/protocol": {
+      "identifier": 5
+    },
+    "src/providers": {
+      "hostCheck": 5,
+      "serviceId": 6,
+      "domain": 3,
+      "identifier": 11
+    },
+    "src/providers/navigation": {
+      "domain": 2,
+      "identifier": 1
+    },
+    "src/ui": {
+      "serviceId": 1
+    }
+  },
+  "viki": {
+    "src/media-features": {
+      "serviceId": 8,
+      "domain": 5,
+      "identifier": 54,
+      "file": 2
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "serviceId": 2
+    },
+    "src/providers": {
+      "hostCheck": 7,
+      "serviceId": 4,
+      "domain": 2,
+      "identifier": 12
+    },
+    "src/providers/navigation": {
+      "hostCheck": 2,
+      "serviceId": 2,
+      "identifier": 3,
+      "file": 1
+    }
+  },
+  "vimeo": {
+    "src/media-features": {
+      "hostCheck": 1,
+      "serviceId": 6,
+      "domain": 4,
+      "identifier": 38,
+      "file": 2
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "domain": 1,
+      "identifier": 8
+    },
+    "src/providers": {
+      "hostCheck": 3,
+      "serviceId": 1,
+      "domain": 2,
+      "identifier": 12
+    },
+    "src/providers/navigation": {
+      "domain": 4,
+      "identifier": 9,
+      "file": 1
+    }
+  },
+  "youtube": {
+    "src/chat": {
+      "serviceId": 1
+    },
+    "src/media-features": {
+      "hostCheck": 1,
+      "serviceId": 10,
+      "domain": 29,
+      "identifier": 215,
+      "file": 10
+    },
+    "src/platform": {
+      "hostCheck": 2,
+      "domain": 2,
+      "identifier": 2,
+      "file": 1
+    },
+    "src/protocol": {
+      "identifier": 6
+    },
+    "src/providers": {
+      "hostCheck": 1,
+      "serviceId": 3,
+      "domain": 3,
+      "identifier": 2
+    },
+    "src/providers/navigation": {
+      "identifier": 1
+    },
+    "src/ui": {
+      "serviceId": 1
+    }
+  }
+}
