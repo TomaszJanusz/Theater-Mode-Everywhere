@@ -10,9 +10,9 @@ import {
   sanitizePlaylistPreview
 } from './playlist-nav';
 import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
-import { youtubePreviousRestarts } from './providers/navigation/youtube';
 import { usableControlIndexes, type ObservedPlaylistControl } from './providers/playlist-controls';
-import { bundleModules } from './test-utils/player-boot';
+import { youtubePreviousRestarts } from './providers/youtube/navigation';
+import { BUNDLED_PROVIDERS, bundleModules } from './test-utils/player-boot';
 import { sharedTestBrowser } from './test-utils/test-browser';
 
 const shared = sharedTestBrowser(chromium);
@@ -275,16 +275,18 @@ describe('playlist navigation DOM', () => {
       const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
       try {
         const page = await context.newPage();
-        const install = () => page.addScriptTag({ content: `${compiled}\nwindow.__playlist = PlaylistNav;` });
-        await page.setContent(`<!doctype html><body>
+        const install = (content = compiled) => page.addScriptTag({ content: `${content}\nwindow.__playlist = PlaylistNav;` });
+        // YouTube's controls come from its registered provider, which admits only YouTube documents.
+        await page.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><body>
           <div id="movie_player">
             <video id="player"></video>
             <a class="ytp-prev-button ytp-button" role="button" aria-disabled="false" data-preview="https://i.ytimg.com/vi/WUvTyaaNkzM/mqdefault.jpg" data-tooltip-text="The essence of calculus">Previous</a>
             <a class="ytp-next-button ytp-button ytp-playlist-ui" role="button" aria-disabled="false" aria-label="Next (SHIFT+n)" data-preview="https://i.ytimg.com/vi/S0_qX4VJhMQ/mqdefault.jpg" data-tooltip-text="Derivative formulas through geometry">Next</a>
             <button class="ytp-button ytp-endscreen-next" aria-label="Next" style="display:none">End</button>
           </div>
-        </body>`, { waitUntil: 'domcontentloaded' });
-        await install();
+        </body>` }));
+        await page.goto('https://www.youtube.com/watch?v=WUvTyaaNkzM&list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr', { waitUntil: 'domcontentloaded' });
+        await install(bundleModules([...BUNDLED_PROVIDERS, "export { findPlaylistActions } from './playlist-nav';"], 'PlaylistNav'));
         const read = () => page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null; activate: () => void }> } }).__playlist;
           const video = document.querySelector('#player') as HTMLVideoElement;

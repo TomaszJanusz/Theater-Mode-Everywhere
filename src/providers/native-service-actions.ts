@@ -47,10 +47,12 @@ export function serviceControlLabel(element: HTMLElement): string {
     .replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
-export function nativeServiceActionId(provider: string, route: string, root: HTMLElement, element: HTMLElement, media?: HTMLElement): string {
+/** A registered provider passes the runtime's `serviceElementToken` rather than bundling a second counter. */
+export function nativeServiceActionId(provider: string, route: string, root: HTMLElement, element: HTMLElement, media?: HTMLElement,
+  token: (element: Element) => number = serviceElementToken): string {
   const video = media instanceof HTMLVideoElement ? media : root.querySelector<HTMLVideoElement>('video');
-  return JSON.stringify([provider, route, serviceElementToken(root), serviceElementToken(element),
-    video && serviceElementToken(video), video?.currentSrc || '', video?.getAttribute('src') || '', serviceControlLabel(element)]);
+  return JSON.stringify([provider, route, token(root), token(element),
+    video && token(video), video?.currentSrc || '', video?.getAttribute('src') || '', serviceControlLabel(element)]);
 }
 
 /** Reads and activations share exactly the same availability and identity checks. */

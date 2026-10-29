@@ -1,7 +1,8 @@
 import type { PlaylistAction, PlaylistDirection } from '../../playlist-nav';
 import { isYouTubeHost } from '../hosts';
 import { namedControl, type CollectedControl, type PlaylistHelpers } from '../playlist-controls';
-import { queryYouTubeQueue, requestYouTubeQueueStep } from '../youtube/queue-bridge';
+
+import { queryYouTubeQueue, requestYouTubeQueueStep } from './queue-bridge';
 
 export const YOUTUBE_PLAYER_SELECTOR = '#movie_player';
 
