@@ -1,4 +1,5 @@
-import { isChatDocument, isNativeChatEvent } from '../chat';
+import { isNativeChatEvent } from '../chat/events';
+import { isChatDocument } from '../chat/url';
 import { isHostPlayControlLabel, mainWorldOwnsWasmPlayPause, toggleDirectPlayback } from '../host-play';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 import { CC_SEARCH_KEY_EVENT } from '../protocol/cc-search';
