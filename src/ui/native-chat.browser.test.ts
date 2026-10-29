@@ -642,6 +642,32 @@ async function expectAppliedTheme(page: Page, theme: 'light' | 'native' | 'dark'
 
 describe('native chat browser session', () => {
   for (const engine of testEngines()) {
+    it(`wraps Twitch chat inside the narrowest chat despite Twitch's own minimum width in ${engine}`, { timeout: 120_000 }, async t => {
+      const browser = pagesOf(browsers[engine], t);
+      // Twitch's chat shell keeps a 340 px minimum (observed Oct 2026, live and VOD chat).
+      const html = twitchDocument()
+        .replace('</head>', '<style>.chat-shell { min-width: 340px; } .chat-line__message { overflow-wrap: anywhere; }</style></head>')
+        .replace('<div id="draft"', '<div class="chat-line__message">viewer: a long message that has to wrap at the chat width https://example.com/a/very/long/link/that/must/wrap</div><div id="draft"');
+      const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: html }, { width: 1280, height: 800 });
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+      await setChatWidth(page, 300);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 300);
+      const fit = await page.evaluate(() => {
+        const root = document.querySelector('[data-theater-chat]')!;
+        const edge = root.getBoundingClientRect().right;
+        const message = root.querySelector('.chat-line__message')!.getBoundingClientRect();
+        return {
+          width: Math.round(root.getBoundingClientRect().width),
+          past: [...root.querySelectorAll('*')].filter(element => element.getBoundingClientRect().right > edge + 1)
+            .map(element => element.className || element.tagName),
+          wrapped: message.height > 30
+        };
+      });
+      assert.deepEqual(fit, { width: 300, past: [], wrapped: true });
+      assert.deepEqual(pageErrors(page), []);
+    });
+
     it(`fixes Twitch Option+R and native toggle, and resizes the chat by dragging in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });
@@ -673,7 +699,7 @@ describe('native chat browser session', () => {
       await page.mouse.down();
       for (const travel of [-120, 60, -400]) {
         await page.mouse.move(start.x + travel, start.y, { steps: 8 });
-        const expected = Math.min(600, Math.max(280, initial - travel));
+        const expected = Math.min(600, Math.max(300, initial - travel));
         await page.waitForFunction(width => window.NativeChatTest.nativeChatState()?.width === width, expected);
         // The drag overlay covers the chat until release, so only the geometry is checked here.
         const moving = await layoutOf(page);
@@ -712,7 +738,7 @@ describe('native chat browser session', () => {
         min: element.getAttribute('aria-valuemin'),
         max: element.getAttribute('aria-valuemax'),
         tabIndex: (element as HTMLElement).tabIndex
-      })), { role: 'separator', orientation: 'vertical', label: 'Resize chat', min: '280', max: '600', tabIndex: 0 });
+      })), { role: 'separator', orientation: 'vertical', label: 'Resize chat', min: '300', max: '600', tabIndex: 0 });
       await revealChatSettings(page);
       assert.equal(await page.locator('.theater-chat-width-row').count(), 0, 'the Width row is gone from the menu');
       await closeChatSettings(page);
@@ -742,7 +768,7 @@ describe('native chat browser session', () => {
       await page.mouse.move(start.x, start.y);
       await page.mouse.down();
       await page.mouse.move(start.x + 260, start.y, { steps: 10 });
-      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 280);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 300);
       // Past the narrowest width the pointer is well inside the frame while the drag goes on.
       layout = await layoutOf(page);
       assert.ok(layout.chat && start.x + 260 > layout.chat.left + 80, `the pointer is over the chat frame ${JSON.stringify(layout.chat)}`);
@@ -767,7 +793,7 @@ describe('native chat browser session', () => {
       await page.keyboard.press('Tab');
       await page.keyboard.press('Shift+Tab');
       assert.equal(await separator.evaluate(element => (element.getRootNode() as ShadowRoot).activeElement === element), true, 'Tab reaches the separator');
-      const steps: Array<[string, number]> = [['ArrowLeft', 330], ['Shift+ArrowLeft', 380], ['ArrowRight', 370], ['Home', 280], ['End', 600]];
+      const steps: Array<[string, number]> = [['ArrowLeft', 330], ['Shift+ArrowLeft', 380], ['ArrowRight', 370], ['Home', 300], ['End', 600]];
       for (const [key, width] of steps) {
         await page.keyboard.press(key);
         await page.waitForFunction(next => window.NativeChatTest.nativeChatState()?.width === next, width);

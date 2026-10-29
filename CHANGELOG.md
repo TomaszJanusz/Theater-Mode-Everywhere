@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Twitch chat beside the picture no longer cuts off the end of messages, the message box and its buttons when the chat is narrower than Twitch's own minimum: live and replay chat now wrap to the chat's width. The narrowest chat is now 300 px instead of 280, the narrowest YouTube's chat fits without being cut off.
 - In theater mode on large pages such as YouTube, the controls bar now appears on the first mouse move after a pause and hides after idle without the brief hitch it used to cause; the pointer still disappears over the video while idle.
 - Letter shortcuts now work on Cyrillic, Greek, Hebrew and other non-Latin keyboard layouts: M mutes and Shift+T cycles on the key in that position without switching layout. Shortcuts recorded on such a layout are saved as the Latin letter of that position, so they also work on any other layout. QWERTY, AZERTY, QWERTZ and Dvorak keep going by the letter the key prints.
 - Keyboard focus is now visible on the volume and speed sliders, the caption sliders and the time-remaining button, which showed no focus frame before. A focused volume or speed button now shows the same focus frame as the other bar buttons instead of opening its panel around it; the panel opens when you point at it or move into the slider.

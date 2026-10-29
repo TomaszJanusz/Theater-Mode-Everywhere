@@ -12,10 +12,10 @@ import {
 
 describe('chat geometry', () => {
   it('clamps the shared width range', () => {
-    assert.equal(MIN_CHAT_WIDTH_PX, 280);
+    assert.equal(MIN_CHAT_WIDTH_PX, 300);
     assert.equal(MAX_CHAT_WIDTH_PX, 600);
     assert.equal(DEFAULT_CHAT_WIDTH_PX, 360);
-    assert.equal(clampChatWidth(10), 280);
+    assert.equal(clampChatWidth(10), 300);
     assert.equal(clampChatWidth(900), 600);
     assert.equal(clampChatWidth(Number.NaN), 360);
     assert.equal(clampChatWidth(360.4), 360);

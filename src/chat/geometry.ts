@@ -4,7 +4,8 @@ import type { ChatDock } from './types';
 export const CHAT_DOCK_BREAKPOINT_PX = 900;
 
 export const DEFAULT_CHAT_WIDTH_PX = 360;
-export const MIN_CHAT_WIDTH_PX = 280;
+/** YouTube's live chat lays itself out at 298 px or wider; its frame adds a 1 px border on each side. */
+export const MIN_CHAT_WIDTH_PX = 300;
 export const MAX_CHAT_WIDTH_PX = 600;
 
 export const DEFAULT_BOTTOM_CHAT_HEIGHT_PX = 360;
