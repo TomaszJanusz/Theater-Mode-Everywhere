@@ -226,6 +226,37 @@ const RapidStatus: Story = hudStory(() => {}, {
 });
 test('RapidStatus', () => runHudCase(RapidStatus));
 
+/** Holding seek forward: the 2x status outlasts the usual timeout until released, then fades and leaves no timer. */
+const HeldStatusFadesOnRelease: Story = hudStory(() => {}, {
+  play: async () => {
+    const release = hud().holdStatusIndicator('2x', STATUS_HUD_MUTE_ICON);
+    stage().advance(CENTERED_HUD_VISIBLE_MS * 3);
+    await expect(overlay()?.classList.contains('fade-out')).toBe(false);
+    await expect(stage().clock.pending).toBe(0);
+    release();
+    release();
+    await expect(overlay()?.classList.contains('fade-out')).toBe(true);
+    stage().advance(HUD_FADE_OUT_MS);
+    await expect(overlay()).toBeNull();
+    await expect(stage().clock.pending).toBe(0);
+  }
+});
+test('HeldStatusFadesOnRelease', () => runHudCase(HeldStatusFadesOnRelease));
+
+/** A confirmation that replaced the held status (a speed key during the hold) keeps its own timing on release. */
+const HeldStatusYieldsToLaterHud: Story = hudStory(() => {}, {
+  play: async () => {
+    const release = hud().holdStatusIndicator('2x', STATUS_HUD_MUTE_ICON);
+    hud().triggerStatusIndicator('1.75x', STATUS_HUD_MUTE_ICON);
+    release();
+    await expect(hudText()).toBe('1.75x');
+    await expect(overlay()?.classList.contains('fade-out')).toBe(false);
+    stage().advance(CENTERED_HUD_VISIBLE_MS);
+    await expect(overlay()?.classList.contains('fade-out')).toBe(true);
+  }
+});
+test('HeldStatusYieldsToLaterHud', () => runHudCase(HeldStatusYieldsToLaterHud));
+
 const RapidPlayPause: Story = hudStory(() => {}, {
   play: async () => {
     const { one, many } = rapid('play-pause', index => hud().triggerPlaybackIndicator(index % 2 ? 'pause' : 'play'));
