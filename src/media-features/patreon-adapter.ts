@@ -1,5 +1,5 @@
 import { parseCaptionPayload } from './parsers/captions';
-import { parseYoutubeDescriptionChapters } from './parsers/youtube-chapters';
+import { parseDescriptionChapters } from './parsers/description-chapters';
 import { getMuxPreviewFrame, parseMuxStoryboard, type MuxStoryboardSet } from './parsers/mux-storyboard';
 import {
   applyPatreonCaptionMeta,
@@ -139,7 +139,7 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
   async probe(): Promise<MediaCapabilities> {
     if (!this.snapshot) await this.load();
     const muxChapters = this.snapshot?.chapters || [];
-    const descriptionChapters = parseYoutubeDescriptionChapters(
+    const descriptionChapters = parseDescriptionChapters(
       this.snapshot?.description || '',
       this.snapshot?.duration
     );
@@ -193,7 +193,7 @@ export class PatreonAdapter implements MediaFeaturesAdapter {
         confidence: 'high' as const
       }));
     }
-    return parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration).map((chapter) => ({
+    return parseDescriptionChapters(this.snapshot?.description || '', duration).map((chapter) => ({
       ...chapter,
       source: 'patreon'
     }));

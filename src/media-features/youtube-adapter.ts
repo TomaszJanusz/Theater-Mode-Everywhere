@@ -1,9 +1,11 @@
 import { isOnMiniplayerSurface } from '../providers/video-candidates';
 import { readMiniplayerIdentity } from '../providers/watch-playback';
 
+import { heatmapSvgPath } from './heatmap-path';
 import { parseCaptionPayload } from './parsers/captions';
-import { parseYoutubeDescriptionChapters, parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
-import { heatmapSvgPath, readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
+import { parseDescriptionChapters } from './parsers/description-chapters';
+import { parseYoutubeMarkerChapters } from './parsers/youtube-chapters';
+import { readRenderedYoutubeHeatmapPath } from './parsers/youtube-heatmap-path';
 import { getStoryboardFrame, parseStoryboardSpec, type StoryboardSet } from './parsers/youtube-storyboard';
 import { PREVIEW_DISPLAY_WIDTH } from './preview-display';
 import { isAllowedMediaFetchUrl, type MediaFetchRequest } from './fetch-allowlist';
@@ -393,7 +395,7 @@ export class YouTubeAdapter implements MediaFeaturesAdapter {
     // Description timestamps cover watches where that marker list is absent.
     const fromMarkers = parseYoutubeMarkerChapters(this.snapshot?.markers || [], duration);
     if (fromMarkers.length > 0) return fromMarkers;
-    return parseYoutubeDescriptionChapters(this.snapshot?.description || '', duration);
+    return parseDescriptionChapters(this.snapshot?.description || '', duration);
   }
 
   getHeatmap(): TimelineHeatmap | null {

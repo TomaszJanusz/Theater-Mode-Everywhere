@@ -1,79 +1,6 @@
-type HeatmapPathSegment = {
-  startMs: number;
-  durationMs: number;
-  intensity: number;
-};
+import { HEATMAP_PATH_WIDTH } from '../heatmap-path';
 
-const PATH_WIDTH = 1000;
-const PATH_HEIGHT = 100;
-const MIN_HEIGHT = 2;
-const MAX_HEIGHT = 94;
 const MIN_SVG_PATH_LENGTH = 20;
-
-function seriesEnd(segments: HeatmapPathSegment[]): number {
-  let end = 0;
-  for (const segment of segments) {
-    const at = segment.startMs + segment.durationMs;
-    if (at > end) end = at;
-  }
-  return end;
-}
-
-function fmt(value: number): string {
-  return (Math.round(value * 100) / 100).toString();
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-/** Builds a closed area path in viewBox 0 0 1000 100 from Most Replayed segments. */
-export function heatmapSvgPath(
-  segments: HeatmapPathSegment[],
-  durationMs?: number,
-  floor = 0
-): string {
-  if (!Array.isArray(segments) || segments.length === 0) return '';
-  const usable = segments.filter((segment) => (
-    Number.isFinite(segment.startMs)
-    && Number.isFinite(segment.durationMs)
-    && Number.isFinite(segment.intensity)
-    && segment.durationMs > 0
-  ));
-  if (usable.length === 0) return '';
-  const end = durationMs && durationMs > 0
-    ? durationMs
-    : seriesEnd(usable);
-  if (!(end > 0)) return '';
-
-  const pts = usable.map((segment) => {
-    const mid = segment.startMs + segment.durationMs / 2;
-    const x = clamp((mid / end) * PATH_WIDTH, 0, PATH_WIDTH);
-    const intensity = clamp(segment.intensity, 0, 1);
-    const raised = MIN_HEIGHT + intensity * (MAX_HEIGHT - MIN_HEIGHT);
-    const h = clamp(Math.max(raised, clamp(floor, 0, 1) * PATH_HEIGHT), MIN_HEIGHT, MAX_HEIGHT);
-    return { x, y: PATH_HEIGHT - h };
-  });
-  pts.unshift({ x: 0, y: PATH_HEIGHT - MIN_HEIGHT });
-  pts.push({ x: PATH_WIDTH, y: PATH_HEIGHT - MIN_HEIGHT });
-
-  let d = `M ${fmt(pts[0].x)} ${fmt(pts[0].y)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i === 0 ? i : i - 1];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] || p2;
-    const c1x = p1.x + (p2.x - p0.x) * 0.2;
-    const c1y = p1.y + (p2.y - p0.y) * 0.2;
-    const c2x = p2.x - (p3.x - p1.x) * 0.2;
-    const c2y = p2.y - (p3.y - p1.y) * 0.2;
-    d += ` C ${fmt(c1x)} ${fmt(c1y)} ${fmt(c2x)} ${fmt(c2y)} ${fmt(p2.x)} ${fmt(p2.y)}`;
-  }
-  d += ` L ${PATH_WIDTH} ${PATH_HEIGHT} L 0 ${PATH_HEIGHT} Z`;
-  return d;
-}
-
-export { heatmapRidgePath } from '../heatmap-path';
 
 type HeatmapPathNode = {
   getAttribute(name: string): string | null;
@@ -90,7 +17,7 @@ function scaleHeatmapPathX(d: string, origin: number, span: number): string {
   return d.replace(
     /(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)(\s*,\s*|\s+)(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)/gi,
     (_match, x: string, sep: string, y: string) => {
-      const next = origin + (Number(x) / PATH_WIDTH) * span;
+      const next = origin + (Number(x) / HEATMAP_PATH_WIDTH) * span;
       const rounded = Math.round(next * 100) / 100;
       return `${rounded}${sep.includes(',') ? ',' : ' '}${y}`;
     }
@@ -112,8 +39,8 @@ function measureHeatmapSlice(path: HeatmapPathNode): HeatmapSlice | null {
     return null;
   }
   if (!(containerBox.width > 0) || !(chapterBox.width > 0)) return null;
-  const origin = ((chapterBox.left - containerBox.left) / containerBox.width) * PATH_WIDTH;
-  const span = (chapterBox.width / containerBox.width) * PATH_WIDTH;
+  const origin = ((chapterBox.left - containerBox.left) / containerBox.width) * HEATMAP_PATH_WIDTH;
+  const span = (chapterBox.width / containerBox.width) * HEATMAP_PATH_WIDTH;
   if (!Number.isFinite(origin) || !Number.isFinite(span) || span <= 0) return null;
   return { d, origin, span };
 }
@@ -126,7 +53,7 @@ function combineRenderedHeatmapPaths(paths: HeatmapPathNode[]): string | null {
   const slices = paths.map(measureHeatmapSlice).filter((slice): slice is HeatmapSlice => Boolean(slice));
   if (slices.length !== paths.length || slices.length === 0) return null;
   slices.sort((a, b) => a.origin - b.origin);
-  if (slices.length === 1 && slices[0].span >= PATH_WIDTH * 0.98) return slices[0].d;
+  if (slices.length === 1 && slices[0].span >= HEATMAP_PATH_WIDTH * 0.98) return slices[0].d;
   return slices.map((slice) => scaleHeatmapPathX(slice.d, slice.origin, slice.span)).join(' ');
 }
 
