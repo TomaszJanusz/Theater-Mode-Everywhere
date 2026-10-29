@@ -42,5 +42,19 @@ export const soopChat: ProviderChat = {
   eventSelector: `${ROOT}, .chatbox, #emoticonContainer, .chat_layer`,
   activationSelector: TOGGLE,
   shellSelector: ROOT,
-  navigationEvents: [SOOP_NAVIGATE_EVENT]
+  navigationEvents: [SOOP_NAVIGATE_EVENT],
+  observeVisibility(surface, changed) {
+    // The panel's own close button and the player's chat button only flip `chat_open` (and an inline
+    // display), so one attribute observer on the player is enough; other class flips are ignored.
+    const player = surface.root.closest('#webplayer');
+    if (!player) return () => {};
+    let open = player.classList.contains('chat_open');
+    const observer = new MutationObserver(() => {
+      if (player.classList.contains('chat_open') === open) return;
+      open = !open;
+      changed();
+    });
+    observer.observe(player, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }
 };

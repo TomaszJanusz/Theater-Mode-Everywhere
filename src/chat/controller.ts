@@ -17,9 +17,10 @@ import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurfa
 import { isNativeChatHost, parseChatLocation, watchIdentity } from './url';
 
 /**
- * Waiting for a service-owned control we clicked (or can click) to open its chat. Hosts such as
- * SOOP flip a class that no observer watches, so this re-reads while an activation is pending.
- * A page without chat has no pending activation and schedules nothing; it never runs while hidden.
+ * Waiting for a service-owned control we clicked (or can click) to open its chat. A host may open it
+ * by flipping a class that no observer watches, so this re-reads while an activation is pending, unless
+ * the provider watches the bound surface's visibility (SOOP). A page without chat has no pending
+ * activation and schedules nothing; it never runs while hidden.
  */
 const PENDING_ACTIVATION_MS = 2000;
 
@@ -72,6 +73,7 @@ export class ChatController {
   private readonly activationSelector = [ACTIVATION_SELECTOR, registeredChat()?.activationSelector].filter(Boolean).join(', ');
   private readonly shellSelector = [SHELL_SELECTOR, registeredChat()?.shellSelector].filter(Boolean).join(', ');
   private readonly structure = registeredChat()?.structure;
+  private readonly providerChat = registeredChat();
   private readonly options: ChatControllerOptions;
   private readonly scope = new DisposableScope();
   private readonly surfaceOwned = new OwnedDom();
@@ -94,6 +96,7 @@ export class ChatController {
   private navigationBound = false;
   private activation: ChatActivation | null = null;
   private attemptedActivation: (ChatActivation & { at: number }) | null = null;
+  private visibilityWatch: { surface: ChatSurface; stop: () => void } | null = null;
 
   constructor(options: ChatControllerOptions) {
     this.options = options;
@@ -217,6 +220,7 @@ export class ChatController {
     this.clearPendingActivationTimer();
     this.clearStructureTimer();
     this.clearViewportFrame();
+    this.watchNativeVisibility(null);
     this.themeSession.dispose();
     this.surfaceOwned.restoreAll();
     this.documentOwned.restoreAll();
@@ -300,7 +304,7 @@ export class ChatController {
   /** Re-reads only while a native control is waiting to open the chat; nothing else needs a timer. */
   private syncPendingActivation(): void {
     const wanted = !this.disposed && !this.options.document.hidden && this.activation !== null
-      && isNativeChatHost(this.safeHref());
+      && !this.visibilityWatch && isNativeChatHost(this.safeHref());
     if (!wanted) {
       this.clearPendingActivationTimer();
       return;
@@ -435,9 +439,19 @@ export class ChatController {
       this.surfaceOwned.restoreAll();
     }
     if (next) this.bindSurface(next, this.preferenceFor(next).visible && !this.activation);
+    this.watchNativeVisibility(next);
     this.boundFrameSrc = next?.iframe?.getAttribute('src') || '';
     this.themeSession.update(next, this.preferenceForSurface(next).theme);
     this.publish(next);
+  }
+
+  /** Closing or reopening the chat through the service's own buttons re-reads like a structural change. */
+  private watchNativeVisibility(surface: ChatSurface | null): void {
+    if (this.visibilityWatch?.surface === surface) return;
+    this.visibilityWatch?.stop();
+    this.visibilityWatch = null;
+    if (!surface || this.disposed || !this.providerChat?.observeVisibility) return;
+    this.visibilityWatch = { surface, stop: this.providerChat.observeVisibility(surface, () => this.scheduleStructureRefresh()) };
   }
 
   private retainSurface(detected: ChatSurface | null): ChatSurface | null {
