@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { iqiyiChapters, normalizeIqiyiPlayInfo, type IqiyiSnapshot } from '../../media-features/parsers/iqiyi';
 import { readProviderWatchPage } from '../watch-playback';
 
 import { iqiyiPlayId } from './page';
+import { iqiyiChapters, normalizeIqiyiPlayInfo, type IqiyiSnapshot } from './play-info';
 
 const playInfo = (overrides: Record<string, unknown> = {}, program: unknown = { video: [{ duration: 2569 }] }) => ({
   data: { tvid: 4546375215960300, program, p: { bt: 14, et: 2415, ete: 2568, ...overrides } }

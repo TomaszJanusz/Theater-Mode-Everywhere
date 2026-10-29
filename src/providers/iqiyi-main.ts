@@ -1,10 +1,10 @@
-import { normalizeIqiyiPlayInfo, type IqiyiSnapshot } from '../media-features/parsers/iqiyi';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 
 import { publishHistoryChanges } from './history-publication';
 import { isIqiyiHost } from './hosts';
+import { normalizeIqiyiPlayInfo, type IqiyiSnapshot } from './iqiyi/play-info';
 
-export type { IqiyiSnapshot } from '../media-features/parsers/iqiyi';
+export type { IqiyiSnapshot } from './iqiyi/play-info';
 
 /** Window event published by the MAIN-world hook below, which isolated-world listeners can observe. */
 export const IQIYI_NAVIGATE_EVENT = 'theater-everywhere-iqiyi-navigate';
