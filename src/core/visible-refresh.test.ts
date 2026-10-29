@@ -6,6 +6,8 @@ class Clock extends EventTarget {
   now = 0;
   serial = 0;
   frames = new Map<number, FrameRequestCallback>();
+  // No layout: the shared read phase runs straight from the animation frame.
+  document = { documentElement: null };
   timers = new Map<number, { due: number; callback: () => void }>();
   requestAnimationFrame = (callback: FrameRequestCallback) => { this.frames.set(++this.serial, callback); return this.serial; };
   cancelAnimationFrame = (id: number) => { this.frames.delete(id); };
@@ -38,8 +40,9 @@ it('coalesces events, bounds fallback to 1 Hz and cancels all scheduled work whi
   refresh.refresh(); assert.equal(reads, 1);
   for (let i = 0; i < 100; i++) clock.dispatchEvent(new Event('mediachange'));
   assert.equal(clock.frames.size, 1); clock.frame(); assert.equal(reads, 2);
-  clock.advance(999); assert.equal(reads, 2);
-  clock.advance(1); assert.equal(reads, 3);
+  clock.advance(999); clock.frame(); assert.equal(reads, 2);
+  // The fallback joins the next frame's read phase.
+  clock.advance(1); assert.equal(reads, 2); clock.frame(); assert.equal(reads, 3);
   doc.visibility(true); clock.advance(10000); refresh.request();
   assert.equal(reads, 3); assert.equal(clock.timers.size, 0); assert.equal(clock.frames.size, 0);
   doc.visibility(false); assert.equal(reads, 4);
@@ -59,4 +62,27 @@ it('can dispose during a read without creating a new timer, and disables fallbac
   assert.equal(reads, 2); assert.equal(clock.timers.size, 0);
   active = true; refresh.refresh();
   assert.equal(reads, 3); assert.equal(clock.timers.size, 0);
+});
+
+it('applies a requested read\'s writes after the frame\'s reads, unless a newer read superseded it', () => {
+  const doc = new TestDocument(), clock = doc.defaultView;
+  const log: string[] = [];
+  let value = 0;
+  const refresh = createVisibleRefresh(doc.document(), () => {
+    const seen = ++value;
+    log.push(`read ${seen}`);
+    return () => { log.push(`write ${seen}`); };
+  });
+  refresh.refresh();
+  assert.deepEqual(log.splice(0), ['read 1', 'write 1']);
+  // A refresh between this read and its write, here from another reader's write, wins.
+  const second = createVisibleRefresh(doc.document(), () => () => { refresh.refresh(); });
+  second.request(); refresh.request();
+  clock.frame();
+  assert.deepEqual(log.splice(0), ['read 2', 'read 3', 'write 3']);
+  refresh.request();
+  refresh.dispose();
+  clock.frame();
+  assert.deepEqual(log, []);
+  second.dispose();
 });

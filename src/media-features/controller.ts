@@ -655,9 +655,11 @@ export class MediaFeaturesController {
     this.renderer.setStyle(style);
   }
 
-  setCaptionLineLimit(maxLines: number): void {
-    if (!this.renderer.setMaxLines(maxLines)) return;
+  /** Returns whether the cap changed; overlay captions are then redrawn at once. */
+  setCaptionLineLimit(maxLines: number): boolean {
+    if (!this.renderer.setMaxLines(maxLines)) return false;
     if (this.usingOverlayCaptions) this.renderer.update(displayMediaTime(this.video));
+    return true;
   }
 
   /**

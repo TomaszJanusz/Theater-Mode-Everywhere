@@ -12,6 +12,7 @@ import {
   type DockRect
 } from '../media-features/caption-dock';
 import { isMotionReduced } from '../appearance-runtime';
+import { measureNextFrame } from '../core/frame-batch';
 import { horizontalLetterboxPx } from './appearance';
 import { HEADER_HUD_CLASS } from './hud';
 import { resolveChromeVisibility } from './controls-visibility';
@@ -91,11 +92,11 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
   ].join(',');
   const candidateSelector = '.theater-service-action-host, .theater-scrubber-tooltip, .theater-cc-menu, '
     + '.theater-settings-menu, .theater-button-tooltip, .theater-volume-panel, .theater-speed-panel';
-  let dockFrame: number | null = null;
+  let cancelDockFrame: (() => void) | null = null;
   let measuringCaptionDock = false;
   let controlsCache: (HTMLElement & {
     _mediaFeatures?: {
-      setCaptionLineLimit(maxLines: number): void;
+      setCaptionLineLimit(maxLines: number): boolean;
       readHostCaptionLayout(): HostCaptionLayout | null;
     };
   }) | null = null;
@@ -110,8 +111,8 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
   let pictureState = '';
 
   function resetCaptionDock(): void {
-    if (dockFrame !== null) window.cancelAnimationFrame(dockFrame);
-    dockFrame = null;
+    cancelDockFrame?.();
+    cancelDockFrame = null;
     dockObserver?.disconnect();
     dockResizeObserver?.disconnect();
     dockObserver = null;
@@ -190,34 +191,48 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
       return;
     }
     if (immediate) {
-      if (dockFrame !== null) window.cancelAnimationFrame(dockFrame);
-      dockFrame = null;
-      if (!ctx.session.isIdle && !ctx.session.isExiting) measureCurrentCaptionDock(ctx.session.element);
+      cancelDockFrame?.();
+      cancelDockFrame = null;
+      if (!ctx.session.isIdle && !ctx.session.isExiting) measureCurrentCaptionDock(ctx.session.element)?.();
       return;
     }
-    if (dockFrame !== null) return;
+    if (cancelDockFrame) return;
     const epoch = ctx.session.currentEpoch;
     const element = ctx.session.element;
-    dockFrame = window.requestAnimationFrame(() => {
-      dockFrame = null;
-      if (ctx.session.currentEpoch !== epoch || ctx.session.element !== element
-        || ctx.session.isIdle || ctx.session.isExiting) return;
-      measureCurrentCaptionDock(element);
+    const stale = () => ctx.session.currentEpoch !== epoch || ctx.session.element !== element
+      || ctx.session.isIdle || ctx.session.isExiting;
+    // Measured with the frame's other readers, so host changes and their writes cost one restyle.
+    cancelDockFrame = measureNextFrame(window, () => {
+      cancelDockFrame = null;
+      if (stale()) return;
+      const write = measureCurrentCaptionDock(element);
+      return write && (() => { if (!stale()) write(); });
     });
   }
 
   let captionDockLifted = false;
   const captionDockMotionMode = new WeakMap<HTMLElement, DockMotionState>();
 
-  function measureCurrentCaptionDock(element: HTMLElement): void {
+  /** Reads the dock; the returned write places captions. */
+  function measureCurrentCaptionDock(element: HTMLElement): (() => void) | void {
     // Updating the line cap can synchronously redraw overlay captions and call
-    // back into this path. The outer measurement reads that updated height.
+    // back into this path. The outer write measures that updated height again.
     if (measuringCaptionDock) return;
-    measuringCaptionDock = true;
-    try { measureCaptionDock(element); } finally { measuringCaptionDock = false; }
+    const write = guardCaptionDock(() => measureCaptionDock(element));
+    return () => guardCaptionDock(write);
   }
 
-  function measureCaptionDock(element: HTMLElement): void {
+  function guardCaptionDock<T>(run: () => T): T {
+    measuringCaptionDock = true;
+    try { return run(); } finally { measuringCaptionDock = false; }
+  }
+
+  /**
+   * Reads every measurement the dock needs and returns the writes. A changed reserved height or
+   * caption line cap moves what was measured, so its write measures again before placing.
+   */
+  function measureCaptionDock(element: HTMLElement, remeasured = 0): () => void {
+    const settled = remeasured >= 2;
     refreshDockElements();
     // The UI keeps the full player viewport; only the media box loses the dock's height.
     const controlsHeight = controlsCache?.classList.contains('pinned') ? controlsCache.offsetHeight : 0;
@@ -225,10 +240,13 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     // An unpinned bar reserves nothing, which is the property's fallback. Leaving it unset spares
     // the page a restyle on entry: a change to the root's custom properties restyles every element.
     const reservedHeight = controlsHeight > 0 ? `${controlsHeight}px` : '';
-    if (root.style.getPropertyValue('--theater-controls-reserved-height') !== reservedHeight) {
-      if (reservedHeight) root.style.setProperty('--theater-controls-reserved-height', reservedHeight);
-      else root.style.removeProperty('--theater-controls-reserved-height');
-      pictureGeometryChanged();
+    if (!settled && root.style.getPropertyValue('--theater-controls-reserved-height') !== reservedHeight) {
+      return () => {
+        if (reservedHeight) root.style.setProperty('--theater-controls-reserved-height', reservedHeight);
+        else root.style.removeProperty('--theater-controls-reserved-height');
+        pictureGeometryChanged();
+        measureCaptionDock(element, remeasured + 1)();
+      };
     }
     const mediaRect = element.getBoundingClientRect();
     const viewportWidth = mediaRect.width || window.innerWidth;
@@ -256,7 +274,6 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     const overlayLineHeight = overlayText ? Number.parseFloat(getComputedStyle(overlayText).lineHeight) : 0;
     const lineHeight = overlayLineHeight > 0 ? overlayLineHeight : (hostCaption?.lineHeight ?? 0);
     const lineLimit = placeInBand ? raisedCaptionLineLimit(band, lineHeight) : CAPTION_LINE_LIMIT_MIN;
-    features?._mediaFeatures?.setCaptionLineLimit(lineLimit);
     const overlayCaption = overlay && overlayText && overlayText.textContent
       ? { width: overlay.offsetWidth, height: overlay.offsetHeight }
       : null;
@@ -308,19 +325,26 @@ export function createToolbar(ctx: PlayerChromeContext, pictureGeometryChanged: 
     });
     const lifted = restBottom !== undefined ? bottom > restBottom : bottom > CAPTION_DOCK_REST_BOTTOM;
     const pictureMoving = document.documentElement.classList.contains('theater-everywhere-picture-moving');
-    // The bottom ease exists to clear the control bar. A row change at rest must
-    // land in the same frame as the new height, or the block slides up or down.
-    // A picture move is the exception: captions travel with the video.
-    const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
     // Our overlay glides with the control bar; a host renderer owns its own ease.
     const glide = !isMotionReduced();
-    applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode, glide);
-    applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
-    captionDockLifted = lifted;
-    const nextBottom = `${bottom}px`;
-    if (document.documentElement.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {
-      document.documentElement.style.setProperty('--theater-caption-bottom', nextBottom);
-    }
+    return () => {
+      // A new cap redraws overlay captions at a new height; place them by that height.
+      if (features?._mediaFeatures?.setCaptionLineLimit(lineLimit) && !settled && overlayCaption) {
+        measureCaptionDock(element, remeasured + 1)();
+        return;
+      }
+      // The bottom ease exists to clear the control bar. A row change at rest must
+      // land in the same frame as the new height, or the block slides up or down.
+      // A picture move is the exception: captions travel with the video.
+      const motion = captionDockMotion(lifted || captionDockLifted, pictureMoving);
+      applyCaptionDockMotion(dockOverlayCache, motion, captionDockMotionMode, glide);
+      applyCaptionDockMotion(hostCaption?.motionTarget ?? null, motion, captionDockMotionMode);
+      captionDockLifted = lifted;
+      const nextBottom = `${bottom}px`;
+      if (root.style.getPropertyValue('--theater-caption-bottom') !== nextBottom) {
+        root.style.setProperty('--theater-caption-bottom', nextBottom);
+      }
+    };
   }
 
   // The picture carries the class instead of <html>: every element inherits `cursor`, so

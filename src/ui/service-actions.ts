@@ -80,21 +80,26 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
     sync();
   });
 
-  const place = () => {
+  /** Reads where the CTA belongs; the returned write moves it there. */
+  const measurePlace = (): (() => void) => {
     const hidden = options.menuOpen?.() === true;
-    if (host.hidden !== hidden) host.hidden = hidden;
     const visible = toolbarOpen();
-    if (host.classList.contains(TOOLBAR_VISIBLE_CLASS) !== visible) host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
-    if (!visible) return;
     let px = LIFT_FALLBACK_PX;
-    try {
-      const lift = options.controlsLift();
-      if (Number.isFinite(lift) && lift > 0) px = Math.round(lift);
-    } catch {
-      px = LIFT_FALLBACK_PX;
+    if (visible) {
+      try {
+        const lift = options.controlsLift();
+        if (Number.isFinite(lift) && lift > 0) px = Math.round(lift);
+      } catch {
+        px = LIFT_FALLBACK_PX;
+      }
     }
-    if (host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
+    return () => {
+      if (host.hidden !== hidden) host.hidden = hidden;
+      if (host.classList.contains(TOOLBAR_VISIBLE_CLASS) !== visible) host.classList.toggle(TOOLBAR_VISIBLE_CLASS, visible);
+      if (visible && host.style.getPropertyValue(LIFT_VAR) !== `${px}px`) host.style.setProperty(LIFT_VAR, `${px}px`);
+    };
   };
+  const place = () => { measurePlace()(); };
 
   const placePicture = () => {
     let end = 0;
@@ -201,25 +206,37 @@ export function mountServiceActionCta(scope: DisposableScope, options: ServiceAc
       // Caption placement is independent of the action list.
     }
   };
-  const sync = () => {
+  /** Reads the provider's actions and the CTA's place; the returned write renders both. */
+  const measure = (): (() => void) | void => {
     if (scope.isDisposed) return;
+    let placed: (() => void) | null = null;
+    let actions: ServiceAction[] = [];
     try {
-      place();
-      const actions = readActions(options.source);
-      currentActions = actions;
-      render(actions);
-      notifyLayout(actions);
-      syncAnimation();
+      placed = measurePlace();
+      actions = readActions(options.source);
     } catch {
-      currentActions = [];
-      render([]);
-      notifyLayout([]);
-      syncAnimation();
+      actions = [];
     }
+    return () => {
+      if (scope.isDisposed) return;
+      try {
+        placed?.();
+        currentActions = actions;
+        render(actions);
+        notifyLayout(actions);
+        syncAnimation();
+      } catch {
+        currentActions = [];
+        render([]);
+        notifyLayout([]);
+        syncAnimation();
+      }
+    };
   };
+  const sync = () => { measure()?.(); };
 
   // Subscribed providers own their bounded fallback as well as DOM events.
-  const refresh = createVisibleRefresh(document, sync, {
+  const refresh = createVisibleRefresh(document, measure, {
     active: () => !options.source.subscribe, pollMs: options.pollMs ?? DEFAULT_POLL_MS
   });
   scope.add(() => {
