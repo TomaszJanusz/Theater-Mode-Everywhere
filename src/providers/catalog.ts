@@ -19,6 +19,28 @@ export const PROVIDER_CATALOG = [
     ]
   },
   {
+    "id": "viki",
+    "hosts": [
+      {
+        "domain": "viki.com",
+        "includeSubdomains": true
+      }
+    ],
+    "home": "https://www.viki.com/",
+    "mediaFetch": [
+      {
+        "kind": "caption-track",
+        "host": "api.viki.io",
+        "pathname": "^/v4/videos/\\d+v/(?:auth_)?subtitles/[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})?\\.vtt$"
+      },
+      {
+        "kind": "storyboard-vtt",
+        "host": "manifest-viki.viki.io",
+        "pathname": "^/v1/streams/\\d+v/preview\\.vtt$"
+      }
+    ]
+  },
+  {
     "id": "vimeo",
     "hosts": [
       {

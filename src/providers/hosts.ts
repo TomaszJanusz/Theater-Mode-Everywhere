@@ -56,12 +56,6 @@ export function isIqiyiHost(hostname = currentHost()): boolean {
 export function isSoopHost(hostname = currentHost()): boolean {
   return catalogHost('soop', hostname);
 }
-/** viki.com and its real subdomains. */
-export function isVikiHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'viki.com' || host.endsWith('.viki.com');
-}
-
 /** crunchyroll.com and its real subdomains, including the static player host. */
 export function isCrunchyrollHost(hostname = currentHost()): boolean {
   const host = normalizeHost(hostname);

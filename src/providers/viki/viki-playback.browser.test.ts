@@ -41,6 +41,7 @@ const FIXTURE = `<!doctype html><html><head><meta charset="utf-8"><title>Legend 
 <script id="__NEXT_DATA__" type="application/json">${JSON.stringify(NEXT_DATA)}</script>
 <style>body { margin: 0; } #vmplayer_id { position: relative; width: 960px; height: 540px; } video { width: 100%; height: 100%; }</style></head>
 <body><div id="vmplayer_id" class="video-js"><video class="vjs-tech" muted playsinline src="data:video/webm;base64,${VOD}"></video>
+<div class="vjs-text-track-display"><div class="vjs-text-track-cue">Translation and Timing by Viki</div></div>
 <div class="vmp-audio-tracks"><div class="vmp-audio-tracks-menu"><ul id="audio-menu">
 <li><svg data-testid="check-icon"></svg>English</li><li>Original - 한국어</li><li>Español (Latinoamérica)</li><li>Português (Brasil)</li></ul></div></div>
 <button type="button" class="vmp-skip-base-button vmp-skip-button-positioned vjs-hidden" data-what="skip_intro_button">Skip Intro</button>
@@ -58,7 +59,7 @@ menu.addEventListener('click', event => {
 });
 </script></body></html>`;
 
-async function open(page: Page): Promise<void> {
+async function open(page: Page, settings: Record<string, unknown> = {}): Promise<void> {
   // The files the page itself loads: served with the CORS header Viki's own API sends.
   const cors = { 'access-control-allow-origin': 'https://www.viki.com' };
   await page.route('https://api.viki.io/**', route => route.fulfill({ status: 200, headers: cors, contentType: 'text/vtt',
@@ -66,7 +67,7 @@ async function open(page: Page): Promise<void> {
   await page.route('https://manifest-viki.viki.io/**', route => route.fulfill({ status: 200, headers: cors, contentType: 'text/vtt',
     body: `WEBVTT\n\n00:00:00.000 --> 00:00:10.000\n${SHEET}#xywh=0,0,256,106\n\n00:00:10.000 --> 00:00:20.000\n${SHEET}#xywh=256,0,256,106\n` }));
   await serveFixture(page, FIXTURE, EPISODE);
-  await bootPlayer(page, { mainWorld: true, bundle });
+  await bootPlayer(page, { mainWorld: true, bundle, settings });
   await page.waitForFunction(() => {
     const video = document.querySelector('video');
     return Boolean(video && video.readyState >= 2 && Number.isFinite(video.duration));
@@ -79,30 +80,75 @@ const run = <T>(page: Page, body: string) => page.evaluate(`(async () => { const
 describe('Rakuten Viki playback data', () => {
   for (const engine of testEngines()) {
     const shared = sharedTestBrowser(({ chromium, firefox })[engine]);
-    const newPage = async (t: TestContext) => {
+    const newPage = async (t: TestContext, settings?: Record<string, unknown>) => {
       const page = await (await shared.newContext(t, { viewport: { width: 1280, height: 720 } })).newPage();
-      await open(page);
+      await open(page, settings);
       return page;
     };
 
-    it(`lists the page's subtitle files, draws a chosen one and hands the host's cues back when off in ${engine}`, { timeout: 40_000 }, async t => {
+    it(`lists the page's subtitle files, draws a chosen one, keeps the host's cues hidden when off and hands them back on dispose in ${engine}`, { timeout: 40_000 }, async t => {
       const page = await newPage(t);
-      const result = await run<{ tracks: string[]; active: { status: string; text: string }; hidden: boolean; off: string; restored: boolean }>(page, `
+      const result = await run<{ tracks: string[]; listed: boolean; active: { status: string; text: string }; hidden: boolean; off: string; offHidden: boolean; unknown: string; restored: boolean }>(page, `
         const adapter = new T.VikiAdapter(T.requestPageFetch, T.parseCaptionPayload);
         const tracks = (await adapter.listCaptionTracks()).map(track => track.id + ':' + track.label + ':' + track.source);
+        const listed = document.documentElement.hasAttribute('data-te-viki-captions-hidden');
         const active = await adapter.activateCaptionTrack('viki:pl');
         const hidden = document.documentElement.hasAttribute('data-te-viki-captions-hidden');
         const off = (await adapter.activateCaptionTrack(null)).status;
-        const restored = !document.documentElement.hasAttribute('data-te-viki-captions-hidden');
+        const offHidden = document.documentElement.hasAttribute('data-te-viki-captions-hidden');
         const unknown = (await adapter.activateCaptionTrack('viki:xx')).status;
         adapter.dispose();
-        return { tracks, active: { status: active.status, text: active.cues[0]?.text }, hidden, off, restored, unknown };`);
+        const restored = !document.documentElement.hasAttribute('data-te-viki-captions-hidden');
+        return { tracks, listed, active: { status: active.status, text: active.cues[0]?.text }, hidden, off, offHidden, unknown, restored };`);
       assert.deepEqual(result.tracks, ['viki:en:English:viki', 'viki:pl:Polski:viki']);
+      assert.equal(result.listed, true, 'once the menu lists tracks, it owns what is on screen');
       assert.deepEqual(result.active, { status: 'active', text: 'Hello from pl.vtt' });
       assert.equal(result.hidden, true, 'the host cues step aside while the extension draws');
       assert.equal(result.off, 'off');
-      assert.equal(result.restored, true);
-      assert.equal((result as unknown as { unknown: string }).unknown, 'failed');
+      assert.equal(result.offHidden, true, 'Off shows no subtitles, not the host\'s');
+      assert.equal(result.unknown, 'failed');
+      assert.equal(result.restored, true, 'dispose hands the cues back to Viki');
+    });
+
+    it(`shows no subtitles while the menu says Off, only the chosen track, and leaves Viki's display untouched on exit in ${engine}`, { timeout: 40_000 }, async t => {
+      const page = await newPage(t);
+      // Viki paints its default subtitles itself; the menu offers the page's files.
+      const native = () => page.evaluate(() => {
+        const display = document.querySelector<HTMLElement>('.vjs-text-track-display')!;
+        return { shown: getComputedStyle(display).display !== 'none', style: display.getAttribute('style') };
+      });
+      const ccActive = () => page.locator('.cc-btn.active').count();
+      const ccReady = () => page.waitForFunction(() => {
+        const button = document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.cc-btn');
+        return button instanceof HTMLElement && !button.hidden && button.getAttribute('aria-busy') !== 'true';
+      });
+      assert.equal((await native()).shown, true, 'outside theater Viki owns its subtitles');
+      await enterTheater(page);
+      await ccReady();
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-viki-captions-hidden'));
+      assert.deepEqual([await ccActive(), (await native()).shown], [0, false], 'Off at entry: nothing on screen');
+      await page.locator('.cc-btn').click();
+      await page.getByRole('button', { name: 'Polski', exact: true }).click();
+      await page.locator('.cc-btn.active').waitFor();
+      assert.equal((await native()).shown, false, 'the chosen track replaces Viki\'s');
+      await page.locator('.cc-btn').click();
+      await page.getByRole('button', { name: 'Off', exact: true }).click();
+      await page.waitForFunction(() => !document.getElementById('theater-everywhere-ui')!.shadowRoot!.querySelector('.cc-btn.active'));
+      assert.equal((await native()).shown, false, 'Off again hides both');
+      assert.equal(await page.locator('.theater-caption-overlay.visible').count(), 0);
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.documentElement.classList.contains('theater-everywhere-html-active'));
+      await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-viki-captions-hidden'));
+      assert.deepEqual(await native(), { shown: true, style: null }, 'Viki shows its own subtitles again, its element unchanged');
+    });
+
+    it(`leaves Viki's own subtitles on screen in theater with the integration off in ${engine}`, { timeout: 40_000 }, async t => {
+      const page = await newPage(t, { vikiIntegrationEnabled: false });
+      await enterTheater(page);
+      await page.locator('.theater-title-hud-text', { hasText: 'Episode 1' }).first().waitFor();
+      assert.equal(await page.evaluate(() => document.documentElement.hasAttribute('data-te-viki-captions-hidden')), false);
+      assert.notEqual(await page.evaluate(() => getComputedStyle(document.querySelector('.vjs-text-track-display')!).display), 'none');
     });
 
     it(`marks the intro and credits and serves timeline previews from the page's own lists in ${engine}`, { timeout: 40_000 }, async t => {

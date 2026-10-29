@@ -15,6 +15,7 @@ import { assertFeatureHighlights } from './highlights';
 import { assertPinStorage } from './pin-storage';
 import { assertPatreonProvider, assertProviderScripts, assertVimeoProvider, assertYoutubeProvider } from './providers';
 import { assertRteSettings, assertPictureLayout } from './settings';
+import { assertVikiProvider } from './viki-provider';
 
 interface EntryScenarios {
   assertShortcutManagement(page: Page, context: BrowserContext): Promise<void>;
@@ -54,6 +55,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
       await assertPatreonProvider(page, context);
       await assertVimeoProvider(page, context);
       await assertYoutubeProvider(page, context);
+      await assertVikiProvider(page, context);
       return;
     }
     if (process.env.THEATER_SMOKE_HIGHLIGHTS_ONLY === '1') {
@@ -109,6 +111,7 @@ async function smokeChromium(origin: string, unpackedDir: string, scenarios: Ent
     await assertPatreonProvider(page, context);
     await assertVimeoProvider(page, context);
     await assertYoutubeProvider(page, context);
+    await assertVikiProvider(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:chromium parent-domain blacklist passed');
@@ -214,6 +217,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
       await assertPatreonProvider(page, context);
       await assertVimeoProvider(page, context);
       await assertYoutubeProvider(page, context);
+      await assertVikiProvider(page, context);
       return;
     }
     page.on('pageerror', (error) => console.warn('Firefox page error:', error.message));
@@ -241,6 +245,7 @@ async function smokeFirefox(origin: string, unpackedDir: string, scenarios: Entr
     await assertPatreonProvider(page, context);
     await assertVimeoProvider(page, context);
     await assertYoutubeProvider(page, context);
+    await assertVikiProvider(page, context);
     await scenarios.assertParentBlacklist(page, origin, context);
     await setBlacklist(context, []);
     console.log('smoke:firefox parent-domain blacklist passed');

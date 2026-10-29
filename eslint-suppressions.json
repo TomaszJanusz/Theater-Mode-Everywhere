@@ -1574,11 +1574,6 @@
       "count": 1
     }
   },
-  "src/providers/registry.test.ts": {
-    "import/order": {
-      "count": 3
-    }
-  },
   "src/providers/stage.ts": {
     "local/max-symbol-name-length": {
       "count": 2
@@ -1850,11 +1845,6 @@
     }
   },
   "src/test-utils/player-boot.browser.test.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
-  "src/test-utils/player-boot.ts": {
     "import/order": {
       "count": 2
     }

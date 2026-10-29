@@ -57,7 +57,7 @@ export function createMediaFeaturesAdapter(
   adapters.push(...registeredAdapters(flags, surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (surface.nativeMedia instanceof HTMLVideoElement) {
     // Native stays first so a service title outranks it; page metadata is only a fallback without one.
-    // A provider that leaves its title to the page (Viki) does not count as a service title.
+    // A provider that leaves its title to the page does not count as a service title.
     adapters.unshift(new NativeTextTrackAdapter(surface.nativeMedia, adapters.length === pageTitledProviders(flags)));
   }
   return new CompositeMediaAdapter(adapters, createHostCaptionLayoutSource());

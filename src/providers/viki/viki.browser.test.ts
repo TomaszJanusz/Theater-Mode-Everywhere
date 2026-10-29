@@ -9,7 +9,7 @@ import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { testEngines } from '../../test-utils/test-engines';
 import { serveFixture } from '../../test-utils/video-fixtures';
 
-const navigationBundle = bundleModules(["export { readVikiControls } from './providers/navigation/viki';"], 'TeVikiNavigation');
+const navigationBundle = bundleModules(["export { readVikiControls } from './providers/viki/navigation';"], 'TeVikiNavigation');
 const EPISODE_1 = 'https://www.viki.com/videos/1263131v';
 const VOD = readFileSync(new URL('../../../test/fixtures/vod.webm', import.meta.url)).toString('base64');
 

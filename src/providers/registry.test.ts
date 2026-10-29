@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+
 import { defaultMediaProviderFlags } from '../media-features/provider-flags';
+
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isYouTubeHost } from './hosts';
 import {
   matchingProviders,
   markFetchPatched,
@@ -8,7 +11,7 @@ import {
   shouldAttachProvider,
   shouldPatchMainWorld
 } from './registry';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isIqiyiHost, isNetflixHost, isSoopHost, isTencentHost, isVikiHost, isYouTubeHost } from './hosts';
+import { isVikiHost } from './viki/hosts';
 
 describe('provider registry', () => {
   it('matches provider hosts used for MAIN patches', () => {

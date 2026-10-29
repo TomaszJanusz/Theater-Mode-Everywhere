@@ -10,7 +10,6 @@ import { IQIYI_PLAYER_SELECTOR, readIqiyiControls } from './iqiyi';
 import { findNetflixPlaylistActions } from './netflix';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
-import { readVikiControls } from './viki';
 
 export const HOST_PLAYER_SCOPE = [
   VIDEOJS_PLAYER_SELECTOR,
@@ -72,8 +71,7 @@ function readHostControls(root: ParentNode) {
     ...readBilibiliIntlControls(root),
     ...readTencentControls(root),
     ...readIqiyiControls(root),
-    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? []),
-    ...readVikiControls(root)
+    ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? [])
   ];
 }
 

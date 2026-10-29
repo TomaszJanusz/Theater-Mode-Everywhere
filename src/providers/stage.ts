@@ -12,7 +12,6 @@ import {
 import { providerRegistry, registeredEvents } from './runtime-registration';
 import { tencentTheaterStage } from './tencent/stage';
 import { twitchTheaterStage } from './twitch/stage';
-import { vikiTheaterStage } from './viki/stage';
 
 const netflixTheaterStage: ProviderStage = {
   mount(hostname: string) {
@@ -36,8 +35,7 @@ const legacyStages: ProviderStage[] = [
   disneyTheaterStage,
   twitchTheaterStage,
   netflixTheaterStage,
-  tencentTheaterStage,
-  vikiTheaterStage
+  tencentTheaterStage
 ];
 
 // Read after registration closes, never cache the empty document-start registry.

@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
+
 import type { Frame, Page } from 'playwright';
+
 import { installChromeStub } from './chrome-stub';
 import { readStylesheet } from './styles';
 
@@ -32,12 +34,12 @@ export function bundleModules(exports: readonly string[], globalName = 'TheaterT
 }
 
 /**
- * First lines of a runtime bundle: the fixture runtimes, then YouTube's entries in both worlds, so its hooks register
+ * First lines of a runtime bundle: the fixture runtimes, then provider entries in both worlds, so its hooks register
  * before any runtime code runs, as the manifest orders runtime, provider and start. Both worlds share one registry in
  * a fixture; on other hosts the registration is rejected, as it is there.
  */
 export const PROVIDER_ENTRIES = ["import './test-utils/fixture-runtimes';", "import './providers/youtube/isolated';",
-  "import './providers/youtube/main';"] as const;
+  "import './providers/youtube/main';", "import './providers/viki/isolated';", "import './providers/viki/main';"] as const;
 
 /** The player runtime and MAIN-world runtime as global `TheaterTest`, plus extra export lines a test inspects. */
 export function bundlePlayer(extraExports: readonly string[] = []): string {

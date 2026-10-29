@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { assertSafeRedirect, classifyMediaFetchUrl, isAllowedBrokerFetchUrl, isAllowedMediaFetchUrl } from '../../media-features/fetch-allowlist';
+
 import {
   isVikiCaptionUrl,
   isVikiPreviewImageUrl,
@@ -160,4 +162,21 @@ describe('Viki audio menu', () => {
     assert.deepEqual(vikiAudioTracks([MENU[0], MENU[0]], LANGUAGES, 'ko').map(track => track.id), ['english', 'english#1']);
     assert.equal(vikiAudioTracks([{ label: 'x'.repeat(500), selected: false }], [], null)[0].label.length, 200);
   });
+});
+
+it('keeps descriptor admission aligned with Viki URL policy for page fetches, broker fetches and redirects', () => {
+  for (const url of [CAPTION, PREVIEW, 'https://api.viki.io/v4/videos/1263131v/auth_subtitles/pt-BR.vtt',
+    'https://manifest-viki.viki.io/v1/license?video_id=1263131v',
+    'https://manifest-viki.viki.io/v1/1263131v/akamai/manifest.mpd',
+    'https://api.viki.io.evil.test/v4/videos/1263131v/subtitles/en.vtt',
+    'https://user@api.viki.io/v4/videos/1263131v/subtitles/en.vtt',
+    'https://api.viki.io:8443/v4/videos/1263131v/subtitles/en.vtt']) {
+    const caption = isVikiCaptionUrl(url);
+    const preview = isVikiPreviewUrl(url);
+    assert.equal(isAllowedMediaFetchUrl({ provider: 'viki', kind: 'caption-track', url }), caption, url);
+    assert.equal(isAllowedMediaFetchUrl({ provider: 'viki', kind: 'storyboard-vtt', url }), preview, url);
+    assert.equal(isAllowedBrokerFetchUrl(url), caption || preview, url);
+    assert.equal(classifyMediaFetchUrl(url)?.provider ?? null, caption || preview ? 'viki' : null, url);
+    assert.equal(assertSafeRedirect(url, { provider: 'viki', kind: 'caption-track', url: CAPTION }), caption, url);
+  }
 });

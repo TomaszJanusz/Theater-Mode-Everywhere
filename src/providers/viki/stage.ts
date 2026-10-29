@@ -1,5 +1,6 @@
 import type { ProviderStage } from '../../core/provider-presentation';
-import { isVikiHost } from '../hosts';
+
+import { isVikiHost } from './hosts';
 
 export const VIKI_THEATER_STAGE_CLASS = 'theater-everywhere-viki-stage';
 /** The player's own tabindex, kept while theater has taken it away. */

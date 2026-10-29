@@ -7,6 +7,8 @@ import { bilibiliVideoIdentity } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
+import { providerRegistry } from './runtime-registration';
+import { vikiWatchPlayback } from './viki/watch-playback';
 import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from './watch-playback';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
@@ -79,7 +81,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -93,7 +95,8 @@ describe('positive provider watch declarations', () => {
     }
   });
 
-  it('qualifies Viki episode routes with an optional slug, excluding catalog pages and spoofed hosts', () => {
+  it('qualifies Viki episode routes through a registered watch hook, excluding catalog and spoofed hosts', t => {
+    t.mock.method(providerRegistry, 'get', (id: string) => id === 'viki' ? { id: 'viki', contractVersion: 1, watchPlayback: vikiWatchPlayback } : undefined);
     const expected = { provider: 'viki', identity: '1263131v' };
     for (const href of ['https://www.viki.com/videos/1263131v', 'https://www.viki.com/videos/1263131v-legend-of-the-female-general-episode-1',
       'https://viki.com/videos/1263131v/?utm_source=x#t', 'https://www.viki.com/videos/1263131v-slug/']) {
@@ -129,8 +132,8 @@ describe('AutoTheater availability', () => {
     assert.equal(autoTheaterAvailability('www.bilibili.com', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('example.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, true), 'available');
-    assert.equal(autoTheaterAvailability('www.viki.com', flags, true), 'available');
-    assert.equal(autoTheaterAvailability('www.viki.com', { ...flags, viki: false }, true), 'integrationOff');
+    assert.equal(autoTheaterAvailability('www.viki.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('www.viki.com', { ...flags, viki: false }, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.twitch.tv', { ...flags, twitch: false }, true), 'integrationOff');
     assert.equal(autoTheaterAvailability('www.twitch.tv', flags, false), 'unsupported');
     assert.equal(autoTheaterAvailability('example.com', { ...flags, twitch: false }, true), 'unsupported');

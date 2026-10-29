@@ -18,7 +18,8 @@ html[data-theater-everywhere-motion="reduced"].theater-everywhere-viki-stage .vj
   transition: none !important;
 }
 
-/* While the extension draws a chosen track, Viki's own cues would double it. */
+/* While the menu offers the episode's tracks it owns subtitles: Viki's own cues
+ * would show under Off or double a chosen track. Viki's player state is untouched. */
 html.theater-everywhere-html-active[data-te-viki-captions-hidden] .vjs-text-track-display {
   display: none !important;
 }

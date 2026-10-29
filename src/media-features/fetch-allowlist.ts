@@ -6,11 +6,11 @@ import { providerRegistry } from '../providers/runtime-registration';
 import { isCrunchyrollCaptionFileUrl } from './crunchyroll-cdn';
 import { bilibiliIntlSubtitleUrl } from './parsers/bilibili-intl';
 import { isMuxCaptionUrl, isMuxStoryboardUrl } from './parsers/mux-storyboard';
-import { isVikiCaptionUrl, isVikiPreviewUrl } from './viki-fetch-url';
+import type { MediaProviderId } from './provider-flags';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki' | 'vimeo';
+  provider: MediaProviderId;
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json' | 'chapters';
   url: string;
 };
@@ -51,11 +51,6 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
 
   if (request.provider === 'crunchyroll' && request.kind === 'caption-track') {
     return isCrunchyrollCaptionFileUrl(request.url);
-  }
-
-  if (request.provider === 'viki') {
-    if (request.kind === 'caption-track') return isVikiCaptionUrl(request.url);
-    return request.kind === 'storyboard-vtt' && isVikiPreviewUrl(request.url);
   }
 
   if (request.provider === 'tencent' && request.kind === 'caption-track') {
@@ -126,7 +121,7 @@ export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest)
   return isAllowedMediaFetchUrl({ ...request, url: finalUrl });
 }
 
-const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', 'viki', ...PROVIDER_CATALOG.map(item => item.id)];
+const CLASSIFY_PROVIDERS: MediaFetchRequest['provider'][] = ['youtube', 'twitch', 'disney', 'bilibili', 'bilibiliIntl', 'tencent', 'crunchyroll', ...PROVIDER_CATALOG.map(item => item.id)];
 // Netflix stays off this list. Public playback renders subtitles in the host
 // player and did not expose a caption or storyboard URL safe to fetch.
 const CLASSIFY_KINDS: MediaFetchRequest['kind'][] = ['caption-track', 'storyboard-vtt', 'storyboard-json', 'chapters'];
