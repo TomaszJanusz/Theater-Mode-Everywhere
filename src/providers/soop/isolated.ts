@@ -4,6 +4,7 @@ import { providerRuntime } from '../provider-api';
 
 import { SoopAdapter } from './adapter';
 import { soopChat } from './chat';
+import { soopChatTheme } from './chat-theme';
 import { SOOP_PLAYER_SELECTOR } from './dom';
 import { allowsSoopMediaFetch } from './fetch-policy';
 import { readSoopControls } from './navigation';
@@ -18,7 +19,7 @@ if (services) api?.register({
   allowsMediaFetch: allowsSoopMediaFetch,
   createAdapter: video => new SoopAdapter(video, services.requestPageFetch),
   navigation: { playerSelector: SOOP_PLAYER_SELECTOR, readControls: readSoopControls },
-  chat: soopChat,
+  chat: { ...soopChat, theme: soopChatTheme },
   serviceActions() {
     // The registry hook gets no document/element options; SOOP's player lives in the light DOM of the page document.
     const source = createSoopServiceActions({ elementToken: services.serviceElementToken });
