@@ -1547,7 +1547,7 @@
   },
   "src/providers/network-harvest.ts": {
     "import/order": {
-      "count": 5
+      "count": 4
     },
     "local/max-symbol-name-length": {
       "count": 1
@@ -1770,7 +1770,7 @@
   },
   "src/providers/youtube/player-main.ts": {
     "import/order": {
-      "count": 11
+      "count": 9
     },
     "local/max-symbol-name-length": {
       "count": 14

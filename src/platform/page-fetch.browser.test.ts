@@ -7,11 +7,11 @@ import { it } from 'node:test';
 
 import { chromium, firefox } from 'playwright';
 
-import { bundleModules } from '../test-utils/player-boot';
+import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { selectTestEngines } from '../test-utils/test-engines';
 
-const bundle = bundleModules([
+const exports = [
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",
   "export { requestPageFetch } from './media-features/probe';",
   "export { fetchPageMedia } from './platform/page-fetch';",
@@ -19,7 +19,10 @@ const bundle = bundleModules([
   "export { readCachedTimedtextBody } from './providers/youtube/player-main';",
   "export { readBoundedBytes } from './platform/bounded-body';",
   "export { readPageResponseBytes } from './platform/page-body';"
-], 'BridgeTest');
+];
+// Fixture pages register YouTube's MAIN hooks as the shipped scripts do; the installed extension already has its own.
+const bundle = bundleModules([...BUNDLED_PROVIDERS, ...exports], 'BridgeTest');
+const installedRequester = bundleModules(exports, 'BridgeTest');
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
   const shared = sharedTestBrowser(engine);
@@ -248,7 +251,7 @@ it('chromium: installed MAIN broker replies privately to the extension isolated 
   // retaining the installed extension's isolated-world MessagePorts and XHRs.
   const result = await cdp.send('Runtime.evaluate', {
     contextId: content.id, awaitPromise: true, returnByValue: true,
-    expression: `${bundle}; (() => {
+    expression: `${installedRequester}; (() => {
       const post = window.postMessage.bind(window);
       window.postMessage = (message, origin, ports) => {
         post({...message, type:'PAGE_FETCH_RESULT', payload:{ok:true, body:'window-forgery'}}, origin);

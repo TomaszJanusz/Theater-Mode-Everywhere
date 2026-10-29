@@ -34,6 +34,7 @@ import { qualifyNetworkHarvest, harvestBodyFormat, harvestFetchFormatMatches, ty
 import { patreonIntegrationEnabled, readPatreonSnapshot } from '../providers/patreon/main';
 import { installPatreonNavigation } from '../providers/patreon/navigation';
 import { HOST_PLAY_CONTROL_SELECTOR } from '../providers/play-controls';
+import type { ProviderHarvest } from '../providers/provider-api';
 import { markFetchPatched, shouldPatchMainWorld } from '../providers/registry';
 import { providerRegistry, registeredEvents } from '../providers/runtime-registration';
 import { captureTencentNetworkResponse, harvestTencentBody, harvestTencentData, installTencentMain, readTencentSnapshot, tencentIntegrationEnabled } from '../providers/tencent/main';
@@ -49,20 +50,7 @@ import {
 import { installTwitchNavigation } from '../providers/twitch/navigation';
 import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
-import {
-  captureTimedtextResponse,
-  cacheTimedtextBody,
-  fetchTimedtextWithPot,
-  handleYoutubeMediaSeek,
-  harvestYoutubeHeatmapJson,
-  harvestTimedtextJson,
-  harvestYoutubeHeatmapText,
-  installYoutubeMain,
-  isAllowedTimedtextUrl,
-  publishYoutubeProbeSnapshot,
-  readYoutubeSnapshot,
-  youtubeIntegrationEnabled
-} from '../providers/youtube/player-main';
+import { publishYoutubeProbeSnapshot, readYoutubeSnapshot, youtubeIntegrationEnabled } from '../providers/youtube/player-main';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
 import { matchesShortcut } from '../ui/shortcuts';
@@ -75,6 +63,17 @@ import { readPageResponseBytes } from './page-body';
 import { fetchPageMedia } from './page-fetch';
 import { noteWrapperFailure } from './wrapper-failures';
 import { installXhrHarvest } from './xhr-harvest';
+
+/** After the observers exist, so a provider's first responses are seen; a failing install drops only that provider. */
+function installProviders(): void {
+  for (const hooks of providerRegistry.all()) {
+    try { hooks.install?.(); } catch { providerRegistry.fail(hooks.id); }
+  }
+}
+
+function wrapsFetch(harvests: readonly ProviderHarvest[]): boolean {
+  return !isTwitchHost(window.location.hostname) && harvests.every(harvest => harvest.wrapFetch !== false);
+}
 
 export function installMainWorldRuntime(): void {
   if (isChatDocument(window.location.href)) return;
@@ -94,23 +93,36 @@ export function installMainWorldRuntime(): void {
     return '';
   }
 
-  function harvestTarget(url: string): NetworkHarvestTarget | null {
+  // Registration closed before startup, so this list is complete before any observer is installed.
+  const harvests = providerRegistry.all().flatMap(hooks => hooks.harvest ?? []);
+  type ProviderTarget = { harvest: ProviderHarvest; id: string };
+  type HarvestTarget = NetworkHarvestTarget | ProviderTarget;
+  const isProviderTarget = (target: HarvestTarget | null): target is ProviderTarget => typeof target === 'object' && target !== null;
+
+  function harvestTarget(url: string): HarvestTarget | null {
     if (isCrunchyrollOwnedRequest(url)) return null;
-    return qualifyNetworkHarvest({
+    const legacy = qualifyNetworkHarvest({
       hostname: window.location.hostname,
       pageUrl: window.location.href,
       flags: {
-        youtube: youtubeIntegrationEnabled(), disney: disneyIntegrationEnabled(),
-        twitch: twitchIntegrationEnabled(), tencent: tencentIntegrationEnabled(),
-        crunchyroll: crunchyrollIntegrationEnabled()
+        disney: disneyIntegrationEnabled(), twitch: twitchIntegrationEnabled(),
+        tencent: tencentIntegrationEnabled(), crunchyroll: crunchyrollIntegrationEnabled()
       }
     }, url);
+    if (legacy) return legacy;
+    for (const harvest of harvests) {
+      const id = harvest.qualify(url, window.location.href);
+      if (id) return { harvest, id };
+    }
+    return null;
   }
 
-  function harvestJson(target: NetworkHarvestTarget | null, url: string, data: unknown): void {
+  /** Format checks treat a registered provider's target as text or JSON metadata. */
+  const formatTarget = (target: HarvestTarget | null) => isProviderTarget(target) ? 'provider' as const : target;
+
+  function harvestJson(target: HarvestTarget | null, url: string, data: unknown): void {
+    if (isProviderTarget(target)) { target.harvest.json?.(target.id, url, data); return; }
     switch (target) {
-      case 'timedtext': harvestTimedtextJson(url, data); break;
-      case 'heatmap': harvestYoutubeHeatmapJson(url, data); break;
       case 'disney': harvestDisneyData(url, data); break;
       case 'tencent': harvestTencentData(url, data); break;
       case 'crunchyroll': harvestCrunchyrollData(url, data); break;
@@ -118,14 +130,26 @@ export function installMainWorldRuntime(): void {
     }
   }
 
-  function harvestText(target: NetworkHarvestTarget | null, url: string, text: string): void {
+  function harvestText(target: HarvestTarget | null, url: string, text: string): void {
+    if (isProviderTarget(target)) { target.harvest.text?.(target.id, url, text); return; }
     switch (target) {
-      case 'timedtext': cacheTimedtextBody(url, text); break;
-      case 'heatmap': harvestYoutubeHeatmapText(url, text); break;
       case 'disney': harvestDisneyBody(url, text); break;
       case 'tencent': harvestTencentBody(url, text); break;
       case 'crunchyroll': harvestCrunchyrollBody(url, text); break;
       case 'twitch': harvestTwitchResponseText(url, text); break;
+    }
+  }
+
+  /** Each selected consumer owns this single clone. Its text/json read bypasses the host Response observers to avoid a second harvest. */
+  function consumeFetchClone(target: HarvestTarget | null, url: string, response: Response): void {
+    if (isProviderTarget(target)) {
+      if (target.harvest.cloneTargets?.includes(target.id)) target.harvest.response?.(target.id, url, markOwnedHarvestResponse(response.clone()));
+      return;
+    }
+    switch (target) {
+      case 'disney':
+      case 'disney-bif': captureDisneyNetworkResponse(url, markOwnedHarvestResponse(response.clone())); break;
+      case 'tencent': captureTencentNetworkResponse(url, markOwnedHarvestResponse(response.clone())); break;
     }
   }
 
@@ -148,15 +172,8 @@ export function installMainWorldRuntime(): void {
             const target = finalUrl ? harvestTarget(finalUrl) : null;
             const length = Number(response.headers.get('content-length'));
             const cap = target === 'disney-bif' ? MAX_BIF_BYTES : MAX_CAPTION_BYTES;
-            if (!harvestFetchFormatMatches(target, response.headers.get('content-type') || '') || length > cap) return response;
-            // Each selected consumer owns this single clone. Its text/json read
-            // bypasses the host Response observers to avoid a second harvest.
-            switch (target) {
-              case 'timedtext': captureTimedtextResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
-              case 'disney':
-              case 'disney-bif': captureDisneyNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
-              case 'tencent': captureTencentNetworkResponse(finalUrl, markOwnedHarvestResponse(response.clone())); break;
-            }
+            if (!harvestFetchFormatMatches(formatTarget(target), response.headers.get('content-type') || '') || length > cap) return response;
+            consumeFetchClone(target, finalUrl, response);
           }
         } catch (error) {
           // Harvest must not break the page's fetch.
@@ -169,7 +186,7 @@ export function installMainWorldRuntime(): void {
     return wrapped;
   }
 
-  const harvestHost = shouldPatchMainWorld(window.location.hostname);
+  const harvestHost = shouldPatchMainWorld(window.location.hostname) || harvests.length > 0;
   if (harvestHost && markFetchPatched(window)) {
     const originalResponseJson = Response.prototype.json;
     Response.prototype.json = function(this: Response) {
@@ -210,7 +227,8 @@ export function installMainWorldRuntime(): void {
     // Twitch replaces fetch with its own transport. Wrapping that replacement
     // freezes native VOD replay after seeking, even outside theater mode.
     // Response JSON/text observers and XHR still harvest Twitch metadata.
-    if (!isTwitchHost(window.location.hostname)) {
+    // A registered provider declares the same with `wrapFetch: false`.
+    if (wrapsFetch(harvests)) {
       let currentFetch = wrapFetch(window.fetch.bind(window));
       try {
         Object.defineProperty(window, 'fetch', {
@@ -233,7 +251,7 @@ export function installMainWorldRuntime(): void {
       if (!target) return;
       if (target === 'crunchyroll-url') { harvestCrunchyrollBody(url, ''); return; }
       if (target === 'twitch-storyboard') { harvestTwitchXhr(url, null, xhr); return; }
-      const format = harvestBodyFormat(target, xhr.responseType);
+      const format = harvestBodyFormat(formatTarget(target), xhr.responseType);
       if (format === 'binary') {
         if (target === 'disney-bif') harvestDisneyBifFromXhr(xhr);
         else if (xhr.response instanceof ArrayBuffer) rememberCrunchyrollBif(xhr.response, url);
@@ -257,8 +275,8 @@ export function installMainWorldRuntime(): void {
   installIqiyiNavigation();
   if (isBilibiliHost(window.location.hostname) || isBilibiliIntlHost(window.location.hostname)) installBilibiliNavigation();
 
+  installProviders();
   if (harvestHost) {
-    installYoutubeMain();
     installTwitchMain();
     if (isTwitchHost(window.location.hostname)) installTwitchNavigation();
     installDisneyMain();
@@ -521,7 +539,6 @@ export function installMainWorldRuntime(): void {
     if (!isAllowlistedPageFetchUrl(url, window.location.href)) return false;
     const classified = classifyMediaFetchUrl(url, window.location.href);
     if (!classified) return false;
-    if (classified.provider === 'youtube') return youtubeIntegrationEnabled();
     if (classified.provider === 'patreon') return patreonIntegrationEnabled();
     if (classified.provider === 'twitch') return twitchIntegrationEnabled();
     if (classified.provider === 'disney') return disneyIntegrationEnabled();
@@ -548,9 +565,9 @@ export function installMainWorldRuntime(): void {
         return;
       }
       const href = window.location.href;
-      const load = isAllowedTimedtextUrl(url)
-        ? fetchTimedtextWithPot(url)
-        : (async () => {
+      let owned: Promise<string | null> | null = null;
+      for (const hooks of providerRegistry.all()) owned ??= hooks.pageFetch?.(url) ?? null;
+      const load = owned ?? (async () => {
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 15_000);
           try {
@@ -600,7 +617,7 @@ export function installMainWorldRuntime(): void {
     const video = findActiveVideo(document) || document.querySelector('video');
     if (handleNetflixMediaSeek(detail, video)) return;
     if (handleDisneyMediaSeek(detail, video)) return;
-    if (handleYoutubeMediaSeek(detail, video)) return;
+    if (providerRegistry.all().some(hooks => hooks.seek?.(detail, video))) return;
     if (video instanceof HTMLVideoElement && typeof detail.time === 'number' && Number.isFinite(detail.time)) {
       video.currentTime = detail.time;
     }

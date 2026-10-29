@@ -92,8 +92,8 @@ it('each descriptor entry actually registers its own hooks in its own world befo
   const chatWorlds = new Map<string, number>();
   for (const descriptor of descriptors) for (const world of ['isolated', 'main'] as const) {
     const registry = createProviderRegistry(descriptor.hosts[0].domain);
-    const api: ProviderRuntimeApi = { contractVersion: 1, register: registry.register, start() {},
-      services: { requestPageFetch: async () => null, serviceElementToken: () => 1 } };
+    const services = world === 'main' ? { fetchPageMedia: async () => null } : { requestPageFetch: async () => null, serviceElementToken: () => 1 };
+    const api: ProviderRuntimeApi = { contractVersion: 1, register: registry.register, start() {}, services };
     const window = { location: { hostname: descriptor.hosts[0].domain }, [Symbol.for(`theater-everywhere.provider-runtime.${world}`)]: api };
     const code = await bundleQueryModules([`import './providers/${descriptor.id}/${descriptor.entries[world].file}';`]);
     runInNewContext(code, { window, URL });
@@ -124,7 +124,7 @@ it('shared bundles have no extracted implementation and providers have no duplic
       const world = { content: 'isolated', mainWorld: 'main' }[entry.output as 'content' | 'mainWorld'];
       if (world) for (const descriptor of bundled) assert.ok(inputs.some(input => input.endsWith(`/providers/${descriptor.id}/${descriptor.entries[world as 'isolated' | 'main'].file}`)), `${entry.output} misses ${descriptor.id}`);
     } else {
-      assert.ok(!inputs.some(input => /(?:runtime-registration|\/registry|media-features\/probe)\.ts$/.test(input)), entry.output);
+      assert.ok(!inputs.some(input => /(?:runtime-registration|\/registry|media-features\/probe|platform\/harvest-ownership|platform\/page-fetch)\.ts$/.test(input)), entry.output);
     }
   }
 });

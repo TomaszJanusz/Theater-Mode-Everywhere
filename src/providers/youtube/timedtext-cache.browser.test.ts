@@ -8,14 +8,16 @@ import { bundleModules } from '../../test-utils/player-boot';
 import { testEngines } from '../../test-utils/test-engines';
 
 type CaptionApi = {
-  installYoutubeMain(): void;
+  installYoutubeMain(fetchPageMedia: unknown): void;
+  fetchPageMedia: unknown;
   cacheTimedtextBody(url: string, body: string): void;
   readCachedTimedtextBody(url: string): string | null;
   readTimedtextCacheUsage(): { retainedStringLength: number; stringBudget: number; tracks: number };
 };
 
 const bundle = bundleModules(
-  ["export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/player-main';"],
+  ["export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/player-main';",
+    "export { fetchPageMedia } from './platform/page-fetch';"],
   'CaptionTest'
 );
 const browsers = sharedEngineBrowsers();
@@ -23,7 +25,7 @@ const browsers = sharedEngineBrowsers();
 async function install(page: Page): Promise<void> {
   await page.addScriptTag({ content: 'window.__name = (fn) => fn;' });
   await page.addScriptTag({ content: `${bundle}\nwindow.CaptionTest = CaptionTest;` });
-  await page.evaluate('window.CaptionTest.installYoutubeMain()');
+  await page.evaluate('window.CaptionTest.installYoutubeMain(window.CaptionTest.fetchPageMedia)');
 }
 
 describe('YouTube timedtext cache budget', () => {
@@ -125,7 +127,7 @@ describe('YouTube timedtext cache budget', () => {
       assert.ok(frame);
       await frame.addScriptTag({ content: 'window.__name = (fn) => fn;' });
       await frame.addScriptTag({ content: `${bundle}\nwindow.CaptionTest = CaptionTest;` });
-      await frame.evaluate('window.CaptionTest.installYoutubeMain()');
+      await frame.evaluate('window.CaptionTest.installYoutubeMain(window.CaptionTest.fetchPageMedia)');
       await frame.evaluate(() => {
         for (let index = 0; index < 20; index++) {
           const body = `${String(index).padStart(6, '0')}${'y'.repeat(800_000 - 6)}`;
