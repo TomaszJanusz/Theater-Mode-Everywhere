@@ -15,7 +15,8 @@ type LanguageHudHost = Pick<PlayerChromeContext, 'mountPlayerUi' | 'paintOverlay
   session: Pick<PlayerChromeContext['session'], 'element' | 'currentEpoch'>;
 };
 type StatusLine = Extract<LanguageLine, { kind: 'status' }>;
-type PlateBox = { box: DOMRect; places: Map<LanguageSource, { x: number; y: number }> };
+type Place = { x: number; y: number };
+type PlateBox = { box: DOMRect; places: Map<LanguageSource, Place[]> };
 type LeavingCell = { cell: HTMLElement; left: number; top: number; width: number; opacity: string };
 
 const PLATE_MORPH_MS = 225;
@@ -53,17 +54,20 @@ function buildRow(source: LanguageSource, line: LanguageLine): HTMLElement {
 
 /** Where the plate and its rows are now, running motion included, so an update can ease from there. */
 function measurePlate(plate: HTMLElement): PlateBox {
-  const places = new Map<LanguageSource, { x: number; y: number }>();
+  const places = new Map<LanguageSource, Place[]>();
   for (const row of plate.querySelectorAll<HTMLElement>(`.${ROWS_CLASS} > [data-language-line]`)) {
-    const { left, top } = row.firstElementChild!.getBoundingClientRect();
-    places.set(row.dataset.languageLine as LanguageSource, { x: left, y: top });
+    // Per cell: the label holds the plate's end edge while its value moves with the column's width.
+    places.set(row.dataset.languageLine as LanguageSource, cellsOf(row).map(cell => {
+      const { left, top } = cell.getBoundingClientRect();
+      return { x: left, y: top };
+    }));
   }
   return { box: plate.getBoundingClientRect(), places };
 }
 
 /**
  * The language notice on screen: one plate, one row per source, each a label and a value in two
- * shared columns. Each row keeps its nodes and its own motion (a spinner's exit, a reveal), so painting
+ * shared columns (value first, label on the plate's end edge; see `.language-hud-rows`). Each row keeps its nodes and its own motion (a spinner's exit, a reveal), so painting
  * one row never restarts or cuts another's. The plate morphs between sizes; rows that stay slide, a
  * row that joins fades in, and a row that leaves fades out in place while the plate closes over it.
  */
@@ -260,11 +264,12 @@ class LanguagePlate implements LanguageNoticeView {
     for (const [source, place] of before.places) {
       const row = rowOf(plate, source);
       if (!row) continue;
-      const now = row.firstElementChild!.getBoundingClientRect();
-      const dx = place.x - now.left;
-      const dy = place.y - now.top;
-      if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) continue;
-      for (const cell of cellsOf(row)) this.play(cell, [{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }]);
+      cellsOf(row).forEach((cell, index) => {
+        const now = cell.getBoundingClientRect();
+        const dx = place[index].x - now.left;
+        const dy = place[index].y - now.top;
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) this.play(cell, [{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }]);
+      });
     }
   }
 

@@ -2756,13 +2756,19 @@ button.theater-time-end:focus-visible,
   pointer-events: none !important;
 }
 
-/* The language notice: one row per source, a label and a value in two shared columns. The label
-   column has a fixed minimum, so values keep their place when a row with another label joins; a longer
-   label widens it for every row. 5.5em holds the widest shipped label (French "Sous-titres", 78px at 15px). Values wrap by words, never clipped. A row has no box of its own
-   (`display: contents`), so both cells sit in the columns. */
+/* The language notice: one row per source, a value then its label, in two shared columns. The plate is
+   anchored to the corner and grows away from it, so the labels take the column at the inline end (the
+   corner side) and the values extend toward the start: a label stays put whatever its value's width.
+   Labels end-align to that edge. The label column has a fixed minimum, so values keep their place when
+   a row with another label joins; a longer label widens it for every row. 5.5em holds the widest
+   shipped label (French "Sous-titres", 78px at 15px). Values wrap by words, never clipped. A row has no
+   box of its own (`display: contents`), so both cells sit in the columns. The DOM keeps the label first
+   (reading and selection order); only the columns reorder it, and they mirror in RTL. */
 .language-hud-rows {
   display: grid;
-  grid-template-columns: minmax(var(--language-hud-label-min), max-content) minmax(0, max-content);
+  grid-template-columns: minmax(0, max-content) minmax(var(--language-hud-label-min), max-content);
+  /* Cells name their column, so `dense` packs each label and value into the same row. */
+  grid-auto-flow: row dense;
   column-gap: 14px;
   row-gap: 6px;
   /* Label and value share one line height, so their first lines align from the top. */
@@ -2775,14 +2781,20 @@ button.theater-time-end:focus-visible,
 }
 
 .language-hud-label {
+  grid-column: 2;
   white-space: nowrap;
+  text-align: end;
   line-height: 1.4;
 }
 
 .language-hud-value {
+  grid-column: 1;
   /* A flex row of one line height, whether it holds the spinner or the value, so the row never changes height. */
   display: flex;
   align-items: center;
+  /* The value ends beside its label, whatever the column's width. */
+  justify-content: flex-end;
+  text-align: end;
   min-height: 1.4em;
   position: relative;
   max-width: 22rem;
@@ -2803,7 +2815,7 @@ button.theater-time-end:focus-visible,
 .language-hud-loading.leaving {
   position: absolute;
   inset-block-start: 0;
-  inset-inline-start: 0;
+  inset-inline-end: 0;
 }
 
 .language-hud-spinner {

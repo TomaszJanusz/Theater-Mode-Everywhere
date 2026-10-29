@@ -106,6 +106,41 @@ test('Subtitles then audio, and audio then subtitles, share one plate in a fixed
   }
 })));
 
+/** The edge of a cell on the plate's inline end (the corner side): right in LTR, left in RTL. */
+const endEdge = (cell: Element) => {
+  const rect = cell.getBoundingClientRect();
+  return getComputedStyle(cell).direction === 'rtl' ? rect.left : rect.right;
+};
+
+// The plate is anchored to its corner and grows away from it, so labels on the end edge never move.
+for (const [name, locale] of [['LTR', 'en'], ['RTL', 'ar']] as const) {
+  test(`${name}: the labels keep their edge while the values change width, value before label`, () => runHudCase({
+    ...hudStory(h => { h.triggerCaptionHud(ON); h.updateLanguageHud(AUDIO); }, {
+      play: async () => {
+        const plate = notice()!;
+        const label = (source: LanguageSource) => line(source)!.querySelector('.language-hud-label')!;
+        const value = (source: LanguageSource) => line(source)!.querySelector('.language-hud-value')!;
+        const edges = () => ({ subtitles: endEdge(label('subtitles')), audio: endEdge(label('audio')) });
+        await finishMorph(plate);
+        const placed = edges();
+        // The value sits on the start side of its label, beside it.
+        for (const source of ['subtitles', 'audio'] as const) {
+          const [v, l] = [value(source).getBoundingClientRect(), label(source).getBoundingClientRect()];
+          await expect(locale === 'ar' ? v.left >= l.right : v.right <= l.left).toBe(true);
+        }
+        for (const detail of ['Off', 'Français (France), audio description', 'Off']) {
+          hud().triggerCaptionHud({ kind: 'status', title: 'Subtitles', detail });
+          hud().updateLanguageHud({ audio: { kind: 'status', title: 'Audio', detail: detail === 'Off' ? 'English' : detail } });
+          await expect(edges()).toEqual(placed);
+          await finishMorph(plate);
+          await expect(edges()).toEqual(placed);
+        }
+      }
+    }),
+    globals: { locale }
+  }));
+}
+
 test('An update at 1 s keeps the 4 s minimum; at 3.5 s it holds 2 s more', () => runHudCase(hudStory(() => {}, {
   play: async () => {
     for (const [at, hideAt] of [[1000, LANGUAGE_MIN_VISIBLE_MS], [3500, 3500 + LANGUAGE_AFTER_UPDATE_MS]]) {
