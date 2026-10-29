@@ -19,7 +19,7 @@ const descriptors = discoverDescriptors(root);
 
 it('keeps descriptors, source manifest, catalog, registry and entry inventory consistent', () => {
   assertProviderSources(root, descriptors);
-  assert.deepEqual(PROVIDER_CATALOG, descriptors.map(({ id, hosts, home }) => ({ id, hosts, ...(home ? { home } : {}) })));
+  assert.deepEqual(PROVIDER_CATALOG, descriptors.map(({ id, hosts, home, mediaFetch }) => ({ id, hosts, ...(home ? { home } : {}), ...(mediaFetch ? { mediaFetch } : {}) })));
   for (const descriptor of descriptors) {
     assert.equal(PROVIDER_DEFINITIONS.filter(item => item.id === descriptor.id).length, 1);
     for (const host of descriptor.hosts) {
@@ -159,5 +159,18 @@ it('validates and preserves canonical home declarations without changing injecti
   for (const home of [42, '/relative', 'javascript:alert(1)', 'http://sooplive.com/',
     'https://sooplive.com.evil.test/', 'https://user:pass@sooplive.com/', 'https://sooplive.com:8443/']) {
     assert.throws(() => parseDescriptor({ ...original, home }));
+  }
+});
+
+it('validates broker URL declarations and carries them into the registry-free catalog', () => {
+  const rule = { kind: 'caption-track', host: 'captions.example.test', pathname: '^/tracks/[a-z]+\\.vtt$' };
+  const declared = parseDescriptor({ ...descriptors[0], mediaFetch: [rule] });
+  assert.deepEqual(declared.mediaFetch, [rule]);
+  assert.ok(catalogSource([declared]).includes('captions.example.test'));
+  for (const rule of [{ kind: 'license', host: 'example.test', pathname: '^/ok$' },
+    { kind: 'caption-track', host: '*.example.test', pathname: '^/ok$' },
+    { kind: 'caption-track', host: 'example.test', pathname: '/unanchored' },
+    { kind: 'caption-track', host: 'example.test', pathname: '^/[$' }]) {
+    assert.throws(() => parseDescriptor({ ...descriptors[0], mediaFetch: [rule] }));
   }
 });
