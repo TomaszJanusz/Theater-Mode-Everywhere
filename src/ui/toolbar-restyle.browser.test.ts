@@ -3,12 +3,12 @@ import { it } from 'node:test';
 
 import type { Page } from 'playwright';
 
+import { CAPTION_DOCK_REST_BOTTOM } from '../media-features/caption-dock';
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bootPlayer, enterTheater } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 import { canvasVideoFixture, serveFixture } from '../test-utils/video-fixtures';
 
-import { CAPTION_DOCK_REST_BOTTOM } from '../media-features/caption-dock';
 
 import { TOOLBAR_AUTO_HIDE_DELAY_MS } from './toolbar';
 
