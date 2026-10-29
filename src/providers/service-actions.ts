@@ -7,9 +7,9 @@ import { createBilibiliIntlServiceActions, type BilibiliIntlServiceActionHooks }
 import { createCrunchyrollServiceActions } from './crunchyroll/service-actions';
 import { createDisneyServiceActions } from './disney/service-actions';
 import { observeProviderDom } from './dom-watch';
-import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isSoopHost, isVikiHost, isYouTubeHost } from './hosts';
+import { isBilibiliHost, isBilibiliIntlHost, isCrunchyrollHost, isDisneyHost, isNetflixHost, isVikiHost, isYouTubeHost } from './hosts';
 import { createNetflixServiceActions } from './netflix/service-actions';
-import { createSoopServiceActions } from './soop/service-actions';
+import { providerRegistry } from './runtime-registration';
 import { createVikiServiceActions } from './viki/service-actions';
 import { createYouTubeServiceActions, YOUTUBE_PLAYER_SELECTOR, youtubeAdShowing } from './youtube/service-actions';
 
@@ -24,7 +24,10 @@ export function createServiceActions(options: BilibiliIntlServiceActionHooks = {
   if (isBilibiliIntlHost()) return observed(createBilibiliIntlServiceActions(options), 'bilibiliIntl', '.bstar-player');
   if (isDisneyHost()) return createDisneyServiceActions();
   if (isCrunchyrollHost()) return observed(createCrunchyrollServiceActions(), 'crunchyroll', '#player-container');
-  if (isSoopHost()) return observed(createSoopServiceActions(), 'soop', '#webplayer #player');
+  for (const hooks of providerRegistry.all()) {
+    const source = hooks.serviceActions?.();
+    if (source) return source;
+  }
   if (isVikiHost()) return observed(createVikiServiceActions(), 'viki', '#vmplayer_id');
   return null;
 

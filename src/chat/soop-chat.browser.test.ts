@@ -7,7 +7,9 @@ import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
 import { bundleModules } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
-const bundle = bundleModules(["export * from './chat/index';"], 'NativeChat');
+const bundle = bundleModules(["export * from './chat/index';",
+  "export { exposeFixtureRuntime } from './test-utils/provider-runtime';"], 'NativeChat');
+const provider = bundleModules(["import './providers/soop/isolated';"]);
 const browsers = sharedEngineBrowsers();
 
 const LIVE = 'https://play.sooplive.com/battleland/297994793';
@@ -28,10 +30,34 @@ async function open(t: TestContext, engine: keyof typeof browsers, url: string, 
   await tab.route('https://*.sooplive.com/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body }));
   await tab.goto(url);
   await tab.addScriptTag({ content: bundle });
+  await tab.evaluate("NativeChat.exposeFixtureRuntime('isolated');");
+  await tab.addScriptTag({ content: provider });
   return tab;
 }
 
 for (const engine of testEngines()) describe(`${engine} SOOP native chat`, () => {
+  it('refreshes identity and native visibility on the registered history event without URL polling', async t => {
+    const tab = await open(t, engine, LIVE, page(true));
+    const time = new Date('2026-01-01T00:00:00Z');
+    await tab.clock.install({ time });
+    await tab.clock.pauseAt(new Date(time.getTime() + 1000));
+    await tab.evaluate(`(() => {
+      window.__href = location.href;
+      window.__controller = new NativeChat.ChatController({ document, href: () => window.__href, onChange() {}, onLayoutChange() {} });
+      window.__controller.hide();
+    })()`);
+    const read = () => tab.evaluate(`({ identity: window.__controller.state.surface?.contentKey, visible: window.__controller.state.visible })`);
+    const first = await read();
+    assert.deepEqual(first, { identity: 'battleland/297994793', visible: false });
+    await tab.evaluate(`window.__href = 'https://play.sooplive.com/lolglobal/298189961'`);
+    await tab.clock.runFor(10000);
+    assert.deepEqual(await read(), first, 'nothing polls the URL');
+    await tab.evaluate(`window.dispatchEvent(new Event('theater-everywhere-soop-navigate'))`);
+    await tab.clock.runFor(80);
+    assert.deepEqual(await read(), { identity: 'lolglobal/298189961', visible: true });
+    await tab.evaluate('window.__controller.dispose()');
+  });
+
   it('finds the panel for a live broadcast and a recording, reading the player\'s own open state', async t => {
     const tab = await open(t, engine, LIVE, page(true));
     const report = await tab.evaluate(`(() => {

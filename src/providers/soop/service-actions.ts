@@ -1,14 +1,16 @@
 import type { ServiceAction, ServiceActionSource } from '../../core/service-actions';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { isSoopHost } from '../hosts';
-import { serviceControlLabel, serviceElementToken, usableServiceControl } from '../native-service-actions';
-import { SOOP_PLAYER_SELECTOR, soopRoute, soopRouteKey } from '../soop-dom';
+import { serviceControlLabel, usableServiceControl } from '../native-service-actions';
+
+import { SOOP_PLAYER_SELECTOR, soopRoute, soopRouteKey } from './dom';
 
 const CARD = `${SOOP_PLAYER_SELECTOR} .prev_next_play`;
 /** The recording player counts "Play in N sec" down from this many seconds. */
 const COUNTDOWN_SECONDS = 5;
 
 export type SoopServiceActionHooks = {
+  elementToken: (element: Element) => number;
   enabled?: () => boolean;
   host?: () => boolean;
   href?: () => string;
@@ -27,7 +29,7 @@ function secondsLeft(text: string): number | null {
  * card appears only while that countdown runs, so the action exists exactly then: it jumps to the
  * next recording through the card's own link, and the host owns the countdown and its cancel.
  */
-export function createSoopServiceActions(hooks: SoopServiceActionHooks = {}): ServiceActionSource {
+export function createSoopServiceActions(hooks: SoopServiceActionHooks): ServiceActionSource {
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('soop'));
   const host = hooks.host ?? (() => isSoopHost());
   const href = hooks.href ?? (() => window.location.href);
@@ -43,7 +45,7 @@ export function createSoopServiceActions(hooks: SoopServiceActionHooks = {}): Se
     const seconds = secondsLeft(heading);
     if (seconds === null) return [];
     return [{
-      id: `soop:next|${soopRouteKey(route)}|${serviceElementToken(link)}`,
+      id: `soop:next|${soopRouteKey(route)}|${hooks.elementToken(link)}`,
       label: serviceControlLabel(link.querySelector('strong') ?? link),
       progress: 1 - seconds / COUNTDOWN_SECONDS,
       seconds,

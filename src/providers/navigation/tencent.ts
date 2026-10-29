@@ -1,4 +1,4 @@
-import { namedControl, type CollectedControl } from './observed';
+import { namedControl, type CollectedControl } from '../playlist-controls';
 
 export const TENCENT_PLAYER_SELECTOR = '.txp_player, #internal-player-wrapper';
 

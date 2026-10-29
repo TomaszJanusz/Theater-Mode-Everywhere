@@ -9,9 +9,9 @@ import {
   playlistNavStateFromActions,
   sanitizePlaylistPreview
 } from './playlist-nav';
-import { usableControlIndexes, type ObservedPlaylistControl } from './providers/navigation/observed';
 import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
 import { youtubePreviousRestarts } from './providers/navigation/youtube';
+import { usableControlIndexes, type ObservedPlaylistControl } from './providers/playlist-controls';
 import { bundleModules } from './test-utils/player-boot';
 import { sharedTestBrowser } from './test-utils/test-browser';
 

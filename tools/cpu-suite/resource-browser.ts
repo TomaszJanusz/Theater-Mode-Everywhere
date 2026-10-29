@@ -1,13 +1,17 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { createServer } from 'node:http';
 import { once } from 'node:events';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import path from 'node:path';
+
 import type { Browser, CDPSession, Page } from 'playwright';
+
+import { manifestScriptsForUrl } from '../../scripts/provider-descriptors';
+
 import type { Build } from './model';
-import { verifyBuild } from './storage';
-import { RESOURCE_PROBE, validateCounters, type Counters } from './resource-probe';
 import { fixtureDocument, fixtureUrl, HIVE_STUB } from './resource-fixtures';
 import { FIXTURES, phase, type Fixture, type ResourceSample } from './resource-model';
+import { RESOURCE_PROBE, validateCounters, type Counters } from './resource-probe';
+import { verifyBuild } from './storage';
 const ROOT = path.resolve(import.meta.dirname, '../..');
 export async function fixtureServer() {
   const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
@@ -130,8 +134,10 @@ export async function runFixture(browser: Browser, build: Build, fixture: Fixtur
     }
     await checkpoint('startup', async () => {
       await page.addStyleTag({ path: path.join(build.path, 'content.css') });
-      await page.addScriptTag({ content: `(function(){${readFileSync(path.join(build.path, 'mainWorld.js'), 'utf8')}\n})();` });
-      await page.addScriptTag({ content: `(function(){${readFileSync(path.join(build.path, 'content.js'), 'utf8')}\n})();` });
+      const manifest = JSON.parse(readFileSync(path.join(build.path, 'manifest.json'), 'utf8'));
+      for (const file of manifestScriptsForUrl(manifest, page.url())) {
+        await page.addScriptTag({ content: readFileSync(path.join(build.path, file), 'utf8') });
+      }
       await page.clock.runFor(1000);
     });
     if (fixture === 'generic-mousemove') {
@@ -140,8 +146,10 @@ export async function runFixture(browser: Browser, build: Build, fixture: Fixtur
       await checkpoint('frame-startup', async () => {
         for (const frame of page.frames().slice(1)) {
           await frame.evaluate(RESOURCE_PROBE);
-          await frame.addScriptTag({ content: `(function(){${readFileSync(path.join(build.path, 'mainWorld.js'), 'utf8')}\n})();` });
-          await frame.addScriptTag({ content: `(function(){${readFileSync(path.join(build.path, 'content.js'), 'utf8')}\n})();` });
+          const manifest = JSON.parse(readFileSync(path.join(build.path, 'manifest.json'), 'utf8'));
+          for (const file of manifestScriptsForUrl(manifest, frame.url())) {
+            await frame.addScriptTag({ content: readFileSync(path.join(build.path, file), 'utf8') });
+          }
         }
         await page.clock.runFor(1000);
         const frameCounters = await Promise.all(page.frames().slice(1).map(frame => frame.evaluate('window.__resourceProbe.snapshot()')));

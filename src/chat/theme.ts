@@ -75,8 +75,8 @@ export class ChatThemeSession {
       this.adapter = null;
     }
     this.doc = doc;
-    // SOOP has no palette to map: its chat keeps the service's own appearance.
-    if (surface.provider === 'soop') {
+    // Providers without a palette adapter retain the service appearance.
+    if (surface.provider !== 'twitch' && surface.provider !== 'youtube') {
       this.status = 'unavailable';
       return;
     }

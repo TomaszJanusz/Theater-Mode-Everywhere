@@ -1,4 +1,5 @@
-import { SOOP_CHAT_TOGGLE } from './selectors';
+import { registeredChat } from '../providers/runtime-registration';
+
 import type { ChatActivation, ChatSurface } from './types';
 import { parseChatLocation } from './url';
 
@@ -39,13 +40,7 @@ export function detectChatActivation(document: Document, href: string, surface: 
     return collapsed ? { provider: page.provider, contentKey: page.contentKey, control } : null;
   }
 
-  if (page.provider === 'soop') {
-    // The closed panel stays in the DOM but its columns collapse; only the player's own button reopens it.
-    const control = document.querySelector(SOOP_CHAT_TOGGLE);
-    const player = document.getElementById('webplayer');
-    return enabled(control) && player && !player.classList.contains('chat_open')
-      ? { provider: page.provider, contentKey: page.contentKey, control } : null;
-  }
+  if (page.provider !== 'youtube') return registeredChat()?.activation(document, href) ?? null;
 
   const watch = document.querySelector('ytd-watch-flexy[video-id]');
   const stampedId = watch?.getAttribute('video-id');

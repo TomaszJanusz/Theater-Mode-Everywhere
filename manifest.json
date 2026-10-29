@@ -22,21 +22,61 @@
       "matches": [
         "<all_urls>"
       ],
-      "js": [
-        "content.js"
+      "exclude_matches": [
+        "*://*.sooplive.com/*",
+        "*://*.sooplive.com./*"
       ],
-      "css": [
-        "content.css"
+      "js": [
+        "content.js",
+        "contentStart.js"
       ],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.sooplive.com/*",
+        "*://*.sooplive.com./*"
+      ],
+      "js": [
+        "content.js",
+        "providers/soop/isolated.js",
+        "contentStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "css": [
+        "content.css"
+      ]
     },
     {
       "matches": [
         "<all_urls>"
       ],
+      "exclude_matches": [
+        "*://*.sooplive.com/*",
+        "*://*.sooplive.com./*"
+      ],
       "js": [
-        "mainWorld.js"
+        "mainWorld.js",
+        "mainWorldStart.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "*://*.sooplive.com/*",
+        "*://*.sooplive.com./*"
+      ],
+      "js": [
+        "mainWorld.js",
+        "providers/soop/main.js",
+        "mainWorldStart.js"
       ],
       "run_at": "document_start",
       "all_frames": true,

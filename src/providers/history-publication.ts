@@ -2,7 +2,7 @@
  * pushState SPAs fire no `popstate` or `hashchange` on in-app navigation, and the isolated world
  * cannot see page-world history calls. Publishes one window event per route change from MAIN.
  */
-export function installHistoryPublication(eventName: string, markerKey: string): void {
+export function publishHistoryChanges(eventName: string, markerKey: string): void {
   const marker = Symbol.for(markerKey);
   const historyRef = window.history as History & { [marker: symbol]: true };
   if (historyRef[marker]) return;

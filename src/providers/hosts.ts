@@ -1,5 +1,8 @@
 import { normalizeHost } from '../platform/domain-policy';
 
+import { PROVIDER_CATALOG } from './catalog';
+import { descriptorMatchesHost } from './descriptor-hosts';
+
 function currentHost(): string {
   return typeof window !== 'undefined' ? window.location.hostname : '';
 }
@@ -63,8 +66,7 @@ export function isIqiyiHost(hostname = currentHost()): boolean {
 
 /** SOOP (formerly AfreecaTV) international: www., play. and vod. under sooplive.com. */
 export function isSoopHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'sooplive.com' || host.endsWith('.sooplive.com');
+  return PROVIDER_CATALOG.some(item => item.id === 'soop' && descriptorMatchesHost(item.hosts, hostname));
 }
 /** viki.com and its real subdomains. */
 export function isVikiHost(hostname = currentHost()): boolean {

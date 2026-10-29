@@ -1400,12 +1400,10 @@ describe('native chat controller', () => {
     } finally { await page.close(); }
   });
 
-  it('follows a Twitch or SOOP route change through the host history event, not by polling', async t => {
+  it('follows a Twitch route change through the host history event, not by polling', async t => {
     if (!installed) { t.skip('Chromium is not installed'); return; }
     const cases = [
-      { name: 'twitch', html: TWITCH, from: 'https://www.twitch.tv/SomeChannel', to: 'https://www.twitch.tv/OtherChannel', event: 'theater-everywhere-twitch-navigate' },
-      { name: 'soop', html: '<div id="webplayer" class="chat_open"><div id="chatting_area"><div class="chatbox"></div></div></div>',
-        from: 'https://play.sooplive.com/crankyducks/298190957', to: 'https://play.sooplive.com/lolglobal/298189961', event: 'theater-everywhere-soop-navigate' }
+      { name: 'twitch', html: TWITCH, from: 'https://www.twitch.tv/SomeChannel', to: 'https://www.twitch.tv/OtherChannel', event: 'theater-everywhere-twitch-navigate' }
     ];
     for (const scenario of cases) {
       const page = await pageWith(t, scenario.html);

@@ -1,5 +1,5 @@
-import { sanitizeContentTitle } from '../content-title';
-import type { Chapter } from '../types';
+import { sanitizeContentTitle } from '../../media-features/content-title';
+import type { Chapter } from '../../media-features/types';
 
 /** SOOP's own chapter list for a recording; the page requests it when the VOD opens. */
 export function soopChaptersUrl(vodId: string): string | null {

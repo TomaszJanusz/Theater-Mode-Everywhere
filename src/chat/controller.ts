@@ -1,5 +1,5 @@
 import { DisposableScope } from '../core/disposable-scope';
-import { SOOP_NAVIGATE_EVENT } from '../providers/soop-main';
+import { registeredChat } from '../providers/runtime-registration';
 import { TWITCH_NAVIGATE_EVENT } from '../providers/twitch/navigation';
 
 import { detectChatActivation, TWITCH_CHAT_TOGGLE_SELECTOR, YOUTUBE_CHAT_CARD_SELECTOR } from './activation';
@@ -12,7 +12,6 @@ import {
   DEFAULT_CHAT_WIDTH_PX
 } from './geometry';
 import { OwnedDom } from './owned-dom';
-import { SOOP_CHAT_ROOT_SELECTOR, SOOP_CHAT_TOGGLE } from './selectors';
 import { ChatThemeSession, normalizeChatTheme } from './theme';
 import type { ChatActivation, ChatPreference, ChatProvider, ChatState, ChatSurface, ChatTheme } from './types';
 import { isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
@@ -26,14 +25,14 @@ const PENDING_ACTIVATION_MS = 2000;
 
 /** Route changes the SPA publishes without `popstate`: YouTube's own events, and the Twitch/SOOP history hooks. */
 const YOUTUBE_NAV_EVENTS = ['yt-navigate-finish', 'yt-page-data-updated'] as const;
-const PAGE_NAV_EVENTS = [TWITCH_NAVIGATE_EVENT, SOOP_NAVIGATE_EVENT] as const;
+const PAGE_NAV_EVENTS = [TWITCH_NAVIGATE_EVENT] as const;
 
 /** Coalesce structural mutations. Message appends never reach this timer. */
 const STRUCTURE_REFRESH_MS = 80;
 
-const ACTIVATION_SELECTOR = `${TWITCH_CHAT_TOGGLE_SELECTOR}, ${YOUTUBE_CHAT_CARD_SELECTOR}, #show-hide-button, ${SOOP_CHAT_TOGGLE}`;
+const ACTIVATION_SELECTOR = `${TWITCH_CHAT_TOGGLE_SELECTOR}, ${YOUTUBE_CHAT_CARD_SELECTOR}, #show-hide-button`;
 
-const SHELL_SELECTOR = `[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame, ${SOOP_CHAT_ROOT_SELECTOR}`;
+const SHELL_SELECTOR = `[data-test-selector="chat-room-component-layout"], .chat-room, .chat-shell, [data-a-target="right-column-chat-bar"], .right-column, #chat, #secondary, ytd-live-chat-frame`;
 
 export interface ChatControllerOptions {
   document: Document;
@@ -71,6 +70,8 @@ const EMPTY_STATE: ChatState = {
  * Show, hide, resize, and preference retention are provider-independent.
  */
 export class ChatController {
+  private readonly activationSelector = [ACTIVATION_SELECTOR, registeredChat()?.activationSelector].filter(Boolean).join(', ');
+  private readonly shellSelector = [SHELL_SELECTOR, registeredChat()?.shellSelector].filter(Boolean).join(', ');
   private readonly options: ChatControllerOptions;
   private readonly scope = new DisposableScope();
   private readonly surfaceOwned = new OwnedDom();
@@ -274,7 +275,7 @@ export class ChatController {
     // Several events can publish one navigation; the structure timer coalesces them.
     const onNavigation = () => { if (isNativeChatHost(this.safeHref())) this.scheduleStructureRefresh(); };
     for (const name of YOUTUBE_NAV_EVENTS) this.scope.listen(doc, name, onNavigation);
-    if (view) for (const name of PAGE_NAV_EVENTS) this.scope.listen(view, name, onNavigation);
+    if (view) for (const name of [...PAGE_NAV_EVENTS, ...(registeredChat()?.navigationEvents ?? [])]) this.scope.listen(view, name, onNavigation);
   }
 
   private onVisibility(): void {
@@ -351,7 +352,7 @@ export class ChatController {
     for (const record of records) {
       if (record.type === 'attributes') {
         const target = record.target;
-        if (target instanceof Element && (target.matches(ACTIVATION_SELECTOR + ', ytd-live-chat-frame')
+        if (target instanceof Element && (target.matches(this.activationSelector + ', ytd-live-chat-frame')
           || target.closest(YOUTUBE_CHAT_CARD_SELECTOR + ', #show-hide-button'))) return true;
         if (target instanceof Element && target.matches('ytd-watch-flexy') && record.attributeName === 'video-id') return true;
         if (!(target instanceof HTMLIFrameElement)) continue;
@@ -387,7 +388,7 @@ export class ChatController {
   private additionMayMountChat(node: Node, surface: ChatSurface | null): boolean {
     if (!(node instanceof Element)) return false;
     if (this.ignoredBeforeScan(node, surface)) return false;
-    if (node.matches(ACTIVATION_SELECTOR) || node.matches(SHELL_SELECTOR)) return true;
+    if (node.matches(this.activationSelector) || node.matches(this.shellSelector)) return true;
     const tag = node.tagName;
     if (tag === 'YTD-LIVE-CHAT-FRAME' || tag === 'YTD-WATCH-FLEXY' || tag === 'YTD-APP') return true;
     if (tag === 'IFRAME') {
@@ -397,14 +398,14 @@ export class ChatController {
     if (id === 'columns' || id === 'page-manager' || id === 'chat-container') return true;
     // An empty node cannot contain a shell. Wrappers are the only subtree scan.
     if (node.childElementCount === 0) return false;
-    return Boolean(node.querySelector(ACTIVATION_SELECTOR) || node.querySelector(SHELL_SELECTOR));
+    return Boolean(node.querySelector(this.activationSelector) || node.querySelector(this.shellSelector));
   }
 
   /** Chat transcripts and our controls are not shells. Skip them before any selector scan. */
   private ignoredBeforeScan(node: Element, surface: ChatSurface | null): boolean {
     if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) return true;
     if (node.matches('[data-theater-chat-palette], [data-theater-chat-canvas], .chat-line__message, .chat-line, yt-live-chat-text-message-renderer')) return true;
-    if (surface?.root.contains(node) && !(node instanceof HTMLIFrameElement) && !node.matches(SHELL_SELECTOR)) return true;
+    if (surface?.root.contains(node) && !(node instanceof HTMLIFrameElement) && !node.matches(this.shellSelector)) return true;
     return false;
   }
 

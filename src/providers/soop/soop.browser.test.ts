@@ -3,25 +3,33 @@ import { describe, it, type TestContext } from 'node:test';
 
 import type { Page } from 'playwright';
 
+import type { requestPageFetch } from '../../media-features/probe';
 import type { findPlaylistActions } from '../../playlist-nav';
 import type { createWorldMessage } from '../../protocol/world-messages';
 import { sharedEngineBrowsers } from '../../test-utils/engine-browsers';
 import { bundleModules } from '../../test-utils/player-boot';
 import { testEngines } from '../../test-utils/test-engines';
+import type { serviceElementToken } from '../native-service-actions';
 
 import type { SoopAdapter } from './adapter';
 import type { createSoopServiceActions } from './service-actions';
 import type { soopWatchPlayback } from './watch-playback';
 
 const bundle = bundleModules([
+  "export { exposeFixtureRuntime } from './test-utils/provider-runtime';",
+  "export { requestPageFetch } from './media-features/probe';",
+  "export { serviceElementToken } from './providers/native-service-actions';",
   "export { SoopAdapter } from './providers/soop/adapter';",
   "export { createSoopServiceActions } from './providers/soop/service-actions';",
   "export { soopWatchPlayback } from './providers/soop/watch-playback';",
   "export { findPlaylistActions } from './playlist-nav';",
   "export { createWorldMessage } from './protocol/world-messages';"
 ], 'SoopTest');
+const provider = bundleModules(["import './providers/soop/isolated';"]);
 const browsers = sharedEngineBrowsers();
 type Api = {
+  requestPageFetch: typeof requestPageFetch;
+  serviceElementToken: typeof serviceElementToken;
   SoopAdapter: typeof SoopAdapter;
   createSoopServiceActions: typeof createSoopServiceActions;
   soopWatchPlayback: typeof soopWatchPlayback;
@@ -50,6 +58,8 @@ async function open(t: TestContext, engine: keyof typeof browsers, url: string, 
   await page.route('https://*.sooplive.com/**', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body }));
   await page.goto(url);
   await page.addScriptTag({ content: 'window.__name = fn => fn;' + bundle });
+  await page.evaluate("SoopTest.exposeFixtureRuntime('isolated');");
+  await page.addScriptTag({ content: provider });
   return page;
 }
 
@@ -57,7 +67,7 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
   it('reads the broadcast title once the page has filled it, and the recording title on VOD pages', async t => {
     const live = await open(t, engine, LIVE, LIVE_PAGE);
     const report = await live.evaluate(async () => {
-      const adapter = new window.SoopTest.SoopAdapter();
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       const empty = adapter.getTitle();
       let notify = () => {};
       const stop = adapter.observeTitle(() => notify());
@@ -69,13 +79,13 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
     assert.deepEqual(report, { empty: null, title: 'PLAY LIVE now', subtitle: 'battleland', id: 'live:battleland/297994793' });
     const vod = await open(t, engine, VOD, VOD_PAGE);
     assert.deepEqual(await vod.evaluate(() => {
-      const adapter = new window.SoopTest.SoopAdapter();
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       return [adapter.getTitle(), adapter.getSubtitle(), adapter.mediaId()];
     }), ['[ENG/한] ANOTHER DAY', '#SNAP', 'vod:211006561']);
     const channel = await open(t, engine, 'https://play.sooplive.com/battleland', LIVE_PAGE);
     assert.deepEqual(await channel.evaluate(() => {
       document.getElementById('broadTitle')!.textContent = 'x';
-      const adapter = new window.SoopTest.SoopAdapter();
+      const adapter = new window.SoopTest.SoopAdapter(null, window.SoopTest.requestPageFetch);
       return [adapter.getTitle(), adapter.mediaId()];
     }), [null, null], 'a bare channel address is not a watch route');
   });
@@ -97,7 +107,7 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
       });
       const video = document.querySelector<HTMLVideoElement>('video#video')!;
       Object.defineProperty(video, 'duration', { configurable: true, value: 1159.2 });
-      const adapter = new SoopAdapter(video);
+      const adapter = new SoopAdapter(video, window.SoopTest.requestPageFetch);
       const first = (await adapter.getChapters()).map(c => [c.title, c.start, c.end]);
       await adapter.getChapters();
       const cached = urls.length;
@@ -112,7 +122,7 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
     assert.equal(report.urls[0], 'https://stbbs.sooplive.com/api/chapter/Controllers/ChapterListController.php?nTitleNo=211006561&szFileType=REVIEW');
     assert.equal(report.stale, 0);
     const live = await open(t, engine, LIVE, LIVE_PAGE);
-    assert.equal(await live.evaluate(async () => (await new window.SoopTest.SoopAdapter(document.querySelector('video')).getChapters()).length), 0, 'a live broadcast has no chapters');
+    assert.equal(await live.evaluate(async () => (await new window.SoopTest.SoopAdapter(document.querySelector('video'), window.SoopTest.requestPageFetch).getChapters()).length), 0, 'a live broadcast has no chapters');
   });
 
   it('confirms only the streamed content video for AutoTheater', async t => {
@@ -178,7 +188,7 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
   it('exposes the "next video" countdown card as an action only while it counts down', async t => {
     const page = await open(t, engine, VOD, VOD_PAGE);
     const report = await page.evaluate(() => {
-      const source = window.SoopTest.createSoopServiceActions();
+      const source = window.SoopTest.createSoopServiceActions({ elementToken: window.SoopTest.serviceElementToken });
       const card = document.querySelector<HTMLElement>('.prev_next_play')!;
       const link = card.querySelector('a')!;
       const strong = card.querySelector('strong')!;
@@ -201,6 +211,6 @@ for (const engine of testEngines()) describe(`${engine} SOOP provider`, () => {
       activated: true, clicks: 1, staleActivate: false, staleProgress: null
     });
     const live = await open(t, engine, LIVE, LIVE_PAGE);
-    assert.equal(await live.evaluate(() => window.SoopTest.createSoopServiceActions().read().length), 0);
+    assert.equal(await live.evaluate(() => window.SoopTest.createSoopServiceActions({ elementToken: window.SoopTest.serviceElementToken }).read().length), 0);
   });
 });

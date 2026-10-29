@@ -1,9 +1,8 @@
-import { readSoopChatVisibility } from './adapters/soop';
+import { registeredChat } from '../providers/runtime-registration';
+
 import { readTwitchChatVisibility } from './adapters/twitch';
 import { readYouTubeChatVisibility } from './adapters/youtube';
 import {
-  SOOP_CHAT_ROOT_SELECTOR,
-  SOOP_CHAT_PANEL,
   TWITCH_CHAT_COLUMN_SELECTOR,
   TWITCH_CHAT_SECTION_SELECTOR,
   YOUTUBE_CHAT_ROOT_SELECTOR
@@ -23,10 +22,7 @@ export function detectChatSurface(document: Document, href: string): ChatSurface
     if (!page.kind) return null;
     return detectTwitch(document, page.contentKey, page.kind);
   }
-  if (page.provider === 'soop') {
-    if (!page.kind) return null;
-    return detectSoop(document, page.contentKey, page.kind);
-  }
+  if (page.provider !== 'youtube') return registeredChat()?.detect(document, href) ?? null;
   return detectYouTube(document, page.contentKey);
 }
 
@@ -48,21 +44,6 @@ function detectTwitch(document: Document, contentKey: string, kind: ChatKind): C
     contentRoot: section,
     revealAncestors: revealAncestors(root),
     initiallyVisible: readTwitchChatVisibility(root)
-  };
-}
-
-function detectSoop(document: Document, contentKey: string, kind: ChatKind): ChatSurface | null {
-  const root = document.querySelector(SOOP_CHAT_ROOT_SELECTOR);
-  const section = root?.querySelector(SOOP_CHAT_PANEL);
-  if (!(root instanceof HTMLElement) || !(section instanceof HTMLElement)) return null;
-  return {
-    provider: 'soop',
-    contentKey,
-    kind,
-    root,
-    contentRoot: section,
-    revealAncestors: revealAncestors(root),
-    initiallyVisible: readSoopChatVisibility(root)
   };
 }
 

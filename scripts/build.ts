@@ -1,9 +1,12 @@
-import { build } from 'vite';
 import * as fs from 'fs';
 import * as path from 'path';
+
 import archiver from 'archiver';
-import { assertSelfContainedBundles } from './bundle-integrity';
+import { build } from 'vite';
+
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
+import { assertSelfContainedBundles } from './bundle-integrity';
+import { assertProviderSources, classicEntries, discoverDescriptors } from './provider-descriptors';
 
 function copyFolderRecursiveSync(source: string, target: string) {
   let files: string[] = [];
@@ -66,7 +69,7 @@ function zipDirectory(sourceDir: string, outPath: string): Promise<void> {
 }
 
 async function buildClassicScript(
-  entryName: 'content' | 'mainWorld',
+  entryName: string,
   entryFile: string,
   mode: ReturnType<typeof resolveBundleBuildMode>
 ): Promise<void> {
@@ -75,6 +78,22 @@ async function buildClassicScript(
     configFile: false,
     root,
     publicDir: false,
+    plugins: [{ name: 'provider-boundaries', generateBundle(_options, bundle) {
+      const migrated = discoverDescriptors(root).map(item => `/src/providers/${item.id}/`);
+      const chunks = Object.values(bundle).filter(chunk => chunk.type === 'chunk');
+      for (const chunk of chunks) {
+        for (const [id, module] of Object.entries(chunk.modules)) {
+          if (!module.renderedLength) continue;
+          const normalized = id.replaceAll('\\', '/');
+          if (!entryName.startsWith('providers/') && migrated.some(directory => normalized.includes(directory))) {
+            throw new Error(`${entryName} includes extracted provider code: ${id}`);
+          }
+          if (entryName.startsWith('providers/') && /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe)\.ts$/.test(normalized)) {
+            throw new Error(`${entryName} duplicates runtime state: ${id}`);
+          }
+        }
+      }
+    } }],
     build: {
       emptyOutDir: false,
       outDir: path.join(root, 'dist'),
@@ -115,6 +134,8 @@ function scopeClassicScript(file: string): void {
 
 async function run() {
   try {
+    const descriptors = discoverDescriptors();
+    assertProviderSources(process.cwd(), descriptors);
     const mode = resolveBundleBuildMode();
     console.log(`=== Starting TypeScript + Vite Bundle & Build (${mode}) ===`);
     
@@ -122,8 +143,7 @@ async function run() {
     console.log('Compiling TypeScript and HTML via Vite...');
     await build({ configFile: path.resolve(__dirname, '../config/vite.config.ts') });
     console.log('Bundling isolated MV3 classic scripts...');
-    await buildClassicScript('content', 'src/entries/content.ts', mode);
-    await buildClassicScript('mainWorld', 'src/entries/main-world.ts', mode);
+    for (const entry of classicEntries(descriptors)) await buildClassicScript(entry.output, entry.source, mode);
 
     const distDir = path.resolve(__dirname, '../dist');
     assertSelfContainedBundles(distDir);

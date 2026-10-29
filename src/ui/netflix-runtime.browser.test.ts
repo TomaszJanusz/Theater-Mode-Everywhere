@@ -6,9 +6,9 @@ import { chromium } from 'playwright';
 import { bundleModules, playerStylesheets } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 
-/** The module under `src/` as an IIFE global; `entries/main-world` is bundled for its side effects. */
+/** The module under `src/` as an IIFE global; MAIN runtime and startup retain manifest order. */
 const compile = (module: string, globalName: string) => bundleModules([`export * from './${module}';`], globalName);
-const esbuildBundle = () => compile('entries/main-world', 'NetflixMainWorld');
+const esbuildBundle = () => bundleModules(["import './entries/main-world';", "import './entries/main-world-start';"], 'NetflixMainWorld');
 
 describe('netflix runtime browser regressions', () => {
   const shared = sharedTestBrowser(chromium);

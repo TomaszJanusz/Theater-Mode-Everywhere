@@ -141,20 +141,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/providers/patreon/navigation.ts",
-    "to": "src/providers/navigation/history-publication.ts",
-    "unresolvedTo": "../navigation/history-publication",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/providers/patreon/watch-playback.ts",
     "to": "src/providers/navigation/watch-page.ts",
     "unresolvedTo": "../navigation/watch-page",
@@ -172,20 +158,6 @@
     "from": "src/providers/timeline/markers.ts",
     "to": "src/providers/youtube/sponsorblock.ts",
     "unresolvedTo": "../youtube/sponsorblock",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "providers-do-not-import-other-providers"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/providers/twitch/navigation.ts",
-    "to": "src/providers/navigation/history-publication.ts",
-    "unresolvedTo": "../navigation/history-publication",
     "dependencyTypes": [
       "local",
       "import"

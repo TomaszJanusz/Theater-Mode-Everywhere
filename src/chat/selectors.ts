@@ -7,15 +7,6 @@ export const TWITCH_CHAT_SECTION_SELECTOR = '[data-test-selector="chat-room-comp
  */
 export const TWITCH_CHAT_COLUMN_SELECTOR = '[data-a-target="right-column-chat-bar"], .right-column';
 
-/**
- * SOOP's chat column: `#chatting_area` holds the native chat panel. The player carries
- * `chat_open` on `#webplayer` while the panel is shown. The panel is `#chatbox` on live pages and
- * `#chatbox_height` on recordings, both with class `chatbox`. The player bar's chat button opens it.
- */
-export const SOOP_CHAT_ROOT_SELECTOR = '#webplayer #chatting_area';
-export const SOOP_CHAT_PANEL = '.chatbox';
-export const SOOP_CHAT_TOGGLE = '#webplayer li.btn_chat button';
-
 /** YouTube watch-page chat shell. Parent CSS hides #chat unless this node is the marked root. */
 export const YOUTUBE_CHAT_ROOT_SELECTOR = '#chat, ytd-live-chat-frame';
 
@@ -44,14 +35,6 @@ export const TWITCH_CHAT_EVENT_SELECTOR = [
   '[data-a-target="viewer-card"]',
   '[data-test-selector="emote-picker"]',
   TWITCH_CHAT_PORTAL_SELECTOR
-].join(',');
-
-/** Portals and controls whose keyboard events belong to SOOP's chat, not TME. */
-export const SOOP_CHAT_EVENT_SELECTOR = [
-  SOOP_CHAT_ROOT_SELECTOR,
-  '.chatbox',
-  '#emoticonContainer',
-  '.chat_layer'
 ].join(',');
 
 export const YOUTUBE_CHAT_EVENT_SELECTOR = [

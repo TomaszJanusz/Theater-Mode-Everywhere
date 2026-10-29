@@ -1,8 +1,8 @@
 import { normalizeIqiyiPlayInfo, type IqiyiSnapshot } from '../media-features/parsers/iqiyi';
 import { mediaProviderIntegrationEnabled } from '../media-features/provider-flags';
 
+import { publishHistoryChanges } from './history-publication';
 import { isIqiyiHost } from './hosts';
-import { installHistoryPublication } from './navigation/history-publication';
 
 export type { IqiyiSnapshot } from '../media-features/parsers/iqiyi';
 
@@ -15,7 +15,7 @@ export function iqiyiIntegrationEnabled(): boolean {
 
 /** iq.com is a pushState SPA: choosing an episode fires no `popstate`. */
 export function installIqiyiNavigation(): void {
-  if (iqiyiIntegrationEnabled()) installHistoryPublication(IQIYI_NAVIGATE_EVENT, 'theater-everywhere.iqiyi-history');
+  if (iqiyiIntegrationEnabled()) publishHistoryChanges(IQIYI_NAVIGATE_EVENT, 'theater-everywhere.iqiyi-history');
 }
 
 /** The page's own play-info global; nothing is requested. */

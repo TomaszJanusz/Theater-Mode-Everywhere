@@ -1,14 +1,17 @@
 import * as fs from 'fs';
+import assert from 'node:assert/strict';
 import * as path from 'path';
 
+import { classicEntries, contentScripts, discoverDescriptors } from './provider-descriptors';
+
 // `\s*` covers minified forms such as `export{` and `import"x"` that a
-// whitespace-requiring pattern would miss. Dynamic `import(` is not an
-// ESM statement and is left to the bundler (`inlineDynamicImports`).
+// whitespace-requiring pattern would miss. Dynamic imports are rejected separately:
+// every manifest entry must execute without asynchronous chunk loading.
 const ESM_IMPORT_RE = /(?:^|[\n;])\s*(?:import\s*(?:['"`]|\*|\{|\w)|export\s*(?:\{|\*|default\b|async\b|function\b|class\b|const\b|let\b|var\b))/m;
 
 export function assertSelfContainedScript(filePath: string): void {
   const source = fs.readFileSync(filePath, 'utf8');
-  if (ESM_IMPORT_RE.test(source)) {
+  if (ESM_IMPORT_RE.test(source) || /\bimport\s*\(/.test(source)) {
     throw new Error(`${path.basename(filePath)} contains ESM imports; classic extension scripts must stay self-contained.`);
   }
 }
@@ -52,7 +55,20 @@ export function assertScopedScript(filePath: string): void {
 }
 
 export function assertSelfContainedBundles(dir: string): void {
-  for (const name of ['content.js', 'mainWorld.js'] as const) {
+  const descriptors = discoverDescriptors();
+  const expected = classicEntries(descriptors).map(entry => `${entry.output}.js`);
+  const manifestPath = path.join(dir, 'manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    assert.deepEqual(manifest.content_scripts, contentScripts(descriptors), 'Packaged provider manifest drift');
+    const scripts = [...new Set<string>(manifest.content_scripts.flatMap((entry: { js: string[] }) => entry.js))].sort();
+    assert.deepEqual(scripts, expected.toSorted(), 'Provider output inventory disagrees with manifest');
+    assert.ok(!manifest.permissions.includes('scripting'), 'Static providers need no scripting permission');
+    for (const rule of manifest.web_accessible_resources ?? []) {
+      assert.ok(rule.resources.every((file: string) => !/\.js$|\*/.test(file)), 'Provider JS must stay private');
+    }
+  }
+  for (const name of expected) {
     assertSelfContainedScript(path.join(dir, name));
     assertScopedScript(path.join(dir, name));
   }

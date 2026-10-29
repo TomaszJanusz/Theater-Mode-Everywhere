@@ -1,4 +1,4 @@
-import type { PlaylistDirection, PlaylistPreview } from '../../playlist-nav';
+import type { PlaylistDirection, PlaylistPreview } from '../playlist-nav';
 
 export type PlaylistProvider = 'youtube' | 'videojs' | 'dailymotion' | 'vimeo-showcase' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'iqiyi' | 'soop' | 'viki';
 
@@ -22,7 +22,7 @@ export type ObservedPlaylistControl = {
   width: number;
 };
 
-export type PlaylistNavigationHelpers = {
+export type PlaylistHelpers = {
   sanitizePreview(title: string, imageUrl: string): PlaylistPreview | null;
   neighborPreviews(
     items: Array<{ position: number; title: string; imageUrl: string }>,
@@ -33,7 +33,7 @@ export type PlaylistNavigationHelpers = {
 export type PreviewContext = {
   direction: PlaylistDirection;
   page: ParentNode;
-  helpers: PlaylistNavigationHelpers;
+  helpers: PlaylistHelpers;
   neighbors: { previous: PlaylistPreview | null; next: PlaylistPreview | null };
 };
 
@@ -85,12 +85,13 @@ export function namedControl(
   root: ParentNode,
   selector: string,
   provider: PlaylistProvider,
-  direction: PlaylistDirection,
-  describeFor?: (element: HTMLElement) => CollectedControl['describe']
+  options: PlaylistDirection | { direction: PlaylistDirection; describeFor(element: HTMLElement): CollectedControl['describe'] }
 ): CollectedControl[] {
   const element = root.querySelector(selector);
   if (!(element instanceof HTMLElement)) return [];
-  return [collectElement(element, provider, direction, describeFor?.(element) ?? inertDescription)];
+  const direction = typeof options === 'string' ? options : options.direction;
+  const describe = typeof options === 'string' ? inertDescription : options.describeFor(element);
+  return [collectElement(element, provider, direction, describe)];
 }
 
 export function collectElement(

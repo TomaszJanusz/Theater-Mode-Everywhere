@@ -116,9 +116,6 @@
     }
   },
   "scripts/build.ts": {
-    "import/order": {
-      "count": 5
-    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -232,9 +229,6 @@
     }
   },
   "scripts/smoke/helpers.ts": {
-    "import/order": {
-      "count": 2
-    },
     "local/max-symbol-name-length": {
       "count": 2
     },
@@ -299,9 +293,6 @@
     }
   },
   "scripts/test-impact.mjs": {
-    "import/order": {
-      "count": 4
-    },
     "no-restricted-imports": {
       "count": 1
     },
@@ -500,16 +491,6 @@
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/entries/content.ts": {
-    "import/order": {
-      "count": 2
-    }
-  },
-  "src/entries/main-world.ts": {
-    "import/order": {
       "count": 1
     }
   },
@@ -1263,11 +1244,6 @@
       "count": 1
     }
   },
-  "src/providers/capabilities.test.ts": {
-    "import/order": {
-      "count": 7
-    }
-  },
   "src/providers/crunchyroll/adapter.ts": {
     "import/order": {
       "count": 1
@@ -1480,11 +1456,6 @@
       "count": 1
     }
   },
-  "src/providers/navigation/history-publication.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
   "src/providers/navigation/netflix.ts": {
     "import/order": {
       "count": 2
@@ -1493,23 +1464,7 @@
       "count": 1
     }
   },
-  "src/providers/navigation/observed.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/providers/navigation/videojs.ts": {
-    "import/order": {
-      "count": 1
-    }
-  },
   "src/providers/navigation/vimeo-showcase.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -1523,9 +1478,6 @@
     }
   },
   "src/providers/navigation/youtube.ts": {
-    "import/order": {
-      "count": 1
-    },
     "local/max-symbol-name-length": {
       "count": 1
     }
@@ -2498,9 +2450,6 @@
     }
   },
   "tools/cpu-suite/resource-browser.ts": {
-    "import/order": {
-      "count": 7
-    },
     "max-lines-per-function": {
       "count": 1
     },

@@ -1,9 +1,8 @@
-import { parseSoopChapters, soopChaptersUrl } from '../../media-features/parsers/soop';
-import { requestPageFetch } from '../../media-features/probe';
 import type { CaptionActivationResult, CaptionTrack, Chapter, MediaCapabilities, MediaFeaturesAdapter } from '../../media-features/types';
 import { observeProviderDom } from '../dom-watch';
-import { soopRoute, soopRouteKey } from '../soop-dom';
 
+import { parseSoopChapters, soopChaptersUrl } from './chapters';
+import { soopRoute, soopRouteKey } from './dom';
 import { readSoopTitle } from './page';
 
 function currentRoute() {
@@ -17,7 +16,7 @@ function currentRoute() {
 export class SoopAdapter implements MediaFeaturesAdapter {
   private chapters: { key: string; list: Chapter[] } | null = null;
 
-  constructor(private readonly video: HTMLVideoElement | null = null) {}
+  constructor(private readonly video: HTMLVideoElement | null, private readonly fetchChapters: (url: string) => Promise<string | null>) {}
 
   mediaId(): string | null {
     const route = currentRoute();
@@ -50,7 +49,7 @@ export class SoopAdapter implements MediaFeaturesAdapter {
     if (!route || !url || !Number.isFinite(duration)) return [];
     const key = `${soopRouteKey(route)}|${Math.round(duration)}`;
     if (this.chapters?.key === key) return this.chapters.list;
-    const body = await requestPageFetch(url);
+    const body = await this.fetchChapters(url);
     // The recording can change while the request is in flight.
     const now = currentRoute();
     if (!now || soopRouteKey(now) !== soopRouteKey(route)) return [];

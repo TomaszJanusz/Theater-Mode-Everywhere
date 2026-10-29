@@ -1,6 +1,7 @@
-import { SOOP_PLAYER_SELECTOR } from '../soop-dom';
+import { namedControl, type CollectedControl } from '../playlist-controls';
 
-import { namedControl, type CollectedControl } from './observed';
+import { SOOP_PLAYER_SELECTOR } from './dom';
+
 
 export { SOOP_PLAYER_SELECTOR };
 
