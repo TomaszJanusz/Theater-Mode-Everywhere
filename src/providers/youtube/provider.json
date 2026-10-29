@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "youtube",
+  "hosts": [
+    {
+      "domain": "youtube.com",
+      "includeSubdomains": true
+    },
+    {
+      "domain": "youtube-nocookie.com",
+      "includeSubdomains": true
+    },
+    {
+      "domain": "youtu.be",
+      "includeSubdomains": false
+    }
+  ],
+  "entries": {
+    "isolated": {
+      "file": "isolated.ts",
+      "runAt": "document_start"
+    },
+    "main": {
+      "file": "main.ts",
+      "runAt": "document_start"
+    }
+  },
+  "packaging": "bundled"
+}

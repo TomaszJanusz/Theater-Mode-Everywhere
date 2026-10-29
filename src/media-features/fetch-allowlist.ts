@@ -135,7 +135,7 @@ export function isAllowedMediaFetchUrl(request: MediaFetchRequest, base?: string
     return false;
   }
 
-  return providerRegistry.get(request.provider)?.allowsMediaFetch(request, base) ?? false;
+  return providerRegistry.get(request.provider)?.allowsMediaFetch?.(request, base) ?? false;
 }
 
 export function assertSafeRedirect(finalUrl: string, request: MediaFetchRequest): boolean {

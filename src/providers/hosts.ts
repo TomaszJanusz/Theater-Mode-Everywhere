@@ -7,13 +7,11 @@ function currentHost(): string {
   return typeof window !== 'undefined' ? window.location.hostname : '';
 }
 
+const catalogHost = (id: string, hostname: string) => PROVIDER_CATALOG.some(item => item.id === id && descriptorMatchesHost(item.hosts, hostname));
+
+/** youtube.com and youtube-nocookie.com with their subdomains, and exactly youtu.be. */
 export function isYouTubeHost(hostname = currentHost()): boolean {
-  const host = normalizeHost(hostname);
-  return host === 'youtube.com'
-    || host === 'youtu.be'
-    || host === 'youtube-nocookie.com'
-    || host.endsWith('.youtube.com')
-    || host.endsWith('.youtube-nocookie.com');
+  return catalogHost('youtube', hostname);
 }
 
 export function isVimeoHost(hostname = currentHost()): boolean {
@@ -66,7 +64,7 @@ export function isIqiyiHost(hostname = currentHost()): boolean {
 
 /** SOOP (formerly AfreecaTV) international: www., play. and vod. under sooplive.com. */
 export function isSoopHost(hostname = currentHost()): boolean {
-  return PROVIDER_CATALOG.some(item => item.id === 'soop' && descriptorMatchesHost(item.hosts, hostname));
+  return catalogHost('soop', hostname);
 }
 /** viki.com and its real subdomains. */
 export function isVikiHost(hostname = currentHost()): boolean {

@@ -1788,7 +1788,7 @@
       "count": 4
     }
   },
-  "src/providers/youtube/main.ts": {
+  "src/providers/youtube/player-main.ts": {
     "import/order": {
       "count": 11
     },

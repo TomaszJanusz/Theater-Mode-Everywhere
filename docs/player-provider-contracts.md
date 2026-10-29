@@ -195,7 +195,7 @@ because they describe the page. An empty title hides the chip.
 
 ## Video launcher
 
-`ProviderDefinition.launcherPlacement` supplies an optional `LauncherPlacement`
+`ProviderDefinition.launcherPlacement` (for a registered provider, `ProviderHooks.launcherPlacement`) supplies an optional `LauncherPlacement`
 (`providers/launcher-placement.ts`). Its `read()` revalidates the current video,
 player and native insertion anchor; `null` uses the generic overlay. The separate
 RTE `launcher` capability describes this placement support, not automatic entry.

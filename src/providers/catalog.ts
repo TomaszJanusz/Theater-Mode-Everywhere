@@ -8,5 +8,22 @@ export const PROVIDER_CATALOG = [
         "includeSubdomains": true
       }
     ]
+  },
+  {
+    "id": "youtube",
+    "hosts": [
+      {
+        "domain": "youtube.com",
+        "includeSubdomains": true
+      },
+      {
+        "domain": "youtube-nocookie.com",
+        "includeSubdomains": true
+      },
+      {
+        "domain": "youtu.be",
+        "includeSubdomains": false
+      }
+    ]
   }
 ] as const;

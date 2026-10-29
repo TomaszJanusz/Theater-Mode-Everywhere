@@ -11,7 +11,6 @@ import { PROVIDER_DEFINITIONS, shouldAttachProvider } from '../providers/registr
 import { TencentAdapter } from '../providers/tencent/adapter';
 import { TwitchAdapter } from '../providers/twitch/adapter';
 import { VimeoAdapter } from '../providers/vimeo/adapter';
-import { YouTubeAdapter } from '../providers/youtube/adapter';
 
 import { CompositeMediaAdapter } from './composite-adapter';
 import { defaultMediaProviderFlags, type MediaProviderFlags } from './provider-flags';
@@ -58,7 +57,6 @@ export function createMediaFeaturesAdapter(
 ): MediaFeaturesAdapter {
   const surface = coercePlaybackSurface(media);
   const adapters: MediaFeaturesAdapter[] = [];
-  if (shouldAttachYouTubeAdapter(flags)) adapters.push(new YouTubeAdapter(surface.nativeMedia instanceof HTMLVideoElement ? surface.nativeMedia : null));
   if (shouldAttachVimeoAdapter(flags)) adapters.push(new VimeoAdapter());
   if (shouldAttachPatreonAdapter(flags)) adapters.push(new PatreonAdapter());
   if (shouldAttachTwitchAdapter(flags)) adapters.push(new TwitchAdapter());

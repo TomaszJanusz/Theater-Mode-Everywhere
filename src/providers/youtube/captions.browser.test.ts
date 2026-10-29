@@ -10,7 +10,7 @@ import { sharedTestBrowser } from '../../test-utils/test-browser';
 const chromiumBrowser = sharedTestBrowser(chromium);
 
 const bundle = bundleModules([
-  "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/main';",
+  "export { installYoutubeMain, readYoutubeSnapshot, fetchTimedtextWithPot } from './providers/youtube/player-main';",
   "export { requestYoutubePlayerCaptions } from './media-features/probe';"
 ], 'CaptionTest');
 

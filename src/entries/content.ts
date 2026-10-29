@@ -1,17 +1,4 @@
 import '../content.css';
-import { requestPageFetch } from '../media-features/probe';
-import { serviceElementToken } from '../providers/native-service-actions';
-import { exposeProviderRuntime } from '../providers/provider-api';
-import { providerRegistry } from '../providers/runtime-registration';
-import { bootstrapPlayerRuntime } from '../ui/player-runtime';
-import { setPlayerUiCss } from '../ui/root';
-import playerUiCss from '../ui/shadow.css?inline';
-
-exposeProviderRuntime('isolated', {
-  contractVersion: 1, register: providerRegistry.register, services: { requestPageFetch, serviceElementToken },
-  start() {
-    if (!providerRegistry.start()) return;
-    setPlayerUiCss(playerUiCss);
-    bootstrapPlayerRuntime();
-  }
-});
+// Order matters: the API must exist before bundled providers register, and contentStart.js closes registration.
+import './content-api';
+import './bundled-providers-isolated';

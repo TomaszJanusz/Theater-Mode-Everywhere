@@ -12,7 +12,7 @@ import { MAX_CAPTION_BYTES } from './media-url-policy';
 
 const bundle = bundleModules([
   "export { installMainWorldRuntime } from './platform/main-world-runtime';",
-  "export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/main';",
+  "export { harvestYoutubeHeatmapText, harvestTimedtextJson, readYoutubeSnapshot } from './providers/youtube/player-main';",
   "export { readDisneySnapshot } from './providers/disney/main';",
   "export { readTencentSnapshot } from './providers/tencent/main';",
   "export { readTwitchSnapshot } from './providers/twitch/main';",

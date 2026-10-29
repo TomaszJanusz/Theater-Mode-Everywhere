@@ -5,6 +5,7 @@ import type { MediaFetchRequest } from '../media-features/fetch-allowlist';
 import type { MediaProviderId } from '../media-features/provider-flags';
 import type { MediaFeaturesAdapter } from '../media-features/types';
 
+import type { LauncherPlacementFactory } from './launcher-placement';
 import type { CollectedControl } from './playlist-controls';
 import type { WatchPlayback } from './watch-playback';
 
@@ -25,8 +26,13 @@ export type ProviderHooks = {
   id: MediaProviderId;
   contractVersion: 1;
   watchPlayback: WatchPlayback;
-  allowsMediaFetch(request: MediaFetchRequest, base?: string): boolean;
+  /**
+   * Fetch admission for this provider's media URLs. Optional: a rule the background broker must also apply
+   * (it has no provider registry), such as YouTube's timedtext, stays in the shared allowlist.
+   */
+  allowsMediaFetch?(request: MediaFetchRequest, base?: string): boolean;
   createAdapter?: (video: HTMLVideoElement | null) => MediaFeaturesAdapter;
+  launcherPlacement?: LauncherPlacementFactory;
   serviceActions?: () => ServiceActionSource;
   navigation?: { playerSelector: string; readControls(root: ParentNode): CollectedControl[] };
   chat?: ProviderChat;

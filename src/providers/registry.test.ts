@@ -26,6 +26,17 @@ describe('provider registry', () => {
     assert.equal(isNetflixHost('www.netflix.com.'), true);
   });
 
+  it('matches YouTube hosts from its descriptor as the hand-written matcher did', () => {
+    for (const host of ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'WWW.YOUTUBE.COM', 'www.youtube.com.',
+      'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtu.be', 'youtu.be.', 'YOUTU.BE']) assert.equal(isYouTubeHost(host), true, host);
+    for (const host of ['youtube.com.evil.test', 'notyoutube.com', 'youtube.co', 'youtu.be.evil.test', 'sub.youtu.be', 'example.com', '']) {
+      assert.equal(isYouTubeHost(host), false, host);
+    }
+    // youtu.be is an exact host: the former blacklist-style normalization also admitted the redirect-only www.youtu.be.
+    assert.equal(isYouTubeHost('www.youtu.be'), false);
+    assert.deepEqual(matchingProviders('youtu.be'), ['native', 'youtube']);
+  });
+
   it('honors provider flags when attaching adapters', () => {
     const flags = { ...defaultMediaProviderFlags(), youtube: false };
     assert.equal(shouldAttachProvider('youtube', flags, 'www.youtube.com'), false);

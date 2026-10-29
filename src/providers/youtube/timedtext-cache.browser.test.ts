@@ -15,7 +15,7 @@ type CaptionApi = {
 };
 
 const bundle = bundleModules(
-  ["export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/main';"],
+  ["export { installYoutubeMain, cacheTimedtextBody, readCachedTimedtextBody, readTimedtextCacheUsage } from './providers/youtube/player-main';"],
   'CaptionTest'
 );
 const browsers = sharedEngineBrowsers();
