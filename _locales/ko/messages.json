@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "앞으로 감기 (5초)"
   },
+  "seekHoldTitle": {
+    "message": "길게 눌러 2배속"
+  },
+  "seekHoldDescription": {
+    "message": "앞으로 감기 키를 길게 누르면 뗄 때까지 2배속으로 재생합니다. 짧게 누르면 계속 5초 앞으로 이동합니다. 끄면 키를 누르고 있는 동안 계속 앞으로 감습니다."
+  },
   "volumeUp5": {
     "message": "음량 높이기 (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "$1 키를 길게 누르면 뗄 때까지 2배속으로 재생합니다.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

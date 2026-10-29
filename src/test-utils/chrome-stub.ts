@@ -1,4 +1,4 @@
-import type { Page } from 'playwright';
+import type { Frame, Page } from 'playwright';
 
 // The part of `chrome` the player touches: storage.{sync,local}.{get,set},
 // storage.onChanged.{add,remove}Listener and an empty runtime (grep `chrome\.` in src/).
@@ -36,7 +36,7 @@ const STUB = `(seed => {
 })`;
 
 /** Installs the stub with the given areas seeded; unseeded areas are absent. */
-export async function installChromeStub(page: Page, seed: StorageSeed): Promise<void> {
+export async function installChromeStub(page: Page | Frame, seed: StorageSeed): Promise<void> {
   await page.evaluate(`${STUB}(${JSON.stringify(seed)})`);
 }
 

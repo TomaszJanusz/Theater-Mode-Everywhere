@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Przewiń do przodu (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Przytrzymaj, by odtwarzać 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Przytrzymaj klawisz przewijania do przodu, aby odtwarzać z prędkością 2x, dopóki go nie puścisz. Krótkie naciśnięcie nadal przewija o 5 s. Po wyłączeniu przytrzymany klawisz dalej przewija do przodu."
+  },
   "volumeUp5": {
     "message": "Głośniej (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Przytrzymaj $1, aby odtwarzać z prędkością 2x, dopóki go nie puścisz.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

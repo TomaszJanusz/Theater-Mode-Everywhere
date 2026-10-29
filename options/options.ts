@@ -12,7 +12,7 @@ import { languageRuntime, observeLanguageStorage } from '../src/i18n-runtime';
 import { AUTO_THEATER_STORAGE_KEY, AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolveAutoEnterTheater, resolveAutoTheaterSkipCountdown } from '../src/ui/auto-theater';
 import { VOLUME_BOOST_STORAGE_KEY, resolveVolumeBoostEnabled } from '../src/ui/volume-boost-settings';
 /* Options script for Theater Everywhere */
-import { createShortcutEditor } from './shortcut-editor';
+import { createShortcutEditor, SEEK_HOLD_TOGGLE } from './shortcut-editor';
 import { setupSettingsTabs } from './tabs';
 import licenseText from '../LICENSE?raw';
 import { openPrivacyPolicy } from './privacy-policy';
@@ -108,7 +108,8 @@ const FEATURE_TOGGLES = [
   { id: 'auto-theater-skip-countdown-toggle', key: AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY, resolve: resolveAutoTheaterSkipCountdown },
   { id: 'video-activator-toggle', key: VIDEO_ACTIVATOR_STORAGE_KEY, resolve: resolveVideoActivator },
   { id: 'keep-controls-visible-toggle', key: KEEP_CONTROLS_VISIBLE_STORAGE_KEY, resolve: resolveKeepControlsVisible },
-  { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled }
+  { id: 'volume-boost-toggle', key: VOLUME_BOOST_STORAGE_KEY, resolve: resolveVolumeBoostEnabled },
+  SEEK_HOLD_TOGGLE
 ] as const;
 
 async function init() {

@@ -68,7 +68,16 @@ function navigationHint(t: Translate, shortcuts: Shortcuts): HTMLElement | null 
   return hint;
 }
 
-function renderGroups(t: Translate, shortcuts: Shortcuts): HTMLElement {
+/** Holding seek forward plays at 2x (seek-hold.ts); named with the key the user bound, while the setting is on. */
+function seekHoldHint(t: Translate, shortcuts: Shortcuts, seekHold: boolean): HTMLElement | null {
+  if (!seekHold || !shortcuts.seekForward) return null;
+  const hint = document.createElement('p');
+  hint.className = 'theater-help-hint';
+  renderKbdText(hint, t('helpSeekHoldHint', shortcutMarkup(shortcuts.seekForward, shortcutDisplayEnv())));
+  return hint;
+}
+
+function renderGroups(t: Translate, shortcuts: Shortcuts, seekHold: boolean): HTMLElement {
   const grid = document.createElement('div');
   grid.className = 'theater-help-grid';
   const sequence = ++helpSequence;
@@ -95,10 +104,9 @@ function renderGroups(t: Translate, shortcuts: Shortcuts): HTMLElement {
       list.append(rowEl);
     }
     groupEl.append(title, list);
-    if (group.id === 'navigation') {
-      const hint = navigationHint(t, shortcuts);
-      if (hint) groupEl.append(hint);
-    }
+    let hint = group.id === 'navigation' ? navigationHint(t, shortcuts) : null;
+    if (group.id === 'playback') hint = seekHoldHint(t, shortcuts, seekHold);
+    if (hint) groupEl.append(hint);
     grid.append(groupEl);
   }
   return grid;
@@ -133,7 +141,7 @@ export function createHelp(ctx: PlayerChromeContext) {
     modal = createModal({
       title: ctx.t('keyboardShortcutsTitle'),
       closeLabel: ctx.t('dialogClose'),
-      content: renderGroups(ctx.t, shortcuts),
+      content: renderGroups(ctx.t, shortcuts, ctx.ui().seekForwardHold),
       actions: [{ label: ctx.t('helpCustomizeShortcuts'), kind: 'secondary', value: false, run: () => requestOptionsPage('shortcuts') }],
       size: 'large',
       scrollable: true,

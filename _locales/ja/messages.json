@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "早送り (5秒)"
   },
+  "seekHoldTitle": {
+    "message": "長押しで2倍速"
+  },
+  "seekHoldDescription": {
+    "message": "早送りキーを長押しすると、離すまで2倍速で再生します。短く押すと従来どおり5秒進みます。オフにすると、長押し中は早送りを繰り返します。"
+  },
   "volumeUp5": {
     "message": "音量アップ (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "$1 を長押しすると、離すまで2倍速で再生します。",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

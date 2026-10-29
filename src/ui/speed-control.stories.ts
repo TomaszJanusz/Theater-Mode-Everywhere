@@ -20,7 +20,7 @@ const meta: Meta<Args> = {
   args: { rate: 1.5, disabled: false, open: false },
   render: ({ rate, disabled, open }) => renderPlayerBar(scope => {
     const control = createSpeedControl({
-      video: { playbackRate: rate },
+      video: { element: document.createElement('video'), playbackRate: rate },
       scope,
       label: t('playbackSpeed'),
       updateCaptionDock: () => {},

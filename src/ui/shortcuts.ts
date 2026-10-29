@@ -106,6 +106,14 @@ const MOVED_DEFAULTS = [
   { action: 'frameForward', previous: '>', successor: 'increaseSpeed' }
 ] as const satisfies ReadonlyArray<{ action: keyof Shortcuts; previous: string; successor: keyof Shortcuts }>;
 
+export const SEEK_HOLD_STORAGE_KEY = 'seekForwardHold';
+export const DEFAULT_SEEK_HOLD = true;
+
+/** Holding the seek-forward key plays at 2x unless turned off; off keeps the auto-repeat seeking. */
+export function resolveSeekHold(value: unknown): boolean {
+  return typeof value === 'boolean' ? value : DEFAULT_SEEK_HOLD;
+}
+
 export function withShortcutDefaults(saved: Record<string, unknown> | undefined): Shortcuts {
   const next = { ...defaultShortcuts };
   if (!saved) return next;

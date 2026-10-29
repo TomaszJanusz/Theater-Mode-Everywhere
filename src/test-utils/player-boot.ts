@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import type { Page } from 'playwright';
+import type { Frame, Page } from 'playwright';
 import { installChromeStub } from './chrome-stub';
 import { readStylesheet } from './styles';
 
@@ -70,7 +70,7 @@ export interface BootPlayerOptions {
  * Stub, page stylesheet, bundle, UI stylesheet, bootstrap — on an already navigated page.
  * Waiting for media and {@link enterTheater} stay with the test.
  */
-export async function bootPlayer(page: Page, { settings = {}, mainWorld = false, bundle = bundlePlayer() }: BootPlayerOptions = {}): Promise<void> {
+export async function bootPlayer(page: Page | Frame, { settings = {}, mainWorld = false, bundle = bundlePlayer() }: BootPlayerOptions = {}): Promise<void> {
   const styles = playerStylesheets();
   await installChromeStub(page, { sync: settings });
   // tsx wraps named functions in __name(); serialized page callbacks need it defined.

@@ -8,10 +8,11 @@ import { videoFitLabel } from './appearance';
 import { CONTROLS_VISIBILITY_ICON } from './controls-visibility';
 import {
   STATUS_HUD_FIT_ICON, STATUS_HUD_LAYOUT_ICON, STATUS_HUD_MUTE_ICON, STATUS_HUD_SPEED_ICONS, STATUS_HUD_SWITCH_ICON,
-  STATUS_HUD_UNMUTE_ICON, SEEK_HUD_MS, VOLUME_BOOST_ICONS
+  STATUS_HUD_UNMUTE_ICON, CENTERED_HUD_VISIBLE_MS, SEEK_HUD_MS, VOLUME_BOOST_ICONS
 } from './hud';
 import { t } from './messages';
 import { getPlayerUiRoot, queryPlayerUi } from './root';
+import { SEEK_HOLD_RATE } from './seek-hold';
 import { formatRate } from './speed-control';
 
 const meta: Meta<HudArgs> = {
@@ -115,4 +116,14 @@ export const Status = status('mute');
 export const TextOnly = status('unavailable');
 export const SpeedSlower = status('slower');
 export const SpeedFaster = status('faster');
+/** Holding seek forward: 2x stays up past the usual timeout while the key is down, and fades when it comes up. */
+const SPEED_HOLD_RELEASE_MS = CENTERED_HUD_VISIBLE_MS + 2000;
+export const SpeedHold = hudStory((h, s) => {
+  s.clock.setTimeout(h.holdStatusIndicator(formatRate(SEEK_HOLD_RATE), STATUS_HUD_SPEED_ICONS.faster), SPEED_HOLD_RELEASE_MS);
+}, {
+  play: async ({ args }) => {
+    await expect(hudText()).toBe('2x');
+    await expect(overlay()?.classList.contains('fade-out')).toBe(args.phase === 'leaving');
+  }
+}, { holdAfterMs: CENTERED_HUD_VISIBLE_MS, leaveAfterMs: SPEED_HOLD_RELEASE_MS });
 export const Bass = bass('moaaarr');

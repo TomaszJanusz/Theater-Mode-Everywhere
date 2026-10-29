@@ -170,7 +170,8 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     ctx.queryPlayerUi('.theater-everywhere-volume-overlay')?.remove();
   }
 
-  function restartCenteredHud(overlay: HTMLElement): void {
+  /** Shows the centred HUD for `visibleMs`, or until the returned release when null; release then fades it out. */
+  function restartCenteredHud(overlay: HTMLElement, visibleMs: number | null = CENTERED_HUD_VISIBLE_MS): () => void {
     clearCenteredTimers();
     overlay.classList.remove('fade-out');
     const root = overlay.getRootNode();
@@ -182,14 +183,19 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     const epoch = ctx.session.currentEpoch;
     const isCurrent = () => centeredIdentity === identity && ctx.session.element === element
       && ctx.session.currentEpoch === epoch;
-    centeredHideTimer = clock.setTimeout(() => {
-      if (!isCurrent()) return;
+    let faded = false;
+    const fade = () => {
+      if (faded || !isCurrent()) return;
+      faded = true;
+      if (centeredHideTimer !== null) clock.clearTimeout(centeredHideTimer);
       centeredHideTimer = null;
       overlay.classList.add('fade-out');
       centeredRemoveTimer = clock.setTimeout(() => {
         if (isCurrent()) removeCenteredHud();
       }, HUD_FADE_OUT_MS);
-    }, CENTERED_HUD_VISIBLE_MS);
+    };
+    if (visibleMs !== null) centeredHideTimer = clock.setTimeout(fade, visibleMs);
+    return fade;
   }
 
   function triggerSeekIndicator(direction: 'left' | 'right'): void {
@@ -282,7 +288,19 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
 
   /** `level` is the confirmed setting's level; the stylesheet recolours the HUD for the red bass levels. */
   function triggerStatusIndicator(text: string, icon: string, level?: string): void {
-    if (!ctx.session.element) return;
+    showStatus(text, icon, level, CENTERED_HUD_VISIBLE_MS);
+  }
+
+  /**
+   * A status that lasts while a key is held: it stays up until the returned release, then fades out rather
+   * than vanishing. A later HUD takes the plate over, and the release then leaves that one alone.
+   */
+  function holdStatusIndicator(text: string, icon: string): () => void {
+    return showStatus(text, icon, undefined, null);
+  }
+
+  function showStatus(text: string, icon: string, level: string | undefined, visibleMs: number | null): () => void {
+    if (!ctx.session.element) return () => {};
 
     const existing = ctx.queryPlayerUi('.theater-everywhere-volume-overlay') as HTMLElement | null;
     const overlay = existing ?? document.createElement('div');
@@ -307,7 +325,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
 
     mountConfirmation(overlay);
 
-    restartCenteredHud(overlay);
+    return restartCenteredHud(overlay, visibleMs);
   }
 
   function triggerPlaybackIndicator(action: 'play' | 'pause'): void {
@@ -576,6 +594,7 @@ export function createHud(ctx: HudHost, bindTooltip: ButtonTooltipBinder, clock:
     triggerSeekIndicator,
     triggerVolumeIndicator,
     triggerStatusIndicator,
+    holdStatusIndicator,
     triggerPlaybackIndicator,
     dismissPlaybackIndicator,
     ...languageHud,

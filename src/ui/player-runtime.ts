@@ -3,7 +3,8 @@ import { measureNextFrame } from '../core/frame-batch';
 import { AUDIO_PREF_STORAGE_KEY, resolveAudioPreferences, upsertAudioPreference } from '../media-features/audio-preference';
 import { saveAutoTheaterEnabled } from './auto-theater-settings';
 import { createNavigation } from './navigation';
-import { formatRate, stepPlaybackRate } from './speed-control';
+import { createSeekHold, SEEK_HOLD_RATE } from './seek-hold';
+import { formatRate, holdPlaybackRate, stepPlaybackRate } from './speed-control';
 
 import { isMotionReduced } from '../appearance-runtime';
 import { SPONSORBLOCK_STORAGE_KEY, resolveSponsorBlockMarkers } from './sponsorblock-settings';
@@ -134,7 +135,7 @@ import {
   type VideoFitMode
 } from './appearance';
 import { applyUiDirection, t } from './messages';
-import { AUDIO_SHORTCUTS, defaultShortcuts, loadKeyboardLayout, matchesShortcut, withShortcutDefaults } from './shortcuts';
+import { AUDIO_SHORTCUTS, defaultShortcuts, loadKeyboardLayout, matchesShortcut, resolveSeekHold, SEEK_HOLD_STORAGE_KEY, withShortcutDefaults } from './shortcuts';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from './entry-shortcuts';
 import { PlayerUiStore, type PlayerUiState } from './store';
 import { createButtonTooltip } from './button-tooltip';
@@ -293,6 +294,12 @@ function sessionSurface(): PlaybackSurface | null {
   if (providerPlayback && session.element === providerPlayback.surface.element) return providerPlayback.surface;
   if (session.element instanceof HTMLVideoElement) return nativePlaybackSurface(session.element);
   return null;
+}
+
+/** The surface whose speed the shortcuts may change: the speed button hides for live playback, and they follow it. */
+function rateSurface(): PlaybackSurface | null {
+  const surface = sessionSurface();
+  return surface && !(queryPlayerUi('.theater-speed-container') as HTMLElement | null)?.hidden ? surface : null;
 }
 
 function sessionNativeVideo(): HTMLVideoElement | null {
@@ -574,9 +581,8 @@ function executeCommand(command: PlayerCommand): void {
       break;
     }
     case 'STEP_PLAYBACK_RATE': {
-      const surface = sessionSurface();
-      // The speed button hides for live playback; the shortcuts follow the button.
-      if (!surface || (queryPlayerUi('.theater-speed-container') as HTMLElement | null)?.hidden) break;
+      const surface = rateSurface();
+      if (!surface) break;
       surface.playbackRate = stepPlaybackRate(surface.playbackRate, command.direction);
       triggerStatusIndicator(formatRate(surface.playbackRate), STATUS_HUD_SPEED_ICONS[command.direction > 0 ? 'faster' : 'slower']);
       break;
@@ -1327,6 +1333,7 @@ async function checkBlacklistAndInit(): Promise<void> {
       AUTO_THEATER_STORAGE_KEY,
       AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY,
       VIDEO_ACTIVATOR_STORAGE_KEY,
+      SEEK_HOLD_STORAGE_KEY,
       SPONSORBLOCK_STORAGE_KEY,
       VOLUME_BOOST_STORAGE_KEY,
       CHAT_PREFERENCES_STORAGE_KEY,
@@ -1358,6 +1365,7 @@ async function checkBlacklistAndInit(): Promise<void> {
         autoEnterTheater: resolveAutoEnterTheater(data[AUTO_THEATER_STORAGE_KEY]),
         autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(data[AUTO_THEATER_SKIP_COUNTDOWN_STORAGE_KEY]),
         videoActivator: resolveVideoActivator(data[VIDEO_ACTIVATOR_STORAGE_KEY]),
+        seekForwardHold: resolveSeekHold(data[SEEK_HOLD_STORAGE_KEY]),
         shortcuts: withShortcutDefaults(saved),
         videoFit: resolveVideoFitMode(data[VIDEO_FIT_STORAGE_KEY]),
         pictureAlign: resolvePictureAlign(data[PICTURE_ALIGN_STORAGE_KEY]),
@@ -1431,6 +1439,30 @@ function theaterDialogOpen(): boolean {
   return Boolean(queryPlayerUi('.te-dialog-overlay') || document.querySelector('.te-dialog-overlay'));
 }
 
+// Ends the 2x of a seek-forward hold: gives the rate back and fades its HUD.
+let endSeekHoldRate: (() => void) | null = null;
+
+const seekForwardHold = createSeekHold({
+  tap: () => executeCommand({ type: 'SEEK_BY', delta: 5 }),
+  startHold: () => {
+    const surface = rateSurface();
+    if (!surface) return;
+    const restoreRate = holdPlaybackRate(surface, SEEK_HOLD_RATE);
+    const fadeHud = hud.holdStatusIndicator(formatRate(SEEK_HOLD_RATE), STATUS_HUD_SPEED_ICONS.faster);
+    // Replaced media, exit and teardown end the hold with the binding; its keyup may never come.
+    const forget = (videoBindingScope ?? session.runtimeScope).add(() => seekForwardHold.cancel());
+    endSeekHoldRate = () => {
+      forget();
+      restoreRate();
+      fadeHud();
+    };
+  },
+  endHold: () => {
+    endSeekHoldRate?.();
+    endSeekHoldRate = null;
+  }
+});
+
 function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
   const shortcuts = ui().shortcuts || defaultShortcuts;
   
@@ -1461,7 +1493,9 @@ function handleVideoKey(e: KeyboardEvent, video: PlaybackSurface): boolean {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    executeCommand({ type: 'SEEK_BY', delta: 5 });
+    // Holding plays at 2x instead of scrubbing, so its auto-repeats are dropped; live speed stays fixed.
+    if (!ui().seekForwardHold || !rateSurface()) executeCommand({ type: 'SEEK_BY', delta: 5 });
+    else if (!e.repeat) seekForwardHold.press(e.code || e.key);
   } else if (matchesShortcut(e, shortcuts.frameBack)) {
     e.preventDefault();
     e.stopPropagation();
@@ -1528,6 +1562,7 @@ function initialize(): void {
   // Position keys (the Navigation group) are named for what this keyboard prints on them; display only.
   void loadKeyboardLayout();
   session.runtimeScope.add(() => {
+    seekForwardHold.cancel();
     navigation.end();
     autoTheaterRuntime?.dispose();
     autoTheaterRuntime = null;
@@ -1557,6 +1592,15 @@ function initialize(): void {
 
   // 1. Keyboard Listener (T and Escape)
   const claimedKeyReleases = new Set<string>();
+  // A seek-forward press handed to the theater iframe, whose release must follow it there.
+  let forwardedSeekPress: { iframe: HTMLIFrameElement; key: string } | null = null;
+  const forwardSeekRelease = () => {
+    const pressed = forwardedSeekPress;
+    forwardedSeekPress = null;
+    if (pressed?.iframe.contentWindow) {
+      frames.postToChildIframe(pressed.iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), { release: pressed.key });
+    }
+  };
   const handleKeydown = (event: KeyboardEvent): boolean => {
     if (event.isComposing || isChatDocument(window.location.href) || isNativeChatEvent(event)) return false;
     if (ui().helpOpen && !refs.helpOverlay?.isConnected) {
@@ -1781,6 +1825,10 @@ function initialize(): void {
             matchesShortcut(event, shortcuts.increaseCaptionSize) ||
             matchesShortcut(event, shortcuts.decreaseCaptionSize);
           if ((previous || next) && !claimed) return false;
+          if (!event.repeat && matchesShortcut(event, shortcuts.seekForward)) {
+            forwardSeekRelease();
+            forwardedSeekPress = { iframe, key: event.code || event.key };
+          }
           frames.postToChildIframe(iframe, 'PLAYBACK_COMMAND', session.id || createSessionId(), {
             key: event.key,
             code: event.code,
@@ -1806,7 +1854,12 @@ function initialize(): void {
     if (handleKeydown(event)) claimedKeyReleases.add(event.code || event.key);
   };
   session.runtimeScope.listen(window, 'keydown', listeners.keydown!, true);
-  session.runtimeScope.listen(window, 'blur', () => claimedKeyReleases.clear());
+  session.runtimeScope.listen(window, 'blur', () => {
+    claimedKeyReleases.clear();
+    // Without focus the release never arrives, so a hold ends here.
+    seekForwardHold.cancel();
+    forwardSeekRelease();
+  });
   session.runtimeScope.listen(window, ENTRY_SHORTCUT_EVENT, (event: Event) => {
     if (isChatDocument(window.location.href)) return;
     if (!refs.isInitialized || typeof (event as CustomEvent).detail !== 'string') return;
@@ -1874,6 +1927,12 @@ function initialize(): void {
       event.stopImmediatePropagation();
     }
   };
+  // Before the listener below can stop a claimed key, its release ends a seek-forward press; modifiers may have come up first.
+  session.runtimeScope.listen(window, 'keyup', (event: KeyboardEvent) => {
+    const key = event.code || event.key;
+    seekForwardHold.release(key);
+    if (forwardedSeekPress?.key === key) forwardSeekRelease();
+  }, true);
   session.runtimeScope.listen(window, 'keyup', listeners.keyup!, true);
   session.runtimeScope.listen(window, 'keypress', listeners.keyup!, true);
 
@@ -1955,7 +2014,9 @@ function initialize(): void {
     } else if (envelope.type === 'FRAME_EXITED') {
       return;
     } else if (envelope.type === 'PLAYBACK_COMMAND') {
-      if (session.element && session.element.tagName === 'VIDEO') {
+      if (typeof envelope.payload.release === 'string') {
+        seekForwardHold.release(envelope.payload.release);
+      } else if (session.element && session.element.tagName === 'VIDEO') {
         const video = session.element as HTMLVideoElement;
         handleVideoKey({
           key: envelope.payload.key,
@@ -2584,6 +2645,7 @@ function exitTheaterMode(
 ): void {
   if (!session.dispatch({ type: 'EXIT', origin, sessionId, from })) return;
   const closedSessionId = session.id;
+  seekForwardHold.cancel();
   cancelAudioReload?.();
   cancelAudioReload = null;
   try {
@@ -2783,9 +2845,15 @@ export function bootstrapPlayerRuntime(): void {
         applyKeepControlsVisible(changes[KEEP_CONTROLS_VISIBLE_STORAGE_KEY].newValue);
       }
 
+      const previousSeekHold = `${ui().seekForwardHold} ${ui().shortcuts.seekForward}`;
+      if (changes[SEEK_HOLD_STORAGE_KEY]) {
+        uiStore.dispatch({ type: 'HYDRATE', value: { seekForwardHold: resolveSeekHold(changes[SEEK_HOLD_STORAGE_KEY].newValue) } });
+      }
       if (changes.shortcuts) {
         uiStore.dispatch({ type: 'SET_SHORTCUTS', value: withShortcutDefaults(changes.shortcuts.newValue || {}) });
       }
+      // Rebinding seek forward or turning the hold off ends a hold that the old key started.
+      if (`${ui().seekForwardHold} ${ui().shortcuts.seekForward}` !== previousSeekHold) seekForwardHold.cancel();
       if (changes[ACCENT_COLOR_STORAGE_KEY]) {
         uiStore.dispatch({ type: 'SET_ACCENT', value: resolveAccentColorPreset(changes[ACCENT_COLOR_STORAGE_KEY].newValue) });
         refreshExtensionAccentColor();

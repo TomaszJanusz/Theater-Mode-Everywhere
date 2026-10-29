@@ -52,6 +52,7 @@ it('renders static English semantic content safely and refreshes localized dialo
     'Fullscreen in theater mode: Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.',
     'Accessibility: Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.',
     'New feature badges: Recently added features are marked with NEW badges until you open these highlights. To silence them until the next version, use Settings → Appearance → Hide until next version.',
+    'Hold for 2x speed: Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.',
     'Settings warn you about conflicting keyboard shortcuts.',
     'The titles of the videos being played are displayed.',
     'You can go to the home page of the service the video is playing on.',
@@ -61,8 +62,8 @@ it('renders static English semantic content safely and refreshes localized dialo
     'You can change the language, and the translations have been improved; spotted a mistake? Use Report a translation issue next to Language in Settings.',
     'And many smaller visual refinements, behavior fixes and reliability improvements throughout the extension.'
   ]);
-  assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'New feature badges:']);
-  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @liango2 for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to @wesleyel for the playback speed shortcuts.');
+  assert.deepEqual(await root.locator('li strong').allTextContents(), ['New services in Rich Theater Experience', 'RTE chat support', 'Captions under the video:', 'Pin controls', 'Rich Theater Experience', 'Rich Theater Experience', 'Audio effects:', 'SponsorBlock support:', 'Automatic theater mode:', 'Video launcher:', 'Fullscreen in theater mode:', 'Accessibility:', 'New feature badges:', 'Hold for 2x speed:']);
+  assert.equal(await page.locator('.whats-new-thanks em').textContent(), 'Big thanks to @liango2 for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to @wesleyel for the playback speed shortcuts and holding Seek Forward for 2x.');
   const profiles = page.locator('.whats-new-thanks a');
   assert.deepEqual(await profiles.evaluateAll(links => links.map(link => ({
     text: link.textContent, href: link.getAttribute('href'), target: link.getAttribute('target'), rel: link.getAttribute('rel')

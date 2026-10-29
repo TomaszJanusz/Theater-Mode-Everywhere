@@ -1,8 +1,11 @@
 import { openDialog } from '../src/dialog';
 import { t } from '../src/i18n';
 import { shortcutLabel } from '../src/ui/shortcut-display';
-import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, shortcutConflicts, shortcutDisplayEnv, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, resolveSeekHold, SEEK_HOLD_STORAGE_KEY, shortcutConflicts, shortcutDisplayEnv, shortcutFromEvent, withShortcutDefaults, type Shortcuts } from '../src/ui/shortcuts';
 import type { ShortcutUpdate, ShortcutUpdateResult } from '../src/ui/shortcut-updates';
+
+/** The Hold for 2x speed switch under Seek Forward; Settings saves it like the other feature switches. */
+export const SEEK_HOLD_TOGGLE = { id: 'seek-hold-toggle', key: SEEK_HOLD_STORAGE_KEY, resolve: resolveSeekHold } as const;
 
 export function createShortcutEditor(onSaved: () => Promise<void>) {
   const entries = Array.from(document.querySelectorAll<HTMLInputElement>('.options-input')).map(input => {

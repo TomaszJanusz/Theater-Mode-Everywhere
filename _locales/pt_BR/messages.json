@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Avançar (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Segurar para 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Segure a tecla Avançar para reproduzir em 2x até soltá-la. Um toque rápido continua avançando 5 s. Com esta opção desativada, segurar a tecla continua avançando."
+  },
   "volumeUp5": {
     "message": "Aumentar Volume (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Segure $1 para reproduzir em 2x até soltar.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },
