@@ -5,10 +5,22 @@ import { describe, it, type TestContext } from 'node:test';
 import { chromium, firefox, type Page } from 'playwright';
 
 import { sharedEngineBrowsers } from '../test-utils/engine-browsers';
-import { bundleModules } from '../test-utils/player-boot';
+import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
 import { testEngines } from '../test-utils/test-engines';
 
-const bundle = (): string => bundleModules(["export * from './chat/index';"], 'NativeChat');
+const bundle = (): string => bundleModules([...BUNDLED_PROVIDERS, "export * from './chat/index';"], 'NativeChat');
+
+/**
+ * YouTube's chat hook is registered only in YouTube documents, so fixtures load on its host. Chat frame
+ * navigations answer 204 and never commit, so frames keep only their declared source unless a test fills
+ * them; Twitch hrefs are parsed regardless of the fixture's own host.
+ */
+async function openYouTube(page: Page, html: string): Promise<void> {
+  await page.route('https://www.youtube.com/**', route => route.request().resourceType() !== 'document' ? route.abort()
+    : route.request().frame() === page.mainFrame() ? route.fulfill({ contentType: 'text/html; charset=utf-8', body: html })
+      : route.fulfill({ status: 204 }));
+  await page.goto('https://www.youtube.com/watch?v=AbCdEfGhIjK', { waitUntil: 'domcontentloaded' });
+}
 
 const TWITCH = `<div id="layout" style="width:1000px">
   <div class="persistent-player" id="player"></div>
@@ -42,7 +54,7 @@ describe('native chat controller', () => {
 
   async function pageWith(t: TestContext, html: string, viewport = { width: 1280, height: 800 }): Promise<Page> {
     const page = await (await browsers.chromium.newContext(t, { viewport })).newPage();
-    await page.setContent(`<!doctype html><html><body>${html}<button id="toggle" type="button">chat</button></body></html>`, { waitUntil: 'domcontentloaded' });
+    await openYouTube(page, `<!doctype html><html><body>${html}<button id="toggle" type="button">chat</button></body></html>`);
     // Install before controller construction so debounce, discovery and theme
     // timers advance only when the fixture requests their documented horizon.
     const start = new Date('2026-01-01T00:00:00Z');
@@ -62,7 +74,7 @@ describe('native chat controller', () => {
       const context = await browsers[engine].newContext(t);
       for (const provider of ['youtube', 'twitch']) {
         const page = await context.newPage();
-        await page.setContent('<!doctype html><html><body></body></html>');
+        await openYouTube(page, '<!doctype html><html><body></body></html>');
         await page.addScriptTag({ content: bundle() });
         const report = await page.evaluate(`(() => {
           const provider = ${JSON.stringify(provider)};
@@ -1136,7 +1148,7 @@ describe('native chat controller', () => {
       if (!existsSync(browserType.executablePath())) { t.skip(`${engine} is not installed`); return; }
       const page: Page = await (await browsers[engine].newContext(t, { viewport: { width: 1280, height: 800 } })).newPage();
       try {
-        await page.setContent('<!doctype html><html><body><div id="layout"></div></body></html>', { waitUntil: 'domcontentloaded' });
+        await openYouTube(page, '<!doctype html><html><body><div id="layout"></div></body></html>');
         const start = new Date('2026-01-01T00:00:00Z');
         await page.clock.install({ time: start });
         await page.clock.pauseAt(new Date(start.getTime() + 1000));

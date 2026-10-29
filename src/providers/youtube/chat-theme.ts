@@ -1,8 +1,9 @@
-import { readNativeChatVisibility } from './visibility';
-import { OwnedDom } from '../owned-dom';
-import { THEATER_STAGE_BACKGROUND } from './stage';
-import type { ChatThemeAdapter, ForcedTheme } from './types';
-import { YOUTUBE_CHAT_KNOWN_REFERENCES, YOUTUBE_CHAT_MAPPED_ALIASES, YOUTUBE_CHAT_TOKEN_BRIDGE } from './youtube-palette';
+import { THEATER_STAGE_BACKGROUND } from '../../chat/adapters/stage';
+import type { ChatThemeAdapter, ForcedTheme } from '../../chat/adapters/types';
+import { OwnedDom } from '../../chat/owned-dom';
+import type { ProviderChat } from '../provider-api';
+
+import { YOUTUBE_CHAT_KNOWN_REFERENCES, YOUTUBE_CHAT_MAPPED_ALIASES, YOUTUBE_CHAT_TOKEN_BRIDGE } from './chat-palette';
 
 /** The bridge stays inside the existing chat document; no service function is patched. */
 export class YouTubeChatThemeAdapter implements ChatThemeAdapter {
@@ -110,8 +111,8 @@ function recognizedPalette(sheets: readonly CSSStyleSheet[]): string | null {
     && [...YOUTUBE_CHAT_MAPPED_ALIASES].every(alias => declared.has(alias)) ? lightThreadHover : null;
 }
 
-export function readYouTubeChatVisibility(root: HTMLElement): boolean | null {
-  if (root.hasAttribute('collapsed') || root.closest('#chat[collapsed]')
-    || root.querySelector('ytd-live-chat-frame[collapsed]')) return false;
-  return readNativeChatVisibility(root);
-}
+/** The palette lives in the chat iframe's own document. */
+export const youtubeChatTheme: NonNullable<ProviderChat['theme']> = {
+  document: surface => surface.iframe?.contentDocument ?? null,
+  adapter: document => new YouTubeChatThemeAdapter(document)
+};

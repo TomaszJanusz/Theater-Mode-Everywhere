@@ -1,6 +1,7 @@
+import { registeredChat } from '../providers/runtime-registration';
+
 import { TwitchChatThemeAdapter } from './adapters/twitch';
 import type { ChatThemeAdapter } from './adapters/types';
-import { YouTubeChatThemeAdapter } from './adapters/youtube';
 import { OwnedDom } from './owned-dom';
 import { TWITCH_CHAT_PORTAL_SELECTOR } from './selectors';
 import type { ChatSurface, ChatTheme, ChatThemeStatus } from './types';
@@ -76,14 +77,12 @@ export class ChatThemeSession {
     }
     this.doc = doc;
     // Providers without a palette adapter retain the service appearance.
-    if (surface.provider !== 'twitch' && surface.provider !== 'youtube') {
+    const createAdapter = paletteAdapter(surface);
+    if (!createAdapter) {
       this.status = 'unavailable';
       return;
     }
-    if (!this.adapter && doc) {
-      this.adapter = surface.provider === 'twitch'
-        ? new TwitchChatThemeAdapter(surface) : new YouTubeChatThemeAdapter(doc);
-    }
+    if (!this.adapter && doc) this.adapter = createAdapter(doc);
     const applied = this.adapter?.apply(theme) ?? false;
     this.status = applied ? 'applied' : 'unavailable';
     if (applied) this.owned.setAttribute(surface.root.ownerDocument.documentElement, CHAT_THEME_ATTRIBUTE, theme);
@@ -192,8 +191,16 @@ export class ChatThemeSession {
   }
 }
 
+/** Twitch's palette adapter, or a registered provider's; null keeps the service's own appearance. */
+function paletteAdapter(surface: ChatSurface): ((doc: Document) => ChatThemeAdapter) | null {
+  if (surface.provider === 'twitch') return () => new TwitchChatThemeAdapter(surface);
+  const theme = registeredChat()?.theme;
+  return theme ? doc => theme.adapter(doc, surface) : null;
+}
+
 function themeDocument(surface: ChatSurface): Document | null {
-  try { return surface.provider === 'youtube' ? surface.iframe?.contentDocument ?? null : surface.root.ownerDocument; }
+  const theme = surface.provider === 'twitch' ? null : registeredChat()?.theme;
+  try { return theme ? theme.document(surface) : surface.root.ownerDocument; }
   catch { return null; }
 }
 
@@ -204,7 +211,7 @@ function themeDomChanged(record: MutationRecord): boolean {
     if (!(node instanceof Element)) continue;
     const tag = node.tagName;
     if (tag === 'STYLE' || tag === 'LINK' || node.matches(TWITCH_CHAT_PORTAL_SELECTOR)) return true;
-    if (tag.startsWith('YT-LIVE-CHAT-') || node.classList.contains('chat-line__message') || node.classList.contains('chat-line')) continue;
+    if (registeredChat()?.structure?.transcript(node) || node.classList.contains('chat-line__message') || node.classList.contains('chat-line')) continue;
     if (node.id === 'theater-everywhere-ui' || node.closest('#theater-everywhere-ui')) continue;
     const parent = node.parentElement;
     if (parent !== node.ownerDocument.head && parent !== node.ownerDocument.body) continue;

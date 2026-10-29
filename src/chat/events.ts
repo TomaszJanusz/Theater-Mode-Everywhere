@@ -1,8 +1,8 @@
-import { isTwitchHost, isYouTubeHost } from '../providers/hosts';
+import { isTwitchHost } from '../providers/hosts';
 import { registeredChat } from '../providers/runtime-registration';
 
-import { TWITCH_CHAT_EVENT_SELECTOR, YOUTUBE_CHAT_EVENT_SELECTOR } from './selectors';
-import { isChatDocument, readLiveChatSource } from './url';
+import { TWITCH_CHAT_EVENT_SELECTOR } from './selectors';
+import { isChatDocument } from './url';
 
 /**
  * True when a keyboard or pointer event belongs to native chat, including
@@ -31,15 +31,7 @@ function matchesServiceChat(element: Element): boolean {
   }
   if (isTwitchHost(host) && element.matches(TWITCH_CHAT_EVENT_SELECTOR)) return true;
   const chat = registeredChat();
-  if (chat?.matchesHost(host) && element.matches(chat.eventSelector)) return true;
-  if (!isYouTubeHost(host)) return false;
-  if (element.matches(YOUTUBE_CHAT_EVENT_SELECTOR)) return true;
-  if (element.ownerDocument.documentElement.hasAttribute('data-theater-chat-active') && element.matches('ytd-popup-container')) return true;
-  if (element.tagName.startsWith('YT-LIVE-CHAT-')) return true;
-  if (element instanceof HTMLIFrameElement) {
-    return readLiveChatSource(element.getAttribute('src') || '') !== null;
-  }
-  return false;
+  return Boolean(chat?.matchesHost(host) && (element.matches(chat.eventSelector) || chat.matchesEvent?.(element)));
 }
 
 function documentOf(event: Event): Document | null {

@@ -1,3 +1,4 @@
+import type { ChatThemeAdapter } from '../chat/adapters/types';
 import type { ChatActivation, ChatSurface } from '../chat/types';
 import type { ParsedChatLocation } from '../chat/url';
 import type { ServiceActionSource } from '../core/service-actions';
@@ -17,11 +18,30 @@ export type ProviderChat = {
   parseLocation(url: URL): ParsedChatLocation | null;
   matchesHost(hostname: string): boolean;
   detect(document: Document, href: string): ChatSurface | null;
-  activation(document: Document, href: string): ChatActivation | null;
+  /** `surface` is the chat already detected, if any; a service may offer activation only while it is collapsed. */
+  activation(document: Document, href: string, surface?: ChatSurface | null): ChatActivation | null;
   eventSelector: string;
+  /** Chat-owned elements a selector cannot express (custom element families, chat frames, open portals). */
+  matchesEvent?(element: Element): boolean;
   activationSelector: string;
   shellSelector: string;
+  /** Events at the page (document or window) after which the chat may have moved to a new route. */
   navigationEvents: readonly string[];
+  /** Finer structure rules for services whose chat mounts through custom elements or frames. */
+  structure?: {
+    attributeChanged(target: Element, name: string | null): boolean;
+    /** The frame source names this service's chat document. */
+    frameSource(src: string): boolean;
+    mayMount(node: Element): boolean;
+    /** Chat transcript nodes, skipped before any subtree scan. */
+    transcript(node: Element): boolean;
+  };
+  /** Palette integration. Without it a non-native theme stays unavailable and the service keeps its appearance. */
+  theme?: {
+    /** The document that holds the chat's palette, such as the chat iframe's. */
+    document(surface: ChatSurface): Document | null;
+    adapter(document: Document, surface: ChatSurface): ChatThemeAdapter;
+  };
 };
 
 /** Only hooks used by the pilot. Stateful shared services are supplied by the owning runtime. */

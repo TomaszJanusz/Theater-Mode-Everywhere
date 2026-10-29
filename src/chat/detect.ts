@@ -1,14 +1,9 @@
 import { registeredChat } from '../providers/runtime-registration';
 
 import { readTwitchChatVisibility } from './adapters/twitch';
-import { readYouTubeChatVisibility } from './adapters/youtube';
-import {
-  TWITCH_CHAT_COLUMN_SELECTOR,
-  TWITCH_CHAT_SECTION_SELECTOR,
-  YOUTUBE_CHAT_ROOT_SELECTOR
-} from './selectors';
+import { TWITCH_CHAT_COLUMN_SELECTOR, TWITCH_CHAT_SECTION_SELECTOR } from './selectors';
 import type { ChatKind, ChatSurface } from './types';
-import { parseChatLocation, readLiveChatSource } from './url';
+import { parseChatLocation } from './url';
 
 /**
  * Finds the page's existing native chat for this host and route.
@@ -22,8 +17,7 @@ export function detectChatSurface(document: Document, href: string): ChatSurface
     if (!page.kind) return null;
     return detectTwitch(document, page.contentKey, page.kind);
   }
-  if (page.provider !== 'youtube') return registeredChat()?.detect(document, href) ?? null;
-  return detectYouTube(document, page.contentKey);
+  return registeredChat()?.detect(document, href) ?? null;
 }
 
 function detectTwitch(document: Document, contentKey: string, kind: ChatKind): ChatSurface | null {
@@ -45,78 +39,6 @@ function detectTwitch(document: Document, contentKey: string, kind: ChatKind): C
     revealAncestors: revealAncestors(root),
     initiallyVisible: readTwitchChatVisibility(root)
   };
-}
-
-function detectYouTube(document: Document, contentKey: string): ChatSurface | null {
-  const stampedId = document.querySelector('ytd-watch-flexy[video-id]')?.getAttribute('video-id');
-  // Channel /live pages can retain their URL after the watch component mounts.
-  if (contentKey.startsWith('/')) {
-    if (!stampedId) return null;
-    contentKey = stampedId;
-  } else if (stampedId && stampedId !== contentKey) {
-    return null; // SPA navigation is still showing the previous watch component.
-  }
-  const selected = selectYouTubeFrame(document, contentKey);
-  if (!selected) return null;
-  const root = youtubeRoot(selected.iframe);
-  if (!root) return null;
-  return {
-    provider: 'youtube',
-    contentKey,
-    kind: selected.kind,
-    root,
-    iframe: selected.iframe,
-    revealAncestors: revealAncestors(root),
-    initiallyVisible: readYouTubeChatVisibility(root)
-  };
-}
-
-function selectYouTubeFrame(document: Document, contentKey: string): { iframe: HTMLIFrameElement; kind: ChatKind } | null {
-  const verified: Array<{ iframe: HTMLIFrameElement; kind: ChatKind }> = [];
-  const structural: Array<{ iframe: HTMLIFrameElement; kind: ChatKind }> = [];
-  for (const node of document.querySelectorAll('iframe')) {
-    if (!(node instanceof HTMLIFrameElement)) continue;
-    const rawSrc = node.getAttribute('src') || '';
-    const declaredSource = readLiveChatSource(rawSrc);
-    if (declaredSource?.videoId && declaredSource.videoId !== contentKey) continue;
-    let navigatedSource = null;
-    try {
-      navigatedSource = readLiveChatSource(node.contentWindow?.location.href || '');
-    } catch { /* Cross-origin chat stays opaque; its native shell supplies identity. */ }
-    const source = navigatedSource ?? declaredSource;
-    if (source?.videoId && source.videoId !== contentKey) continue;
-    if (source?.videoId) {
-      if (source.videoId === contentKey) verified.push({ iframe: node, kind: source.kind });
-      continue;
-    }
-    const nativeFrame = node.id === 'chatframe' && node.closest('ytd-live-chat-frame');
-    const watchId = node.closest('ytd-watch-flexy')?.getAttribute('video-id');
-    // An unavailable replay can retain an empty iframe alongside the native
-    // status message. That placeholder is not an available chat surface.
-    if (!source && nativeFrame instanceof HTMLElement
-      && nativeFrame.hasAttribute('hide-chat-frame')
-      && nativeFrame.querySelector('ytd-message-renderer')?.textContent?.trim()) continue;
-    // YouTube navigates chatframe programmatically, often without a src attribute.
-    // Require the native component and its current stamped watch identity.
-    if (nativeFrame && watchId === contentKey && (source || !rawSrc || rawSrc === 'about:blank')) {
-      structural.push({ iframe: node, kind: source?.kind ?? 'live' });
-    } else if (source?.kind === 'replay' && node.closest(YOUTUBE_CHAT_ROOT_SELECTOR)) {
-      structural.push({ iframe: node, kind: source.kind });
-    }
-  }
-  return verified[0] ?? structural[0] ?? null;
-}
-
-function youtubeRoot(iframe: HTMLIFrameElement): HTMLElement | null {
-  const chat = iframe.closest('#chat');
-  if (chat instanceof HTMLElement) return chat;
-  const frame = iframe.closest('ytd-live-chat-frame');
-  if (frame instanceof HTMLElement) return frame;
-  const parent = iframe.parentElement;
-  if (parent && parent !== iframe.ownerDocument.body && parent !== iframe.ownerDocument.documentElement) {
-    return parent;
-  }
-  return iframe;
 }
 
 function twitchRoot(section: HTMLElement): HTMLElement {

@@ -1,7 +1,19 @@
+// First: the registry must see a YouTube document before it loads.
+import '../test-utils/youtube-node-host';
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { isChatDocument, isNativeChatHost, parseChatLocation, readLiveChatSource, watchIdentity } from './url';
+import { providerRegistry } from '../providers/runtime-registration';
+import { readLiveChatSource, youtubeChat } from '../providers/youtube/chat';
+import { youtubeWatchPlayback } from '../providers/youtube/watch-playback';
+import { releaseYouTubeNodeHost } from '../test-utils/youtube-node-host';
+
+import { isChatDocument, isNativeChatHost, parseChatLocation, watchIdentity } from './url';
+
+releaseYouTubeNodeHost();
+// YouTube's chat routes reach the shared parser only through its registered hook.
+assert.equal(providerRegistry.register({ id: 'youtube', contractVersion: 1, watchPlayback: youtubeWatchPlayback, chat: youtubeChat }), true);
 
 describe('chat document urls', () => {
   it('recognizes Twitch and YouTube chat, popout, and replay documents', () => {
