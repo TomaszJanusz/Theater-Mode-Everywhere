@@ -219,6 +219,8 @@ export const FALLBACK_MESSAGES: Record<string, string> = {
   playPause: 'Play / Pause',
   seekBackward5: 'Seek Backward (5s)',
   seekForward5: 'Seek Forward (5s)',
+  seekHoldTitle: 'Hold for 2x speed',
+  seekHoldDescription: 'Hold the Seek Forward key to play at 2x until you let go. A tap still skips 5 seconds. When this is off, holding the key keeps skipping forward.',
   volumeUp5: 'Volume Up (5%)',
   volumeDown5: 'Volume Down (5%)',
   toggleMute: 'Toggle mute',

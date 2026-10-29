@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Avanti (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Tieni premuto per 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Tieni premuto il tasto Avanti per riprodurre a 2x finché non lo rilasci. Una pressione breve salta ancora avanti di 5 s. Se è disattivato, tenere premuto il tasto continua ad andare avanti."
+  },
   "volumeUp5": {
     "message": "Alza volume (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Tieni premuto $1 per riprodurre a 2x finché non lo rilasci.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

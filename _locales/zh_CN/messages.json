@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "前进（5 秒）"
   },
+  "seekHoldTitle": {
+    "message": "长按 2 倍速"
+  },
+  "seekHoldDescription": {
+    "message": "按住前进键即以 2 倍速播放，松开后恢复。短按仍前进 5 秒。关闭后，按住该键会持续前进。"
+  },
   "volumeUp5": {
     "message": "提高音量（5%）"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "按住 $1 以 2 倍速播放，松开即恢复。",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

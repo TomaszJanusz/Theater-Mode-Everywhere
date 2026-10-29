@@ -11,7 +11,7 @@ import {
   type PictureAlign,
   type VideoFitMode
 } from './appearance';
-import { defaultShortcuts, type Shortcuts } from './shortcuts';
+import { DEFAULT_SEEK_HOLD, defaultShortcuts, type Shortcuts } from './shortcuts';
 import { DEFAULT_AUDIO_SETTINGS, sameAudioSettings, type AudioSettings } from '../audio-settings';
 import { DEFAULT_VOLUME_BOOST_ENABLED } from './volume-boost-settings';
 import { DEFAULT_AUTO_ENTER_THEATER, resolveAutoTheaterSkipCountdown } from './auto-theater';
@@ -32,6 +32,7 @@ export type PlayerUiState = {
   autoEnterTheater: boolean;
   autoTheaterSkipCountdown: boolean;
   videoActivator: boolean;
+  seekForwardHold: boolean;
   accentColor: AccentColorPreset;
   captionStyle: CaptionStyle;
   shortcuts: Shortcuts;
@@ -68,6 +69,7 @@ const defaultState = (): PlayerUiState => ({
   autoEnterTheater: DEFAULT_AUTO_ENTER_THEATER,
   autoTheaterSkipCountdown: resolveAutoTheaterSkipCountdown(undefined),
   videoActivator: DEFAULT_VIDEO_ACTIVATOR,
+  seekForwardHold: DEFAULT_SEEK_HOLD,
   accentColor: DEFAULT_ACCENT_COLOR,
   captionStyle: resolveCaptionStyle(null),
   shortcuts: { ...defaultShortcuts }
@@ -89,6 +91,7 @@ function sameState(left: PlayerUiState, right: PlayerUiState): boolean {
     && left.autoEnterTheater === right.autoEnterTheater
     && left.autoTheaterSkipCountdown === right.autoTheaterSkipCountdown
     && left.videoActivator === right.videoActivator
+    && left.seekForwardHold === right.seekForwardHold
     && left.accentColor === right.accentColor
     && left.captionStyle === right.captionStyle
     && left.shortcuts === right.shortcuts

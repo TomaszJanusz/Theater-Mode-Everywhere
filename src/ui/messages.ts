@@ -96,6 +96,7 @@ export const PLAYER_I18N_FALLBACKS: Record<string, string> = {
   helpSubtitleSize: "Subtitle size smaller / larger",
   helpNavigateControls: "Move between controls",
   helpNavigationHint: "$1 opens the controls bar at the settings button. On a menu button, $1 opens its menu and $2 from its bottom row closes it. $3 ends navigation.",
+  helpSeekHoldHint: "Hold $1 to play at 2x until you let go.",
   helpCustomizeShortcuts: "Customize shortcuts",
   volumeBoostLabel: 'Volume boost',
   volumeBoostOff: 'Off',

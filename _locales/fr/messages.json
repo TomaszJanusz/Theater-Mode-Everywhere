@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Avancer (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Maintenir pour 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Maintenez la touche Avancer pour lire en 2x jusqu’à ce que vous la relâchiez. Un appui bref avance toujours de 5 s. Si cette option est désactivée, maintenir la touche continue d’avancer."
+  },
   "volumeUp5": {
     "message": "Augmenter le volume (5 %)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Maintenez $1 pour lire en 2x jusqu’à ce que vous relâchiez.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

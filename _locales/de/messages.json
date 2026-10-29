@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "5 s vor"
   },
+  "seekHoldTitle": {
+    "message": "Halten für 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Halte die Taste für „5 s vor“ gedrückt, um mit 2x abzuspielen, bis du sie loslässt. Kurz gedrückt springt sie weiterhin 5 s vor. Ist dies aus, springt die gehaltene Taste wiederholt vor."
+  },
   "volumeUp5": {
     "message": "Lauter (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Halte $1 gedrückt, um mit 2x abzuspielen, bis du loslässt.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

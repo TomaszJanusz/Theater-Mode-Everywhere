@@ -24,6 +24,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
     [{ strong: 'Fullscreen in theater mode:' }, ' Double-click the picture to enter or leave fullscreen without leaving theater mode. A single click now plays or pauses faster, and a quick double-click never pauses the video.'],
     [{ strong: 'Accessibility:' }, ' Choose High contrast, Reduce transparency and Reduce motion separately (Auto, On or Off) in Settings → Appearance; Auto follows your system preferences. Settings and the player also work better with screen readers.'],
     [{ strong: 'New feature badges:' }, ' Recently added features are marked with NEW badges until you open these highlights. To silence them until the next version, use Settings → Appearance → Hide until next version.'],
+    [{ strong: 'Hold for 2x speed:' }, ' Hold the Seek Forward key (→ unless you changed it) to play at 2x until you let go; a tap still skips 5 seconds. You can turn this off in Settings → Keyboard Shortcuts.'],
     ['Settings warn you about conflicting keyboard shortcuts.'],
     ['The titles of the videos being played are displayed.'],
     ['You can go to the home page of the service the video is playing on.'],
@@ -36,7 +37,7 @@ export const WHATS_NEW_CONTENT: AnnouncementContent = {
   thanks: [
     'Big thanks to ', { link: '@liango2', href: 'https://github.com/liango2' },
     ' for the idea of the always-visible interface, to Denis for the idea of automatically entering theater mode, and to ',
-    { link: '@wesleyel', href: 'https://github.com/wesleyel' }, ' for the playback speed shortcuts.'
+    { link: '@wesleyel', href: 'https://github.com/wesleyel' }, ' for the playback speed shortcuts and holding Seek Forward for 2x.'
   ]
 };
 

@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Avanzar (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Mantener para 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Mantén pulsada la tecla Avanzar para reproducir a 2x hasta que la sueltes. Una pulsación corta sigue avanzando 5 s. Si está desactivado, mantener la tecla sigue avanzando."
+  },
   "volumeUp5": {
     "message": "Subir volumen (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Mantén pulsado $1 para reproducir a 2x hasta que lo sueltes.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

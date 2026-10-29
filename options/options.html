@@ -516,6 +516,16 @@
                 </div>
               </div>
               <div class="options-row">
+                <div class="options-info">
+                  <label id="seek-hold-label" for="seek-hold-toggle" class="options-label" data-i18n="seekHoldTitle">Hold for 2x speed</label>
+                  <p id="seek-hold-description" class="options-desc" data-i18n="seekHoldDescription">Hold the Seek Forward key to play at 2x until you let go. A tap still skips 5 seconds. When this is off, holding the key keeps skipping forward.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="seek-hold-toggle" role="switch" aria-labelledby="seek-hold-label" aria-describedby="seek-hold-description" checked>
+                  <span class="toggle-slider" aria-hidden="true"></span>
+                </label>
+              </div>
+              <div class="options-row">
                 <label class="options-label" for="shortcut-frame-back" data-i18n="frameStepBackward004">Frame Step Backward (0.04s)</label>
                 <div class="options-input-wrapper">
                   <input type="text" id="shortcut-frame-back" class="options-input" readonly placeholder="Press keys..." data-i18n-placeholder="pressKeysPlaceholder">

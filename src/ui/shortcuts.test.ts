@@ -5,7 +5,7 @@ import { createShortcutEditor } from '../../options/shortcut-editor';
 
 import { shortcutLabel } from './shortcut-display';
 import { createShortcutUpdateQueue, readShortcutUpdate } from './shortcut-updates';
-import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, matchesShortcut, NAVIGATION_SHORTCUTS, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayEnv, withShortcutDefaults } from './shortcuts';
+import { assignShortcut, defaultShortcuts, isNavigationShortcut, isReservedShortcut, loadKeyboardLayout, matchesShortcut, NAVIGATION_SHORTCUTS, resolveSeekHold, shortcutConflicts, shortcutsConflict, shortcutFromEvent, shortcutDisplayEnv, withShortcutDefaults } from './shortcuts';
 
 function key(partial: {
   key: string;
@@ -26,6 +26,16 @@ function key(partial: {
 }
 
 describe('shortcut matching', () => {
+  it('holds seek forward for 2x by default, adding no shortcut of its own', () => {
+    assert.equal(resolveSeekHold(undefined), true);
+    assert.equal(resolveSeekHold(false), false);
+    assert.equal(resolveSeekHold('false'), true, 'only a saved boolean counts');
+    // The hold rides on whatever Seek Forward is bound to, so conflicts follow that binding alone.
+    const custom = withShortcutDefaults({ seekForward: 'Shift+J' });
+    assert.deepEqual(shortcutConflicts(custom, 'toggle', 'Shift+J'), ['seekForward']);
+    assert.deepEqual(shortcutConflicts(custom, 'toggle', 'ArrowRight'), []);
+  });
+
   it('adds the pin shortcut to older settings without conflicting with help or losing custom keys', () => {
     const oldSettings = withShortcutDefaults({ showHelp: 'H', toggle: 'Ctrl+T' });
     assert.equal(oldSettings.toggleControlsPin, 'Shift+H');

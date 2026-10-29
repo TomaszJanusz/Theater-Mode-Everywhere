@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Seek Forward (5s)"
   },
+  "seekHoldTitle": {
+    "message": "Hold for 2x speed"
+  },
+  "seekHoldDescription": {
+    "message": "Hold the Seek Forward key to play at 2x until you let go. A tap still skips 5 seconds. When this is off, holding the key keeps skipping forward."
+  },
   "volumeUp5": {
     "message": "Volume Up (5%)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Hold $1 to play at 2x until you let go.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },

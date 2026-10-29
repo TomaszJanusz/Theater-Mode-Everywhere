@@ -1,10 +1,13 @@
 import type { DisposableScope } from '../core/disposable-scope';
+import type { PlaybackSurface } from '../playback-surface';
 
 import { armPictureDismissOnLeave } from './picture-dismiss';
 import { createVerticalSlider } from './vertical-slider';
 
+type RateTarget = Pick<PlaybackSurface, 'element' | 'playbackRate'>;
+
 export interface SpeedControlOptions {
-  video: { playbackRate: number };
+  video: RateTarget;
   scope: DisposableScope;
   /** One string names the button, the slider and its value text. */
   label: string;
@@ -47,6 +50,27 @@ export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
   return next ?? rate;
 }
 
+// Rates a player shows only for a moment, by element: surfaces are views created per call.
+const momentaryRates = new WeakMap<HTMLElement, number>();
+
+/**
+ * Plays `target` at `rate` until the returned release, without the speed button taking it as the speed to
+ * toggle back to. Release gives back the previous rate only while `rate` still applies, so a speed chosen
+ * meanwhile (the speed keys, the menu, the host) wins. Safe to release twice.
+ */
+export function holdPlaybackRate(target: RateTarget, rate: number): () => void {
+  const restore = target.playbackRate;
+  momentaryRates.set(target.element, rate);
+  target.playbackRate = rate;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    momentaryRates.delete(target.element);
+    if (target.playbackRate === rate) target.playbackRate = restore;
+  };
+}
+
 export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
   const { video, scope, label } = options;
   const container = document.createElement('div');
@@ -79,8 +103,8 @@ export function createSpeedControl(options: SpeedControlOptions): SpeedControl {
 
   let lastNonNormalSpeed = 1.5;
   const paint = () => {
-    // Follows every rate change (shortcuts, host), so the button toggles back to the latest speed.
-    if (video.playbackRate !== 1.0) lastNonNormalSpeed = video.playbackRate;
+    // Follows every lasting rate change (shortcuts, host), so the button toggles back to the latest speed.
+    if (video.playbackRate !== 1.0 && momentaryRates.get(video.element) !== video.playbackRate) lastNonNormalSpeed = video.playbackRate;
     const text = formatRate(video.playbackRate);
     buttonLabel.textContent = text;
     render({ value: closestSpeedIndex(video.playbackRate), text });

@@ -482,6 +482,12 @@
   "seekForward5": {
     "message": "Dopredu (5 s)"
   },
+  "seekHoldTitle": {
+    "message": "Podržaním rýchlosť 2x"
+  },
+  "seekHoldDescription": {
+    "message": "Podržte kláves Dopredu a video sa prehráva rýchlosťou 2x, kým ho nepustíte. Krátke stlačenie naďalej preskočí o 5 s. Keď je voľba vypnutá, podržaný kláves ďalej preskakuje dopredu."
+  },
   "volumeUp5": {
     "message": "Zvýšiť hlasitosť (5 %)"
   },
@@ -1295,6 +1301,14 @@
       },
       "escape": {
         "content": "$3"
+      }
+    }
+  },
+  "helpSeekHoldHint": {
+    "message": "Podržaním $1 prehrávate rýchlosťou 2x, kým kláves nepustíte.",
+    "placeholders": {
+      "key": {
+        "content": "$1"
       }
     }
   },
