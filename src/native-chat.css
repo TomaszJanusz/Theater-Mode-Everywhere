@@ -65,10 +65,13 @@ html.theater-everywhere-html-active [data-theater-chat] iframe {
   min-height: 0 !important;
 }
 
+/* Twitch gives its chat a 340 px minimum; narrower, the messages, the composer and its buttons
+ * would run past the edge and be cut off. At our width they wrap as Twitch wraps them anyway. */
 html.theater-everywhere-twitch-stage [data-theater-chat] .chat-shell {
   position: relative !important;
   inset: auto !important;
   width: 100% !important;
+  min-width: 0;
   height: 100% !important;
   transform: none !important;
 }

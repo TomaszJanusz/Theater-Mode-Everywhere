@@ -642,6 +642,32 @@ async function expectAppliedTheme(page: Page, theme: 'light' | 'native' | 'dark'
 
 describe('native chat browser session', () => {
   for (const engine of testEngines()) {
+    it(`wraps Twitch chat inside the narrowest chat despite Twitch's own minimum width in ${engine}`, { timeout: 120_000 }, async t => {
+      const browser = pagesOf(browsers[engine], t);
+      // Twitch's chat shell keeps a 340 px minimum (observed Oct 2026, live and VOD chat).
+      const html = twitchDocument()
+        .replace('</head>', '<style>.chat-shell { min-width: 340px; } .chat-line__message { overflow-wrap: anywhere; }</style></head>')
+        .replace('<div id="draft"', '<div class="chat-line__message">viewer: a long message that has to wrap at the chat width https://example.com/a/very/long/link/that/must/wrap</div><div id="draft"');
+      const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: html }, { width: 1280, height: 800 });
+      await boot(page);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.visible);
+      await setChatWidth(page, 300);
+      await page.waitForFunction(() => window.NativeChatTest.nativeChatState()?.width === 300);
+      const fit = await page.evaluate(() => {
+        const root = document.querySelector('[data-theater-chat]')!;
+        const edge = root.getBoundingClientRect().right;
+        const message = root.querySelector('.chat-line__message')!.getBoundingClientRect();
+        return {
+          width: Math.round(root.getBoundingClientRect().width),
+          past: [...root.querySelectorAll('*')].filter(element => element.getBoundingClientRect().right > edge + 1)
+            .map(element => element.className || element.tagName),
+          wrapped: message.height > 30
+        };
+      });
+      assert.deepEqual(fit, { width: 300, past: [], wrapped: true });
+      assert.deepEqual(pageErrors(page), []);
+    });
+
     it(`fixes Twitch Option+R and native toggle, and resizes the chat by dragging in ${engine}`, { timeout: 120_000 }, async t => {
       const browser = pagesOf(browsers[engine], t);
       const { page } = await openPage(browser, { url: TWITCH_CHANNEL, twitch: twitchDocument() }, { width: 1280, height: 800 });

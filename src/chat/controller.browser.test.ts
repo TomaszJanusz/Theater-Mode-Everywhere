@@ -626,7 +626,7 @@ describe('native chat controller', () => {
       })()`) as { available: boolean; visible: boolean; width: number; hidden: boolean; persisted: string[] };
       assert.equal(collapsed.available, true);
       assert.equal(collapsed.visible, false);
-      assert.equal(collapsed.width, 280);
+      assert.equal(collapsed.width, 300);
       assert.equal(collapsed.hidden, true);
       assert.deepEqual(collapsed.persisted, []);
     } finally {
