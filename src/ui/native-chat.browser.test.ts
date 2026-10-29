@@ -440,7 +440,16 @@ async function boot(page: Page): Promise<void> {
   await page.locator('.theater-controls-wrapper.visible').waitFor();
 }
 
+/**
+ * Reads the layout once the controls bar has settled. The bar slides up into place when it is shown,
+ * a transition even under reduced motion, where it ends a frame later; a slow runner otherwise reads
+ * it still 10 px low, outside the player UI host. Its own transitions only, not its contents'.
+ */
 async function layoutOf(page: Page): Promise<Layout> {
+  await page.waitForFunction(() => {
+    const bar = document.getElementById('theater-everywhere-ui')?.shadowRoot?.querySelector('.theater-controls-wrapper');
+    return !bar || bar.getAnimations().length === 0;
+  });
   return page.evaluate(readLayout);
 }
 
