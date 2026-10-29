@@ -55,6 +55,24 @@ it('returns to live after two consecutive writes within budget, with a fresh win
   assert.equal(budget.live, false);
 });
 
+it('asks for twice as many good writes after each fallback, up to eight, so a borderline host does not flip back and forth', () => {
+  const budget = createLiveResizeBudget();
+  const slowWindow = () => feed(budget, Array.from({ length: 6 }, () => [33.3, true] as [number, boolean]));
+  const goodUntilLive = () => {
+    let writes = 0;
+    while (!budget.live && writes < 20) { budget.frame(16.7, true); writes++; }
+    return writes;
+  };
+  slowWindow();
+  assert.equal(goodUntilLive(), 2);
+  slowWindow();
+  assert.equal(goodUntilLive(), 4);
+  slowWindow();
+  assert.equal(goodUntilLive(), 8);
+  slowWindow();
+  assert.equal(goodUntilLive(), 8);
+});
+
 it('ignores intervals that are not positive and finite', () => {
   const budget = createLiveResizeBudget();
   feed(budget, [[0, true], [-5, true], [Number.NaN, true], [Infinity, true], [0, true], [0, true], [0, true]]);

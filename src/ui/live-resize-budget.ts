@@ -1,7 +1,8 @@
 /** Frames a drag judges together: the median of this many width-writing frames decides. */
 const WINDOW = 6;
-/** Consecutive in-budget writes that bring a drag back to live resizing. */
+/** Consecutive in-budget writes that first bring a drag back to live resizing; each fallback doubles it. */
 const RECOVERY = 2;
+const MAX_RECOVERY = 8;
 /** Longest frame a live resize may take; the display's own interval raises it on slow displays. */
 export const LIVE_RESIZE_BUDGET_MS = 24;
 const DISPLAY_HEADROOM = 1.5;
@@ -14,8 +15,10 @@ const DEFAULT_INTERVAL_MS = 1000 / 60;
  *
  * Live resizing falls back once the median of the last few writing frames is over budget, and
  * returns after consecutive writes within budget: during the fallback those come from the widths
- * applied when the pointer rests. Frames without a write only tell the display's own interval,
- * so a 30 Hz display does not count as over budget.
+ * applied when the pointer rests. A single write at rest fits a frame more easily than one every
+ * frame, so on a host near the budget each fallback asks for twice as many before returning,
+ * rather than switching back and forth. Frames without a write only tell the display's own
+ * interval, so a 30 Hz display does not count as over budget.
  */
 export interface LiveResizeBudget {
   readonly live: boolean;
@@ -28,6 +31,8 @@ export function createLiveResizeBudget(): LiveResizeBudget {
   // intervals must not raise the budget they are judged against.
   let displayInterval = Infinity;
   let writes: number[] = [];
+  let recovery = RECOVERY;
+  let goodWrites = 0;
   return {
     get live() { return live; },
     frame(intervalMs, wrote) {
@@ -38,16 +43,20 @@ export function createLiveResizeBudget(): LiveResizeBudget {
       }
       const budget = Math.max(LIVE_RESIZE_BUDGET_MS,
         (Number.isFinite(displayInterval) ? displayInterval : DEFAULT_INTERVAL_MS) * DISPLAY_HEADROOM);
-      writes = [...writes, intervalMs].slice(-WINDOW);
       if (live) {
+        writes = [...writes, intervalMs].slice(-WINDOW);
         if (writes.length === WINDOW && median(writes) > budget) {
           live = false;
+          // Back in live, a fresh window: the old slow frames do not count again.
           writes = [];
+          goodWrites = 0;
         }
-      } else if (writes.length >= RECOVERY && writes.slice(-RECOVERY).every(cost => cost <= budget)) {
+        return;
+      }
+      goodWrites = intervalMs <= budget ? goodWrites + 1 : 0;
+      if (goodWrites >= recovery) {
         live = true;
-        // A fresh window: one recovered write does not carry the old slow frames back in.
-        writes = [];
+        recovery = Math.min(MAX_RECOVERY, recovery * 2);
       }
     }
   };
