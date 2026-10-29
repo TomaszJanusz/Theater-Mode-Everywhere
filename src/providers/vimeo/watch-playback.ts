@@ -1,10 +1,16 @@
-import { vimeoWatchPageId } from '../navigation/watch-page';
 import type { WatchPlayback } from '../watch-playback';
 
 type VimeoWatchWindow = Window & {
   playerConfig?: { video?: { id?: unknown; clip_id?: unknown } };
   _player_config?: { video?: { id?: unknown; clip_id?: unknown } };
 };
+
+export function vimeoWatchPageId(url: URL): string | null {
+  const path = url.hostname === 'player.vimeo.com'
+    ? /^\/video\/(\d+)(?:\/)?$/
+    : /^\/(\d+)(?:\/[a-f0-9]+)?\/?$/;
+  return path.exec(url.pathname)?.[1] ?? null;
+}
 
 export const vimeoWatchPlayback: WatchPlayback = {
   pageIdentity: vimeoWatchPageId,
