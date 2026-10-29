@@ -10,7 +10,7 @@ import { isVikiCaptionUrl, isVikiPreviewUrl } from './viki-fetch-url';
 import { isYoutubeTimedtextUrl } from './youtube-caption-url';
 
 export type MediaFetchRequest = {
-  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki';
+  provider: 'youtube' | 'patreon' | 'twitch' | 'disney' | 'bilibili' | 'bilibiliIntl' | 'tencent' | 'crunchyroll' | 'soop' | 'viki' | 'vimeo';
   kind: 'caption-track' | 'storyboard-vtt' | 'storyboard-json' | 'chapters';
   url: string;
 };

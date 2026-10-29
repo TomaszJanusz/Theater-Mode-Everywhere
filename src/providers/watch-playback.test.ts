@@ -7,6 +7,7 @@ import { bilibiliVideoIdentity } from './bilibili/watch-playback';
 import { bilibiliIntlVideoIdentity } from './bilibili-intl/watch-playback';
 import { patreonWatchPlayback } from './patreon/watch-playback';
 import { providerDefinition, shouldAttachProvider } from './registry';
+import { vimeoWatchPlayback } from './vimeo/watch-playback';
 import { autoTheaterAvailability, leftProviderWatchPage, readProviderWatchPage } from './watch-playback';
 import { youtubeWatchPlayback } from './youtube/watch-playback';
 
@@ -26,7 +27,7 @@ describe('positive provider watch declarations', () => {
   });
 
   it('keeps extracted providers unavailable until their host script registers', () => {
-    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
+    for (const [id, href] of [['soop', 'https://vod.sooplive.com/player/211006561'], ['patreon', 'https://www.patreon.com/posts/my-post-12345678'], ['vimeo', 'https://vimeo.com/123456'], ['youtube', 'https://www.youtube.com/watch?v=abcdefghijk']] as const) {
       assert.equal(providerDefinition(id).watchPlayback, undefined);
       assert.equal(read(href), null);
     }
@@ -41,10 +42,10 @@ describe('positive provider watch declarations', () => {
 
   it('declares individual Vimeo clips, excluding feeds, showcases and OTT/live pages', () => {
     for (const href of ['https://vimeo.com/123456', 'https://vimeo.com/123456/abc123', 'https://player.vimeo.com/video/123456']) {
-      assert.deepEqual(read(href), { provider: 'vimeo', identity: '123456' });
+      assert.equal(vimeoWatchPlayback.pageIdentity(new URL(href)), '123456', href);
     }
     for (const href of ['https://vimeo.com/', 'https://vimeo.com/watch', 'https://vimeo.com/showcase/1?video=123456', 'https://vimeo.com/event/123456', 'https://vimeo.com/video/123456']) {
-      assert.equal(read(href), null, href);
+      assert.equal(vimeoWatchPlayback.pageIdentity(new URL(href)), null, href);
     }
   });
 
@@ -78,7 +79,7 @@ describe('positive provider watch declarations', () => {
     for (const href of ['https://example.com/watch?v=abcdefghijk', 'https://youtube.com.evil.test/watch?v=abcdefghijk', 'https://twitch.tv.evil.test/videos/123456', 'https://netflix.com.evil.test/watch/123456', 'https://disneyplus.com.evil.test/play/560861a0-55c9-4552-a181-64c498e01b62']) {
       assert.equal(read(href), null, href);
     }
-    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['vimeo', 'twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
+    assert.deepEqual(MEDIA_PROVIDER_IDS.filter(id => providerDefinition(id).watchPlayback), ['twitch', 'disney', 'netflix', 'bilibili', 'bilibiliIntl', 'iqiyi', 'viki']);
     assert.equal(shouldAttachProvider('youtube', { ...defaultMediaProviderFlags(), youtube: false }, 'www.youtube.com'), false);
   });
 
@@ -136,6 +137,7 @@ describe('AutoTheater availability', () => {
     // Extracted providers are available once their host script registers (covered by the browser runtime tests).
     assert.equal(autoTheaterAvailability('www.youtube.com', flags, true), 'unsupported');
     assert.equal(autoTheaterAvailability('www.patreon.com', flags, true), 'unsupported');
+    assert.equal(autoTheaterAvailability('vimeo.com', flags, true), 'unsupported');
   });
 });
 

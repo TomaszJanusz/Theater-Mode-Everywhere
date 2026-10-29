@@ -533,20 +533,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/media-features/resolve-adapter.ts",
-    "to": "src/providers/vimeo/adapter.ts",
-    "unresolvedTo": "../providers/vimeo/adapter",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/bilibili-intl/main.ts",
     "unresolvedTo": "../providers/bilibili-intl/main",
@@ -676,20 +662,6 @@
     "from": "src/platform/main-world-runtime.ts",
     "to": "src/providers/twitch/navigation.ts",
     "unresolvedTo": "../providers/twitch/navigation",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "shared-ui-does-not-import-service-implementations"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/platform/main-world-runtime.ts",
-    "to": "src/providers/vimeo/main.ts",
-    "unresolvedTo": "../providers/vimeo/main",
     "dependencyTypes": [
       "local",
       "import"

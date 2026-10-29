@@ -19,6 +19,15 @@ export const PROVIDER_CATALOG = [
     ]
   },
   {
+    "id": "vimeo",
+    "hosts": [
+      {
+        "domain": "vimeo.com",
+        "includeSubdomains": true
+      }
+    ]
+  },
+  {
     "id": "youtube",
     "hosts": [
       {

@@ -47,7 +47,6 @@ import {
   twitchIntegrationEnabled
 } from '../providers/twitch/main';
 import { installTwitchNavigation } from '../providers/twitch/navigation';
-import { readVimeoSnapshot, vimeoIntegrationEnabled } from '../providers/vimeo/main';
 import { installWatchPlaybackQueries } from '../providers/watch-playback';
 import { ENTRY_SHORTCUT_ATTRIBUTE, ENTRY_SHORTCUT_EVENT } from '../ui/entry-shortcuts';
 import { queryPlayerUi, PLAYER_NATIVE_ACTIVATION_SELECTOR } from '../ui/root';
@@ -484,15 +483,9 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
     if (requestId === null) return;
-    let vimeo: Record<string, unknown> | null = null;
     let twitch: Record<string, unknown> | null = null;
     let disney: Record<string, unknown> | null = null;
     let netflix: Record<string, unknown> | null = null;
-    try {
-      vimeo = vimeoIntegrationEnabled() ? readVimeoSnapshot() : null;
-    } catch {
-      vimeo = null;
-    }
     try {
       twitch = twitchIntegrationEnabled() ? readTwitchSnapshot() : null;
     } catch {
@@ -509,7 +502,7 @@ export function installMainWorldRuntime(): void {
       netflix = null;
     }
     window.dispatchEvent(new CustomEvent('theater-everywhere-media-probe-result', {
-      detail: { requestId, providers: probeProviders(), vimeo, twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
+      detail: { requestId, providers: probeProviders(), twitch, disney, netflix, tencent: readTencentSnapshot(), crunchyroll: readCrunchyrollSnapshot(), iqiyi: readIqiyiSnapshot() }
     }));
     // Bilibili needs asynchronous metadata. Keep the original fast probe for
     // other adapters and deliver Bilibili's result through its own event.

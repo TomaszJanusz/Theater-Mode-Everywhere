@@ -11,7 +11,6 @@ import { findNetflixPlaylistActions } from './netflix';
 import { readTencentControls, TENCENT_PLAYER_SELECTOR } from './tencent';
 import { readVideoJsControls, peerTubeNeighborPreviews, VIDEOJS_PLAYER_SELECTOR } from './videojs';
 import { readVikiControls } from './viki';
-import { readVimeoShowcaseControls } from './vimeo-showcase';
 
 export const HOST_PLAYER_SCOPE = [
   VIDEOJS_PLAYER_SELECTOR,
@@ -74,8 +73,7 @@ function readHostControls(root: ParentNode) {
     ...readTencentControls(root),
     ...readIqiyiControls(root),
     ...providerRegistry.all().flatMap(hooks => hooks.navigation?.readControls(root) ?? []),
-    ...readVikiControls(root),
-    ...readVimeoShowcaseControls(root)
+    ...readVikiControls(root)
   ];
 }
 

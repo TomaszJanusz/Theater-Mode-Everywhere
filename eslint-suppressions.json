@@ -1414,11 +1414,6 @@
       "count": 1
     }
   },
-  "src/providers/navigation/vimeo-showcase.ts": {
-    "local/max-symbol-name-length": {
-      "count": 1
-    }
-  },
   "src/providers/navigation/watch.ts": {
     "local/max-symbol-name-length": {
       "count": 1
@@ -1712,6 +1707,11 @@
   "src/providers/video-candidates.ts": {
     "local/max-symbol-name-length": {
       "count": 3
+    }
+  },
+  "src/providers/vimeo/navigation.ts": {
+    "local/max-symbol-name-length": {
+      "count": 1
     }
   },
   "src/providers/vimeo/title.ts": {

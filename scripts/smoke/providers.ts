@@ -202,6 +202,101 @@ export async function assertPatreonProvider(page: Page, context: BrowserContext)
   }
 }
 
+const VIMEO = 'https://vimeo.com/123456';
+const vimeoFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
+window.hostKeys = 0;
+window.playerConfig = { video: { id: 123456, title: 'Vimeo pilot clip', duration: 1 } };
+window.addEventListener('keydown', event => {
+  if (event.code === 'KeyT') { window.hostKeys++; event.stopImmediatePropagation(); event.preventDefault(); }
+}, true);
+</script></head><body>
+<div class="player"><video id="video" muted style="width:640px;height:360px"></video></div>
+<script>
+fetch('/fixture.webm').then(response => response.blob()).then(blob => { document.querySelector('video').src = URL.createObjectURL(blob); });
+</script></body></html>`;
+
+/** Vimeo loads per host: installed-extension evidence on intercepted host URLs, as for SOOP and Patreon. */
+export async function assertVimeoProvider(page: Page, context: BrowserContext): Promise<void> {
+  const worker = await extensionWorker(context);
+  const saved = await worker.evaluate(() => chrome.storage.sync.get(['autoEnterTheater', 'vimeoIntegrationEnabled']));
+  const media = readFileSync(path.join(ROOT, 'test/fixtures/vod.webm'));
+  const handler = async (route: Route) => {
+    if (new URL(route.request().url()).pathname === '/fixture.webm') await route.fulfill({ contentType: 'video/webm', body: media });
+    else await route.fulfill({ contentType: 'text/html', body: vimeoFixture });
+  };
+  const hosts = /^https:\/\/(?:vimeo\.com\.?|player\.vimeo\.com|player\.example\.test|vimeo\.com\.evil\.test)\//;
+  await context.route(hosts, handler);
+  const query = () => page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'pilot-query' }));
+    const video = document.querySelector('video')!;
+    const result = video.getAttribute('data-te-watch-replacement-response');
+    video.removeAttribute('data-te-watch-replacement-response');
+    return result;
+  });
+  try {
+    await worker.evaluate(() => chrome.storage.sync.set({ autoEnterTheater: false, vimeoIntegrationEnabled: true }));
+    await page.goto(VIMEO);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+    assert.equal(await query(), 'pilot-query', 'MAIN provider must answer the validated watch bridge');
+    const first = await page.evaluate(() => {
+      const begin = performance.now();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 't', code: 'KeyT', bubbles: true, cancelable: true }));
+      return { entered: document.documentElement.classList.contains('theater-everywhere-html-active'), milliseconds: performance.now() - begin };
+    });
+    assert.equal(first.entered, true, 'first t enters synchronously, without loading or replaying the key');
+    assert.equal(await page.evaluate('window.hostKeys'), 0, 'early key capture beats the host listener');
+    // The title comes from the provider: MAIN reads the player config, the isolated adapter validates it.
+    await page.locator('.theater-title-hud-head').filter({ hasText: 'Vimeo pilot clip' }).first().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // Registration survives preference changes.
+    await worker.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: false }));
+    await page.goto(VIMEO);
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-te-vimeo-integration-off') && document.querySelector('video')!.readyState >= 2);
+    assert.equal(await query(), 'pilot-query', 'MAIN identity stays available with RTE off');
+    await page.keyboard.press('t');
+    await page.locator('.theater-controls-wrapper').waitFor();
+    await worker.evaluate(() => chrome.storage.sync.set({ vimeoIntegrationEnabled: true }));
+    await page.waitForFunction(() => !document.documentElement.hasAttribute('data-te-vimeo-integration-off'));
+    await page.locator('.theater-title-hud-head').filter({ hasText: 'Vimeo pilot clip' }).first().waitFor({ state: 'attached' });
+    await page.keyboard.press('Escape');
+
+    // Subdomains and the terminal DNS dot keep admission; look-alike hosts stay generic.
+    for (const url of ['https://player.vimeo.com/video/123456', 'https://vimeo.com./123456']) {
+      await page.goto(url);
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+      assert.equal(await query(), 'pilot-query', url);
+    }
+    for (const url of ['https://player.example.test/', 'https://vimeo.com.evil.test/123456']) {
+      await page.goto(url);
+      await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts') && document.querySelector('video')!.readyState >= 2);
+      assert.equal(await query(), null, `${url} must not load the Vimeo provider`);
+      await page.keyboard.press('t');
+      await page.locator('.theater-controls-wrapper').waitFor();
+      assert.equal(await page.locator('.theater-title-hud-head').filter({ hasText: 'Vimeo pilot clip' }).count(), 0, url);
+      await page.keyboard.press('Escape');
+    }
+    // Own-frame admission: generic parent, Vimeo child.
+    await page.goto('https://player.example.test/');
+    await page.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    await page.evaluate(url => { const frame = document.createElement('iframe'); frame.src = url; document.body.append(frame); }, VIMEO);
+    await page.frameLocator('iframe').locator('video').waitFor();
+    const frame = page.frames().find(frame => frame.url() === VIMEO)!;
+    await frame.waitForFunction(() => document.documentElement.hasAttribute('data-theater-everywhere-entry-shortcuts'));
+    assert.equal(await frame.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('theater-everywhere-watch-replacement-query', { detail: 'frame-query' }));
+      return document.querySelector('video')!.getAttribute('data-te-watch-replacement-response');
+    }), 'frame-query');
+    console.log(`smoke provider scripts: Vimeo registration in both worlds, first t synchronous (${first.milliseconds.toFixed(1)} ms; includes existing theater work), title through the provider, RTE off/on, subdomain and DNS dot, generic/spoofed host, own-frame admission passed`);
+  } finally {
+    await context.unroute(hosts, handler);
+    await worker.evaluate(async saved => {
+      await chrome.storage.sync.remove(['autoEnterTheater', 'vimeoIntegrationEnabled']);
+      await chrome.storage.sync.set(saved);
+    }, saved);
+  }
+}
+
 const YOUTUBE = 'https://www.youtube.com/watch?v=abcdefghijk';
 const youtubeFixture = `<!doctype html><html><head><title>Generic fixture title</title><script>
 // The page's first script: YouTube's MAIN hooks must already observe responses, and the entry key must beat this listener.

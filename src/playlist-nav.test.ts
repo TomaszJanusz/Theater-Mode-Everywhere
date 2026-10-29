@@ -9,8 +9,8 @@ import {
   playlistNavStateFromActions,
   sanitizePlaylistPreview
 } from './playlist-nav';
-import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
 import { usableControlIndexes, type ObservedPlaylistControl } from './providers/playlist-controls';
+import { isVimeoShowcaseStepHref } from './providers/vimeo/navigation';
 import { youtubePreviousRestarts } from './providers/youtube/navigation';
 import { PROVIDER_ENTRIES, bundleModules } from './test-utils/player-boot';
 import { sharedTestBrowser } from './test-utils/test-browser';
@@ -20,7 +20,7 @@ const shared = sharedTestBrowser(chromium);
 const playlistBrowserBundle = (): string => bundleModules([
   "import { findPlaylistActions, neighborPreviews, sanitizePlaylistPreview } from './playlist-nav';",
   "import { peerTubeNeighborPreviews as readPeerTubeNeighborPreviews } from './providers/navigation/videojs';",
-  "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/navigation/vimeo-showcase';",
+  "import { vimeoShowcasePreview as readVimeoShowcasePreview } from './providers/vimeo/navigation';",
   "import { installDisneyPlayNext } from './providers/disney/play-next';",
   'const helpers = { neighborPreviews, sanitizePreview: sanitizePlaylistPreview };',
   'export { findPlaylistActions, installDisneyPlayNext };',
@@ -275,6 +275,7 @@ describe('playlist navigation DOM', () => {
       const context = await shared.newContext(t, { viewport: { width: 1280, height: 800 } });
       try {
         const page = await context.newPage();
+        const vimeoBundle = bundleModules([...PROVIDER_ENTRIES, "import './providers/vimeo/isolated';", "export { findPlaylistActions } from './playlist-nav';"], 'PlaylistNav');
         const install = (content = compiled) => page.addScriptTag({ content: `${content}\nwindow.__playlist = PlaylistNav;` });
         // YouTube's controls come from its registered provider, which admits only YouTube documents.
         await page.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><body>
@@ -402,7 +403,8 @@ describe('playlist navigation DOM', () => {
         });
         assert.deepEqual(dailymotionClick, { stray: 0, real: 1 });
 
-        await page.setContent(`<!doctype html><body>
+        // Vimeo's showcase controls come from its registered provider, which admits only Vimeo documents.
+        await page.route('https://vimeo.com/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><body>
           <video id="player" width="304" height="143"></video>
           <button aria-label="Previous page">Page</button>
           <button aria-label="Next video" data-href="https://vimeo.com/showcase/1574596?video=5124854" style="position:fixed;left:1208px;top:328px;width:48px;height:48px"></button>
@@ -412,8 +414,9 @@ describe('playlist navigation DOM', () => {
             <p>AS ONE</p>
             <p>makoto yabuki</p>
           </a>
-        </body>`, { waitUntil: 'domcontentloaded' });
-        await install();
+        </body>` }));
+        await page.goto('https://vimeo.com/showcase/1574596', { waitUntil: 'domcontentloaded' });
+        await install(vimeoBundle);
         assert.deepEqual(await read(), ['next']);
         const vimeoTitle = await page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode) => Array<{ preview: { title: string } | null }> } }).__playlist;

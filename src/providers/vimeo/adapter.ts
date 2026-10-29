@@ -1,5 +1,5 @@
 import { sanitizeContentTitle } from '../../media-features/content-title';
-import { requestMediaProbe, type VimeoPlayerSnapshot } from '../../media-features/probe';
+import type { MediaProbeSnapshot } from '../../media-features/probe';
 import type {
   CaptionActivationResult,
   CaptionTrack,
@@ -10,15 +10,23 @@ import type {
   PreviewSource
 } from '../../media-features/types';
 
+import { normalizeVimeoSnapshot, type VimeoPlayerSnapshot } from './snapshot-model';
 import { getVimeoPreviewFrame, parseVimeoThumbPreview, type VimeoThumbSprite } from './thumbs';
+
+/** The isolated runtime's shared probe owner, lent by the registry so the provider bundles no second copy. */
+export type VimeoServices = {
+  requestMediaProbe(): Promise<MediaProbeSnapshot>;
+};
 
 export class VimeoAdapter implements MediaFeaturesAdapter {
   private snapshot: VimeoPlayerSnapshot | null = null;
   private thumbs: VimeoThumbSprite | null = null;
 
+  constructor(private readonly services: VimeoServices) {}
+
   async load(): Promise<void> {
-    const probed = await requestMediaProbe();
-    this.snapshot = probed.vimeo || null;
+    const probed = await this.services.requestMediaProbe();
+    this.snapshot = normalizeVimeoSnapshot(probed.providers?.vimeo);
     this.thumbs = parseVimeoThumbPreview(this.snapshot?.thumbPreview, this.snapshot?.duration || 0);
   }
 

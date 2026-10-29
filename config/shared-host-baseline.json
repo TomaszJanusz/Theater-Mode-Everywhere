@@ -270,23 +270,12 @@
     "src/media-features": {
       "serviceId": 4,
       "domain": 3,
-      "identifier": 15
-    },
-    "src/platform": {
-      "hostCheck": 2,
-      "domain": 1,
-      "identifier": 8
+      "identifier": 4
     },
     "src/providers": {
-      "hostCheck": 3,
       "serviceId": 1,
-      "domain": 2,
-      "identifier": 12
-    },
-    "src/providers/navigation": {
-      "domain": 3,
-      "identifier": 8,
-      "file": 1
+      "domain": 1,
+      "identifier": 10
     }
   },
   "youtube": {
