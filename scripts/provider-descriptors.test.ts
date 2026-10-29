@@ -12,12 +12,10 @@ import { PROVIDER_DEFINITIONS } from '../src/providers/registry';
 import { createProviderRegistry } from '../src/providers/runtime-registration';
 import { bundleQueryModules } from '../src/test-utils/query-bundle';
 
-import { assertProviderSources, bundledEntryFile, bundledEntrySource, catalogSource, classicEntries, contentScripts, discoverDescriptors, packagedDescriptors, parseDescriptor, providerMatches } from './provider-descriptors';
+import { assertProviderSources, catalogSource, classicEntries, contentScripts, discoverDescriptors, parseDescriptor, providerMatches } from './provider-descriptors';
 
 const root = path.resolve(__dirname, '..');
 const descriptors = discoverDescriptors(root);
-const packaged = packagedDescriptors(descriptors);
-const bundled = descriptors.filter(descriptor => descriptor.packaging === 'bundled');
 
 it('keeps descriptors, source manifest, catalog, registry and entry inventory consistent', () => {
   assertProviderSources(root, descriptors);
@@ -39,16 +37,11 @@ it('fails on stale manifests or catalogs and unsafe/missing descriptor entries',
   const directory = mkdtempSync(path.join(tmpdir(), 'tme-184-descriptors-'));
   try {
     mkdirSync(path.join(directory, 'src/providers/soop'), { recursive: true });
-    mkdirSync(path.join(directory, 'src/entries'), { recursive: true });
     writeFileSync(path.join(directory, 'src/providers/catalog.ts'), catalogSource(descriptors));
-    for (const world of ['isolated', 'main'] as const) writeFileSync(path.join(directory, bundledEntryFile(world)), bundledEntrySource(descriptors, world));
     const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
     manifest.content_scripts[0].js.reverse();
     writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify(manifest));
     assert.throws(() => assertProviderSources(directory, descriptors), /manifest drift/);
-    writeFileSync(path.join(directory, 'manifest.json'), readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-    writeFileSync(path.join(directory, bundledEntryFile('main')), bundledEntrySource([], 'main'));
-    if (bundled.length) assert.throws(() => assertProviderSources(directory, descriptors), /Bundled provider entry drift/);
     writeFileSync(path.join(directory, 'src/providers/catalog.ts'), 'stale');
     assert.throws(() => assertProviderSources(directory, descriptors), /catalog drift/);
     const value = JSON.parse(readFileSync(path.join(root, 'src/providers/soop/provider.json'), 'utf8'));
@@ -56,10 +49,8 @@ it('fails on stale manifests or catalogs and unsafe/missing descriptor entries',
       { ...value, schemaVersion: 2 }, { ...value, id: 'unknown' },
       { ...value, hosts: [{ domain: 'sooplive.com/*', includeSubdomains: true }] },
       { ...value, entries: { ...value.entries, main: { file: '../other.ts', runAt: 'document_start' } } },
-      { ...value, entries: { ...value.entries, main: { file: 'main.ts', runAt: 'document_idle' } } },
-      { ...value, packaging: 'lazy' }
+      { ...value, entries: { ...value.entries, main: { file: 'main.ts', runAt: 'document_idle' } } }
     ]) assert.throws(() => parseDescriptor(mutation));
-    assert.equal(parseDescriptor({ ...value, packaging: 'bundled' }).packaging, 'bundled');
     writeFileSync(path.join(directory, 'src/providers/soop/provider.json'), JSON.stringify(value));
     assert.throws(() => discoverDescriptors(directory), /Missing entry/);
   } finally { rmSync(directory, { recursive: true, force: true }); }
@@ -67,7 +58,7 @@ it('fails on stale manifests or catalogs and unsafe/missing descriptor entries',
 
 it('uses disjoint rules, private ordered scripts, and both dotted DNS spellings', () => {
   const rules = contentScripts(descriptors);
-  for (const descriptor of packaged) {
+  for (const descriptor of descriptors) {
     const matches = providerMatches(descriptor);
     for (const host of descriptor.hosts) for (const dot of ['', '.']) assert.ok(matches.includes(`*://${host.includeSubdomains ? '*.' : ''}${host.domain}${dot}/*`));
     for (const world of ['isolated', 'main'] as const) {
@@ -78,13 +69,8 @@ it('uses disjoint rules, private ordered scripts, and both dotted DNS spellings'
       assert.equal(rule.run_at, 'document_start');
       assert.equal(rule.all_frames, true);
       const fallback = rules.find(rule => rule.matches.includes('<all_urls>') && rule.js[0] === (world === 'main' ? 'mainWorld.js' : 'content.js'))!;
-      assert.deepEqual(fallback.exclude_matches, packaged.flatMap(providerMatches));
+      assert.deepEqual(fallback.exclude_matches, descriptors.flatMap(providerMatches));
     }
-  }
-  // A bundled provider stays in the shared scripts: no partition, no exclusion from the fallback.
-  for (const descriptor of bundled) {
-    assert.ok(!rules.some(rule => rule.js.some(file => file.startsWith(`providers/${descriptor.id}/`))));
-    assert.ok(!rules.some(rule => rule.exclude_matches?.some(pattern => providerMatches(descriptor).includes(pattern))));
   }
 });
 
@@ -92,7 +78,8 @@ it('each descriptor entry actually registers its own hooks in its own world befo
   const chatWorlds = new Map<string, number>();
   for (const descriptor of descriptors) for (const world of ['isolated', 'main'] as const) {
     const registry = createProviderRegistry(descriptor.hosts[0].domain);
-    const services = world === 'main' ? { fetchPageMedia: async () => null } : { requestPageFetch: async () => null, requestMediaProbe: async () => ({}), serviceElementToken: () => 1 };
+    const services = world === 'main' ? { fetchPageMedia: async () => null } : { requestPageFetch: async () => null, requestMediaProbe: async () => ({}), serviceElementToken: () => 1,
+      observeProviderDom: () => () => {}, parseCaptionPayload: () => [] };
     const api: ProviderRuntimeApi = { contractVersion: 1, register: registry.register, start() {}, services };
     const window = { location: { hostname: descriptor.hosts[0].domain }, [Symbol.for(`theater-everywhere.provider-runtime.${world}`)]: api };
     const code = await bundleQueryModules([`import './providers/${descriptor.id}/${descriptor.entries[world].file}';`]);
@@ -119,10 +106,7 @@ it('shared bundles have no extracted implementation and providers have no duplic
   for (const entry of classicEntries(descriptors)) {
     const inputs = await entryInputs(entry.source);
     if (!entry.output.startsWith('providers/')) {
-      for (const descriptor of packaged) assert.ok(!inputs.some(input => input.includes(`/providers/${descriptor.id}/`)), entry.output);
-      // Until its packaging flip, a bundled provider registers from the shared runtime script of each world.
-      const world = { content: 'isolated', mainWorld: 'main' }[entry.output as 'content' | 'mainWorld'];
-      if (world) for (const descriptor of bundled) assert.ok(inputs.some(input => input.endsWith(`/providers/${descriptor.id}/${descriptor.entries[world as 'isolated' | 'main'].file}`)), `${entry.output} misses ${descriptor.id}`);
+      for (const descriptor of descriptors) assert.ok(!inputs.some(input => input.includes(`/providers/${descriptor.id}/`)), entry.output);
     } else {
       assert.ok(!inputs.some(input => /(?:runtime-registration|\/registry|media-features\/probe|platform\/harvest-ownership|platform\/page-fetch)\.ts$/.test(input)), entry.output);
     }
@@ -148,7 +132,12 @@ it('admits providers by each document hostname and preserves the generic path el
     assert.ok(files.includes('providers/soop/isolated.js'), host);
     assert.ok(files.includes('providers/soop/main.js'), host);
   }
-  for (const host of ['www.youtube.com', 'example.test', 'sooplive.com.evil.test', 'notsooplive.com', 'sooplive.co.kr', 'afreecatv.com']) {
+  for (const host of ['www.youtube.com', 'm.youtube.com', 'youtube.com.', 'www.youtube-nocookie.com', 'youtu.be', 'YOUTU.BE.']) {
+    const files = manifestScriptsForUrl(manifest, `https://${host}/`);
+    assert.deepEqual(files, ['mainWorld.js', 'providers/youtube/main.js', 'mainWorldStart.js', 'content.js', 'providers/youtube/isolated.js', 'contentStart.js'], host);
+  }
+  // youtu.be is exact; spoofed and look-alike hosts keep the generic path.
+  for (const host of ['www.youtu.be', 'youtube.com.evil.test', 'notyoutube.com', 'youtube.co', 'www.vimeo.com', 'example.test', 'sooplive.com.evil.test', 'notsooplive.com', 'sooplive.co.kr', 'afreecatv.com']) {
     assert.deepEqual(manifestScriptsForUrl(manifest, `https://${host}/`), ['mainWorld.js', 'mainWorldStart.js', 'content.js', 'contentStart.js'], host);
   }
 });

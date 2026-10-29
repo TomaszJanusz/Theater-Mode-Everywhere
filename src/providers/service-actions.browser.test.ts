@@ -4,7 +4,7 @@ import { describe, it, type TestContext } from 'node:test';
 
 import { chromium, type Page } from 'playwright';
 
-import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 
 const PLAY = 'https://www.disneyplus.com/pl-pl/play/0c64c5db-0d1d-48c7-a6d6-8d2d56b16ca8';
@@ -331,7 +331,7 @@ describe('disney and crunchyroll service actions', () => {
 });
 
 const code = bundleModules([
-  ...BUNDLED_PROVIDERS,
+  ...PROVIDER_ENTRIES,
   "export { createServiceActions } from './providers/service-actions';",
   "export { createYouTubeServiceActions } from './providers/youtube/service-actions';",
   "export { createBilibiliServiceActions } from './providers/bilibili/service-actions';",

@@ -17,7 +17,7 @@ import {
   youtubeWatchJsonVideoId,
   type YoutubeHeatmap
 } from '../../media-features/parsers/youtube-heatmap';
-import { MAX_CAPTION_BYTES } from '../../platform/media-url-policy';
+import { MAX_CAPTION_BYTES } from '../../platform/bounded-body';
 import { discoverParentOrigin } from '../../platform/parent-origin';
 import { mediaProviderIntegrationEnabled } from '../../media-features/provider-flags';
 import { sanitizeContentTitle } from '../../media-features/content-title';

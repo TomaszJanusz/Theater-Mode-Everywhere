@@ -1,3 +1,6 @@
+/** Upper bound for caption and text metadata bodies, in bytes. */
+export const MAX_CAPTION_BYTES = 2 * 1024 * 1024;
+
 /** Only pass an owned fetch response, clone, or Blob stream, never the page's body. */
 export type BoundedResponse = {
   headers?: { get(name: string): string | null };

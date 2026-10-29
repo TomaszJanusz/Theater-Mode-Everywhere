@@ -12,7 +12,7 @@ import {
 import { isVimeoShowcaseStepHref } from './providers/navigation/vimeo-showcase';
 import { usableControlIndexes, type ObservedPlaylistControl } from './providers/playlist-controls';
 import { youtubePreviousRestarts } from './providers/youtube/navigation';
-import { BUNDLED_PROVIDERS, bundleModules } from './test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from './test-utils/player-boot';
 import { sharedTestBrowser } from './test-utils/test-browser';
 
 const shared = sharedTestBrowser(chromium);
@@ -286,7 +286,7 @@ describe('playlist navigation DOM', () => {
           </div>
         </body>` }));
         await page.goto('https://www.youtube.com/watch?v=WUvTyaaNkzM&list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr', { waitUntil: 'domcontentloaded' });
-        await install(bundleModules([...BUNDLED_PROVIDERS, "export { findPlaylistActions } from './playlist-nav';"], 'PlaylistNav'));
+        await install(bundleModules([...PROVIDER_ENTRIES, "export { findPlaylistActions } from './playlist-nav';"], 'PlaylistNav'));
         const read = () => page.evaluate(() => {
           const api = (window as unknown as { __playlist: { findPlaylistActions: (root: ParentNode, video: HTMLVideoElement) => Array<{ direction: string; preview: { title: string } | null; activate: () => void }> } }).__playlist;
           const video = document.querySelector('#player') as HTMLVideoElement;

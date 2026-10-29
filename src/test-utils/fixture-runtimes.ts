@@ -1,5 +1,5 @@
 import { exposeFixtureRuntime } from './provider-runtime';
 
-// Evaluated before the bundled provider entries, as `entries/content.ts` and `entries/main-world.ts` order their APIs.
+// Evaluated before the provider entries, as content.js and mainWorld.js run before them in the manifest.
 exposeFixtureRuntime('isolated');
 exposeFixtureRuntime('main');

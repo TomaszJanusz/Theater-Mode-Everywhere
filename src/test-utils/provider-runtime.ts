@@ -1,5 +1,7 @@
+import { parseCaptionPayload } from '../media-features/parsers/captions';
 import { requestMediaProbe, requestPageFetch } from '../media-features/probe';
 import { fetchPageMedia } from '../platform/page-fetch';
+import { observeProviderDom } from '../providers/dom-watch';
 import { serviceElementToken } from '../providers/native-service-actions';
 import { exposeProviderRuntime, type ProviderHooks, type ProviderWorld } from '../providers/provider-api';
 import { providerRegistry } from '../providers/runtime-registration';
@@ -23,5 +25,7 @@ function register(hooks: ProviderHooks): boolean {
 /** Fixture wiring only: provider implementation is a separate script, just as in the manifest. */
 export function exposeFixtureRuntime(world: ProviderWorld): void {
   if (world === 'main') exposeProviderRuntime('main', { contractVersion: 1, register, start() {}, services: { fetchPageMedia } });
-  else exposeProviderRuntime('isolated', { contractVersion: 1, register, start() {}, services: { requestPageFetch, requestMediaProbe: () => requestMediaProbe(), serviceElementToken } });
+  else exposeProviderRuntime('isolated', { contractVersion: 1, register, start() {}, services: {
+    requestPageFetch, requestMediaProbe: () => requestMediaProbe(), serviceElementToken, observeProviderDom, parseCaptionPayload
+  } });
 }

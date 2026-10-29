@@ -1,6 +1,6 @@
 import type { ServiceActionSource } from '../../core/service-actions';
 import { mediaProviderIntegrationEnabled, providerOffAttribute } from '../../media-features/provider-flags';
-import { observeProviderDom } from '../dom-watch';
+import type { observeProviderDom } from '../dom-watch';
 import { isYouTubeHost } from '../hosts';
 import {
   nativeServiceActionId, nativeServiceActionSource, serviceActionRoute, serviceControlLabel, servicePlayer,
@@ -19,9 +19,13 @@ export function youtubeAdShowing(doc: Document, element?: HTMLElement): boolean 
   return servicePlayer(doc, YOUTUBE_PLAYER_SELECTOR, element)?.classList.contains('ad-showing') === true;
 }
 
-export type YouTubeActionHooks = NativeServiceActionHooks & { elementToken?: (element: Element) => number };
+/** The runtime lends its element tokens and DOM observation; the source bundles neither. */
+export type YouTubeActionHooks = NativeServiceActionHooks & {
+  elementToken?: (element: Element) => number;
+  observe: typeof observeProviderDom;
+};
 
-export function createYouTubeServiceActions(hooks: YouTubeActionHooks = {}): ServiceActionSource {
+export function createYouTubeServiceActions(hooks: YouTubeActionHooks): ServiceActionSource {
   const doc = hooks.document ?? document;
   const enabled = hooks.enabled ?? (() => mediaProviderIntegrationEnabled('youtube'));
   const host = hooks.host ?? (() => isYouTubeHost());
@@ -40,7 +44,7 @@ export function createYouTubeServiceActions(hooks: YouTubeActionHooks = {}): Ser
     return [];
   });
   const scope = hooks.element?.getRootNode();
-  return { ...source, subscribe: changed => observeProviderDom({
+  return { ...source, subscribe: changed => hooks.observe({
     root: scope instanceof ShadowRoot ? scope : doc, selector: YOUTUBE_PLAYER_SELECTOR, changed,
     enabled: () => mediaProviderIntegrationEnabled('youtube'),
     events: YOUTUBE_PAGE_EVENTS, flags: [providerOffAttribute('youtube')],

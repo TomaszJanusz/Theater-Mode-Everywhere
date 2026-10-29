@@ -6,7 +6,7 @@ import { build } from 'vite';
 
 import { bundleMinify, resolveBundleBuildMode } from './build-mode';
 import { assertSelfContainedBundles } from './bundle-integrity';
-import { assertProviderSources, classicEntries, discoverDescriptors, packagedDescriptors } from './provider-descriptors';
+import { assertProviderSources, classicEntries, discoverDescriptors } from './provider-descriptors';
 
 /** Stateful runtime owners a provider entry must receive through its runtime's services, never bundle. */
 const RUNTIME_OWNERS = /\/src\/(?:providers\/(?:registry|runtime-registration)|media-features\/probe|platform\/(?:harvest-ownership|page-fetch))\.ts$/;
@@ -82,7 +82,7 @@ async function buildClassicScript(
     root,
     publicDir: false,
     plugins: [{ name: 'provider-boundaries', generateBundle(_options, bundle) {
-      const migrated = packagedDescriptors(discoverDescriptors(root)).map(item => `/src/providers/${item.id}/`);
+      const migrated = discoverDescriptors(root).map(item => `/src/providers/${item.id}/`);
       const chunks = Object.values(bundle).filter(chunk => chunk.type === 'chunk');
       for (const chunk of chunks) {
         for (const [id, module] of Object.entries(chunk.modules)) {

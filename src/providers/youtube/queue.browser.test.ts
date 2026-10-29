@@ -4,14 +4,14 @@ import { describe, it } from 'node:test';
 
 import { chromium, firefox, type Page } from 'playwright';
 
-import { BUNDLED_PROVIDERS, bundleModules } from '../../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../../test-utils/player-boot';
 import { sharedTestBrowser } from '../../test-utils/test-browser';
 import { selectTestEngines } from '../../test-utils/test-engines';
 
 const chromiumBrowser = sharedTestBrowser(chromium);
 
 const bundle = bundleModules([
-  ...BUNDLED_PROVIDERS,
+  ...PROVIDER_ENTRIES,
   "export { findPlaylistActions } from './playlist-nav';",
   "export { installYouTubeQueueNavigation } from './providers/youtube/queue-main';"
 ], 'QueueTest');

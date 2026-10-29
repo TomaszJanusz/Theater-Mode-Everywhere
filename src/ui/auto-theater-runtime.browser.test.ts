@@ -5,14 +5,14 @@ import { it } from 'node:test';
 import { chromium, firefox } from 'playwright';
 
 import { defaultMediaProviderFlags, type MediaProviderFlags } from '../media-features/provider-flags';
-import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { testEngines } from '../test-utils/test-engines';
 
 import { AUTO_ENTER_CANCEL_GRACE_MS as GRACE_MS } from './auto-theater-intent';
 import { AUTO_ENTER_NOTICE_DELAY_MS as DELAY_MS, type AutoTheaterRuntime } from './auto-theater-runtime';
 
-const BUNDLE = bundleModules([...BUNDLED_PROVIDERS, "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo, confirmProviderPreparingVideo } from './providers/watch-playback';"], 'AutoTheaterTest');
+const BUNDLE = bundleModules([...PROVIDER_ENTRIES, "export { createAutoTheaterRuntime } from './ui/auto-theater-runtime'; export { installWatchPlaybackQueries, confirmProviderWatchVideo, confirmProviderPreparingVideo } from './providers/watch-playback';"], 'AutoTheaterTest');
 const MEDIA = `data:video/webm;base64,${readFileSync(new URL('../../test/fixtures/vod.webm', import.meta.url)).toString('base64')}`;
 
 declare global {

@@ -7,7 +7,7 @@ import { it } from 'node:test';
 
 import { chromium, firefox } from 'playwright';
 
-import { BUNDLED_PROVIDERS, bundleModules } from '../test-utils/player-boot';
+import { PROVIDER_ENTRIES, bundleModules } from '../test-utils/player-boot';
 import { sharedTestBrowser } from '../test-utils/test-browser';
 import { selectTestEngines } from '../test-utils/test-engines';
 
@@ -21,7 +21,7 @@ const exports = [
   "export { readPageResponseBytes } from './platform/page-body';"
 ];
 // Fixture pages register YouTube's MAIN hooks as the shipped scripts do; the installed extension already has its own.
-const bundle = bundleModules([...BUNDLED_PROVIDERS, ...exports], 'BridgeTest');
+const bundle = bundleModules([...PROVIDER_ENTRIES, ...exports], 'BridgeTest');
 const installedRequester = bundleModules(exports, 'BridgeTest');
 
 for (const engine of selectTestEngines([chromium, firefox], engine => engine.name())) {
