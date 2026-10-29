@@ -78,7 +78,7 @@ it('each descriptor entry actually registers its own hooks in its own world befo
   const chatWorlds = new Map<string, number>();
   for (const descriptor of descriptors) for (const world of ['isolated', 'main'] as const) {
     const registry = createProviderRegistry(descriptor.hosts[0].domain);
-    const services = world === 'main' ? { fetchPageMedia: async () => null } : { requestPageFetch: async () => null, requestMediaProbe: async () => ({}), serviceElementToken: () => 1,
+    const services = world === 'main' ? { fetchPageMedia: async () => null } : { requestPageFetch: async () => null, requestMediaProbe: async () => ({}), requestProviderProbe: async () => null, serviceElementToken: () => 1,
       observeProviderDom: () => () => {}, parseCaptionPayload: () => [] };
     const api: ProviderRuntimeApi = { contractVersion: 1, register: registry.register, start() {}, services };
     const window = { location: { hostname: descriptor.hosts[0].domain }, [Symbol.for(`theater-everywhere.provider-runtime.${world}`)]: api };

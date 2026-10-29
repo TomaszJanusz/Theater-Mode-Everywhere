@@ -50,6 +50,7 @@ import { classifyMediaFetchUrl, isAllowedPageFetchUrl as isAllowlistedPageFetchU
 import { installVisitSignal } from './navigation-visit';
 import { readPageResponseBytes } from './page-body';
 import { fetchPageMedia } from './page-fetch';
+import { answerProviderProbes } from './provider-probe';
 import { noteWrapperFailure } from './wrapper-failures';
 import { installXhrHarvest } from './xhr-harvest';
 
@@ -470,6 +471,8 @@ export function installMainWorldRuntime(): void {
   window.addEventListener('keydown', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keyup', swallowTheaterPlaybackKeys, true);
   window.addEventListener('keypress', swallowTheaterPlaybackKeys, true);
+
+  answerProviderProbes(window, id => providerRegistry.get(id));
 
   window.addEventListener('theater-everywhere-media-probe', (event: Event) => {
     const requestId = parseProbeRequest((event as CustomEvent<unknown>).detail);
