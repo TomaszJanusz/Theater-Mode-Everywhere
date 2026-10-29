@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html-vite';
 import { expect, waitFor } from 'storybook/test';
 
 import { mountHudStage } from '../../.storybook/hud-stage';
+import { manualFrames } from '../../.storybook/manual-frames';
 import { ACCENT_COLOR_PRESETS, applyAccentColorPreset, type AccentColorPreset } from '../accentTheme';
 import { DEFAULT_CHAT_WIDTH_PX, MAX_CHAT_WIDTH_PX, MIN_CHAT_WIDTH_PX } from '../chat';
 import { DisposableScope } from '../core/disposable-scope';
@@ -10,28 +11,30 @@ import { CHAT_SEPARATOR_SETTLE_MS, createChatSeparator } from './chat-separator'
 import { applyUiDirection, t } from './messages';
 import { mountPlayerUi, queryPlayerUi } from './root';
 
-type HandleState = 'idle' | 'hover' | 'focus' | 'dragging';
+type HandleState = 'idle' | 'hover' | 'focus' | 'dragging' | 'previewing';
 interface Args { state: HandleState; accent: AccentColorPreset; width: number; settle?: boolean }
 
 /**
  * The production separator in the real player-UI root, beside a stand-in chat column. The story owns
  * the width as the chat controller does: `setWidth` moves the picture/chat edge and reports back through
  * `update`. The chat column follows the backdrop global, so the dark and light shots show the handle
- * against a dark and a light chat. A drag applies its width after a pause on the stage's manual clock,
- * so `dragging` holds the preview: the separator 60 px left of the applied edge. Transitions are held at
- * the swept fractions (`frames`).
+ * against a dark and a light chat. Drags run on hand-driven frames and the stage's manual clock:
+ * `dragging` resizes live, the chat 60 px wider; `previewing` is the fallback after writes cost 80 ms a
+ * frame, the separator 60 px left of the edge the chat still has. Transitions are held at the swept
+ * fractions (`frames`).
  */
 const meta: Meta<Args> = {
   title: 'Components/Chat separator',
   tags: ['frames'],
   argTypes: {
-    state: { control: 'select', options: ['idle', 'hover', 'focus', 'dragging'] },
+    state: { control: 'select', options: ['idle', 'hover', 'focus', 'dragging', 'previewing'] },
     accent: { control: 'select', options: [...ACCENT_COLOR_PRESETS] },
     width: { control: { type: 'range', min: MIN_CHAT_WIDTH_PX, max: MAX_CHAT_WIDTH_PX, step: 10 } }
   },
   args: { state: 'idle', accent: 'system', width: DEFAULT_CHAT_WIDTH_PX },
   render: (args, { globals }) => {
     const stage = mountHudStage({ progress: 1 });
+    const frames = manualFrames();
     const scope = new DisposableScope();
     stage.onDispose(() => scope.dispose());
     const root = document.documentElement;
@@ -59,7 +62,8 @@ const meta: Meta<Args> = {
       max: MAX_CHAT_WIDTH_PX,
       defaultWidth: DEFAULT_CHAT_WIDTH_PX,
       setWidth: next => show(next),
-      clock: stage.clock
+      clock: stage.clock,
+      frames: frames.source
     });
     function show(width: number): void {
       root.style.setProperty('--theater-video-width', `calc(100vw - ${width}px)`);
@@ -77,12 +81,25 @@ const meta: Meta<Args> = {
     const element = separator.element;
     if (args.state === 'hover') element.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
     if (args.state === 'focus') element.focus();
-    if (args.state === 'dragging') {
+    if (args.state === 'dragging' || args.state === 'previewing') {
       element.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
       const box = element.getBoundingClientRect();
+      const start = box.left + box.width / 2;
       const pointer = { pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1, clientY: box.top + box.height / 2, bubbles: true, cancelable: true };
-      element.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, clientX: box.left + box.width / 2 }));
-      element.dispatchEvent(new PointerEvent('pointermove', { ...pointer, clientX: box.left + box.width / 2 - 60 }));
+      const move = (chatWidth: number) => element.dispatchEvent(new PointerEvent('pointermove', { ...pointer, clientX: start - (chatWidth - args.width) }));
+      element.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, clientX: start }));
+      frames.tick(16.7);
+      if (args.state === 'previewing') {
+        // Each tick ends the previous frame: after the first write, every written frame takes 80 ms.
+        move(args.width + 2);
+        frames.tick(16.7);
+        for (let step = 2; element.dataset.dragMode === 'live' && step < 20; step++) {
+          move(args.width + 2 * step);
+          frames.tick(80);
+        }
+      }
+      move(Number(element.getAttribute('aria-valuenow')) + 60);
+      frames.tick(16.7);
       if (args.settle) stage.advance(CHAT_SEPARATOR_SETTLE_MS);
     }
     stage.settle();
@@ -100,26 +117,30 @@ export const Idle: Story = {
     await expect(separator().getAttribute('role')).toBe('separator');
     await expect(separator().getAttribute('aria-orientation')).toBe('vertical');
     await expect(separator().getAttribute('aria-label')).toBe(t('nativeChatResize'));
-    await expect(separator().getAttribute('aria-valuenow')).toBe(String(args.width + (args.settle ? 60 : 0)));
+    if (args.state !== 'previewing') await expect(separator().getAttribute('aria-valuenow')).toBe(String(args.width + (args.state === 'dragging' ? 60 : 0)));
     await expect(separator().getAttribute('aria-valuemin')).toBe(String(MIN_CHAT_WIDTH_PX));
     await expect(separator().getAttribute('aria-valuemax')).toBe(String(MAX_CHAT_WIDTH_PX));
-    await expect(separator().hasAttribute('data-hover')).toBe(args.state === 'hover' || args.state === 'dragging');
-    await expect(separator().hasAttribute('data-dragging')).toBe(args.state === 'dragging');
-    await expect(separator().querySelectorAll('.theater-chat-separator-overlay').length).toBe(args.state === 'dragging' ? 1 : 0);
+    const held = args.state === 'dragging' || args.state === 'previewing';
+    await expect(separator().hasAttribute('data-hover')).toBe(args.state === 'hover' || held);
+    await expect(separator().hasAttribute('data-dragging')).toBe(held);
+    await expect(separator().querySelectorAll('.theater-chat-separator-overlay').length).toBe(held ? 1 : 0);
     if (args.state === 'focus') await waitFor(() => expect(separator().matches(':focus')).toBe(true));
-    // The preview frame follows the pointer before the chat takes the width.
-    if (args.state === 'dragging') await waitFor(() => expect(separator().style.transform).toBe(args.settle ? '' : 'translateX(-60px)'));
+    // Live, the chat is at the pointer; previewing, only the separator is, until the pointer rests.
+    if (held) await expect(separator().dataset.dragMode).toBe(args.state === 'dragging' ? 'live' : 'preview');
+    if (args.state === 'dragging') await expect(separator().style.transform).toBe('');
+    if (args.state === 'previewing') await expect(separator().style.transform).toBe(args.settle ? '' : 'translateX(-60px)');
   }
 };
 export const Hover: Story = { ...Idle, args: { state: 'hover' } };
 export const Focus: Story = { ...Idle, args: { state: 'focus' } };
 export const Dragging: Story = { ...Idle, args: { state: 'dragging' } };
+export const Previewing: Story = { ...Idle, args: { state: 'previewing' } };
 export const PaleAccent: Story = { ...Idle, args: { state: 'hover', accent: 'yellow' } };
 
-/** Resting the pointer applies the previewed width while the drag goes on. */
-export const DragSettles: Story = {
+/** While previewing, resting the pointer applies its width and the drag goes on. */
+export const PreviewSettles: Story = {
   tags: ['no-shot'],
-  args: { state: 'dragging', settle: true },
+  args: { state: 'previewing', settle: true },
   play: async context => { await Idle.play?.(context); }
 };
 
